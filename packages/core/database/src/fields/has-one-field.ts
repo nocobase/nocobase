@@ -1,16 +1,16 @@
-import lodash, { omit } from 'lodash';
+import { omit } from 'lodash';
 import {
   AssociationScope,
   DataType,
   ForeignKeyOptions,
   HasOneOptions,
   HasOneOptions as SequelizeHasOneOptions,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Collection } from '../collection';
-import { checkIdentifier, snakeCase } from '../utils';
-import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { Reference } from '../features/ReferencesMap';
+import { checkIdentifier } from '../utils';
+import { BaseRelationFieldOptions, RelationField } from './relation-field';
 
 export interface HasOneFieldOptions extends HasOneOptions {
   /**

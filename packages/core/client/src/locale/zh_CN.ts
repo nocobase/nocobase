@@ -651,4 +651,8 @@ export default {
   'Fix block': '固定区块',
   'Plugin name': '插件',
   'Plugin tab name': '插件标签页',
+  'Enable page header': '启用页眉',
+  'Display page title': '显示页面标题',
+  'Edit page title': '编辑页面标题',
+  'Enable page tabs': '启用页面选项卡',
 }

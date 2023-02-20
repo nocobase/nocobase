@@ -28,7 +28,7 @@ const collection = {
 <CollectionProvider collection={collection}></CollectionProvider>
 ```
 
-如果没有传 collection 参数，从 CollectionManagerProvider 里取对应 name 的 collection。
+If there is no collection parameter passed in, get the collection from CollectionManagerProvider with the corresponding name.
 
 ```jsx | pure
 const collections = [
@@ -67,7 +67,8 @@ const field = {
 <CollectionFieldProvider field={field}></CollectionFieldProvider>
 ```
 
-如果没有传 field 参数，从 CollectionProvider 里取对应 name 的 field。
+If there is no field parameter passed in, get the field from CollectionProvider with the corresponding name.
+
 
 ```jsx | pure
 const collection = {
@@ -91,7 +92,7 @@ const collection = {
 
 ### CollectionField
 
-万能字段组件，需要与 `<CollectionProvider/>` 搭配使用，仅限于在 Schema 场景使用。从 CollectionProvider 里取对应 name 的 field schema。可通过 CollectionField 所在的 schema 扩展配置。
+Universal field component that needs to be used with `<CollectionProvider/>`, but only in schema scenarios. Get the field schema from CollectionProvider with the corresponding name. Extend the configuration via the schema where the CollectionField is located.
 
 ```ts
 {
@@ -108,7 +109,7 @@ const collection = {
 
 ### useCollectionManager()
 
-与 `<CollectionManagerProvider/>` 搭配使用
+Use with `<CollectionManagerProvider/>`.
 
 ```jsx | pure
 const { collections, get } = useCollectionManager();
@@ -116,7 +117,7 @@ const { collections, get } = useCollectionManager();
 
 ### useCollection()
 
-与 `<CollectionProvider/>` 搭配使用
+Use with `<CollectionProvider/>`.
 
 ```jsx | pure
 const { name, fields, getField, findField, resource } = useCollection();
@@ -124,13 +125,13 @@ const { name, fields, getField, findField, resource } = useCollection();
 
 ### useCollectionField()
 
-与 `<CollectionFieldProvider/>` 搭配使用
+Use with `<CollectionFieldProvider/>`.
 
 ```jsx | pure
 const { name, uiSchema, resource } = useCollectionField();
 ```
 
-resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。如：
+The resource needs to be used with `<RecordProvider/>` to provide context of the record of the current data table row.
 
 # CollectionManager
 
@@ -162,7 +163,7 @@ const collection = {
 <CollectionProvider collection={collection}></CollectionProvider>
 ```
 
-如果没有传 collection 参数，从 CollectionManagerProvider 里取对应 name 的 collection。
+If there is no collection parameter passed in, get the collection from CollectionManagerProvider with the corresponding name.
 
 ```jsx | pure
 const collections = [
@@ -201,7 +202,7 @@ const field = {
 <CollectionFieldProvider field={field}></CollectionFieldProvider>
 ```
 
-如果没有传 field 参数，从 CollectionProvider 里取对应 name 的 field。
+If there is no field parameter passed in, get the field from CollectionProvider with the corresponding name.
 
 ```jsx | pure
 const collection = {
@@ -225,7 +226,7 @@ const collection = {
 
 ### CollectionField
 
-万能字段组件，需要与 `<CollectionProvider/>` 搭配使用，仅限于在 Schema 场景使用。从 CollectionProvider 里取对应 name 的 field schema。可通过 CollectionField 所在的 schema 扩展配置。
+Universal field component that needs to be used with `<CollectionProvider/>`, but only in schema scenarios. Get the field schema from CollectionProvider with the corresponding name. Extend the configuration via the schema where the CollectionField is located.
 
 ```ts
 {
@@ -242,7 +243,7 @@ const collection = {
 
 ### useCollectionManager()
 
-与 `<CollectionManagerProvider/>` 搭配使用
+Use with `<CollectionManagerProvider/>`.
 
 ```jsx | pure
 const { collections, get } = useCollectionManager();
@@ -250,7 +251,7 @@ const { collections, get } = useCollectionManager();
 
 ### useCollection()
 
-与 `<CollectionProvider/>` 搭配使用
+Use with `<CollectionProvider/>`.
 
 ```jsx | pure
 const { name, fields, getField, findField, resource } = useCollection();
@@ -258,10 +259,10 @@ const { name, fields, getField, findField, resource } = useCollection();
 
 ### useCollectionField()
 
-与 `<CollectionFieldProvider/>` 搭配使用
+Use with `<CollectionFieldProvider/>`.
 
 ```jsx | pure
 const { name, uiSchema, resource } = useCollectionField();
 ```
 
-resource 需要与 `<RecordProvider/>` 搭配使用，用于提供当前数据表行记录的上下文。
+The resource needs to be used with `<RecordProvider/>` to provide context of the record of the current data table row.
