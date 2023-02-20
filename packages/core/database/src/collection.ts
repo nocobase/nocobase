@@ -134,7 +134,10 @@ export class Collection<
           context: options.context,
         });
         if (children?.length > 0) {
-          instance.setDataValue('children', children);
+          instance.setDataValue(
+            'children',
+            children.map((r) => r.toJSON()),
+          );
         }
       }
     });

@@ -60,15 +60,19 @@ describe('sort', function () {
     const values = [
       {
         name: '1',
+        __index: '0',
         children: [
           {
             name: '1-1',
+            __index: '0.children.0',
             children: [
               {
                 name: '1-1-1',
+                __index: '0.children.0.children.0',
                 children: [
                   {
                     name: '1-1-1-1',
+                    __index: '0.children.0.children.0.children.0',
                   },
                 ],
               },
@@ -78,15 +82,19 @@ describe('sort', function () {
       },
       {
         name: '2',
+        __index: '1',
         children: [
           {
             name: '2-1',
+            __index: '1.children.0',
             children: [
               {
                 name: '2-1-1',
+                __index: '1.children.0.children.0',
                 children: [
                   {
                     name: '2-1-1-1',
+                    __index: '1.children.0.children.0.children.0',
                   },
                 ],
               },
@@ -106,9 +114,16 @@ describe('sort', function () {
       },
       tree: true,
       fields: ['id', 'name'],
-      appends: ['parent', 'children'],
       sort: 'id',
     });
+
+    console.log(
+      JSON.stringify(
+        instances.map((i) => i.toJSON()),
+        null,
+        2,
+      ),
+    );
 
     expect(instances.map((i) => i.toJSON())).toMatchObject(values);
 
