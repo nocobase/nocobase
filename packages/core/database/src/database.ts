@@ -156,7 +156,9 @@ class DatabaseVersion {
         }
         const [result] = (await this.db.sequelize.query(dialects[dialect].sql)) as any;
         if (result?.[0]?.version) {
-          checkIsSatisfiedInSpecialVersion(result?.[0]?.version, uselessSpecialVersionTokens);
+          const isSatisfiedInSpecialVersion = checkIsSatisfiedInSpecialVersion(result?.[0]?.version, uselessSpecialVersionTokens);
+          if (!isSatisfiedInSpecialVersion)
+            return false;
         }
         return semver.satisfies(dialects[dialect].get(result?.[0]?.version), versions[dialect]);
       }
