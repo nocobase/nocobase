@@ -12,8 +12,16 @@ export default class extends Migration {
       const fields = await Field.find({ transaction });
       for (const field of fields) {
         if (['mathFormula', 'excelFormula'].includes(field.get('type'))) {
-          field.set('type', 'formula');
-          field.set('interface', 'formula');
+          const { options } = field;
+          field.set({
+            type: 'formula',
+            interface: 'formula',
+            options: {
+              ...options,
+              engine: field.get('type') === 'mathFormula' ? 'math.js' : 'formula.js',
+              dataType: options.dataType === 'number' ? 'double' : 'string'
+            },
+          });
           await field.save({ transaction });
           const schema = await field.getUiSchema({ transaction });
           schema.set('x-component', 'Formula.Result');

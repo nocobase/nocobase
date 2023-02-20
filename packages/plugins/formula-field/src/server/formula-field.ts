@@ -210,7 +210,7 @@ export class FormulaField extends Field {
   }
 
   calculate(scope) {
-    const { expression, engine, dataType = 'double' } = this.options;
+    const { expression, engine = 'math.js', dataType = 'double' } = this.options;
     const evaluate = evaluators.get(engine);
     try {
       const result = evaluate(expression, scope);

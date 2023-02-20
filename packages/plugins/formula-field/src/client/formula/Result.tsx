@@ -34,7 +34,7 @@ const Input = (props) => {
       setVal(val());
     });
   });
-  if (dataType !== 'string') {
+  if (dataType === 'double') {
     return <div>{toFixedByStep(value, props.step)}</div>;
   }
   return <div>{value}</div>;
