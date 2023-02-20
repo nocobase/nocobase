@@ -33,7 +33,8 @@
     "@nocobase/plugin-verification": "0.9.0-alpha.2",
     "@nocobase/plugin-workflow": "0.9.0-alpha.2",
     "@nocobase/server": "0.9.0-alpha.2",
-    "@nocobase/plugin-charts": "0.9.0-alpha.2"
+    "@nocobase/plugin-charts": "0.9.0-alpha.2",
+    "@nocobase/plugin-dataset": "0.9.0-alpha.2"
   },
   "repository": {
     "type": "git",
