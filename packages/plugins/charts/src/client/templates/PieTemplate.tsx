@@ -36,7 +36,7 @@ const chartConfig = {
   interactions: [{ type: 'element-active' }],
 };
 export const pieTemplate = {
-  title: 'Pie(一个维度，一个度量)',
+  title: 'Pie(1 个「无序名词」字段，1 个「数值」字段)',
   type: 'Pie',
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

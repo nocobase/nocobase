@@ -33,7 +33,7 @@ const chartConfig = {
   },
 };
 export const lineTemplate = {
-  title: 'Line(一个维度，一个度量)',
+  title: 'Line(1 个「时间」或「有序名词」字段，1 个「数值」字段)',
   type: 'Line',
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

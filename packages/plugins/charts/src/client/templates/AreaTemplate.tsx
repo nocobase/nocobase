@@ -25,7 +25,7 @@ const chartConfig = {
   seriesField: '{{category}}',
 };
 export const areaTemplate = {
-  title: 'Area(一个维度，一个度量)',
+  title: 'Area(1 个「时间」或「有序名词」字段，1 个「数值」字段,1 个「无序名词」字段(可选))',
   type: 'Area',
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

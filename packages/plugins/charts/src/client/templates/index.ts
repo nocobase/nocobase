@@ -9,5 +9,5 @@ export const templates = new Map();
 templates.set('Pie', pieTemplate);
 templates.set('Line', lineTemplate);
 templates.set('Area', areaTemplate);
-// templates.set('Bar', barTemplate);
-// templates.set('Column', columnTemplate);
+templates.set('Bar', barTemplate);
+templates.set('Column', columnTemplate);
