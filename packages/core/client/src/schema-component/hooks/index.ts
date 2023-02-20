@@ -7,4 +7,4 @@ export * from './useFieldProps';
 export * from './useSchemaComponentContext';
 export * from './useFieldComponentOptions';
 export * from './useFieldTitle';
-
+export * from './useProps';

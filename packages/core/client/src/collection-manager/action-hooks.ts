@@ -102,7 +102,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;

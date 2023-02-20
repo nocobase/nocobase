@@ -6,20 +6,21 @@ import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, Button, Modal } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useHistory } from 'react-router';
 import { useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 import Search from './Search';
 
-interface AMapComponentProps {
-  accessKey: string;
-  securityJsCode: string;
-  value: any;
-  onChange: (value: number[]) => void;
+export interface AMapComponentProps {
+  value?: any;
+  onChange?: (value: number[]) => void;
   disabled?: boolean;
   mapType: string;
   zoom: number;
+  type: 'pointy' | 'polygon' | 'lineString' | 'circle';
+  dataSource?: any[];
+  style?: React.CSSProperties;
 }
 
 const methodMapping = {
@@ -55,7 +56,7 @@ const methodMapping = {
 
 const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, disabled, zoom = 13 } = props;
+  const { value, onChange, disabled, zoom = 13, dataSource } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -64,8 +65,12 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
   const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
-  const type = collectionField?.interface;
+  const type = useMemo(() => {
+    if (props.type) return props.type;
+    const collectionField = getField(fieldSchema?.name);
+    return collectionField?.interface;
+  }, [props?.type, fieldSchema?.name]);
+
   const overlay = useRef<any>();
   const editor = useRef(null);
   const history = useHistory();
@@ -186,7 +191,7 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
   // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
-    if (!value || overlay.current) {
+    if (!value || overlay.current || dataSource) {
       return;
     }
     const mapping = methodMapping[type as keyof typeof methodMapping];
@@ -209,7 +214,39 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
 
     createEditor();
     setTarget();
-  }, [value, needUpdateFlag, type, commonOptions]);
+  }, [value, dataSource, needUpdateFlag, type, commonOptions]);
+
+  // Map block shows data source
+  useEffect(() => {
+    if (!aMap.current) return;
+    if (!dataSource) {
+      return;
+    }
+    const mapping = methodMapping[type as keyof typeof methodMapping];
+    if (!mapping) {
+      return;
+    }
+    const options = { ...commonOptions };
+
+    const overlays = dataSource.map((item) => {
+      if ('transformOptions' in mapping) {
+        Object.assign(options, mapping.transformOptions(item));
+      } else if ('propertyKey' in mapping) {
+        options[mapping.propertyKey] = item;
+      }
+
+      const nextOverlay = new aMap.current[mapping.overlay](options);
+      nextOverlay.setMap(map.current);
+      return nextOverlay;
+    });
+
+    map.current.setFitView(overlays);
+    return () => {
+      overlays.forEach((item) => {
+        item.remove();
+      });
+    };
+  }, [dataSource, needUpdateFlag, type, commonOptions]);
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -301,13 +338,13 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     <div
       className={css`
         position: relative;
+        height: 500px;
       `}
       id={id.current}
       style={{
-        height: '500px',
+        ...props?.style,
       }}
     >
-      {/* bottom: 20px; right: 50%; transform: translateX(50%); z-index: 2; */}
       <div
         className={css`
           position: absolute;
