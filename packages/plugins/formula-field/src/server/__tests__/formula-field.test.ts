@@ -477,7 +477,7 @@ describe('formula field', () => {
       });
     });
 
-    describe.skip('bigInt', () => {
+    describe('bigInt', () => {
       describe('from boolean', () => {
         it('true', async () => {
           const expression = '{{a}}';
@@ -494,7 +494,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: true,
           });
-          expect(test.get('result')).toBe(BigInt(1));
+          expect(test.get('result')).toBe(1);
         });
 
         it('false', async () => {
@@ -512,12 +512,12 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: false,
           });
-          expect(test.get('result')).toBe(BigInt(0));
+          expect(test.get('result')).toBe(0);
         });
       });
 
       describe('from number', () => {
-        it.skip('float', async () => {
+        it('float', async () => {
           const expression = '{{a}}';
           const Test = db.collection({
             name: 'tests',
@@ -532,7 +532,120 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: 1.6,
           });
-          expect(test.get('result')).toEqual(BigInt(1));
+          expect(test.get('result')).toEqual(1);
+        });
+
+        it('negative', async () => {
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'float', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: -1.6,
+          });
+          expect(test.get('result')).toEqual(-1);
+        });
+      });
+
+      describe('from string', () => {
+        it('number string', async () => {
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'string', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: '-123.56',
+          });
+          expect(test.get('result')).toEqual(-123);
+        });
+
+        it('mixed string', async () => {
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'string', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: '9007199254740991abc',
+          });
+          expect(test.get('result')).toEqual(9007199254740991);
+        });
+
+        it('invalid number string', async () => {
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'string', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: 'abc',
+          });
+          expect(test.get('result')).toEqual(null);
+        });
+
+        it('infinity string', async () => {
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'string', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: 'Infinity',
+          });
+          expect(test.get('result')).toEqual(null);
+        });
+      });
+
+      describe('from date', () => {
+        it('now', async () => {
+          const now = new Date();
+          const expression = '{{a}}';
+          const Test = db.collection({
+            name: 'tests',
+            fields: [
+              { type: 'date', name: 'a' },
+              { name: 'result', type: 'formula', expression, engine: 'formula.js', dataType: 'bigInt' },
+            ],
+          });
+
+          await db.sync();
+
+          const test = await Test.model.create<any>({
+            a: now,
+          });
+          expect(test.get('result')).toEqual(now.valueOf());
         });
       });
     });
