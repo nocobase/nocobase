@@ -6,7 +6,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { InfoOutlined } from '@ant-design/icons';
 
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeCardClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from "../style";
 import { useFlowContext } from "../FlowContext";
@@ -43,13 +43,14 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any): { label: string; value: any; key: string }[];
+  getOptions?(config: any, types: any[]): { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
-  getter?(node: any): React.ReactNode;
+  useInitializers?(config): SchemaInitializerItemOptions | null;
+  initializers?: any;
 };
 
 export const triggers = new Registry<Trigger>();
@@ -230,4 +231,9 @@ export const TriggerConfig = () => {
       />
     </div>
   );
+}
+
+export function useTrigger() {
+  const { workflow } = useFlowContext();
+  return triggers.get(workflow.type);
 }

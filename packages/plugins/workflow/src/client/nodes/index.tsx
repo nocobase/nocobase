@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
 import { Registry } from '@nocobase/utils/client';
-import { SchemaComponent, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton } from '../AddButton';
@@ -21,6 +21,8 @@ import condition from './condition';
 import parallel from './parallel';
 import delay from './delay';
 
+import manual from './manual';
+
 import query from './query';
 import create from './create';
 import update from './update';
@@ -28,6 +30,7 @@ import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
 import request from "./request";
+import { VariableOption } from '../variable';
 
 export interface Instruction {
   title: string;
@@ -38,9 +41,11 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactElement;
+  render?(props): React.ReactNode;
   endding?: boolean;
-  getter?(node: any): React.ReactElement;
+  getOptions?(config, types?): VariableOption[] | null;
+  useInitializers?(node): SchemaInitializerItemOptions | null;
+  initializers?: { [key: string]: any };
 };
 
 export const instructions = new Registry<Instruction>();
@@ -49,6 +54,8 @@ instructions.register('condition', condition);
 instructions.register('parallel', parallel);
 instructions.register('calculation', calculation);
 instructions.register('delay', delay);
+
+instructions.register('manual', manual);
 
 instructions.register('query', query);
 instructions.register('create', create);
@@ -70,8 +77,12 @@ function useUpdateAction() {
         return;
       }
       // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
-      // await form.submit();
-      await api.resource('flow_nodes', data.id).update({
+      try {
+        await form.submit();
+      } catch (err) {
+        return;
+      }
+      await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {
           title: form.values.title,
@@ -84,10 +95,19 @@ function useUpdateAction() {
   };
 };
 
-const NodeContext = React.createContext(null);
+export const NodeContext = React.createContext<any>({});
 
 export function useNodeContext() {
   return useContext(NodeContext);
+}
+
+export function useAvailableUpstreams(node) {
+  const stack: any[] = [];
+  for (let current = node.upstream; current; current = current.upstream) {
+    stack.push(current);
+  }
+
+  return stack;
 }
 
 export function Node({ data }) {
@@ -142,7 +162,7 @@ export function RemoveButton() {
 
   async function onRemove() {
     async function onOk() {
-      const { data: { data: node } } = await resource.destroy({
+      const { data: { data: node } } = await resource.destroy?.({
         filterByTk: current.id
       });
       onNodeRemoved(node);
@@ -218,21 +238,24 @@ export function JobButton() {
       schema={{
         type: 'void',
         properties: {
-          job: {
+          [`${job.id}-button`]: {
             type: 'void',
             'x-component': 'Action',
             'x-component-props': {
-              title: icon,
+              title: <Tag color={color}>{icon}</Tag>,
               shape: 'circle',
               className: ['workflow-node-job-button', css`
-                background-color: ${color};
-                &:hover,&:focus{
-                  background-color: ${color}
+                .ant-tag{
+                  padding: 0;
+                  width: 100%;
+                  line-height: 18px;
+                  margin-right: 0;
+                  border-radius: 50%;
                 }
               `]
             },
             properties: {
-              [job.id]: {
+              [`${job.id}-modal`]: {
                 type: 'void',
                 'x-decorator': 'Form',
                 'x-decorator-props': {
@@ -319,7 +342,7 @@ export function NodeDefaultView(props) {
           schema={{
             type: 'void',
             properties: {
-              view: instruction.view,
+              ...(instruction.view ? { view: instruction.view } : {}),
               config: {
                 type: 'void',
                 title: detailText,
@@ -328,7 +351,7 @@ export function NodeDefaultView(props) {
                   type: 'primary',
                 },
                 properties: {
-                  [instruction.type]: {
+                  [`${instruction.type}_${data.id}`]: {
                     type: 'void',
                     title: instruction.title,
                     'x-component': 'Action.Drawer',
@@ -371,6 +394,7 @@ export function NodeDefaultView(props) {
                         'x-component': 'fieldset',
                         'x-component-props': {
                           className: css`
+                            .ant-input,
                             .ant-select,
                             .ant-cascader-picker,
                             .ant-picker,
@@ -405,9 +429,9 @@ export function NodeDefaultView(props) {
                             },
                           },
                         },
-                      } as ISchema
+                      }
                     }
-                  }
+                  } as ISchema
                 }
               }
             }

@@ -1,17 +1,54 @@
 import actions, { Context, utils } from '@nocobase/actions';
-import { Repository } from '@nocobase/database';
+import { Op, Repository } from '@nocobase/database';
 
 export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;
   const { filterByTk, values } = context.action.params;
+  context.action.mergeParams({
+    whitelist: ['title', 'description', 'enabled', 'config']
+  });
   // only enable/disable
-  if (Object.keys(values).sort().join() !== 'enabled,key'){
+  if (Object.keys(values).includes('config')){
     const workflow = await repository.findById(filterByTk);
     if (workflow.get('executed')) {
-      return context.throw(400, 'executed workflow can not be updated');
+      return context.throw(400, 'config of executed workflow can not be updated');
     }
   }
   return actions.update(context, next);
+}
+
+export async function destroy(context: Context, next) {
+  const repository = utils.getRepositoryFromParams(context) as Repository;
+  const { filterByTk, filter } = context.action.params;
+
+  await context.db.sequelize.transaction(async transaction => {
+    const items = await repository.find({
+      filterByTk,
+      filter,
+      fields: ['id', 'key', 'current'],
+      transaction
+    });
+    const ids = new Set<number>(items.map(item => item.id));
+    const keysSet = new Set<string>(items.filter(item => item.current).map(item => item.key));
+    const revisions = await repository.find({
+      filter: {
+        key: Array.from(keysSet),
+        current: { [Op.not]: true }
+      },
+      fields: ['id'],
+      transaction
+    });
+
+    revisions.forEach(item => ids.add(item.id));
+
+    context.body = await repository.destroy({
+      filterByTk: Array.from(ids),
+      individualHooks: true,
+      transaction
+    });
+  });
+
+  next();
 }
 
 function typeOf(value) {
@@ -43,16 +80,13 @@ function migrateConfig(config, oldToNew) {
       case 'array':
         return value.map(item => migrate(item));
       case 'string':
-        const matcher = value.match(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/);
-        if (!matcher) {
-          return value;
-        }
-        const oldNodeId = Number.parseInt(matcher[2], 10);
-        const newNode = oldToNew.get(oldNodeId);
-        if (!newNode) {
-          throw new Error('node configurated for result is not existed');
-        }
-        return value.replace(matcher[0], `{{$jobsMapByNodeId.${newNode.id}`);
+        return value.replace(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/g, (_, jobVar, oldNodeId) => {
+          const newNode = oldToNew.get(Number.parseInt(oldNodeId, 10));
+          if (!newNode) {
+            throw new Error('node configurated for result is not existed');
+          }
+          return `{{$jobsMapByNodeId.${newNode.id}`;
+        });
       default:
         return value;
     }

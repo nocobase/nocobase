@@ -45,16 +45,13 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         },
         resume(node, input, execution) {
           throw new Error('input failed');
-        },
-      },
+        }
+      }
     },
+    functions: {
+      no1: () => 1
+    }
   });
-
-  if (!calculators.get('no1')) {
-    calculators.register('no1', () => 1);
-  }
-
-  await app.db.clean({ drop: true });
 
   await app.load();
 
