@@ -1,88 +1,50 @@
-import calculators, { calculate, Operand } from "../calculators";
+import { Evaluator, Processor } from '..';
 import { JOB_STATUS } from "../constants";
+import FlowNodeModel from "../models/FlowNode";
+import { Instruction } from ".";
 
-type BaseCalculation = {
-  not?: boolean;
-};
-
-type SingleCalculation = BaseCalculation & {
-  calculation: string;
-  operands?: Operand[];
-};
-
-type GroupCalculationOptions = {
-  type: 'and' | 'or';
-  calculations: Calculation[]
-};
-
-type GroupCalculation = BaseCalculation & {
-  group: GroupCalculationOptions
-};
-
-// TODO(type)
-type Calculation = SingleCalculation | GroupCalculation;
-
-// @calculation: {
-//   not: false,
-//   group: {
-//     type: 'and',
-//     calculations: [
-//       {
-//         calculator: 'time.equal',
-//         operands: [{ value: '{{$context.time}}' }, { value: '{{$fn.now}}' }]
-//       },
-//       {
-//         calculator: 'value.equal',
-//         operands: [{ value: '{{$jobsMapByNodeId.213}}' }, { value: 1 }]
-//       },
-//       {
-//         group: {
-//           type: 'or',
-//           calculations: [
-//             {
-//               calculator: 'value.equal',
-//               operands: [{ value: '{{$jobsMapByNodeId.213}}' }, { value: 1 }]
-//             }
-//           ]
-//         }
-//       }
-//     ]
-//   }
-// }
-function logicCalculate(calculation, input, processor) {
+function logicCalculate(calculation, evaluator, scope) {
   if (!calculation) {
     return true;
   }
 
-  const { not, group } = calculation;
-  let result;
-  if (group) {
-    const method = group.type === 'and' ? 'every' : 'some';
-    result = group.calculations[method](item => logicCalculate(item, input, processor));
-  } else {
-    const args = calculation.operands.map(operand => calculate(operand, input, processor));
-    const fn = calculators.get(calculation.calculator);
-    if (!fn) {
-      throw new Error(`no calculator function registered for "${calculation.calculator}"`);
-    }
-    result = fn(...args);
+  if (typeof calculation === 'object' && calculation.group) {
+    const method = calculation.group.type === 'and' ? 'every' : 'some';
+    return calculation.group.calculations[method](item => logicCalculate(item, evaluator, scope));
   }
 
-  return not ? !result : result;
+  return evaluator(calculation, scope);
 }
 
 
 export default {
-  async run(node, prevJob, processor) {
+  async run(node: FlowNodeModel, prevJob, processor: Processor) {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
     // const jobs = await processor.getJobs();
-    const { calculation, rejectOnFalse } = node.config || {};
+    const { engine = 'basic', calculation, rejectOnFalse } = node.config || {};
+    const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
+    if (!evaluator) {
+      return {
+        status: JOB_STATUS.ERROR,
+        result: new Error('no calculator engine configured')
+      }
+    }
 
-    const result = logicCalculate(processor.getParsedValue(calculation), prevJob, processor);
+    const scope = processor.getScope();
+    let result = true;
+
+    try {
+      result = logicCalculate(processor.getParsedValue(calculation), evaluator, scope);
+    } catch (e) {
+      return {
+        result: e.toString(),
+        status: JOB_STATUS.ERROR
+      }
+    }
 
     if (!result && rejectOnFalse) {
       return {
-        status: JOB_STATUS.REJECTED,
+        status: JOB_STATUS.FAILED,
         result
       };
     }
@@ -107,7 +69,7 @@ export default {
     return processor.run(branchNode, savedJob);
   },
 
-  async resume(node, branchJob, processor) {
+  async resume(node: FlowNodeModel, branchJob, processor: Processor) {
     if (branchJob.status === JOB_STATUS.RESOLVED) {
       // return to continue node.downstream
       return branchJob;
@@ -116,4 +78,4 @@ export default {
     // pass control to upper scope by ending current scope
     return processor.end(node, branchJob);
   }
-};
+} as Instruction;

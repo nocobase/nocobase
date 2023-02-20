@@ -22,6 +22,7 @@ import { Branch } from './Branch';
 import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
+import { linkNodes } from './utils';
 
 
 
@@ -47,25 +48,12 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
 }
 
 
-function makeNodes(nodes): void {
-  const nodesMap = new Map();
-  nodes.forEach(item => nodesMap.set(item.id, item));
-  for (let node of nodesMap.values()) {
-    if (node.upstreamId) {
-      node.upstream = nodesMap.get(node.upstreamId);
-    }
-
-    if (node.downstreamId) {
-      node.downstream = nodesMap.get(node.downstreamId);
-    }
-  }
-}
 
 export function WorkflowCanvas() {
   const history = useHistory();
   const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -79,7 +67,7 @@ export function WorkflowCanvas() {
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
 
-  makeNodes(nodes);
+  linkNodes(nodes);
 
   const entry = nodes.find(item => !item.upstream);
 
@@ -91,11 +79,9 @@ export function WorkflowCanvas() {
 
   async function onToggle(value) {
     await resource.update({
-      filterByTk: workflow[targetKey],
+      filterByTk: workflow.id,
       values: {
-        enabled: value,
-        // NOTE: keep `key` field to adapt for backend
-        key: workflow.key
+        enabled: value
       }
     });
     refresh();
@@ -103,7 +89,7 @@ export function WorkflowCanvas() {
 
   async function onRevision() {
     const { data: { data: revision } } = await resource.revision({
-      filterByTk: workflow[targetKey],
+      filterByTk: workflow.id,
       filter: {
         key: workflow.key
       }
