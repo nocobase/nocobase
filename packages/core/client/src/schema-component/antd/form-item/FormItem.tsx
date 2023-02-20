@@ -4,10 +4,10 @@ import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
+import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
@@ -26,6 +26,15 @@ const divWrap = (schema: ISchema) => {
 
 export const FormItem: any = observer((props) => {
   const field = useField();
+  const ctx = useContext(BlockRequestContext);
+  const schema = useFieldSchema();
+  useEffect(() => {
+    if (ctx?.block === 'form') {
+      ctx.field.data = ctx.field.data || {};
+      ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+      ctx.field.data.activeFields.add(schema.name);
+    }
+  }, []);
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>

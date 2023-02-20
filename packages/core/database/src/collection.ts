@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { Field, FieldOptions } from './fields';
@@ -488,12 +488,18 @@ export class Collection<
 
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
-      indexes.map((item) => {
-        if (this.options.underscored) {
-          item.fields = item.fields.map((field) => snakeCase(field));
-        }
-        return item;
-      }),
+      indexes
+        .filter((item) => {
+          return item.fields.every((field) =>
+            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
+          );
+        })
+        .map((item) => {
+          if (this.options.underscored) {
+            item.fields = item.fields.map((field) => snakeCase(field));
+          }
+          return item;
+        }),
       'name',
     );
   }
@@ -531,5 +537,19 @@ export class Collection<
 
   public isParent() {
     return this.context.database.inheritanceMap.isParentNode(this.name);
+  }
+
+  public addSchemaTableName() {
+    const tableName = this.model.tableName;
+
+    if (this.options.schema) {
+      return this.db.utils.addSchema(tableName, this.options.schema);
+    }
+
+    return tableName;
+  }
+
+  public quotedTableName() {
+    return this.db.utils.quoteTable(this.addSchemaTableName());
   }
 }

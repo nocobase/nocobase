@@ -81,12 +81,12 @@ const InternalAssociationSelect = connect(
   mapReadPretty(ReadPretty),
 );
 
-interface RemoteSelectInterface {
+interface AssociationSelectInterface {
   (props: any): React.ReactElement;
   Designer: React.FC;
 }
 
-export const AssociationSelect = InternalAssociationSelect as unknown as RemoteSelectInterface;
+export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
 AssociationSelect.Designer = () => {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();

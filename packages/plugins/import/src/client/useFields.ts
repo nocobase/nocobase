@@ -1,17 +1,17 @@
 import { useCollectionManager } from '@nocobase/client';
 
 const EXCLUDE_INTERFACES = [
-  'icon',
-  'formula',
-  'attachment',
-  'markdown',
-  'richText',
+  // 'icon',
+  // 'formula',
+  // 'attachment',
+  // 'markdown',
+  // 'richText',
   'id',
   'createdAt',
   'createdBy',
   'updatedAt',
   'updatedBy',
-  'sequence',
+  // 'sequence',
 ];
 
 export const useFields = (collectionName: string) => {

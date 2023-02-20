@@ -52,10 +52,11 @@ export class AppManager extends EventEmitter {
     return server.listen(...args);
   }
 
-  async getApplication(appName: string): Promise<null | Application> {
+  async getApplication(appName: string, options = {}): Promise<null | Application> {
     await this.emitAsync('beforeGetApplication', {
       appManager: this,
       name: appName,
+      options,
     });
 
     return this.applications.get(appName);

@@ -1,10 +1,6 @@
 import { css } from '@emotion/css';
 
 export const workflowPageClass = css`
-  height: 100%;
-  width: 100%;
-  overflow: auto;
-
   .workflow-toolbar{
     display: flex;
     align-items: center;

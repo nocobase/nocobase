@@ -22,6 +22,7 @@ module.exports = {
     },
   },
   modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
+  // add .mjs .cjs for formula.js
   moduleFileExtensions: [...defaults.moduleFileExtensions, 'mjs', 'cjs'],
   coveragePathIgnorePatterns: [
     '/node_modules/',

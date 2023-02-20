@@ -1,24 +1,24 @@
 # SchemaInitializer
 
-用于各种 schema 的初始化。新增的 schema 可以插入到某个已有 schema 节点的任意位置，包括：
+Used for the initialization of various schemas. Newly added schema can be inserted anywhere in an existing schema node, including:
 
 ```ts
 {
   properties: {
-    // beforeBegin 在当前节点的前面插入
+    // beforeBegin - Insert in front of the current node
     node1: {
       properties: {
-        // afterBegin 在当前节点的第一个子节点前面插入
+        // afterBegin - Insert in front of the first child node of the current node
         // ...
-        // beforeEnd 在当前节点的最后一个子节点后面
+        // beforeEnd - After the last child node of the current node
       },
     },
-    // afterEnd 在当前节点的后面
+    // afterEnd - After the current node
   },
 }
 ```
 
-SchemaInitializer 的核心包括 `<SchemaInitializer.Button />` 和 `<SchemaInitializer.Item />` 两个组件。`<SchemaInitializer.Button />` 用于创建 Schema 的下拉菜单按钮，下拉菜单的菜单项为 `<SchemaInitializer.Item/>`。
+The core of SchemaInitializer includes `<SchemaInitializer.Button />` and `<SchemaInitializer.Item />` the two components. `<SchemaInitializer.Button />` is used to create the dropdown menu button of schema, and the options of the dropdown menu is `<SchemaInitializer.Item/>`.
 
 ### `<SchemaInitializerProvider />`
 

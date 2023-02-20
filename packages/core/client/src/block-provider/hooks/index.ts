@@ -3,6 +3,7 @@ import { message, Modal } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
+import omit from 'lodash/omit';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -69,6 +70,16 @@ const filterValue = (value) => {
 };
 
 function getFormValues(filterByTk, field, form, fieldNames, getField, resource) {
+  if (filterByTk) {
+    const actionFields = field?.data?.activeFields as Set<string>;
+    if (actionFields) {
+      const keys = Object.keys(form.values).filter((key) => {
+        const f = getField(key);
+        return !actionFields.has(key) && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(f?.type);
+      });
+      return omit({ ...form.values }, keys);
+    }
+  }
   return form.values;
   let values = {};
   for (const key in form.values) {

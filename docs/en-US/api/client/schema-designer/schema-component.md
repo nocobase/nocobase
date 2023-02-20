@@ -1,12 +1,12 @@
 # SchemaComponent
 
-## 核心组件
+## Core Components
 
 ### `<SchemaComponentProvider />`
 ### `<SchemaComponentOptions>`
 ### `<SchemaComponent>`
 
-## 核心方法
+## Core Methods
 
 ### `createDesignable()`
 ### `useDesignable()`

@@ -1,57 +1,59 @@
 # ACLResource
 
-ACLResource，ACL 系统中的资源类。在 ACL 系统中，为用户授予权限时会自动创建对应的资源。
+ACLResource is the resource class in ACL system. In ACL systems, the corresponding resource is created automatically when granting permission to user.
 
-
-## 类方法
+## Class Methods
 
 ### `constructor()`
-构造函数
 
-**签名**
+Constructor.
+
+**Signature**
 * `constructor(options: AclResourceOptions)`
 
-**类型**
+**Type**
 ```typescript
 type ResourceActions = { [key: string]: RoleActionParams };
 
 interface AclResourceOptions {
-  name: string; // 资源名称
-  role: ACLRole; // 资源所属角色
+  name: string; // Name of the resource
+  role: ACLRole; // Role to which the resource belongs
   actions?: ResourceActions;
 }
 ```
 
-**详细信息**
+**Detailed Information**
 
-`RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
+Refer to [`aclRole.grantAction`](./acl-role.md#grantaction) for details about `RoleActionParams`.
 
 ### `getActions()`
 
-获取资源的所有 Action，返回结果为 `ResourceActions` 对象。
+Get all actions of the resource, the return is `ResourceActions` object.
 
 ### `getAction()`
-根据名称返回 Action 的参数配置，返回结果为 `RoleActionParams` 对象。
 
-**详细信息**
+Get the parameter configuration of the action by name, the return is `RoleActionParams` object.
 
-`RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
+**Detailed Information**
+
+Refer to  [`aclRole.grantAction`](./acl-role.md#grantaction) for 
+`RoleActionParams`.
 
 ### `setAction()`
 
-在资源内部设置一个 Action 的参数配置，返回结果为 `RoleActionParams` 对象。
+Set the parameter configuration of an action inside the resource, the return is `RoleActionParams` object.
 
-**签名**
+**Signature**
 * `setAction(name: string, params: RoleActionParams)`
 
-**详细信息**
+**Detailed Information**
 
-* name - 要设置的 action 名称
-* `RoleActionParams`详见 [`aclRole.grantAction`](./acl-role.md#grantaction)
+* name - Name of the action to set
+* Refer to [`aclRole.grantAction`](./acl-role.md#grantaction) for details about `RoleActionParams`.
 
 ### `setActions()`
 
-**签名**
+**Signature**
 * `setActions(actions: ResourceActions)`
 
-批量调用 `setAction` 的便捷方法
+A shortcut for calling `setAction` in batches.

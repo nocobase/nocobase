@@ -8,7 +8,6 @@ import { EXECUTION_STATUS } from '../constants';
 describe('workflow > Plugin', () => {
   let app: MockServer;
   let db: Database;
-  let PostModel;
   let PostRepo;
   let WorkflowModel;
 
@@ -16,7 +15,6 @@ describe('workflow > Plugin', () => {
     app = await getApp();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
-    PostModel = db.getCollection('posts').model;
     PostRepo = db.getCollection('posts').repository;
   });
 
@@ -180,6 +178,56 @@ describe('workflow > Plugin', () => {
 
       const c2 = await workflow.countExecutions();
       expect(c2).toBe(1);
+    });
+  });
+
+  describe('destroy', () => {
+    it('destroyed workflow will not be trigger any more', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts'
+        }
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}'
+            },
+            values: {
+              title: 't2'
+            }
+          }
+        }
+      });
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const { model: JobModel } = db.getCollection('jobs');
+
+      const e1c = await workflow.countExecutions();
+      expect(e1c).toBe(1);
+      const j1c = await JobModel.count();
+      expect(j1c).toBe(1);
+      const p1 = await PostRepo.findOne();
+      expect(p1.title).toBe('t2');
+
+      await workflow.destroy();
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const p2c = await PostRepo.count({ filter: { title: 't1' } });
+      expect(p2c).toBe(1);
     });
   });
 
