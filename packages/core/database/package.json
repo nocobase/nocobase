@@ -10,6 +10,7 @@
     "async-mutex": "^0.3.2",
     "cron-parser": "4.4.0",
     "deepmerge": "^4.2.2",
+    "excel-date-to-js": "^1.1.5",
     "flat": "^5.0.2",
     "glob": "^7.1.6",
     "mathjs": "^10.6.1",
