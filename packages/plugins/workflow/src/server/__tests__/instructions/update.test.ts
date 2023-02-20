@@ -1,6 +1,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
+import DefinedWorkflowModel from '../../models/Workflow';
 
 
 
@@ -9,7 +10,7 @@ describe('workflow > instructions > update', () => {
   let db: Database;
   let PostRepo;
   let WorkflowModel;
-  let workflow;
+  let workflow: DefinedWorkflowModel;
 
   beforeEach(async () => {
     app = await getApp();

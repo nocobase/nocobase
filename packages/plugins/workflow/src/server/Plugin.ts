@@ -5,22 +5,23 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import calculators from './calculators';
+import initCalculationEngines from './calculators';
+import type { Evaluator } from './calculators';
 import { EXECUTION_STATUS } from './constants';
-import extensions from './extensions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
+import initFunctions from './functions';
 
 type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  calculators = calculators;
-  extensions = extensions;
+  calculators: Registry<Evaluator> = new Registry();
+  functions: Registry<Function> = new Registry();
   executing: ExecutionModel | null = null;
   pending: Pending[] = [];
   events: [WorkflowModel, any, { context?: any }][] = [];
@@ -74,6 +75,13 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
+    initActions(this);
+    initTriggers(this, options.triggers);
+    initInstructions(this, options.instructions);
+    initCalculationEngines(this);
+    initFunctions(this, options.functions);
+
+
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
       actions: [
@@ -100,17 +108,9 @@ export default class WorkflowPlugin extends Plugin {
       },
     });
 
-    initActions(this);
-    initTriggers(this, options.triggers);
-    initInstructions(this, options.instructions);
-
     db.on('workflows.beforeSave', this.onBeforeSave);
     db.on('workflows.afterSave', (model: WorkflowModel) => this.toggle(model));
     db.on('workflows.afterDestroy', (model: WorkflowModel) => this.toggle(model, false));
-
-    this.app.on('afterLoad', async () => {
-      this.extensions.reduce((promise, extend) => promise.then(() => extend(this)), Promise.resolve());
-    });
 
     // [Life Cycle]:
     //   * load all workflows in db
@@ -200,16 +200,13 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     if (valid) {
-      const execution = await this.db.sequelize.transaction(async (transaction) => {
-        const execution = await workflow.createExecution(
-          {
-            context,
-            key: workflow.key,
-            status: EXECUTION_STATUS.CREATED,
-            useTransaction: workflow.useTransaction,
-          },
-          { transaction },
-        );
+      const execution = await this.db.sequelize.transaction(async transaction => {
+        const execution = await workflow.createExecution({
+          context,
+          key: workflow.key,
+          status: EXECUTION_STATUS.QUEUEING,
+          useTransaction: workflow.useTransaction,
+        }, { transaction });
 
         const executed = await workflow.countExecutions({ transaction });
 
@@ -276,7 +273,7 @@ export default class WorkflowPlugin extends Plugin {
     } else {
       const execution = (await this.db.getRepository('executions').findOne({
         filter: {
-          status: EXECUTION_STATUS.CREATED,
+          status: EXECUTION_STATUS.QUEUEING
         },
         sort: 'createdAt',
       })) as ExecutionModel;
@@ -292,13 +289,13 @@ export default class WorkflowPlugin extends Plugin {
   private async process(execution: ExecutionModel, job?: JobModel) {
     this.executing = execution;
 
-    if (execution.status === EXECUTION_STATUS.CREATED) {
+    if (execution.status === EXECUTION_STATUS.QUEUEING) {
       await execution.update({ status: EXECUTION_STATUS.STARTED });
     }
 
     const processor = this.createProcessor(execution);
 
-    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'} ...`);
+    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'}...`);
 
     try {
       await (job ? processor.resume(job) : processor.start());
@@ -311,7 +308,7 @@ export default class WorkflowPlugin extends Plugin {
     this.dispatch();
   }
 
-  private createProcessor(execution: ExecutionModel, options = {}): Processor {
+  public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
   }
 }

@@ -2,7 +2,7 @@ import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { RequestConfig } from '../../instructions/request';
-import { JOB_STATUS } from '../../constants';
+import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 const PORT = 12345;
 
@@ -72,6 +72,7 @@ describe('workflow > instructions > request', () => {
       await sleep(500);
 
       let [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       let [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
     });
@@ -92,7 +93,7 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.REJECTED);
+      expect(job.status).toEqual(JOB_STATUS.FAILED);
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
@@ -144,7 +145,7 @@ describe('workflow > instructions > request', () => {
 
       let [execution] = await workflow.getExecutions();
       let [job] = await execution.getJobs();
-      expect(job.status).toEqual(JOB_STATUS.REJECTED);
+      expect(job.status).toEqual(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
     });
 

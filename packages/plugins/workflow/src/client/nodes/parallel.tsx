@@ -2,15 +2,13 @@ import React, { useState } from "react";
 import { css, cx } from "@emotion/css";
 import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from "antd";
-import { useTranslation } from "react-i18next";
-
-import { i18n } from "@nocobase/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { lang, NAMESPACE } from "../locale";
+import { RadioWithTooltip } from "../components/RadioWithTooltip";
 
 
 
@@ -24,44 +22,26 @@ export default {
       name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
+      'x-component': 'RadioWithTooltip',
       'x-component-props': {
+        options: [
+          {
+            value: 'all',
+            label: `{{t('All succeeded', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Continue after all branches succeeded', { ns: "${NAMESPACE}" })}}`,
+          },
+          {
+            value: 'any',
+            label: `{{t('Any succeeded', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Continue after any branch succeeded', { ns: "${NAMESPACE}" })}}`,
+          },
+          {
+            value: 'race',
+            label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed', { ns: "${NAMESPACE}" })}}`,
+          },
+        ]
       },
-      enum: [
-        {
-          value: 'all',
-          label: (
-            <Tooltip
-              title={lang('Continue after all branches succeeded')}
-              placement="bottom"
-            >
-              {lang('All succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
-        },
-        {
-          value: 'any',
-          label: (
-            <Tooltip
-              title={lang('Continue after any branch succeeded')}
-              placement="bottom"
-            >
-              {lang('Any succeeded')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
-        },
-        {
-          value: 'race',
-          label: (
-            <Tooltip
-              title={lang('Continue after any branch succeeded, or exit after any branch failed')}
-              placement="bottom"
-            >
-              {lang('Any succeeded or failed')} <QuestionCircleOutlined style={{ color: '#999' }} />
-            </Tooltip>
-          )
-        },
-      ],
       default: 'all'
     }
   },
@@ -143,5 +123,8 @@ export default {
         </div>
       </NodeDefaultView>
     )
+  },
+  components: {
+    RadioWithTooltip
   }
 };
