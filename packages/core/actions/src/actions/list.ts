@@ -23,8 +23,8 @@ function totalPage(total, pageSize): number {
 }
 
 function findArgs(params: ActionParams) {
-  const { fields, filter, appends, except, sort } = params;
-  return { filter, fields, appends, except, sort };
+  const { tree, fields, filter, appends, except, sort } = params;
+  return { tree, filter, fields, appends, except, sort };
 }
 
 async function listWithPagination(ctx: Context) {
