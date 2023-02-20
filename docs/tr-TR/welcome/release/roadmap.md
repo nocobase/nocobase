@@ -2,7 +2,8 @@
 
 ## Current
 
-- Formulas: support for Math.js and Formula.js, support for relational data
+- Snapshot field: Copy relational data into the current collection and save it as a snapshot
+- Formula: support Math.js and Formula.js, support snapshot data aggregation calculation
 - Variables: support for variables in filter, data scope
 - BI: Chart template engine
 - Tree Structure
