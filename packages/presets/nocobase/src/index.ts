@@ -41,6 +41,7 @@ export class PresetNocoBase extends Plugin {
       'snapshot-field',
       'graph-collection-manager',
       'charts',
+      'dataset',
     ];
     return localPlugins;
   }
