@@ -27,6 +27,7 @@ describe('sort', function () {
         },
       ],
     });
+
     expect(collection.getField('parent').options.target).toBe('categories');
     expect(collection.getField('parent').options.foreignKey).toBe('parentId');
     expect(collection.getField('children').options.target).toBe('categories');
