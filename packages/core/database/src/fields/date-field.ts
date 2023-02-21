@@ -1,20 +1,14 @@
+import moment from 'moment';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-import { str2moment } from '@nocobase/utils';
 export class DateField extends Field {
   get dataType() {
     return DataTypes.DATE(3);
   }
 
   init(): void {
-    if (this.options.defaultValue) {
-      // @ts-ignore
-      this.options.defaultValue = new this.database.sequelize.dialect.DataTypes.DATE()._stringify(
-        this.options.defaultValue,
-        {
-          timezone: this.database.options.timezone,
-        },
-      );
+    if (this.options.defaultValue && this.database.inDialect('mysql')) {
+      this.options.defaultValue = moment(this.options.defaultValue).format('YYYY-MM-DD HH:mm:ss.SSS');
     }
   }
 }

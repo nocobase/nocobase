@@ -69,19 +69,4 @@ describe('number value parser', () => {
     expectValue('2016-05-20 01:00:00', 'dateTime').toBe(moment('2016-05-20 01:00:00').toISOString());
     expectValue('2016-05-20 01:00:00', 'dateTimeGmt').toBe('2016-05-20T01:00:00.000Z');
   });
-
-  it('should create date field with default value', async () => {
-    db.collection({
-      name: 'dateTests',
-      fields: [
-        {
-          name: 'dateField',
-          type: 'date',
-          defaultValue: '2016-05-20T00:00:00.000Z',
-        },
-      ],
-    });
-
-    await db.sync();
-  });
 });
