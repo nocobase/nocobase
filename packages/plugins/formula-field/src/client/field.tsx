@@ -7,6 +7,17 @@ import { NAMESPACE } from './locale';
 
 
 
+const booleanReactions = [
+  {
+    dependencies: ['dataType'],
+    fulfill: {
+      state: {
+        display: '{{$deps[0] === "boolean" ? "visible" : "none"}}',
+      },
+    },
+  }
+];
+
 const numberReactions = [
   {
     dependencies: ['dataType'],
@@ -23,7 +34,7 @@ const datetimeReactions = [
     dependencies: ['dataType'],
     fulfill: {
       state: {
-        display: '{{["date"].includes($deps[0]) ? "visible" : "none"}}',
+        display: '{{$deps[0] === "date" ? "visible" : "none"}}',
       },
     },
   }
@@ -85,6 +96,14 @@ export default {
       ],
       required: true,
       default: 'double',
+    },
+    'uiSchema.x-component-props.showUnchecked': {
+      type: 'boolean',
+      title: '{{t("Display X when unchecked")}}',
+      default: false,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-reactions': booleanReactions
     },
     'uiSchema.x-component-props.step': {
       type: 'string',

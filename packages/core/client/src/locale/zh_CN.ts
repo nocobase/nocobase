@@ -172,6 +172,7 @@ export default {
   "Formula.js supports most Microsoft Excel formula functions.": "Formula.js 支持大部分 Mircrosoft Excel 公式。",
   "Choices": "选择类型",
   "Checkbox": "勾选",
+  "Display X when unchecked": "未勾选时显示 X",
   "Single select": "下拉菜单（单选）",
   "Multiple select": "下拉菜单（多选）",
   "Radio group": "单选框",
