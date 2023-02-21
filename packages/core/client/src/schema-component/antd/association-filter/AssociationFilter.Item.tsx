@@ -155,11 +155,7 @@ export const AssociationFilterItem = (props) => {
       )}
     >
       <Designer />
-      <Collapse
-        defaultActiveKey={[collectionField.uiSchemaUid]}
-        ghost
-        expandIcon={searchVisible ? () => null : undefined}
-      >
+      <Collapse defaultActiveKey={[collectionFieldName]} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
           className={css`
             & .ant-collapse-content-box {
@@ -240,7 +236,7 @@ export const AssociationFilterItem = (props) => {
               </Col>
             </Row>
           }
-          key={collectionField.uiSchemaUid}
+          key={collectionFieldName}
         >
           <Tree
             style={{ padding: '16px 0' }}
