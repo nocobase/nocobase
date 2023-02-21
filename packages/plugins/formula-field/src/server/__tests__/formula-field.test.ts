@@ -494,7 +494,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: true,
           });
-          expect(test.get('result')).toBe(db.inDialect('sqlite') ? BigInt(1) : 1);
+          expect(test.get('result')).toBe(1);
         });
 
         it('false', async () => {
@@ -512,7 +512,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: false,
           });
-          expect(test.get('result')).toBe(db.inDialect('sqlite') ? BigInt(0) : 0);
+          expect(test.get('result')).toBe(0);
         });
       });
 
@@ -532,7 +532,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: 1.6,
           });
-          expect(test.get('result')).toEqual(db.inDialect('sqlite') ? BigInt(1) : 1);
+          expect(test.get('result')).toEqual(1);
         });
 
         it('negative', async () => {
@@ -550,7 +550,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: -1.6,
           });
-          expect(test.get('result')).toEqual(db.inDialect('sqlite') ? BigInt(-1) : -1);
+          expect(test.get('result')).toEqual(-1);
         });
       });
 
@@ -570,7 +570,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: '-123.56',
           });
-          expect(test.get('result')).toEqual(db.inDialect('sqlite') ? BigInt(-123) : -123);
+          expect(test.get('result')).toEqual(-123);
         });
 
         it('mixed string', async () => {
@@ -588,7 +588,7 @@ describe('formula field', () => {
           const test = await Test.model.create<any>({
             a: '9007199254740991abc',
           });
-          expect(test.get('result')).toEqual(db.inDialect('sqlite') ? BigInt(9007199254740991) : 9007199254740991);
+          expect(test.get('result')).toEqual(9007199254740991);
         });
 
         it('invalid number string', async () => {

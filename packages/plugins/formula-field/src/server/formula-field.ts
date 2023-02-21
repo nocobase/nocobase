@@ -46,24 +46,20 @@ const DataTypeMap = {
     type: DataTypes.BIGINT,
     transformers: {
       boolean(value: boolean) {
-        return BigInt(value);
+        return Number(value);
       },
       number(value: number) {
-        return BigInt(Math.floor(value >= 0 ? Math.floor(value) : Math.ceil(value)));
+        return Math.floor(value >= 0 ? Math.floor(value) : Math.ceil(value));
       },
       bigint(value: bigint) {
-        return value;
+        return Number(value);
       },
       string(value: string) {
-        try {
-          return BigInt(value);
-        } catch (e) {
-          const result = Number.parseInt(value, 10);
-          if (Number.isNaN(result) || !Number.isFinite(result)) {
-            return null;
-          }
-          return BigInt(result);
+        const result = Number.parseInt(value, 10);
+        if (Number.isNaN(result) || !Number.isFinite(result)) {
+          return null;
         }
+        return result;
       },
       date(value: Date) {
         const result = value.valueOf();
