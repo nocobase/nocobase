@@ -117,14 +117,6 @@ describe('sort', function () {
       sort: 'id',
     });
 
-    console.log(
-      JSON.stringify(
-        instances.map((i) => i.toJSON()),
-        null,
-        2,
-      ),
-    );
-
     expect(instances.map((i) => i.toJSON())).toMatchObject(values);
 
     const instance = await db.getRepository('categories').findOne({
