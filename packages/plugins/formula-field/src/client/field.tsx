@@ -1,3 +1,4 @@
+import { cloneDeep } from 'lodash';
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
 import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
@@ -6,7 +7,33 @@ import { NAMESPACE } from './locale';
 
 
 
-const { defaultProps, operators } = interfacesProperties;
+const numberReactions = [
+  {
+    dependencies: ['dataType'],
+    fulfill: {
+      state: {
+        display: '{{["double", "decimal"].includes($deps[0]) ? "visible" : "none"}}',
+      },
+    },
+  }
+];
+
+const datetimeReactions = [
+  {
+    dependencies: ['dataType'],
+    fulfill: {
+      state: {
+        display: '{{["date"].includes($deps[0]) ? "visible" : "none"}}',
+      },
+    },
+  }
+];
+
+const { defaultProps, dateTimeProps, operators } = interfacesProperties;
+const datetimeProperties = cloneDeep(dateTimeProps);
+Object.values(datetimeProperties).forEach((item) => Object.assign(item, {
+  'x-reactions': datetimeReactions,
+}));
 
 export default {
   name: 'formula',
@@ -65,17 +92,9 @@ export default {
         { value: '0.0001', label: '1.0000' },
         { value: '0.00001', label: '1.00000' },
       ],
-      'x-reactions': [
-        {
-          dependencies: ['dataType'],
-          fulfill: {
-            state: {
-              display: '{{["double", "decimal"].includes($deps[0]) ? "visible" : "none"}}',
-            },
-          },
-        },
-      ],
+      'x-reactions': numberReactions,
     },
+    ...datetimeProperties,
     engine: {
       type: 'string',
       title: `{{t("Formula engine", { ns: "${NAMESPACE}" })}}`,

@@ -4,13 +4,17 @@ import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
-import { useCollection } from '@nocobase/client';
+import { DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
 
 const ReadPretty = (props) => {
-  if (props?.options?.dataType !== 'string') {
-    return <div>{toFixedByStep(props.value, props.step)}</div>;
+  const { dataType } = props?.options?? {};
+  if (['double', 'decimal'].includes(dataType)) {
+    return <InputNumber {...props} />;
   }
-  return <div>{props.value}</div>;
+  if (dataType === 'date') {
+    return <DatePicker {...props} />;
+  }
+  return <InputString {...props} />;
 };
 
 const Input = (props) => {

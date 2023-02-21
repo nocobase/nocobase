@@ -228,7 +228,7 @@ export class FormulaField extends Field {
     for (const record of records) {
       const scope = record.toJSON();
       const result = this.calculate(scope);
-      if (result) {
+      if (result != null) {
         await record.update(
           {
             [name]: result,
