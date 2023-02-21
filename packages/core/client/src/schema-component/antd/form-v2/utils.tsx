@@ -3,15 +3,20 @@ import { last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import * as formulajs from '@formulajs/formulajs';
 
+function now() {
+  return new Date();
+}
 export function evaluate(exp: string, scope = {}) {
-  const expression =
-    Object.keys(scope).length > 0
-      ? exp.replace(/{{([^}]+)}}/g, (match, i) => {
-          return scope[i.trim()] || null;
-        })
-      : '';
-  const fn = new Function(...Object.keys(formulajs), ...Object.keys(scope), `return ${expression}`);
-  return fn(...Object.values(formulajs), ...Object.values(scope));
+  const mergeScope = { ...scope, now };
+  const expression: any = exp.replace(/{{([^}]+)}}/g, (match, i) => {
+    return mergeScope[i.trim()] || null;
+  });
+  try {
+    const fn = new Function(...Object.keys(formulajs), ...Object.keys(mergeScope), `return ${expression}`);
+    return fn(...Object.values(formulajs), ...Object.values(mergeScope));
+  } catch (error) {
+    return () => expression;
+  }
 }
 
 export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondition, values) => {
@@ -67,7 +72,8 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
     case ActionType.Value:
       if (conditionAnalyse(linkageRuleCondition, values)) {
         if (value.mode === 'express') {
-          valueResult.push(evaluate(value.result || value.value, values));
+          const result = evaluate(value.result || value.value, values);
+          valueResult.push(typeof result === 'function' ? result() : result === Infinity ? null : result);
         } else {
           valueResult.push(value?.value || value);
         }

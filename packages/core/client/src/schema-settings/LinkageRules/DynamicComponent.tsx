@@ -78,6 +78,7 @@ export const DynamicComponent = (props) => {
             'x-component-props': merge(props?.schema?.['x-component-props'] || {}, {
               style: {
                 minWidth: 150,
+                width: '100%'
               },
             }),
             name: 'value',

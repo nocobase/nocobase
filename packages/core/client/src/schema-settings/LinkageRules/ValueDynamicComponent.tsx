@@ -94,7 +94,7 @@ export const ValueDynamicComponent = (props) => {
   const { t } = useTranslation();
   const scope = useVariableOptions(fields, collectionName);
   return (
-    <Input.Group compact>
+    <Input.Group compact style={{ minWidth: 280 }}>
       <Select value={mode} style={{ width: '32%', maxWidth: '100px' }} onChange={(value) => setMode(value)}>
         <Option value="constant">{t('Constant value')}</Option>
         <Option value="express">{t('Expression')}</Option>
@@ -102,7 +102,7 @@ export const ValueDynamicComponent = (props) => {
       <div style={{ width: '68%' }}>
         {mode === 'constant' ? (
           React.createElement(DynamicComponent, {
-            value: fieldValue?.value,
+            value: fieldValue?.value || fieldValue,
             schema,
             onChange(value) {
               setValue({
