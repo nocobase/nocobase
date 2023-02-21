@@ -7,8 +7,14 @@ export class DateField extends Field {
   }
 
   init(): void {
-    if (this.options.defaultValue && this.database.inDialect('mysql')) {
-      this.options.defaultValue = str2moment(this.options.defaultValue, { gmt: true }).format('YYYY-MM-DD HH:mm:ss');
+    if (this.options.defaultValue) {
+      // @ts-ignore
+      this.options.defaultValue = new this.database.sequelize.dialect.DataTypes.DATE()._stringify(
+        this.options.defaultValue,
+        {
+          timezone: this.database.options.timezone,
+        },
+      );
     }
   }
 }
