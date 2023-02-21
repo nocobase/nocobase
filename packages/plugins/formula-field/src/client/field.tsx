@@ -30,10 +30,19 @@ const datetimeReactions = [
 ];
 
 const { defaultProps, dateTimeProps, operators } = interfacesProperties;
-const datetimeProperties = cloneDeep(dateTimeProps);
-Object.values(datetimeProperties).forEach((item) => Object.assign(item, {
-  'x-reactions': datetimeReactions,
-}));
+const datetimeProperties = {
+  'uiSchema.x-component-props.dateFormat': {
+    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.dateFormat']),
+    'x-reactions': datetimeReactions
+  },
+  'uiSchema.x-component-props.showTime': {
+    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.showTime']),
+    'x-reactions': [...(dateTimeProps['uiSchema.x-component-props.showTime']['x-reactions'] as string[]), ...datetimeReactions]
+  },
+  'uiSchema.x-component-props.timeFormat': {
+    ...cloneDeep(dateTimeProps['uiSchema.x-component-props.timeFormat']),
+  }
+};
 
 export default {
   name: 'formula',

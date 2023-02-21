@@ -4,17 +4,22 @@ import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
-import { DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
+import { Checkbox, DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
+
+const TypedComponents = {
+  boolean: Checkbox,
+  integer: InputNumber,
+  bigInt: InputNumber,
+  double: InputNumber,
+  decimal: InputNumber,
+  date: DatePicker,
+  string: InputString,
+};
 
 const ReadPretty = (props) => {
   const { dataType } = props?.options?? {};
-  if (['double', 'decimal'].includes(dataType)) {
-    return <InputNumber {...props} />;
-  }
-  if (dataType === 'date') {
-    return <DatePicker {...props} />;
-  }
-  return <InputString {...props} />;
+  const Component = TypedComponents[dataType] ?? InputString;
+  return <Component {...props} />;
 };
 
 const Input = (props) => {
