@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-formula-field",
+  "version": "0.9.0-alpha.2",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "dependencies": {
+    "@nocobase/evaluators": "0.9.0-alpha.2",
+    "@nocobase/utils": "0.9.0-alpha.2"
+  },
+  "devDependencies": {
+    "@nocobase/server": "0.9.0-alpha.2",
+    "@nocobase/test": "0.9.0-alpha.2"
+  }
+}
