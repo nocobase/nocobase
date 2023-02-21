@@ -49,7 +49,6 @@ export const areaTemplate = {
         enum: '{{dataSource}}',
       },
       category: {
-        required: true,
         type: 'string',
         title: '{{t("Color legend/dimensional")}}',
         'x-decorator': 'FormItem',
