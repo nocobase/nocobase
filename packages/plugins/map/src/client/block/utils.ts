@@ -11,10 +11,7 @@ export const createMapBlockSchema = (options) => {
       collection: collection,
       resource: resource || collection,
       action: 'list',
-      fieldNames: {
-        id: 'id',
-        ...fieldNames,
-      },
+      fieldNames,
       params: {
         paginate: false,
       },

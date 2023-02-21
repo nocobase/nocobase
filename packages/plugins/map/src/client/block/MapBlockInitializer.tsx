@@ -19,8 +19,8 @@ export const MapBlockInitializer = (props) => {
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon']);
-        const markFieldOptions = getCollectionFieldsOptions(item.name, 'string');
-        const values = await FormDialog(t('Create calendar block'), () => {
+        const markerFieldOptions = getCollectionFieldsOptions(item.name, 'string');
+        const values = await FormDialog(t('Create map block'), () => {
           return (
             <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
               <FormLayout layout={'vertical'}>
@@ -34,9 +34,9 @@ export const MapBlockInitializer = (props) => {
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
-                      mark: {
-                        title: t('Mark field'),
-                        enum: markFieldOptions,
+                      marker: {
+                        title: t('Marker field'),
+                        enum: markerFieldOptions,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },

@@ -34,7 +34,7 @@ export const MapBlockDesigner = () => {
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
 
   const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon']);
-  const markFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
+  const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -60,12 +60,12 @@ export const MapBlockDesigner = () => {
         }}
       />
       <SchemaSettings.SelectItem
-        title={t('Mark field')}
-        value={fieldNames.mark}
-        options={markFieldOptions}
+        title={t('Marker field')}
+        value={fieldNames.marker}
+        options={markerFieldOptions}
         onChange={(v) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
-          fieldNames['mark'] = v;
+          fieldNames['marker'] = v;
           field.decoratorProps.fieldNames = fieldNames;
           fieldSchema['x-decorator-props']['fieldNames'] = fieldNames;
           service.refresh();

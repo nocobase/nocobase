@@ -6,7 +6,7 @@ import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, Button, Modal } from 'antd';
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle } from 'react';
 import { useHistory } from 'react-router';
 import { useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
@@ -19,7 +19,6 @@ export interface AMapComponentProps {
   mapType: string;
   zoom: number;
   type: 'pointy' | 'polygon' | 'lineString' | 'circle';
-  dataSource?: any[];
   style?: React.CSSProperties;
 }
 
@@ -54,9 +53,15 @@ const methodMapping = {
   },
 };
 
-const AMapComponent: React.FC<AMapComponentProps> = (props) => {
+export interface AMapForwardedRefProps {
+  setOverlay: (t: keyof typeof methodMapping, v: any) => any;
+  aMap: any;
+  map: AMap.Map;
+}
+
+const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, disabled, zoom = 13, dataSource } = props;
+  const { value, onChange, disabled, zoom = 13 } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -188,65 +193,53 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
     }
   };
 
+  const getOverlay = useCallback(
+    (t = type, v = value) => {
+      const mapping = methodMapping[t as keyof typeof methodMapping];
+      if (!mapping) {
+        return;
+      }
+      const options = { ...commonOptions };
+      if ('transformOptions' in mapping) {
+        Object.assign(options, mapping.transformOptions(v));
+      } else if ('propertyKey' in mapping) {
+        options[mapping.propertyKey] = v;
+      }
+
+      return new aMap.current[mapping.overlay](options);
+    },
+    [commonOptions],
+  );
+
+  const setOverlay = (t = type, v = value) => {
+    if (!aMap.current) return;
+    const nextOverlay = getOverlay(t, v);
+    nextOverlay.setMap(map.current);
+    return nextOverlay;
+  };
+
   // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
-    if (!value || overlay.current || dataSource) {
+    if (!value || overlay.current) {
       return;
     }
-    const mapping = methodMapping[type as keyof typeof methodMapping];
-    if (!mapping) {
-      return;
-    }
-    const options = { ...commonOptions };
-    if ('transformOptions' in mapping) {
-      Object.assign(options, mapping.transformOptions(value));
-    } else if ('propertyKey' in mapping) {
-      options[mapping.propertyKey] = value;
-    }
-    const nextOverlay = new aMap.current[mapping.overlay](options);
 
+    const nextOverlay = setOverlay();
     // 聚焦在编辑的位置
     map.current.setFitView([nextOverlay]);
-
-    nextOverlay.setMap(map.current);
     overlay.current = nextOverlay;
 
     createEditor();
     setTarget();
-  }, [value, dataSource, needUpdateFlag, type, commonOptions]);
+  }, [value, needUpdateFlag, type, commonOptions]);
 
-  // Map block shows data source
-  useEffect(() => {
-    if (!aMap.current) return;
-    if (!dataSource) {
-      return;
-    }
-    const mapping = methodMapping[type as keyof typeof methodMapping];
-    if (!mapping) {
-      return;
-    }
-    const options = { ...commonOptions };
-
-    const overlays = dataSource.map((item) => {
-      if ('transformOptions' in mapping) {
-        Object.assign(options, mapping.transformOptions(item));
-      } else if ('propertyKey' in mapping) {
-        options[mapping.propertyKey] = item;
-      }
-
-      const nextOverlay = new aMap.current[mapping.overlay](options);
-      nextOverlay.setMap(map.current);
-      return nextOverlay;
-    });
-
-    map.current.setFitView(overlays);
-    return () => {
-      overlays.forEach((item) => {
-        item.remove();
-      });
-    };
-  }, [dataSource, needUpdateFlag, type, commonOptions]);
+  useImperativeHandle(ref, () => ({
+    setOverlay,
+    getOverlay,
+    aMap: aMap.current,
+    map: map.current,
+  }));
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -345,26 +338,26 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
         ...props?.style,
       }}
     >
-      <div
-        className={css`
-          position: absolute;
-          bottom: 80px;
-          right: 20px;
-          z-index: 10;
-        `}
-      >
-        <Button
-          onClick={onFocusOverlay}
-          disabled={!overlay.current}
-          type="primary"
-          shape="round"
-          size="large"
-          icon={<SyncOutlined />}
-        ></Button>
-      </div>
       {!disabled ? (
         <>
           <Search toCenter={toCenter} aMap={aMap.current} />
+          <div
+            className={css`
+              position: absolute;
+              bottom: 80px;
+              right: 20px;
+              z-index: 10;
+            `}
+          >
+            <Button
+              onClick={onFocusOverlay}
+              disabled={!overlay.current}
+              type="primary"
+              shape="round"
+              size="large"
+              icon={<SyncOutlined />}
+            ></Button>
+          </div>
           <div
             className={css`
               position: absolute;
@@ -400,6 +393,6 @@ const AMapComponent: React.FC<AMapComponentProps> = (props) => {
       ) : null}
     </div>
   );
-};
+});
 
 export default AMapComponent;
