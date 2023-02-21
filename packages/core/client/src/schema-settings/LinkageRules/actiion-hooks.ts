@@ -26,6 +26,8 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
+      interface:field.interface,
+      target:field.target,
       operators:
         operators?.filter?.((operator) => {
           if (nested || children || ['mathFormula', 'excelFormula', 'richText','sequence'].includes(fieldInterface.name)) {

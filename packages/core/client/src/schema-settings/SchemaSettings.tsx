@@ -723,7 +723,7 @@ SchemaSettings.LinkageRules = (props) => {
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
       components={{ ArrayCollapse, FormLayout }}
-      width={650}
+      width={700}
       schema={
         {
           type: 'object',
@@ -739,6 +739,7 @@ SchemaSettings.LinkageRules = (props) => {
                     defaultValues: fieldSchema?.['x-linkageRules'],
                     type,
                     linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+                    collectionName
                   };
                 },
               },

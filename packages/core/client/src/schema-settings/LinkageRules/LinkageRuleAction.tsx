@@ -6,12 +6,13 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { RemoveActionContext } from './context';
-import { DynamicComponent } from '../../schema-component/antd/filter/DynamicComponent';
+import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 import { ActionType } from './type';
+import { ValueDynamicComponent } from './ValueDynamicComponent';
 
 export const FormFieldLinkageRuleAction = observer((props: any) => {
-  const { value, options } = props;
+  const { value, options,collectionName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
   const remove = useContext(RemoveActionContext);
@@ -57,14 +58,9 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
           }}
           placeholder={t('action')}
         />
-        {[ActionType.Value].includes(operator) &&
-          React.createElement(DynamicComponent, {
-            value: fieldValue,
-            schema,
-            onChange(value) {
-              setValue(value);
-            },
-          })}
+        {[ActionType.Value].includes(operator) && (
+          <ValueDynamicComponent fieldValue={fieldValue} schema={schema} setValue={setValue} fields={fields} collectionName={collectionName} />
+        )}
         {!props.disabled && (
           <a>
             <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />

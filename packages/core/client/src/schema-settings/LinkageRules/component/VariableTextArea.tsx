@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
-import { lang } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 const VARIABLE_RE = /\{\{\s*([^{}]+)\s*\}\}/g;
 
@@ -104,7 +104,7 @@ function createVariableTagHTML(variable, keyLabelMap) {
 }
 
 export function VariableTextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button, other } = props;
+  const { value = '', scope, onChange, multiline = true, button, style } = props;
   const inputRef = useRef<HTMLDivElement>(null);
   const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
@@ -113,6 +113,7 @@ export function VariableTextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (changed) {
@@ -173,10 +174,10 @@ export function VariableTextArea(props) {
   }
 
   const disabled = props.disabled || form.disabled;
-
   return (
     <Input.Group
       compact
+      style={style}
       className={css`
         &.ant-input-group.ant-input-group-compact {
           display: flex;
@@ -193,7 +194,6 @@ export function VariableTextArea(props) {
       `}
     >
       <div
-        {...other}
         onInput={onInput}
         onBlur={onBlur}
         onKeyDown={(e) => {
@@ -221,7 +221,7 @@ export function VariableTextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={lang('Use variable')}>
+      <Tooltip title={t('Use variable')}>
         <Cascader value={[]} options={options} onChange={onInsert}>
           {button ?? (
             <Button

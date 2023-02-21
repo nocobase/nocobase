@@ -52,6 +52,7 @@ export const useValues = (options) => {
       field.value = { ...field.value, operator: operatorValue };
     },
     setValue(value) {
+      console.log(value);
       field.data.value = value;
       field.value = { ...field.value, value };
     },

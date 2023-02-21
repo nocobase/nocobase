@@ -8,7 +8,7 @@ import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 export const FormLinkageRules = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { useProps, dynamicComponent } = props;
-  const { options,defaultValues} = useProps();
+  const { options, defaultValues } = useProps();
   return (
     <FilterContext.Provider value={{ field: options, fieldSchema, dynamicComponent, options: options || [] }}>
       <SchemaComponent
@@ -17,7 +17,7 @@ export const FormLinkageRules = observer((props: any) => {
           properties: {
             rules: {
               type: 'array',
-              default:defaultValues,
+              default: defaultValues,
               'x-component': 'ArrayCollapse',
               'x-decorator': 'FormItem',
               'x-component-props': {

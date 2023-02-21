@@ -16,7 +16,7 @@ export const LinkageRuleActions = observer((props: any): any => {
           name={index}
           component={[
             type === 'button' ? FormButtonLinkageRuleAction : FormFieldLinkageRuleAction,
-            { options: linkageOptions },
+            { ...props, options: linkageOptions },
           ]}
         />
       </RemoveActionContext.Provider>
@@ -28,10 +28,14 @@ export const LinkageRuleActionGroup = (props) => {
   const { t } = useTranslation();
   const field = useField<any>();
   const logic = 'action';
-  const { type, linkageOptions } = props?.useProps();
+  const { type, linkageOptions, collectionName } = props?.useProps();
   return (
     <div style={{ marginLeft: 10 }}>
-      <ArrayField name={logic} component={[LinkageRuleActions, { type, linkageOptions }]} disabled={false} />
+      <ArrayField
+        name={logic}
+        component={[LinkageRuleActions, { type, linkageOptions, collectionName }]}
+        disabled={false}
+      />
       <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
         <a
           onClick={() => {

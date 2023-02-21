@@ -1,6 +1,18 @@
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import * as formulajs from '@formulajs/formulajs';
+
+export function evaluate(exp: string, scope = {}) {
+  const expression =
+    Object.keys(scope).length > 0
+      ? exp.replace(/{{([^}]+)}}/g, (match, i) => {
+          return scope[i.trim()] || null;
+        })
+      : '';
+  const fn = new Function(...Object.keys(formulajs), ...Object.keys(scope), `return ${expression}`);
+  return fn(...Object.values(formulajs), ...Object.values(scope));
+}
 
 export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required];
@@ -50,11 +62,15 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
         ...field.linkageProperty,
         pattern: patternResult,
       };
-      field.pattern = last(patternResult);
+      field.pattern = last(field.linkageProperty.pattern);
       break;
     case ActionType.Value:
       if (conditionAnalyse(linkageRuleCondition, values)) {
-        valueResult.push(value);
+        if (value.mode === 'express') {
+          valueResult.push(evaluate(value.result || value.value, values));
+        } else {
+          valueResult.push(value?.value || value);
+        }
       }
       field.linkageProperty = {
         ...field.linkageProperty,
