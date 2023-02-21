@@ -64,7 +64,6 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
-import { applyExtenders } from './collection-extenders';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -336,10 +335,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (this.options.schema && !options.schema) {
         options.schema = this.options.schema;
       }
-    });
-
-    this.on('definingCollection', (collection) => {
-      applyExtenders(collection);
     });
   }
 
