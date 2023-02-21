@@ -33,6 +33,7 @@ Input.TextArea = connect(
         minRows: 3,
       },
       ...props,
+      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty(ReadPretty.TextArea),
@@ -40,6 +41,15 @@ Input.TextArea = connect(
 
 Input.URL = connect(AntdInput, mapReadPretty(ReadPretty.URL));
 
-Input.JSON = connect(Json, mapReadPretty(ReadPretty.JSON));
+Input.JSON = connect(
+  Json,
+  mapProps((props: any, field) => {
+    return {
+      ...props,
+      disabled: props.disabled || field.pattern === 'readOnly',
+    };
+  }),
+  mapReadPretty(ReadPretty.JSON),
+);
 
 export default Input;

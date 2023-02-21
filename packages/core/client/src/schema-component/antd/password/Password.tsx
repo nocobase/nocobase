@@ -1,4 +1,4 @@
-import { connect, mapReadPretty } from '@formily/react';
+import { connect, mapReadPretty,mapProps } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Input } from 'antd';
 import { PasswordProps } from 'antd/lib/input';
@@ -58,6 +58,12 @@ export const Password = connect(
       </span>
     );
   },
+  mapProps((props, field) => {
+    return {
+      ...props,
+      disabled: props.disabled || field.pattern === 'readOnly',
+    };
+  }),
   mapReadPretty((props) => {
     if (!props.value) {
       return <div></div>;
