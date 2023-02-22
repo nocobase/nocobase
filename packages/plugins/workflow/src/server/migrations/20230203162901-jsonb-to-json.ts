@@ -10,17 +10,18 @@ export default class extends Migration {
     }
 
     const { context: { sequelize, queryInterface } } = arguments[0];
+    const { db } = this.app;
     await sequelize.transaction(async (transaction) => {
-      await queryInterface.changeColumn('workflows', 'config', {
+      await queryInterface.changeColumn(db.getCollection('workflows').model.getTableName(), 'config', {
         type: DataTypes.JSON
       }, { transaction });
-      await queryInterface.changeColumn('flow_nodes', 'config', {
+      await queryInterface.changeColumn(db.getCollection('flow_nodes').model.getTableName(), 'config', {
         type: DataTypes.JSON
       }, { transaction });
-      await queryInterface.changeColumn('executions', 'context', {
+      await queryInterface.changeColumn(db.getCollection('executions').model.getTableName(), 'context', {
         type: DataTypes.JSON
       }, { transaction });
-      await queryInterface.changeColumn('jobs', 'result', {
+      await queryInterface.changeColumn(db.getCollection('jobs').model.getTableName(), 'result', {
         type: DataTypes.JSON
       }, { transaction });
     });
