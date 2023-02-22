@@ -49,7 +49,7 @@ const ChartRenderComponent = ({
         ...finalChartOptions,
         ...advanceConfig,
         data: dataSet?.data_set_value ? JSON5.parse(dataSet?.data_set_value) : [],
-      }, chartConfig[chartConfig.chartType]);
+      }, {...chartConfig[chartConfig.chartType],category: chartConfig[chartConfig.chartType]?.category??""});
       return (
         loading
           ?
