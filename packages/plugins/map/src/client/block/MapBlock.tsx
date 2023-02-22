@@ -29,7 +29,6 @@ export const MapBlock = (props) => {
     mapRef.current.map?.setFitView(overlays);
 
     const events = overlays.map((o: AMap.Marker) => {
-      // mapRef.current.map.on('click', (e) => {
       const onClick = (e) => {
         const extData = e.target.getOptions()?.extData;
         if (!extData) return;

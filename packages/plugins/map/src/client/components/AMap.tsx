@@ -334,9 +334,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
         height: 500px;
       `}
       id={id.current}
-      style={{
-        ...props?.style,
-      }}
+      style={props?.style}
     >
       {!disabled ? (
         <>
