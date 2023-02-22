@@ -53,7 +53,7 @@ const VariableCascader = connect((props) => {
 });
 
 export const DynamicComponent = (props) => {
-  const { dynamicComponent, disabled } = useContext(FilterContext)||{};
+  const { dynamicComponent, disabled } = useContext(FilterContext) || {};
   const component = useComponent(dynamicComponent);
   const form = useMemo(() => {
     return createForm({
@@ -78,7 +78,7 @@ export const DynamicComponent = (props) => {
             'x-component-props': merge(props?.schema?.['x-component-props'] || {}, {
               style: {
                 minWidth: 150,
-                width: '100%'
+                width: '100%',
               },
             }),
             name: 'value',

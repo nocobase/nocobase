@@ -144,8 +144,8 @@ export function VariableInput(props) {
 
   return (
     <Input.Group
-      compact
       className={css`
+        display: flex !important;
         width: auto;
         .ant-input-disabled {
           .ant-tag {
@@ -154,6 +154,7 @@ export function VariableInput(props) {
           }
         }
       `}
+      compact
     >
       {variable ? (
         <div
