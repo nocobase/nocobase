@@ -46,7 +46,7 @@ NocoBase 采用数据结构与使用界面分离的设计思路，可以为数�
 ![2.collection-block.png](https://docs-cn.nocobase.com/static/2.collection-block.7dcc928f.png)
 
 ### 2. 所见即所得
-NocoBase 可以开发复杂和有特色的业务系统，但这并意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
+NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
 ![2.user-root.gif](https://docs-cn.nocobase.com/static/2.user-root.824f5ef2.gif)
 
