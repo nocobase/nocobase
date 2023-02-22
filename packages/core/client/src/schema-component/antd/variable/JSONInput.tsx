@@ -2,9 +2,8 @@ import React, { useRef } from 'react';
 import { Button, Cascader } from 'antd';
 import { css } from "@emotion/css";
 
-import { Input } from "@nocobase/client";
-
-import { lang } from '../locale';
+import { Input } from "../input";
+import { useTranslation } from 'react-i18next';
 
 
 
@@ -17,9 +16,10 @@ function setNativeInputValue(input, value) {
   }));
 }
 
-export function VariableJSONInput(props) {
+export function JSONInput(props) {
   const inputRef = useRef(null);
   const { value, space = 2, scope } = props;
+  const { t } = useTranslation()
   const options = typeof scope === 'function' ? scope() : (scope ?? []);
 
   function onFormat() {
@@ -69,7 +69,7 @@ export function VariableJSONInput(props) {
           }
         `}
       >
-        <Button onClick={onFormat}>{lang('Format')}</Button>
+        <Button onClick={onFormat}>{t('Prettify')}</Button>
         <Cascader
           value={[]}
           options={options}
