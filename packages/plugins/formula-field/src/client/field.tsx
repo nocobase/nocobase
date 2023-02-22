@@ -61,7 +61,7 @@ export default {
   group: 'advanced',
   order: 1,
   title: `{{t("Formula", { ns: "${NAMESPACE}" })}}`,
-  description: '{{t("Compute a value based on the other fields using mathjs")}}',
+  description: `{{t("Compute a value based on the other fields", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'formula',

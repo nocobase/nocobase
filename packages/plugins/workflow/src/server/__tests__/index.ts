@@ -1,9 +1,9 @@
-import { MockServer, mockServer } from '@nocobase/test';
 import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
+import { MockServer, mockServer } from '@nocobase/test';
+
 import Plugin from '..';
-import calculators from '../calculators';
 import { JOB_STATUS } from '../constants';
 
 export function sleep(ms: number) {

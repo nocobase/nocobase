@@ -89,6 +89,25 @@ describe('formula field', () => {
 
         expect(test.get('sum')).toEqual(3.22);
       });
+
+      it('scope with number key', async () => {
+        const expression = '{{a.1}}+1';
+        const Test = db.collection({
+          name: 'tests',
+          fields: [
+            { type: 'json', name: 'a' },
+            { name: 'sum', type: 'formula', expression, engine: 'math.js' },
+          ],
+        });
+
+        await db.sync();
+
+        const test = await Test.model.create<any>({
+          a: { '1': 1 },
+        });
+
+        expect(test.get('sum')).toEqual(2);
+      });
     });
 
     describe('formula.js', () => {
