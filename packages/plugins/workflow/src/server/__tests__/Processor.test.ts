@@ -121,20 +121,56 @@ describe('workflow > Processor', () => {
       await sleep(500);
 
       const [execution] = await workflow.getExecutions();
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
-      expect(status).toEqual(JOB_STATUS.REJECTED);
+      expect(status).toEqual(JOB_STATUS.ERROR);
       expect(result.message).toBe('definite error');
+    });
+
+    it('workflow with customized success node', async () => {
+      await workflow.createNode({
+        type: 'customizedSuccess'
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toEqual(1);
+      const { status, result } = jobs[0].get();
+      expect(status).toEqual(100);
+    });
+
+    it('workflow with customized error node', async () => {
+      await workflow.createNode({
+        type: 'customizedError'
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.FAILED);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toEqual(1);
+      const { status, result } = jobs[0].get();
+      expect(status).toEqual(-100);
     });
   });
 
   describe('manual nodes', () => {
     it('manual node should suspend execution, and could be manually resume', async () => {
       const n1 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
       });
 
       const n2 = await workflow.createNode({
@@ -154,7 +190,10 @@ describe('workflow > Processor', () => {
       expect(pending.status).toEqual(JOB_STATUS.PENDING);
       expect(pending.result).toEqual(null);
 
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -196,11 +235,11 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
-      expect(jobs[0].status).toEqual(JOB_STATUS.REJECTED);
+      expect(jobs[0].status).toEqual(JOB_STATUS.ERROR);
       expect(jobs[0].result.message).toEqual('input failed');
     });
   });
@@ -245,7 +284,7 @@ describe('workflow > Processor', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         branchIndex: BRANCH_INDEX.ON_TRUE,
         upstreamId: n1.id
       });
@@ -265,7 +304,10 @@ describe('workflow > Processor', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.STARTED);
 
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -275,7 +317,7 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(3);
     });
 
-    it('resume error downstream in condition branch, should reject', async () => {
+    it('resume error downstream in condition branch, should error', async () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         // no config means always true
@@ -308,7 +350,7 @@ describe('workflow > Processor', () => {
 
       await sleep(500);
 
-      expect(execution.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(execution.status).toEqual(EXECUTION_STATUS.ERROR);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
@@ -328,7 +370,7 @@ describe('workflow > Processor', () => {
       });
 
       const n3 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         upstreamId: n2.id,
         branchIndex: 0
       });
@@ -359,7 +401,10 @@ describe('workflow > Processor', () => {
       expect(pendingJobs.length).toBe(4);
 
       const pending = pendingJobs.find(item => item.nodeId === n3.id );
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = execution;
       await plugin.resume(pending);
 
@@ -376,7 +421,7 @@ describe('workflow > Processor', () => {
       });
 
       const n2 = await workflow.createNode({
-        type: 'prompt',
+        type: 'manual',
         upstreamId: n1.id,
         branchIndex: 0
       });
@@ -413,7 +458,10 @@ describe('workflow > Processor', () => {
       expect(pendingJobs.length).toBe(4);
 
       const pending = pendingJobs.find(item => item.nodeId === n2.id );
-      pending.set('result', 123);
+      pending.set({
+        status: JOB_STATUS.RESOLVED,
+        result: 123
+      });
       pending.execution = e1;
       await plugin.resume(pending);
 

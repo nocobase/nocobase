@@ -5,9 +5,9 @@ import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
-import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { Operand, parseValue, VariableTypes, VariableTypesContext } from "../calculators";
-import { lang, NAMESPACE } from "../locale";
+import { CollectionField, CollectionProvider, SchemaComponent, Variable, useCollectionManager, useCompile } from "@nocobase/client";
+import { lang } from "../locale";
+import { useWorkflowVariableOptions } from "../variable";
 
 function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
@@ -28,9 +28,10 @@ function AssociationInput(props) {
 }
 
 // NOTE: observer for watching useProps
-export default observer(({ value, onChange }: any) => {
+export default observer(({ value, disabled, onChange }: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
+  const form = useForm();
   const { getCollection, getCollectionFields } = useCollectionManager();
   const { values: data } = useForm();
   const collectionName = data?.config?.collection;
@@ -38,10 +39,13 @@ export default observer(({ value, onChange }: any) => {
     .filter(field => (
       !field.hidden
       && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-      // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
+      // TODO: should use some field option but not type to control this
+      && (!['formula'].includes(field.type))
     ));
 
   const unassignedFields = fields.filter(field => !(field.name in value));
+  const scope = useWorkflowVariableOptions();
+  const mergedDisabled = disabled || form.disabled;
 
   return (
     <fieldset className={css`
@@ -61,18 +65,11 @@ export default observer(({ value, onChange }: any) => {
             {fields
               .filter(field => field.name in value)
               .map(field => {
-                const VTypes = {
-                  ...(['linkTo', 'hasMany', 'belongsToMany'].includes(field.type) ? {} : VariableTypes),
-                  constant: {
-                    title: `{{t("Constant", { ns: "${NAMESPACE}" })}}`,
-                    value: 'constant',
-                  }
-                };
-
-                const operand = parseValue(value[field.name], VTypes);
                 // constant for associations to use Input, others to use CollectionField
                 // dynamic values only support belongsTo/hasOne association, other association type should disable
-
+                const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+                  ? AssociationInput
+                  : CollectionField;
                 // TODO: try to use <ObjectField> to replace this map
                 return (
                   <Form.Item key={field.name} label={compile(field.uiSchema?.title ?? field.name)} labelAlign="left" className={css`
@@ -80,45 +77,36 @@ export default observer(({ value, onChange }: any) => {
                       display: flex;
                     }
                   `}>
-                    <VariableTypesContext.Provider value={VTypes}>
-                      <Operand
-                        value={value[field.name]}
-                        onChange={(next) => {
-                          onChange({ ...value, [field.name]: next });
-                        }}
-                      >
-                        {operand.type === 'constant'
-                          ? (
-                            <SchemaComponent
-                              schema={{
-                                type: 'void',
-                                properties: {
-                                  [field.name]: {
-                                    'x-component': ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-                                      ? 'AssociationInput'
-                                      : 'CollectionField'
-                                  }
-                                }
-                              }}
-                              components={{
-                                CollectionField,
-                                AssociationInput
-                              }}
-                            />
-                          )
-                          // ? <SchemaComponent schema={{ ...field.uiSchema, name: field.name }} />
-                          : null
-                        }
-                      </Operand>
-                      <Button
-                        type="link"
-                        icon={<CloseCircleOutlined />}
-                        onClick={() => {
-                          const { [field.name]: _, ...rest } = value;
-                          onChange(rest);
+                    <Variable.Input
+                      scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
+                      value={value[field.name]}
+                      onChange={(next) => {
+                        onChange({ ...value, [field.name]: next });
+                      }}
+                    >
+                      <SchemaComponent
+                        schema={{
+                          type: 'void',
+                          properties: {
+                            [field.name]: {
+                              'x-component': ConstantCompoent
+                            }
+                          }
                         }}
                       />
-                    </VariableTypesContext.Provider>
+                    </Variable.Input>
+                    {!mergedDisabled
+                      ? (
+                        <Button
+                          type="link"
+                          icon={<CloseCircleOutlined />}
+                          onClick={() => {
+                            const { [field.name]: _, ...rest } = value;
+                            onChange(rest);
+                          }}
+                        />
+                      )
+                      : null}
                   </Form.Item>
                 );
               })

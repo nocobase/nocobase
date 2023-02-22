@@ -17,13 +17,13 @@ export class NumberValueParser extends BaseValueParser {
           value = +value;
         }
         if (isNaN(value)) {
-          this.errors.push(`Value invalid - "${value}"`);
+          this.errors.push(`Invalid value - "${value}"`);
         } else {
           this.value = value;
         }
       }
     } else {
-      this.errors.push(`Value invalid - ${JSON.stringify(value)}`);
+      this.errors.push(`Invalid value - ${JSON.stringify(value)}`);
     }
   }
 }

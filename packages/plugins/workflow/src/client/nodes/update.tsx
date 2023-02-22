@@ -1,6 +1,6 @@
 import { useCollectionDataSource } from '@nocobase/client';
 
-import { VariableComponent } from '../calculators';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
@@ -26,7 +26,7 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent,
+    FilterDynamicComponent,
     CollectionFieldset
   }
 };

@@ -59,7 +59,7 @@ export const useFixedBlockDesignerSetting = () => {
     return (
       <SchemaSettings.SwitchItem
         title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']['fixedBlock']}
+        checked={fieldSchema['x-decorator-props']?.fixedBlock}
         onChange={async (fixedBlock) => {
           const decoratorProps = {
             ...fieldSchema['x-decorator-props'],

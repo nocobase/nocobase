@@ -4,29 +4,29 @@
 
 ```ts
 class APIClient {
-  // axios 实例
+  // axios instance
   axios: AxiosInstance;
-  // 构造器
+  // Constructor
   constructor(instance?: AxiosInstance | AxiosRequestConfig);
-  // 客户端请求，支持 AxiosRequestConfig 和 ResourceActionOptions
+  // Request from client, support AxiosRequestConfig and ResourceActionOptions
   request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R>;
-  // 获取资源
+  // Get resource
   resource<R = IResource>(name: string, of?: any): R;
 }
 ```
 
-初始化实例
+Instance initialization:
 
 ```ts
 import axios from 'axios';
 import { APIClient } from '@nocobase/sdk';
 
-// 提供 AxiosRequestConfig 配置参数
+// Provide AxiosRequestConfig configuration parameters
 const api = new APIClient({
   baseURL: 'https://localhost:8000/api',
 });
 
-// 提供 AxiosInstance
+// Provide AxiosInstance
 const instance = axios.create({
   baseURL: 'https://localhost:8000/api',
 });
@@ -54,7 +54,7 @@ await api.request({ url: 'users:get' });
 
 ## Storage
 
-APIClient 默认使用的 localStorage，你也可以自定义 Storage，如：
+APIClient uses localStorage by default, but you can also customize the Storage, for example:
 
 ```ts
 import { Storage } from '@nocobase/sdk';
@@ -88,19 +88,19 @@ const api = new APIClient({
 ## Auth
 
 ```ts
-// 登录并记录 token
+// Sign in and record token
 api.auth.signIn({ email, password });
-// 注销并删除 token
+// Sign out and remove token
 api.auth.signOut();
-// 设置 token
+// Set token
 api.auth.setToken('123');
-// 设置 role（当需要多角色时）
+// Set role (When multiple roles are needed)
 api.auth.setRole('admin');
-// 设置 locale（当需要多语言时）
+// Set locale (When multiple languages are needed)
 api.auth.setLocale('zh-CN');
 ```
 
-自定义 Auth
+Auth customization:
 
 ```ts
 import { Auth } from '@nocobase/sdk';

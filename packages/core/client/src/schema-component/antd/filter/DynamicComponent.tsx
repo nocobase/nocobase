@@ -53,13 +53,14 @@ const VariableCascader = connect((props) => {
 });
 
 export const DynamicComponent = (props) => {
-  const { dynamicComponent } = useContext(FilterContext);
+  const { dynamicComponent, disabled } = useContext(FilterContext);
   const component = useComponent(dynamicComponent);
   const form = useMemo(() => {
     return createForm({
       values: {
         value: props.value,
       },
+      disabled,
       effects() {
         onFieldValueChange('value', (field) => {
           props?.onChange?.(field.value);

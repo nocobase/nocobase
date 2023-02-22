@@ -43,7 +43,7 @@ export const ActionDesigner = (props) => {
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const context = useActionContext();
   const [initialSchema, setInitialSchema] = useState<ISchema>();
-  const actionType = fieldSchema['x-action'] || '';
+  const actionType = fieldSchema['x-action'] ?? '';
 
   useEffect(() => {
     const schemaUid = uid();
