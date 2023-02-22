@@ -123,7 +123,7 @@ export const TableColumnDesigner = (props) => {
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
         <SchemaSettings.SwitchItem
           title={t('Show link')}
-          checked={fieldSchema['x-component-props']?.mode === 'links'}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
           onChange={(flag) => {
             fieldSchema['x-component-props'] = {
               ...fieldSchema?.['x-component-props'],
