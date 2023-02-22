@@ -42,7 +42,7 @@ const chartConfig = {
   }
 };
 export const barTemplate = {
-  title: 'Bar(1 个「时间」或「有序名词」字段，1 个「数值」字段，0 ～ 1 个「无序名词」)',
+  title: '1 个「时间」或「有序名词」字段，1 个「数值」字段，0 ～ 1 个「无序名词」',
   type: 'Bar',
   group:2,
   renderComponent: 'G2Plot',

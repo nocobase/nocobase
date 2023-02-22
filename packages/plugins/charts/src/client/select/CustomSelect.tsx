@@ -2,10 +2,11 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import type { SelectProps } from 'antd';
-import { Input, Select as AntdSelect } from 'antd';
+import { Input, Popover, Select as AntdSelect } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
+import { css } from '@emotion/css';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
@@ -31,18 +32,30 @@ const InternalSelect = connect(
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
         }}
+        onMouseEnter={(e) => {
+          console.log(e);
+        }
+        }
         mode={mode}
       >
         <OptGroup label='分组1'>
           {
             group1.map(option => (
-              <Option value={option.value} label={option.label}>
-                <div className='demo-option-label-item'>
-        <span role='img' aria-label={option.label}>
-         🇨🇳
-        </span>
-                  {option.label}
-                </div>
+              <Option value={option.value} label={option.value}>
+                <Popover zIndex={99999999999} content={() =>
+                  (<span>
+                      {
+                        option?.label
+                      }
+                    </span>
+                  )
+                } trigger='hover'>
+                  <div>
+                    <span role='img' aria-label={option.label}>
+                    🍉{option.value}
+                    </span>
+                  </div>
+                </Popover>
               </Option>
             ))
           }
@@ -51,11 +64,11 @@ const InternalSelect = connect(
           {
             group2.map(option => (
               <Option value={option.value} label={option.label}>
-                <div className='demo-option-label-item'>
+                <div>
         <span role='img' aria-label={option.label}>
           🍉
         </span>
-                  {option.label}
+                  {option.value}
                 </div>
               </Option>
             ))

@@ -34,7 +34,7 @@ const chartConfig = {
 };
 const arr = [{a:"1",b:2,c:3},{a:"2",b:2,c:3},{a:"3",b:2,c:3},{a:"4",b:2,c:3},{a:"5",b:2,c:3},]
 export const lineTemplate = {
-  title: 'Line(1 个「时间」或「有序名词」字段，1 个「数值」字段)',
+  title: '1 个「时间」或「有序名词」字段，1 个「数值」字段',
   type: 'Line',
   group:2,
   renderComponent: 'G2Plot',
