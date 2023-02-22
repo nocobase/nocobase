@@ -54,7 +54,7 @@ const methodMapping = {
 };
 
 export interface AMapForwardedRefProps {
-  setOverlay: (t: keyof typeof methodMapping, v: any) => any;
+  setOverlay: (t: keyof typeof methodMapping, v: any, o?: AMap.OverlayOptions) => any;
   aMap: any;
   map: AMap.Map;
 }
@@ -194,12 +194,12 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
   };
 
   const getOverlay = useCallback(
-    (t = type, v = value) => {
+    (t = type, v = value, o?: AMap.OverlayOptions) => {
       const mapping = methodMapping[t as keyof typeof methodMapping];
       if (!mapping) {
         return;
       }
-      const options = { ...commonOptions };
+      const options = { ...commonOptions, ...o } as AMap.MarkerOptions;
       if ('transformOptions' in mapping) {
         Object.assign(options, mapping.transformOptions(v));
       } else if ('propertyKey' in mapping) {
@@ -211,9 +211,9 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     [commonOptions],
   );
 
-  const setOverlay = (t = type, v = value) => {
+  const setOverlay = (t = type, v = value, o?: AMap.OverlayOptions) => {
     if (!aMap.current) return;
-    const nextOverlay = getOverlay(t, v);
+    const nextOverlay = getOverlay(t, v, o);
     nextOverlay.setMap(map.current);
     return nextOverlay;
   };
