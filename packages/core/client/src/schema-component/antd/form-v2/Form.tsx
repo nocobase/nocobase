@@ -55,11 +55,21 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   );
 };
 
+const getLinkageRules = (fieldSchema) => {
+  let linkageRules = null;
+  fieldSchema.mapProperties((schema) => {
+    if (schema['x-linkageRules']) {
+      linkageRules = schema['x-linkageRules'];
+    }
+  });
+  return linkageRules;
+};
+
 const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = fieldSchema.properties.grid?.['x-linkageRules'] || fieldSchema.parent?.['x-linkageRules'] || [];
+  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkageRules'] || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {

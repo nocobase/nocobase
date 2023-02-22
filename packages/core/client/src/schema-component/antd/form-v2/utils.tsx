@@ -72,7 +72,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
       break;
     case ActionType.Value:
       if (conditionAnalyse(linkageRuleCondition, values)) {
-        if (value.mode === 'express') {
+        if (value?.mode === 'express') {
           const result = evaluate(value.result || value.value, values);
           valueResult.push(typeof result === 'function' ? result() : result === Infinity ? null : result);
         } else {
