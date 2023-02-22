@@ -55,7 +55,7 @@ function migrateConfig({ calculation }) {
   }
 
   const calculator = calculatorsMap[calculation.calculator];
-  const operands = calculator.operands.map(operand => addQuote(operand));
+  const operands = (calculator.operands ?? []).map(operand => addQuote(operand));
 
   return {
     engine: 'formula.js',
@@ -67,7 +67,7 @@ function migrateConfig({ calculation }) {
 
 export default class extends Migration {
   async up() {
-    const match = await this.app.version.satisfies('<=0.9.0-alpha.2');
+    const match = await this.app.version.satisfies('<0.9.0-alpha.3');
     if (!match) {
       return;
     }
