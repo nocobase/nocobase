@@ -2,6 +2,7 @@ FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMIT_HASH
 ARG PRESET_NOCOBASE_PLUGINS
+ARG PROD_YARN_INSTALL='echo "empty"'
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -26,7 +27,8 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=$PRESET_NOCOBASE_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install --production
+  && yarn install --production \
+  && $PROD_YARN_INSTALL
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
