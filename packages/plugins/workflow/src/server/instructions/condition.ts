@@ -21,7 +21,7 @@ export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     // TODO(optimize): loading of jobs could be reduced and turned into incrementally in processor
     // const jobs = await processor.getJobs();
-    const { engine = 'basic', calculation, rejectOnFalse } = node.config || {};
+    const { engine = 'basic', calculation, expression, rejectOnFalse } = node.config || {};
     const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
     if (!evaluator) {
       return {
@@ -34,7 +34,7 @@ export default {
     let result = true;
 
     try {
-      result = logicCalculate(processor.getParsedValue(calculation), evaluator, scope);
+      result = logicCalculate(engine === 'basic' ? processor.getParsedValue(calculation) : expression, evaluator, scope);
     } catch (e) {
       return {
         result: e.toString(),
