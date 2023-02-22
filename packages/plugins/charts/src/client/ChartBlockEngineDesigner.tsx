@@ -127,19 +127,20 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       <FormProvider form={form}>
                         <FormLayout layout={'vertical'}>
                           <SchemaComponent
-                            scope={{ dataSource,JSON5 }}
+                            scope={{ dataSource, JSON5 }}
                             components={{ Options }}
                             schema={{
                               properties: {
                                 chartType: {
                                   title: t('Chart type'),
                                   required: true,
-                                  'x-component': 'Select',
+                                  'x-component': 'CustomSelect',
                                   'x-decorator': 'FormItem',
                                   enum: [...templates.values()].map((template) => {
                                     return {
                                       label: template.title,
                                       value: template.type,
+                                      group: template.group,
                                     };
                                   }),
                                 },
