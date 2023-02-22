@@ -49,9 +49,9 @@ const calculatorsMap = {
   }
 }
 
-function migrateConfig({ calculation }) {
+function migrateConfig({ calculation, ...config }: any = {}) {
   if (!calculation?.calculator || !calculation?.operands?.length) {
-    return {};
+    return config;
   }
 
   const calculator = calculatorsMap[calculation.calculator];
