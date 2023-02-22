@@ -85,13 +85,13 @@ function renderHTML(exp: string, keyLabelMap) {
   });
 }
 
-function createOptionsKeyLabelMap(options: any[]) {
+function createOptionsValueLabelMap(options: any[]) {
   const map = new Map<string, string[]>();
   for (const option of options) {
-    map.set(option.key, [option.label]);
+    map.set(option.value, [option.label]);
     if (option.children) {
-      for (const [key, labels] of createOptionsKeyLabelMap(option.children)) {
-        map.set(`${option.key}.${key}`, [option.label, ...labels]);
+      for (const [value, labels] of createOptionsValueLabelMap(option.children)) {
+        map.set(`${option.value}.${value}`, [option.label, ...labels]);
       }
     }
   }
@@ -109,7 +109,7 @@ export function TextArea(props) {
   const inputRef = useRef<HTMLDivElement>(null);
   const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsKeyLabelMap(options), [scope]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // [startElementIndex, startOffset, endElementIndex, endOffset]

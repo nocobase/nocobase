@@ -6,6 +6,7 @@ import { Trans, useTranslation } from "react-i18next";
 
 import { Registry } from "@nocobase/utils/client";
 import { Variable, useCompile } from "@nocobase/client";
+import evaluators, { renderReference } from "@nocobase/evaluators/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
@@ -14,7 +15,6 @@ import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { lang, NAMESPACE } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
 import { RadioWithTooltip, RadioWithTooltipOption } from "../components/RadioWithTooltip";
-import { calculationEngines, renderReference } from "./calculation/engines";
 
 interface Calculator {
   name: string;
@@ -333,7 +333,7 @@ export default {
       'x-component-props': {
         options: [
           ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-          ...Array.from(calculationEngines.getEntities())
+          ...Array.from(evaluators.getEntities())
         ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
       },
       required: true,
@@ -366,7 +366,7 @@ export default {
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = calculationEngines.get(values.config.engine);
+        const { evaluate } = evaluators.get(values.config.engine);
         const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);

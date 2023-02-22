@@ -129,6 +129,7 @@ export function Input(props) {
     { value: '', label: t('Constant'), children: children ? null : constantOptions },
     ...(typeof scope === 'function' ? scope() : (scope ?? []))
   ]);
+
   const form = useForm();
 
   function onSwitch(next) {

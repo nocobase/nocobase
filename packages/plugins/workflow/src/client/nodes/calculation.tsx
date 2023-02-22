@@ -3,12 +3,12 @@ import { css } from '@emotion/css';
 import parse from 'json-templates';
 
 import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
+import evaluators, { renderReference, Evaluator } from '@nocobase/evaluators/client';
 
-import { useFlowContext } from '../../FlowContext';
-import { lang, NAMESPACE } from '../../locale';
-import { TypeSets, useWorkflowVariableOptions } from '../../variable';
-import { calculationEngines, renderReference } from './engines';
-import { RadioWithTooltip } from '../../components/RadioWithTooltip';
+import { useFlowContext } from '../FlowContext';
+import { lang, NAMESPACE } from '../locale';
+import { TypeSets, useWorkflowVariableOptions } from '../variable';
+import { RadioWithTooltip } from '../components/RadioWithTooltip';
 
 
 
@@ -24,7 +24,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
-        options: Array.from(calculationEngines.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
+        options: Array.from(evaluators.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
       },
       required: true,
       default: 'math.js'
@@ -40,7 +40,7 @@ export default {
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = calculationEngines.get(values.config.engine);
+        const { evaluate } = evaluators.get(values.config.engine) as Evaluator;
         const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);
