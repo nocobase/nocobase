@@ -22,8 +22,8 @@ const validateJSON = {
 const chartConfig = {
   appendPadding: 10,
   isGroup: true,
-  yField: '{{metric}}',
-  xField: '{{dimension}}',
+  yField: '{{dimension}}',
+  xField: '{{metric}}',
   seriesField: '{{category}}',
   label: {
     // 可手动配置 label 数据标签位置
