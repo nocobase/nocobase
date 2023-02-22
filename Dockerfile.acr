@@ -12,12 +12,13 @@ RUN cd /tmp && \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
 RUN  yarn install && yarn build
 
-RUN git checkout -b release \
-    && yarn version:alpha -y  \
-    && git config user.email "test@mail.com"  \
-    && git config user.name "test" && git add .  \
-    && git commit -m "chore(versions): test publish packages xxx" \
-    && yarn release:force --registry $VERDACCIO_URL
+RUN git checkout -b release
+RUN yarn version:alpha -y  
+RUN git config user.email "test@mail.com" 
+RUN git config user.name "test" 
+RUN git add .
+RUN git commit -m "chore(versions): test publish packages xxx"
+RUN yarn release:force --registry $VERDACCIO_URL
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
