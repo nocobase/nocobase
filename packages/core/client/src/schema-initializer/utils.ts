@@ -84,7 +84,9 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': {
+          mode: 'links',
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {

@@ -608,5 +608,6 @@ export default {
   "CreatedAt": "Recording a row's created time ",
   "UpdatedAt": "Recording a row's last updated user",
   "Column width": "Column width",
-  "Sortable": "Sortable"
+  "Sortable": "Sortable",
+  "Show link": "Show link"
 };

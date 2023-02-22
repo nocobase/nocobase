@@ -639,5 +639,6 @@ export default {
   'Edit page title': '编辑页面标题',
   'Enable page tabs': '启用页面选项卡',
   "Column width": "列宽",
-  "Sortable": "排序"
+  "Sortable": "排序",
+  "Show link": "展示链接"
 }
