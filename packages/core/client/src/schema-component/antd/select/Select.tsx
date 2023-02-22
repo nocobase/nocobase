@@ -69,8 +69,14 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, ...others } = props;
+    const { objectValue, value, ...others } = props;
     const mode = props.mode || props.multiple ? 'multiple' : undefined;
+    const toValue = (v) => {
+      if (['multiple', 'tags'].includes(mode)) {
+        return v || [];
+      }
+      return v;
+    };
     if (objectValue) {
       return <ObjectSelect {...others} mode={mode} />;
     }
@@ -79,6 +85,7 @@ const InternalSelect = connect(
         showSearch
         filterOption={filterOption}
         allowClear
+        value={toValue(value)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
