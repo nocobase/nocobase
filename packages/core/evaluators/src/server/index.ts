@@ -7,10 +7,9 @@ import formulajs from "../utils/formulajs";
 
 
 
-export interface Evaluator {
-  (expression: string, scope?: { [key: string]: any }): any;
-}
+export type Scope = { [key: string]: any };
 
+export type Evaluator = (expression: string, scope?: Scope) => any;
 export interface EvaluatorsOptions extends RegistryOptions {
   empty?: boolean;
   evaluators?: { [key: string]: Evaluator };
@@ -18,7 +17,16 @@ export interface EvaluatorsOptions extends RegistryOptions {
 
 const evaluators = new Registry<Evaluator>();
 
-evaluators.register('math.js', mathjs);
-evaluators.register('formula.js', formulajs);
+function evaluate(this: Evaluator, expression: string, scope: Scope = {}) {
+  const exp = expression.trim().replace(/{{\s*([^{}]+)\s*}}/g, (_, v) => {
+    const item = get(scope, v);
+    const key = v.replace(/\.(\d+)/g, '["$1"]');
+    return ` ${typeof item === 'function' ? item() : key} `;
+  });
+  return this(exp, scope);
+}
+
+evaluators.register('math.js', evaluate.bind(mathjs));
+evaluators.register('formula.js', evaluate.bind(formulajs));
 
 export default evaluators;
