@@ -3,8 +3,6 @@ import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
-import { VariableJSONInput } from '../components/VariableJSONInput';
-import { VariableInput } from '../components/VariableInput';
 
 
 
@@ -79,7 +77,7 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'VariableInput',
+                'x-component': 'Variable.Input',
                 'x-component-props': {
                   scope: useWorkflowVariableOptions
                 }
@@ -125,7 +123,7 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'VariableInput',
+                'x-component': 'Variable.Input',
                 'x-component-props': {
                   scope: useWorkflowVariableOptions
                 }
@@ -153,7 +151,7 @@ export default {
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'VariableJSONInput',
+      'x-component': 'Variable.JSON',
       'x-component-props': {
         scope: useWorkflowVariableOptions,
         autoSize: {
@@ -193,7 +191,5 @@ export default {
   scope: {},
   components: {
     ArrayItems,
-    VariableInput,
-    VariableJSONInput
   },
 };
