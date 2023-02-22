@@ -200,9 +200,7 @@ function CalculationItem({ value, onChange, onRemove }) {
             onChange={group => onChange({ ...value, group })}
           />
         )
-        : (
-          <VariableTextArea value={value} onChange={onChange} scope={scope} />
-        )
+        : <Calculation operands={operands} calculator={calculator} onChange={onChange} />
       }
       <Button onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
@@ -216,14 +214,14 @@ function CalculationGroup({ value, onChange }) {
   function onAddSingle() {
     onChange({
       ...value,
-      calculations: [...calculations, '']
+      calculations: [...calculations, { not: false, calculator: 'equal' }]
     });
   }
 
   function onAddGroup() {
     onChange({
       ...value,
-      calculations: [...calculations, { group: { type: 'and', calculations: [] } }]
+      calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }]
     });
   }
 
