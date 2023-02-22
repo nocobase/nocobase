@@ -23,7 +23,7 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
     name: 'workflow',
     instructions: {
       echo: {
-        run(node, { result }, execution) {
+        run(node, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
             result,
@@ -32,21 +32,37 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
       },
 
       error: {
-        run(node, input, execution) {
+        run(node, input, processor) {
           throw new Error('definite error');
         },
       },
 
       'prompt->error': {
-        run(node, input, execution) {
+        run(node, input, processor) {
           return {
             status: JOB_STATUS.PENDING,
           };
         },
-        resume(node, input, execution) {
+        resume(node, input, processor) {
           throw new Error('input failed');
         }
-      }
+      },
+
+      customizedSuccess: {
+        run(node, input, processor) {
+          return {
+            status: 100
+          }
+        }
+      },
+
+      customizedError: {
+        run(node, input, processor) {
+          return {
+            status: -100
+          }
+        }
+      },
     },
     functions: {
       no1: () => 1
