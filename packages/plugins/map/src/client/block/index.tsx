@@ -15,6 +15,7 @@ import { MapBlockProvider, useMapBlockProps } from './MapBlockProvider';
 export const MapBlockOptions: React.FC = (props) => {
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
+  const schemaInitializer = useContext(SchemaInitializerContext);
 
   useEffect(() => {
     children.push({
@@ -26,7 +27,7 @@ export const MapBlockOptions: React.FC = (props) => {
   }, []);
 
   return (
-    <SchemaInitializerProvider initializers={{ MapActionInitializers }}>
+    <SchemaInitializerProvider initializers={{ ...schemaInitializer, MapActionInitializers }}>
       <SchemaComponentOptions
         scope={{ useMapBlockProps }}
         components={{ MapBlockInitializer, MapBlockDesigner, MapBlockProvider, MapBlock }}

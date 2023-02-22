@@ -81,7 +81,7 @@ export const useSortFields = (collectionName: string) => {
         return false;
       }
       const fieldInterface = getInterface(field.interface);
-      if (fieldInterface.sortable) {
+      if (fieldInterface?.sortable) {
         return true;
       }
       return false;
