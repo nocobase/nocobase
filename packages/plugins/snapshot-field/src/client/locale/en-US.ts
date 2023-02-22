@@ -4,8 +4,8 @@ export default {
   'View record': 'View record',
   'Add block': 'Add block',
   'Allow linking to multiple records': 'Allow linking to multiple records',
-  'Snapshot to description':
-    'It is used to create a snapshot of the table, save the current data of the pointed table, and save it only when the record to which it belongs is created, and will not be updated later.',
+  'Copy relational data into the current collection and save it as a snapshot':
+    'Copy relational data into the current collection and save it as a snapshot.',
   'Association field': 'Association field',
   'Deep copy fields': 'Deep copy fields',
   'Please select': 'Please select',

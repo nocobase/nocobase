@@ -30,6 +30,8 @@ const onTargetFieldChange = (field: Field) => {
 export const useSnapshotInterface = () => {
   const { t } = useSnapshotTranslation();
 
+  console.log(t('Snapshot to description'));
+
   const recordPickerViewer = {
     type: 'void',
     title: t('View record'),
@@ -69,7 +71,7 @@ export const useSnapshotInterface = () => {
     type: 'object',
     group: 'advanced',
     title: t('Snapshot'),
-    description: t('Snapshot to description'),
+    description: t('Copy relational data into the current collection and save it as a snapshot'),
     default: {
       type: 'snapshot',
       // name,
