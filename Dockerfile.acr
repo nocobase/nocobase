@@ -28,7 +28,6 @@ RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=$PRESET_NOCOBASE_PLUGINS \
   && cd /app/my-nocobase-app \
   && yarn install --production
-
 RUN $PROD_YARN_INSTALL
 
 RUN cd /app \
