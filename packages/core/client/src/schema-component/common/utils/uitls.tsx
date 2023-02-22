@@ -48,7 +48,7 @@ export const conditionAnalyse = (rules, values) => {
     const jsonlogic = getDeepestProperty(c);
     const operator = jsonlogic.operator;
     const value = getValue(jsonlogic.value, values);
-    const targetField = Object.keys(flat(c))[0].replace(`.${operator}`, '');
+    const targetField = Object.keys(flat(c))[0]?.replace?.(`.${operator}`, '');
     const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
     return result;
   });

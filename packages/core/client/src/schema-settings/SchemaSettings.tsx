@@ -15,7 +15,7 @@ import {
   Modal,
   Select,
   Space,
-  Switch
+  Switch,
 } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
@@ -719,6 +719,7 @@ SchemaSettings.LinkageRules = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
+  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   return (
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
@@ -736,10 +737,10 @@ SchemaSettings.LinkageRules = (props) => {
                   const options = useCollectionFilterOptions(collectionName);
                   return {
                     options,
-                    defaultValues: fieldSchema?.['x-linkageRules'],
+                    defaultValues: gridSchema?.['x-linkageRules'] || fieldSchema?.['x-linkageRules'],
                     type,
                     linkageOptions: useLinkageCollectionFieldOptions(collectionName),
-                    collectionName
+                    collectionName,
                   };
                 },
               },
@@ -753,10 +754,10 @@ SchemaSettings.LinkageRules = (props) => {
           rules.push(_.pickBy(rule, _.identity));
         }
         const schema = {
-          ['x-uid']: fieldSchema['x-uid'],
+          ['x-uid']: gridSchema['x-uid'],
         };
 
-        fieldSchema['x-linkageRules'] = rules;
+        gridSchema['x-linkageRules'] = rules;
         schema['x-linkageRules'] = rules;
         dn.emit('patch', {
           schema,

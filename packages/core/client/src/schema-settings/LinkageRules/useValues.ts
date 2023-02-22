@@ -45,7 +45,8 @@ export const useValues = (options) => {
       field.data.schema = option?.schema;
       field.value = field.value || [];
       field.data.operator = undefined;
-      field.value = { ...field.value, targetFields: dataIndex, operator: undefined };
+      field.data.value = undefined;
+      field.value = { ...field.value, targetFields: dataIndex, operator: undefined, value: undefined };
     },
     setOperator(operatorValue) {
       field.data.operator = operatorValue;

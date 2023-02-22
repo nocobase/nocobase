@@ -59,7 +59,7 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = fieldSchema.parent?.['x-linkageRules'] || [];
+  const linkageRules = fieldSchema.properties.grid?.['x-linkageRules'] || fieldSchema.parent?.['x-linkageRules'] || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -87,7 +87,7 @@ const WithForm = (props) => {
                 value: field.value || field.initialValue,
               };
             });
-            onFieldChange(`*(${fields})`, ['value','required','pattern','display'], (field: any) => {
+            onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
               field.linkageProperty = {};
             });
           }

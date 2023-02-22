@@ -1,6 +1,23 @@
 import { useCompile } from '../../schema-component';
 import { useCollectionManager, useCollection } from '../../collection-manager';
 
+const supportsType = [
+  'checkbox',
+  'number',
+  'percent',
+  'integer',
+  'input',
+  'textarea',
+  'email',
+  'phone',
+  'datetime',
+  'createdAt',
+  'updatedAt',
+  'radioGroup',
+  'checkboxGroup',
+  'select',
+  'multipleSelect',
+];
 const VariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
   const collection = getCollection(currentCollection);
@@ -11,7 +28,7 @@ const VariableTypes = (currentCollection) => {
       value: currentCollection,
       options() {
         const field2option = (field, depth) => {
-          if (!field.interface) {
+          if (!field.interface || !supportsType.includes(field.interface)) {
             return;
           }
           const fieldInterface = getInterface(field.interface);

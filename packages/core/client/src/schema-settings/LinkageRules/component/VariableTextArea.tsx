@@ -77,7 +77,7 @@ function getValue(el) {
 }
 
 function renderHTML(exp: string, keyLabelMap) {
-  return exp.replace(VARIABLE_RE, (_, i) => {
+  return exp?.replace?.(VARIABLE_RE, (_, i) => {
     const key = i.trim();
     return createVariableTagHTML(key, keyLabelMap) ?? '';
   });

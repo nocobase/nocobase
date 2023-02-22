@@ -8,9 +8,10 @@ function now() {
 }
 export function evaluate(exp: string, scope = {}) {
   const mergeScope = { ...scope, now };
-  const expression: any = exp.replace(/{{([^}]+)}}/g, (match, i) => {
-    return mergeScope[i.trim()] || null;
-  });
+  const expression: any =
+    exp?.replace?.(/{{([^}]+)}}/g, (match, i) => {
+      return mergeScope[i.trim()] || null;
+    }) || exp;
   try {
     const fn = new Function(...Object.keys(formulajs), ...Object.keys(mergeScope), `return ${expression}`);
     return fn(...Object.values(formulajs), ...Object.values(mergeScope));
@@ -82,7 +83,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
         ...field.linkageProperty,
         value: valueResult,
       };
-      field.value = last(field.linkageProperty.value);
+      field.value = last(valueResult) || field.value;
       break;
     default:
       return null;
