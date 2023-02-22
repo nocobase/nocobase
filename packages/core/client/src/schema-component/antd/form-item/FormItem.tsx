@@ -424,6 +424,22 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable link')}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          onChange={(flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              mode: flag ? 'links' : 'tags',
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {form &&
         !form?.readPretty &&
         collectionField?.interface !== 'o2m' &&

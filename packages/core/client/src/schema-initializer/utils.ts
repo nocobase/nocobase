@@ -213,7 +213,9 @@ export const useFormItemInitializerFields = (options?: any) => {
           useLabelStyle: useLabelStyle,
         },
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          mode: 'links',
+        },
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });

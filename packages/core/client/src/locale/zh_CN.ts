@@ -643,5 +643,5 @@ export default {
   'Enable page tabs': '启用页面选项卡',
   "Column width": "列宽",
   "Sortable": "排序",
-  "Show link": "展示链接"
+  "Enable link": "启用链接"
 }

@@ -609,5 +609,5 @@ export default {
   "UpdatedAt": "Recording a row's last updated user",
   "Column width": "Column width",
   "Sortable": "Sortable",
-  "Show link": "Show link"
+  "Enable link": "Enable link"
 };
