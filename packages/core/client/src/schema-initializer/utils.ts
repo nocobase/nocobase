@@ -1,8 +1,8 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -432,10 +432,18 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
+  const ctx = useContext(BlockRequestContext);
+  const exists = !!schema;
+
   return {
     schema,
     exists: !!schema,
     remove() {
+      if (ctx.field) {
+        ctx.field.data = ctx.field.data || {};
+        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+        ctx.field.data.activeFields.delete(schema.name);
+      }
       schema && rm(schema, remove);
     },
   };

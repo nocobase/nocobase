@@ -1,6 +1,7 @@
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
 import flat from 'flat';
+import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
 import { FilterContext, FilterLogicContext } from './context';
@@ -29,27 +30,25 @@ export const useValues = () => {
     });
   };
   const value2data = () => {
+    field.data = field.data || {};
     const values = flat(field.value);
     const path = Object.keys(values).shift() || '';
     if (!path) {
       return;
     }
-    const [fieldPath, otherPath] = path.split('.$');
+    const [fieldPath = '', otherPath = ''] = path.split('.$');
     const [operatorValue] = otherPath.split('.', 2);
     const dataIndex = fieldPath.split('.');
     const option = findOption(dataIndex, options);
     const operators = option?.operators;
     const operator = operators?.find?.((item) => item.value === `$${operatorValue}`);
-    field.data = field.data || {};
     field.data.dataIndex = dataIndex;
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(() => {
-    value2data();
-  }, [logic]);
+  useEffect(value2data, [logic]);
   return {
     fields: options,
     ...field.data,
@@ -59,24 +58,26 @@ export const useValues = () => {
       field.data = field.data || {};
       field.data.operators = option?.operators;
       field.data.operator = operator;
-      field.data.schema = merge(option?.schema, operator?.schema);
+      const s1 = cloneDeep(option?.schema);
+      const s2 = cloneDeep(operator?.schema);
+      field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
       field.data.value = null;
       data2value();
-      console.log('setDataIndex', field.data);
     },
     setOperator(operatorValue) {
       const operator = field.data?.operators?.find?.((item) => item.value === operatorValue);
       field.data.operator = operator;
-      field.data.schema = merge(field.data.schema, operator.schema);
+      const option = findOption(field.data.dataIndex, options);
+      const s1 = cloneDeep(option?.schema);
+      const s2 = cloneDeep(operator?.schema);
+      field.data.schema = merge(s1, s2);
       field.data.value = operator.noValue ? operator.default || true : null;
       data2value();
-      console.log('setOperator', field.data);
     },
     setValue(value) {
       field.data.value = value;
       data2value();
-      console.log('setValue', field.data);
     },
   };
 };

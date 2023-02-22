@@ -27,16 +27,4 @@ export class ArrayValueParser extends BaseValueParser {
     }
     return { map, set };
   }
-
-  toArr(value) {
-    let values: string[] = [];
-    if (!value) {
-      values = [];
-    } else if (typeof value === 'string') {
-      values = value.split(',');
-    } else if (Array.isArray(value)) {
-      values = value;
-    }
-    return values;
-  }
 }

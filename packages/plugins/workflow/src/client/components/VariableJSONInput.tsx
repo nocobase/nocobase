@@ -1,10 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { Popover, Button } from 'antd';
+import React, { useRef } from 'react';
+import { Button, Cascader } from 'antd';
 import { css } from "@emotion/css";
 
 import { Input } from "@nocobase/client";
 
-import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
 import { lang } from '../locale';
 
 
@@ -19,9 +18,9 @@ function setNativeInputValue(input, value) {
 }
 
 export function VariableJSONInput(props) {
-  const [variable, setVariable] = useState<string>('');
   const inputRef = useRef(null);
-  const { value, space = 2 } = props;
+  const { value, space = 2, scope } = props;
+  const options = typeof scope === 'function' ? scope() : (scope ?? []);
 
   function onFormat() {
     if (!inputRef.current) {
@@ -38,17 +37,16 @@ export function VariableJSONInput(props) {
     textArea.focus();
   }
 
-  function onInsert() {
+  function onInsert(selected) {
     if (!inputRef.current) {
       return;
     }
-    if (!variable) {
-      return;
-    }
+
+    const variable = `"{{${selected.join('.')}}}"`;
 
     const { textArea } = inputRef.current.resizableTextArea;
-    const nextValue = textArea.value.slice(0, textArea.selectionStart) + `"${variable}"` + textArea.value.slice(textArea.selectionEnd);
-    const nextPos = [textArea.selectionStart, textArea.selectionStart + variable.length + 2];
+    const nextValue = textArea.value.slice(0, textArea.selectionStart) + variable + textArea.value.slice(textArea.selectionEnd);
+    const nextPos = [textArea.selectionStart, textArea.selectionStart + variable.length];
     setNativeInputValue(textArea, nextValue);
     textArea.setSelectionRange(...nextPos);
     textArea.focus();
@@ -56,39 +54,36 @@ export function VariableJSONInput(props) {
   return (
     <div className={css`
       position: relative;
+      .ant-input{
+        width: 100%;
+      }
     `}>
       <Input.JSON {...props} ref={inputRef} />
-        <Button.Group
-          className={css`
-            position: absolute;
-            right: 2px;
-            top: 2px;
-            .ant-btn-sm{
-              font-size: 85%;
-            }
-          `}
-        >
-        <Button size="small" onClick={onFormat}>{lang('Format')}</Button>
-        <Popover
-          trigger="click"
-          placement="topRight"
-          content={
-            <div className={css`
-              display: flex;
-              gap: .5em;
-            `}>
-              <VariableTypesContext.Provider value={{
-                $jobsMapByNodeId: VariableTypes.$jobsMapByNodeId,
-                $context: VariableTypes.$context,
-              }}>
-                <Operand value={variable} onChange={setVariable} />
-                <Button onClick={onInsert} disabled={!variable}>{lang('Insert')}</Button>
-              </VariableTypesContext.Provider>
-            </div>
+      <Button.Group
+        className={css`
+          position: absolute;
+          right: 0;
+          top: 0;
+          .ant-btn-sm{
+            font-size: 85%;
           }
+        `}
+      >
+        <Button onClick={onFormat}>{lang('Format')}</Button>
+        <Cascader
+          value={[]}
+          options={options}
+          onChange={onInsert}
         >
-          <Button size="small">{lang('Use variables')}</Button>
-        </Popover>
+          <Button
+            className={css`
+              font-style: italic;
+              font-family: "New York", "Times New Roman", Times, serif;
+            `}
+          >
+            x
+          </Button>
+        </Cascader>
       </Button.Group>
     </div>
   );

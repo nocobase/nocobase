@@ -10,6 +10,22 @@ export class BaseValueParser {
     this.value = null;
   }
 
+  trim(value: any) {
+    return typeof value === 'string' ? value.trim() : value;
+  }
+
+  toArr(value: any, splitter?: string) {
+    let values: string[] = [];
+    if (!value) {
+      values = [];
+    } else if (typeof value === 'string') {
+      values = value.split(splitter || /,|，|、/);
+    } else if (Array.isArray(value)) {
+      values = value;
+    }
+    return values.map((v) => this.trim(v)).filter(Boolean);
+  }
+
   toString() {
     return this.value;
   }

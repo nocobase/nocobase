@@ -1,16 +1,20 @@
 import React from 'react';
 import { Select } from 'antd';
+import { onFieldValueChange } from '@formily/core';
 import { observer, useForm, useFormEffects } from '@formily/react';
 
-import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+  useCollectionManager,
+  useCompile,
+} from '@nocobase/client';
 
-import { useFlowContext } from '../FlowContext';
 import { collection, filter } from '../schemas/collection';
-import { css } from '@emotion/css';
-import { onFieldValueChange } from '@formily/core';
-import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { useCollectionFieldOptions } from '../variable';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
-import { useOperandContext } from '../calculators';
 
 const FieldsSelect = observer((props) => {
   const compile = useCompile();
@@ -25,12 +29,7 @@ const FieldsSelect = observer((props) => {
   });
 
   return (
-    <Select
-      {...props}
-      className={css`
-        min-width: 6em;
-      `}
-    >
+    <Select {...props}>
       {fields
         .filter(field => (
           !field.hidden
@@ -57,8 +56,6 @@ const collectionModeOptions = [
   { label: `{{t("After record added or updated", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.SAVED },
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
-
-
 
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
@@ -140,26 +137,28 @@ export default {
   components: {
     FieldsSelect
   },
-  getOptions(config) {
+  getOptions(config, types) {
     const { t } = useWorkflowTranslation();
+    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types });
     const options: any[] = [
-      { value: 'data', label: t('Trigger data') },
+      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
     ];
     return options;
   },
-  getter(props) {
-    const { onChange } = props;
-    const { workflow } = useFlowContext();
-    const { options } = useOperandContext();
+  useInitializers(config): SchemaInitializerItemOptions | null {
+    if (!config.collection) {
+      return null;
+    }
 
-    return (
-      <CollectionFieldSelect
-        collection={workflow.config.collection}
-        value={options?.path}
-        onChange={(path) => {
-          onChange(`{{$context.data.${path}}}`);
-        }}
-      />
-    );
+    return {
+      type: 'item',
+      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      component: CollectionBlockInitializer,
+      collection: config.collection,
+      dataSource: '{{$context.data}}'
+    };
+  },
+  initializers: {
+    CollectionFieldInitializers
   }
 };

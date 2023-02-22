@@ -15,7 +15,7 @@ import {
   Modal,
   Select,
   Space,
-  Switch,
+  Switch
 } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
@@ -34,8 +34,9 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
+  useCollectionManager,
   useCompile,
-  useDesignable,
+  useDesignable
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -136,7 +137,9 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 SchemaSettings.Template = (props) => {
   const { componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
+  const compile = useCompile();
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -166,6 +169,7 @@ SchemaSettings.Template = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -177,6 +181,7 @@ SchemaSettings.Template = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${t(componentName)}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -252,6 +257,8 @@ const findBlockTemplateSchema = (fieldSchema) => {
 SchemaSettings.FormItemTemplate = (props) => {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const compile = useCompile();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -299,8 +306,13 @@ SchemaSettings.FormItemTemplate = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(t('Save as template'), () => {
+          const componentTitle = {
+            FormItem: t('Form'),
+            ReadPrettyFormItem: t('Details'),
+          };
           return (
             <FormLayout layout={'vertical'}>
               <SchemaComponent
@@ -311,6 +323,7 @@ SchemaSettings.FormItemTemplate = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },

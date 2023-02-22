@@ -1,20 +1,12 @@
-import React from 'react';
 import { ArrayItems } from '@formily/antd';
 import { css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
+import { useWorkflowVariableOptions } from '../variable';
 import { VariableJSONInput } from '../components/VariableJSONInput';
+import { VariableInput } from '../components/VariableInput';
 
 
-
-function VariableTypesContextProvider(props) {
-  return (
-    <VariableTypesContext.Provider value={VariableTypes}>
-      {props.children}
-    </VariableTypesContext.Provider>
-  )
-}
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
@@ -29,7 +21,6 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        defaultValue: 'POST',
         showSearch: false,
         allowClear: false,
       },
@@ -40,6 +31,7 @@ export default {
         { label: 'PATCH', value: 'PATCH' },
         { label: 'DELETE', value: 'DELETE' },
       ],
+      default: 'POST'
     },
     'config.url': {
       type: 'string',
@@ -71,7 +63,6 @@ export default {
       description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -88,7 +79,10 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Operand',
+                'x-component': 'VariableInput',
+                'x-component-props': {
+                  scope: useWorkflowVariableOptions
+                }
               },
               remove: {
                 type: 'void',
@@ -115,7 +109,6 @@ export default {
       title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -132,7 +125,10 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Operand',
+                'x-component': 'VariableInput',
+                'x-component-props': {
+                  scope: useWorkflowVariableOptions
+                }
               },
               remove: {
                 type: 'void',
@@ -159,6 +155,7 @@ export default {
       'x-decorator-props': {},
       'x-component': 'VariableJSONInput',
       'x-component-props': {
+        scope: useWorkflowVariableOptions,
         autoSize: {
           minRows: 10,
         },
@@ -196,8 +193,7 @@ export default {
   scope: {},
   components: {
     ArrayItems,
-    Operand,
-    VariableTypesContextProvider,
+    VariableInput,
     VariableJSONInput
   },
 };
