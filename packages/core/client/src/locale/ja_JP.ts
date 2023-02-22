@@ -392,7 +392,7 @@ export default {
   "Role UID": "役割ID",
   "Precision": "精度",
   "Formula mode": "数式モード",
-  "Expression": "表示",
+  "Expression": "表达式",
   "Input +, -, *, /, ( ) to calculate, input @ to open field variables.": "+、-、*、/、( ) で算術演算、@でフィールド変数を開くことができます。",
   "Formula error.": "式の検証エラーです。",
   "Accept": "ファイル形式",

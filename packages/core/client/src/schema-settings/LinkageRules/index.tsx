@@ -4,11 +4,12 @@ import { observer, useFieldSchema } from '@formily/react';
 import { SchemaComponent } from '../../schema-component';
 import { FilterContext } from '../../schema-component/antd/filter/context';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const FormLinkageRules = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { useProps, dynamicComponent } = props;
-  const { options, defaultValues } = useProps();
+  const { options, defaultValues, collectionName } = useProps();
   return (
     <FilterContext.Provider value={{ field: options, fieldSchema, dynamicComponent, options: options || [] }}>
       <SchemaComponent
@@ -62,7 +63,8 @@ export const FormLinkageRules = observer((props: any) => {
                               `,
                             };
                           },
-                          // dynamicComponent: FilterDynamicComponent,
+                          dynamicComponent: (props) =>
+                            FilterDynamicComponent({ ...props, collectionName }),
                         },
                       },
                       action: {

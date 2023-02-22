@@ -1,7 +1,7 @@
-import { conditionAnalyse } from '../../common/utils/uitls';
 import { last } from 'lodash';
-import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import * as formulajs from '@formulajs/formulajs';
+import { conditionAnalyse } from '../../common/utils/uitls';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 
 function now() {
   return new Date();

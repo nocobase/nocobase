@@ -54,6 +54,7 @@ export default {
   "Properties":"属性",
   "Add linkage rule":"添加联动规则",
   "Add property":"添加属性",
+  "Expression":"表达式",
   "Sort":"排序",
   "Categories":"数据表类别",
   "Category name":"分类名称",

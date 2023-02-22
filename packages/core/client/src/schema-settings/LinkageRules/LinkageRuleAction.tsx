@@ -12,7 +12,7 @@ import { ActionType } from './type';
 import { ValueDynamicComponent } from './ValueDynamicComponent';
 
 export const FormFieldLinkageRuleAction = observer((props: any) => {
-  const { value, options,collectionName } = props;
+  const { value, options, collectionName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
   const remove = useContext(RemoveActionContext);
@@ -59,7 +59,12 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
           placeholder={t('action')}
         />
         {[ActionType.Value].includes(operator) && (
-          <ValueDynamicComponent fieldValue={fieldValue} schema={schema} setValue={setValue} fields={fields} collectionName={collectionName} />
+          <ValueDynamicComponent
+            fieldValue={fieldValue}
+            schema={schema}
+            setValue={setValue}
+            collectionName={collectionName}
+          />
         )}
         {!props.disabled && (
           <a>

@@ -26,6 +26,20 @@ function getDeepestProperty(obj) {
   traverse(obj, 1);
   return deepest;
 }
+const getValue = (str, values) => {
+  const regex = /{{(.*?)}}/;
+  const matches = str?.match?.(regex);
+  if (matches) {
+    return getVariableValue(str, values);
+  } else {
+    return str;
+  }
+};
+const getVariableValue = (str, values) => {
+  const regex = /{{[^.]+\.([^}]+)}}/;
+  const match = regex.exec(str);
+  return values[match?.[1]];
+};
 
 export const conditionAnalyse = (rules, values) => {
   const type = Object.keys(rules)[0] || '$and';
@@ -33,7 +47,7 @@ export const conditionAnalyse = (rules, values) => {
   const results = conditions.map((c) => {
     const jsonlogic = getDeepestProperty(c);
     const operator = jsonlogic.operator;
-    const value = jsonlogic.value;
+    const value = getValue(jsonlogic.value, values);
     const targetField = Object.keys(flat(c))[0].replace(`.${operator}`, '');
     const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
     return result;
