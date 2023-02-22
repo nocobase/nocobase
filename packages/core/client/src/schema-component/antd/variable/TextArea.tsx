@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from "@emotion/css";
-import { lang } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 
 
-const VARIABLE_RE = /\{\{\s*([^{}]+)\s*\}\}/g;
+const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
 function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
   // IE9 and non-IE
@@ -103,8 +103,9 @@ function createVariableTagHTML(variable, keyLabelMap) {
   return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
 }
 
-export function VariableTextArea(props) {
+export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true, button } = props;
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLDivElement>(null);
   const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
@@ -213,7 +214,7 @@ export function VariableTextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={lang('Use variable')}>
+      <Tooltip title={t('Use variable')}>
         <Cascader
           value={[]}
           options={options}

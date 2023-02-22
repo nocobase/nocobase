@@ -1,20 +1,18 @@
 import React from "react";
 import { useForm } from '@formily/react';
-import { Cascader, Input, Button, Tag, InputNumber, Select, DatePicker } from "antd";
+import { Cascader, Input as AntInput, Button, Tag, InputNumber, Select, DatePicker } from "antd";
 import { CloseCircleFilled } from "@ant-design/icons";
 import { cx, css } from "@emotion/css";
 import { useTranslation } from "react-i18next";
 import moment from "moment";
 
-import { useCompile } from "@nocobase/client";
-
-import { lang, NAMESPACE } from "../locale";
+import { useCompile } from '../../hooks/useCompile';
 
 
 
-const JT_VALUE_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/;
+const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
-export function parseValue(value: any): string | string[] {
+function parseValue(value: any): string | string[] {
   if (value == null) {
     return 'null';
   }
@@ -36,11 +34,11 @@ export function parseValue(value: any): string | string[] {
 
 const ConstantTypes = {
   string: {
-    label: `{{t("String", { ns: "${NAMESPACE}" })}}`,
+    label: `{{t("String")}}`,
     value: 'string',
     component({ onChange, value }) {
       return (
-        <Input
+        <AntInput
           value={value}
           onChange={ev => onChange(ev.target.value)}
         />
@@ -62,7 +60,7 @@ const ConstantTypes = {
     default: 0
   },
   boolean: {
-    label: `{{t("Boolean", { ns: "${NAMESPACE}" })}}`,
+    label: `{{t("Boolean")}}`,
     value: 'boolean',
     component({ onChange, value }) {
       const { t } = useTranslation();
@@ -72,8 +70,8 @@ const ConstantTypes = {
           onChange={onChange}
           placeholder={t('Select')}
           options={[
-            { value: true, label: lang('True') },
-            { value: false, label: lang('False') },
+            { value: true, label: t('True') },
+            { value: false, label: t('False') },
           ]}
         />
       );
@@ -81,7 +79,7 @@ const ConstantTypes = {
     default: false
   },
   date: {
-    label: '日期',
+    label: '{{t("Date")}}',
     value: 'date',
     component({ onChange, value }) {
       return (
@@ -99,11 +97,12 @@ const ConstantTypes = {
     })(),
   },
   null: {
-    label: `{{t("Null", { ns: "${NAMESPACE}" })}}`,
+    label: `{{t("Null")}}`,
     value: 'null',
     component() {
+      const { t } = useTranslation();
       return (
-        <Input readOnly placeholder={lang('Null')} />
+        <AntInput readOnly placeholder={t('Null')} className="null-value" />
       );
     },
     default: null,
@@ -116,17 +115,18 @@ type VariableOptions = {
   children?: VariableOptions[];
 }
 
-export function VariableInput(props) {
+export function Input(props) {
   const { value = '', scope, onChange, children, button } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
-  const type = isConstant ? parsed : 'string';
+  const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
   const ConstantComponent = ConstantTypes[type]?.component;
   const constantOptions = Object.values(ConstantTypes);
   const compile = useCompile();
+  const { t } = useTranslation();
   const options: VariableOptions[] = compile([
-    { value: '', label: lang('Constant'), children: children ? null : constantOptions },
+    { value: '', label: t('Constant'), children: children ? null : constantOptions },
     ...(typeof scope === 'function' ? scope() : (scope ?? []))
   ]);
   const form = useForm();
@@ -155,13 +155,17 @@ export function VariableInput(props) {
   const disabled = props.disabled || form.disabled;
 
   return (
-    <Input.Group compact className={css`
+    <AntInput.Group compact className={css`
       width: auto;
       .ant-input-disabled{
         .ant-tag{
           color: #bfbfbf;
           border-color: #d9d9d9;
         }
+      }
+      .ant-input.null-value{
+        width: 4em;
+        min-width: 4em;
       }
     `}
     >
@@ -202,6 +206,7 @@ export function VariableInput(props) {
               }}
               className={cx('ant-input', { 'ant-input-disabled': disabled })}
               contentEditable={!disabled}
+              suppressContentEditableWarning
             >
               <Tag contentEditable={false} color="blue">{variableText}</Tag>
             </div>
@@ -247,6 +252,6 @@ export function VariableInput(props) {
         )
         : null
       }
-    </Input.Group>
+    </AntInput.Group>
   );
 }

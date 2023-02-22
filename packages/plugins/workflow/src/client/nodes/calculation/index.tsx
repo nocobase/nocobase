@@ -6,7 +6,6 @@ import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/clien
 
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
-import { VariableTextArea } from '../../components/VariableTextArea';
 import { TypeSets, useWorkflowVariableOptions } from '../../variable';
 import { calculationEngines, renderReference } from './engines';
 import { RadioWithTooltip } from '../../components/RadioWithTooltip';
@@ -35,14 +34,14 @@ export default {
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
       name: 'config.expression',
       'x-decorator': 'FormItem',
-      'x-component': 'VariableTextArea',
+      'x-component': 'Variable.TextArea',
       'x-component-props': {
         scope: '{{useWorkflowVariableOptions}}'
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = calculationEngines.get(values.config.engine);
-        const exp = value.trim().replace(/\{\{([^{}]+)\}\}/g, '1');
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);
           return '';
@@ -86,8 +85,7 @@ export default {
         </pre>
       );
     },
-    RadioWithTooltip,
-    VariableTextArea
+    RadioWithTooltip
   },
   getOptions(config, types) {
     if (types && !types.some(type => type in TypeSets || Object.values(TypeSets).some(set => set.has(type)))) {
