@@ -21,6 +21,10 @@ export const getDatePickerLabels = (props): string => {
 };
 
 export const getLabelFormatValue = (labelUiSchema: ISchema, value: any): string => {
+  if (Array.isArray(labelUiSchema?.enum) && value) {
+    const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);
+    return opt?.label;
+  }
   switch (labelUiSchema?.['x-component']) {
     case 'DatePicker':
       return getDatePickerLabels({ ...labelUiSchema?.['x-component-props'], value });
