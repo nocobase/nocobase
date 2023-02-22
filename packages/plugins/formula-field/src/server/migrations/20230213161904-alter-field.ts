@@ -2,7 +2,7 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<=0.9.0-alpha.2');
+    const result = await this.app.version.satisfies('<=0.9.0-alpha.3');
     if (!result) {
       return;
     }
@@ -19,7 +19,7 @@ export default class extends Migration {
             options: {
               ...options,
               engine: field.get('type') === 'mathFormula' ? 'math.js' : 'formula.js',
-              dataType: options.dataType === 'number' ? 'double' : 'string'
+              dataType: options.dataType === 'number' ? 'double' : 'string',
             },
           });
           await field.save({ transaction });
@@ -29,32 +29,11 @@ export default class extends Migration {
         }
       }
 
-      const AppPlugin = db.getRepository('applicationPlugins');
-      const formulaPlugin = await AppPlugin.findOne({
+      const repository = db.getRepository('applicationPlugins');
+      await repository.destroy({
         filter: {
-          name: 'formula-field',
+          'name.$in': ['math-formula-field', 'excel-formula-field'],
         },
-        transaction
-      });
-
-      if (!formulaPlugin) {
-        await AppPlugin.create({
-          values: {
-            name: 'formula-field',
-            version: '0.9.0-alpha.2',
-            enabled: true,
-            installed: true,
-            builtin: true
-          },
-          transaction
-        });
-      }
-
-      await AppPlugin.destroy({
-        filter: {
-          name: ['math-formula-field', 'excel-formula-field']
-        },
-        transaction
       });
     });
   }
