@@ -129,6 +129,42 @@ describe('workflow > Processor', () => {
       expect(status).toEqual(JOB_STATUS.ERROR);
       expect(result.message).toBe('definite error');
     });
+
+    it('workflow with customized success node', async () => {
+      await workflow.createNode({
+        type: 'customizedSuccess'
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toEqual(1);
+      const { status, result } = jobs[0].get();
+      expect(status).toEqual(100);
+    });
+
+    it('workflow with customized error node', async () => {
+      await workflow.createNode({
+        type: 'customizedError'
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.FAILED);
+
+      const jobs = await execution.getJobs();
+      expect(jobs.length).toEqual(1);
+      const { status, result } = jobs[0].get();
+      expect(status).toEqual(-100);
+    });
   });
 
   describe('manual nodes', () => {
