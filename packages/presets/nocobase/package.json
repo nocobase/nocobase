@@ -14,6 +14,8 @@
     "@nocobase/plugin-error-handler": "0.9.0-alpha.2",
     "@nocobase/plugin-export": "0.9.0-alpha.2",
     "@nocobase/plugin-file-manager": "0.9.0-alpha.2",
+    "@nocobase/plugin-excel-formula-field": "0.9.0-alpha.2",
+    "@nocobase/plugin-math-formula-field": "0.9.0-alpha.2",
     "@nocobase/plugin-formula-field": "0.9.0-alpha.2",
     "@nocobase/plugin-graph-collection-manager": "0.9.0-alpha.2",
     "@nocobase/plugin-multi-app-manager": "0.9.0-alpha.2",
