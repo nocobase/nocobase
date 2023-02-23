@@ -27,11 +27,7 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=$PRESET_NOCOBASE_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install --production
-
-RUN echo $PROD_YARN_INSTALL > /tmp/my_command && \
-    chmod +x /tmp/my_command && \
-    /tmp/my_command
+  && yarn install --production && echo $PROD_YARN_INSTALL > yarn_install && chmod +x ./yarn_install && ./yarn_install
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
