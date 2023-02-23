@@ -1,8 +1,6 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMIT_HASH
-ARG PRESET_NOCOBASE_PLUGINS
-ARG PROD_YARN_INSTALL='echo "empty"'
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
