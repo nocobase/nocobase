@@ -41,7 +41,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
   const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
   const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
-  const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
+  const valueResult = field?.linkageProperty?.value || [field.value || field?.initProperty?.value];
 
   switch (operator) {
     case ActionType.Required:
@@ -101,7 +101,7 @@ export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondit
         ...field.linkageProperty,
         value: valueResult,
       };
-      field.value = last(valueResult) === undefined ? field.value : last(valueResult);
+      setTimeout(() => (field.value = last(valueResult) === undefined ? field.value : last(valueResult)));
       break;
     default:
       return null;
