@@ -40,15 +40,15 @@ export class PresetNocoBase extends Plugin {
   }
 
   getBuiltInPlugins() {
-    const { PRESET_NOCOBASE_PLUGINS, PRESET_NOCOBASE_BUILT_IN_PLUGINS } = process.env;
+    const { PRESET_NOCOBASE_PLUGINS, APPEND_PRESET_BUILT_IN_PLUGINS } = process.env;
     return _.uniq(
-      this.splitNames(PRESET_NOCOBASE_BUILT_IN_PLUGINS || PRESET_NOCOBASE_PLUGINS).concat(this.builtInPlugins),
+      this.splitNames(APPEND_PRESET_BUILT_IN_PLUGINS || PRESET_NOCOBASE_PLUGINS).concat(this.builtInPlugins),
     );
   }
 
   getLocalPlugins() {
-    const { PRESET_NOCOBASE_LOCAL_PLUGINS } = process.env;
-    return _.uniq(this.splitNames(PRESET_NOCOBASE_LOCAL_PLUGINS).concat(this.localPlugins));
+    const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
+    return _.uniq(this.splitNames(APPEND_PRESET_LOCAL_PLUGINS).concat(this.localPlugins));
   }
 
   async addBuiltInPlugins(options?: any) {
