@@ -4,6 +4,8 @@ import { columnTemplate } from './ColumnTemplate';
 import { lineTemplate } from './LineTemplate';
 import { areaTemplate } from './AreaTemplate';
 import { tableTemplate } from './TableTemplate';
+import { scatterTemplate } from './ScatterTemplate';
+import { radarTemplate } from './RadarTemplate';
 
 export const templates = new Map();
 
@@ -12,4 +14,6 @@ templates.set('Line', lineTemplate);
 templates.set('Area', areaTemplate);
 templates.set('Bar', barTemplate);
 templates.set('Column', columnTemplate);
+templates.set('Scatter', scatterTemplate);
+templates.set('Radar', radarTemplate);
 // templates.set('DataSetPreviewTable', tableTemplate);
