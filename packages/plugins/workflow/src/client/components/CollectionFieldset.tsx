@@ -5,8 +5,7 @@ import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
-import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { VariableInput } from "./VariableInput";
+import { CollectionField, CollectionProvider, SchemaComponent, Variable, useCollectionManager, useCompile } from "@nocobase/client";
 import { lang } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
 
@@ -40,7 +39,8 @@ export default observer(({ value, disabled, onChange }: any) => {
     .filter(field => (
       !field.hidden
       && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-      // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
+      // TODO: should use some field option but not type to control this
+      && (!['formula'].includes(field.type))
     ));
 
   const unassignedFields = fields.filter(field => !(field.name in value));
@@ -77,7 +77,7 @@ export default observer(({ value, disabled, onChange }: any) => {
                       display: flex;
                     }
                   `}>
-                    <VariableInput
+                    <Variable.Input
                       scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
                       value={value[field.name]}
                       onChange={(next) => {
@@ -94,7 +94,7 @@ export default observer(({ value, disabled, onChange }: any) => {
                           }
                         }}
                       />
-                    </VariableInput>
+                    </Variable.Input>
                     {!mergedDisabled
                       ? (
                         <Button

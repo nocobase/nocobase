@@ -32,8 +32,9 @@ export default class extends Migration {
       const repository = db.getRepository('applicationPlugins');
       await repository.destroy({
         filter: {
-          'name.$in': ['math-formula-field', 'excel-formula-field'],
+          name: ['math-formula-field', 'excel-formula-field'],
         },
+        transaction,
       });
     });
   }

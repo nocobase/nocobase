@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
-import { cx, css } from '@emotion/css';
-import { lang } from '../locale';
+import { cx, css } from "@emotion/css";
+import { useTranslation } from 'react-i18next';
 
-const VARIABLE_RE = /\{\{\s*([^{}]+)\s*\}\}/g;
+
+
+const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
 function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
   // IE9 and non-IE
@@ -83,13 +85,13 @@ function renderHTML(exp: string, keyLabelMap) {
   });
 }
 
-function createOptionsKeyLabelMap(options: any[]) {
+function createOptionsValueLabelMap(options: any[]) {
   const map = new Map<string, string[]>();
   for (const option of options) {
-    map.set(option.key, [option.label]);
+    map.set(option.value, [option.label]);
     if (option.children) {
-      for (const [key, labels] of createOptionsKeyLabelMap(option.children)) {
-        map.set(`${option.key}.${key}`, [option.label, ...labels]);
+      for (const [value, labels] of createOptionsValueLabelMap(option.children)) {
+        map.set(`${option.value}.${value}`, [option.label, ...labels]);
       }
     }
   }
@@ -103,12 +105,13 @@ function createVariableTagHTML(variable, keyLabelMap) {
   )}</span>`;
 }
 
-export function VariableTextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button, other } = props;
+export function TextArea(props) {
+  const { value = '', scope, onChange, multiline = true, button } = props;
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLDivElement>(null);
   const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
-  const keyLabelMap = useMemo(() => createOptionsKeyLabelMap(options), [scope]);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // [startElementIndex, startOffset, endElementIndex, endOffset]
@@ -221,8 +224,12 @@ export function VariableTextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={lang('Use variable')}>
-        <Cascader value={[]} options={options} onChange={onInsert}>
+      <Tooltip title={t('Use variable')}>
+        <Cascader
+          value={[]}
+          options={options}
+          onChange={onInsert}
+        >
           {button ?? (
             <Button
               className={css`
