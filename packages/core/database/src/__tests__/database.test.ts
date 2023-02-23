@@ -312,5 +312,9 @@ describe('database', () => {
     expect(f1.name).toBe('t');
     expect(f2.name).toBe('c');
     expect(f3.name).toBe('p');
+    expect(db.getFieldByPath('users.d')).toBeNull;
+    expect(db.getFieldByPath('users.d.e')).toBeNull;
+    expect(db.getFieldByPath('users.p.f')).toBeNull;
+    expect(db.getFieldByPath('users.p.c.j')).toBeNull;
   });
 });
