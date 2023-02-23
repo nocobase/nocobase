@@ -3,44 +3,52 @@ import _ from 'lodash';
 import path from 'path';
 
 export class PresetNocoBase extends Plugin {
+  builtInPlugins = [
+    'error-handler',
+    'collection-manager',
+    'ui-schema-storage',
+    'ui-routes-storage',
+    'file-manager',
+    'system-settings',
+    'sequence-field',
+    'verification',
+    'users',
+    'acl',
+    'china-region',
+    'workflow',
+    'client',
+    'export',
+    'import',
+    'audit-logs',
+    'duplicator',
+    'iframe-block',
+    'formula-field',
+  ];
+
+  localPlugins = [
+    'sample-hello',
+    'multi-app-manager',
+    'oidc',
+    'saml',
+    'map',
+    'snapshot-field',
+    'graph-collection-manager',
+  ];
+
+  splitNames(name: string) {
+    return (name || '').split(',').filter(Boolean);
+  }
+
   getBuiltInPlugins() {
-    const plugins = (process.env.PRESET_NOCOBASE_PLUGINS || '').split(',').filter(Boolean);
+    const { PRESET_NOCOBASE_PLUGINS, PRESET_NOCOBASE_BUILT_IN_PLUGINS } = process.env;
     return _.uniq(
-      [
-        'error-handler',
-        'collection-manager',
-        'ui-schema-storage',
-        'ui-routes-storage',
-        'file-manager',
-        'system-settings',
-        'sequence-field',
-        'verification',
-        'users',
-        'acl',
-        'china-region',
-        'workflow',
-        'client',
-        'export',
-        'import',
-        'audit-logs',
-        'duplicator',
-        'iframe-block',
-        'formula-field',
-      ].concat(plugins),
+      this.splitNames(PRESET_NOCOBASE_BUILT_IN_PLUGINS || PRESET_NOCOBASE_PLUGINS).concat(this.builtInPlugins),
     );
   }
 
   getLocalPlugins() {
-    const localPlugins = [
-      'sample-hello',
-      'multi-app-manager',
-      'oidc',
-      'saml',
-      'map',
-      'snapshot-field',
-      'graph-collection-manager',
-    ];
-    return localPlugins;
+    const { PRESET_NOCOBASE_LOCAL_PLUGINS } = process.env;
+    return _.uniq(this.splitNames(PRESET_NOCOBASE_LOCAL_PLUGINS).concat(this.localPlugins));
   }
 
   async addBuiltInPlugins(options?: any) {
