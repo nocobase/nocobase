@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCompile, useOnceFn } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
@@ -17,7 +17,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
+    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, ...others } = props;
     const compile = useCompile();
 
     const { data, run, loading } = useRequest(
@@ -56,14 +56,31 @@ const InternalRemoteSelect = connect(
       });
     };
 
+    const normalizeOptions = useCallback(
+      (obj) => {
+        if (objectValue || typeof obj === 'object') {
+          return { ...obj, [fieldNames.label]: compile(obj[fieldNames.label]) };
+        }
+        return { [fieldNames.value]: obj, [fieldNames.label]: obj };
+      },
+      [objectValue, fieldNames.value],
+    );
+
     const options = useMemo(() => {
+      if (!data?.data?.length) {
+        return value !== undefined && value !== null
+          ? Array.isArray(value)
+            ? value.map(normalizeOptions)
+            : [normalizeOptions(value)]
+          : [];
+      }
       return (
         data?.data?.map((item) => ({
           ...item,
           [fieldNames.label]: compile(item[fieldNames.label]),
         })) || []
       );
-    }, [data, fieldNames.label]);
+    }, [data, fieldNames.label, objectValue, value]);
 
     const onDropdownVisibleChange = useOnceFn(() => {
       run();
@@ -78,6 +95,8 @@ const InternalRemoteSelect = connect(
         onSearch={onSearch}
         loading={loading}
         onDropdownVisibleChange={onDropdownVisibleChange}
+        objectValue={objectValue}
+        value={value}
         {...others}
         options={options}
       />
