@@ -1,14 +1,12 @@
-import React from "react";
+import React from 'react';
 import { useForm } from '@formily/react';
-import { Cascader, Input as AntInput, Button, Tag, InputNumber, Select, DatePicker } from "antd";
-import { CloseCircleFilled } from "@ant-design/icons";
-import { cx, css } from "@emotion/css";
-import { useTranslation } from "react-i18next";
-import moment from "moment";
+import { Cascader, Input as AntInput, Button, Tag, InputNumber, Select, DatePicker } from 'antd';
+import { CloseCircleFilled } from '@ant-design/icons';
+import { cx, css } from '@emotion/css';
+import { useTranslation } from 'react-i18next';
+import moment from 'moment';
 
 import { useCompile } from '../../hooks/useCompile';
-
-
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -37,27 +35,17 @@ const ConstantTypes = {
     label: `{{t("String")}}`,
     value: 'string',
     component({ onChange, value }) {
-      return (
-        <AntInput
-          value={value}
-          onChange={ev => onChange(ev.target.value)}
-        />
-      );
+      return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
     },
-    default: ''
+    default: '',
   },
   number: {
     label: '{{t("Number")}}',
     value: 'number',
     component({ onChange, value }) {
-      return (
-        <InputNumber
-          value={value}
-          onChange={onChange}
-        />
-      );
+      return <InputNumber value={value} onChange={onChange} />;
     },
-    default: 0
+    default: 0,
   },
   boolean: {
     label: `{{t("Boolean")}}`,
@@ -76,7 +64,7 @@ const ConstantTypes = {
         />
       );
     },
-    default: false
+    default: false,
   },
   date: {
     label: '{{t("Date")}}',
@@ -85,7 +73,7 @@ const ConstantTypes = {
       return (
         <DatePicker
           value={moment(value)}
-          onChange={(d) => d ? onChange(d.toDate()) : null}
+          onChange={(d) => (d ? onChange(d.toDate()) : null)}
           allowClear={false}
           showTime
         />
@@ -101,9 +89,7 @@ const ConstantTypes = {
     value: 'null',
     component() {
       const { t } = useTranslation();
-      return (
-        <AntInput readOnly placeholder={t('Null')} className="null-value" />
-      );
+      return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
     default: null,
   },
@@ -113,7 +99,7 @@ type VariableOptions = {
   value: string;
   label?: string;
   children?: VariableOptions[];
-}
+};
 
 export function Input(props) {
   const { value = '', scope, onChange, children, button } = props;
@@ -127,7 +113,7 @@ export function Input(props) {
   const { t } = useTranslation();
   const options: VariableOptions[] = compile([
     { value: '', label: t('Constant'), children: children ? null : constantOptions },
-    ...(typeof scope === 'function' ? scope() : (scope ?? []))
+    ...(typeof scope === 'function' ? scope() : scope ?? []),
   ]);
 
   const form = useForm();
@@ -148,46 +134,52 @@ export function Input(props) {
     onChange(`{{${next.join('.')}}}`);
   }
 
-  const variableText = variable?.reduce((opts, key, i) => {
-    const option = (i ? (opts[i - 1] as VariableOptions).children : options)?.find(item => item.value === key);
-    return option ? opts.concat(option) : opts;
-  }, [] as VariableOptions[]).map(item => item.label).join(' / ');
+  const variableText = variable
+    ?.reduce((opts, key, i) => {
+      const option = (i ? (opts[i - 1] as VariableOptions).children : options)?.find((item) => item.value === key);
+      return option ? opts.concat(option) : opts;
+    }, [] as VariableOptions[])
+    .map((item) => item.label)
+    .join(' / ');
 
   const disabled = props.disabled || form.disabled;
 
   return (
-    <AntInput.Group compact className={css`
-      width: auto;
-      .ant-input-disabled{
-        .ant-tag{
-          color: #bfbfbf;
-          border-color: #d9d9d9;
+    <AntInput.Group
+      compact
+      className={css`
+        width: auto;
+        display: flex !important;
+        .ant-input-disabled {
+          .ant-tag {
+            color: #bfbfbf;
+            border-color: #d9d9d9;
+          }
         }
-      }
-      .ant-input.null-value{
-        width: 4em;
-        min-width: 4em;
-      }
-    `}
+        .ant-input.null-value {
+          width: 4em;
+          min-width: 4em;
+        }
+      `}
     >
-      {variable
-        ? (
-          <div className={css`
+      {variable ? (
+        <div
+          className={css`
             position: relative;
             line-height: 0;
 
-            &:hover{
-              .ant-select-clear{
-                opacity: .8;
+            &:hover {
+              .ant-select-clear {
+                opacity: 0.8;
               }
             }
 
-            .ant-input{
+            .ant-input {
               overflow: auto;
               white-space: nowrap;
               ${disabled ? '' : 'padding-right: 28px;'}
 
-              .ant-tag{
+              .ant-tag {
                 display: inline;
                 line-height: 19px;
                 margin: 0;
@@ -195,64 +187,59 @@ export function Input(props) {
                 border-radius: 10px;
               }
             }
-          `}>
-            <div
-              onInput={e => e.preventDefault()}
-              onKeyDown={(e) => {
-                if (e.key !== 'Backspace') {
-                  e.preventDefault();
-                  return;
-                }
-                onChange(null);
-              }}
-              className={cx('ant-input', { 'ant-input-disabled': disabled })}
-              contentEditable={!disabled}
-              suppressContentEditableWarning
-            >
-              <Tag contentEditable={false} color="blue">{variableText}</Tag>
-            </div>
-            {!disabled
-              ? (
-                <span
-                  className={cx('ant-select-clear', css`
-                    user-select: 'none'
-                  `)}
-                  unselectable="on"
-                  aria-hidden
-                  onClick={() => onChange(null)}
-                >
-                  <CloseCircleFilled />
-                </span>
-              )
-              : null}
-          </div>
-        )
-        : (
-          children ?? <ConstantComponent value={value} onChange={onChange} />
-        )
-      }
-      {options.length > 1
-        ? (
-          <Cascader
-            value={variable ?? ['', ...(children ? [] : [type])]}
-            options={options}
-            onChange={onSwitch}
+          `}
+        >
+          <div
+            onInput={(e) => e.preventDefault()}
+            onKeyDown={(e) => {
+              if (e.key !== 'Backspace') {
+                e.preventDefault();
+                return;
+              }
+              onChange(null);
+            }}
+            className={cx('ant-input', { 'ant-input-disabled': disabled })}
+            contentEditable={!disabled}
+            suppressContentEditableWarning
           >
-            {button ?? (
-              <Button
-                type={variable ? 'primary' : 'default'}
-                className={css`
-                  font-style: italic;
-                  font-family: "New York", "Times New Roman", Times, serif;
-                `}
-              >
-                x
-              </Button>
-            )}
-          </Cascader>
-        )
-        : null
-      }
+            <Tag contentEditable={false} color="blue">
+              {variableText}
+            </Tag>
+          </div>
+          {!disabled ? (
+            <span
+              className={cx(
+                'ant-select-clear',
+                css`
+                  user-select: 'none';
+                `,
+              )}
+              unselectable="on"
+              aria-hidden
+              onClick={() => onChange(null)}
+            >
+              <CloseCircleFilled />
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        children ?? <ConstantComponent value={value} onChange={onChange} />
+      )}
+      {options.length > 1 ? (
+        <Cascader value={variable ?? ['', ...(children ? [] : [type])]} options={options} onChange={onSwitch}>
+          {button ?? (
+            <Button
+              type={variable ? 'primary' : 'default'}
+              className={css`
+                font-style: italic;
+                font-family: 'New York', 'Times New Roman', Times, serif;
+              `}
+            >
+              x
+            </Button>
+          )}
+        </Cascader>
+      ) : null}
     </AntInput.Group>
   );
 }

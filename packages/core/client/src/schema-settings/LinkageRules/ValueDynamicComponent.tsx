@@ -3,7 +3,7 @@ import { Input, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { DynamicComponent } from './DynamicComponent';
 const { Option } = Select;
-import { VariableTextArea } from './component/VariableTextArea';
+import { Variable } from '.././../schema-component';
 import { useVariableOptions } from './Variables';
 
 export const ValueDynamicComponent = (props) => {
@@ -30,7 +30,7 @@ export const ValueDynamicComponent = (props) => {
             },
           })
         ) : (
-          <VariableTextArea
+          <Variable.TextArea
             value={fieldValue?.value}
             onChange={(value) => {
               const result = value.replaceAll(`${collectionName}.`, '').replaceAll('$system.', '').trim();

@@ -1,13 +1,13 @@
 import React from 'react';
-import { VariableInput } from './component/VariableInput';
+import { Variable } from '../../schema-component';
 import { useVariableOptions } from './Variables';
 
 export function FilterDynamicComponent(props) {
   const { value, onChange, renderSchemaComponent, collectionName } = props;
   const scope = useVariableOptions(collectionName);
   return (
-    <VariableInput value={value} onChange={onChange} scope={scope}>
+    <Variable.Input value={value} onChange={onChange} scope={scope}>
       {renderSchemaComponent()}
-    </VariableInput>
+    </Variable.Input>
   );
 }
