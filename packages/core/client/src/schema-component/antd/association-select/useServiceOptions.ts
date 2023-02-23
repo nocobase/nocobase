@@ -34,11 +34,12 @@ export default function useServiceOptions(props) {
                 },
               }
             : null,
+          params?.filter,
         ].filter(Boolean),
       };
     }
 
-    return params?.filter ? { $and: [extraFilter, params?.filter] } : extraFilter;
+    return extraFilter;
   }, [params?.filter, getCollectionFields, collectionField]);
 
   return useMemo(() => {
