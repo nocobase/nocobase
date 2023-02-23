@@ -8,6 +8,7 @@ export default function addDumpCommand(app: Application) {
     .action(async (options) => {
       if (!options.app) {
         await dumpAction(app);
+        return;
       }
 
       const subApp = await app.appManager.getApplication(options.app);
