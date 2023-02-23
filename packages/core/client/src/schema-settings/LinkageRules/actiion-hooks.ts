@@ -30,7 +30,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
       target:field.target,
       operators:
         operators?.filter?.((operator) => {
-          if (nested || children || ['mathFormula', 'excelFormula', 'richText','sequence'].includes(fieldInterface.name)) {
+          if (nested || children || ['formula', 'richText','sequence'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Value;
           }
           return true;

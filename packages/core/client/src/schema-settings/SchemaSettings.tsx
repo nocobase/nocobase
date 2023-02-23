@@ -228,7 +228,7 @@ const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'FormV2') {
       const f = s.reduceProperties((buf, s) => {
-        if (s['x-component'] === 'Grid') {
+        if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
         }
         return buf;
@@ -718,6 +718,7 @@ SchemaSettings.LinkageRules = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const { getTemplateById } = useSchemaTemplateManager();
   const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   return (
@@ -753,8 +754,10 @@ SchemaSettings.LinkageRules = (props) => {
         for (const rule of v.fieldReaction.rules) {
           rules.push(_.pickBy(rule, _.identity));
         }
+        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
         const schema = {
-          ['x-uid']: gridSchema['x-uid'],
+          ['x-uid']: uid,
         };
 
         gridSchema['x-linkageRules'] = rules;

@@ -21,7 +21,7 @@ export function evaluate(exp: string, scope = {}) {
 }
 
 export const linkageMergeAction = ({ operator, value }, field, linkageRuleCondition, values) => {
-  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required];
+  const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
   const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
   const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
   const valueResult = field?.linkageProperty?.value || [field?.initProperty?.value];
