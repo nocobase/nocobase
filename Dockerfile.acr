@@ -28,7 +28,10 @@ RUN cd /app \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=$PRESET_NOCOBASE_PLUGINS \
   && cd /app/my-nocobase-app \
   && yarn install --production
-RUN $PROD_YARN_INSTALL
+
+RUN echo "$PROD_YARN_INSTALL" > /tmp/my_command && \
+    chmod +x /tmp/my_command && \
+    /tmp/my_command
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
