@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
@@ -397,6 +397,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   getTablePrefix() {
     return this.options.tablePrefix || '';
+  }
+
+  getFieldByPath(path: string) {
+    if (!path) {
+      return;
+    }
+
+    const [collectionName, associationName, ...args] = path.split('.');
+    let collection = this.getCollection(collectionName);
+
+    if (!collection) {
+      return;
+    }
+
+    const field = collection.getField(associationName);
+
+    if (!field) {
+      return;
+    }
+
+    if (args.length > 0) {
+      return this.getFieldByPath(`${field?.target}.${args.join('.')}`);
+    }
+
+    return field;
   }
 
   /**
