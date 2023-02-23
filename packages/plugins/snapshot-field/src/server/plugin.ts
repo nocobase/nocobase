@@ -53,7 +53,7 @@ export class SnapshotFieldPlugin extends Plugin {
         });
       }
       await fieldsHistoryRepository.create({
-        values: fieldDoc,
+        values: JSON.parse(JSON.stringify(fieldDoc)),
         transaction,
       });
     };

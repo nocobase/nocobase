@@ -77,8 +77,9 @@ const InternalSelect = connect(
       }
       return v;
     };
+    console.log('props', props);
     if (objectValue) {
-      return <ObjectSelect {...others} mode={mode} />;
+      return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
     }
     return (
       <AntdSelect

@@ -158,6 +158,7 @@ export default {
   "Long text": "多行文本",
   "Phone": "手机号码",
   "Email": "电子邮箱",
+  'Null': '空值',
   "Boolean": "逻辑值",
   "Number": "数字",
   "Integer": "整数",
@@ -640,4 +641,10 @@ export default {
   'Display page title': '显示页面标题',
   'Edit page title': '编辑页面标题',
   'Enable page tabs': '启用页面选项卡',
+
+  'Constant': '常量',
+  'Use variable': '使用变量',
+  'True': '真',
+  'False': '假',
+  'Prettify': '格式化'
 }

@@ -399,6 +399,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.options.tablePrefix || '';
   }
 
+  getFieldByPath(path: string) {
+    if (!path) {
+      return;
+    }
+
+    const [collectionName, associationName, ...args] = path.split('.');
+    let collection = this.getCollection(collectionName);
+
+    if (!collection) {
+      return;
+    }
+
+    const field = collection.getField(associationName);
+
+    if (!field) {
+      return;
+    }
+
+    if (args.length > 0) {
+      return this.getFieldByPath(`${field?.target}.${args.join('.')}`);
+    }
+
+    return field;
+  }
+
   /**
    * get exists collection by its name
    * @param name
@@ -626,6 +651,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     };
     return await authenticate();
+  }
+
+  async prepare() {
+    if (this.inDialect('postgres') && this.options.schema && this.options.schema != 'public') {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
   }
 
   async reconnect() {
