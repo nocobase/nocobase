@@ -20,7 +20,6 @@ export default defineCollection({
         type: 'string',
         title: '{{t("Application name")}}',
         'x-component': 'Input',
-        'x-read-pretty': true,
       },
     },
     {
