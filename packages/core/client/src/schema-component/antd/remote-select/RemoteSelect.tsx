@@ -3,7 +3,7 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
 import React, { useMemo } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useCompile } from '../../hooks';
+import { useCompile, useOnceFn } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 
@@ -20,7 +20,7 @@ const InternalRemoteSelect = connect(
     const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
     const compile = useCompile();
 
-    const { data, run } = useRequest(
+    const { data, run, loading } = useRequest(
       {
         action: 'list',
         ...service,
@@ -35,6 +35,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
+        manual: true,
         debounceWait: wait,
         refreshDeps: [service, fieldNames.label, fieldNames.value],
       },
@@ -64,6 +65,10 @@ const InternalRemoteSelect = connect(
       );
     }, [data, fieldNames.label]);
 
+    const onDropdownVisibleChange = useOnceFn(() => {
+      run();
+    });
+
     return (
       <Select
         autoClearSearchValue
@@ -71,6 +76,8 @@ const InternalRemoteSelect = connect(
         filterSort={null}
         fieldNames={fieldNames}
         onSearch={onSearch}
+        loading={loading}
+        onDropdownVisibleChange={onDropdownVisibleChange}
         {...others}
         options={options}
       />
