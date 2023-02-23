@@ -23,9 +23,14 @@ export default function useServiceOptions(props) {
       extraFilter = {
         $or: [
           {
-            [collectionField.foreignKey]: {
-              $is: null,
-            },
+            $and: [
+              {
+                [collectionField.foreignKey]: {
+                  $is: null,
+                },
+              },
+              params?.filter,
+            ].filter(Boolean),
           },
           eqValue !== undefined && eqValue !== null
             ? {
@@ -34,7 +39,6 @@ export default function useServiceOptions(props) {
                 },
               }
             : null,
-          params?.filter,
         ].filter(Boolean),
       };
     }
