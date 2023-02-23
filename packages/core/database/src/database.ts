@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
@@ -651,6 +651,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     };
     return await authenticate();
+  }
+
+  async prepare() {
+    if (this.inDialect('postgres') && this.options.schema && this.options.schema != 'public') {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
   }
 
   async reconnect() {

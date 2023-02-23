@@ -377,7 +377,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log(chalk.red(error.message));
       process.exit(1);
     }
+
     await this.dbVersionCheck({ exit: true });
+
+    await this.db.prepare();
 
     if (argv?.[2] !== 'upgrade') {
       await this.load({
