@@ -1,23 +1,34 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { getChartData } from './actions';
+import { resolve } from 'path';
+import { getData, listSchema } from './actions/chartsQueries';
+import { query } from './query';
 
 export class ChartsPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
 
-  async load() {
-    this.app.resource({
-      name: 'chartData',
-      actions: {
-        data: getChartData,
-      }
+  syncFields = async (instance, { transaction }) => {
+    const data = await query[instance.type](instance.options, { db: this.db, transaction });
+    const d = Array.isArray(data) ? data.shift() : data;
+    const fields = Object.keys(d || {}).map((f) => {
+      return {
+        name: f,
+      };
     });
+    instance.set('fields', fields);
+  };
 
-    this.app.acl.allow('products', '*');
-    this.app.acl.allow('categories', '*');
-    this.app.acl.allow('users', '*');
-    this.app.acl.allow('chartData', '*');
+  async load() {
+    this.app.resourcer.registerActionHandlers({
+      'chartsQueries:getData': getData,
+      'chartsQueries:listSchema': listSchema,
+    });
+    await this.db.import({
+      directory: resolve(__dirname, 'collections'),
+    });
+    this.app.db.on('chartsQueries.beforeCreate', this.syncFields);
+    this.app.db.on('chartsQueries.beforeUpdate', this.syncFields);
   }
 
   async install(options?: InstallOptions) {}
