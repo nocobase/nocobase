@@ -12,7 +12,7 @@ RUN cd /tmp && \
     NEWVERSION="$(cat lerna.json | jq '.version' | tr -d '"').$(date +'%Y%m%d%H%M%S')" \
         && tmp=$(mktemp) \
         && jq ".version = \"${NEWVERSION}\"" lerna.json > "$tmp" && mv "$tmp" lerna.json
-RUN  yarn install && yarn build
+RUN  yarn install && yarn nocobase install && yarn pm add mdg && yarn build
 
 RUN git checkout -b release \
     && yarn version:alpha -y  \
@@ -25,7 +25,7 @@ RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=$PRESET_NOCOBASE_PLUGINS \
+  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e PRESET_NOCOBASE_PLUGINS=mdg \
   && cd /app/my-nocobase-app \
   && yarn install --production && yarn add @nocobase/plugin-mdg -W
 
