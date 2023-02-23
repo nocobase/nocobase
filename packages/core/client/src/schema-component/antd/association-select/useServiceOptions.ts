@@ -4,7 +4,8 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
-  const { action = 'list', service, params, value } = props;
+  const { action = 'list', service, value } = props;
+  const params = service?.params || {};
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const { getCollectionFields } = useCollectionManager();
