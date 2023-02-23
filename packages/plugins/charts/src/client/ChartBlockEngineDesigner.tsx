@@ -1,5 +1,5 @@
 import { ISchema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
-import React, { useCallback, useContext, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
@@ -41,19 +41,12 @@ const validateJSON = {
 };
 
 export const ChartBlockEngineDesigner = () => {
-  const { t } = useTranslation();
-  const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
-  const field = useField();
-  const compile = useCompile();
-  const api = useAPIClient();
-  const options = useContext(SchemaOptionsContext);
-  const { chartBlockMetaData, renderComponent } = fieldSchema?.['x-component-props'];
+  const { previewMetaData } = fieldSchema?.['x-component-props'];
   return (
     <GeneralSchemaDesigner>
       <ChartBlockEngineDesignerInitializer
-        chartBlockMetaData={chartBlockMetaData}
-        renderComponent={renderComponent}
+        previewMetaData={previewMetaData}
       />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -67,7 +60,8 @@ export const ChartBlockEngineDesigner = () => {
 };
 
 export const ChartBlockEngineDesignerInitializer = (props) => {
-    const { chartBlockMetaData, renderComponent, effects } = props;
+    const { previewMetaData, effects } = props;
+    const chartBlockMetaData = previewMetaData.dataSetMetaData
     const { chartConfig, dataSetMetaData } = chartBlockMetaData;
     const { t } = useTranslation();
     const options = useContext(SchemaOptionsContext);
@@ -81,24 +75,18 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       <SchemaSettings.Item
         onClick={async () => {
           FormDialog({ title: 'Edit chart block', width: 1200 }, (form) => {
-            const chartConfig = form.values;
-            const { dataSetMetaData } = chartBlockMetaData;
             const [dataSet, setDataSet] = useState(parseDataSetString(dataSetMetaData?.data_set_value));
             const [previewMetaData, setPreviewMetaData] = useState(null);
-            // const form = useForm()
-            const previewChart = useCallback(() => {
-              form.validate().then(() => {
-                const renderComponent = templates.get(form.values.chartType)?.renderComponent;
-                const result = {
-                  renderComponent,
-                  dataSetMetaData: {
-                    dataSetMetaData,
-                    chartConfig,
-                  },
-                };
-                setPreviewMetaData(result);
-              });
-            }, [form.values]);
+            useEffect(() => {
+              const result = {
+                dataSetMetaData: {
+                  dataSetMetaData: dataSetMetaData,
+                  chartConfig: form.values,
+                }
+              };
+              setPreviewMetaData(result);
+            }, [form.values.chartType]);
+
             const dataSource = Object.keys(JSON5.parse(dataSetMetaData.data_set_value)[0]).map(key => {
               return {
                 label: key,
@@ -172,14 +160,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         <h4>
                           Chart Preview:
                         </h4>
-                        <Button
-                          onClick={() => {
-                            previewChart();
-                          }
-                          }
-                        >
-                          refresh
-                        </Button>
                       </div>
                       {/*  Chart Preview*/}
                       {
@@ -195,8 +175,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                                   'x-component': 'ChartBlockEngine',
                                   'title': `${previewMetaData?.dataSetMetaData?.title ?? ''}`,
                                   'x-component-props': {
-                                    renderComponent: previewMetaData.renderComponent,
-                                    chartBlockMetaData: previewMetaData.dataSetMetaData,
+                                    previewMetaData
                                   },
                                 },
                               },
@@ -216,16 +195,13 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             .then((values) => {
               //patch updates
               values = {
-                dataSetMetaData,
-                chartConfig: values,
+                dataSetMetaData:{
+                  dataSetMetaData,
+                  chartConfig: values,
+                }
               };
-              // const title = values?.chartOptions?.title ?? '';
-              // field.title = title;
-              field.componentProps.renderComponent = renderComponent;
-              field.componentProps.chartBlockMetaData = values;
-              // fieldSchema.title = title;
-              fieldSchema['x-component-props'].chartBlockMetaData = values;
-              fieldSchema['x-component-props'].renderComponent = renderComponent;
+              field.componentProps.previewMetaData=values
+              fieldSchema['x-component-props'].previewMetaData = values;
               //
               dn.emit('patch', {
                 schema: {

@@ -19,7 +19,6 @@ const InternalSelect = connect(
   (props: Props) => {
     const { ...others } = props;
     const { options, ...othersProps } = { ...others };
-    console.log('props', props);
     const mode = props.mode || props.multiple ? 'multiple' : undefined;
     const group1 = options.filter(option => option.group === 2);
     const group2 = options.filter(option => option.group === 1);
@@ -32,10 +31,6 @@ const InternalSelect = connect(
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
         }}
-        onMouseEnter={(e) => {
-          console.log(e);
-        }
-        }
         mode={mode}
       >
         <OptGroup label='分组1'>

@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { FormItem, Input, SchemaComponent, SchemaComponentProvider, Table } from '@nocobase/client';
 import React from 'react';
+import { uid } from '@formily/shared';
 
 interface DataSetPreviewProps {
   dataSet: null | object[];
@@ -10,6 +11,9 @@ export default ({ dataSet }: DataSetPreviewProps) => {
   const columns = {};
   if (dataSet) {
     const dataKeys = Object.keys(dataSet[0]);
+  /*  dataSet.map((dataItem)=>{
+      dataItem["data_set_preview_cus_id"]=uid()
+    })*/
     for (const dataKey of dataKeys) {
       columns[dataKey] = {
         type: 'void',
