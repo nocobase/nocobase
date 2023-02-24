@@ -97,7 +97,6 @@ const InternalSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

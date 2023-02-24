@@ -109,11 +109,11 @@ const InternalRemoteSelect = connect(
         filterSort={null}
         fieldNames={fieldNames}
         onSearch={onSearch}
-        loading={loading}
         onDropdownVisibleChange={onDropdownVisibleChange}
         objectValue={objectValue}
         value={value}
         {...others}
+        loading={loading}
         options={options}
       />
     );
@@ -121,7 +121,6 @@ const InternalRemoteSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {
