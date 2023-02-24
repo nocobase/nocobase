@@ -39,8 +39,6 @@ export const TableBlockDesigner = () => {
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
   const collection = useCollection();
 
-  console.log(collection);
-
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />

@@ -16,6 +16,7 @@ import {
   RecordProvider,
   TableBlockContext,
   useSchemaInitializer,
+  useTableBlockContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -157,6 +158,7 @@ export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
   const isTreeTableFlag = useContext(IsTreeTableContext);
+  const { expandCount, collapseCount } = useTableBlockContext();
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
   const { pagination: pagination2, treeTable: usePropsTreeTableFlag, ...others2 } = useProps?.() || {};
   const {
@@ -401,6 +403,7 @@ export const Table: any = observer((props: any) => {
 
   const [dataSource, setDataSource] = useState([]);
   const [expandedKeys, setExpandesKeys] = useState([]);
+  const [allIncludesChildren, setAllIncludesChildren] = useState([]);
 
   useEffect(() => {
     const allIncludesChildren = [];
@@ -418,8 +421,18 @@ export const Table: any = observer((props: any) => {
       });
     };
     setDataSource(treeTable ? updateDataSource(field?.value) : field?.value ?? []);
-    // setExpandesKeys(allIncludesChildren.map((i) => i.__index));
+    setAllIncludesChildren(allIncludesChildren);
   }, [field?.value]);
+
+  useEffect(() => {
+    if (expandCount === 0) return;
+    setExpandesKeys(allIncludesChildren.map((i) => i.__index));
+  }, [expandCount]);
+
+  useEffect(() => {
+    if (collapseCount === 0) return;
+    setExpandesKeys([]);
+  }, [collapseCount]);
 
   return (
     <div

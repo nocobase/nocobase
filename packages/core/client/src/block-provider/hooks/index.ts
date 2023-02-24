@@ -633,6 +633,24 @@ export const useRefreshActionProps = () => {
   };
 };
 
+export const useExpandAllActionProps = () => {
+  const ctx = useTableBlockContext();
+  return {
+    async onClick() {
+      ctx.setExpandCount();
+    },
+  };
+};
+
+export const useCollapseAllActionProps = () => {
+  const ctx = useTableBlockContext();
+  return {
+    async onClick() {
+      ctx.setCollapseCount();
+    },
+  };
+};
+
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;

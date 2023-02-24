@@ -3,6 +3,7 @@ import { ISchema, observer } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
+import { IsTreeTableContext } from '../block-provider';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import './style.less';
@@ -10,7 +11,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -36,6 +37,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     onSuccess,
     ...others
   } = props;
+  const treeTable = useContext(IsTreeTableContext);
   const compile = useCompile();
   let { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
@@ -47,59 +49,63 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     }
   };
   const renderItems = (items: any) => {
-    return items?.map((item, indexA) => {
-      if (item.type === 'divider') {
-        return <Menu.Divider key={item.key || `item-${indexA}`} />;
-      }
-      if (item.type === 'item' && item.component) {
-        const Component = findComponent(item.component);
-        item.key = `${item.key || item.title}-${indexA}`;
-        return (
-          Component && (
-            <SchemaInitializerItemContext.Provider
-              key={item.key}
-              value={{
-                index: indexA,
-                item,
-                info: item,
-                insert: insertSchema,
-              }}
-            >
-              <Component
-                {...item}
-                item={{
-                  ...item,
-                  title: compile(item.title),
+    return items
+      ?.filter((item) =>
+        !treeTable ? !['ExpandActionInitializer', 'CollapseActionInitializer'].includes(item.component) : true,
+      )
+      .map((item, indexA) => {
+        if (item.type === 'divider') {
+          return <Menu.Divider key={item.key || `item-${indexA}`} />;
+        }
+        if (item.type === 'item' && item.component) {
+          const Component = findComponent(item.component);
+          item.key = `${item.key || item.title}-${indexA}`;
+          return (
+            Component && (
+              <SchemaInitializerItemContext.Provider
+                key={item.key}
+                value={{
+                  index: indexA,
+                  item,
+                  info: item,
+                  insert: insertSchema,
                 }}
-                insert={insertSchema}
-              />
-            </SchemaInitializerItemContext.Provider>
-          )
-        );
-      }
-      if (item.type === 'itemGroup') {
-        return (
-          !!item.children?.length && (
-            <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-              {renderItems(item.children)}
-            </Menu.ItemGroup>
-          )
-        );
-      }
-      if (item.type === 'subMenu') {
-        return (
-          !!item.children?.length && (
-            <Menu.SubMenu
-              key={item.key || `item-group-${indexA}`}
-              title={compile(item.title)}
-              popupClassName={menuItemGroupCss}
-            >
-              {renderItems(item.children)}
-            </Menu.SubMenu>
-          )
-        );
-      }
-    });
+              >
+                <Component
+                  {...item}
+                  item={{
+                    ...item,
+                    title: compile(item.title),
+                  }}
+                  insert={insertSchema}
+                />
+              </SchemaInitializerItemContext.Provider>
+            )
+          );
+        }
+        if (item.type === 'itemGroup') {
+          return (
+            !!item.children?.length && (
+              <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
+                {renderItems(item.children)}
+              </Menu.ItemGroup>
+            )
+          );
+        }
+        if (item.type === 'subMenu') {
+          return (
+            !!item.children?.length && (
+              <Menu.SubMenu
+                key={item.key || `item-group-${indexA}`}
+                title={compile(item.title)}
+                popupClassName={menuItemGroupCss}
+              >
+                {renderItems(item.children)}
+              </Menu.SubMenu>
+            )
+          );
+        }
+      });
   };
   const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
   if (!designable && props.designable !== true) {
