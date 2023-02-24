@@ -5,7 +5,7 @@ import { ActionInitializer } from './ActionInitializer';
 export const CreateChildNodeInitializer = (props) => {
   const schema = {
     type: 'void',
-    title: '{{ t("Create") }}',
+    title: '{{ t("Add Child") }}',
     'x-action': 'create',
     'x-designer': 'Action.Designer',
     'x-component': 'Action',

@@ -109,7 +109,7 @@ export const TableActionColumnInitializers = (props: any) => {
             },
             {
               type: 'item',
-              title: t('Create'),
+              title: t('Add Child'),
               component: 'CreateChildNodeInitializer',
               schema: {
                 'x-component': 'Action.Link',

@@ -6,6 +6,7 @@ import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
+import { IsTreeTableContext } from './TableBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
 
@@ -18,18 +19,20 @@ const InternalTableSelectorProvider = (props) => {
   // }
   return (
     <RecordProvider record={{}}>
-      <TableSelectorContext.Provider
-        value={{
-          field,
-          service,
-          resource,
-          params,
-          extraFilter,
-          rowKey,
-        }}
-      >
-        <RenderChildrenWithAssociationFilter {...props} />
-      </TableSelectorContext.Provider>
+      <IsTreeTableContext.Provider value={!!useIsEnableTree(props)}>
+        <TableSelectorContext.Provider
+          value={{
+            field,
+            service,
+            resource,
+            params,
+            extraFilter,
+            rowKey,
+          }}
+        >
+          <RenderChildrenWithAssociationFilter {...props} />
+        </TableSelectorContext.Provider>
+      </IsTreeTableContext.Provider>
     </RecordProvider>
   );
 };
@@ -114,6 +117,14 @@ export const TableSelectorProvider = (props) => {
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
+  }
+  if (useIsEnableTree(props)) {
+    params.tree = true;
+    params.filter = {
+      ...(params.filter ?? {}),
+      parentId: useRecord()?.id ?? null,
+    };
+    params.appends = params.appends ?? useAssociationNames(props.collection).filter((i) => i !== 'children');
   }
   let extraFilter;
   if (collectionField) {
@@ -206,7 +217,7 @@ export const useTableSelectorProps = () => {
     }
   }, [ctx?.service?.loading]);
 
-  const rowkey = ctx.rowKey || 'id';
+  const rowkey = useContext(IsTreeTableContext) ? '__index' : ctx.rowKey || 'id';
 
   return {
     loading: ctx?.service?.loading,
@@ -235,4 +246,9 @@ export const useTableSelectorProps = () => {
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize });
     },
   };
+};
+
+const useIsEnableTree = (props) => {
+  const { getCollection } = useCollectionManager();
+  return getCollection(props.collection).tree === 'adjacencyList';
 };

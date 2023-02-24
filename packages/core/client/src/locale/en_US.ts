@@ -605,5 +605,6 @@ export default {
   "CreatedBy": "Recording a row's created user",
   "UpdatedBy": "Recording a row's last updated user",
   "CreatedAt": "Recording a row's created time ",
-  "UpdatedAt": "Recording a row's last updated user"
+  "UpdatedAt": "Recording a row's last updated user",
+  "Add Child": "Add Child"
 };

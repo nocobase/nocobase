@@ -417,7 +417,7 @@ export const Table: any = observer((props: any) => {
         return newChild;
       });
     };
-    setDataSource(updateDataSource(field?.value));
+    setDataSource(treeTable ? updateDataSource(field?.value) : field?.value ?? []);
     // setExpandesKeys(allIncludesChildren.map((i) => i.__index));
   }, [field?.value]);
 
