@@ -29,7 +29,7 @@ RUN cd /app \
   && cd /app/my-nocobase-app \
   && yarn install --production
 
-RUN bach -c $BEFORE_PACK_NOCOBASE
+RUN bash -c $BEFORE_PACK_NOCOBASE
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
