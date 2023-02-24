@@ -41,11 +41,6 @@ Input.URL = connect(AntdInput, mapReadPretty(ReadPretty.URL));
 
 Input.JSON = connect(
   Json,
-  mapProps((props: any, field) => {
-    return {
-      ...props,
-    };
-  }),
   mapReadPretty(ReadPretty.JSON),
 );
 
