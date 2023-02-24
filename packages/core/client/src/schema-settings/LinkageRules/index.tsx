@@ -46,11 +46,11 @@ export const FormLinkageRules = observer((props: any) => {
                       wrapperCol: 16,
                     },
                     properties: {
-                      condition: {
+                      conditions: {
                         'x-component': 'h4',
                         'x-content': '{{ t("Condition") }}',
                       },
-                      linkageRuleCondition: {
+                      condition: {
                         'x-component': 'Filter',
                         'x-component-props': {
                           useProps() {
@@ -63,15 +63,14 @@ export const FormLinkageRules = observer((props: any) => {
                               `,
                             };
                           },
-                          dynamicComponent: (props) =>
-                            FilterDynamicComponent({ ...props, collectionName }),
+                          dynamicComponent: (props) => FilterDynamicComponent({ ...props, collectionName }),
                         },
                       },
-                      action: {
+                      actions: {
                         'x-component': 'h4',
                         'x-content': '{{ t("Properties") }}',
                       },
-                      linkageRuleAction: {
+                      action: {
                         'x-component': LinkageRuleActionGroup,
                         'x-component-props': {
                           ...props,

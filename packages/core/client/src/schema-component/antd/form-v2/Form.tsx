@@ -58,8 +58,8 @@ const FormDecorator: React.FC<FormProps> = (props) => {
 const getLinkageRules = (fieldSchema) => {
   let linkageRules = null;
   fieldSchema.mapProperties((schema) => {
-    if (schema['x-linkageRules']) {
-      linkageRules = schema['x-linkageRules'];
+    if (schema['x-linkage-rules']) {
+      linkageRules = schema['x-linkage-rules'];
     }
   });
   return linkageRules;
@@ -69,7 +69,7 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkageRules'] || [];
+  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'] || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -86,7 +86,7 @@ const WithForm = (props) => {
     const id = uid();
     form.addEffects(id, () => {
       return linkageRules.map((v) => {
-        return v.linkageRuleAction?.action.map((h) => {
+        return v.action?.action.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
             onFieldInit(`*(${fields})`, (field: any, form) => {
@@ -113,12 +113,12 @@ const WithForm = (props) => {
     form.addEffects(id, () => {
       const linkagefields = [];
       return linkageRules.map((v, index) => {
-        return v.linkageRuleAction?.action.map((h) => {
+        return v.action?.action.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
             return onFieldReact(`*(${fields})`, (field: any, form) => {
               linkagefields.push(field);
-              linkageMergeAction(h, field, v.linkageRuleCondition, form?.values);
+              linkageMergeAction(h, field, v.condition, form?.values);
               if (index === linkageRules.length - 1) {
                 setTimeout(() =>
                   linkagefields.map((v) => {

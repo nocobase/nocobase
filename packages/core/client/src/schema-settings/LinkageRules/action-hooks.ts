@@ -21,16 +21,19 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
   ];
   const field2option = (field, depth) => {
     const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface) {
+      return;
+    }
     const { nested, children } = fieldInterface?.filterable || {};
     const option = {
       name: field.name,
       title: field?.uiSchema?.title || field.name,
       schema: field?.uiSchema,
-      interface:field.interface,
-      target:field.target,
+      interface: field.interface,
+      target: field.target,
       operators:
         operators?.filter?.((operator) => {
-          if (nested || children || ['formula', 'richText','sequence'].includes(fieldInterface.name)) {
+          if (nested || children || ['formula', 'richText', 'sequence'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Value;
           }
           return true;

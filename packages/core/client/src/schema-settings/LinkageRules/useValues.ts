@@ -1,5 +1,4 @@
 import { useField } from '@formily/react';
-import flat from 'flat';
 import { useContext, useEffect } from 'react';
 import { FilterLogicContext } from './context';
 

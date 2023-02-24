@@ -95,12 +95,12 @@ export const Action: ComposedAction = observer((props: any) => {
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
-  const linkageRules = fieldSchema?.['x-linkageRules'] || [];
+  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
   const { designable } = useDesignable();
   useEffect(() => {
     linkageRules.map((v) => {
-      return v.linkageRuleAction?.action.map((h) => {
-        linkageAction(h.operator, field, v.linkageRuleCondition, values, designable);
+      return v.action?.action.map((h) => {
+        linkageAction(h.operator, field, v.condition, values, designable);
       });
     });
   }, [linkageRules]);

@@ -42,7 +42,7 @@ import {
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
-import { useLinkageCollectionFieldOptions } from './LinkageRules/actiion-hooks';
+import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -738,7 +738,7 @@ SchemaSettings.LinkageRules = (props) => {
                   const options = useCollectionFilterOptions(collectionName);
                   return {
                     options,
-                    defaultValues: gridSchema?.['x-linkageRules'] || fieldSchema?.['x-linkageRules'],
+                    defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
                     type,
                     linkageOptions: useLinkageCollectionFieldOptions(collectionName),
                     collectionName,
@@ -760,8 +760,8 @@ SchemaSettings.LinkageRules = (props) => {
           ['x-uid']: uid,
         };
 
-        gridSchema['x-linkageRules'] = rules;
-        schema['x-linkageRules'] = rules;
+        gridSchema['x-linkage-rules'] = rules;
+        schema['x-linkage-rules'] = rules;
         dn.emit('patch', {
           schema,
         });
