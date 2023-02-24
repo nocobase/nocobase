@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { SelectProps } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { SelectProps, Spin } from 'antd';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCompile, useOnceFn } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
@@ -37,9 +37,25 @@ const InternalRemoteSelect = connect(
       {
         manual: true,
         debounceWait: wait,
-        refreshDeps: [service, fieldNames.label, fieldNames.value],
       },
     );
+
+    const runDep = useMemo(
+      () =>
+        JSON.stringify({
+          service,
+          fieldNames,
+        }),
+      [service, fieldNames],
+    );
+    const firstDep = useRef(runDep);
+
+    useEffect(() => {
+      // Lazy load
+      if (firstDep.current !== runDep) {
+        run();
+      }
+    }, [runDep]);
 
     const onSearch = async (search) => {
       run({

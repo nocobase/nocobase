@@ -16,9 +16,8 @@ export default function useServiceOptions(props) {
   }, [fieldSchema.name]);
 
   const filter = useMemo(() => {
-    if (!collectionField) return params?.filter;
-    let extraFilter = {};
-    if (['oho', 'o2m'].includes(collectionField.interface)) {
+    let extraFilter = params?.filter;
+    if (collectionField && ['oho', 'o2m'].includes(collectionField.interface)) {
       const eqValue = record?.[collectionField.sourceKey];
       extraFilter = {
         $or: [
@@ -42,9 +41,8 @@ export default function useServiceOptions(props) {
         ].filter(Boolean),
       };
     }
-
     return extraFilter;
-  }, [params?.filter, getCollectionFields, collectionField]);
+  }, [params?.filter, getCollectionFields, collectionField, record]);
 
   return useMemo(() => {
     return {
