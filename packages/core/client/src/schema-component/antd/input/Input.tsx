@@ -39,6 +39,9 @@ Input.TextArea = connect(
 
 Input.URL = connect(AntdInput, mapReadPretty(ReadPretty.URL));
 
-Input.JSON = connect(Json, mapReadPretty(ReadPretty.JSON));
+Input.JSON = connect(
+  Json,
+  mapReadPretty(ReadPretty.JSON),
+);
 
 export default Input;

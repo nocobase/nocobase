@@ -1,4 +1,4 @@
-import { connect, mapReadPretty } from '@formily/react';
+import { connect, mapReadPretty, mapProps } from '@formily/react';
 import React from 'react';
 import ReactQuill from 'react-quill';
 import { ReadPretty as InputReadPretty } from '../input';
@@ -7,11 +7,7 @@ import './style.less';
 export const RichText = connect(
   (props) => {
     const modules = {
-      toolbar: [
-        ['bold', 'italic', 'underline', 'link'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['clean'],
-      ],
+      toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
     };
     const formats = [
       'header',
@@ -26,13 +22,14 @@ export const RichText = connect(
       'link',
       'image',
     ];
-    const { value, onChange } = props;
+    const { value, onChange, disabled } = props;
     return (
       <ReactQuill
         modules={modules}
         formats={formats}
         value={typeof value === 'string' ? value : ''}
         onChange={onChange}
+        readOnly={disabled}
       />
     );
   },
