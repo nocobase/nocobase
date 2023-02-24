@@ -41,6 +41,26 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.SwitchItem
+        title={t('Tree table')}
+        checked={field.decoratorProps.treeTable}
+        onChange={(flag) => {
+          field.decoratorProps.treeTable = flag;
+          fieldSchema['x-decorator-props'].treeTable = flag;
+          const params = {
+            ...service.params?.[0],
+          };
+          params.filter = {
+            ...(params.filter ?? {}),
+            parentId: flag ? null : undefined,
+          };
+          service.run(params);
+          dn.emit('patch', {
+            schema: fieldSchema,
+          });
+          dn.refresh();
+        }}
+      />
       {sortable && (
         <SchemaSettings.SwitchItem
           title={t('Enable drag and drop sorting')}

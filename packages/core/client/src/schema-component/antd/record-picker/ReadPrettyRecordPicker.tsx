@@ -1,7 +1,7 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
-import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
+import { BlockAssociationContext, IsTreeTableContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
@@ -69,15 +69,17 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
 
   const renderWithoutTableFieldResourceProvider = () => (
     <WithoutTableFieldResource.Provider value={true}>
-      <FormProvider>
-        <RecursionField
-          schema={fieldSchema}
-          onlyRenderProperties
-          filterProperties={(s) => {
-            return s['x-component'] === 'RecordPicker.Viewer';
-          }}
-        />
-      </FormProvider>
+      <IsTreeTableContext.Provider value={false}>
+        <FormProvider>
+          <RecursionField
+            schema={fieldSchema}
+            onlyRenderProperties
+            filterProperties={(s) => {
+              return s['x-component'] === 'RecordPicker.Viewer';
+            }}
+          />
+        </FormProvider>
+      </IsTreeTableContext.Provider>
     </WithoutTableFieldResource.Provider>
   );
 

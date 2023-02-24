@@ -80,6 +80,8 @@ export const useAssociationNames = (collection) => {
   );
 };
 
+export const IsTreeTableContext = createContext(false);
+
 export const TableBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
@@ -90,11 +92,20 @@ export const TableBlockProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  if (props.treeTable) {
+    params['tree'] = true;
+    params.filter = {
+      ...(params.filter ?? {}),
+      parentId: params.filter?.parentId ?? null,
+    };
+  }
   return (
     <FormContext.Provider value={form}>
-      <BlockProvider {...props} params={params}>
-        <InternalTableBlockProvider {...props} params={params} />
-      </BlockProvider>
+      <IsTreeTableContext.Provider value={props.treeTable}>
+        <BlockProvider {...props} params={params}>
+          <InternalTableBlockProvider {...props} params={params} />
+        </BlockProvider>
+      </IsTreeTableContext.Provider>
     </FormContext.Provider>
   );
 };

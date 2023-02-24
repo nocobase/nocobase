@@ -3,6 +3,7 @@ import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { IsTreeTableContext } from '../../../block-provider';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
@@ -24,15 +25,15 @@ const useTableSelectorProps = () => {
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
       // defaultSelectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
-      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey || 'id']),
+      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey]),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
         const scopeRows = field.value || [];
         const allSelectedRows = rcSelectRows || [];
-        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey || 'id');
-        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey || 'id');
-        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey || 'id']);
+        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey);
+        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey);
+        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey]);
         setSelectedRows?.(unionSelectedRows);
         onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
       } else {
@@ -92,7 +93,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value,fieldNames?.label]);
+  }, [value, fieldNames?.label]);
 
   const getValue = () => {
     if (multiple == null) return null;
@@ -130,17 +131,19 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>
         <CollectionProvider allowNull name={collectionField?.target}>
           <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
-            <FormProvider>
-              <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-                <RecursionField
-                  schema={fieldSchema}
-                  onlyRenderProperties
-                  filterProperties={(s) => {
-                    return s['x-component'] === 'RecordPicker.Selector';
-                  }}
-                />
-              </SchemaComponentOptions>
-            </FormProvider>
+            <IsTreeTableContext.Provider value={false}>
+              <FormProvider>
+                <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
+                  <RecursionField
+                    schema={fieldSchema}
+                    onlyRenderProperties
+                    filterProperties={(s) => {
+                      return s['x-component'] === 'RecordPicker.Selector';
+                    }}
+                  />
+                </SchemaComponentOptions>
+              </FormProvider>
+            </IsTreeTableContext.Provider>
           </ActionContext.Provider>
         </CollectionProvider>
       </RecordPickerContext.Provider>

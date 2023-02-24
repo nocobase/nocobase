@@ -1,9 +1,9 @@
-import React from "react";
+import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from "../../collection-manager";
-import { DataBlockInitializer } from "./DataBlockInitializer";
-import { createTableBlockSchema } from "../utils";
+import { useCollectionManager } from '../../collection-manager';
+import { DataBlockInitializer } from './DataBlockInitializer';
+import { createTableBlockSchema } from '../utils';
 
 export const TableBlockInitializer = (props) => {
   const { insert } = props;
@@ -15,7 +15,11 @@ export const TableBlockInitializer = (props) => {
       componentType={'Table'}
       onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name);
-        const schema = createTableBlockSchema({ collection: item.name, rowKey: collection.filterTargetKey || 'id' });
+        const schema = createTableBlockSchema({
+          collection: item.name,
+          treeTable: !!collection.tree,
+          rowKey: collection.filterTargetKey || 'id',
+        });
         insert(schema);
       }}
     />

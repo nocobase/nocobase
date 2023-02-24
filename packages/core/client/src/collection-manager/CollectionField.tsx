@@ -2,8 +2,16 @@ import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
-import React, { useEffect } from 'react';
-import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
+import React, { useContext, useEffect } from 'react';
+import {
+  IsTreeTableContext,
+  TableBlockContext,
+  useActionContext,
+  useCompile,
+  useComponent,
+  useFormBlockContext,
+  useRecord,
+} from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
@@ -31,6 +39,14 @@ const InternalField: React.FC = (props) => {
       ctx.field.added.add(fieldSchema.name);
     }
   });
+
+  const record = useRecord();
+  const inTreeTable = useContext(IsTreeTableContext);
+  const action = useActionContext();
+  const isCreate = action?.fieldSchema?.['x-action'] === 'create';
+  const isEmptyRecord = typeof record === 'object' && Object.keys(record).length === 0;
+  const isTreeTableParentField = inTreeTable && fieldSchema.name === 'parent' && !isEmptyRecord && isCreate;
+
   // TODO: 初步适配
   useEffect(() => {
     if (!uiSchema) {
@@ -40,14 +56,14 @@ const InternalField: React.FC = (props) => {
     setFieldProps('title', uiSchema.title);
     setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
-      setFieldProps('initialValue', fieldSchema.default || defaultValue);
+      setFieldProps('initialValue', isTreeTableParentField ? record : fieldSchema.default || defaultValue);
     }
 
     if (!field.validator && (uiSchema['x-validator'] || fieldSchema['x-validator'])) {
       const concatSchema = concat([], uiSchema['x-validator'] || [], fieldSchema['x-validator'] || []);
       field.validator = concatSchema;
     }
-    if (fieldSchema['x-disabled'] === true) {
+    if (fieldSchema['x-disabled'] === true || isTreeTableParentField) {
       field.disabled = true;
     }
     if (fieldSchema['x-read-pretty'] === true) {

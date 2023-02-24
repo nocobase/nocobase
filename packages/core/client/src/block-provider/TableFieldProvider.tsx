@@ -2,10 +2,12 @@ import { ArrayField, Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
 import { APIClient } from '../api-client';
-import { useCollectionField } from '../collection-manager';
+import { useCollectionField, useCollectionManager } from '../collection-manager';
+import { useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
+import { TableBlockContext, useAssociationNames } from './TableBlockProvider';
 
 export const TableFieldContext = createContext<any>({});
 
@@ -36,6 +38,7 @@ const InternalTableFieldProvider = (props) => {
         params,
         showIndex,
         dragSort,
+        treeTable: useIsEnableTree(props),
       }}
     >
       {props.children}
@@ -125,9 +128,18 @@ export class TableFieldResource {
 export const WithoutTableFieldResource = createContext(null);
 
 export const TableFieldProvider = (props) => {
+  const params = { ...props.params };
+  if (useIsEnableTree(props)) {
+    params.tree = true;
+    params.filter = {
+      ...(params.filter ?? {}),
+      parentId: useRecord()?.id ?? null,
+    };
+    params.appends = params.appends ?? useAssociationNames(props.collection).filter((i) => i !== 'children');
+  }
   return (
     <WithoutTableFieldResource.Provider value={false}>
-      <BlockProvider block={'TableField'} {...props}>
+      <BlockProvider block={'TableField'} {...props} params={params}>
         <InternalTableFieldProvider {...props} />
       </BlockProvider>
     </WithoutTableFieldResource.Provider>
@@ -149,6 +161,7 @@ export const useTableFieldProps = () => {
     }
   }, [ctx?.service?.loading]);
   return {
+    ...ctx,
     size: 'middle',
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
@@ -166,4 +179,10 @@ export const useTableFieldProps = () => {
       ctx.service.run({ page: current, pageSize });
     },
   };
+};
+
+const useIsEnableTree = (props) => {
+  const { getCollection } = useCollectionManager();
+
+  return getCollection(props.collection).tree === 'adjacencyList';
 };

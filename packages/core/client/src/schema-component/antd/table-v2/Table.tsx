@@ -7,10 +7,16 @@ import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { RefCallback, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import {
+  IsTreeTableContext,
+  RecordIndexProvider,
+  RecordProvider,
+  TableBlockContext,
+  useSchemaInitializer,
+} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isCollectionFieldComponent, isColumnComponent } from './utils';
 
@@ -106,7 +112,7 @@ const TableIndex = (props) => {
   const { index } = props;
   return (
     <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
-      {index + 1}
+      {index}
     </div>
   );
 };
@@ -150,8 +156,9 @@ const useValidator = (validator: (value: any) => string) => {
 export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
+  const isTreeTableFlag = useContext(IsTreeTableContext);
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
-  const { pagination: pagination2, ...others2 } = useProps?.() || {};
+  const { pagination: pagination2, treeTable: usePropsTreeTableFlag, ...others2 } = useProps?.() || {};
   const {
     dragSort = false,
     showIndex = true,
@@ -165,6 +172,7 @@ export const Table: any = observer((props: any) => {
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
+  const treeTable = usePropsTreeTableFlag ?? isTreeTableFlag;
 
   useEffect(() => {
     field.setValidator((value) => {
@@ -277,6 +285,11 @@ export const Table: any = observer((props: any) => {
             if (current) {
               index = index + (current - 1) * pageSize;
             }
+            if (treeTable) {
+              const [first, ...rest] = [...record.index];
+              const newIndex = [first + ((current ?? 1) - 1) * pageSize, ...rest];
+              index = newIndex.join('.');
+            }
             return (
               <div
                 className={classNames(
@@ -386,6 +399,26 @@ export const Table: any = observer((props: any) => {
     calcTableSize();
   };
 
+  let dataSource = field?.value ?? [];
+
+  const getChildren = (children = [], indexs = []) => {
+    return children.map((child, index) => {
+      const newIndexs = [...indexs, index + 1];
+      const newChildren = getChildren(child.children, newIndexs);
+      return {
+        ...child,
+        // id: [...path, child.id].join('.'),
+        key: newIndexs.join('.'),
+        index: newIndexs,
+        children: newChildren.length ? newChildren : undefined,
+      };
+    });
+  };
+
+  dataSource = treeTable ? getChildren(dataSource) : dataSource;
+
+  // console.log(treeTable, rowKey, defaultRowKey, dataSource);
+
   return (
     <div
       ref={mountedRef}
@@ -408,7 +441,7 @@ export const Table: any = observer((props: any) => {
             const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
             setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
           }}
-          rowKey={rowKey ?? defaultRowKey}
+          rowKey={treeTable ? '__index' : rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -419,7 +452,10 @@ export const Table: any = observer((props: any) => {
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}
-          dataSource={field?.value?.slice?.()}
+          expandable={{
+            childrenColumnName: treeTable ? 'children' : 'NO_CHILDREN',
+          }}
+          dataSource={dataSource}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (

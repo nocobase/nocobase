@@ -205,11 +205,14 @@ export const useTableSelectorProps = () => {
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
     }
   }, [ctx?.service?.loading]);
+
+  const rowkey = ctx.rowKey || 'id';
+
   return {
     loading: ctx?.service?.loading,
     showIndex: false,
     dragSort: false,
-    rowKey: ctx.rowKey || 'id',
+    rowKey: rowkey,
     pagination:
       ctx?.params?.paginate !== false
         ? {
@@ -223,8 +226,8 @@ export const useTableSelectorProps = () => {
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
-        sourceId: from[ctx.rowKey || 'id'],
-        targetId: to[ctx.rowKey || 'id'],
+        sourceId: from[rowkey],
+        targetId: to[rowkey],
       });
       ctx.service.refresh();
     },

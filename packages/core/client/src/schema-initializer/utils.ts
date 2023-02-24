@@ -2,7 +2,7 @@ import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext, SchemaInitializerItemOptions, TableBlockContext, useRecord } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -815,12 +815,13 @@ export const createReadPrettyFormBlockSchema = (options) => {
 };
 
 export const createTableBlockSchema = (options) => {
-  const { collection, resource, rowKey, ...others } = options;
+  const { collection, resource, rowKey, treeTable, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
+      treeTable: treeTable ? true : false,
       collection,
       resource: resource || collection,
       action: 'list',
