@@ -18,6 +18,7 @@ import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
+import { useDesignable } from '../../';
 import { linkageAction } from './utils';
 
 export const actionDesignerCss = css`
@@ -95,10 +96,11 @@ export const Action: ComposedAction = observer((props: any) => {
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const linkageRules = fieldSchema?.['x-linkageRules'] || [];
+  const { designable } = useDesignable();
   useEffect(() => {
     linkageRules.map((v) => {
       return v.linkageRuleAction?.action.map((h) => {
-        linkageAction(h.operator, field, v.linkageRuleCondition, values);
+        linkageAction(h.operator, field, v.linkageRuleCondition, values, designable);
       });
     });
   }, [linkageRules]);
@@ -108,6 +110,7 @@ export const Action: ComposedAction = observer((props: any) => {
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       disabled={disabled}
+      style={{ border: field?.data?.hidden && '1px dashed #ede9e9' }}
       onClick={(e: React.MouseEvent) => {
         if (!disabled) {
           e.preventDefault();

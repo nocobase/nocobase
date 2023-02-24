@@ -2,7 +2,6 @@ import type { ISchema } from '@formily/react';
 import { last } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
-
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -70,26 +69,35 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = (operator, field, linkageRuleCondition, form) => {
+export const linkageAction = (operator, field, linkageRuleCondition, values, designable) => {
   const displayResult = [field.display];
   const disableResult = [field.disabled];
-
   switch (operator) {
     case ActionType.Visible:
-    case ActionType.Hidden:
-      if (conditionAnalyse(linkageRuleCondition, form)) {
+      if (conditionAnalyse(linkageRuleCondition, values)) {
         displayResult.push(operator);
       }
       field.display = last(displayResult);
       break;
+    case ActionType.Hidden:
+      if (conditionAnalyse(linkageRuleCondition, values)) {
+        if (!designable) {
+          displayResult.push(operator);
+        } else {
+          field.data = field.data || {};
+          field.data.hidden = true;
+        }
+      }
+      field.display = last(displayResult);
+      break;
     case ActionType.Disabled:
-      if (conditionAnalyse(linkageRuleCondition, form)) {
+      if (conditionAnalyse(linkageRuleCondition, values)) {
         disableResult.push(true);
       }
       field.disabled = last(disableResult);
       break;
     case ActionType.Active:
-      if (conditionAnalyse(linkageRuleCondition, form)) {
+      if (conditionAnalyse(linkageRuleCondition, values)) {
         disableResult.push(false);
       }
       field.disabled = last(disableResult);

@@ -49,7 +49,7 @@ export default {
   "Not required":"Not required",
   "Value":"Value",
   "Disabled":"Disabled",
-  "Active":"Active",
+  "Enabled":"Enabled",
   "Linkage rule":"Linkage rule",
   "Linkage rules":"Linkage rules",
   "Condition":"Condition",

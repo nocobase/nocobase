@@ -725,7 +725,7 @@ SchemaSettings.LinkageRules = (props) => {
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
       components={{ ArrayCollapse, FormLayout }}
-      width={740}
+      width={750}
       schema={
         {
           type: 'object',
