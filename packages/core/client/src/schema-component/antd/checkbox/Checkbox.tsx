@@ -23,11 +23,6 @@ export const Checkbox: ComposedCheckbox = connect(
       value: 'checked',
       onInput: 'onChange',
     },
-    (props, field) => {
-      return {
-        ...props,
-      };
-    },
   ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
@@ -47,11 +42,6 @@ Checkbox.Group = connect(
   mapProps(
     {
       dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-      };
     },
   ),
   mapReadPretty((props) => {

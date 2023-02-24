@@ -16,11 +16,6 @@ export const Radio: ComposedRadio = connect(
       value: 'checked',
       onInput: 'onChange',
     },
-    (props, field) => {
-      return {
-        ...props,
-      };
-    },
   ),
 );
 Radio.__ANT_RADIO = true;
@@ -30,11 +25,6 @@ Radio.Group = connect(
   mapProps(
     {
       dataSource: 'options',
-    },
-    (props, field) => {
-      return {
-        ...props,
-      };
     },
   ),
   mapReadPretty((props) => {
