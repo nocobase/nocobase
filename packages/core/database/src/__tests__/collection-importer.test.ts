@@ -7,7 +7,19 @@ describe('collection importer', () => {
     const reader = new ImporterReader(path.resolve(__dirname, './fixtures/collections'));
 
     const modules = await reader.read();
-    expect(modules).toBeDefined();
+
+    const posts = modules.find((m) => m.name === 'posts');
+
+    expect(posts).toMatchObject({
+      name: 'posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    posts.schema = 'test';
+
+    const modules2 = await reader.read();
+    const posts2 = modules2.find((m) => m.name === 'posts');
+    expect(posts2.schema).toBeFalsy();
   });
 
   test('extend', async () => {

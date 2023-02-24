@@ -1,6 +1,6 @@
 import path from 'path';
 import { readdir } from 'fs/promises';
-import { isPlainObject } from 'lodash';
+import { cloneDeep, isPlainObject } from 'lodash';
 import { requireModule } from '@nocobase/utils';
 
 export type ImportFileExtension = 'js' | 'ts' | 'json';
@@ -36,6 +36,6 @@ export class ImporterReader {
         return typeof mod === 'function' ? mod() : mod;
       });
 
-    return (await Promise.all(modules)).filter((module) => isPlainObject(module));
+    return (await Promise.all(modules)).filter((module) => isPlainObject(module)).map((module) => cloneDeep(module));
   }
 }
