@@ -32,7 +32,6 @@ export const useValues = (options) => {
     fields: options,
     ...field.data,
     setDataIndex(dataIndex) {
-      console.log(dataIndex)
       const option = findOption(dataIndex, options);
       field.data = field.data || {};
       const operators = option?.operators;
