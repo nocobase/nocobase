@@ -399,25 +399,27 @@ export const Table: any = observer((props: any) => {
     calcTableSize();
   };
 
-  let dataSource = field?.value ?? [];
+  const [dataSource, setDataSource] = useState([]);
+  const [expandedKeys, setExpandesKeys] = useState([]);
 
-  const getChildren = (children = [], indexs = []) => {
-    return children.map((child, index) => {
-      const newIndexs = [...indexs, index + 1];
-      const newChildren = getChildren(child.children, newIndexs);
-      return {
-        ...child,
-        // id: [...path, child.id].join('.'),
-        key: newIndexs.join('.'),
-        index: newIndexs,
-        children: newChildren.length ? newChildren : undefined,
-      };
-    });
-  };
-
-  dataSource = treeTable ? getChildren(dataSource) : dataSource;
-
-  // console.log(treeTable, rowKey, defaultRowKey, dataSource);
+  useEffect(() => {
+    const allIncludesChildren = [];
+    const updateDataSource = (children = [], indexs = []) => {
+      return children.map((child, index) => {
+        const newIndexs = [...indexs, index + 1];
+        const newChildren = updateDataSource(child.children, newIndexs);
+        const newChild = {
+          ...child,
+          index: newIndexs,
+          children: newChildren.length ? newChildren : undefined,
+        };
+        newChildren.length && allIncludesChildren.push(newChild);
+        return newChild;
+      });
+    };
+    setDataSource(updateDataSource(field?.value));
+    // setExpandesKeys(allIncludesChildren.map((i) => i.__index));
+  }, [field?.value]);
 
   return (
     <div
@@ -453,7 +455,14 @@ export const Table: any = observer((props: any) => {
           scroll={scroll}
           columns={columns}
           expandable={{
+            onExpand: (flag, record) => {
+              const newKeys = flag
+                ? [...expandedKeys, record.__index]
+                : expandedKeys.filter((i) => record.__index !== i);
+              setExpandesKeys(newKeys);
+            },
             childrenColumnName: treeTable ? 'children' : 'NO_CHILDREN',
+            expandedRowKeys: treeTable ? expandedKeys : [],
           }}
           dataSource={dataSource}
         />
