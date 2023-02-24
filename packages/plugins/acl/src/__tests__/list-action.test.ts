@@ -313,7 +313,6 @@ describe('list association action with acl', () => {
 
     await agent.resource('collections').create({
       values: {
-        logging: true,
         autoGenId: true,
         createdBy: false,
         updatedBy: false,
@@ -394,6 +393,6 @@ describe('list association action with acl', () => {
       tree: true,
     });
 
-    expect(res.body.meta.allowedActions.view.length).toBe(2);
+    expect(res.body.meta.allowedActions.view).toMatchObject([1, 2]);
   });
 });
