@@ -18,7 +18,8 @@ const supportsType = [
   'select',
   'multipleSelect',
   'oho',
-  'obo'
+  'obo',
+  'm2o'
 ];
 const VariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
