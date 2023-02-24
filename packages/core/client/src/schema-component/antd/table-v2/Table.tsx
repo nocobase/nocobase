@@ -462,7 +462,7 @@ export const Table: any = observer((props: any) => {
               setExpandesKeys(newKeys);
             },
             childrenColumnName: treeTable ? 'children' : 'NO_CHILDREN',
-            expandedRowKeys: treeTable ? expandedKeys : [],
+            expandedRowKeys: expandedKeys,
           }}
           dataSource={dataSource}
         />
