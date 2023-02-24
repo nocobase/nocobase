@@ -29,6 +29,7 @@ RUN cd /app \
   && cd /app/my-nocobase-app \
   && yarn install --production
 
+WORKDIR /app/my-nocobase-app
 RUN $BEFORE_PACK_NOCOBASE
 
 RUN cd /app \
