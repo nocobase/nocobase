@@ -1,8 +1,8 @@
 import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useTableBlockContext } from '../../../block-provider';
+import { IsTreeTableContext, useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
@@ -37,30 +37,35 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const { dragSort } = field.decoratorProps;
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
+  const collection = useCollection();
+
+  console.log(collection);
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.SwitchItem
-        title={t('Tree table')}
-        checked={field.decoratorProps.treeTable}
-        onChange={(flag) => {
-          field.decoratorProps.treeTable = flag;
-          fieldSchema['x-decorator-props'].treeTable = flag;
-          const params = {
-            ...service.params?.[0],
-          };
-          params.filter = {
-            ...(params.filter ?? {}),
-            parentId: flag ? null : undefined,
-          };
-          service.run(params);
-          dn.emit('patch', {
-            schema: fieldSchema,
-          });
-          dn.refresh();
-        }}
-      />
+      {(collection as any)?.tree === 'adjacencyList' && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          checked={field.decoratorProps.treeTable}
+          onChange={(flag) => {
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+            };
+            params.filter = {
+              ...(params.filter ?? {}),
+              parentId: flag ? null : undefined,
+            };
+            service.run(params);
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {sortable && (
         <SchemaSettings.SwitchItem
           title={t('Enable drag and drop sorting')}
