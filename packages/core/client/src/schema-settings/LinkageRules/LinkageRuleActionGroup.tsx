@@ -1,11 +1,10 @@
-import { observer } from '@formily/react';
-import { ArrayField, useField, ObjectField } from '@formily/react';
-import { ArrayField as ArrayFieldModel } from '@formily/core';
+import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
+import { ArrayField, ObjectField, observer, useField } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoveActionContext } from './context';
-import { FormFieldLinkageRuleAction, FormButtonLinkageRuleAction } from './LinkageRuleAction';
+import { FormButtonLinkageRuleAction, FormFieldLinkageRuleAction } from './LinkageRuleAction';
 export const LinkageRuleActions = observer((props: any): any => {
   const { type, linkageOptions } = props;
   const field = useField<ArrayFieldModel>();
@@ -26,8 +25,8 @@ export const LinkageRuleActions = observer((props: any): any => {
 
 export const LinkageRuleActionGroup = (props) => {
   const { t } = useTranslation();
-  const field = useField<any>();
-  const logic = 'action';
+  const field = useField<VoidField>();
+  const logic = 'actions';
   const { type, linkageOptions, collectionName } = props?.useProps();
   return (
     <div style={{ marginLeft: 10 }}>
@@ -39,12 +38,10 @@ export const LinkageRuleActionGroup = (props) => {
       <Space size={16} style={{ marginTop: 8, marginBottom: 8 }}>
         <a
           onClick={() => {
-            const value = field.value || {};
-            const items = value[logic] || [];
+            const f = field.query('.actions').take() as ArrayFieldModel;
+            const items = f.value || [];
             items.push({});
-            field.value = {
-              [logic]: items,
-            };
+            f.value = items;
           }}
         >
           {t('Add property')}
