@@ -33,11 +33,6 @@ export const RichText = connect(
       />
     );
   },
-  mapProps((props, field) => {
-    return {
-      ...props,
-    };
-  }),
   mapReadPretty((props) => {
     return <InputReadPretty.Html {...props} />;
   }),

@@ -193,11 +193,6 @@ Upload.Attachment = connect(
       </div>
     );
   },
-  mapProps((props, field) => {
-    return {
-      ...props,
-    };
-  }),
   mapReadPretty(ReadPretty.Attachment),
 );
 
