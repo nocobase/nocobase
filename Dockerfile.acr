@@ -2,6 +2,7 @@ FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
+ARG BEFORE_PACK_NOCOBASE="ls -l"
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -26,7 +27,9 @@ RUN cd /app \
   && yarn config set network-timeout 600000 -g \
   && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
-  && yarn install --production && yarn add @nocobase/plugin-mdg -W
+  && yarn install --production
+
+RUN echo "$BEFORE_PACK_NOCOBASE" > /tmp/before_command && bash /tmp/before_command
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
