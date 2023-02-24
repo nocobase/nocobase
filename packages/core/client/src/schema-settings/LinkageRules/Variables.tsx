@@ -17,6 +17,8 @@ const supportsType = [
   'checkboxGroup',
   'select',
   'multipleSelect',
+  'oho',
+  'obo'
 ];
 const VariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
