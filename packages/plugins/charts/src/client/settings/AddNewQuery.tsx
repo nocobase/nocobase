@@ -12,6 +12,7 @@ import {
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useMemo, useState } from 'react';
+import { useChartQueryMetadataContext } from '../ChartQueryMetadataProvider';
 import { getQueryTypeSchema } from './queryTypes';
 
 const useCreateAction = () => {
@@ -19,6 +20,7 @@ const useCreateAction = () => {
   const form = useForm();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const ctx = useChartQueryMetadataContext();
   return {
     async run() {
       await form.submit();
@@ -26,6 +28,7 @@ const useCreateAction = () => {
       setVisible(false);
       await form.reset();
       refresh();
+      ctx.refresh();
     },
   };
 };
@@ -36,6 +39,7 @@ const useUpdateAction = () => {
   const { refresh } = useResourceActionContext();
   const { resource, targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
+  const ctx = useChartQueryMetadataContext();
   return {
     async run() {
       await form.submit();
@@ -43,6 +47,7 @@ const useUpdateAction = () => {
       setVisible(false);
       await form.reset();
       refresh();
+      ctx.refresh();
     },
   };
 };

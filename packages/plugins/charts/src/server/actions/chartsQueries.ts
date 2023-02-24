@@ -8,7 +8,7 @@ export const getData = async (ctx, next) => {
   return next();
 };
 
-export const listSchema = async (ctx, next) => {
+export const listMetadata = async (ctx, next) => {
   const r = ctx.db.getRepository('chartsQueries');
   const items = await r.find({ sort: '-id' });
   ctx.body = items.map((item) => {

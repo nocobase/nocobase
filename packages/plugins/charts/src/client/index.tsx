@@ -2,6 +2,7 @@ import { SchemaComponentOptions, SchemaInitializerContext, SettingsCenterProvide
 import React, { useContext } from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
+import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
 
@@ -15,23 +16,25 @@ export default React.memo((props) => {
     component: 'ChartBlockInitializer',
   });
   return (
-    <SettingsCenterProvider
-      settings={{
-        charts: {
-          title: '{{t("Charts")}}',
-          icon: 'PieChartOutlined',
-          tabs: {
-            queries: {
-              title: '{{t("Queries")}}',
-              component: () => <QueriesTable />,
+    <ChartQueryMetadataProvider>
+      <SettingsCenterProvider
+        settings={{
+          charts: {
+            title: '{{t("Charts")}}',
+            icon: 'PieChartOutlined',
+            tabs: {
+              queries: {
+                title: '{{t("Queries")}}',
+                component: () => <QueriesTable />,
+              },
             },
           },
-        },
-      }}
-    >
-      <SchemaComponentOptions components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}>
-        <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
-      </SchemaComponentOptions>
-    </SettingsCenterProvider>
+        }}
+      >
+        <SchemaComponentOptions components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}>
+          <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
+        </SchemaComponentOptions>
+      </SettingsCenterProvider>
+    </ChartQueryMetadataProvider>
   );
 });
