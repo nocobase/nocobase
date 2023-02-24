@@ -1,6 +1,7 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMIT_HASH
+ARG APPEND_PRESET_LOCAL_PLUGINS
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -23,7 +24,7 @@ RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=mdg \
+  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
   && yarn install --production && yarn add @nocobase/plugin-mdg -W
 
