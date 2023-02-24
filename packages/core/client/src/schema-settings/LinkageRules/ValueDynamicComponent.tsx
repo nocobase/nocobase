@@ -17,7 +17,7 @@ export const ValueDynamicComponent = (props) => {
         <Option value="constant">{t('Constant value')}</Option>
         <Option value="express">{t('Expression')}</Option>
       </Select>
-      <div style={{ width: '68%' }}>
+      <div style={{ maxWidth: '80%', minWidth: '60%' }}>
         {mode === 'constant' ? (
           React.createElement(DynamicComponent, {
             value: fieldValue?.value || fieldValue,

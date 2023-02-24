@@ -28,7 +28,13 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
   } = useValues(options);
   return (
     <div style={{ marginBottom: 8 }}>
-      <Space>
+      <Space
+        className={css`
+          .ant-space-item {
+            max-width: 95%;
+          }
+        `}
+      >
         <Cascader
           className={css`
             min-width: 160px;
