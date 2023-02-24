@@ -285,7 +285,7 @@ export const Table: any = observer((props: any) => {
             if (current) {
               index = index + (current - 1) * pageSize;
             }
-            if (treeTable) {
+            if (treeTable && record.index) {
               const [first, ...rest] = [...record.index];
               const newIndex = [first + ((current ?? 1) - 1) * pageSize, ...rest];
               index = newIndex.join('.');

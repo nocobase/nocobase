@@ -606,5 +606,6 @@ export default {
   "UpdatedBy": "Recording a row's last updated user",
   "CreatedAt": "Recording a row's created time ",
   "UpdatedAt": "Recording a row's last updated user",
-  "Add Child": "Add Child"
+  "Add Child": "Add Child",
+  "Tree table": "Tree table"
 };
