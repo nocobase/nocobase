@@ -3,7 +3,7 @@ ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
-RUN $BEFORE_PACK_NOCOBASE
+
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
 COPY . /tmp
