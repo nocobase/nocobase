@@ -12,11 +12,10 @@ on:
       - 'packages/**'
 
 jobs:
-  sqlite-test:
+  build-test:
     strategy:
       matrix:
         node_version: ['16', '18']
-        underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -28,6 +27,23 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - run: yarn build
+
+  sqlite-test:
+    strategy:
+      matrix:
+        node_version: ['18']
+        underscored: [true, false]
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      # - run: yarn build
       - name: Test with Sqlite
         run: yarn test
         env:
@@ -38,7 +54,7 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['16', '18']
+        node_version: ['18']
         underscored: [true, false]
         schema: [public, nocobase]
     runs-on: ubuntu-latest
@@ -66,7 +82,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
-      - run: yarn build
+      # - run: yarn build
       - name: Test with postgres
         run: yarn test
         env:
@@ -82,7 +98,7 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['16', '18']
+        node_version: ['18']
         underscored: [true, false]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
@@ -101,7 +117,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
-      - run: yarn build
+      # - run: yarn build
       - name: Test with MySQL
         run: yarn test
         env:

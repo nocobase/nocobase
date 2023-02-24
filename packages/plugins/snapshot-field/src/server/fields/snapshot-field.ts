@@ -17,7 +17,7 @@ export class SnapshotField extends Field {
 
     const repository = this.database.getRepository<any>(`${collectionName}.${targetField}`, model.get(primaryKey));
     const appends = (this.options.appends || []).filter((appendName) =>
-      repository.targetCollection.hasField(appendName),
+      this.database.getFieldByPath(`${repository.targetCollection.name}.${appendName}`),
     );
 
     let data = await repository.find({

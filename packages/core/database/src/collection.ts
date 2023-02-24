@@ -354,9 +354,9 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-    this.options = newOptions;
-
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
+
+    this.options = newOptions;
 
     this.setFields(options.fields, false);
     this.setRepository(options.repository);

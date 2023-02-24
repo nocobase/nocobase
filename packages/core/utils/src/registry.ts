@@ -11,7 +11,7 @@ export class Registry<T> {
     this.options = options;
   }
 
-  register(key: string, value: T): void {
+  public register(key: string, value: T): void {
     if (!this.options.override && this.map.has(key)) {
       throw new Error(`this registry does not allow to override existing keys: "${key}"`);
     }
@@ -24,19 +24,19 @@ export class Registry<T> {
   //   return files.filter(file => extensions.includes(path.extname(file)))
   // }
 
-  get(key: string): T {
+  public get(key: string): T {
     return this.map.get(key);
   }
 
-  getKeys(): Iterable<string> {
+  public getKeys(): Iterable<string> {
     return this.map.keys();
   }
 
-  getValues(): Iterable<T> {
+  public getValues(): Iterable<T> {
     return this.map.values();
   }
 
-  getEntities(): Iterable<[string, T]> {
+  public getEntities(): Iterable<[string, T]> {
     return this.map.entries();
   }
 }
