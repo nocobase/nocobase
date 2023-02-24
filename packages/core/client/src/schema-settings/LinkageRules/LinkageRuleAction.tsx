@@ -1,7 +1,8 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { Cascader, Select, Space } from 'antd';
+import { TreeSelect } from '@formily/antd';
+import {  Select, Space } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
@@ -35,7 +36,7 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
           }
         `}
       >
-        <Cascader
+        <TreeSelect
           className={css`
             min-width: 160px;
           `}
@@ -44,11 +45,13 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
             value: 'name',
             children: 'children',
           }}
-          changeOnSelect={false}
+          // changeOnSelect={false}
           value={value?.targetFields}
           multiple
-          options={compile(fields)}
+          allowClear
+          treeData={compile(fields)}
           onChange={(value) => {
+            console.log(value)
             setDataIndex(value);
           }}
           placeholder={t('Select Field')}

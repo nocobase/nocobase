@@ -1,13 +1,13 @@
 export enum ActionType {
   Visible = 'visible',
   Editable = 'editable',
-  ReadOnly = 'readOnly',
+  ReadOnly = 'disabled',
   ReadPretty = 'readPretty',
   None = 'none',
   Hidden = 'hidden',
   Required = 'required',
-  InRequired ='inRequired',
+  InRequired ='notRequired',
   Disabled ='disabled',
   Value = 'value',
-  Active = 'active',
+  Active = 'enabled',
 }

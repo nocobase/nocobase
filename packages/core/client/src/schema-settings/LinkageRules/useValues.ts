@@ -5,8 +5,9 @@ import { FilterLogicContext } from './context';
 const findOption = (dataIndex = [], options) => {
   let items = options;
   let option;
+  console.log(dataIndex,options)
   dataIndex?.forEach?.((name, index) => {
-    const item = items.find((v) => v.name === name[0]);
+    const item = items.find((v) => v.name === name);
     if (item) {
       option = item;
     }
@@ -32,13 +33,14 @@ export const useValues = (options) => {
     fields: options,
     ...field.data,
     setDataIndex(dataIndex) {
+      console.log(dataIndex)
       const option = findOption(dataIndex, options);
       field.data = field.data || {};
       const operators = option?.operators;
       field.data.operators = operators?.filter((v) => {
-        if (dataIndex.length > 1) {
-          return v.value !== 'value';
-        }
+        // if (dataIndex.length > 1) {
+        //   return v.value !== 'value';
+        // }
         return true;
       });
       field.data.schema = option?.schema;
