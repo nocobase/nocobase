@@ -21,11 +21,6 @@ export const Percent = connect(
       />
     );
   },
-  mapProps((props, field) => {
-    return {
-      ...props,
-    };
-  }),
   mapReadPretty((props) => {
     return (<ReadPretty {...props} value={props.value ? math.round(props.value * 100, 9) : null} />);
   }),
