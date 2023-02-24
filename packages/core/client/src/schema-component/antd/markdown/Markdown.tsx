@@ -17,7 +17,6 @@ export const Markdown: any = connect(
         minRows: 3,
       },
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),

@@ -45,7 +45,7 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
             value: 'name',
             children: 'children',
           }}
-          // changeOnSelect={false}
+          treeCheckable={true}
           value={value?.targetFields}
           multiple
           allowClear

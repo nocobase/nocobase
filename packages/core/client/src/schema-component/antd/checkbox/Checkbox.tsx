@@ -26,7 +26,6 @@ export const Checkbox: ComposedCheckbox = connect(
     (props, field) => {
       return {
         ...props,
-        disabled: props.disabled || field.pattern === 'readOnly',
       };
     },
   ),
@@ -52,7 +51,6 @@ Checkbox.Group = connect(
     (props, field) => {
       return {
         ...props,
-        disabled: props.disabled || field.pattern === 'readOnly',
       };
     },
   ),

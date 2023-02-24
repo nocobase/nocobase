@@ -9,8 +9,7 @@ export const InputNumber = connect((props) => {
   const handleChange = (v) => {
     onChange(parseFloat(v));
   };
-  const disabled = props.disabled || field.pattern === 'readOnly';
-  return <AntdNumber onChange={handleChange} {...others} disabled={disabled} />;
+  return <AntdNumber onChange={handleChange} {...others}  />;
 }, mapReadPretty(ReadPretty));
 
 export default InputNumber;

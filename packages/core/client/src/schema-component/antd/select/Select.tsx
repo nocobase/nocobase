@@ -102,7 +102,6 @@ const InternalSelect = connect(
     (props, field) => {
       return {
         ...props,
-        disabled: props.disabled || field.pattern === 'readOnly',
         fieldNames: { ...defaultFieldNames, ...props.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };

@@ -52,7 +52,6 @@ export const mapDateFormat = function () {
     const onChange = props.onChange;
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
       format: format,
       value: str2moment(props.value, props),
       onChange: (value: moment.Moment | moment.Moment[]) => {

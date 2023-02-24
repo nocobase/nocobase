@@ -17,7 +17,6 @@ const mapTimeFormat = function () {
       ...props,
       format,
       value: momentable(props.value, format),
-      disabled: props.disabled || field.pattern === 'readOnly',
       onChange: (value: moment.Moment | moment.Moment[]) => {
         if (onChange) {
           onChange(formatMomentValue(value, format) || null);

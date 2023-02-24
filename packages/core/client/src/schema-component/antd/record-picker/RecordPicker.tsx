@@ -7,7 +7,6 @@ export const RecordPicker: any = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty(ReadPrettyRecordPicker),

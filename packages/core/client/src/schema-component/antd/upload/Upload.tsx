@@ -196,7 +196,6 @@ Upload.Attachment = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty(ReadPretty.Attachment),

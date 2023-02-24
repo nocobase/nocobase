@@ -17,7 +17,6 @@ export const Input: ComposedInput = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
       suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
     };
   }),
@@ -33,7 +32,6 @@ Input.TextArea = connect(
         minRows: 3,
       },
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty(ReadPretty.TextArea),
@@ -46,7 +44,6 @@ Input.JSON = connect(
   mapProps((props: any, field) => {
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty(ReadPretty.JSON),

@@ -61,7 +61,6 @@ export const Password = connect(
   mapProps((props, field) => {
     return {
       ...props,
-      disabled: props.disabled || field.pattern === 'readOnly',
     };
   }),
   mapReadPretty((props) => {

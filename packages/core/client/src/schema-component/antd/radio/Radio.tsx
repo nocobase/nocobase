@@ -19,7 +19,6 @@ export const Radio: ComposedRadio = connect(
     (props, field) => {
       return {
         ...props,
-        disabled: props.disabled || field.pattern === 'readOnly',
       };
     },
   ),
@@ -35,7 +34,6 @@ Radio.Group = connect(
     (props, field) => {
       return {
         ...props,
-        disabled: props.disabled || field.pattern === 'readOnly',
       };
     },
   ),
