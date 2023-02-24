@@ -1,6 +1,6 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
-ARG COMIT_HASH
+ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 
 RUN apt-get update && apt-get install -y jq
@@ -51,7 +51,7 @@ COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMIT_HASH" >> /app/nocobase/storage/uploads/COMIT_HASH
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
