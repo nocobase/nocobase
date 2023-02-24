@@ -99,7 +99,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const { designable } = useDesignable();
   useEffect(() => {
     linkageRules.map((v) => {
-      return v.actions.map((h) => {
+      return v.actions?.map((h) => {
         linkageAction(h.operator, field, v.condition, values, designable);
       });
     });

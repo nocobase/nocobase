@@ -86,7 +86,7 @@ const WithForm = (props) => {
     const id = uid();
     form.addEffects(id, () => {
       return linkageRules.map((v) => {
-        return v.actions.map((h) => {
+        return v.actions?.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
             onFieldInit(`*(${fields})`, (field: any, form) => {
@@ -113,7 +113,7 @@ const WithForm = (props) => {
     form.addEffects(id, () => {
       const linkagefields = [];
       return linkageRules.map((v, index) => {
-        return v.actions.map((h) => {
+        return v.actions?.map((h) => {
           if (h.targetFields) {
             const fields = h.targetFields.join(',');
             return onFieldReact(`*(${fields})`, (field: any, form) => {
