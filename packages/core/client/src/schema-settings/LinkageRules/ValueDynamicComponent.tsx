@@ -13,11 +13,11 @@ export const ValueDynamicComponent = (props) => {
   const scope = useVariableOptions(collectionName);
   return (
     <Input.Group compact style={{ minWidth: 280 }}>
-      <Select value={mode} style={{ width: '32%', maxWidth: '100px' }} onChange={(value) => setMode(value)}>
+      <Select value={mode} style={{ width: 150 }} onChange={(value) => setMode(value)}>
         <Option value="constant">{t('Constant value')}</Option>
         <Option value="express">{t('Expression')}</Option>
       </Select>
-      <div style={{ maxWidth: '80%', minWidth: '60%' }}>
+      <div style={{ minWidth: 150, maxWidth: 430 }}>
         {mode === 'constant' ? (
           React.createElement(DynamicComponent, {
             value: fieldValue?.value || fieldValue,

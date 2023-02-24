@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
-import { cx, css } from "@emotion/css";
+import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-
-
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
@@ -100,12 +98,14 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(' / ')}</span>`;
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(
+    ' / ',
+  )}</span>`;
 }
 
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true, button } = props;
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
   const options = (typeof scope === 'function' ? scope() : scope) ?? [];
   const form = useForm();
@@ -140,7 +140,7 @@ export function TextArea(props) {
   }, [html]);
 
   function onInsert(keyPath) {
-    const variable: string[] = keyPath.filter(key => Boolean(key.trim()));
+    const variable: string[] = keyPath.filter((key) => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -176,20 +176,24 @@ export function TextArea(props) {
   const disabled = props.disabled || form.disabled;
 
   return (
-    <Input.Group compact className={css`
-      &.ant-input-group.ant-input-group-compact{
-        display: flex;
-        .ant-input{
-          flex-grow: 1;
-        }
-        .ant-input-disabled{
-          .ant-tag{
-            color: #bfbfbf;
-            border-color: #d9d9d9;
+    <Input.Group
+      compact
+      className={css`
+        &.ant-input-group.ant-input-group-compact {
+          display: flex;
+          .ant-input {
+            flex-grow: 1;
+            min-width: 200px;
+          }
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
+            }
           }
         }
-      }
-    `}>
+      `}
+    >
       <div
         onInput={onInput}
         onBlur={onBlur}
@@ -198,33 +202,33 @@ export function TextArea(props) {
             e.preventDefault();
           }
         }}
-        className={cx('ant-input', { 'ant-input-disabled': disabled }, css`
-          overflow: auto;
-          white-space: ${multiline ? 'normal': 'nowrap'};
+        className={cx(
+          'ant-input',
+          { 'ant-input-disabled': disabled },
+          css`
+            overflow: auto;
+            white-space: ${multiline ? 'normal' : 'nowrap'};
 
-          .ant-tag{
-            display: inline;
-            line-height: 19px;
-            margin: 0 .5em;
-            padding: 2px 7px;
-            border-radius: 10px;
-          }
-        `)}
+            .ant-tag {
+              display: inline;
+              line-height: 19px;
+              margin: 0 0.5em;
+              padding: 2px 7px;
+              border-radius: 10px;
+            }
+          `,
+        )}
         ref={inputRef}
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       <Tooltip title={t('Use variable')}>
-        <Cascader
-          value={[]}
-          options={options}
-          onChange={onInsert}
-        >
+        <Cascader value={[]} options={options} onChange={onInsert}>
           {button ?? (
             <Button
               className={css`
                 font-style: italic;
-                font-family: "New York", "Times New Roman", Times, serif;
+                font-family: 'New York', 'Times New Roman', Times, serif;
               `}
             >
               x
