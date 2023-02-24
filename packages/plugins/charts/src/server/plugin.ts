@@ -10,7 +10,7 @@ export class ChartsPlugin extends Plugin {
 
   syncFields = async (instance, { transaction }) => {
     const data = await query[instance.type](instance.options, { db: this.db, transaction });
-    const d = Array.isArray(data) ? data.shift() : data;
+    const d = Array.isArray(data) ? data?.[0] : data;
     const fields = Object.keys(d || {}).map((f) => {
       return {
         name: f,
