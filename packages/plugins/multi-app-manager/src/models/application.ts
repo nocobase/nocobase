@@ -10,7 +10,7 @@ export interface registerAppOptions extends Transactionable {
 
 export class ApplicationModel extends Model {
   static async handleAppStart(mainApp: Application, app: Application, options: registerAppOptions) {
-    await mainApp.emit('beforeSubAppLoad', {
+    await mainApp.emitAsync('beforeSubAppLoad', {
       mainApp,
       subApp: app,
     });
