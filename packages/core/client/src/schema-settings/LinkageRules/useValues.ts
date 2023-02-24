@@ -5,7 +5,6 @@ import { FilterLogicContext } from './context';
 const findOption = (dataIndex = [], options) => {
   let items = options;
   let option;
-  console.log(dataIndex,options)
   dataIndex?.forEach?.((name, index) => {
     const item = items.find((v) => v.name === name);
     if (item) {
