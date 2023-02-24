@@ -11,7 +11,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string) => {
   const operators = [
     { label: t('Visible'), value: ActionType.Visible, selected: true, schema: {} },
     { label: t('Editable'), value: ActionType.Editable, selected: false, schema: {} },
-    { label: t('Read only'), value: ActionType.ReadOnly, selected: false, schema: {} },
+    { label: t('Disabled'), value: ActionType.ReadOnly, selected: false, schema: {} },
     { label: t('Easy reading'), value: ActionType.ReadPretty, selected: false, schema: {} },
     { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
     { label: t('Hidden(reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
