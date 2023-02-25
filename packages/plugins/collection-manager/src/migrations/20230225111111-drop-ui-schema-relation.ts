@@ -21,8 +21,13 @@ export default class extends Migration {
     const migrateFieldsSchema = async (collection: Collection) => {
       this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
 
-      const fieldRecords: Array<FieldModel> = await collection.repository.find();
-      const fieldsCount = await collection.repository.count();
+      const fieldRecords: Array<FieldModel> = await collection.repository.find({
+        transaction,
+      });
+      const fieldsCount = await collection.repository.count({
+        transaction,
+      });
+
       this.app.log.info(`Total ${fieldsCount} fields need to be migrated`);
 
       let i = 0;
