@@ -3,10 +3,11 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useEffect, useState } from 'react';
 import { useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { useCollectionManager } from '../../../collection-manager';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -15,6 +16,7 @@ const { Panel } = Collapse;
 
 export const AssociationFilterItem = (props) => {
   const collectionField = AssociationFilter.useAssociationField();
+  const { getCollection, getCollectionField } = useCollectionManager();
 
   if (!collectionField) {
     return null;
@@ -28,24 +30,34 @@ export const AssociationFilterItem = (props) => {
   const [searchVisible, setSearchVisible] = useState(false);
 
   const collectionFieldName = collectionField.name;
+  const targetCollection = getCollection(collectionField.target);
+  const treeTable = targetCollection.tree === 'adjacencyList';
 
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+
+  const targetValueField = getCollectionField(`${targetCollection.name}.${valueKey}`);
 
   const fieldNames = {
     title: labelKey || valueKey,
     key: valueKey,
   };
 
-  const { data, params, loading, run } = useRequest(
+  const params = {
+    fields: [labelKey, valueKey],
+    pageSize: 200,
+    page: 1,
+    tree: treeTable,
+    filter: {
+      parentId: null,
+    },
+  };
+
+  const { data, loading, run } = useRequest(
     {
       resource: collectionField.target,
       action: 'list',
-      params: {
-        fields: [labelKey, valueKey],
-        pageSize: 200,
-        page: 1,
-      },
+      params,
     },
     {
       refreshDeps: [labelKey, valueKey],
@@ -57,11 +69,27 @@ export const AssociationFilterItem = (props) => {
 
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+
+  useEffect(() => {
+    expandAll();
+  }, [loading]);
+
+  const expandAll = () => {
+    const keys = [];
+    const find = (list) => {
+      list.forEach((i) => {
+        if (i.children?.length) {
+          keys.push(i[valueKey]);
+          find(i.children);
+        }
+      });
+    };
+    find(treeData);
+    setExpandedKeys(keys);
+  };
 
   const onExpand = (expandedKeysValue: React.Key[]) => {
     setExpandedKeys(expandedKeysValue);
-    setAutoExpandParent(false);
   };
 
   const onSelect = (selectedKeysValue: React.Key[]) => {
@@ -88,12 +116,14 @@ export const AssociationFilterItem = (props) => {
     );
   };
 
-  const handleSearchToggle = (e: MouseEvent) => {
+  const handleSearchToggle = async (e: MouseEvent) => {
     const filter = params?.[0]?.filter;
     if (searchVisible || filter) {
-      run({
-        ...params?.[0],
-        filter: undefined,
+      await run({
+        ...params,
+        filter: {
+          ...params.filter,
+        },
       });
     }
     setSearchVisible(!searchVisible);
@@ -104,11 +134,13 @@ export const AssociationFilterItem = (props) => {
     e.stopPropagation();
   };
 
-  const handleSearchInput = (e: ChangeEvent<any>) => {
-    run({
-      ...params?.[0],
+  const handleSearchInput = async (e: ChangeEvent<any>) => {
+    await run({
+      ...params,
       filter: {
-        [`${labelKey}.$includes`]: e.target.value,
+        ...params.filter,
+        [`${labelKey}.${['integer', 'decimal', 'bigInt'].includes(targetValueField.type) ? '$eq' : '$includes'}`]:
+          e.target.value,
       },
     });
   };
@@ -257,7 +289,7 @@ export const AssociationFilterItem = (props) => {
             style={{ padding: '16px 0' }}
             onExpand={onExpand}
             expandedKeys={expandedKeys}
-            autoExpandParent={autoExpandParent}
+            key={valueKey}
             treeData={treeData}
             onSelect={onSelect}
             fieldNames={fieldNames}
