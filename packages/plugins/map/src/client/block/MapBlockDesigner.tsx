@@ -28,7 +28,7 @@ export const MapBlockDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
-  const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 16;
+  const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 13;
 
   const template = useSchemaTemplate();
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
@@ -100,13 +100,13 @@ export const MapBlockDesigner = () => {
         onSubmit={({ zoom }) => {
           set(fieldSchema, 'x-component-props.zoom', zoom);
           Object.assign(field.componentProps, fieldSchema['x-component-props']);
-
           dn.emit('patch', {
             schema: {
               'x-uid': fieldSchema['x-uid'],
               'x-component-props': field.componentProps,
             },
           });
+          dn.refresh();
         }}
       ></SchemaSettings.ModalItem>
       <SchemaSettings.ModalItem

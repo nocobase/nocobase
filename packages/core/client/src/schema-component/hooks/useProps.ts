@@ -1,4 +1,5 @@
 import { merge } from '@formily/shared';
+import { useEffect } from 'react';
 
 interface Options {
   arrayMerge?(target: any[], source: any[], options?: Options): any[];
