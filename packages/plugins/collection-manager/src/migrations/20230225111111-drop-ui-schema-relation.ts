@@ -3,6 +3,16 @@ import { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {
+    const migratedFieldsCount = await this.db.getRepository('fields').count({
+      filter: {
+        'options.uiSchema': { $exists: true },
+      },
+    });
+
+    if (migratedFieldsCount > 0) {
+      return;
+    }
+
     this.app.log.info('Start to migrate uiSchema to options field');
     const fieldsCount = await this.db.getRepository('fields').count();
     this.app.log.info(`Total ${fieldsCount} fields need to be migrated`);
@@ -59,6 +69,7 @@ export default class extends Migration {
     } catch (error) {
       await transaction.rollback();
       this.app.log.error(error);
+      throw error;
     }
   }
 }

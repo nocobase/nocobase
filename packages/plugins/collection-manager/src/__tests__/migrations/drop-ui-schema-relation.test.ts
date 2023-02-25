@@ -19,6 +19,58 @@ class AddBelongsToPlugin extends Plugin {
   }
 }
 
+describe('skip if already migrated', function () {
+  let app: MockServer;
+  let db: Database;
+
+  beforeEach(async () => {
+    app = await createApp({});
+
+    db = app.db;
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should not run migration', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'testCollection',
+        fields: [
+          {
+            name: 'testField',
+            type: 'string',
+            uiSchema: {
+              title: '{{t("Collection display name")}}',
+              type: 'number',
+              'x-component': 'Input',
+              required: true,
+            },
+          },
+          {
+            name: 'fieldWithoutSchema',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    let error;
+
+    try {
+      const migration = new Migrator({ db } as MigrationContext);
+      migration.context.app = app;
+      await migration.up();
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error).toBeFalsy();
+  });
+});
+
 describe('drop ui schema', () => {
   let app: MockServer;
   let db: Database;
