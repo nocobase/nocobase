@@ -47,7 +47,7 @@ export const moment2str = (value?: moment.Moment | moment.Moment[], options: Mom
 };
 
 export const mapDateFormat = function () {
-  return (props: any) => {
+  return (props: any, field) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
     return {

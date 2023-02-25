@@ -1,24 +1,16 @@
-import { get } from "lodash";
+import { Registry } from "@nocobase/utils";
 
-import { Registry, RegistryOptions } from "@nocobase/utils";
-
+import { evaluate, Evaluator } from '../utils';
 import mathjs from "../utils/mathjs";
 import formulajs from "../utils/formulajs";
 
 
 
-export interface Evaluator {
-  (expression: string, scope?: { [key: string]: any }): any;
-}
+export { Evaluator } from '../utils';
 
-export interface EvaluatorsOptions extends RegistryOptions {
-  empty?: boolean;
-  evaluators?: { [key: string]: Evaluator };
-}
+export const evaluators = new Registry<Evaluator>();
 
-const evaluators = new Registry<Evaluator>();
-
-evaluators.register('math.js', mathjs);
-evaluators.register('formula.js', formulajs);
+evaluators.register('math.js', evaluate.bind(mathjs));
+evaluators.register('formula.js', evaluate.bind(formulajs));
 
 export default evaluators;

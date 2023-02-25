@@ -1,7 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCompile } from '../../hooks';

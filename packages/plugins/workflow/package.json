@@ -9,6 +9,7 @@
     "@nocobase/actions": "0.9.0-alpha.2",
     "@nocobase/client": "0.9.0-alpha.2",
     "@nocobase/database": "0.9.0-alpha.2",
+    "@nocobase/evaluators": "0.9.0-alpha.2",
     "@nocobase/resourcer": "0.9.0-alpha.2",
     "@nocobase/server": "0.9.0-alpha.2",
     "@nocobase/utils": "0.9.0-alpha.2",
@@ -16,9 +17,7 @@
     "axios": "^0.27.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
-    "@formulajs/formulajs": "4.2.0",
     "json-templates": "^4.2.0",
-    "mathjs": "^10.6.0",
     "moment": "^2.29.2",
     "react-js-cron": "^1.4.0"
   },
