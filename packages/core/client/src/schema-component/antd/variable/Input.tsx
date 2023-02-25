@@ -6,7 +6,7 @@ import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import moment from 'moment';
 
-import { useCompile } from '../../hooks/useCompile';
+import { useCompile } from '../..';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
