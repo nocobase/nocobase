@@ -7,7 +7,12 @@ import JSON5 from 'json5';
 export class ChartsPlugin extends Plugin {
   syncFields = async (instance, { transaction }) => {
     const _data = await query[instance.type](instance.options, { db: this.db, transaction });
-    const data = JSON5.parse(_data);
+    let data
+    if(typeof _data === 'string'){
+       data = JSON5.parse(_data);
+    }else{
+      data = _data
+    }
     const d = Array.isArray(data) ? data?.[0] : data;
     const fields = Object.keys(d || {}).map((f) => {
       return {

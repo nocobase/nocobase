@@ -5,7 +5,12 @@ export const getData = async (ctx, next) => {
   const { filterByTk } = ctx.action.params;
   const r = ctx.db.getRepository('chartsQueries');
   const instance = await r.findOne({ filterByTk });
-  ctx.body = JSON5.parse(await query[instance.type](instance.options, { db: ctx.db }));
+  const result = await query[instance.type](instance.options, { db: ctx.db });
+  if(typeof result === 'string'){
+    ctx.body = JSON5.parse(result);
+  }else{
+    ctx.body = result;
+  }
   return next();
 };
 

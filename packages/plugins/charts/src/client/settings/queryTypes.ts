@@ -8,6 +8,12 @@ const validateJSON = {
     }
     try {
       const val = JSON5.parse(value);
+      if(!Array.isArray(val)){
+        return false;
+      }
+      if(typeof val[0] !== 'object'){
+        return false;
+      }
       if(!isNaN(val)) {
         return false;
       }
@@ -17,7 +23,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-  message: '{{t("Invalid JSON format")}}',
+  message: '{{t("Invalid JSON format,must be an object array.")}}',
 };
 export const json: ISchema = {
   type: 'object',
