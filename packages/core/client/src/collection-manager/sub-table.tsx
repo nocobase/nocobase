@@ -8,7 +8,7 @@ import {
   useCollectionManager,
   useRecord,
   useRecordIndex,
-  useRequest,
+  useRequest
 } from '../';
 import { useAPIClient } from '../api-client';
 
@@ -183,7 +183,7 @@ export const SubFieldDataSourceProvider = observer((props) => {
           .resource('fields')
           .list({
             paginate: false,
-            appends: ['uiSchema'],
+            // appends: ['uiSchema'],
             sort: 'sort',
             filter: {
               parentKey: record.key,
