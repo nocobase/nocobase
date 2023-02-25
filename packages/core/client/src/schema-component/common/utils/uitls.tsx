@@ -56,7 +56,7 @@ export const conditionAnalyse = (rules, values) => {
       const result = operator && jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
       return result;
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   });
   if (type === '$and') {
