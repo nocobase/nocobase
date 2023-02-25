@@ -58,6 +58,9 @@ export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
 
+    if (options.afterLoad) {
+      await options.afterLoad();
+    }
     await this.install({
       ...options,
       sync: {
