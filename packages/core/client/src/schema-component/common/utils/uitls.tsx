@@ -49,8 +49,12 @@ export const conditionAnalyse = (rules, values) => {
     const operator = jsonlogic.operator;
     const value = getValue(jsonlogic.value, values);
     const targetField = Object.keys(flat(c))[0]?.replace?.(`.${operator}`, '');
-    const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
-    return result;
+    try {
+      const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
+      return result;
+    } catch (error) {
+      return true;
+    }
   });
   if (type === '$and') {
     return every(results, (v) => v);
