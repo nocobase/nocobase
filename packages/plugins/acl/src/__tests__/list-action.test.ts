@@ -283,4 +283,128 @@ describe('list association action with acl', () => {
     expect(data['meta']['allowedActions'].view).toContain(1);
     expect(data['meta']['allowedActions'].view).toContain(2);
   });
+
+  it('tree list action allowActions', async () => {
+    await db.getRepository('roles').create({
+      values: {
+        name: 'newRole',
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['newRole'],
+      },
+    });
+
+    const userPlugin = app.getPlugin('users');
+    const agent = app
+      .agent()
+      .set('X-With-ACL-Meta', true)
+      .auth(
+        userPlugin.jwtService.sign({
+          userId: user.get('id'),
+        }),
+        { type: 'bearer' },
+      );
+
+    app.acl.allow('table_a', ['*']);
+    app.acl.allow('collections', ['*']);
+
+    await agent.resource('collections').create({
+      values: {
+        autoGenId: true,
+        createdBy: false,
+        updatedBy: false,
+        createdAt: false,
+        updatedAt: false,
+        sortable: false,
+        name: 'table_a',
+        template: 'tree',
+        tree: 'adjacencyList',
+        fields: [
+          {
+            interface: 'integer',
+            name: 'parentId',
+            type: 'bigInt',
+            isForeignKey: true,
+            uiSchema: {
+              type: 'number',
+              title: '{{t("Parent ID")}}',
+              'x-component': 'InputNumber',
+              'x-read-pretty': true,
+            },
+            target: 'table_a',
+          },
+          {
+            interface: 'm2o',
+            type: 'belongsTo',
+            name: 'parent',
+            foreignKey: 'parentId',
+            uiSchema: {
+              title: '{{t("Parent")}}',
+              'x-component': 'RecordPicker',
+              'x-component-props': { multiple: false, fieldNames: { label: 'id', value: 'id' } },
+            },
+            target: 'table_a',
+          },
+          {
+            interface: 'o2m',
+            type: 'hasMany',
+            name: 'children',
+            foreignKey: 'parentId',
+            uiSchema: {
+              title: '{{t("Children")}}',
+              'x-component': 'RecordPicker',
+              'x-component-props': { multiple: true, fieldNames: { label: 'id', value: 'id' } },
+            },
+            target: 'table_a',
+          },
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+            uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
+            interface: 'id',
+          },
+        ],
+        title: 'table_a',
+      },
+    });
+
+    await agent.resource('table_a').create({
+      values: {},
+    });
+
+    await agent.resource('table_a').create({
+      values: {
+        parent: {
+          id: 1,
+        },
+      },
+    });
+
+    await agent.resource('table_a').create({
+      values: {},
+    });
+
+    await agent.resource('table_a').create({
+      values: {
+        parent: {
+          id: 3,
+        },
+      },
+    });
+
+    const res = await agent.resource('table_a').list({
+      filter: JSON.stringify({
+        parentId: null,
+      }),
+      tree: true,
+    });
+
+    expect(res.body.meta.allowedActions.view).toMatchObject([1, 2, 3, 4]);
+  });
 });
