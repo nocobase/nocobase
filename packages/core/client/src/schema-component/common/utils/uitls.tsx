@@ -53,7 +53,7 @@ export const conditionAnalyse = (rules, values) => {
       return true;
     }
     try {
-      const result = operator && jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
+      const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
       return result;
     } catch (error) {
       console.error(error);
