@@ -58,10 +58,7 @@ export default class extends Migration {
 
         const uiSchema = uiSchemaRecord.get('schema');
 
-        fieldRecord.set('options', {
-          options: fieldRecord.get('options'),
-          uiSchema,
-        });
+        fieldRecord.set('uiSchema', uiSchema);
 
         await fieldRecord.save({
           transaction,
