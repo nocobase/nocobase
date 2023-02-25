@@ -1,48 +1,76 @@
 import { useFieldSchema } from '@formily/react';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
-  const { action = 'list', service, value } = props;
+  const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const { getCollectionFields } = useCollectionManager();
   const record = useRecord();
+  const recordValue = record[fieldSchema.name];
+
+  const normalizeValues = useCallback(
+    (obj) => {
+      if (obj && typeof obj === 'object') {
+        return obj[fieldNames.value];
+      }
+      return obj;
+    },
+    [fieldNames.value],
+  );
+
+  const value = useMemo(() => {
+    if (recordValue === undefined || recordValue === null) {
+      return;
+    }
+    if (Array.isArray(recordValue)) {
+      return recordValue.map(normalizeValues);
+    } else {
+      return normalizeValues(recordValue);
+    }
+  }, [recordValue, normalizeValues]);
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name);
   }, [fieldSchema.name]);
 
+  const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {
-    let extraFilter = params?.filter;
-    if (collectionField && ['oho', 'o2m'].includes(collectionField.interface)) {
-      const eqValue = record?.[collectionField.sourceKey];
-      extraFilter = {
-        $or: [
-          {
-            $and: [
-              {
-                [collectionField.foreignKey]: {
-                  $is: null,
-                },
+    const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
+    return {
+      $or: [
+        {
+          $and: [
+            isOToAny
+              ? {
+                  [collectionField.foreignKey]: {
+                    $is: null,
+                  },
+                }
+              : null,
+            params?.filter,
+          ],
+        },
+        isOToAny && sourceValue !== undefined && sourceValue !== null
+          ? {
+              [collectionField.foreignKey]: {
+                $eq: sourceValue,
               },
-              params?.filter,
-            ].filter(Boolean),
-          },
-          eqValue !== undefined && eqValue !== null
-            ? {
-                [collectionField.foreignKey]: {
-                  $eq: eqValue,
-                },
-              }
-            : null,
-        ].filter(Boolean),
-      };
-    }
-    return extraFilter;
-  }, [params?.filter, getCollectionFields, collectionField, record]);
+            }
+          : null,
+        value
+          ? {
+              [fieldNames.value]: {
+                [Array.isArray(value) ? '$in' : '$eq']: value,
+              },
+            }
+          : null,
+      ],
+    };
+  }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
 
   return useMemo(() => {
     return {

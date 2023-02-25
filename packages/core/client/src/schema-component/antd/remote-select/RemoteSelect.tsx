@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { SelectProps, Spin } from 'antd';
+import { SelectProps } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
-import { useCompile, useOnceFn } from '../../hooks';
+import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
 
@@ -19,6 +19,7 @@ const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
     const { fieldNames = {}, service = {}, wait = 300, value, objectValue, ...others } = props;
     const compile = useCompile();
+    const firstRun = useRef(false);
 
     const { data, run, loading } = useRequest(
       {
@@ -48,11 +49,10 @@ const InternalRemoteSelect = connect(
         }),
       [service, fieldNames],
     );
-    const firstDep = useRef(runDep);
 
     useEffect(() => {
       // Lazy load
-      if (firstDep.current !== runDep) {
+      if (firstRun.current) {
         run();
       }
     }, [runDep]);
@@ -98,9 +98,13 @@ const InternalRemoteSelect = connect(
       );
     }, [data, fieldNames.label, objectValue, value]);
 
-    const onDropdownVisibleChange = useOnceFn(() => {
+    const onDropdownVisibleChange = () => {
+      if (firstRun.current) {
+        return;
+      }
       run();
-    });
+      firstRun.current = true;
+    };
 
     return (
       <Select
