@@ -7,17 +7,17 @@ import {
   FormProvider,
   SchemaComponent,
   SchemaComponentOptions,
-  useAPIClient,
+  useAPIClient, useRequest,
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { templates } from './templates';
-import { DataSetBlockInitializer } from './DataSetBlockInitializer';
+import { ChartQueryBlockInitializer, ChartQueryMetadata } from './ChartQueryBlockInitializer';
 import { css } from '@emotion/css';
 import JSON5 from 'json5';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { parseDataSetString } from './utils';
-import { ChartBlockEngine } from './ChartBlockEngine';
+import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -37,38 +37,36 @@ export const Options = observer((props) => {
   return <RecursionField name={form.values.chartType || 'default'} schema={s} />;
 });
 
+
 export const ChartBlockInitializer = (props) => {
   const { insert } = props;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return (
-    <DataSetBlockInitializer
+    <ChartQueryBlockInitializer
       {...props}
       componentType={'Kanban'}
       icon={<FormOutlined />}
-      onCreateBlockSchema={async ({ item }) => {
-        const dataSource = Object.keys(JSON5.parse(item.data_set_value)[0]).map(key => {
+      onCreateBlockSchema={async ({ item: chartQueryMetadata }: { item: ChartQueryMetadata }) => {
+        console.log(chartQueryMetadata);
+        const dataSource = chartQueryMetadata?.fields.map(field => {
           return {
-            label: key,
-            value: key,
+            label: field.name,
+            value: field.name,
           };
         });
         let values = await FormDialog({ title: t('Create chart block'), width: 1200 }, () => {
-          const [dataSet, setDataSet] = useState(parseDataSetString(item?.data_set_value));
           const form = useForm();
-          const [previewMetaData, setPreviewMetaData] = useState(null);
+          const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
           useEffect(() => {
-            const renderComponent = templates.get(form.values.chartType)?.renderComponent;
-            const result = {
-              dataSetMetaData: {
-                dataSetMetaData: item,
-                chartConfig: form.values,
-              },
+            const chartBlockEngineMetaData = {
+              chartQueryMetadata,
+              chartConfig: form.values,
             };
-            setPreviewMetaData(result);
+            setChartBlockEngineMetaData(chartBlockEngineMetaData);
           }, [form.values.chartType]);
-          console.log(previewMetaData);
+          console.log(chartBlockEngineMetaData);
           return (
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions
@@ -90,7 +88,7 @@ export const ChartBlockInitializer = (props) => {
                     <FormProvider form={form}>
                       <FormLayout layout={'vertical'}>
                         <SchemaComponent
-                          scope={{ dataSource, JSON5, setPreviewMetaData }}
+                          scope={{ dataSource, JSON5 }}
                           components={{ Options }}
                           schema={{
                             properties: {
@@ -120,14 +118,19 @@ export const ChartBlockInitializer = (props) => {
                   {/*  right*/}
                   <div className={
                     css`
-                      max-width: 600px;
+                      flex: 1;
+                      min-width: 600px;
                     `
                   }>
                     {/*DataSet Preview*/}
-                    <h4>DataSet Preview:</h4>
-                    <DataSetPreviewTable dataSet={dataSet} />
+                    <h4>QueryData Preview:</h4>
                     {
-                      (previewMetaData?.dataSetMetaData?.chartConfig?.chartType !== undefined && previewMetaData?.dataSetMetaData?.chartConfig?.chartType !== 'DataSetPreviewTable')
+                      chartBlockEngineMetaData?.chartQueryMetadata?.id
+                      &&
+                      <DataSetPreviewTable queryId={chartBlockEngineMetaData?.chartQueryMetadata?.id} />
+                    }
+                    {
+                      (chartBlockEngineMetaData?.chartConfig?.chartType !== undefined && chartBlockEngineMetaData?.chartConfig?.chartType !== 'DataSetPreviewTable')
                       &&
                       <div className={
                         css`
@@ -142,7 +145,7 @@ export const ChartBlockInitializer = (props) => {
                     }
                     {/*  Chart Preview*/}
                     {
-                      previewMetaData
+                      chartBlockEngineMetaData
                       &&
                       <>
                         <SchemaComponent
@@ -152,9 +155,8 @@ export const ChartBlockInitializer = (props) => {
                                 type: 'void',
                                 'x-decorator': 'CardItem',
                                 'x-component': 'ChartBlockEngine',
-                                'title': `${previewMetaData?.dataSetMetaData?.title ?? ''}`,
                                 'x-component-props': {
-                                  previewMetaData: previewMetaData,
+                                  chartBlockEngineMetaData,
                                 },
                               },
                             },
@@ -171,20 +173,17 @@ export const ChartBlockInitializer = (props) => {
           initialValues: {},
         });
         if (values) {
-          values = {
-            dataSetMetaData: {
-              dataSetMetaData: item,
-              chartConfig: values,
-            },
+          const chartBlockEngineMetaData = {
+            chartQueryMetadata,
+            chartConfig: values,
           };
           insert({
             type: 'void',
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',
-            'title': `${values?.dataSetMetaData?.title ?? ''}`,
             'x-component-props': {
-              previewMetaData: values,
+              chartBlockEngineMetaData,
             },
           });
         }

@@ -1,10 +1,11 @@
 import { query } from '../query';
+import JSON5 from 'json5';
 
 export const getData = async (ctx, next) => {
   const { filterByTk } = ctx.action.params;
   const r = ctx.db.getRepository('chartsQueries');
   const instance = await r.findOne({ filterByTk });
-  ctx.body = await query[instance.type](instance.options, { db: ctx.db });
+  ctx.body = JSON5.parse(await query[instance.type](instance.options, { db: ctx.db }));
   return next();
 };
 

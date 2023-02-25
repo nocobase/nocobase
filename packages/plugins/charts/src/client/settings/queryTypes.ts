@@ -1,18 +1,37 @@
 import { ISchema } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
 
+const validateJSON = {
+  validator: `{{(value, rule)=> {
+    if (!value) {
+      return '';
+    }
+    try {
+      const val = JSON5.parse(value);
+      if(!isNaN(val)) {
+        return false;
+      }
+      return true;
+    } catch(error) {
+      console.error(error);
+      return false;
+    }
+  }}}`,
+  message: '{{t("Invalid JSON format")}}',
+};
 export const json: ISchema = {
   type: 'object',
   properties: {
     data: {
       title: 'JSON',
       required: true,
-      'x-component': 'Input.JSON',
+      'x-component': 'Input.TextArea',
+      'x-validator': validateJSON,
       'x-component-props': {
         autoSize: {
           maxRows: 20,
           minRows: 10,
-        }
+        },
       },
       'x-decorator': 'FormItem',
     },
@@ -31,7 +50,7 @@ export const sql: ISchema = {
         autoSize: {
           maxRows: 20,
           minRows: 10,
-        }
+        },
       },
     },
   },

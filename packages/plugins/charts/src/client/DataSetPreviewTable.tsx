@@ -1,19 +1,23 @@
 import { ISchema } from '@formily/react';
-import { FormItem, Input, SchemaComponent, SchemaComponentProvider, Table } from '@nocobase/client';
+import {
+  BlockSchemaComponentProvider,
+  FormItem,
+  Input,
+  SchemaComponent,
+  SchemaComponentProvider,
+  Table,
+} from '@nocobase/client';
 import React from 'react';
 import { uid } from '@formily/shared';
+import { useGetDataSet } from './ChartBlockEngine';
+import { Spin } from 'antd';
 
-interface DataSetPreviewProps {
-  dataSet: null | object[];
-}
-
-export default ({ dataSet }: DataSetPreviewProps) => {
+export default ({ queryId }: { queryId: number }) => {
+  const { dataSet, loading } = useGetDataSet(queryId);
   const columns = {};
+  console.log(dataSet);
   if (dataSet) {
     const dataKeys = Object.keys(dataSet[0]);
-  /*  dataSet.map((dataItem)=>{
-      dataItem["data_set_preview_cus_id"]=uid()
-    })*/
     for (const dataKey of dataKeys) {
       columns[dataKey] = {
         type: 'void',
@@ -44,9 +48,17 @@ export default ({ dataSet }: DataSetPreviewProps) => {
       },
     },
   };
+  if (loading)
+    return (
+      <>
+        <Spin />
+      </>
+    );
   return (
-    <SchemaComponentProvider scope={{ dataSet }} components={{ Table, Input ,FormItem}}>
-      <SchemaComponent schema={schema} />
+    <SchemaComponentProvider scope={{ dataSet }} components={{ Table, Input, FormItem }}>
+      <BlockSchemaComponentProvider>
+        <SchemaComponent schema={schema} />
+      </BlockSchemaComponentProvider>
     </SchemaComponentProvider>
   );
 };

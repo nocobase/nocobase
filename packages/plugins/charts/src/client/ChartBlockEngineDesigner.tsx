@@ -20,6 +20,7 @@ import JSON5 from 'json5';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { Button } from 'antd';
 import { parseDataSetString } from './utils';
+import { ChartBlockEngineMetaData } from './ChartBlockEngine';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -42,11 +43,11 @@ const validateJSON = {
 
 export const ChartBlockEngineDesigner = () => {
   const fieldSchema = useFieldSchema();
-  const { previewMetaData } = fieldSchema?.['x-component-props'];
+  const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'];
   return (
     <GeneralSchemaDesigner>
       <ChartBlockEngineDesignerInitializer
-        previewMetaData={previewMetaData}
+        chartBlockEngineMetaData={chartBlockEngineMetaData}
       />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -60,9 +61,7 @@ export const ChartBlockEngineDesigner = () => {
 };
 
 export const ChartBlockEngineDesignerInitializer = (props) => {
-    const { previewMetaData, effects } = props;
-    const chartBlockMetaData = previewMetaData.dataSetMetaData
-    const { chartConfig, dataSetMetaData } = chartBlockMetaData;
+    const { chartBlockEngineMetaData }: { chartBlockEngineMetaData: ChartBlockEngineMetaData } = props;
     const { t } = useTranslation();
     const options = useContext(SchemaOptionsContext);
     const { dn } = useDesignable();
@@ -70,30 +69,25 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
     const api = useAPIClient();
     const field = useField();
     const compiler = useCompile();
-
+    const { chartConfig, chartQueryMetadata } = chartBlockEngineMetaData;
+    const dataSource = chartBlockEngineMetaData.chartQueryMetadata?.fields.map(field => {
+      return {
+        label: field.name,
+        value: field.name,
+      };
+    });
     return (
       <SchemaSettings.Item
         onClick={async () => {
           FormDialog({ title: 'Edit chart block', width: 1200 }, (form) => {
-            const [dataSet, setDataSet] = useState(parseDataSetString(dataSetMetaData?.data_set_value));
-            const [previewMetaData, setPreviewMetaData] = useState(null);
+            const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
             useEffect(() => {
-              const result = {
-                dataSetMetaData: {
-                  dataSetMetaData: dataSetMetaData,
-                  chartConfig: form.values,
-                }
+              const chartBlockEngineMetaData = {
+                chartQueryMetadata,
+                chartConfig: form.values,
               };
-              setPreviewMetaData(result);
+              setChartBlockEngineMetaData(chartBlockEngineMetaData);
             }, [form.values.chartType]);
-
-            const dataSource = Object.keys(JSON5.parse(dataSetMetaData.data_set_value)[0]).map(key => {
-              return {
-                label: key,
-                value: key,
-              };
-            });
-
             return (
               <APIClientProvider apiClient={api}>
                 <SchemaComponentOptions
@@ -109,7 +103,8 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                     {/*  left*/}
                     <div className={
                       css`
-                        flex: 1
+                        flex: 1;
+                        min-width: 600px;
                       `
                     }>
                       <FormProvider form={form}>
@@ -149,8 +144,13 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       `
                     }>
                       {/*DataSet Preview*/}
-                      <h4>DataSet Preview:</h4>
-                      <DataSetPreviewTable dataSet={dataSet} />
+                      <h4>QueryData Preview:</h4>
+                      {
+                        chartBlockEngineMetaData?.chartQueryMetadata?.id
+                        &&
+                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.chartQueryMetadata?.id} />
+                      }
+                      {/*<DataSetPreviewTable dataSet={dataSet} />*/}
                       <div className={
                         css`
                           display: flex;
@@ -163,7 +163,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       </div>
                       {/*  Chart Preview*/}
                       {
-                        previewMetaData
+                        chartBlockEngineMetaData
                         &&
                         <>
                           <SchemaComponent
@@ -173,9 +173,8 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                                   type: 'void',
                                   'x-decorator': 'CardItem',
                                   'x-component': 'ChartBlockEngine',
-                                  'title': `${previewMetaData?.dataSetMetaData?.title ?? ''}`,
                                   'x-component-props': {
-                                    previewMetaData
+                                    chartBlockEngineMetaData,
                                   },
                                 },
                               },
@@ -195,14 +194,11 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
             .then((values) => {
               //patch updates
               values = {
-                dataSetMetaData:{
-                  dataSetMetaData,
-                  chartConfig: values,
-                }
+                chartQueryMetadata,
+                chartConfig: values,
               };
-              field.componentProps.previewMetaData=values
-              fieldSchema['x-component-props'].previewMetaData = values;
-              //
+              field.componentProps.chartBlockEngineMetaData = values;
+              fieldSchema['x-component-props'].chartBlockEngineMetaData = values;
               dn.emit('patch', {
                 schema: {
                   'x-uid': fieldSchema['x-uid'],
