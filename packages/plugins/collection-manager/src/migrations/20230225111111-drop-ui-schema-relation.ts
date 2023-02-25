@@ -43,7 +43,7 @@ export default class extends Migration {
         const foreignKeyValue: any = await this.app.db.sequelize.query(
           `SELECT ${foreignKey}
            FROM ${collection.addSchemaTableName()}
-           WHERE key = '${fieldKey}'`,
+           WHERE ${this.app.db.inDialect('mysql') ? '`key`' : 'key'} = '${fieldKey}'`,
           {
             type: 'SELECT',
             transaction,
