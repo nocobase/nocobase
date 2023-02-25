@@ -3,7 +3,9 @@ import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
 import { MockServer, mockServer } from '@nocobase/test';
 import Plugin from '../';
 
-export async function createApp(options: { beforeInstall?: (app: MockServer) => void } & any = {}) {
+export async function createApp(
+  options: { beforeInstall?: (app: MockServer) => void; beforePlugin?: (app: MockServer) => void } & any = {},
+) {
   const app = mockServer({
     acl: false,
     ...options,
@@ -11,6 +13,8 @@ export async function createApp(options: { beforeInstall?: (app: MockServer) => 
 
   await app.db.clean({ drop: true });
   await app.db.sync({});
+
+  options.beforePlugin && options.beforePlugin(app);
 
   app.plugin(PluginErrorHandler, { name: 'error-handler' });
   app.plugin(Plugin, { name: 'collection-manager' });
@@ -20,7 +24,7 @@ export async function createApp(options: { beforeInstall?: (app: MockServer) => 
     await options.beforeInstall(app);
   }
 
-  await app.loadAndInstall({ clean: true, afterLoad: options.afterLoad });
+  await app.install({ clean: true });
   await app.start();
   return app;
 }
