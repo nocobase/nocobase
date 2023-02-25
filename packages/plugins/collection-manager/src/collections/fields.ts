@@ -60,12 +60,6 @@ export default {
       foreignKey: 'reverseKey',
     },
     {
-      type: 'belongsTo',
-      name: 'uiSchema',
-      target: 'uiSchemas',
-      foreignKey: 'uiSchemaUid',
-    },
-    {
       type: 'json',
       name: 'options',
       defaultValue: {},
