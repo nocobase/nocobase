@@ -677,7 +677,7 @@ export class PluginACL extends Plugin {
         if (collection.options.tree) {
           if (listData.length == 0) return [];
           const getAllNodeIds = (data) => [data[primaryKeyField], ...(data.children || []).flatMap(getAllNodeIds)];
-          return getAllNodeIds(listData[0].toJSON());
+          return listData.map((tree) => getAllNodeIds(tree.toJSON())).flat();
         }
 
         return listData.map((item) => item[primaryKeyField]);

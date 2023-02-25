@@ -386,6 +386,18 @@ describe('list association action with acl', () => {
       },
     });
 
+    await agent.resource('table_a').create({
+      values: {},
+    });
+
+    await agent.resource('table_a').create({
+      values: {
+        parent: {
+          id: 3,
+        },
+      },
+    });
+
     const res = await agent.resource('table_a').list({
       filter: JSON.stringify({
         parentId: null,
@@ -393,6 +405,6 @@ describe('list association action with acl', () => {
       tree: true,
     });
 
-    expect(res.body.meta.allowedActions.view).toMatchObject([1, 2]);
+    expect(res.body.meta.allowedActions.view).toMatchObject([1, 2, 3, 4]);
   });
 });
