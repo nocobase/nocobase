@@ -285,7 +285,7 @@ export const Table: any = observer((props: any) => {
             const current = props?.pagination?.current;
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
-              index = index + (current - 1) * pageSize;
+              index = index + 1 + (current - 1) * pageSize;
             }
             if (treeTable && record.index) {
               const [first, ...rest] = [...record.index];
