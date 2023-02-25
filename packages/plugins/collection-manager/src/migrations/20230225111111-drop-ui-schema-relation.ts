@@ -18,12 +18,15 @@ export default class extends Migration {
 
     const transaction = await this.db.sequelize.transaction();
 
+    const queryInterface = this.app.db.sequelize.getQueryInterface();
+
     const migrateFieldsSchema = async (collection: Collection) => {
       this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
 
       const fieldRecords: Array<FieldModel> = await collection.repository.find({
         transaction,
       });
+
       const fieldsCount = await collection.repository.count({
         transaction,
       });
@@ -41,9 +44,9 @@ export default class extends Migration {
 
         const fieldKey = fieldRecord.get('key');
         const foreignKeyValue: any = await this.app.db.sequelize.query(
-          `SELECT ${foreignKey}
+          `SELECT ${queryInterface.quoteIdentifier(foreignKey)}
            FROM ${collection.addSchemaTableName()}
-           WHERE ${this.app.db.inDialect('mysql') ? '`key`' : 'key'} = '${fieldKey}'`,
+           WHERE ${queryInterface.quoteIdentifier('key')} = '${fieldKey}'`,
           {
             type: 'SELECT',
             transaction,
