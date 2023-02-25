@@ -2,7 +2,13 @@ import { MenuOutlined } from '@ant-design/icons';
 import { ISchema, useFieldSchema } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaSettings, TableBlockContext } from '../..';
+import {
+  IsTreeTableContext,
+  SchemaInitializer,
+  SchemaInitializerItemOptions,
+  SchemaSettings,
+  TableBlockContext,
+} from '../..';
 import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
 
@@ -49,6 +55,7 @@ export const TableActionColumnInitializers = (props: any) => {
   const api = useAPIClient();
   const { refresh } = useDesignable();
   const { t } = useTranslation();
+  const treeTable = useContext(IsTreeTableContext);
 
   return (
     <SchemaInitializer.Button
@@ -107,17 +114,19 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
-            {
-              type: 'item',
-              title: t('Add Child'),
-              component: 'CreateChildNodeInitializer',
-              schema: {
-                'x-component': 'Action.Link',
-                'x-action': 'create',
-                'x-decorator': 'ACLActionProvider',
-              },
-            },
-          ],
+            treeTable
+              ? {
+                  type: 'item',
+                  title: t('Add Child'),
+                  component: 'CreateChildNodeInitializer',
+                  schema: {
+                    'x-component': 'Action.Link',
+                    'x-action': 'create',
+                    'x-decorator': 'ACLActionProvider',
+                  },
+                }
+              : null,
+          ].filter((i) => i) as SchemaInitializerItemOptions[],
         },
         {
           type: 'divider',
