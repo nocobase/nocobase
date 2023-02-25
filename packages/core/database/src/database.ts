@@ -312,6 +312,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
+    this.on('afterUpdateCollection', (collection, options) => {
+      if (collection.options.schema) {
+        collection.model._schema = collection.options.schema;
+      }
+    });
+
     this.on('beforeDefineCollection', (options) => {
       if (options.underscored) {
         if (lodash.get(options, 'sortable.scopeKey')) {
