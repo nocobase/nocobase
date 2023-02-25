@@ -1,5 +1,6 @@
 import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
+import { Collection } from '@nocobase/database';
 
 export default class extends Migration {
   async up() {
@@ -13,19 +14,17 @@ export default class extends Migration {
       return;
     }
 
-    this.app.log.info('Start to migrate uiSchema to options field');
-    const fieldsCount = await this.db.getRepository('fields').count();
-    this.app.log.info(`Total ${fieldsCount} fields need to be migrated`);
-
-    const fieldCollection = this.db.getCollection('fields');
-
-    const fieldRecords: Array<FieldModel> = await this.db.getRepository('fields').find();
-
     const foreignKey = this.app.db.options.underscored ? 'ui_schema_uid' : 'uiSchemaUid';
 
     const transaction = await this.db.sequelize.transaction();
 
-    try {
+    const migrateFieldsSchema = async (collection: Collection) => {
+      this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
+
+      const fieldRecords: Array<FieldModel> = await collection.repository.find();
+      const fieldsCount = await collection.repository.count();
+      this.app.log.info(`Total ${fieldsCount} fields need to be migrated`);
+
       let i = 0;
 
       for (const fieldRecord of fieldRecords) {
@@ -34,10 +33,11 @@ export default class extends Migration {
         this.app.log.info(
           `Migrate field ${fieldRecord.get('collectionName')}.${fieldRecord.get('name')}, ${i}/${fieldsCount}`,
         );
+
         const fieldKey = fieldRecord.get('key');
         const foreignKeyValue: any = await this.app.db.sequelize.query(
           `SELECT ${foreignKey}
-           FROM ${fieldCollection.addSchemaTableName()}
+           FROM ${collection.addSchemaTableName()}
            WHERE key = '${fieldKey}'`,
           {
             type: 'SELECT',
@@ -58,7 +58,11 @@ export default class extends Migration {
 
         const uiSchema = uiSchemaRecord.get('schema');
 
-        fieldRecord.set('uiSchema', uiSchema);
+        fieldRecord.set('options', {
+          options: fieldRecord.get('options'),
+          uiSchema,
+        });
+
         await fieldRecord.save({
           transaction,
         });
@@ -66,6 +70,14 @@ export default class extends Migration {
 
       await transaction.commit();
       this.app.log.info('Migrate uiSchema to options field done');
+    };
+
+    try {
+      await migrateFieldsSchema(this.db.getCollection('fields'));
+
+      if (this.db.getCollection('fieldsHistory')) {
+        await migrateFieldsSchema(this.db.getCollection('fieldsHistory'));
+      }
     } catch (error) {
       await transaction.rollback();
       this.app.log.error(error);
