@@ -17,6 +17,8 @@ export default class Duplicator extends Plugin {
     this.app.resourcer.define({
       name: 'duplicator',
       actions: {
+        restore: async (ctx, next) => {},
+        dump: async (ctx, next) => {},
         collectionGroups: async (ctx, next) => {
           ctx.withoutDataWrapping = true;
           ctx.body = CollectionGroupManager.collectionGroups;
