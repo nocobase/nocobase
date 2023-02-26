@@ -73,6 +73,7 @@ export default {
   "Close": "Close",
   "Set the data scope": "Set the data scope",
   "Data blocks": "Data blocks",
+  "Filter blocks": "Filter blocks",
   "Table": "Table",
   "Form": "Form",
   "Select data source": "Select data source",

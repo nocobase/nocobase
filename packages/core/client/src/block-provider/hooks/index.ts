@@ -199,6 +199,56 @@ export const useCreateActionProps = () => {
   };
 };
 
+export const useFilterBlockActionProps = () => {
+  const form = useForm();
+  const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const { fields, getField } = useCollection();
+  const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUser = useCurrentUserContext()?.data?.data;
+
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      // TODO: implement filter action
+      // need to get the controller of the data block
+      // and it can control how to filter the data
+
+      // try {
+      //   actionField.data.loading = false;
+      // } catch (error) {
+      //   actionField.data.loading = false;
+      // }
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const form = useForm();
+  const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const { fields, getField } = useCollection();
+  const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUser = useCurrentUserContext()?.data?.data;
+
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      // TODO: implement reset action
+
+      // try {
+      //   actionField.data.loading = false;
+      // } catch (error) {
+      //   actionField.data.loading = false;
+      // }
+    },
+  };
+};
+
 export const useCustomizeUpdateActionProps = () => {
   const { resource, __parent, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();

@@ -760,6 +760,72 @@ export const createFormBlockSchema = (options) => {
   return schema;
 };
 
+// TODO
+export const createFilterFormBlockSchema = (options) => {
+  const {
+    formItemInitializers = 'FormItemInitializers',
+    actionInitializers = 'FilterFormActionInitializers',
+    collection,
+    resource,
+    association,
+    action,
+    template,
+    ...others
+  } = options;
+  const resourceName = resource || association || collection;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action-props': {
+      skipScopeCheck: !action,
+    },
+    'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
+    'x-decorator': 'FormBlockProvider',
+    'x-decorator-props': {
+      ...others,
+      action,
+      resource: resourceName,
+      collection,
+      association,
+      // action: 'get',
+      // useParams: '{{ useParamsFromRecord }}',
+    },
+    'x-designer': 'FormV2.Designer',
+    'x-component': 'CardItem',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'FormV2',
+        'x-component-props': {
+          useProps: '{{ useFormBlockProps }}',
+        },
+        properties: {
+          grid: template || {
+            type: 'void',
+            'x-component': 'Grid',
+            'x-initializer': formItemInitializers,
+            properties: {},
+          },
+          actions: {
+            type: 'void',
+            'x-initializer': actionInitializers,
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              layout: 'one-column',
+              style: {
+                marginTop: 24,
+                float: 'right',
+              },
+            },
+            properties: {},
+          },
+        },
+      },
+    },
+  };
+  // console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
+
 export const createReadPrettyFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',

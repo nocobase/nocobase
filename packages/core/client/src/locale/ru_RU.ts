@@ -49,6 +49,7 @@ export default {
   "Close": "Закрыть",
   "Set the data scope": "Установить область данных",
   "Data blocks": "Блоки данных",
+  "Filter blocks": "Просеивающие блоки",
   "Table": "Таблица",
   "Form": "Форма",
   "Select data source": "Выбрать источник данных",

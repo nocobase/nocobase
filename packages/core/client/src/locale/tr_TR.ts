@@ -49,6 +49,7 @@ export default {
   "Close": "Kapat",
   "Set the data scope": "Veri kapsamını ayarla",
   "Data blocks": "Veri Blokları",
+  "Filter blocks": "Filtre blokları",
   "Table": "Tablo",
   "Form": "Form",
   "Select data source": "Veri kaynağını seç",

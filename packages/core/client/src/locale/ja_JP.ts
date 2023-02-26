@@ -77,6 +77,7 @@ export default {
   "Close": "閉じる",
   "Set the data scope": "データ範囲の設定",
   "Data blocks": "データブロック",
+  "Filter blocks": "フィルターブロック",
   "Table": "テーブル",
   "Form": "フォーム",
   "Select data source": "データソースを選択",
