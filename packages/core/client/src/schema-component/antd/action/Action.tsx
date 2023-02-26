@@ -149,6 +149,7 @@ export const Action: ComposedAction = observer((props: any) => {
         openSize,
         containerRefKey,
         fieldSchema,
+        action: fieldSchema['x-action'],
       }}
     >
       {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}

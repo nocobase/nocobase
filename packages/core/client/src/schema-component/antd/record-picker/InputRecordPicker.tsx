@@ -130,7 +130,9 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       />
       <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>
         <CollectionProvider allowNull name={collectionField?.target}>
-          <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+          <ActionContext.Provider
+            value={{ openMode: 'drawer', action: useActionContext().action, visible, setVisible }}
+          >
             <IsTreeTableContext.Provider value={false}>
               <FormProvider>
                 <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>

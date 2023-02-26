@@ -4,6 +4,7 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
+import { useActionContext } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { IsTreeTableContext } from './TableBlockProvider';
@@ -122,7 +123,7 @@ export const TableSelectorProvider = (props) => {
     params.tree = true;
     params.filter = {
       ...(params.filter ?? {}),
-      parentId: useRecord()?.id ?? null,
+      parentId: useActionContext().action === 'update' ? null : record?.id ?? null,
     };
     params.appends = params.appends ?? useAssociationNames(props.collection).filter((i) => i !== 'children');
   }
