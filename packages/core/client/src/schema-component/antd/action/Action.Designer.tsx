@@ -47,7 +47,9 @@ export const ActionDesigner = (props) => {
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
-  const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
+  const isLinkageAction =
+    (Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0) ||
+    fieldSchema.parent['x-initializer'] === 'DetailsActionInitializers';
 
   useEffect(() => {
     const schemaUid = uid();
