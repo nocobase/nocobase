@@ -2,7 +2,7 @@ import lodash from 'lodash';
 import { Restorer } from './restorer';
 
 interface CollectionGroup {
-  pluginName: string;
+  namespace: string;
   collections: string[];
   function: string;
 
@@ -24,13 +24,13 @@ export class CollectionGroupManager {
 
     if (lodash.isPlainObject(groups[0])) {
       groups = (groups as CollectionGroup[]).map(
-        (collectionGroup) => `${collectionGroup.pluginName}.${collectionGroup.function}`,
+        (collectionGroup) => `${collectionGroup.namespace}.${collectionGroup.function}`,
       );
     }
 
     return this.collectionGroups
       .filter((collectionGroup) => {
-        const groupKey = `${collectionGroup.pluginName}.${collectionGroup.function}`;
+        const groupKey = `${collectionGroup.namespace}.${collectionGroup.function}`;
         return (groups as string[]).includes(groupKey);
       })
       .map((collectionGroup) => collectionGroup.collections)
@@ -53,70 +53,70 @@ export class CollectionGroupManager {
 }
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'core',
+  namespace: 'core',
   function: 'migration',
   collections: ['migrations'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'multi-app-manager',
+  namespace: 'multi-app-manager',
   function: 'multi apps',
   collections: ['applications'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'collection-manager',
+  namespace: 'collection-manager',
   function: 'collections',
   collections: ['collections', 'fields', 'collectionCategories', 'collectionCategory'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'ui-schema-storage',
+  namespace: 'ui-schema-storage',
   function: 'uiSchemas',
   collections: ['uiSchemas', 'uiSchemaServerHooks', 'uiSchemaTemplates', 'uiSchemaTreePath'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'ui-routes-storage',
+  namespace: 'ui-routes-storage',
   function: 'uiRoutes',
   collections: ['uiRoutes'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'acl',
+  namespace: 'acl',
   function: 'acl',
   collections: ['roles', 'rolesResources', 'rolesResourcesActions', 'rolesResourcesScopes', 'rolesUischemas'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'workflow',
+  namespace: 'workflow',
   function: 'workflowConfig',
   collections: ['workflows', 'flow_nodes'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'snapshot-field',
+  namespace: 'snapshot-field',
   function: 'snapshot-field',
   collections: ['collectionsHistory', 'fieldsHistory'],
   dumpable: 'required',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'workflow',
+  namespace: 'workflow',
   function: 'executionLogs',
   collections: ['executions', 'jobs'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'sequence-field',
+  namespace: 'sequence-field',
   function: 'sequences',
   collections: ['sequences'],
   dumpable: 'required',
@@ -171,84 +171,84 @@ CollectionGroupManager.registerCollectionGroup({
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'users',
+  namespace: 'users',
   function: 'users',
   collections: ['users', 'rolesUsers'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'file-manager',
+  namespace: 'file-manager',
   function: 'storageSetting',
   collections: ['storages'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'file-manager',
+  namespace: 'file-manager',
   function: 'attachmentRecords',
   collections: ['attachments'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'system-settings',
+  namespace: 'system-settings',
   function: 'systemSettings',
   collections: ['systemSettings'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'verification',
+  namespace: 'verification',
   function: 'verificationProviders',
   collections: ['verifications_providers'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'verification',
+  namespace: 'verification',
   function: 'verificationData',
   collections: ['verifications'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'oidc',
+  namespace: 'oidc',
   function: 'oidcProviders',
   collections: ['oidcProviders'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'saml',
+  namespace: 'saml',
   function: 'samlProviders',
   collections: ['samlProviders'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'map',
+  namespace: 'map',
   function: 'mapConfiguration',
   collections: ['mapConfiguration'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'audit-logs',
+  namespace: 'audit-logs',
   function: 'auditLogs',
   collections: ['auditLogs', 'auditChanges'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'graph-collection-manager',
+  namespace: 'graph-collection-manager',
   function: 'graphCollectionPositions',
   collections: ['graphPositions'],
   dumpable: 'optional',
 });
 
 CollectionGroupManager.registerCollectionGroup({
-  pluginName: 'iframe-block',
+  namespace: 'iframe-block',
   function: 'iframe html storage',
   collections: ['iframeHtml'],
   dumpable: 'required',

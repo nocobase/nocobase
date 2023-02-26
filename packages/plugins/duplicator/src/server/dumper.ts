@@ -23,7 +23,7 @@ export class Dumper extends AppMigrator {
 
     // get system available collection groups
     const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
-      appPlugins.includes(collectionGroup.pluginName),
+      appPlugins.includes(collectionGroup.namespace),
     );
 
     const coreCollections = ['applicationPlugins'];

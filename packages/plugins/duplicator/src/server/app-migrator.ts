@@ -70,16 +70,16 @@ abstract class AppMigrator extends EventEmitter {
       choices: [
         new inquirer.Separator('== Required =='),
         ...requiredGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
+          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
           checked: true,
           disabled: true,
         })),
 
         new inquirer.Separator('== Optional =='),
         ...optionalGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
+          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
+          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
           checked: this.direction === 'dump',
         })),
       ],

@@ -7,6 +7,7 @@ import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
+
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
 
@@ -103,7 +104,7 @@ export class Restorer extends AppMigrator {
 
     const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) => {
       return (
-        importPlugins.includes(collectionGroup.pluginName) &&
+        importPlugins.includes(collectionGroup.namespace) &&
         collectionGroup.collections.every((collectionName) => collections.includes(collectionName))
       );
     });

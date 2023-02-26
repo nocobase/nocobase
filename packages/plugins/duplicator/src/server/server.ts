@@ -1,4 +1,5 @@
 import { Plugin } from '@nocobase/server';
+import { CollectionGroupManager } from './collection-group-manager';
 import addDumpCommand from './commands/dump';
 import addRestoreCommand from './commands/restore';
 
@@ -16,6 +17,11 @@ export default class Duplicator extends Plugin {
     this.app.resourcer.define({
       name: 'duplicator',
       actions: {
+        collectionGroups: async (ctx, next) => {
+          ctx.withoutDataWrapping = true;
+          ctx.body = CollectionGroupManager.collectionGroups;
+          await next();
+        },
         getDict: async (ctx, next) => {
           ctx.withoutDataWrapping = true;
           let collectionNames = await this.db.getRepository('collections').find();
