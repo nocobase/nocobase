@@ -52,6 +52,12 @@ export class CollectionRepository extends Repository {
 
   async db2cm(collectionName: string) {
     const collection = this.database.getCollection(collectionName);
+
+    // skip if collection already exists
+    if (await this.findOne({ filter: { name: collectionName } })) {
+      return;
+    }
+
     const options = collection.options;
     const fields = [];
     for (const [name, field] of collection.fields) {

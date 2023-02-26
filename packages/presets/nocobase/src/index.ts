@@ -83,7 +83,7 @@ export class PresetNocoBase extends Plugin {
     this.app.on('beforeUpgrade', async (options) => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
       if (result) {
-        console.log(`Initialize all built-in plugins`);
+        console.log(`Initialize all built-in plugins beforeUpgrade`);
         await this.addBuiltInPlugins({ method: 'upgrade' });
       }
       const builtInPlugins = this.getBuiltInPlugins();
@@ -105,8 +105,9 @@ export class PresetNocoBase extends Plugin {
       await this.app.reload({ method: 'upgrade' });
       await this.app.db.sync();
     });
+
     this.app.on('beforeInstall', async (options) => {
-      console.log(`Initialize all built-in plugins`);
+      console.log(`Initialize all built-in plugins beforeInstall`);
       await this.addBuiltInPlugins({ method: 'install' });
     });
   }

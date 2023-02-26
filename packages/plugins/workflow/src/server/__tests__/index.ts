@@ -7,7 +7,7 @@ import Plugin from '..';
 import { JOB_STATUS } from '../constants';
 
 export function sleep(ms: number) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
 }
@@ -26,21 +26,21 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         run(node, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result,
+            result
           };
-        },
+        }
       },
 
       error: {
         run(node, input, processor) {
           throw new Error('definite error');
-        },
+        }
       },
 
       'prompt->error': {
         run(node, input, processor) {
           return {
-            status: JOB_STATUS.PENDING,
+            status: JOB_STATUS.PENDING
           };
         },
         resume(node, input, processor) {
@@ -72,7 +72,7 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
   await app.load();
 
   await app.db.import({
-    directory: path.resolve(__dirname, './collections'),
+    directory: path.resolve(__dirname, './collections')
   });
 
   try {

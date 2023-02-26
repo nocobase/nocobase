@@ -3,8 +3,12 @@ import { isValid, uid } from '@formily/shared';
 import { Menu, Select } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useActionContext, useCompile, useDesignable } from '../..';
+import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useCollection } from '../../../collection-manager';
+import { useRecord } from '../../../record-provider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+
 import { requestSettingsSchema } from './utils';
 
 const MenuGroup = (props) => {
@@ -36,14 +40,14 @@ export const ActionDesigner = (props) => {
   const { modalTip, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const { name } = useCollection();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const compile = useCompile();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
-  const context = useActionContext();
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
+  const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
 
   useEffect(() => {
     const schemaUid = uid();
@@ -132,6 +136,7 @@ export const ActionDesigner = (props) => {
             }
           }}
         />
+        {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
         {isPopupAction && (
           <SchemaSettings.SelectItem
             title={t('Open mode')}

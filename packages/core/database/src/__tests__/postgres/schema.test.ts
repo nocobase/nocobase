@@ -97,4 +97,24 @@ describe('postgres schema', () => {
 
     expect(newTableInfo[0].find((item) => item['table_name'] == collection.model.tableName)).toBeTruthy();
   });
+
+  it('should update schema options', async () => {
+    if (!db.inDialect('postgres')) return;
+
+    await db.clean({ drop: true });
+
+    const collection = db.collection({
+      name: 'test',
+    });
+
+    await db.sync();
+
+    collection.updateOptions({
+      ...collection.options,
+      schema: 'test',
+    });
+
+    // @ts-ignore
+    expect(collection.model._schema).toEqual('test');
+  });
 });
