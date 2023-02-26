@@ -3,7 +3,7 @@ import * as types from '../templates';
 
 export const templates = new Map<string, ISchema>();
 
-const collectionTemplates: any = {};
+export const collectionTemplates: any = {};
 
 export function registerTemplate(key: string, schema: any) {
   collectionTemplates[key] = schema;

@@ -1,7 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCompile } from '../../hooks';
@@ -28,7 +27,7 @@ const InternalRemoteSelect = connect(
         params: {
           pageSize: 200,
           ...service?.params,
-          fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
+          // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
           filter: {
             $and: [service?.params?.filter].filter(Boolean),

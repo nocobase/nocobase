@@ -1,5 +1,5 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange } from '@formily/core';
+import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit, onFieldChange } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
@@ -7,6 +7,7 @@ import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
+import { linkageMergeAction } from './utils';
 
 export interface FormProps {
   [key: string]: any;
@@ -54,10 +55,21 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   );
 };
 
+const getLinkageRules = (fieldSchema) => {
+  let linkageRules = null;
+  fieldSchema.mapProperties((schema) => {
+    if (schema['x-linkage-rules']) {
+      linkageRules = schema['x-linkage-rules'];
+    }
+  });
+  return linkageRules;
+};
+
 const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
+  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'] || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -70,6 +82,59 @@ const WithForm = (props) => {
       form.removeEffects(id);
     };
   }, []);
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      return linkageRules.map((v) => {
+        return v.actions?.map((h) => {
+          if (h.targetFields) {
+            const fields = h.targetFields.join(',');
+            onFieldInit(`*(${fields})`, (field: any, form) => {
+              field['initProperty'] = {
+                display: field.display,
+                required: field.required,
+                pattern: field.pattern,
+                value: field.value || field.initialValue,
+              };
+            });
+            onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
+              field.linkageProperty = {};
+            });
+          }
+        });
+      });
+    });
+    return () => {
+      form.removeEffects(id);
+    };
+  }, []);
+  useEffect(() => {
+    const id = uid();
+    form.addEffects(id, () => {
+      const linkagefields = [];
+      return linkageRules.map((v, index) => {
+        return v.actions?.map((h) => {
+          if (h.targetFields) {
+            const fields = h.targetFields.join(',');
+            return onFieldReact(`*(${fields})`, (field: any, form) => {
+              linkagefields.push(field);
+              linkageMergeAction(h, field, v.condition, form?.values);
+              if (index === linkageRules.length - 1) {
+                setTimeout(() =>
+                  linkagefields.map((v) => {
+                    v.linkageProperty = {};
+                  }),
+                );
+              }
+            });
+          }
+        });
+      });
+    });
+    return () => {
+      form.removeEffects(id);
+    };
+  }, [linkageRules]);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
 
