@@ -56,6 +56,22 @@ export const useDestroyQueryItemAction = () => {
   };
 };
 
+export const useDestroyAllSelectedQueriesAction = () => {
+  const ctx = useChartQueryMetadataContext();
+  const { state, setState, refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  return {
+    async run() {
+      await resource.destroy({
+        filterByTk: state?.selectedRowKeys || [],
+      });
+      setState?.({ selectedRowKeys: [] });
+      refresh();
+      ctx.refresh();
+    },
+  };
+};
+
 export const chartsQueriesSchema: ISchema = {
   type: 'object',
   properties: {
@@ -89,18 +105,18 @@ export const chartsQueriesSchema: ISchema = {
             },
           },
           properties: {
-            // delete: {
-            //   type: 'void',
-            //   title: '{{ t("Delete") }}',
-            //   'x-component': 'Action',
-            //   'x-component-props': {
-            //     useAction: '{{ cm.useBulkDestroyAction }}',
-            //     confirm: {
-            //       title: "{{t('Delete storage')}}",
-            //       content: "{{t('Are you sure you want to delete it?')}}",
-            //     },
-            //   },
-            // },
+            delete: {
+              type: 'void',
+              title: '{{ t("Delete") }}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ useDestroyAllSelectedQueriesAction }}',
+                confirm: {
+                  title: '{{t(\'Delete queries\')}}',
+                  content: '{{t(\'Are you sure you want to delete it?\')}}',
+                },
+              },
+            },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -288,7 +304,7 @@ export const chartsQueriesSchema: ISchema = {
                           title: '{{t(\'Delete role\')}}',
                           content: '{{t(\'Are you sure you want to delete it?\')}}',
                         },
-                        useAction: '{{useDestroyQueryItemAction}}',
+                        useAction: '{{ useDestroyQueryItemAction }}',
                       },
                     },
                   },
