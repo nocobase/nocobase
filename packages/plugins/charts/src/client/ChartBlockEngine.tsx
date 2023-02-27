@@ -7,14 +7,6 @@ import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
 import JSON5 from 'json5';
 import { ChartQueryMetadata } from './ChartQueryBlockInitializer';
 
-type dataSet = {
-  title: string,
-  id: number,
-  data_set_id: string,
-  data_set_value: string,
-  data_set_name: string,
-}
-
 export interface ChartBlockEngineMetaData {
   chartQueryMetadata: ChartQueryMetadata,
   chartConfig: {
@@ -23,9 +15,6 @@ export interface ChartBlockEngineMetaData {
     [key: string]: any,
   },
 }
-
-// renderComponent 可扩展 G2Plot | Echarts | D3'
-type RenderComponent = 'G2Plot' | 'DataSetPreviewTable';
 
 const ChartRenderComponent = ({
                                 chartBlockEngineMetaData,
