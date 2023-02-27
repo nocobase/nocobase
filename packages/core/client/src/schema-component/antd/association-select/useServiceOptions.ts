@@ -1,17 +1,9 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 
-const normalizeFilters = (filters: any[]) => {
-  const res = filters.filter((f) => {
-    if (f && typeof f === 'object') {
-      return Object.values(f).filter((v) => v !== undefined).length;
-    }
-    return f;
-  });
-  return res.length ? res : undefined;
-};
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
@@ -49,20 +41,18 @@ export default function useServiceOptions(props) {
   const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {
     const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
-    return {
-      $or: normalizeFilters([
-        {
-          $and: normalizeFilters([
-            isOToAny
-              ? {
-                  [collectionField.foreignKey]: {
-                    $is: null,
-                  },
-                }
-              : null,
-            params?.filter,
-          ]),
-        },
+    return mergeFilter(
+      [
+        mergeFilter([
+          isOToAny
+            ? {
+                [collectionField.foreignKey]: {
+                  $is: null,
+                },
+              }
+            : null,
+          params?.filter,
+        ]),
         isOToAny && sourceValue !== undefined && sourceValue !== null
           ? {
               [collectionField.foreignKey]: {
@@ -77,8 +67,9 @@ export default function useServiceOptions(props) {
               },
             }
           : null,
-      ]),
-    };
+      ],
+      '$or',
+    );
   }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
 
   return useMemo(() => {

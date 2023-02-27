@@ -96,7 +96,7 @@ const InternalRemoteSelect = connect(
           [fieldNames.label]: compile(item[fieldNames.label]),
         })) || []
       );
-    }, [data, fieldNames.label, objectValue, value]);
+    }, [data?.data, fieldNames.label, normalizeOptions, value]);
 
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
