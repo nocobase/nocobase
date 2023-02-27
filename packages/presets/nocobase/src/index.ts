@@ -80,6 +80,7 @@ export class PresetNocoBase extends Plugin {
       //   }
       // }
     });
+
     this.app.on('beforeUpgrade', async (options) => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
       if (result) {
