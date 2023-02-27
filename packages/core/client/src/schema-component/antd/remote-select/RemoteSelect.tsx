@@ -102,7 +102,6 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
-      console.log(data?.data?.map(getOptionsByFieldNames));
       return data?.data?.map(getOptionsByFieldNames) || [];
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
 
