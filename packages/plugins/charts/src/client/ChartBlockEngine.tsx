@@ -6,6 +6,7 @@ import { templates } from './templates';
 import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
 import JSON5 from 'json5';
 import { ChartQueryMetadata } from './ChartQueryBlockInitializer';
+import { Empty } from 'antd';
 
 export interface ChartBlockEngineMetaData {
   chartQueryMetadata: ChartQueryMetadata,
@@ -24,7 +25,16 @@ const ChartRenderComponent = ({
   const renderComponent = templates.get(chartType)?.renderComponent;
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3 |Table
   const chartConfig = chartBlockEngineMetaData.chartConfig;
-  const { loading, dataSet } = useGetDataSet(chartBlockEngineMetaData.chartQueryMetadata.id);
+  const { loading, dataSet, error } = useGetDataSet(chartBlockEngineMetaData.chartQueryMetadata.id);
+
+  if (error) {
+    return (
+      <>
+        <Empty description={<span>May be this query has been deleted,please check!</span>} />
+      </>
+    );
+  }
+
   switch (renderComponent) {
     case 'G2Plot': {
       let finalChartOptions;
@@ -93,13 +103,14 @@ const ChartRenderComponent = ({
 };
 
 export const useGetDataSet = (chartQueryId: number) => {
-  const { data, loading } = useRequest({
+  const { data, loading, error } = useRequest({
     url: `/chartsQueries:getData/${chartQueryId}`,
   });
   const dataSet = data?.data;
   return {
     loading,
     dataSet: dataSet,
+    error,
   };
 };
 
@@ -119,7 +130,7 @@ const ChartBlockEngine = ({
 
   return (
     <>
-      <ChartRenderComponent chartBlockEngineMetaData={chartBlockEngineMetaData}/>
+      <ChartRenderComponent chartBlockEngineMetaData={chartBlockEngineMetaData} />
     </>
   );
 };

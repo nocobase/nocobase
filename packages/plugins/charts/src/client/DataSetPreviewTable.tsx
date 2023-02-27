@@ -10,10 +10,10 @@ import {
 import React from 'react';
 import { uid } from '@formily/shared';
 import { useGetDataSet } from './ChartBlockEngine';
-import { Spin } from 'antd';
+import { Empty, Spin } from 'antd';
 
 export default ({ queryId }: { queryId: number }) => {
-  const { dataSet, loading } = useGetDataSet(queryId);
+  const { dataSet, loading, error } = useGetDataSet(queryId);
   const columns = {};
   console.log(dataSet);
   if (dataSet) {
@@ -48,6 +48,15 @@ export default ({ queryId }: { queryId: number }) => {
       },
     },
   };
+
+  if (error) {
+    return (
+      <>
+        <Empty description={<span>May be this query has been deleted,please check!</span>} />
+      </>
+    );
+  }
+
   if (loading)
     return (
       <>
