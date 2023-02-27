@@ -18,14 +18,15 @@ export class ApplicationModel extends Model {
     await app.load();
 
     if (!(await app.isInstalled())) {
-      await app.db.sync({
-        force: false,
-        alter: {
-          drop: false,
-        },
-      });
-
+      await app.db.sync();
       await app.install();
+
+      // emit an event on mainApp
+      // current if you add listener on subApp through `subApp.on('afterInstall')` , it will be clear after subApp installed
+      await mainApp.emitAsync('afterSubAppInstalled', {
+        mainApp,
+        subApp: app,
+      });
     }
 
     await app.start();
