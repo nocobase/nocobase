@@ -17,9 +17,12 @@ const supportsType = [
   'checkboxGroup',
   'select',
   'multipleSelect',
+  'formula',
   'oho',
   'obo',
-  'm2o'
+  'm2o',
+  'o2m',
+  'm2m',
 ];
 const VariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
@@ -31,6 +34,7 @@ const VariableTypes = (currentCollection) => {
       value: currentCollection,
       options() {
         const field2option = (field, depth) => {
+          console.log(field);
           if (!field.interface || !supportsType.includes(field.interface)) {
             return;
           }
