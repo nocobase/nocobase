@@ -31,9 +31,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: {
-            ...mergeFilter([service?.params?.filter]),
-          },
+          filter: mergeFilter([service?.params?.filter]),
         },
       },
       {
@@ -60,16 +58,14 @@ const InternalRemoteSelect = connect(
 
     const onSearch = async (search) => {
       run({
-        filter: {
-          ...mergeFilter([
-            {
-              [fieldNames.label]: {
-                $includes: search,
-              },
+        filter: mergeFilter([
+          {
+            [fieldNames.label]: {
+              $includes: search,
             },
-            service?.params?.filter,
-          ]),
-        },
+          },
+          service?.params?.filter,
+        ]),
       });
     };
 
