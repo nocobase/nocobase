@@ -30,7 +30,7 @@ const ChartRenderComponent = ({
   if (error) {
     return (
       <>
-        <Empty description={<span>May be this query has been deleted,please check!</span>} />
+        <Empty description={<span>May be this chart block's query data has been deleted,please check!</span>} />
       </>
     );
   }
