@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
@@ -17,10 +17,11 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
+    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, ...others } = props;
     const compile = useCompile();
+    const firstRun = useRef(false);
 
-    const { data, run } = useRequest(
+    const { data, run, loading } = useRequest(
       {
         action: 'list',
         ...service,
@@ -35,10 +36,26 @@ const InternalRemoteSelect = connect(
         },
       },
       {
+        manual: true,
         debounceWait: wait,
-        refreshDeps: [service, fieldNames.label, fieldNames.value],
       },
     );
+
+    const runDep = useMemo(
+      () =>
+        JSON.stringify({
+          service,
+          fieldNames,
+        }),
+      [service, fieldNames],
+    );
+
+    useEffect(() => {
+      // Lazy load
+      if (firstRun.current) {
+        run();
+      }
+    }, [runDep]);
 
     const onSearch = async (search) => {
       run({
@@ -55,14 +72,39 @@ const InternalRemoteSelect = connect(
       });
     };
 
+    const normalizeOptions = useCallback(
+      (obj) => {
+        if (objectValue || typeof obj === 'object') {
+          return { ...obj, [fieldNames.label]: compile(obj[fieldNames.label]) };
+        }
+        return { [fieldNames.value]: obj, [fieldNames.label]: obj };
+      },
+      [objectValue, fieldNames.value],
+    );
+
     const options = useMemo(() => {
+      if (!data?.data?.length) {
+        return value !== undefined && value !== null
+          ? Array.isArray(value)
+            ? value.map(normalizeOptions)
+            : [normalizeOptions(value)]
+          : [];
+      }
       return (
         data?.data?.map((item) => ({
           ...item,
           [fieldNames.label]: compile(item[fieldNames.label]),
         })) || []
       );
-    }, [data, fieldNames.label]);
+    }, [data, fieldNames.label, objectValue, value]);
+
+    const onDropdownVisibleChange = () => {
+      if (firstRun.current) {
+        return;
+      }
+      run();
+      firstRun.current = true;
+    };
 
     return (
       <Select
@@ -71,7 +113,11 @@ const InternalRemoteSelect = connect(
         filterSort={null}
         fieldNames={fieldNames}
         onSearch={onSearch}
+        onDropdownVisibleChange={onDropdownVisibleChange}
+        objectValue={objectValue}
+        value={value}
         {...others}
+        loading={loading}
         options={options}
       />
     );
@@ -79,7 +125,6 @@ const InternalRemoteSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {
