@@ -74,15 +74,16 @@ const InternalRemoteSelect = connect(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
           const value = item[fieldNames[key]];
-          if (value !== undefined && value !== null) {
-            obj[fieldNames[key]] = key === 'label' ? compile(value) : value;
+          if (value) {
+            // support hidden, disabled, etc.
+            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
+              key === 'label' ? compile(value) : value;
           }
           return obj;
         }, {} as any);
       },
       [fieldNames],
     );
-
     const normalizeOptions = useCallback(
       (obj) => {
         if (objectValue || typeof obj === 'object') {
@@ -101,6 +102,7 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
+      console.log(data?.data?.map(getOptionsByFieldNames));
       return data?.data?.map(getOptionsByFieldNames) || [];
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
 
