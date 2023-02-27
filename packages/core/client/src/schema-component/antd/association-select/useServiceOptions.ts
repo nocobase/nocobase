@@ -3,6 +3,15 @@ import { useCallback, useMemo } from 'react';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 
+const normalizeFilters = (filters: any[]) => {
+  const res = filters.filter((f) => {
+    if (f && typeof f === 'object') {
+      return Object.values(f).filter((v) => v !== undefined).length;
+    }
+    return f;
+  });
+  return res.length ? res : undefined;
+};
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
@@ -41,9 +50,9 @@ export default function useServiceOptions(props) {
   const filter = useMemo(() => {
     const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
     return {
-      $or: [
+      $or: normalizeFilters([
         {
-          $and: [
+          $and: normalizeFilters([
             isOToAny
               ? {
                   [collectionField.foreignKey]: {
@@ -52,7 +61,7 @@ export default function useServiceOptions(props) {
                 }
               : null,
             params?.filter,
-          ],
+          ]),
         },
         isOToAny && sourceValue !== undefined && sourceValue !== null
           ? {
@@ -68,7 +77,7 @@ export default function useServiceOptions(props) {
               },
             }
           : null,
-      ],
+      ]),
     };
   }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
 
