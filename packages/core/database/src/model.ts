@@ -153,6 +153,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   static async sync(options) {
     const model = this as any;
 
+    const _schema = model._schema;
+
+    if (_schema && _schema != 'public') {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
+        raw: true,
+        transaction: options.transaction,
+      });
+    }
+
     // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {
       if (this.database.inDialect('sqlite', 'mysql')) {

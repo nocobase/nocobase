@@ -19,9 +19,16 @@ import {
 
 import { InheritedCollection } from '@nocobase/database';
 import { CollectionModel, FieldModel } from './models';
+import * as process from 'process';
 
 export class CollectionManagerPlugin extends Plugin {
+  public schema: string;
+
   async beforeLoad() {
+    if (process.env.COLLECTION_MANAGER_SCHEMA) {
+      this.schema = process.env.COLLECTION_MANAGER_SCHEMA;
+    }
+
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
@@ -64,6 +71,27 @@ export class CollectionManagerPlugin extends Plugin {
       }
     });
 
+    this.app.db.on('collections.beforeCreate', async (model) => {
+      if (this.app.db.inDialect('postgres') && this.schema) {
+        model.set('schema', this.schema);
+      }
+    });
+
+    this.app.db.on(
+      'collections.afterCreateWithAssociations',
+      async (model: CollectionModel, { context, transaction }) => {
+        if (context) {
+          await model.migrate({
+            transaction,
+          });
+        }
+      },
+    );
+
+    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      await model.remove(options);
+    });
+
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
     this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
@@ -90,17 +118,6 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
-
-    this.app.db.on(
-      'collections.afterCreateWithAssociations',
-      async (model: CollectionModel, { context, transaction }) => {
-        if (context) {
-          await model.migrate({
-            transaction,
-          });
-        }
-      },
-    );
 
     this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
@@ -156,10 +173,6 @@ export class CollectionManagerPlugin extends Plugin {
       await mutex.runExclusive(async () => {
         await model.remove(options);
       });
-    });
-
-    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
-      await model.remove(options);
     });
 
     this.app.db.on('fields.afterDestroy', async (model: FieldModel, options) => {
