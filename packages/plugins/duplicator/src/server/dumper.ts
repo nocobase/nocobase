@@ -19,19 +19,18 @@ export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
   async dump() {
-    const appPlugins = await this.getAppPlugins();
+    const coreCollections = ['applicationPlugins'];
 
     // get system available collection groups
+    const appPlugins = await this.getAppPlugins();
+
     const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
       appPlugins.includes(collectionGroup.namespace),
     );
-
-    const coreCollections = ['applicationPlugins'];
-    const customCollections = await this.getCustomCollections();
-
     const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
 
+    const customCollections = await this.getCustomCollections();
     const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
 
     const questions = this.buildInquirerQuestions(
