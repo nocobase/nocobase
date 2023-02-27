@@ -72,7 +72,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('collections.beforeCreate', async (model) => {
-      if (this.app.db.inDialect('postgres') && this.schema) {
+      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm') {
         model.set('schema', this.schema);
       }
     });
