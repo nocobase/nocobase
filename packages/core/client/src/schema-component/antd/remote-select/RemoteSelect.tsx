@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
+import Item from 'antd/lib/list/Item';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -69,14 +70,27 @@ const InternalRemoteSelect = connect(
       });
     };
 
+    const getOptionsByFieldNames = useCallback(
+      (item) => {
+        return Object.keys(fieldNames).reduce((obj, key) => {
+          const value = item[fieldNames[key]];
+          if (value !== undefined && value !== null) {
+            obj[fieldNames[key]] = key === 'label' ? compile(value) : value;
+          }
+          return obj;
+        }, {} as any);
+      },
+      [fieldNames],
+    );
+
     const normalizeOptions = useCallback(
       (obj) => {
         if (objectValue || typeof obj === 'object') {
-          return { ...obj, [fieldNames.label]: compile(obj[fieldNames.label]) };
+          return getOptionsByFieldNames(obj);
         }
         return { [fieldNames.value]: obj, [fieldNames.label]: obj };
       },
-      [objectValue, fieldNames.value],
+      [objectValue, getOptionsByFieldNames],
     );
 
     const options = useMemo(() => {
@@ -87,13 +101,8 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
-      return (
-        data?.data?.map((item) => ({
-          ...item,
-          [fieldNames.label]: compile(item[fieldNames.label]),
-        })) || []
-      );
-    }, [data?.data, fieldNames.label, normalizeOptions, value]);
+      return data?.data?.map(getOptionsByFieldNames) || [];
+    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
 
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
