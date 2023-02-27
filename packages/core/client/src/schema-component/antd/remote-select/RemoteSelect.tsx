@@ -3,6 +3,7 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -31,7 +32,7 @@ const InternalRemoteSelect = connect(
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
           filter: {
-            $and: [service?.params?.filter].filter(Boolean),
+            ...mergeFilter([service?.params?.filter]),
           },
         },
       },
@@ -60,14 +61,14 @@ const InternalRemoteSelect = connect(
     const onSearch = async (search) => {
       run({
         filter: {
-          $and: [
+          ...mergeFilter([
             {
               [fieldNames.label]: {
                 $includes: search,
               },
             },
             service?.params?.filter,
-          ].filter(Boolean),
+          ]),
         },
       });
     };
