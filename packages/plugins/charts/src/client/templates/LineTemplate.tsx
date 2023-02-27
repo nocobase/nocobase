@@ -36,6 +36,7 @@ const arr = [{a:"1",b:2,c:3},{a:"2",b:2,c:3},{a:"3",b:2,c:3},{a:"4",b:2,c:3},{a:
 export const lineTemplate = {
   title: '1 个「时间」或「有序名词」字段，1 个「数值」字段',
   type: 'Line',
+  iconId:"icon-line",
   group:2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

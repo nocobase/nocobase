@@ -27,7 +27,8 @@ const chartConfig = {
 export const funnelTemplate = {
   title: '1 个「无序名词」字段，1 个「数值」字段',
   type: 'Funnel',
-  group: 2,
+  iconId:"icon-other",
+  group: 1,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {

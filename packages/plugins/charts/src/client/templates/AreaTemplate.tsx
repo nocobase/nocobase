@@ -27,6 +27,7 @@ const chartConfig = {
 export const areaTemplate = {
   title: '1 个「时间」或「有序名词」字段，1 个「数值」字段,1 个「无序名词」字段(可选)',
   type: 'Area',
+  iconId:"icon-area",
   group:2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

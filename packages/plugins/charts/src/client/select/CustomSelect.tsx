@@ -33,7 +33,7 @@ const InternalSelect = connect(
         }}
         mode={mode}
       >
-        <OptGroup label='分组1'>
+        <OptGroup label='基础图表'>
           {
             group1.map(option => (
               <Option value={option.value} label={option.value}>
@@ -45,9 +45,16 @@ const InternalSelect = connect(
                     </span>
                   )
                 } trigger='hover'>
-                  <div>
+                  <div className={css`display: flex;
+                    gap: 4px;
+                    align-items: center`}>
+                    <svg width='1em' height='1em' fill='currentColor' aria-hidden='true' focusable='false' className=''>
+                      <use
+                        href={`#${option.iconId}`}>
+                      </use>
+                    </svg>
                     <span role='img' aria-label={option.label}>
-                    🍉{option.value}
+                      {option.value}
                     </span>
                   </div>
                 </Popover>
@@ -55,15 +62,21 @@ const InternalSelect = connect(
             ))
           }
         </OptGroup>
-        <OptGroup label='分组2'>
+        <OptGroup label='更多图表'>
           {
             group2.map(option => (
               <Option value={option.value} label={option.label}>
-                <div>
-        <span role='img' aria-label={option.label}>
-          🍉
-        </span>
+                <div className={css`display: flex;
+                  gap: 4px;
+                  align-items: center`}>
+                  <svg width='1em' height='1em' fill='currentColor' aria-hidden='true' focusable='false' className=''>
+                    <use
+                      href={`#${option.iconId}`}>
+                    </use>
+                  </svg>
+                  <span role='img' aria-label={option.label}>
                   {option.value}
+                  </span>
                 </div>
               </Option>
             ))

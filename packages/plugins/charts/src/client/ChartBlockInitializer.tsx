@@ -18,6 +18,7 @@ import JSON5 from 'json5';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { parseDataSetString } from './utils';
 import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
+import { ChartSvgs } from './ChartSvgs';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -73,6 +74,7 @@ export const ChartBlockInitializer = (props) => {
                 scope={options.scope}
                 components={{ ...options.components }}
               >
+
                 <section className={
                   css`
                     display: flex;
@@ -102,6 +104,7 @@ export const ChartBlockInitializer = (props) => {
                                     label: template.title,
                                     value: template.type,
                                     group: template.group,
+                                    iconId:template.iconId,
                                   };
                                 }),
                               },

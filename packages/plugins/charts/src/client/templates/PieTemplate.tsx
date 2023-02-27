@@ -38,6 +38,7 @@ const chartConfig = {
 export const pieTemplate = {
   title: '1 个「无序名词」字段，1 个「数值」字段',
   type: 'Pie',
+  iconId:"icon-pie",
   group:2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

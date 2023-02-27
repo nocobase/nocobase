@@ -41,7 +41,8 @@ const chartConfig = {
 export const radarTemplate = {
   title: '1 ~ 2 个「无序名词」字段，1 个「数值」字段',
   type: 'Radar',
-  group:2,
+  iconId:"icon-other",
+  group:1,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {

@@ -124,6 +124,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                                       label: template.title,
                                       value: template.type,
                                       group: template.group,
+                                      iconId: template.iconId,
                                     };
                                   }),
                                 },
