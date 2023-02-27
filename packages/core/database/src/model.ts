@@ -158,7 +158,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     if (_schema && _schema != 'public') {
       await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
         raw: true,
-        transaction: options.transaction,
+        transaction: options?.transaction,
       });
     }
 
