@@ -102,20 +102,21 @@ export const Action: ComposedAction = observer((props: any) => {
       disabled: [false],
       visible: ['visible'],
     };
+    field.data = field.data || {};
+    field.data.hidden = false;
     linkageRules.map((v) => {
       return v.actions?.map((h) => {
         linkageAction(h.operator, field, v.condition, values, designable);
       });
     });
   }, [linkageRules, values]);
-
   const renderButton = () => (
     <SortableItem
       {...others}
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       disabled={disabled}
-      style={{ border: field?.data?.hidden && '1px dashed #ede9e9' }}
+      style={{ opacity: field?.data?.hidden && 0.1 }}
       onClick={(e: React.MouseEvent) => {
         if (!disabled) {
           e.preventDefault();
@@ -142,6 +143,7 @@ export const Action: ComposedAction = observer((props: any) => {
       <Designer {...designerProps} />
     </SortableItem>
   );
+
   return (
     <ActionContext.Provider
       value={{
