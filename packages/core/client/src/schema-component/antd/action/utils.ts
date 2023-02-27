@@ -77,6 +77,8 @@ export const linkageAction = (operator, field, condition, values, designable) =>
     case ActionType.Visible:
       if (conditionAnalyse(condition, values)) {
         displayResult.push(operator);
+        field.data = field.data || {};
+        field.data.hidden = false;
       }
       field.linkageProperty = {
         ...field.linkageProperty,
@@ -100,7 +102,6 @@ export const linkageAction = (operator, field, condition, values, designable) =>
       field.display = last(displayResult);
       break;
     case ActionType.Disabled:
-      console.log(disableResult);
       if (conditionAnalyse(condition, values)) {
         disableResult.push(true);
       }
@@ -108,7 +109,6 @@ export const linkageAction = (operator, field, condition, values, designable) =>
         ...field.linkageProperty,
         required: disableResult,
       };
-      console.log(disableResult, last(disableResult));
       field.disabled = last(disableResult);
       break;
     case ActionType.Active:

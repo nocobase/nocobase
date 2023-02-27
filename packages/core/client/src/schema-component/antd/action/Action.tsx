@@ -98,12 +98,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
   const { designable } = useDesignable();
   useEffect(() => {
-    field.linkageProperty = {
-      disabled: [false],
-      visible: ['visible'],
-    };
-    field.data = field.data || {};
-    field.data.hidden = false;
+    field.linkageProperty = {};
     linkageRules.map((v) => {
       return v.actions?.map((h) => {
         linkageAction(h.operator, field, v.condition, values, designable);
