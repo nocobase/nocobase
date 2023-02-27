@@ -1,6 +1,13 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useActionContext, useRequest } from '@nocobase/client';
+import {
+  useActionContext,
+  useRecord,
+  useRequest,
+  useResourceActionContext,
+  useResourceContext,
+} from '@nocobase/client';
+import { useChartQueryMetadataContext } from '../../ChartQueryMetadataProvider';
 
 const collection = {
   name: 'chartsQueries',
@@ -33,6 +40,20 @@ const collection = {
       } as ISchema,
     },
   ],
+};
+
+export const useDestroyQueryItemAction = () => {
+  const ctx = useChartQueryMetadataContext();
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await resource.destroy({ filterByTk });
+      refresh();
+      ctx.refresh();
+    },
+  };
 };
 
 export const chartsQueriesSchema: ISchema = {
@@ -68,18 +89,18 @@ export const chartsQueriesSchema: ISchema = {
             },
           },
           properties: {
-            delete: {
-              type: 'void',
-              title: '{{ t("Delete") }}',
-              'x-component': 'Action',
-              'x-component-props': {
-                useAction: '{{ cm.useBulkDestroyAction }}',
-                confirm: {
-                  title: "{{t('Delete storage')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
-                },
-              },
-            },
+            // delete: {
+            //   type: 'void',
+            //   title: '{{ t("Delete") }}',
+            //   'x-component': 'Action',
+            //   'x-component-props': {
+            //     useAction: '{{ cm.useBulkDestroyAction }}',
+            //     confirm: {
+            //       title: "{{t('Delete storage')}}",
+            //       content: "{{t('Are you sure you want to delete it?')}}",
+            //     },
+            //   },
+            // },
             create: {
               type: 'void',
               title: '{{t("Add new")}}',
@@ -264,10 +285,10 @@ export const chartsQueriesSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {
-                          title: "{{t('Delete role')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
+                          title: '{{t(\'Delete role\')}}',
+                          content: '{{t(\'Are you sure you want to delete it?\')}}',
                         },
-                        useAction: '{{cm.useDestroyAction}}',
+                        useAction: '{{useDestroyQueryItemAction}}',
                       },
                     },
                   },
