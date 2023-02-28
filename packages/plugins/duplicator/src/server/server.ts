@@ -3,10 +3,10 @@ import addDumpCommand from './commands/dump-command';
 import addRestoreCommand from './commands/restore-command';
 
 import zhCN from './locale/zh-CN';
-import collectionGroupAction from './actions/collection-groups-action';
 import dumpAction from './actions/dump-action';
 import restoreAction from './actions/restore-action';
 import getDictAction from './actions/get-dict-action';
+import dumpableCollections from './actions/dumpable-collections-action';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -22,7 +22,7 @@ export default class Duplicator extends Plugin {
       actions: {
         restore: restoreAction,
         dump: dumpAction,
-        collectionGroups: collectionGroupAction,
+        dumpableCollections: dumpableCollections,
         getDict: getDictAction,
       },
     });

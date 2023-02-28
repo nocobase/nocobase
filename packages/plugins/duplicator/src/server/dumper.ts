@@ -24,14 +24,30 @@ export class Dumper extends AppMigrator {
   }> {
     const appPlugins = await this.getAppPlugins();
 
-    console.log({ appPlugins });
-    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
+    const pluginGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
       appPlugins.includes(collectionGroup.namespace),
     );
 
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(pluginGroups);
+
+    const userCollections = await this.getCustomCollections();
+
     return lodash.cloneDeep({
-      collectionGroups: collectionGroups,
-      userCollections: await this.getCustomCollections(),
+      collectionGroups: pluginGroups,
+      userCollections: await Promise.all(
+        userCollections
+          .filter((collection) => !pluginsCollections.includes(collection))
+          .map(async (name) => {
+            const collectionInstance = await this.app.db.getRepository('collections').findOne({
+              filterByTk: name,
+            });
+
+            return {
+              name,
+              title: collectionInstance.get('title'),
+            };
+          }),
+      ),
     });
   }
 

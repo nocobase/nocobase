@@ -18,6 +18,7 @@ describe('duplicator api', () => {
     await app.db.getRepository('collections').create({
       values: {
         name: 'test_collection',
+        title: '测试Collection',
         fields: [
           {
             name: 'test_field1',
@@ -28,7 +29,7 @@ describe('duplicator api', () => {
       context: {},
     });
 
-    const collectionGroupsResponse = await app.agent().resource('duplicator').collectionGroups();
+    const collectionGroupsResponse = await app.agent().resource('duplicator').dumpableCollections();
     expect(collectionGroupsResponse.status).toBe(200);
 
     const data = collectionGroupsResponse.body;

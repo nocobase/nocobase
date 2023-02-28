@@ -1,6 +1,6 @@
 import { Dumper } from '../dumper';
 
-export default async function collectionGroupAction(ctx, next) {
+export default async function dumpableCollections(ctx, next) {
   ctx.withoutDataWrapping = true;
 
   const dumper = new Dumper(ctx.app);
