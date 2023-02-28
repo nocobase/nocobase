@@ -114,10 +114,12 @@ export class TableFieldResource {
 
   async get(options) {
     console.log('get', options);
-    const { filterByTk } = options;
+    const { filterByTk, treeTable } = options;
     return {
       data: {
-        data: this.field.data.dataSource[filterByTk],
+        data: treeTable
+          ? this.field.data.dataSource.find((i) => i.__index == filterByTk)
+          : this.field.data.dataSource[filterByTk],
       },
     };
   }

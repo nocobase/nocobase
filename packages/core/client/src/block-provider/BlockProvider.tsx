@@ -8,6 +8,7 @@ import React, { createContext, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
+  IsTreeTableContext,
   TableFieldResource,
   useActionContext,
   useAPIClient,
@@ -98,6 +99,7 @@ export const useResourceAction = (props, opts = {}) => {
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
   const record = useRecord();
+  const treeTable = useContext(IsTreeTableContext);
 
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
@@ -115,7 +117,7 @@ export const useResourceAction = (props, opts = {}) => {
           if (params.appends) {
             actionParams.appends = params.appends;
           }
-          return resource[action](actionParams).then((res) => res.data);
+          return resource[action]({ ...actionParams, treeTable }).then((res) => res.data);
         },
     {
       ...opts,
