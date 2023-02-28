@@ -41,7 +41,7 @@ function makeFieldsPathOptions(fields, appends = []) {
         options.push({
           label: field.uiSchema?.title ?? field.name,
           value: field.name,
-          children: nextAppends.length ? makeFieldsPathOptions(nextCollection.fields, nextAppends) : null,
+          children: makeFieldsPathOptions(nextCollection.fields, nextAppends),
         });
       }
     } else {
