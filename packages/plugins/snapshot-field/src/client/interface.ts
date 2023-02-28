@@ -26,7 +26,7 @@ const onTargetFieldChange = (field: Field) => {
   !targetField.getState().disabled && targetField.setValue([]);
 };
 
-function makeFieldsPathOptions(fields, appends) {
+function makeFieldsPathOptions(fields, appends = []) {
   const { getCollection } = useCollectionManager();
   const options = [];
   fields.forEach(field => {
@@ -116,7 +116,7 @@ export const snapshot: IField = {
   },
   initialize: (values: any) => {},
   usePathOptions(field) {
-    const { appends, targetCollection } = field;
+    const { appends = [], targetCollection } = field;
     const { getCollection } = useCollectionManager();
     const { fields } = getCollection(targetCollection);
 
