@@ -67,7 +67,7 @@ export const pieTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          advanceConfig: {
+          jsonConfig: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',

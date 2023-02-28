@@ -1,4 +1,6 @@
 import JSON5 from 'json5';
+import React from 'react';
+import { i18n } from '@nocobase/client';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -57,17 +59,29 @@ export const areaTemplate = {
         'x-component': 'Select',
         enum: '{{dataSource}}',
       },
-      advanceConfig: {
-        required: true,
-        title: '{{t("AdvanceConfig")}}',
-        type: 'string',
-        default: JSON5.stringify(chartConfig, null, 2),
-        'x-decorator': 'FormItem',
-        'x-component': 'Input.TextArea',
-        'x-component-props': {
-          autoSize: { minRows: 8, maxRows: 16 },
+      jsonConfig: {
+        type: 'void',
+        'x-component': 'div',
+        properties: {
+          jsonConfig: {
+            required: true,
+            title: '{{t("JSON config")}}',
+            type: 'string',
+            default: JSON5.stringify(chartConfig, null, 2),
+            'x-decorator': 'FormItem',
+            'x-component': 'Input.TextArea',
+            'x-component-props': {
+              autoSize: { minRows: 8, maxRows: 16 },
+            },
+            'x-validator': validateJSON,
+          },
+          references: {
+            type: 'string',
+            'x-decorator': 'div',
+            'x-content': <span>{i18n.t('Json config references: ')}<a
+              href={'https://g2plot.antv.antgroup.com/api/plots/area'} target='_blank'>{i18n.t('Area | G2Plot')}</a></span>,
+          },
         },
-        'x-validator': validateJSON,
       },
     },
   },

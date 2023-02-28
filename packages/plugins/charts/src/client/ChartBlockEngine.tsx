@@ -12,7 +12,7 @@ export interface ChartBlockEngineMetaData {
   chartQueryMetadata: ChartQueryMetadata,
   chartConfig: {
     chartType: string,
-    advanceConfig: string,
+    jsonConfig: string,
     [key: string]: any,
   },
 }
@@ -39,15 +39,15 @@ const ChartRenderComponent = ({
     case 'G2Plot': {
       let finalChartOptions;
       finalChartOptions = templates.get(chartType)?.defaultChartOptions;
-      let advanceConfig;
+      let jsonConfig;
       try {
-        advanceConfig = JSON5.parse(chartConfig[chartConfig?.chartType]?.advanceConfig);
+        jsonConfig = JSON5.parse(chartConfig[chartConfig?.chartType]?.jsonConfig);
       } catch (e) {
-        advanceConfig = {};
+        jsonConfig = {};
       }
       const config = compile({
         ...finalChartOptions,
-        ...advanceConfig,
+        ...jsonConfig,
         data: dataSet,
       }, { ...chartConfig[chartConfig.chartType], category: chartConfig[chartConfig.chartType]?.category ?? '' });
       if (config && chartConfig[chartConfig?.chartType]) {
