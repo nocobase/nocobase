@@ -1,7 +1,7 @@
 import lodash from 'lodash';
 import { Restorer } from './restorer';
 
-interface CollectionGroup {
+export interface CollectionGroup {
   namespace: string;
   collections: string[];
   function: string;

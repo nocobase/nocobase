@@ -9,7 +9,7 @@ import path from 'path';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
-import { CollectionGroupManager } from './collection-group-manager';
+import { CollectionGroup, CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -18,9 +18,24 @@ const finished = util.promisify(stream.finished);
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
-  async dump() {
-    const coreCollections = ['applicationPlugins'];
+  async dumpableCollections(): Promise<{
+    collectionGroups: CollectionGroup[];
+    userCollections: string[];
+  }> {
+    const appPlugins = await this.getAppPlugins();
 
+    console.log({ appPlugins });
+    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
+      appPlugins.includes(collectionGroup.namespace),
+    );
+
+    return lodash.cloneDeep({
+      collectionGroups: collectionGroups,
+      userCollections: await this.getCustomCollections(),
+    });
+  }
+
+  async dump(dumpResults) {
     // get system available collection groups
     const appPlugins = await this.getAppPlugins();
 
@@ -56,6 +71,8 @@ export class Dumper extends AppMigrator {
 
     const throughCollections = this.findThroughCollections(userCollections);
 
+    const coreCollections = ['applicationPlugins'];
+
     const dumpedCollections = [
       coreCollections,
       CollectionGroupManager.getGroupsCollections(requiredGroups),
@@ -83,18 +100,14 @@ export class Dumper extends AppMigrator {
     if (dialect === 'postgres') {
       // get user defined functions in postgres
       const functions = await db.sequelize.query(
-        `SELECT
-n.nspname AS function_schema,
-p.proname AS function_name,
-pg_get_functiondef(p.oid) AS def
-FROM
-pg_proc p
-LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE
-n.nspname NOT IN ('pg_catalog', 'information_schema')
-ORDER BY
-function_schema,
-function_name;`,
+        `SELECT n.nspname                 AS function_schema,
+                p.proname                 AS function_name,
+                pg_get_functiondef(p.oid) AS def
+         FROM pg_proc p
+                LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+         WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+         ORDER BY function_schema,
+                  function_name;`,
         {
           type: 'SELECT',
         },
@@ -105,9 +118,13 @@ function_name;`,
       }
 
       // get user defined triggers in postgres
-      const triggers = await db.sequelize.query(`select pg_get_triggerdef(oid) from pg_trigger`, {
-        type: 'SELECT',
-      });
+      const triggers = await db.sequelize.query(
+        `select pg_get_triggerdef(oid)
+         from pg_trigger`,
+        {
+          type: 'SELECT',
+        },
+      );
 
       for (const t of triggers) {
         sqlContent.push(t['pg_get_triggerdef']);
@@ -115,10 +132,10 @@ function_name;`,
 
       // get user defined views in postgres
       const views = await db.sequelize.query(
-        `SELECT table_schema, table_name,  pg_get_viewdef("table_name", true) as def
-FROM information_schema.views
-WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-ORDER BY table_schema, table_name`,
+        `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
+         FROM information_schema.views
+         WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+         ORDER BY table_schema, table_name`,
         {
           type: 'SELECT',
         },
@@ -176,7 +193,11 @@ ORDER BY table_schema, table_name`,
     const dataStream = fs.createWriteStream(dataFilePath);
 
     const rows = await app.db.sequelize.query(
-      sqlAdapter(app.db, `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`),
+      sqlAdapter(
+        app.db,
+        `SELECT *
+         FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`,
+      ),
       {
         type: 'SELECT',
       },

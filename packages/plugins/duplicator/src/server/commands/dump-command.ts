@@ -24,7 +24,7 @@ export default function addDumpCommand(app: Application) {
 
 async function dumpAction(app) {
   const dumper = new Dumper(app);
-  await dumper.dump();
+  await dumper.dump({});
 
   await app.stop();
 }
