@@ -1,9 +1,8 @@
 import type { Field } from '@formily/core';
 import { ISchema } from '@formily/react';
-import { IField, interfacesProperties, useRecord } from '@nocobase/client';
+import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
-import { useMemo } from 'react';
-import { useSnapshotTranslation } from './locale';
+import { NAMESPACE } from './locale';
 
 const { defaultProps } = interfacesProperties;
 
@@ -27,116 +26,151 @@ const onTargetFieldChange = (field: Field) => {
   !targetField.getState().disabled && targetField.setValue([]);
 };
 
-export const useSnapshotInterface = () => {
-  const { t } = useSnapshotTranslation();
+function makeFieldsPathOptions(fields, appends = []) {
+  const { getCollection } = useCollectionManager();
+  const options = [];
+  fields.forEach((field) => {
+    if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)) {
+      const currentAppends = appends.filter((key) => `${key}.`.startsWith(`${field.name}.`));
+      if (currentAppends.length) {
+        const nextCollection = getCollection(field.target);
+        const nextAppends = currentAppends
+          .filter((key) => key !== field.name)
+          .map((key) => key.replace(`${field.name}.`, ''))
+          .filter((key) => key);
+        options.push({
+          label: field.uiSchema?.title ?? field.name,
+          value: field.name,
+          children: makeFieldsPathOptions(nextCollection.fields, nextAppends),
+        });
+      }
+    } else {
+      options.push({
+        label: field.uiSchema?.title ?? field.name,
+        value: field.name,
+      });
+    }
+  });
+  return options;
+}
 
-  console.log(t('Snapshot to description'));
-
-  const recordPickerViewer = {
-    type: 'void',
-    title: t('View record'),
-    'x-component': 'RecordPicker.Viewer',
-    'x-component-props': {
-      className: 'nb-action-popup',
-    },
-    properties: {
-      tabs: {
-        type: 'void',
-        'x-component': 'Tabs',
-        'x-component-props': {},
-        // 'x-initializer': 'TabPaneInitializers',
-        properties: {
-          tab1: {
-            type: 'void',
-            title: t('Detail'),
-            'x-component': 'Tabs.TabPane',
-            'x-designer': 'Tabs.Designer',
-            'x-component-props': {},
-            properties: {
-              grid: {
-                type: 'void',
-                'x-component': 'Grid',
-                'x-initializer': 'SnapshotBlockInitializers',
-                properties: {},
-              },
+const recordPickerViewer = {
+  type: 'void',
+  title: `{{t('View record')}}`,
+  'x-component': 'RecordPicker.Viewer',
+  'x-component-props': {
+    className: 'nb-action-popup',
+  },
+  properties: {
+    tabs: {
+      type: 'void',
+      'x-component': 'Tabs',
+      'x-component-props': {},
+      // 'x-initializer': 'TabPaneInitializers',
+      properties: {
+        tab1: {
+          type: 'void',
+          title: `{{t('Detail')}}`,
+          'x-component': 'Tabs.TabPane',
+          'x-designer': 'Tabs.Designer',
+          'x-component-props': {},
+          properties: {
+            grid: {
+              type: 'void',
+              'x-component': 'Grid',
+              'x-initializer': 'SnapshotBlockInitializers',
+              properties: {},
             },
           },
         },
       },
     },
-  };
+  },
+};
 
-  const snapshot: IField = {
-    name: 'snapshot',
-    type: 'object',
-    group: 'advanced',
-    title: t('Snapshot'),
-    description: t('Copy relational data into the current collection and save it as a snapshot'),
-    default: {
-      type: 'snapshot',
-      // name,
-      uiSchema: {
-        // title,
-        'x-component': 'SnapshotRecordPicker',
-        'x-component-props': {
-          multiple: true,
-          fieldNames: {
-            label: 'id',
-            value: 'id',
-          },
+export const snapshot: IField = {
+  name: 'snapshot',
+  type: 'object',
+  group: 'advanced',
+  title: `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`,
+  description: `{{t('Snapshot to description', {ns: '${NAMESPACE}'})}}`,
+  default: {
+    type: 'snapshot',
+    // name,
+    uiSchema: {
+      // title,
+      'x-component': 'SnapshotRecordPicker',
+      'x-component-props': {
+        multiple: true,
+        fieldNames: {
+          label: 'id',
+          value: 'id',
         },
       },
     },
-    schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
-    },
-    initialize: (values: any) => {},
-    properties: {
-      ...defaultProps,
-      [TARGET_FIELD]: {
-        type: 'string',
-        title: t('Association field'),
-        required: true,
-        'x-decorator': 'FormItem',
-        'x-component': 'SnapshotOwnerCollectionFieldsSelect',
-        'x-disabled': '{{ !createOnly || isOverride }}',
-        'x-reactions': [
-          {
-            target: APPENDS,
-            when: '{{$self.value != undefined}}',
-            fulfill: {
-              state: {
-                visible: true,
-              },
-            },
-            otherwise: {
-              state: {
-                visible: false,
-              },
-            },
-          },
-        ],
-      },
-      [APPENDS]: {
-        type: 'string',
-        title: t('Deep copy fields'),
-        description: t('When a record is created, relational data is backed up in a snapshot'),
-        'x-decorator': 'FormItem',
-        'x-component': 'AppendsTreeSelect',
-        'x-reactions': [
-          {
-            dependencies: [TARGET_FIELD],
-            when: '{{$deps[0]}}',
-            fulfill: {
-              run: '{{$self.setValue($self.value)}}',
-            },
-          },
-        ],
-      },
-    },
-  };
+  },
+  schemaInitialize(schema: ISchema, { field, readPretty, action, block }) {
+    schema['properties'] = {
+      viewer: cloneDeep(recordPickerViewer),
+    };
+  },
+  initialize: (values: any) => {},
+  usePathOptions(field) {
+    const { appends = [], targetCollection } = field;
+    const { getCollection } = useCollectionManager();
+    const { fields } = getCollection(targetCollection);
 
-  return useMemo<IField>(() => snapshot, [t]);
+    const result = makeFieldsPathOptions(fields, appends);
+
+    return [
+      {
+        label: `{{t('Snapshot data', { ns: '${NAMESPACE}' })}}`,
+        value: 'data',
+        children: result,
+      },
+    ];
+  },
+  properties: {
+    ...defaultProps,
+    [TARGET_FIELD]: {
+      type: 'string',
+      title: `{{t('Association field', {ns: '${NAMESPACE}'})}}`,
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'SnapshotOwnerCollectionFieldsSelect',
+      'x-disabled': '{{ !createOnly || isOverride }}',
+      'x-reactions': [
+        {
+          target: APPENDS,
+          when: '{{$self.value != undefined}}',
+          fulfill: {
+            state: {
+              visible: true,
+            },
+          },
+          otherwise: {
+            state: {
+              visible: false,
+            },
+          },
+        },
+      ],
+    },
+    [APPENDS]: {
+      type: 'string',
+      title: `{{t('Deep copy fields', {ns: '${NAMESPACE}'})}}`,
+      description: `{{t('When a record is created, relational data is backed up in a snapshot', {ns: '${NAMESPACE}'})}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'AppendsTreeSelect',
+      'x-reactions': [
+        {
+          dependencies: [TARGET_FIELD],
+          when: '{{$deps[0]}}',
+          fulfill: {
+            run: '{{$self.setValue($self.value)}}',
+          },
+        },
+      ],
+    },
+  },
 };
