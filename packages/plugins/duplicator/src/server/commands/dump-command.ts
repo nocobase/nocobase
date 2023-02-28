@@ -1,5 +1,7 @@
+import inquirer from 'inquirer';
 import { Application } from '@nocobase/server';
 import { Dumper } from '../dumper';
+import InquireQuestionBuilder from './inquire-question-builder';
 
 export default function addDumpCommand(app: Application) {
   app
@@ -24,7 +26,22 @@ export default function addDumpCommand(app: Application) {
 
 async function dumpAction(app) {
   const dumper = new Dumper(app);
-  await dumper.dump({});
+  const { requiredGroups, optionalGroups, userCollections } = await dumper.dumpableCollections();
+
+  const questions = InquireQuestionBuilder.buildInquirerQuestions({
+    requiredGroups,
+    optionalGroups,
+    optionalCollections: userCollections,
+    direction: 'dump',
+  });
+
+  const results = await inquirer.prompt(questions);
+
+  await dumper.dump({
+    requiredGroups,
+    selectedOptionalGroups: results.collectionGroups,
+    selectedUserCollections: results.userCollections,
+  });
 
   await app.stop();
 }

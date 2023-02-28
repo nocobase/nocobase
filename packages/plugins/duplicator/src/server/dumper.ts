@@ -2,7 +2,6 @@ import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import inquirer from 'inquirer';
 import lodash from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
@@ -19,8 +18,12 @@ export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
   async dumpableCollections(): Promise<{
-    collectionGroups: CollectionGroup[];
-    userCollections: string[];
+    requiredGroups: CollectionGroup[];
+    optionalGroups: CollectionGroup[];
+    userCollections: Array<{
+      name: string;
+      title: string;
+    }>;
   }> {
     const appPlugins = await this.getAppPlugins();
 
@@ -29,11 +32,13 @@ export class Dumper extends AppMigrator {
     );
 
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(pluginGroups);
+    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(pluginGroups);
 
     const userCollections = await this.getCustomCollections();
 
     return lodash.cloneDeep({
-      collectionGroups: pluginGroups,
+      requiredGroups,
+      optionalGroups,
       userCollections: await Promise.all(
         userCollections
           .filter((collection) => !pluginsCollections.includes(collection))
@@ -51,49 +56,22 @@ export class Dumper extends AppMigrator {
     });
   }
 
-  async dump(dumpResults) {
-    // get system available collection groups
-    const appPlugins = await this.getAppPlugins();
+  async dump(options: {
+    requiredGroups: CollectionGroup[];
+    selectedOptionalGroups: CollectionGroup[];
+    selectedUserCollections: string[];
+  }) {
+    const { requiredGroups, selectedOptionalGroups, selectedUserCollections } = options;
 
-    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
-      appPlugins.includes(collectionGroup.namespace),
-    );
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
-
-    const customCollections = await this.getCustomCollections();
-    const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
-
-    const questions = this.buildInquirerQuestions(
-      requiredGroups,
-      optionalGroups,
-      await Promise.all(
-        optionalCollections.map(async (name) => {
-          const collectionInstance = await this.app.db.getRepository('collections').findOne({
-            filterByTk: name,
-          });
-
-          return {
-            name,
-            title: collectionInstance.get('title'),
-          };
-        }),
-      ),
-    );
-
-    const results = await inquirer.prompt(questions);
-
-    const userCollections = results.userCollections || [];
-
-    const throughCollections = this.findThroughCollections(userCollections);
+    const throughCollections = this.findThroughCollections(selectedUserCollections);
 
     const coreCollections = ['applicationPlugins'];
 
     const dumpedCollections = [
       coreCollections,
       CollectionGroupManager.getGroupsCollections(requiredGroups),
-      CollectionGroupManager.getGroupsCollections(results.collectionGroups),
-      userCollections,
+      CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
+      selectedUserCollections,
       throughCollections,
     ].flat();
 

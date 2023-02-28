@@ -3,10 +3,10 @@ import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import crypto from 'crypto';
 import EventEmitter from 'events';
 import fsPromises from 'fs/promises';
-import inquirer from 'inquirer';
 import lodash from 'lodash';
 import * as os from 'os';
 import path from 'path';
+import { CollectionGroupManager } from './collection-group-manager';
 
 abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
@@ -47,6 +47,13 @@ abstract class AppMigrator extends EventEmitter {
     return lodash.uniq(['core', ...this.app.pm.plugins.keys(), ...plugins.map((plugin) => plugin.get('name'))]);
   }
 
+  async getAppPluginCollectionGroups() {
+    const plugins = await this.getAppPlugins();
+    return CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
+      plugins.includes(collectionGroup.namespace),
+    );
+  }
+
   async getCustomCollections() {
     const collections = await this.app.db.getCollection('collections').repository.find();
     return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.get('name'));
@@ -58,64 +65,6 @@ abstract class AppMigrator extends EventEmitter {
 
   async clearWorkDir() {
     await this.rmDir(this.workDir);
-  }
-
-  buildInquirerPluginQuestion(requiredGroups, optionalGroups) {
-    return {
-      type: 'checkbox',
-      name: 'collectionGroups',
-      message: `Select the plugin collections to be ${this.direction === 'dump' ? 'dumped' : 'restored'}`,
-      loop: false,
-      pageSize: 20,
-      choices: [
-        new inquirer.Separator('== Required =='),
-        ...requiredGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
-          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
-          checked: true,
-          disabled: true,
-        })),
-
-        new inquirer.Separator('== Optional =='),
-        ...optionalGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
-          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
-          checked: this.direction === 'dump',
-        })),
-      ],
-    };
-  }
-
-  buildInquirerCollectionQuestion(
-    collections: {
-      name: string;
-      title: string;
-    }[],
-  ) {
-    return {
-      type: 'checkbox',
-      name: 'userCollections',
-      message: `Select the collection records to be ${this.direction === 'dump' ? 'dumped' : 'restored'}`,
-      loop: false,
-      pageSize: 30,
-      choices: collections.map((collection) => {
-        return {
-          name: collection.title,
-          value: collection.name,
-          checked: this.direction === 'dump',
-        };
-      }),
-    };
-  }
-
-  buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections) {
-    const questions = [this.buildInquirerPluginQuestion(requiredGroups, optionalGroups)];
-
-    if (optionalCollections.length > 0) {
-      questions.push(this.buildInquirerCollectionQuestion(optionalCollections));
-    }
-
-    return questions;
   }
 
   findThroughCollections(collections: string[]) {

@@ -7,6 +7,7 @@ import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
+import InquireQuestionBuilder from './commands/inquire-question-builder';
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
@@ -119,15 +120,16 @@ export class Restorer extends AppMigrator {
       (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
     );
 
-    const questions = this.buildInquirerQuestions(
+    const questions = InquireQuestionBuilder.buildInquirerQuestions({
       requiredGroups,
       optionalGroups,
-      await Promise.all(
+      optionalCollections: await Promise.all(
         optionalCollections.map(async (name) => {
           return { name, title: await this.getImportCollectionTitle(name) };
         }),
       ),
-    );
+      direction: this.direction,
+    });
 
     const results = await inquirer.prompt(questions);
 
@@ -314,10 +316,11 @@ export class Restorer extends AppMigrator {
       this.on('restoreCollectionsFinished', async () => {
         if (this.app.db.inDialect('postgres')) {
           const sequenceNameResult = await app.db.sequelize.query(
-            `SELECT column_default FROM information_schema.columns WHERE
-          table_name='${collection.model.tableName}' and "column_name" = 'id' and table_schema = '${
-              app.db.options.schema || 'public'
-            }';`,
+            `SELECT column_default
+             FROM information_schema.columns
+             WHERE table_name = '${collection.model.tableName}'
+               and "column_name" = 'id'
+               and table_schema = '${app.db.options.schema || 'public'}';`,
           );
 
           if (sequenceNameResult[0].length) {
@@ -328,7 +331,8 @@ export class Restorer extends AppMigrator {
               const sequenceName = match[1];
 
               const maxVal = await app.db.sequelize.query(
-                `SELECT MAX("${primaryKeyAttribute.field}") FROM ${tableName}`,
+                `SELECT MAX("${primaryKeyAttribute.field}")
+                 FROM ${tableName}`,
                 {
                   type: 'SELECT',
                 },
@@ -342,7 +346,9 @@ export class Restorer extends AppMigrator {
 
         if (this.app.db.inDialect('sqlite')) {
           await app.db.sequelize.query(
-            `UPDATE sqlite_sequence set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}") WHERE name = "${collection.model.tableName}"`,
+            `UPDATE sqlite_sequence
+             set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}")
+             WHERE name = "${collection.model.tableName}"`,
           );
         }
       });

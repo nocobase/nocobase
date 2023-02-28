@@ -37,4 +37,13 @@ describe('duplicator api', () => {
     expect(data['collectionGroups']).toBeTruthy();
     expect(data['userCollections']).toBeTruthy();
   });
+
+  it('should request dump api', async () => {
+    const dumpResponse = await app.agent().post('/duplicator:dump').send({
+      selectedCollectionGroups: [],
+      selectedUserCollections: [],
+    });
+
+    expect(dumpResponse.status).toBe(200);
+  });
 });
