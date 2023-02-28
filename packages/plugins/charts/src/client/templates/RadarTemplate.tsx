@@ -41,10 +41,11 @@ const chartConfig = {
   area: {},
 };
 export const radarTemplate = {
-  title: '1 ~ 2 个「无序名词」字段，1 个「数值」字段',
+  description: '1 ~ 2 个「无序名词」字段，1 个「数值」字段',
   type: 'Radar',
-  iconId:"icon-other",
-  group:1,
+  title: 'Radar',
+  iconId: 'icon-other',
+  group: 1,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
@@ -86,7 +87,8 @@ export const radarTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/radar'} target='_blank'>{i18n.t('Radar | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/radar'}
+              target='_blank'>{i18n.t('Radar | G2Plot')}</a></span>,
           },
         },
       },

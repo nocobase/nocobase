@@ -41,13 +41,14 @@ const chartConfig = {
       autoHide: true,
       autoRotate: false,
     },
-  }
+  },
 };
 export const barTemplate = {
-  title: '1 个「时间」或「有序名词」字段，1 个「数值」字段，0 ～ 1 个「无序名词」',
+  description: '1 个「时间」或「有序名词」字段，1 个「数值」字段，0 ～ 1 个「无序名词」',
   type: 'Bar',
-  iconId:"icon-bar",
-  group:2,
+  title: 'Bar',
+  iconId: 'icon-bar',
+  group: 2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
@@ -96,7 +97,8 @@ export const barTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/bar'} target='_blank'>{i18n.t('Bar | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/bar'}
+              target='_blank'>{i18n.t('Bar | G2Plot')}</a></span>,
           },
         },
       },

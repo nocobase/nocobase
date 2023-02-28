@@ -106,8 +106,9 @@ export const ChartBlockInitializer = (props) => {
                                 'x-decorator': 'FormItem',
                                 enum: [...templates.values()].map((template) => {
                                   return {
-                                    label: template.title,
-                                    value: template.type,
+                                    title: template.title,
+                                    key: template.type,
+                                    description: template.description,
                                     group: template.group,
                                     iconId: template.iconId,
                                   };
@@ -153,7 +154,7 @@ export const ChartBlockInitializer = (props) => {
                         </>
                       }
                     </Card>
-                    <Card size='small' title={'Data preview'} className={css`margin-top:8px`}>
+                    <Card size='small' title={'Data preview'} className={css`margin-top: 8px`}>
                       {/*Data preview*/}
                       {
                         chartBlockEngineMetaData?.chartQueryMetadata?.id
@@ -176,6 +177,7 @@ export const ChartBlockInitializer = (props) => {
           };
           insert({
             type: 'void',
+            title: chartBlockEngineMetaData?.chartQueryMetadata?.title,
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',

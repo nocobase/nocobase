@@ -27,10 +27,11 @@ const chartConfig = {
   seriesField: '{{category}}',
 };
 export const areaTemplate = {
-  title: '1 个「时间」或「有序名词」字段，1 个「数值」字段,1 个「无序名词」字段(可选)',
+  description: '1 个「时间」或「有序名词」字段，1 个「数值」字段,1 个「无序名词」字段(可选)',
   type: 'Area',
-  iconId:"icon-area",
-  group:2,
+  title: 'Area',
+  iconId: 'icon-area',
+  group: 2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
@@ -79,7 +80,8 @@ export const areaTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/area'} target='_blank'>{i18n.t('Area | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/area'}
+              target='_blank'>{i18n.t('Area | G2Plot')}</a></span>,
           },
         },
       },

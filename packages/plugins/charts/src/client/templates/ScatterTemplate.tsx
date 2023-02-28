@@ -22,41 +22,42 @@ const validateJSON = {
 };
 
 const chartConfig = {
-      appendPadding: 10,
-      xField: '{{metric}}',
-      yField: '{{dimension}}',
-      colorField: '{{category}}',
-      shape: 'circle',
-      size: 4,
-      yAxis: {
-        nice: true,
-        line: {
-          style: {
-            stroke: '#aaa',
-          },
+  appendPadding: 10,
+  xField: '{{metric}}',
+  yField: '{{dimension}}',
+  colorField: '{{category}}',
+  shape: 'circle',
+  size: 4,
+  yAxis: {
+    nice: true,
+    line: {
+      style: {
+        stroke: '#aaa',
+      },
+    },
+  },
+  xAxis: {
+    min: -100,
+    grid: {
+      line: {
+        style: {
+          stroke: '#eee',
         },
       },
-      xAxis: {
-        min: -100,
-        grid: {
-          line: {
-            style: {
-              stroke: '#eee',
-            },
-          },
-        },
-        line: {
-          style: {
-            stroke: '#aaa',
-          },
-        },
+    },
+    line: {
+      style: {
+        stroke: '#aaa',
       },
-    };
+    },
+  },
+};
 export const scatterTemplate = {
-  title: '1 个「数值」字段，0 ~ 1 个「无序名词」字段',
+  description: '1 个「数值」字段，0 ~ 1 个「无序名词」字段',
   type: 'Scatter',
-  iconId:"icon-point",
-  group:2,
+  title: 'Scatter',
+  iconId: 'icon-point',
+  group: 2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
@@ -105,7 +106,8 @@ export const scatterTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/scatter'} target='_blank'>{i18n.t('Scatter | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/scatter'}
+              target='_blank'>{i18n.t('Scatter | G2Plot')}</a></span>,
           },
         },
       },

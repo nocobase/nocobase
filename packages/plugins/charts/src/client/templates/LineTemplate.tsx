@@ -34,12 +34,17 @@ const chartConfig = {
     // },
   },
 };
-const arr = [{a:"1",b:2,c:3},{a:"2",b:2,c:3},{a:"3",b:2,c:3},{a:"4",b:2,c:3},{a:"5",b:2,c:3},]
+const arr = [{ a: '1', b: 2, c: 3 }, { a: '2', b: 2, c: 3 }, { a: '3', b: 2, c: 3 }, { a: '4', b: 2, c: 3 }, {
+  a: '5',
+  b: 2,
+  c: 3,
+}];
 export const lineTemplate = {
-  title: '1 个「时间」或「有序名词」字段，1 个「数值」字段',
+  description: '1 个「时间」或「有序名词」字段，1 个「数值」字段',
   type: 'Line',
-  iconId:"icon-line",
-  group:2,
+  title: 'Line',
+  iconId: 'icon-line',
+  group: 2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
@@ -88,7 +93,8 @@ export const lineTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/line'} target='_blank'>{i18n.t('Line | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/line'}
+              target='_blank'>{i18n.t('Line | G2Plot')}</a></span>,
           },
         },
       },

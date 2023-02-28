@@ -38,7 +38,8 @@ const chartConfig = {
   interactions: [{ type: 'element-active' }],
 };
 export const pieTemplate = {
-  title: '1 个「无序名词」字段，1 个「数值」字段',
+  description: '1 个「无序名词」字段，1 个「数值」字段',
+  title: 'Pie',
   type: 'Pie',
   iconId: 'icon-pie',
   group: 2,
@@ -83,7 +84,8 @@ export const pieTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/pie'} target='_blank'>{i18n.t('Pie | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/pie'}
+              target='_blank'>{i18n.t('Pie | G2Plot')}</a></span>,
           },
         },
       },
