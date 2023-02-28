@@ -38,7 +38,7 @@ export const funnelTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Sector label/dimensional")}}',
+        title: '{{t("Sector label / Dimensional")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -53,7 +53,7 @@ export const funnelTemplate = {
       },
       category: {
         type: 'string',
-        title: '{{t("Color legend/dimensional")}}',
+        title: '{{t("Color legend / Dimensional")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',

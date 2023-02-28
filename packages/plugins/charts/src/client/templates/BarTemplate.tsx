@@ -54,7 +54,7 @@ export const barTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Category Axis/dimension")}}',
+        title: '{{t("Category axis / Dimension")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -62,14 +62,14 @@ export const barTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Value Axis/Metrics")}}',
+        title: '{{t("Value axis / Metrics")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
       },
       category: {
         type: 'string',
-        title: '{{t("Color legend/dimensional")}}',
+        title: '{{t("Color legend / Dimensional")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
