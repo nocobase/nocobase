@@ -23,8 +23,8 @@ const validateJSON = {
 
 const chartConfig = {
       appendPadding: 10,
-      xField: '{{dimension}}',
-      yField: '{{metric}}',
+      xField: '{{metric}}',
+      yField: '{{dimension}}',
       colorField: '{{category}}',
       shape: 'circle',
       size: 4,
