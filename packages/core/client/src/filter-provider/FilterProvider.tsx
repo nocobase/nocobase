@@ -1,17 +1,18 @@
 import { useField } from '@formily/react';
 import React, { createContext } from 'react';
-import { useBlockRequestContext } from '../block-provider';
-import { useCollection } from '../collection-manager';
+import { useAssociation, useBlockRequestContext } from '../block-provider';
+import { CollectionFieldOptions, useCollection } from '../collection-manager';
 
 type Collection = ReturnType<typeof useCollection>;
 
-interface DataBlock {
+export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
   name: string;
   /** 与当前区块相关的数据表信息 */
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any) => void;
+  association?: CollectionFieldOptions;
 }
 
 interface FilterContextValue {
@@ -37,11 +38,13 @@ export const FilterRecord = (props: any) => {
   const { recordDataBlocks } = useFilter();
   const { service } = useBlockRequestContext();
   const field = useField();
+  const association = useAssociation(props);
 
   recordDataBlocks({
     name: field.props.name as string,
-    collection,
     doFilter: service.run,
+    collection,
+    association,
   });
 
   return <>{children}</>;

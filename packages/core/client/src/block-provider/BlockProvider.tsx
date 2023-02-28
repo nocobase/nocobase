@@ -35,7 +35,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-const useAssociation = (props) => {
+export const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager();
   if (typeof association === 'string') {
@@ -235,7 +235,7 @@ export const BlockProvider = (props) => {
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>
             <SharedFilterProvider {...props}>
-              <FilterRecord>{props.children}</FilterRecord>
+              <FilterRecord {...props}>{props.children}</FilterRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>
