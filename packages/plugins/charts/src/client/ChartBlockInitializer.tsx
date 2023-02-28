@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
-  FormProvider,
+  FormProvider, i18n,
   SchemaComponent,
   SchemaComponentOptions,
   useAPIClient, useRequest,
@@ -19,6 +19,7 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { parseDataSetString } from './utils';
 import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { ChartSvgs } from './ChartSvgs';
+import { Card } from 'antd';
 
 export const Options = observer((props) => {
   const form = useForm();
@@ -57,7 +58,11 @@ export const ChartBlockInitializer = (props) => {
             value: field.name,
           };
         });
-        let values = await FormDialog({ title: t('Create chart block'), width: 1200 }, () => {
+        let values = await FormDialog({
+          title: t('Create chart block'),
+          width: 1200,
+          bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
+        }, () => {
           const form = useForm();
           const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
           useEffect(() => {
@@ -82,7 +87,7 @@ export const ChartBlockInitializer = (props) => {
                   `
                 }>
                   {/*  left*/}
-                  <div className={
+                  <Card title={i18n.t('Chart config')} size={'small'} className={
                     css`
                       flex: 1
                     `
@@ -104,7 +109,7 @@ export const ChartBlockInitializer = (props) => {
                                     label: template.title,
                                     value: template.type,
                                     group: template.group,
-                                    iconId:template.iconId,
+                                    iconId: template.iconId,
                                   };
                                 }),
                               },
@@ -117,7 +122,7 @@ export const ChartBlockInitializer = (props) => {
                         />
                       </FormLayout>
                     </FormProvider>
-                  </div>
+                  </Card>
                   {/*  right*/}
                   <div className={
                     css`
@@ -125,48 +130,37 @@ export const ChartBlockInitializer = (props) => {
                       min-width: 600px;
                     `
                   }>
-                    {/*DataSet Preview*/}
-                    <h4>QueryData Preview:</h4>
-                    {
-                      chartBlockEngineMetaData?.chartQueryMetadata?.id
-                      &&
-                      <DataSetPreviewTable queryId={chartBlockEngineMetaData?.chartQueryMetadata?.id} />
-                    }
-                    {
-                      (chartBlockEngineMetaData?.chartConfig?.chartType !== undefined && chartBlockEngineMetaData?.chartConfig?.chartType !== 'DataSetPreviewTable')
-                      &&
-                      <div className={
-                        css`
-                          display: flex;
-                          gap: 10px;
-                        `
-                      }>
-                        <h4>
-                          Chart Preview:
-                        </h4>
-                      </div>
-                    }
-                    {/*  Chart Preview*/}
-                    {
-                      chartBlockEngineMetaData
-                      &&
-                      <>
-                        <SchemaComponent
-                          schema={{
-                            properties: {
-                              chartPreview: {
-                                type: 'void',
-                                'x-decorator': 'CardItem',
-                                'x-component': 'ChartBlockEngine',
-                                'x-component-props': {
-                                  chartBlockEngineMetaData,
+                    <Card size='small' title={'Chart Preview'}>
+                      {/*  Chart Preview*/}
+                      {
+                        chartBlockEngineMetaData
+                        &&
+                        <>
+                          <SchemaComponent
+                            schema={{
+                              properties: {
+                                chartPreview: {
+                                  type: 'void',
+                                  'x-decorator': 'CardItem',
+                                  'x-component': 'ChartBlockEngine',
+                                  'x-component-props': {
+                                    chartBlockEngineMetaData,
+                                  },
                                 },
                               },
-                            },
-                          }}
-                        />
-                      </>
-                    }
+                            }}
+                          />
+                        </>
+                      }
+                    </Card>
+                    <Card size='small' title={'Data preview'} className={css`margin-top:8px`}>
+                      {/*Data preview*/}
+                      {
+                        chartBlockEngineMetaData?.chartQueryMetadata?.id
+                        &&
+                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.chartQueryMetadata?.id} />
+                      }
+                    </Card>
                   </div>
                 </section>
               </SchemaComponentOptions>
