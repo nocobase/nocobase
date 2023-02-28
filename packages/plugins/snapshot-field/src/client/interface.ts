@@ -34,11 +34,14 @@ function makeFieldsPathOptions(fields, appends) {
       const currentAppends = appends.filter(key => `${key}.`.startsWith(`${field.name}.`))
       if (currentAppends.length) {
         const nextCollection = getCollection(field.target);
-        const nextAppends = currentAppends.filter(key => key !== field.name).map(key => key.replace(`${field.name}.`, ''));
+        const nextAppends = currentAppends
+          .filter(key => key !== field.name)
+          .map(key => key.replace(`${field.name}.`, ''))
+          .filter(key => key);
         options.push({
           label: field.uiSchema?.title ?? field.name,
           value: field.name,
-          children: makeFieldsPathOptions(nextCollection.fields, nextAppends),
+          children: nextAppends.length ? makeFieldsPathOptions(nextCollection.fields, nextAppends) : null,
         });
       }
     } else {
