@@ -1,5 +1,5 @@
 import { useField } from '@formily/react';
-import React, { createContext } from 'react';
+import React, { createContext, useMemo } from 'react';
 import { useAssociation, useBlockRequestContext } from '../block-provider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 
@@ -28,8 +28,8 @@ const FilterContext = createContext<FilterContextValue>(null);
  */
 export const FilterProvider = (props: any) => {
   const { children } = props;
-  const dataBlocks = [];
-  return <FilterContext.Provider value={{ dataBlocks }}>{children}</FilterContext.Provider>;
+  const value = useMemo(() => ({ dataBlocks: [] }), []);
+  return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };
 
 export const FilterRecord = (props: any) => {
