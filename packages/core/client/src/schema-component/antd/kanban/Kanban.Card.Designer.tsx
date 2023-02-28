@@ -7,8 +7,11 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { createDesignable, useDesignable } from '../../../schema-component';
-import { SchemaInitializer } from '../../../schema-initializer';
-import { useAssociatedFormItemInitializerFields, useFormItemInitializerFields } from '../../../schema-initializer/utils';
+import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
+import {
+  useAssociatedFormItemInitializerFields,
+  useFormItemInitializerFields,
+} from '../../../schema-initializer/utils';
 
 const titleCss = css`
   pointer-events: none;
@@ -58,24 +61,45 @@ export const KanbanCardDesigner = (props: any) => {
   const { refresh } = useDesignable();
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const fields = useFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
-  const associationFields = useAssociatedFormItemInitializerFields({readPretty: true, block: 'Kanban'});
-  
-  const items: any = [{
-    type: 'itemGroup',
-    title: t('Display fields'),
-    children: fields,
-  }];
-  if (associationFields.length > 0) {
-    items.push({
-      type: 'divider',
-    }, {
+  const fields = useFormItemInitializerFields({
+    readPretty: true,
+    block: 'Kanban',
+    useLabelStyle: '{{useKanbanLabelStyle}}',
+  });
+  const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
+
+  const items: any = [
+    {
       type: 'itemGroup',
-      title: t('Display association fields'),
-      children: associationFields,
-    })
+      title: t('Display fields'),
+      children: fields,
+    },
+  ];
+  if (associationFields.length > 0) {
+    items.push(
+      {
+        type: 'divider',
+      },
+      {
+        type: 'itemGroup',
+        title: t('Display association fields'),
+        children: associationFields,
+      },
+    );
   }
-  
+
+  items.push(
+    {
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      title: t('Display fields title'),
+      component: 'Kanban.Card.Designer.TitleSwitch',
+      enable: true,
+    } as SchemaInitializerItemOptions,
+  );
+
   if (!designable) {
     return null;
   }
@@ -112,4 +136,3 @@ export const KanbanCardDesigner = (props: any) => {
     </div>
   );
 };
-

@@ -24,7 +24,8 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const FormItem: any = observer((props) => {
+export const FormItem: any = observer((props: any) => {
+  const { useLabelStyle, labelStyle, ...restProps } = props;
   const field = useField();
   const ctx = useContext(BlockRequestContext);
   const schema = useFieldSchema();
@@ -44,7 +45,8 @@ export const FormItem: any = observer((props) => {
               flex-wrap: wrap;
             }
           `}`}
-          {...props}
+          {...restProps}
+          labelStyle={Object.assign({}, labelStyle, useLabelStyle?.())}
           extra={
             typeof field.description === 'string' ? (
               <div
@@ -419,6 +421,22 @@ FormItem.Designer = (props) => {
                 });
               },
             });
+          }}
+        />
+      )}
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable link')}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          onChange={(flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              mode: flag ? 'links' : 'tags',
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
           }}
         />
       )}

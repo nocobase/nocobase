@@ -8,6 +8,7 @@ import { DndContext } from '../..';
 import { RecordProvider } from '../../../record-provider';
 import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
 import { KanbanCardContext } from './context';
+import { useKanbanLabelStyle } from './useKanbanLabelStyle';
 
 const FormItem = observer((props) => {
   return <BlockItem {...props} />;
@@ -19,7 +20,7 @@ export const KanbanCard: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
   return (
-    <>
+    <SchemaComponentOptions components={{}} scope={{ useKanbanLabelStyle: () => useKanbanLabelStyle(fieldSchema) }}>
       <Card
         onClick={(e) => {
           setVisible(true);
@@ -63,24 +64,22 @@ export const KanbanCard: any = observer((props: any) => {
           }
         `}
       >
-        <SchemaComponentOptions components={{}}>
-          <DndContext
-            onDragStart={() => {
-              setDisableCardDrag(true);
-            }}
-            onDragEnd={() => {
-              setDisableCardDrag(false);
-            }}
-          >
-            <FormLayout layout={'vertical'}>
-              <RecursionField
-                basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
-                schema={fieldSchema}
-                onlyRenderProperties
-              />
-            </FormLayout>
-          </DndContext>
-        </SchemaComponentOptions>
+        <DndContext
+          onDragStart={() => {
+            setDisableCardDrag(true);
+          }}
+          onDragEnd={() => {
+            setDisableCardDrag(false);
+          }}
+        >
+          <FormLayout layout={'vertical'}>
+            <RecursionField
+              basePath={cardField.address.concat(`${columnIndex}.cards.${cardIndex}`)}
+              schema={fieldSchema}
+              onlyRenderProperties
+            />
+          </FormLayout>
+        </DndContext>
       </Card>
       {cardViewerSchema && (
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
@@ -93,6 +92,6 @@ export const KanbanCard: any = observer((props: any) => {
           </RecordProvider>
         </ActionContext.Provider>
       )}
-    </>
+    </SchemaComponentOptions>
   );
 });
