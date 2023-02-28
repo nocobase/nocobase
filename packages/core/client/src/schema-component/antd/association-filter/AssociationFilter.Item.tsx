@@ -3,12 +3,12 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useState } from 'react';
-import { useRequest } from '../../../api-client';
+import React, { ChangeEvent, MouseEvent, useContext, useState } from 'react';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
+import { AssociationItemContext } from './Association.Item.Decorator';
 import { AssociationFilter } from './AssociationFilter';
 
 const { Panel } = Collapse;
@@ -24,6 +24,11 @@ export const AssociationFilterItem = (props) => {
   const Designer = useDesigner();
   const compile = useCompile();
   const { service, props: blockProps } = useBlockRequestContext();
+  const { service: associationItemService } = useContext(AssociationItemContext);
+
+  if (!associationItemService) return null;
+
+  const { data, params, run } = associationItemService;
 
   const [searchVisible, setSearchVisible] = useState(false);
 
@@ -36,22 +41,6 @@ export const AssociationFilterItem = (props) => {
     title: labelKey || valueKey,
     key: valueKey,
   };
-
-  const { data, params, loading, run } = useRequest(
-    {
-      resource: collectionField.target,
-      action: 'list',
-      params: {
-        fields: [labelKey, valueKey],
-        pageSize: 200,
-        page: 1,
-      },
-    },
-    {
-      refreshDeps: [labelKey, valueKey],
-      debounceWait: 300,
-    },
-  );
 
   const treeData = data?.data || [];
 
@@ -166,11 +155,7 @@ export const AssociationFilterItem = (props) => {
       )}
     >
       <Designer />
-      <Collapse
-        defaultActiveKey={[collectionField.uiSchemaUid]}
-        ghost
-        expandIcon={searchVisible ? () => null : undefined}
-      >
+      <Collapse defaultActiveKey={[collectionFieldName]} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
           className={css`
             & .ant-collapse-content-box {
@@ -251,7 +236,7 @@ export const AssociationFilterItem = (props) => {
               </Col>
             </Row>
           }
-          key={collectionField.uiSchemaUid}
+          key={collectionFieldName}
         >
           <Tree
             style={{ padding: '16px 0' }}

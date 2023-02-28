@@ -6,6 +6,7 @@ import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
+import { AssociationItemDecorator } from './Association.Item.Decorator';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
@@ -76,8 +77,10 @@ export const AssociationFilter = (props) => {
 AssociationFilter.Initializer = AssociationFilterInitializer;
 AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem & {
   Designer: typeof AssociationFilterItemDesigner;
+  Decorator: typeof AssociationItemDecorator;
 };
 AssociationFilter.Item.Designer = AssociationFilterItemDesigner;
+AssociationFilter.Item.Decorator = AssociationItemDecorator;
 
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();
