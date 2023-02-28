@@ -9,4 +9,5 @@ export default {
   'Deep copy fields': '深复制的字段',
   'Please select': '请选择',
   'When a record is created, association data is backed up in a snapshot': '创建记录时，关系数据会备份到快照里',
+  'Snapshot data': '快照数据',
 };
