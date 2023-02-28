@@ -141,7 +141,6 @@ export function afterCreateForForeignKeyField(db: Database) {
         transaction,
       });
       if (!instance) {
-        console.log('create through collection record');
         await r.create({
           values: {
             name: through,
@@ -152,6 +151,7 @@ export function afterCreateForForeignKeyField(db: Database) {
             autoCreate: true,
             isThrough: true,
           },
+          context,
           transaction,
         });
       }
