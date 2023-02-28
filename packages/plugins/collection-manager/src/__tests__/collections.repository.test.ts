@@ -30,13 +30,37 @@ describe('collections repository', () => {
 
     await Collection.repository.create({
       values: {
-        name: 'testCollection',
+        name: 'posts',
       },
       context: {},
     });
 
-    const testCollection = db.getCollection('testCollection');
-    expect(testCollection.options.schema).toEqual('testSchema');
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection.options.schema).toEqual('testSchema');
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'posts',
+        type: 'belongsToMany',
+        target: 'posts',
+        through: 'posts_tags',
+        foreignKey: 'tag_id',
+        otherKey: 'post_id',
+        interface: 'm2m',
+        collectionName: 'tags',
+      },
+      context: {},
+    });
+
+    const throughCollection = db.getCollection('posts_tags');
+    expect(throughCollection.options.schema).toEqual('testSchema');
   });
 
   test('create underscored field', async () => {
