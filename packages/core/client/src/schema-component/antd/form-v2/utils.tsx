@@ -1,48 +1,12 @@
-import { last, get, cloneDeep } from 'lodash';
-import * as functions from '@formulajs/formulajs';
+import { last, cloneDeep } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import { evaluators } from '../../../../../evaluators/src/client';
-function now() {
-  return new Date();
-}
-
-const fnNames = Object.keys(functions).filter((key) => key !== 'default');
-const fns = fnNames.map((key) => functions[key]);
-// function formula(expression: string, scope = {}) {
-//   try {
-//     const fn = new Function(...fnNames, ...Object.keys(scope), `return ${expression}`);
-//     const result = fn(...fns, ...Object.values(scope));
-//     if (typeof result === 'number') {
-//       if (Number.isNaN(result) || !Number.isFinite(result)) {
-//         return null;
-//       }
-//       return functions.ROUND(result, 9);
-//     }
-//     if (typeof result === 'function') {
-//       return result();
-//     }
-//     return result;
-//   } catch (error) {
-//     return undefined;
-//   }
-// }
-
-// export function evaluate(expression: string, scope = {}) {
-//   const mergeScope = { ...scope, now };
-//   const exp = expression.trim().replace(/{{\s*([^{}]+)\s*}}/g, (_, v) => {
-//     const item: any = get(scope, v);
-//     const key = v.replace(/\.(\d+)/g, '["$1"]');
-//     return ` ${typeof item === 'function' ? item() : key} `;
-//   });
-//   return formula(exp, mergeScope);
-// }
 export const linkageMergeAction = ({ operator, value }, field, condition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
   const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
   const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
   const valueResult = field?.linkageProperty?.value || [field.value || field?.initProperty?.value];
-  console.log(evaluators.get('formula.js'));
   const { evaluate } = evaluators.get('formula.js');
 
   switch (operator) {
@@ -93,13 +57,13 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
     case ActionType.Value:
       if (conditionAnalyse(condition, values)) {
         if (value?.mode === 'express') {
-          console.log(value.result, values);
           const scope = cloneDeep(values);
           const result = evaluate(value.result || value.value, scope);
-          console.log(result);
           valueResult.push(result);
-        } else {
+        } else if (value?.mode === 'constant') {
           valueResult.push(value?.value || value);
+        } else {
+          valueResult.push(null);
         }
       }
       field.linkageProperty = {

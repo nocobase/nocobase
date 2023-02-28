@@ -34,7 +34,6 @@ const VariableTypes = (currentCollection) => {
       value: currentCollection,
       options() {
         const field2option = (field, depth) => {
-          console.log(field);
           if (!field.interface || !supportsType.includes(field.interface)) {
             return;
           }
