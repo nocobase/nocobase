@@ -1,6 +1,4 @@
 import path from 'path';
-
-import lodash from 'lodash';
 import { UniqueConstraintError } from 'sequelize';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
@@ -11,7 +9,6 @@ import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
   afterCreateForReverseField,
-  beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
   beforeInitOptions,
@@ -20,6 +17,7 @@ import {
 import { InheritedCollection } from '@nocobase/database';
 import { CollectionModel, FieldModel } from './models';
 import * as process from 'process';
+import lodash from 'lodash';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -55,22 +53,6 @@ export class CollectionManagerPlugin extends Plugin {
       ],
     });
 
-    this.app.db.on('fields.beforeUpdate', async (model, options) => {
-      const newValue = options.values;
-      if (
-        model.get('reverseKey') &&
-        lodash.get(newValue, 'reverseField') &&
-        !lodash.get(newValue, 'reverseField.key')
-      ) {
-        const field = await this.app.db
-          .getModel('fields')
-          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
-        if (field) {
-          throw new Error('cant update field without a reverseField key');
-        }
-      }
-    });
-
     this.app.db.on('collections.beforeCreate', async (model) => {
       if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm') {
         model.set('schema', this.schema);
@@ -94,7 +76,6 @@ export class CollectionManagerPlugin extends Plugin {
 
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
-    this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const collectionName = model.get('collectionName');
@@ -130,6 +111,22 @@ export class CollectionManagerPlugin extends Plugin {
 
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
+
+    this.app.db.on('fields.beforeUpdate', async (model, options) => {
+      const newValue = options.values;
+      if (
+        model.get('reverseKey') &&
+        lodash.get(newValue, 'reverseField') &&
+        !lodash.get(newValue, 'reverseField.key')
+      ) {
+        const field = await this.app.db
+          .getModel('fields')
+          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
+        if (field) {
+          throw new Error('cant update field without a reverseField key');
+        }
+      }
+    });
 
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
       const prevOptions = model.previous('options');
