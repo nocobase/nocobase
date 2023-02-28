@@ -1,7 +1,7 @@
 import { last, cloneDeep } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
-import { evaluators } from '../../../../../evaluators/src/client';
+import evaluators from '@nocobase/evaluators/client';
 export const linkageMergeAction = ({ operator, value }, field, condition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
   const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
