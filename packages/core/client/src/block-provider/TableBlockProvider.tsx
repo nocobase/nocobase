@@ -6,15 +6,17 @@ import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 import { SchemaInitializerContext } from '../schema-initializer';
+import { flat } from './TableFieldProvider';
 
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey = 'id' } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandCount, setExpandCount] = useState(0);
   const [collapseCount, setCollapseCount] = useState(0);
+  const treeTable = useContext(IsTreeTableContext);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -28,7 +30,8 @@ const InternalTableBlockProvider = (props) => {
         params,
         showIndex,
         dragSort,
-        rowKey,
+        rowKey: treeTable ? '__index' : rowKey,
+        idKey: rowKey,
         expandCount,
         setExpandCount: () => setExpandCount(expandCount + 1),
         collapseCount,
@@ -126,6 +129,8 @@ export const useTableBlockProps = () => {
   const fieldSchema = useFieldSchema();
   const ctx = useTableBlockContext();
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
+  const treeTable = useContext(IsTreeTableContext);
+
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -135,13 +140,20 @@ export const useTableBlockProps = () => {
       field.componentProps.pagination.pageSize = ctx?.service?.data?.meta?.pageSize;
       field.componentProps.pagination.total = ctx?.service?.data?.meta?.count;
       field.componentProps.pagination.current = ctx?.service?.data?.meta?.page;
+      if (treeTable) {
+        const blockField = ctx.field;
+        blockField.value = ctx?.service?.data?.data;
+        blockField.data = blockField.data || {};
+        blockField.data.selectedRowKeys = ctx?.blockField?.data?.selectedRowKeys;
+        blockField.data.dataSource = flat(ctx?.service?.data?.data ?? []);
+      }
     }
   }, [ctx?.service?.loading]);
   return {
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
-    rowKey: ctx.rowKey || 'id',
+    rowKey: ctx.rowKey,
     pagination:
       ctx?.params?.paginate !== false
         ? {
@@ -154,9 +166,10 @@ export const useTableBlockProps = () => {
       ctx.field.data.selectedRowKeys = selectedRowKeys;
     },
     async onRowDragEnd({ from, to }) {
+      if (!from || !to) return;
       await ctx.resource.move({
-        sourceId: from[ctx.rowKey || 'id'],
-        targetId: to[ctx.rowKey || 'id'],
+        sourceId: from[ctx.idKey || 'id'],
+        targetId: to[ctx.idKey || 'id'],
       });
       ctx.service.refresh();
     },

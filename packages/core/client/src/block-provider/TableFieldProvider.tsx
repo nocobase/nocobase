@@ -7,15 +7,16 @@ import { useRecord } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';
-import { TableBlockContext, useAssociationNames } from './TableBlockProvider';
+import { IsTreeTableContext, TableBlockContext, useAssociationNames } from './TableBlockProvider';
 
 export const TableFieldContext = createContext<any>({});
 
 const InternalTableFieldProvider = (props) => {
-  const { params = {}, showIndex, dragSort, fieldName } = props;
+  const { params = {}, showIndex, dragSort, fieldName, rowKey = 'id' } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { resource, service } = useBlockRequestContext();
+  const treeTable = useContext(IsTreeTableContext);
 
   const formBlockCtx = useFormBlockContext();
   const formFieldCtx = useFormFieldContext();
@@ -38,6 +39,8 @@ const InternalTableFieldProvider = (props) => {
         params,
         showIndex,
         dragSort,
+        rowKey: treeTable ? '__index' : rowKey,
+        idKey: rowKey,
         treeTable: useIsEnableTree(props),
       }}
     >
@@ -46,13 +49,13 @@ const InternalTableFieldProvider = (props) => {
   );
 };
 
-const flat = (tree: any[]) => {
+export const flat = (tree: any[]) => {
   return tree.reduce((pre, cur) => {
     return pre.concat(cur, flat(cur.children ?? []));
   }, []);
 };
 
-const toTree = (adjacencyList) => {
+export const toTree = (adjacencyList) => {
   const buildSubtree = (node) => {
     const parentIndex = node.__index;
     return {
@@ -173,12 +176,12 @@ export class TableFieldResource {
 
   async destroy(options) {
     console.log('destroy', options);
-    let { filterByTk, treeTable } = options;
+    let { filterByTk, idKey, treeTable } = options;
     if (!Array.isArray(filterByTk)) {
       filterByTk = [filterByTk];
     }
     this.field.data.dataSource = this.field.data.dataSource.filter((item, index) => {
-      return !filterByTk.includes(treeTable ? item.__index : index);
+      return !filterByTk.includes(treeTable && idKey ? item[idKey] ?? item.__index : index);
     });
     this.field.data.changed = true;
   }
@@ -227,9 +230,6 @@ export const useTableFieldProps = () => {
     dragSort: ctx.dragSort,
     pagination: false,
     required: ctx?.fieldSchema?.parent?.required,
-    rowKey: (record: any) => {
-      return field.value?.indexOf?.(record);
-    },
     onRowSelectionChange(selectedRowKeys) {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;

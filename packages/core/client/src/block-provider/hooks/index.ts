@@ -17,7 +17,7 @@ import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
-import { TableFieldResource } from '../TableFieldProvider';
+import { TableFieldResource, useTableFieldContext, WithoutTableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -574,14 +574,21 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
+  const { field } = useBlockRequestContext();
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const treeTable = useContext(IsTreeTableContext);
+  const ctx = useTableFieldContext();
+  const idKey = ctx.idKey;
   return {
     async onClick() {
       await resource.destroy({
-        filterByTk,
+        filterByTk:
+          treeTable && idKey
+            ? field.data.dataSource.find((i) => i.__index === filterByTk)[idKey] ?? filterByTk
+            : filterByTk,
         treeTable,
+        idKey,
       });
       service?.refresh?.();
       if (block !== 'TableField') {
@@ -617,13 +624,25 @@ export const useDetailPrintActionProps = () => {
 export const useBulkDestroyActionProps = () => {
   const { field } = useBlockRequestContext();
   const { resource, service } = useBlockRequestContext();
+  const treeTable = useContext(IsTreeTableContext);
+  const tableFieldCtx = useTableFieldContext();
+  const tableBlockCtx = useTableBlockContext();
+  const idKey = tableFieldCtx.idKey ?? tableBlockCtx.idKey;
+  const rowKey = tableFieldCtx.rowKey ?? tableBlockCtx.rowKey;
   return {
     async onClick() {
       if (!field?.data?.selectedRowKeys?.length) {
         return;
       }
       await resource.destroy({
-        filterByTk: field.data?.selectedRowKeys,
+        filterByTk: treeTable
+          ? field.data.dataSource
+              .filter((i) => field.data?.selectedRowKeys.includes(i[rowKey]))
+              .map((i) => i[idKey] ?? i[rowKey])
+          : field.data?.selectedRowKeys,
+        treeTable,
+        idKey,
+        rowKey,
       });
       field.data.selectedRowKeys = [];
       service?.refresh?.();

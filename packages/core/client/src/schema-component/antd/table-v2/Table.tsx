@@ -456,7 +456,7 @@ export const Table: any = observer((props: any) => {
             const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
             setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
           }}
-          rowKey={treeTable ? '__index' : rowKey ?? defaultRowKey}
+          rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
           pagination={paginationProps}
