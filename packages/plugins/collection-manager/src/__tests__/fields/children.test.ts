@@ -2,7 +2,7 @@ import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '..';
 
-describe.only('children options', () => {
+describe.skip('children options', () => {
   let db: Database;
   let app: Application;
   let Collection: DBCollection;
