@@ -665,5 +665,7 @@ export default {
   'Use variable': '使用变量',
   'True': '真',
   'False': '假',
-  'Prettify': '格式化'
+  'Prettify': '格式化',
+  "Expand all": "全部展开",
+  "Collapse all": "全部收拢"
 }

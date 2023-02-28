@@ -4,10 +4,11 @@ import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useFormBlockContext, useTableBlockContext } from '../..';
+import { IsTreeTableContext, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
@@ -137,6 +138,7 @@ export const useCreateActionProps = () => {
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const treeTable = useContext(IsTreeTableContext);
   const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
@@ -161,6 +163,7 @@ export const useCreateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          treeTable,
         });
         actionField.data.loading = false;
         __parent?.service?.refresh?.();
@@ -507,6 +510,7 @@ export const useUpdateActionProps = () => {
   const { updateAssociationValues } = useFormBlockContext();
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
+  const treeTable = useContext(IsTreeTableContext);
   const currentUser = currentUserContext?.data?.data;
   return {
     async onClick() {
@@ -527,6 +531,7 @@ export const useUpdateActionProps = () => {
       try {
         await resource.update({
           filterByTk,
+          treeTable,
           values: {
             ...values,
             ...overwriteValues,
@@ -571,10 +576,12 @@ export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
   const { resource, service, block, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
+  const treeTable = useContext(IsTreeTableContext);
   return {
     async onClick() {
       await resource.destroy({
         filterByTk,
+        treeTable,
       });
       service?.refresh?.();
       if (block !== 'TableField') {

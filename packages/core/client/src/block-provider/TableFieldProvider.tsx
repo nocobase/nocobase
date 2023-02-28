@@ -46,6 +46,30 @@ const InternalTableFieldProvider = (props) => {
   );
 };
 
+const flat = (tree: any[]) => {
+  return tree.reduce((pre, cur) => {
+    return pre.concat(cur, flat(cur.children ?? []));
+  }, []);
+};
+
+const toTree = (adjacencyList) => {
+  const buildSubtree = (node) => {
+    const parentIndex = node.__index;
+    return {
+      ...node,
+      children: adjacencyList
+        .filter(
+          (i) =>
+            i.__index.length > parentIndex.length &&
+            i.__index.startsWith(parentIndex) &&
+            !i.__index.replace(`${parentIndex}.children.`, '').includes('.'),
+        )
+        .map(buildSubtree),
+    };
+  };
+  return adjacencyList.filter((i) => !i.__index.includes('.')).map(buildSubtree);
+};
+
 export class TableFieldResource {
   field: Field;
   api: APIClient;
@@ -65,7 +89,7 @@ export class TableFieldResource {
       console.log('list.dataSource', this.field.data.dataSource);
       return {
         data: {
-          data: this.field.data.dataSource,
+          data: options.tree ? toTree(this.field.data.dataSource) : this.field.data.dataSource,
         },
       };
     }
@@ -80,7 +104,7 @@ export class TableFieldResource {
     }
     const response = await this.resource.list(options);
     console.log('list', response);
-    this.field.data.dataSource = response.data.data;
+    this.field.data.dataSource = options.tree ? flat(response.data.data) : response.data.data;
     return {
       data: {
         data: response.data.data,
@@ -100,26 +124,59 @@ export class TableFieldResource {
 
   async create(options) {
     console.log('create', options);
-    const { values } = options;
-    this.field.data.dataSource.push(values);
+    const { values, treeTable } = options;
+    if (treeTable) {
+      const tops = this.field.data.dataSource.filter((i) => !i.__index.includes('.')).length;
+      this.field.data.dataSource = this.field.data.dataSource.concat({
+        ...values,
+        __index:
+          values.parent?.__parent && Object.keys(values.parent?.__parent).length === 0
+            ? String(tops)
+            : `${values.parent?.__index}.children.${values.parent.children?.length ?? 0}`,
+      });
+    } else {
+      this.field.data.dataSource = this.field.data.dataSource.concat(values);
+    }
     this.field.data.changed = true;
   }
 
   async update(options) {
     console.log('update', options);
-    const { filterByTk, values } = options;
-    this.field.data.dataSource[filterByTk] = values;
+    const { filterByTk, values, treeTable } = options;
+
+    if (treeTable) {
+      const parentId = values.parent.id;
+      const parentIndex = this.field.data.dataSource.find((i) => i.id === parentId).__index;
+      const parentChildrenLen = (values.parent.children ?? []).length;
+
+      values.__index = `${parentIndex}.children.${parentChildrenLen}`;
+
+      const writeChildrenIndex = (node) => {
+        (node.children ?? []).forEach((i, index) => {
+          i.__index = `${node.__index}.children.${index}`;
+          writeChildrenIndex(i);
+        });
+      };
+
+      writeChildrenIndex(values);
+
+      this.field.data.dataSource = this.field.data.dataSource.map((i, index) =>
+        treeTable && filterByTk === i.__index ? values : index === filterByTk ? values : i,
+      );
+    } else {
+      this.field.data.dataSource = this.field.data.dataSource.map((i, index) => (index === filterByTk ? values : i));
+    }
     this.field.data.changed = true;
   }
 
   async destroy(options) {
     console.log('destroy', options);
-    let { filterByTk } = options;
+    let { filterByTk, treeTable } = options;
     if (!Array.isArray(filterByTk)) {
       filterByTk = [filterByTk];
     }
     this.field.data.dataSource = this.field.data.dataSource.filter((item, index) => {
-      return !filterByTk.includes(index);
+      return !filterByTk.includes(treeTable ? item.__index : index);
     });
     this.field.data.changed = true;
   }

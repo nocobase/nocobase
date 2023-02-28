@@ -622,5 +622,7 @@ export default {
   "CreatedAt": "Recording a row's created time ",
   "UpdatedAt": "Recording a row's last updated user",
   "Add Child": "Add Child",
-  "Tree table": "Tree table"
+  "Tree table": "Tree table",
+  "Expand all": "Expand all",
+  "Collapse all": "Collapse all"
 };
