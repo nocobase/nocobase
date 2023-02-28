@@ -815,7 +815,15 @@ export const createReadPrettyFormBlockSchema = (options) => {
 };
 
 export const createTableBlockSchema = (options) => {
-  const { collection, resource, rowKey, ...others } = options;
+  const {
+    collection,
+    resource,
+    rowKey,
+    tableActionInitializers,
+    tableColumnInitializers,
+    tableActionColumnInitializers,
+    ...others
+  } = options;
   const schema: ISchema = {
     type: 'void',
     'x-decorator': 'TableBlockProvider',
@@ -837,7 +845,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'TableActionInitializers',
+        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -848,7 +856,7 @@ export const createTableBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': 'TableColumnInitializers',
+        'x-initializer': tableColumnInitializers ?? 'TableColumnInitializers',
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
@@ -865,7 +873,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': 'TableActionColumnInitializers',
+            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
               actions: {
                 type: 'void',
