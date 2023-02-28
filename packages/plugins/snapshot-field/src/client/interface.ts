@@ -29,15 +29,15 @@ const onTargetFieldChange = (field: Field) => {
 function makeFieldsPathOptions(fields, appends = []) {
   const { getCollection } = useCollectionManager();
   const options = [];
-  fields.forEach(field => {
+  fields.forEach((field) => {
     if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)) {
-      const currentAppends = appends.filter(key => `${key}.`.startsWith(`${field.name}.`))
+      const currentAppends = appends.filter((key) => `${key}.`.startsWith(`${field.name}.`));
       if (currentAppends.length) {
         const nextCollection = getCollection(field.target);
         const nextAppends = currentAppends
-          .filter(key => key !== field.name)
-          .map(key => key.replace(`${field.name}.`, ''))
-          .filter(key => key);
+          .filter((key) => key !== field.name)
+          .map((key) => key.replace(`${field.name}.`, ''))
+          .filter((key) => key);
         options.push({
           label: field.uiSchema?.title ?? field.name,
           value: field.name,
@@ -93,7 +93,7 @@ export const snapshot: IField = {
   type: 'object',
   group: 'advanced',
   title: `{{t('Snapshot', {ns: '${NAMESPACE}'})}}`,
-  description: `{{t('Snapshot to description', {ns: '${NAMESPACE}'})}}`,
+  description: `{{t('When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.', {ns: '${NAMESPACE}'})}}`,
   default: {
     type: 'snapshot',
     // name,
@@ -127,14 +127,14 @@ export const snapshot: IField = {
         label: `{{t('Snapshot data', { ns: '${NAMESPACE}' })}}`,
         value: 'data',
         children: result,
-      }
+      },
     ];
   },
   properties: {
     ...defaultProps,
     [TARGET_FIELD]: {
       type: 'string',
-      title: `{{t('Association field', {ns: '${NAMESPACE}'})}}`,
+      title: `{{t('The association field to snapshot', {ns: '${NAMESPACE}'})}}`,
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'SnapshotOwnerCollectionFieldsSelect',
@@ -158,8 +158,7 @@ export const snapshot: IField = {
     },
     [APPENDS]: {
       type: 'string',
-      title: `{{t('Deep copy fields', {ns: '${NAMESPACE}'})}}`,
-      description: `{{t('When a record is created, relational data is backed up in a snapshot', {ns: '${NAMESPACE}'})}}`,
+      title: `{{t("Snapshot the snapshot's association fields", {ns: "${NAMESPACE}"})}}`,
       'x-decorator': 'FormItem',
       'x-component': 'AppendsTreeSelect',
       'x-reactions': [
