@@ -150,6 +150,7 @@ export function afterCreateForForeignKeyField(db: Database) {
             hidden: true,
             autoCreate: true,
             isThrough: true,
+            sortable: false,
           },
           transaction,
         });
