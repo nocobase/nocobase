@@ -87,9 +87,15 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       if (!a || typeof a.indexOf === 'undefined') return false;
       return a.indexOf(b) !== -1;
     },
-    $notIncludes:function (a, b) {
+    $notIncludes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
       return !(a.indexOf(b) !== -1);
+    },
+    $isTruly: function (a) {
+      return a === true || a === 1;
+    },
+    $isFalsy: function (a) {
+      return !jsonLogic.truthy(a);
     },
     cat: function () {
       return Array.prototype.join.call(arguments, '');
