@@ -14,14 +14,14 @@ export default class extends Migration {
       return;
     }
 
-    const foreignKey = this.app.db.options.underscored ? 'ui_schema_uid' : 'uiSchemaUid';
-
     const transaction = await this.db.sequelize.transaction();
-
-    const queryInterface = this.app.db.sequelize.getQueryInterface();
 
     const migrateFieldsSchema = async (collection: Collection) => {
       this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
+
+      collection.setField('uiSchemaUid', {
+        type: 'string',
+      });
 
       const fieldRecords: Array<FieldModel> = await collection.repository.find({
         transaction,
@@ -42,22 +42,11 @@ export default class extends Migration {
           `Migrate field ${fieldRecord.get('collectionName')}.${fieldRecord.get('name')}, ${i}/${fieldsCount}`,
         );
 
-        const fieldKey = fieldRecord.get('key');
-        const foreignKeyValue: any = await this.app.db.sequelize.query(
-          `SELECT ${queryInterface.quoteIdentifier(foreignKey)}
-           FROM ${collection.addSchemaTableName()}
-           WHERE ${queryInterface.quoteIdentifier('key')} = '${fieldKey}'`,
-          {
-            type: 'SELECT',
-            transaction,
-          },
-        );
+        const uiSchemaUid = fieldRecord.get('uiSchemaUid');
 
-        if (foreignKeyValue.length == 0) {
+        if (!uiSchemaUid) {
           continue;
         }
-
-        const uiSchemaUid = foreignKeyValue[0][foreignKey];
 
         const uiSchemaRecord = await this.db.getRepository('uiSchemas').findOne({
           filterByTk: uiSchemaUid,
@@ -74,6 +63,7 @@ export default class extends Migration {
       }
 
       await transaction.commit();
+      collection.removeField('uiSchemaUid');
       this.app.log.info('Migrate uiSchema to options field done');
     };
 
