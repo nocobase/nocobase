@@ -37,11 +37,13 @@ async function dumpAction(app) {
 
   const results = await inquirer.prompt(questions);
 
-  await dumper.dump({
+  const filePath = await dumper.dump({
     requiredGroups,
     selectedOptionalGroups: results.collectionGroups,
     selectedUserCollections: results.userCollections,
   });
+
+  app.log.info(`dumped to ${filePath}`);
 
   await app.stop();
 }

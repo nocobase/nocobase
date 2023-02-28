@@ -83,8 +83,9 @@ export class Dumper extends AppMigrator {
 
     await this.dumpMeta();
     await this.dumpDb();
-    await this.packDumpedDir();
+    const filePath = await this.packDumpedDir();
     await this.clearWorkDir();
+    return filePath;
   }
 
   async dumpDb() {
@@ -262,5 +263,6 @@ export class Dumper extends AppMigrator {
 
     await archive.finalize();
     console.log('dumped to', filePath);
+    return filePath;
   }
 }
