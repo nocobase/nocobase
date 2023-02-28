@@ -28,6 +28,14 @@ export default class extends Migration {
           await schema.save({ transaction });
         }
       }
+
+      const repository = db.getRepository('applicationPlugins');
+      await repository.destroy({
+        filter: {
+          name: ['math-formula-field', 'excel-formula-field'],
+        },
+        transaction,
+      });
     });
   }
 }

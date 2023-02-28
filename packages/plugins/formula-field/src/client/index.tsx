@@ -5,7 +5,7 @@ import { css } from '@emotion/css';
 import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
 import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 
-import Formula from './formula';
+import { Formula } from './formula';
 import field from './field';
 import { NAMESPACE } from './locale';
 import { Registry } from '@nocobase/utils/client';
@@ -35,6 +35,8 @@ function renderExpressionDescription(key: string) {
     )
     : null
 }
+
+export { Formula } from './formula';
 
 export default React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);

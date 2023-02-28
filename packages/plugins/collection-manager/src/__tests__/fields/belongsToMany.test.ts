@@ -17,11 +17,14 @@ describe('belongsToMany', () => {
       values: {
         name: 'posts',
       },
+      context: {},
     });
+
     await Collection.repository.create({
       values: {
         name: 'tags',
       },
+      context: {},
     });
   });
 
@@ -29,5 +32,24 @@ describe('belongsToMany', () => {
     await app.destroy();
   });
 
-  it('should create belongsToMany field', async () => {});
+  it('should create belongsToMany field', async () => {
+    await Field.repository.create({
+      values: {
+        name: 'tags',
+        type: 'belongsToMany',
+        collectionName: 'posts',
+        interface: 'm2m',
+        through: 'post_tags',
+      },
+      context: {},
+    });
+
+    const throughCollection = await Collection.repository.findOne({
+      filter: {
+        name: 'post_tags',
+      },
+    });
+
+    expect(throughCollection.get('sortable')).toEqual(false);
+  });
 });

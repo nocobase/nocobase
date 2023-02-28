@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
 import { ArrayItems } from '@formily/antd';
-import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
+import _ from 'lodash';
 import { uid } from '@formily/shared';
 import {
   Alert,
@@ -15,7 +16,7 @@ import {
   Modal,
   Select,
   Space,
-  Switch
+  Switch,
 } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
@@ -36,10 +37,14 @@ import {
   useCollection,
   useCollectionManager,
   useCompile,
-  useDesignable
+  useDesignable,
+  useCollectionFilterOptions,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { FormLinkageRules } from './LinkageRules';
+import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -224,7 +229,7 @@ const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'FormV2') {
       const f = s.reduceProperties((buf, s) => {
-        if (s['x-component'] === 'Grid') {
+        if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
         }
         return buf;
@@ -630,6 +635,7 @@ SchemaSettings.ModalItem = (props) => {
     onSubmit,
     asyncGetInitialValues,
     initialValues,
+    width,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -642,7 +648,7 @@ SchemaSettings.ModalItem = (props) => {
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
-        FormDialog(schema.title || title, () => {
+        FormDialog({ title: schema.title || title, width }, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
@@ -788,6 +794,64 @@ SchemaSettings.DefaultSortingRules = (props) => {
         } as ISchema
       }
       onSubmit={onSubmit}
+    />
+  );
+};
+
+SchemaSettings.LinkageRules = (props) => {
+  const { collectionName } = props;
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const { getTemplateById } = useSchemaTemplateManager();
+  const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
+  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Linkage rules')}
+      components={{ ArrayCollapse, FormLayout }}
+      width={750}
+      schema={
+        {
+          type: 'object',
+          title: t('Linkage rules'),
+          properties: {
+            fieldReaction: {
+              'x-component': FormLinkageRules,
+              'x-component-props': {
+                useProps: () => {
+                  const options = useCollectionFilterOptions(collectionName);
+                  return {
+                    options,
+                    defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+                    type,
+                    linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+                    collectionName,
+                  };
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(v) => {
+        const rules = [];
+        for (const rule of v.fieldReaction.rules) {
+          rules.push(_.pickBy(rule, _.identity));
+        }
+        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+        const schema = {
+          ['x-uid']: uid,
+        };
+
+        gridSchema['x-linkage-rules'] = rules;
+        schema['x-linkage-rules'] = rules;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
     />
   );
 };

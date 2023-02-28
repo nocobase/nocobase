@@ -45,7 +45,11 @@ export class PluginManagerRepository extends Repository {
   }
 
   async load() {
-    const items = await this.find();
+    // sort plugins by id
+    const items = await this.find({
+      sort: 'id',
+    });
+
     for (const item of items) {
       await this.pm.addStatic(item.get('name'), {
         ...item.get('options'),
