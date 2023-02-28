@@ -22,6 +22,7 @@ const validateJSON = {
 const chartConfig = {
   xField: '{{dimension}}',
   yField: '{{metric}}',
+  seriesField: '{{category}}',
   legend: false,
 };
 export const funnelTemplate = {
@@ -46,6 +47,13 @@ export const funnelTemplate = {
         required: true,
         type: 'string',
         title: '{{t("Funnel Layer Width/Metrics")}}',
+        'x-decorator': 'FormItem',
+        'x-component': 'Select',
+        enum: '{{dataSource}}',
+      },
+      category: {
+        type: 'string',
+        title: '{{t("Color legend/dimensional")}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
