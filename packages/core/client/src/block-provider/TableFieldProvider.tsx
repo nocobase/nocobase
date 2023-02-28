@@ -132,7 +132,7 @@ export class TableFieldResource {
       this.field.data.dataSource = this.field.data.dataSource.concat({
         ...values,
         __index:
-          values.parent?.__parent && Object.keys(values.parent?.__parent).length === 0
+          (values.parent?.__parent && Object.keys(values.parent?.__parent).length === 0) || !values.parent?.__index
             ? String(tops)
             : `${values.parent?.__index}.children.${values.parent.children?.length ?? 0}`,
       });
