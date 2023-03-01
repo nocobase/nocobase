@@ -39,7 +39,7 @@ export const AuditLogsTableActionColumnInitializers = (props: any) => {
             {
               type: 'item',
               title: t('View'),
-              component: 'ViewActionInitializer',
+              component: 'AuditLogsViewActionInitializer',
               schema: {
                 'x-component': 'Action.Link',
                 'x-action': 'view',

@@ -6,6 +6,7 @@ import { AuditLogsField } from './components/AuditLogsField';
 import { AuditLogsBlockProvider } from './AuditLogsBlockProvider';
 import { AuditLogsTableActionColumnInitializer } from './initializers/AuditLogsTableActionColumnInitializer';
 import { AuditLogs } from './deplicated/AuditLogs';
+import { AuditLogsViewActionInitializer } from './components/AuditLogsViewActionInitializer';
 
 export const AuditLogsProvider = (props: any) => {
   return (
@@ -16,6 +17,7 @@ export const AuditLogsProvider = (props: any) => {
         AuditLogsBlockInitializer,
         AuditLogsValue,
         AuditLogsField,
+        AuditLogsViewActionInitializer,
         AuditLogsTableActionColumnInitializer,
       }}
     >
