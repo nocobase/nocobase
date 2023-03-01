@@ -65,6 +65,7 @@ async function restoreWarning() {
 
 async function restoreActionCommand(app: Application, restoreFilePath: string) {
   const restorer = new Restorer(app, restoreFilePath);
+  console.log(await restorer.parseBackupFile());
   await restorer.restore();
   await app.stop();
 }

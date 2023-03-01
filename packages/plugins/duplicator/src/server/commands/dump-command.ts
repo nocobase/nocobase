@@ -38,8 +38,7 @@ async function dumpCommandAction(app) {
   const results = await inquirer.prompt(questions);
 
   const { filePath } = await dumper.dump({
-    requiredGroups,
-    selectedOptionalGroups: results.collectionGroups,
+    selectedOptionalGroupNames: results.collectionGroups,
     selectedUserCollections: results.userCollections,
   });
 

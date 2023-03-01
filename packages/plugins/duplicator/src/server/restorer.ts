@@ -99,12 +99,13 @@ export class Restorer extends AppMigrator {
 
   async importCollections(options?: { ignore?: string | string[] }) {
     const coreCollections = ['applicationPlugins'];
-    const collections = await this.getImportCollections();
+    const collections = await this.getImportCollections(); // 获取导入压缩包内的所有collections
 
-    const importCustomCollections = await this.getImportCustomCollections();
+    const importCustomCollections = await this.getImportCustomCollections(); // 获取导入的 collections 记录
 
-    const importPlugins = await this.getImportPlugins();
+    const importPlugins = await this.getImportPlugins(); // 获取导入的插件列表
 
+    // 获取导入的 collectionGroups
     const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) => {
       return (
         importPlugins.includes(collectionGroup.namespace) &&
@@ -116,6 +117,7 @@ export class Restorer extends AppMigrator {
     const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
 
     const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
+
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
 
     const optionalCollections = importCustomCollections.filter(

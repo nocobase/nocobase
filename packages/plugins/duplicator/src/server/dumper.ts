@@ -53,24 +53,27 @@ export class Dumper extends AppMigrator {
     });
   }
 
-  async dump(options: {
-    requiredGroups: CollectionGroup[];
-    selectedOptionalGroups: CollectionGroup[];
-    selectedUserCollections: string[];
-  }) {
-    const { requiredGroups, selectedOptionalGroups, selectedUserCollections = [] } = options;
+  async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
+    const { requiredGroups, optionalGroups } = await this.dumpableCollections();
+    let { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 
-    const coreCollections = ['applicationPlugins'];
+    const selectedOptionalGroups = optionalGroups.filter((group) => {
+      return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+        const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+        return group.function === functionKey && group.namespace === namespace;
+      });
+    });
 
-    const dumpedCollections = [
-      coreCollections,
-      CollectionGroupManager.getGroupsCollections(requiredGroups),
-      CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
-      selectedUserCollections,
-      throughCollections,
-    ].flat();
+    const dumpedCollections = lodash.uniq(
+      [
+        CollectionGroupManager.getGroupsCollections(requiredGroups),
+        CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
+        selectedUserCollections,
+        throughCollections,
+      ].flat(),
+    );
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({
@@ -78,8 +81,27 @@ export class Dumper extends AppMigrator {
       });
     }
 
-    await this.dumpMeta();
+    const mapGroupToMetaJson = (groups) =>
+      groups.map((group: CollectionGroup) => {
+        const data = {
+          ...group,
+        };
+
+        if (group.delayRestore) {
+          data['delayRestore'] = true;
+        }
+
+        return data;
+      });
+
+    await this.dumpMeta({
+      requiredGroups: mapGroupToMetaJson(requiredGroups),
+      selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
+      userCollections: selectedUserCollections,
+    });
+
     await this.dumpDb();
+
     const filePath = await this.packDumpedDir();
     await this.clearWorkDir();
     return filePath;
@@ -144,12 +166,16 @@ export class Dumper extends AppMigrator {
     }
   }
 
-  async dumpMeta() {
+  async dumpMeta(additionalMeta: Object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(
       metaPath,
-      JSON.stringify({ version: this.app.version.get(), dialect: this.app.db.sequelize.getDialect() }),
+      JSON.stringify({
+        version: this.app.version.get(),
+        dialect: this.app.db.sequelize.getDialect(),
+        ...additionalMeta,
+      }),
       'utf8',
     );
   }

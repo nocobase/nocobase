@@ -1,4 +1,4 @@
-import lodash, { castArray, isString } from 'lodash';
+import { castArray, isString } from 'lodash';
 import { Application } from '@nocobase/server';
 
 export interface CollectionGroup {
@@ -96,22 +96,12 @@ export class CollectionGroupManager {
     return results;
   }
 
-  static getGroupsCollections(groups: string[] | CollectionGroup[]) {
+  static getGroupsCollections(groups: CollectionGroup[]) {
     if (!groups || groups.length == 0) {
       return [];
     }
 
-    if (lodash.isPlainObject(groups[0])) {
-      return (groups as CollectionGroup[]).map((collectionGroup) => collectionGroup.collections).flat();
-    }
-
-    return this.collectionGroups
-      .filter((collectionGroup) => {
-        const groupKey = `${collectionGroup.namespace}.${collectionGroup.function}`;
-        return (groups as string[]).includes(groupKey);
-      })
-      .map((collectionGroup) => collectionGroup.collections)
-      .flat();
+    return groups.map((collectionGroup) => collectionGroup.collections).flat();
   }
 
   static classifyCollectionGroups(collectionGroups: CollectionGroup[]) {
