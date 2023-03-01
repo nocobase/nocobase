@@ -90,7 +90,6 @@ const plots = {
 
 export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
   const { className, plot, config } = props;
-
   const containerRef = useRef(undefined);
   const plotRef = useRef(undefined);
 
@@ -125,6 +124,7 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
   }
 
   useEffect(() => {
+    console.log(config,plot);
     try {
       renderPlot();
     }

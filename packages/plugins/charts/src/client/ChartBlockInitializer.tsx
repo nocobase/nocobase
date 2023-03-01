@@ -1,6 +1,6 @@
 import { FormOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
+import { Field, FormPath } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
@@ -25,18 +25,19 @@ export const Options = observer((props) => {
   const form = useForm<ChartFormInterface>();
   const field = useField<Field>();
   const [s, setSchema] = useState(new Schema({}));
-  const [chartType, setChartType] = useState(form.values.chartType);
+  const [chartType, setChartType] = useState(form.values.type);
   useEffect(() => {
     // form.clearFormGraph('options.*');
     setChartType(form?.values?.type);
-    if (chartType !== form?.values?.type)
+    if (chartType !== form?.values?.type) {
       form.clearFormGraph('options.*');
+    }
     if (form.values.type) {
       const template = templates.get(form.values.type);
       setSchema(new Schema(template.configurableProperties || {}));
     }
   }, [form.values.type]);
-  return <RecursionField name={form.values.type || 'default'} schema={s} />;
+  return <RecursionField schema={s} />;
 });
 
 
@@ -83,7 +84,7 @@ export const ChartBlockInitializer = (props) => {
               chart: form.values,//TODO
             };
             setChartBlockEngineMetaData(chartBlockEngineMetaData);
-          }, [form.values.chartType]);
+          }, [form.values.type]);
           console.log(chartBlockEngineMetaData);
           return (
             <APIClientProvider apiClient={api}>
@@ -190,7 +191,7 @@ export const ChartBlockInitializer = (props) => {
           };
           insert({
             type: 'void',
-            title:chartQueryMetadata?.title,
+            title: chartQueryMetadata?.title,
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',

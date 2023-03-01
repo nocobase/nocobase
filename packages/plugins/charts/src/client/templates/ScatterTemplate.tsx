@@ -22,6 +22,7 @@ const validateJSON = {
 };
 
 const chartConfig = {
+  _xType: 'Scatter',
   appendPadding: 10,
   xField: '{{metric}}',
   yField: '{{dimension}}',
@@ -61,7 +62,7 @@ export const scatterTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'object',
+    type: 'void',
     properties: {
       dimension: {
         required: true,
@@ -90,7 +91,7 @@ export const scatterTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          jsonConfig: {
+          template: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',

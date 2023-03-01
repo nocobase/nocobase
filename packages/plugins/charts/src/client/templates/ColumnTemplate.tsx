@@ -22,6 +22,7 @@ const validateJSON = {
 };
 
 const chartConfig = {
+  _xType:'Column',
   appendPadding: 10,
   isGroup: true,
   yField: '{{metric}}',
@@ -52,7 +53,7 @@ export const columnTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'object',
+    type: 'void',
     properties: {
       dimension: {
         required: true,
@@ -81,7 +82,7 @@ export const columnTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          jsonConfig: {
+          template: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',

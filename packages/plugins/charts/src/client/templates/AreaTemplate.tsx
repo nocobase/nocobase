@@ -22,6 +22,7 @@ const validateJSON = {
 };
 
 const chartConfig = {
+  _xType:'Area',
   yField: '{{metric}}',
   xField: '{{dimension}}',
   seriesField: '{{category}}',
@@ -35,7 +36,7 @@ export const areaTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'object',
+    type: 'void',
     properties: {
       dimension: {
         required: true,
@@ -64,7 +65,7 @@ export const areaTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          jsonConfig: {
+          template: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',

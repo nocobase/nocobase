@@ -51,21 +51,36 @@ const ChartRenderComponent = ({
       } catch (e) {
         template = {};
       }
+      console.log(chartConfig, finalChartOptions);
       const config = compile({
         ...finalChartOptions,
         ...template,
         data: dataSet,
       }, { ...chartConfig, category: chartConfig?.category ?? '' });
+      console.log(config, '!!!!!!!!!!!!!!!!!!');
+      console.log(chartConfig, '!!!!!!!!!!!!!!!!!!');
       if (config && chartConfig) {
-        const { dimension, metric } = chartConfig;
+        const { dimension, metric, category } = chartConfig;
+        console.log(dimension, metric, 66666666666);
         if (!metric || !dimension) {
           return (
             <>
-              Please check your config
+              Please check your chart config option88888888888888
             </>
           );
         }
       }
+      if (config && chartConfig) {
+        if (config._xType !== chartConfig.type) {
+          return (
+            <>
+              Please check your chart config option88888888888888
+            </>
+          );
+        }
+      }
+      console.log(config, 22222222222222222222222);
+      console.log('333333333333333333');
       return (
         <>
           {
@@ -76,33 +91,6 @@ const ChartRenderComponent = ({
               <RenderComponent plot={chartConfig.type} config={config} />
           }
         </>
-      );
-    }
-    case 'DataSetPreviewTable': {
-      const tableConfig = chartConfig[chartConfig.chartType]; // ['Date','scales']
-      let data = dataSet?.data_set_value ? JSON5.parse(dataSet?.data_set_value) : [];
-      let finalData = data;
-      if (data.length && tableConfig?.columns?.length) {
-        finalData = data.map(item => {
-          let obj = {};
-          for (const column of tableConfig?.columns) {
-            obj[column] = item[column];
-          }
-          return obj;
-        });
-      }
-      if (!finalData || !tableConfig?.columns?.length) {
-        return (
-          <>
-          </>
-        );
-      }
-      return (
-        loading
-          ?
-          <Spin />
-          :
-          <RenderComponent dataSet={finalData} />
       );
     }
   }
@@ -130,7 +118,7 @@ const ChartBlockEngine = ({
   }
   if (!chartType || !renderComponent) {
     return (
-      <>Please check your chart config option!!! </>
+      <>Please check your chart config option</>
     );
   }
 

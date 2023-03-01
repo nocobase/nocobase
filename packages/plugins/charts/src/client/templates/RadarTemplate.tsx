@@ -22,6 +22,7 @@ const validateJSON = {
 };
 
 const chartConfig = {
+  _xType: 'Radar',
   xField: '{{dimension}}',
   yField: '{{metric}}',
   appendPadding: [0, 10, 0, 10],
@@ -49,7 +50,7 @@ export const radarTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'object',
+    type: 'void',
     properties: {
       dimension: {
         required: true,
@@ -71,7 +72,7 @@ export const radarTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          jsonConfig: {
+          template: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',

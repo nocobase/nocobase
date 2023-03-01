@@ -22,6 +22,7 @@ const validateJSON = {
 };
 
 const chartConfig = {
+  _xType:'Pie',
   appendPadding: 10,
   angleField: '{{metric}}',
   colorField: '{{dimension}}',
@@ -46,7 +47,7 @@ export const pieTemplate = {
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,
   configurableProperties: {
-    type: 'object',
+    type: 'void',
     properties: {
       dimension: {
         required: true,
@@ -68,7 +69,7 @@ export const pieTemplate = {
         type: 'void',
         'x-component': 'div',
         properties: {
-          jsonConfig: {
+          template: {
             required: true,
             title: '{{t("JSON config")}}',
             type: 'string',
