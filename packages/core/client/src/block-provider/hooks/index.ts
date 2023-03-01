@@ -215,15 +215,11 @@ export const useFilterBlockActionProps = () => {
       getDataBlocks().forEach(async (block) => {
         block.filters[actionField.props.name as string] = transformToFilter(form.values);
 
-        const filters = block.service.params?.[1]?.filters || {};
-        filters[`filterAction`] = transformToFilter(form.values);
-
         try {
           actionField.data.loading = true;
           await block.doFilter({
-            ...block.service.params?.[0],
             page: 1,
-            filter: mergeFilter([...Object.values(filters).map((filter) => removeNullCondition(filter))]),
+            filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
           });
           actionField.data.loading = false;
         } catch (error) {

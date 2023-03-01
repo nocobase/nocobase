@@ -16,7 +16,6 @@ export interface DataBlock {
   association?: CollectionFieldOptions;
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
-  service: any;
 }
 
 interface FilterContextValue {
@@ -47,7 +46,6 @@ export const FilterBlockRecord = (props: any) => {
   if (props.block !== 'form' && props.blockType !== 'filter') {
     recordDataBlocks({
       name: field.props.name as string,
-      service,
       doFilter: service.run,
       collection,
       association,
