@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
+import { uid } from '@formily/shared';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
@@ -132,7 +133,7 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
             height: `calc(100vh - ${height}px)`,
           }}
         >
-          <RecursionField onlyRenderProperties={false} schema={schema} />
+          <RecursionField onlyRenderProperties={false} name={schema.name} schema={schema} />
         </div>
       ) : (
         props.children
