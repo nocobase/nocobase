@@ -27,19 +27,19 @@ export class Dumper extends AppMigrator {
   }> {
     const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
 
-    console.log(appCollectionGroups);
     const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(appCollectionGroups);
     const pluginsCollections = CollectionGroupManager.getGroupsCollections(appCollectionGroups);
 
-    console.log(pluginsCollections);
     const userCollections = await this.getCustomCollections();
     return lodash.cloneDeep({
       requiredGroups,
       optionalGroups,
       userCollections: await Promise.all(
         userCollections
-          .filter((collection) => !pluginsCollections.includes(collection))
+          .filter((collection) => !pluginsCollections.includes(collection)) //remove collection that is in plugins
           .map(async (name) => {
+            // map user collection to { name, title }
+
             const collectionInstance = await this.app.db.getRepository('collections').findOne({
               filterByTk: name,
             });
