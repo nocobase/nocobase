@@ -3,7 +3,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager, useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -51,14 +51,17 @@ const InternalFormBlockProvider = (props) => {
 
 export const FormBlockProvider = (props) => {
   const record = useRecord();
+  const { collection } = props;
   const { __tableName } = record;
   const { getInheritCollections } = useCollectionManager();
   const inheritCollections = getInheritCollections(__tableName);
+  const currentCollection = useCollection();
   const { designable } = useDesignable();
-  const flag =
-    !designable && __tableName && !inheritCollections.includes(props.collection) && __tableName !== props.collection;
+  const detailFlag =
+    Object.keys(record).length>0 && !(__tableName && !inheritCollections.includes(collection) && __tableName !== collection);
+  const createFlag = currentCollection.name === collection && !Object.keys(record).length;
   return (
-    !flag && (
+    (designable || detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
         <InternalFormBlockProvider {...props} />
       </BlockProvider>
