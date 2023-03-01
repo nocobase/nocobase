@@ -4,9 +4,11 @@ import addRestoreCommand from './commands/restore-command';
 
 import zhCN from './locale/zh-CN';
 import dumpAction from './actions/dump-action';
-import restoreAction from './actions/restore-action';
+import { getPackageContent, restoreAction } from './actions/restore-action';
 import getDictAction from './actions/get-dict-action';
 import dumpableCollections from './actions/dumpable-collections-action';
+import multer from '@koa/multer';
+import * as os from 'os';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -19,8 +21,24 @@ export default class Duplicator extends Plugin {
   async load() {
     this.app.resourcer.define({
       name: 'duplicator',
+      middleware: async (ctx, next) => {
+        if (ctx.action.actionName !== 'upload') {
+          return next();
+        }
+        const storage = multer.diskStorage({
+          destination: os.tmpdir(), // 获取临时目录
+          filename: function (req, file, cb) {
+            const randomName = Date.now().toString() + Math.random().toString().slice(2); // 随机生成文件名
+            cb(null, randomName);
+          },
+        });
+
+        const upload = multer({ storage }).single('file');
+        return upload(ctx, next);
+      },
       actions: {
         restore: restoreAction,
+        upload: getPackageContent,
         dump: dumpAction,
         dumpableCollections: dumpableCollections,
         getDict: getDictAction,

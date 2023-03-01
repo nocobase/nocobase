@@ -6,6 +6,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "@koa/multer": "^3.0.2",
     "@nocobase/client": "0.9.0-alpha.2",
     "@nocobase/database": "0.9.0-alpha.2",
     "@nocobase/server": "0.9.0-alpha.2",
