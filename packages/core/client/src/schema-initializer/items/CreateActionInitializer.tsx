@@ -1,12 +1,19 @@
-import React, { forwardRef } from 'react';
+import React from 'react';
 import { ActionInitializer } from './ActionInitializer';
 
 export const CreateActionInitializer = (props) => {
   const schema = {
     type: 'void',
     'x-action': 'create',
+    title: "{{t('Add new')}}",
     'x-designer': 'Action.Designer',
-    'x-component': 'CreateRecordAction',
+    'x-component': 'Action',
+    'x-decorator': 'ACLActionProvider',
+    'x-component-props': {
+      // type: 'primary',
+      // icon: 'PlusOutlined',
+      component: 'CreateRecordAction',
+    },
     properties: {
       drawer: {
         type: 'void',

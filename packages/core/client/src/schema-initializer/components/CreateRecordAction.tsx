@@ -1,19 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
-import { RecursionField, useFieldSchema } from '@formily/react';
+import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Dropdown, Menu, Button } from 'antd';
+import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
-import { ActionContext, useCompile, Action } from '../../schema-component';
-import { useDesignable } from '../../schema-component/hooks';
+import { ActionContext, useCompile } from '../../schema-component';
 
-export const CreateRecordAction = observer(() => {
-  const { DesignableBar } = useDesignable();
+export const actionDesignerCss = css`
+  position: relative;
+  &:hover {
+    .general-schema-designer {
+      display: block;
+    }
+  }
+  .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: rgba(241, 139, 98, 0.06);
+    border: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: #f18b62;
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+      }
+    }
+  }
+`;
+export const CreateRecordAction = observer((props) => {
   const [visible, setVisible] = useState(false);
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
-  const { getChildrenCollections, refreshCM } = useCollectionManager();
+  const field = useField();
+  const { getChildrenCollections } = useCollectionManager();
   const inheritsCollections = getChildrenCollections(collection.name);
   const [currentCollection, setCurrentCollection] = useState(collection.name);
   const compile = useCompile();
@@ -36,41 +74,49 @@ export const CreateRecordAction = observer(() => {
     </Menu>
   );
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      {inheritsCollections?.length > 0 ? (
-        <Dropdown.Button
-          type="primary"
-          icon={<DownOutlined />}
-          buttonsRender={([leftButton, rightButton]) => [
-            leftButton,
-            React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-          ]}
-          overlay={menu}
-          onClick={(info) => {
-            setVisible(true);
-            setCurrentCollection(collection.name);
-          }}
-        >
-          <PlusOutlined />
-          {t('Add new')}
-          <DesignableBar />
-        </Dropdown.Button>
-      ) : (
-        <Button
-          type={'primary'}
-          icon={<PlusOutlined />}
-          onClick={(info) => {
-            setVisible(true);
-            setCurrentCollection(collection.name);
-          }}
-        >
-          {t('Add new')}
-          <DesignableBar />
-        </Button>
-      )}
-      <CollectionProvider name={currentCollection}>
-        <RecursionField schema={fieldSchema} name="create" onlyRenderProperties />
-      </CollectionProvider>
-    </ActionContext.Provider>
+    <div className={actionDesignerCss}>
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        {inheritsCollections?.length > 0 ? (
+          <Dropdown.Button
+            type="primary"
+            icon={<DownOutlined />}
+            buttonsRender={([leftButton, rightButton]) => [
+              leftButton,
+              React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+            ]}
+            overlay={menu}
+            onClick={(info) => {
+              setVisible(true);
+              setCurrentCollection(collection.name);
+            }}
+          >
+            <PlusOutlined />
+            {props.children}
+          </Dropdown.Button>
+        ) : (
+          <Button
+            type={'primary'}
+            icon={<PlusOutlined />}
+            onClick={(info) => {
+              setVisible(true);
+              setCurrentCollection(collection.name);
+            }}
+          >
+            {props.children}
+          </Button>
+        )}
+        <CollectionProvider name={currentCollection}>
+          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+        </CollectionProvider>
+      </ActionContext.Provider>
+    </div>
   );
 });
+
+// export const CreateRecordAction = observer((props: any) => {
+//   return (
+//     <Action {...props} component={CreateAction}>
+//       {props.children}
+//     </Action>
+//   );
+// });
