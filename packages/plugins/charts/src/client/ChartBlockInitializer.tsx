@@ -22,23 +22,33 @@ import { ChartSvgs } from './ChartSvgs';
 import { Card } from 'antd';
 
 export const Options = observer((props) => {
-  const form = useForm();
+  const form = useForm<ChartFormInterface>();
   const field = useField<Field>();
   const [s, setSchema] = useState(new Schema({}));
   const [chartType, setChartType] = useState(form.values.chartType);
   useEffect(() => {
     // form.clearFormGraph('options.*');
-    setChartType(form?.values?.chartType);
-    if (chartType !== form?.values?.chartType)
+    setChartType(form?.values?.type);
+    if (chartType !== form?.values?.type)
       form.clearFormGraph('options.*');
-    if (form.values.chartType) {
-      const template = templates.get(form.values.chartType);
+    if (form.values.type) {
+      const template = templates.get(form.values.type);
       setSchema(new Schema(template.configurableProperties || {}));
     }
-  }, [form.values.chartType]);
-  return <RecursionField name={form.values.chartType || 'default'} schema={s} />;
+  }, [form.values.type]);
+  return <RecursionField name={form.values.type || 'default'} schema={s} />;
 });
 
+
+interface ChartFormInterface {
+  type: string;
+  template: string;
+  metric: string;
+  dimension: string;
+  category?: string;
+
+  [key: string]: string;
+}
 
 export const ChartBlockInitializer = (props) => {
   const { insert } = props;
@@ -63,12 +73,14 @@ export const ChartBlockInitializer = (props) => {
           width: 1200,
           bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
         }, () => {
-          const form = useForm();
+          const form = useForm<ChartFormInterface>();
           const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
           useEffect(() => {
             const chartBlockEngineMetaData = {
-              chartQueryMetadata,
-              chartConfig: form.values,
+              query: {
+                id: chartQueryMetadata?.id,
+              },
+              chart: form.values,//TODO
             };
             setChartBlockEngineMetaData(chartBlockEngineMetaData);
           }, [form.values.chartType]);
@@ -79,7 +91,6 @@ export const ChartBlockInitializer = (props) => {
                 scope={options.scope}
                 components={{ ...options.components }}
               >
-
                 <section className={
                   css`
                     display: flex;
@@ -99,7 +110,7 @@ export const ChartBlockInitializer = (props) => {
                           components={{ Options }}
                           schema={{
                             properties: {
-                              chartType: {
+                              type: {
                                 title: t('Chart type'),
                                 required: true,
                                 'x-component': 'CustomSelect',
@@ -157,9 +168,9 @@ export const ChartBlockInitializer = (props) => {
                     <Card size='small' title={'Data preview'} className={css`margin-top: 8px`}>
                       {/*Data preview*/}
                       {
-                        chartBlockEngineMetaData?.chartQueryMetadata?.id
+                        chartBlockEngineMetaData?.query?.id
                         &&
-                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.chartQueryMetadata?.id} />
+                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id} />
                       }
                     </Card>
                   </div>
@@ -171,13 +182,15 @@ export const ChartBlockInitializer = (props) => {
           initialValues: {},
         });
         if (values) {
-          const chartBlockEngineMetaData = {
-            chartQueryMetadata,
-            chartConfig: values,
+          const chartBlockEngineMetaData: ChartBlockEngineMetaData = {
+            query: {
+              id: chartQueryMetadata.id,
+            },
+            chart: values,
           };
           insert({
             type: 'void',
-            title: chartBlockEngineMetaData?.chartQueryMetadata?.title,
+            title:chartQueryMetadata?.title,
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',

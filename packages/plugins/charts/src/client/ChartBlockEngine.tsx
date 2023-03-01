@@ -9,10 +9,16 @@ import { ChartQueryMetadata } from './ChartQueryBlockInitializer';
 import { Empty } from 'antd';
 
 export interface ChartBlockEngineMetaData {
-  chartQueryMetadata: ChartQueryMetadata,
-  chartConfig: {
-    chartType: string,
-    jsonConfig: string,
+  query: {
+    id: number
+    //vars
+  },
+  chart: {
+    type: string
+    template: string
+    metric: string
+    dimension: string
+    category?: string
     [key: string]: any,
   },
 }
@@ -21,11 +27,11 @@ const ChartRenderComponent = ({
                                 chartBlockEngineMetaData,
                               }: { chartBlockEngineMetaData: ChartBlockEngineMetaData }): JSX.Element => {
   const compile = useCompile();
-  const chartType = chartBlockEngineMetaData.chartConfig.chartType;
+  const chartType = chartBlockEngineMetaData.chart.type;
   const renderComponent = templates.get(chartType)?.renderComponent;
   const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3 |Table
-  const chartConfig = chartBlockEngineMetaData.chartConfig;
-  const { loading, dataSet, error } = useGetDataSet(chartBlockEngineMetaData.chartQueryMetadata.id);
+  const chartConfig = chartBlockEngineMetaData.chart;
+  const { loading, dataSet, error } = useGetDataSet(chartBlockEngineMetaData.query.id);
 
   if (error) {
     return (
@@ -39,19 +45,19 @@ const ChartRenderComponent = ({
     case 'G2Plot': {
       let finalChartOptions;
       finalChartOptions = templates.get(chartType)?.defaultChartOptions;
-      let jsonConfig;
+      let template;
       try {
-        jsonConfig = JSON5.parse(chartConfig[chartConfig?.chartType]?.jsonConfig);
+        template = JSON5.parse(chartConfig?.template);
       } catch (e) {
-        jsonConfig = {};
+        template = {};
       }
       const config = compile({
         ...finalChartOptions,
-        ...jsonConfig,
+        ...template,
         data: dataSet,
-      }, { ...chartConfig[chartConfig.chartType], category: chartConfig[chartConfig.chartType]?.category ?? '' });
-      if (config && chartConfig[chartConfig?.chartType]) {
-        const { dimension, metric } = chartConfig[chartConfig?.chartType];
+      }, { ...chartConfig, category: chartConfig?.category ?? '' });
+      if (config && chartConfig) {
+        const { dimension, metric } = chartConfig;
         if (!metric || !dimension) {
           return (
             <>
@@ -67,7 +73,7 @@ const ChartRenderComponent = ({
               ?
               <Spin />
               :
-              <RenderComponent plot={chartConfig.chartType} config={config} />
+              <RenderComponent plot={chartConfig.type} config={config} />
           }
         </>
       );
@@ -118,7 +124,7 @@ const ChartBlockEngine = ({
                             chartBlockEngineMetaData,
                           }: { chartBlockEngineMetaData: ChartBlockEngineMetaData }) => {
   let renderComponent;
-  const chartType = chartBlockEngineMetaData?.chartConfig?.chartType;
+  const chartType = chartBlockEngineMetaData?.chart?.type;
   if (chartType) {
     renderComponent = templates.get(chartType)?.renderComponent;
   }

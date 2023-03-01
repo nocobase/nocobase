@@ -36,7 +36,6 @@ export const ChartQueryBlockInitializer = (props) => {
   const [items, setItems] = useState(defaultItems);
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
-  console.log(ctx.data);
   useEffect(() => {
     const chartQueryMetadata = ctx.data;
     if (chartQueryMetadata && Array.isArray(chartQueryMetadata)) {
