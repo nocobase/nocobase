@@ -18,7 +18,7 @@ export class CollectionGroupManager {
   }
 
   static getGroupsCollections(groups: string[] | CollectionGroup[]) {
-    if (groups.length == 0) {
+    if (!groups || groups.length == 0) {
       return [];
     }
 

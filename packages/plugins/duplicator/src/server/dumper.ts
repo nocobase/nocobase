@@ -263,6 +263,9 @@ export class Dumper extends AppMigrator {
 
     await archive.finalize();
     console.log('dumped to', filePath);
-    return filePath;
+    return {
+      filePath,
+      dirname,
+    };
   }
 }
