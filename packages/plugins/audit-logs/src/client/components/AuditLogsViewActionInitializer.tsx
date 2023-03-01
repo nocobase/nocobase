@@ -133,15 +133,28 @@ export const AuditLogsViewActionInitializer = (props) => {
                                             type: 'void',
                                             'x-component': 'Grid.Row',
                                             properties: {
-                                              nwtbkqd99zl: {
+                                              nwtbkqd99zl2: {
                                                 type: 'void',
                                                 'x-component': 'Grid.Col',
                                                 properties: {
-                                                  collectionName: {
+                                                  'collection.title': {
                                                     type: 'string',
                                                     'x-component': 'CollectionField',
                                                     'x-decorator': 'FormItem',
-                                                    'x-collection-field': 'auditLogs.collectionName',
+                                                    'x-collection-field': 'auditLogs.collection.title',
+                                                    'x-component-props': {},
+                                                  },
+                                                },
+                                              },
+                                              nwtbkqd99zl1: {
+                                                type: 'void',
+                                                'x-component': 'Grid.Col',
+                                                properties: {
+                                                  'collection.name': {
+                                                    type: 'string',
+                                                    'x-component': 'CollectionField',
+                                                    'x-decorator': 'FormItem',
+                                                    'x-collection-field': 'auditLogs.collection.name',
                                                     'x-component-props': {},
                                                   },
                                                 },
