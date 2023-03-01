@@ -61,7 +61,7 @@ const ChartRenderComponent = ({
         if (!metric || !dimension) {
           return (
             <>
-              Please check your chart config option88888888888888
+              Please check your chart config option
             </>
           );
         }
@@ -70,7 +70,7 @@ const ChartRenderComponent = ({
         if (config._xType !== chartConfig.type) {
           return (
             <>
-              Please check your chart config option88888888888888
+              Please check your chart config option
             </>
           );
         }
