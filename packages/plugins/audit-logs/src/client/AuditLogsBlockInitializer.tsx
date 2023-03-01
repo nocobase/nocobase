@@ -14,6 +14,7 @@ export const AuditLogsBlockInitializer = (props) => {
     tableActionInitializers: 'AuditLogsTableActionInitializers',
     tableColumnInitializers: 'AuditLogsTableColumnInitializers',
     tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
+    tableBlockProvider: 'AuditLogsBlockProvider',
   });
 
   return (
@@ -21,13 +22,7 @@ export const AuditLogsBlockInitializer = (props) => {
       {...props}
       icon={<TableOutlined />}
       onClick={() => {
-        insert({
-          type: 'void',
-          'x-component': 'AuditLogsBlockProvider',
-          properties: {
-            auditLogs: schema,
-          },
-        } as ISchema);
+        insert(schema as ISchema);
       }}
       title={t('Audit Logs')}
     />

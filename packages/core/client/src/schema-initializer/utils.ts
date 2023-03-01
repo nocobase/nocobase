@@ -822,11 +822,12 @@ export const createTableBlockSchema = (options) => {
     tableActionInitializers,
     tableColumnInitializers,
     tableActionColumnInitializers,
+    tableBlockProvider,
     ...others
   } = options;
   const schema: ISchema = {
     type: 'void',
-    'x-decorator': 'TableBlockProvider',
+    'x-decorator': tableBlockProvider ?? 'TableBlockProvider',
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
       collection,

@@ -133,7 +133,7 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
             height: `calc(100vh - ${height}px)`,
           }}
         >
-          <RecursionField onlyRenderProperties={false} name={schema.name} schema={schema} />
+          <RecursionField onlyRenderProperties={false} schema={schema} />
         </div>
       ) : (
         props.children
