@@ -775,10 +775,6 @@ export const createFilterFormBlockSchema = (options) => {
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-acl-action-props': {
-      skipScopeCheck: !action,
-    },
-    'x-acl-action': action ? `${resourceName}:update` : `${resourceName}:create`,
     'x-decorator': 'FormBlockProvider',
     'x-decorator-props': {
       ...others,
@@ -786,8 +782,7 @@ export const createFilterFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // action: 'get',
-      // useParams: '{{ useParamsFromRecord }}',
+      blockType: 'filter',
     },
     'x-designer': 'FormV2.Designer',
     'x-component': 'CardItem',
@@ -822,7 +817,6 @@ export const createFilterFormBlockSchema = (options) => {
       },
     },
   };
-  // console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

@@ -31,3 +31,15 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
     });
   }
 };
+
+export const transformToFilter = (values: Record<string, any>) => {
+  return {
+    $and: Object.keys(values).map((key) => {
+      return {
+        [key]: {
+          $includes: values[key],
+        },
+      };
+    }),
+  };
+};

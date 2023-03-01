@@ -1,6 +1,7 @@
 import { useField } from '@formily/react';
 import React, { createContext, useMemo } from 'react';
 import { useAssociation, useBlockRequestContext } from '../block-provider';
+import { SharedFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 
 type Collection = ReturnType<typeof useCollection>;
@@ -13,6 +14,9 @@ export interface DataBlock {
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any) => void;
   association?: CollectionFieldOptions;
+  /** 存储筛选区块中的筛选条件 */
+  filters: Record<string, SharedFilter>;
+  service: any;
 }
 
 interface FilterContextValue {
@@ -40,12 +44,16 @@ export const FilterBlockRecord = (props: any) => {
   const field = useField();
   const association = useAssociation(props);
 
-  recordDataBlocks({
-    name: field.props.name as string,
-    doFilter: service.run,
-    collection,
-    association,
-  });
+  if (props.block !== 'form' && props.blockType !== 'filter') {
+    recordDataBlocks({
+      name: field.props.name as string,
+      service,
+      doFilter: service.run,
+      collection,
+      association,
+      filters: {},
+    });
+  }
 
   return <>{children}</>;
 };

@@ -11,12 +11,15 @@ import { useReactToPrint } from 'react-to-print';
 import { useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
+import { useFilter } from '../../filter-provider/FilterProvider';
+import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
-import { useActionContext, useCompile } from '../../schema-component';
+import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
+import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
@@ -201,26 +204,32 @@ export const useCreateActionProps = () => {
 
 export const useFilterBlockActionProps = () => {
   const form = useForm();
-  const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField } = useCollection();
-  const filterByTk = useFilterByTk();
-  const currentRecord = useRecord();
-  const currentUser = useCurrentUserContext()?.data?.data;
+  const { getDataBlocks } = useFilter();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      // TODO: implement filter action
-      // need to get the controller of the data block
-      // and it can control how to filter the data
+      // 收集 filter 的值
+      getDataBlocks().forEach(async (block) => {
+        block.filters[actionField.props.name as string] = transformToFilter(form.values);
 
-      // try {
-      //   actionField.data.loading = false;
-      // } catch (error) {
-      //   actionField.data.loading = false;
-      // }
+        const filters = block.service.params?.[1]?.filters || {};
+        filters[`filterAction`] = transformToFilter(form.values);
+
+        try {
+          actionField.data.loading = true;
+          await block.doFilter({
+            ...block.service.params?.[0],
+            page: 1,
+            filter: mergeFilter([...Object.values(filters).map((filter) => removeNullCondition(filter))]),
+          });
+          actionField.data.loading = false;
+        } catch (error) {
+          actionField.data.loading = false;
+        }
+      });
     },
   };
 };
@@ -239,7 +248,6 @@ export const useResetBlockActionProps = () => {
   return {
     async onClick() {
       // TODO: implement reset action
-
       // try {
       //   actionField.data.loading = false;
       // } catch (error) {
