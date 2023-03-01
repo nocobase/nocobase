@@ -66,10 +66,12 @@ export class CollectionRepository extends Repository {
         ...field.options,
       });
     }
+
     await this.create({
       values: {
         ...options,
         fields,
+        from: 'db2cm',
       },
     });
   }
