@@ -124,7 +124,6 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
   }
 
   useEffect(() => {
-    console.log(config,plot);
     try {
       renderPlot();
     }
