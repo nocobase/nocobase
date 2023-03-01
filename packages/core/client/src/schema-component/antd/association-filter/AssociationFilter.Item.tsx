@@ -53,22 +53,22 @@ export const AssociationFilterItem = (props) => {
     setAutoExpandParent(false);
   };
 
+  const filterKey = `${collectionFieldName}.${valueKey}.$in`;
+
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
 
-    const filters = {};
+    const filter = service.params?.[0]?.filter ?? {};
 
     if (selectedKeysValue.length) {
-      filters[`af.${collectionFieldName}`] = {
-        [`${collectionFieldName}.${valueKey}.$in`]: selectedKeysValue,
-      };
+      filter[filterKey] = selectedKeysValue;
     } else {
-      delete filters[`af.${collectionFieldName}`];
+      delete filter[filterKey];
     }
 
     service.run({
       ...service.params?.[0],
-      filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+      filter,
     });
   };
 
@@ -105,6 +105,18 @@ export const AssociationFilterItem = (props) => {
         ...params?.[0],
       });
   }, [service.loading]);
+
+  useEffect(
+    () => () => {
+      const filter = service.params?.[0]?.filter ?? {};
+      delete filter[filterKey];
+      service.run({
+        ...service.params?.[0],
+        filter,
+      });
+    },
+    [],
+  );
 
   return (
     <SortableItem
