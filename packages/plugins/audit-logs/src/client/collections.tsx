@@ -91,7 +91,7 @@ export const useAuditLogsCollection = () => {
         targetKey: 'id',
         uiSchema: {
           type: 'object',
-          title: '{{t("Change detail", { ns: "audit-logs" })}}',
+          title: '{{t("Details of changes", { ns: "audit-logs" })}}',
         },
       },
     ],

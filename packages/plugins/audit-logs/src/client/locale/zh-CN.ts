@@ -1,3 +1,3 @@
 export default {
-  'Change detail': '修改详情',
+  'Details of changes': '变更详情',
 };

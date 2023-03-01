@@ -1,3 +1,3 @@
 export default {
-  'Change detail': 'Change detail',
+  'Details of changes': 'Details of changes',
 };
