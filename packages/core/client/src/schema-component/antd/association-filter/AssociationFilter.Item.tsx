@@ -100,9 +100,10 @@ export const AssociationFilterItem = (props) => {
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
 
   useEffect(() => {
-    run({
-      ...params?.[0],
-    });
+    if (!service.loading)
+      return run({
+        ...params?.[0],
+      });
   }, [service.loading]);
 
   return (
