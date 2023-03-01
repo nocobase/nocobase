@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'multi-app-manager',
+  namespace: 'multi-app-manager.multi-apps',
   duplicator: 'optional',
   name: 'applications',
   model: 'ApplicationModel',

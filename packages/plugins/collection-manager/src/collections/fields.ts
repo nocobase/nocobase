@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager',
+  namespace: 'collection-manager.collections',
   duplicator: 'required',
   name: 'fields',
   autoGenId: false,

@@ -1,5 +1,6 @@
 import { Application } from '@nocobase/server';
 import { Restorer } from '../restorer';
+import inquirer from 'inquirer';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -8,7 +9,7 @@ export default function addRestoreCommand(app: Application) {
     .option('-a, --app <appName>', 'sub app name if you want to restore into a sub app')
     .action(async (restoreFilePath, options) => {
       if (!options.app) {
-        await restoreAction(app, restoreFilePath);
+        await restoreActionCommand(app, restoreFilePath);
         return;
       }
 
@@ -33,7 +34,7 @@ export default function addRestoreCommand(app: Application) {
         return;
       }
 
-      await restoreAction(subApp, restoreFilePath);
+      await restoreActionCommand(subApp, restoreFilePath);
     });
 }
 
@@ -42,8 +43,26 @@ interface RestoreContext {
   dir: string;
 }
 
-async function restoreAction(app: Application, restoreFilePath: string) {
-  const restorer = new Restorer(app);
-  await restorer.restore(restoreFilePath);
+async function restoreWarning() {
+  const results = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'confirm',
+      message: 'Danger !!! This action will overwrite your current data, please make sure you have a backup❗️❗️',
+      default: false,
+    },
+  ]);
+
+  return results.confirm;
+}
+
+async function restoreActionCommand(app: Application, restoreFilePath: string) {
+  // should confirm data will be overwritten
+  if (!(await restoreWarning())) {
+    return;
+  }
+
+  const restorer = new Restorer(app, restoreFilePath);
+  await restorer.restore();
   await app.stop();
 }

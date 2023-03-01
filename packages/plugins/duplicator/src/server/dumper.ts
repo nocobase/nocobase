@@ -25,17 +25,14 @@ export class Dumper extends AppMigrator {
       title: string;
     }>;
   }> {
-    const appPlugins = await this.getAppPlugins();
+    const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
 
-    const pluginGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
-      appPlugins.includes(collectionGroup.namespace),
-    );
+    console.log(appCollectionGroups);
+    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(appCollectionGroups);
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(appCollectionGroups);
 
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(pluginGroups);
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(pluginGroups);
-
+    console.log(pluginsCollections);
     const userCollections = await this.getCustomCollections();
-
     return lodash.cloneDeep({
       requiredGroups,
       optionalGroups,
@@ -61,7 +58,7 @@ export class Dumper extends AppMigrator {
     selectedOptionalGroups: CollectionGroup[];
     selectedUserCollections: string[];
   }) {
-    const { requiredGroups, selectedOptionalGroups, selectedUserCollections } = options;
+    const { requiredGroups, selectedOptionalGroups, selectedUserCollections = [] } = options;
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 

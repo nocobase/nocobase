@@ -19,8 +19,19 @@ export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type dumpable = 'required' | 'optional' | 'skip';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  namespace?: string;
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
   tableName?: string;
   inherits?: string[] | string;
   filterTargetKey?: string;

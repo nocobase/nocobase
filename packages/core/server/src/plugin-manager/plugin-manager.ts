@@ -9,7 +9,7 @@ import Application from '../application';
 import { Plugin } from '../plugin';
 import collectionOptions from './options/collection';
 import resourceOptions from './options/resource';
-import { PluginManagerRepository } from './PluginManagerRepository';
+import { PluginManagerRepository } from './plugin-manager-repository';
 
 export interface PluginManagerOptions {
   app: Application;

@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'audit-logs',
+  namespace: 'audit-logs.auditLogs',
   duplicator: 'optional',
   name: 'auditLogs',
   createdBy: false,

@@ -9,7 +9,7 @@ export default function addDumpCommand(app: Application) {
     .option('-a, --app <appName>', 'sub app name if you dump sub app in multiple apps')
     .action(async (options) => {
       if (!options.app) {
-        await dumpAction(app);
+        await dumpCommandAction(app);
         return;
       }
 
@@ -20,11 +20,11 @@ export default function addDumpCommand(app: Application) {
         return;
       }
 
-      await dumpAction(subApp);
+      await dumpCommandAction(subApp);
     });
 }
 
-async function dumpAction(app) {
+async function dumpCommandAction(app) {
   const dumper = new Dumper(app);
   const { requiredGroups, optionalGroups, userCollections } = await dumper.dumpableCollections();
 
@@ -37,7 +37,7 @@ async function dumpAction(app) {
 
   const results = await inquirer.prompt(questions);
 
-  const filePath = await dumper.dump({
+  const { filePath } = await dumper.dump({
     requiredGroups,
     selectedOptionalGroups: results.collectionGroups,
     selectedUserCollections: results.userCollections,

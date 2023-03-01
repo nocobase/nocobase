@@ -8,38 +8,42 @@ import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
 import InquireQuestionBuilder from './commands/inquire-question-builder';
+import { Application } from '@nocobase/server';
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
+  backUpFilePath: string;
+  decompressed: boolean = false;
+
+  constructor(app: Application, backUpFilePath: string) {
+    super(app);
+
+    if (path.isAbsolute(backUpFilePath)) {
+      this.backUpFilePath = backUpFilePath;
+    } else if (path.basename(backUpFilePath) === backUpFilePath) {
+      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+      this.backUpFilePath = path.resolve(dirname, backUpFilePath);
+    } else {
+      this.backUpFilePath = path.resolve(process.cwd(), backUpFilePath);
+    }
+  }
 
   importedCollections: string[] = [];
 
-  async restore(backupFilePath: string) {
-    let filePath: string;
+  async parseBackupFile() {
+    await this.decompressBackup(this.backUpFilePath);
+    const importCustomCollections = await this.getImportCustomCollections();
+    const importPlugins = await this.getImportPlugins();
 
-    if (path.isAbsolute(backupFilePath)) {
-      filePath = backupFilePath;
-    } else if (path.basename(backupFilePath) === backupFilePath) {
-      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
-      filePath = path.resolve(dirname, backupFilePath);
-    } else {
-      filePath = path.resolve(process.cwd(), backupFilePath);
-    }
+    return {
+      importCustomCollections,
+      importPlugins,
+    };
+  }
 
-    const results = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'confirm',
-        message: 'Danger !!! This action will overwrite your current data, please make sure you have a backup❗️❗️',
-        default: false,
-      },
-    ]);
+  async restore() {
+    await this.decompressBackup(this.backUpFilePath);
 
-    if (results.confirm !== true) {
-      return;
-    }
-
-    await this.decompressBackup(filePath);
     await this.importCollections();
     await this.importDb();
     await this.clearWorkDir();
@@ -80,8 +84,7 @@ export class Restorer extends AppMigrator {
 
   async getImportCollections() {
     const collectionsDir = path.resolve(this.workDir, 'collections');
-    const collections = await fsPromises.readdir(collectionsDir);
-    return collections;
+    return await fsPromises.readdir(collectionsDir);
   }
 
   async getImportCollectionData(collectionName) {
@@ -91,8 +94,7 @@ export class Restorer extends AppMigrator {
 
   async getImportCollectionMeta(collectionName) {
     const metaData = path.resolve(this.workDir, 'collections', collectionName, 'meta');
-    const meta = JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
-    return meta;
+    return JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
   }
 
   async importCollections(options?: { ignore?: string | string[] }) {
@@ -207,7 +209,7 @@ export class Restorer extends AppMigrator {
   }
 
   async decompressBackup(backupFilePath: string) {
-    await decompress(backupFilePath, this.workDir);
+    if (!this.decompressed) await decompress(backupFilePath, this.workDir);
   }
 
   async importCollection(options: {
