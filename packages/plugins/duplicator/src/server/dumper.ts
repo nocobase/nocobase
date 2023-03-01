@@ -97,7 +97,7 @@ export class Dumper extends AppMigrator {
     await this.dumpMeta({
       requiredGroups: mapGroupToMetaJson(requiredGroups),
       selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
-      userCollections: selectedUserCollections,
+      selectedUserCollections: selectedUserCollections,
     });
 
     await this.dumpDb();
@@ -172,7 +172,7 @@ export class Dumper extends AppMigrator {
     await fsPromises.writeFile(
       metaPath,
       JSON.stringify({
-        version: this.app.version.get(),
+        version: await this.app.version.get(),
         dialect: this.app.db.sequelize.getDialect(),
         ...additionalMeta,
       }),

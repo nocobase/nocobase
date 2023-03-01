@@ -1,13 +1,11 @@
 import decompress from 'decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import inquirer from 'inquirer';
 import path from 'path';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
-import InquireQuestionBuilder from './commands/inquire-question-builder';
 import { Application } from '@nocobase/server';
 
 export class Restorer extends AppMigrator {
@@ -32,19 +30,12 @@ export class Restorer extends AppMigrator {
 
   async parseBackupFile() {
     await this.decompressBackup(this.backUpFilePath);
-    const importCustomCollections = await this.getImportCustomCollections();
-    const importPlugins = await this.getImportPlugins();
-
-    return {
-      importCustomCollections,
-      importPlugins,
-    };
+    return await this.getImportMeta();
   }
 
-  async restore() {
+  async restore(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
     await this.decompressBackup(this.backUpFilePath);
-
-    await this.importCollections();
+    await this.importCollections(options);
     await this.importDb();
     await this.clearWorkDir();
   }
@@ -73,6 +64,7 @@ export class Restorer extends AppMigrator {
 
     const index = meta.columns.indexOf('name');
     const row = data.find((row) => JSON.parse(row)[index] === collectionName);
+
     if (!row) {
       throw new Error(`Collection ${collectionName} not found`);
     }
@@ -97,46 +89,16 @@ export class Restorer extends AppMigrator {
     return JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
   }
 
-  async importCollections(options?: { ignore?: string | string[] }) {
-    const coreCollections = ['applicationPlugins'];
-    const collections = await this.getImportCollections(); // 获取导入压缩包内的所有collections
+  async getImportMeta() {
+    const metaFile = path.resolve(this.workDir, 'meta');
+    return JSON.parse(await fsPromises.readFile(metaFile, 'utf8')) as any;
+  }
 
-    const importCustomCollections = await this.getImportCustomCollections(); // 获取导入的 collections 记录
-
-    const importPlugins = await this.getImportPlugins(); // 获取导入的插件列表
-
-    // 获取导入的 collectionGroups
-    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) => {
-      return (
-        importPlugins.includes(collectionGroup.namespace) &&
-        collectionGroup.collections.every((collectionName) => collections.includes(collectionName))
-      );
-    });
-
-    const delayGroups = CollectionGroupManager.getDelayRestoreCollectionGroups();
-    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
-
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
-
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
-
-    const optionalCollections = importCustomCollections.filter(
-      (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
-    );
-
-    const questions = InquireQuestionBuilder.buildInquirerQuestions({
-      requiredGroups,
-      optionalGroups,
-      optionalCollections: await Promise.all(
-        optionalCollections.map(async (name) => {
-          return { name, title: await this.getImportCollectionTitle(name) };
-        }),
-      ),
-      direction: this.direction,
-    });
-
-    const results = await inquirer.prompt(questions);
-
+  async importCollections(options: {
+    ignore?: string | string[];
+    selectedOptionalGroupNames: string[];
+    selectedUserCollections: string[];
+  }) {
     const importCollection = async (collectionName: string) => {
       const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
 
@@ -164,16 +126,20 @@ export class Restorer extends AppMigrator {
       }
     };
 
+    // import applicationPlugins first
     await importCollection('applicationPlugins');
-
+    // reload app
     await this.app.reload();
 
-    const requiredCollections = CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
-      (collection) => !delayCollections.includes(collection),
-    );
+    const { requiredGroups, selectedOptionalGroups } = await this.parseBackupFile();
+
+    const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
+    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
 
     // import required plugins collections
-    for (const collectionName of requiredCollections) {
+    for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
+      (i) => !delayCollections.includes(i) && i != 'applicationPlugins',
+    )) {
       await importCollection(collectionName);
     }
 
@@ -188,11 +154,18 @@ export class Restorer extends AppMigrator {
       },
     });
 
-    const userCollections = results.userCollections || [];
+    const userCollections = options.selectedUserCollections || [];
     const throughCollections = this.findThroughCollections(userCollections);
 
     const customCollections = [
-      ...CollectionGroupManager.getGroupsCollections(results.collectionGroups),
+      ...CollectionGroupManager.getGroupsCollections(
+        selectedOptionalGroups.filter((group) => {
+          return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+            const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+            return group.function === functionKey && group.namespace === namespace;
+          });
+        }),
+      ),
       ...userCollections,
       ...throughCollections,
     ];
@@ -203,8 +176,13 @@ export class Restorer extends AppMigrator {
     }
 
     // import delay groups
+    const appGroups = CollectionGroupManager.getGroups(this.app);
+
     for (const collectionGroup of delayGroups) {
-      await collectionGroup.delayRestore(this);
+      const appCollectionGroup = appGroups.find(
+        (group) => group.namespace === collectionGroup.name && group.function === collectionGroup.function,
+      );
+      await appCollectionGroup.delayRestore(this);
     }
 
     await this.emitAsync('restoreCollectionsFinished');

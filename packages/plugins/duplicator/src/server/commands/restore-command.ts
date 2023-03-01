@@ -1,6 +1,7 @@
 import { Application } from '@nocobase/server';
 import { Restorer } from '../restorer';
 import inquirer from 'inquirer';
+import InquireQuestionBuilder from './inquire-question-builder';
 
 export default function addRestoreCommand(app: Application) {
   app
@@ -65,7 +66,27 @@ async function restoreWarning() {
 
 async function restoreActionCommand(app: Application, restoreFilePath: string) {
   const restorer = new Restorer(app, restoreFilePath);
-  console.log(await restorer.parseBackupFile());
-  await restorer.restore();
+  const restoreMeta = await restorer.parseBackupFile();
+
+  const { requiredGroups, selectedOptionalGroups, selectedUserCollections } = restoreMeta;
+
+  const questions = InquireQuestionBuilder.buildInquirerQuestions({
+    requiredGroups,
+    optionalGroups: selectedOptionalGroups,
+    optionalCollections: await Promise.all(
+      selectedUserCollections.map(async (name) => {
+        return { name, title: await restorer.getImportCollectionTitle(name) };
+      }),
+    ),
+    direction: 'restore',
+  });
+
+  const results = await inquirer.prompt(questions);
+
+  await restorer.restore({
+    selectedOptionalGroupNames: results.collectionGroups,
+    selectedUserCollections: results.userCollections,
+  });
+
   await app.stop();
 }
