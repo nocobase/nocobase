@@ -15,7 +15,7 @@ function appendArrayColumn(scope, key) {
     if (Array.isArray(data) && !isIndex && !data[path]) {
       data[path] = data.map(item => item[path]);
     }
-    data = data[path];
+    data = data?.[path];
   }
 }
 
