@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useContext, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useContext, useEffect, useState } from 'react';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
@@ -98,6 +98,12 @@ export const AssociationFilterItem = (props) => {
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
+
+  useEffect(() => {
+    run({
+      ...params?.[0],
+    });
+  }, [service.loading]);
 
   return (
     <SortableItem
