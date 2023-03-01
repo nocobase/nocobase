@@ -56,7 +56,7 @@ export const AssociationFilterItem = (props) => {
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
 
-    const filters = service.params?.[1]?.filters || {};
+    const filters = {};
 
     if (selectedKeysValue.length) {
       filters[`af.${collectionFieldName}`] = {
@@ -66,15 +66,10 @@ export const AssociationFilterItem = (props) => {
       delete filters[`af.${collectionFieldName}`];
     }
 
-    service.run(
-      {
-        ...service.params?.[0],
-        pageSize: 200,
-        page: 1,
-        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
-      },
-      { filters },
-    );
+    service.run({
+      ...service.params?.[0],
+      filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+    });
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
