@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import React from 'react';
-import { FilterProvider, useFilter } from '../FilterProvider';
+import { FilterBlockProvider, useFilter } from '../FilterProvider';
 
 // TODO: make jest can parse css files
 describe('useFilter', () => {
@@ -12,9 +12,9 @@ describe('useFilter', () => {
     };
     const App = () => {
       return (
-        <FilterProvider>
+        <FilterBlockProvider>
           <Comp />
-        </FilterProvider>
+        </FilterBlockProvider>
       );
     };
     render(<App />);
@@ -30,9 +30,9 @@ describe('useFilter', () => {
     };
     const App = () => {
       return (
-        <FilterProvider>
+        <FilterBlockProvider>
           <Comp />
-        </FilterProvider>
+        </FilterBlockProvider>
       );
     };
     render(<App />);

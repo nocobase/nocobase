@@ -16,7 +16,7 @@ import {
   WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
-import { FilterRecord } from '../filter-provider/FilterProvider';
+import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 
@@ -235,7 +235,7 @@ export const BlockProvider = (props) => {
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>
             <SharedFilterProvider {...props}>
-              <FilterRecord {...props}>{props.children}</FilterRecord>
+              <FilterBlockRecord {...props}>{props.children}</FilterBlockRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>

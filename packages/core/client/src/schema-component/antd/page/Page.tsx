@@ -8,7 +8,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
-import { FilterProvider } from '../../../filter-provider/FilterProvider';
+import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -139,7 +139,7 @@ export const Page = (props) => {
   const [height, setHeight] = useState(0);
 
   return (
-    <FilterProvider>
+    <FilterBlockProvider>
       <div className={pageDesignerCss}>
         <PageDesigner title={fieldSchema.title || title} />
         <div
@@ -303,6 +303,6 @@ export const Page = (props) => {
           )}
         </div>
       </div>
-    </FilterProvider>
+    </FilterBlockProvider>
   );
 };

@@ -26,13 +26,13 @@ const FilterContext = createContext<FilterContextValue>(null);
  * @param props
  * @returns
  */
-export const FilterProvider = (props: any) => {
+export const FilterBlockProvider = (props: any) => {
   const { children } = props;
   const value = useMemo(() => ({ dataBlocks: [] }), []);
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };
 
-export const FilterRecord = (props: any) => {
+export const FilterBlockRecord = (props: any) => {
   const { children } = props;
   const collection = useCollection();
   const { recordDataBlocks } = useFilter();
