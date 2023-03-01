@@ -21,12 +21,19 @@ export const FormDesigner = () => {
   const { t } = useTranslation();
   const { visible } = useActionContext();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const blockType = fieldSchema?.['x-decorator-props']?.blockType;
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettings.FormItemTemplate
+        componentName={'FormItem'}
+        collectionName={name}
+        resourceName={defaultResource}
+      />
       <SchemaSettings.LinkageRules collectionName={name} />
+      {blockType === 'filter' ? <SchemaSettings.ConnectDataBlocks /> : null}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

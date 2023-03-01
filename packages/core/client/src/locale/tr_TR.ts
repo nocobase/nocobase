@@ -93,6 +93,7 @@ export default {
   "Are you sure you want to delete it?": "Silmek istediğinizden emin misiniz?",
   "This is a demo text, **supports Markdown syntax**.": "Bu bir örnek yazıdır, **işaretleme yazısı destekleniyor**.",
   "Filter": "Filtre",
+  "Connect data blocks": "Veri bloklarını bağla",
   "Action type": "İşlem Türü",
   "Actions": "İşlemler",
   "Insert": "Ekle",

@@ -134,6 +134,7 @@ export default {
   "This is a demo text, **supports Markdown syntax**.": "这是一段演示文本，**支持 Markdown 语法**。",
 
   "Filter": "筛选",
+  "Connect data blocks": "连接数据区块",
   "Action type": "操作类型",
   "Actions": "操作",
   "Insert": "新增",

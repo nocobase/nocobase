@@ -782,6 +782,7 @@ export const createFilterFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
+      // 与数据区块进行区分
       blockType: 'filter',
     },
     'x-designer': 'FormV2.Designer',

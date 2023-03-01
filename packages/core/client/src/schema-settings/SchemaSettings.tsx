@@ -448,6 +448,11 @@ SchemaSettings.Remove = (props: any) => {
   );
 };
 
+SchemaSettings.ConnectDataBlocks = (props: any) => {
+  const { t } = useTranslation();
+  return <SchemaSettings.Item eventKey="connectDataBlocks">{t('Connect data blocks')}</SchemaSettings.Item>;
+};
+
 SchemaSettings.SelectItem = (props) => {
   const { title, options, value, onChange, ...others } = props;
   return (

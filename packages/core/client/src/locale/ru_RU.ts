@@ -93,6 +93,7 @@ export default {
   "Are you sure you want to delete it?": "Вы уверены, что хотите удалить это?",
   "This is a demo text, **supports Markdown syntax**.": "Это демо текст, **поддерживает синтаксис Markdown**.",
   "Filter": "Фильтр",
+  "Connect data blocks": "Соединить блоки данных",
   "Action type": "Тип действия",
   "Actions": "Действия",
   "Insert": "Вставить",

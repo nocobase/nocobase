@@ -121,6 +121,7 @@ export default {
   "Are you sure you want to delete it?": "本当に削除しますか？",
   "This is a demo text, **supports Markdown syntax**.": "これはデモテキストです。 **マークダウン構文をサポートしています。**",
   "Filter": "フィルター",
+  "Connect data blocks": "データブロックを連結",
   "Action type": "操作タイプ",
   "Actions": "操作",
   "Insert": "作成",
