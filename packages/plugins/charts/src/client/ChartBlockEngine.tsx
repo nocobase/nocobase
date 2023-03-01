@@ -51,17 +51,13 @@ const ChartRenderComponent = ({
       } catch (e) {
         template = {};
       }
-      console.log(chartConfig, finalChartOptions);
       const config = compile({
         ...finalChartOptions,
         ...template,
         data: dataSet,
       }, { ...chartConfig, category: chartConfig?.category ?? '' });
-      console.log(config, '!!!!!!!!!!!!!!!!!!');
-      console.log(chartConfig, '!!!!!!!!!!!!!!!!!!');
       if (config && chartConfig) {
         const { dimension, metric, category } = chartConfig;
-        console.log(dimension, metric, 66666666666);
         if (!metric || !dimension) {
           return (
             <>
@@ -79,8 +75,6 @@ const ChartRenderComponent = ({
           );
         }
       }
-      console.log(config, 22222222222222222222222);
-      console.log('333333333333333333');
       return (
         <>
           {

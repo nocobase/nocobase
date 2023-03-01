@@ -62,7 +62,6 @@ const useCloseAction = () => {
 };
 
 const getSchema = (initialValue, { form, isNewRecord }) => {
-  console.log(initialValue);
   const type = initialValue.type;
   const schema: ISchema = {
     type: 'void',
@@ -115,7 +114,6 @@ export const AddNewQuery = () => {
   const menu = (
     <Menu
       onClick={(info) => {
-        console.log(info.key);
         setVisible(true);
         form.setValues({ type: info.key });
         setSchema(getSchema({ type: info.key }, { form, isNewRecord: true }));

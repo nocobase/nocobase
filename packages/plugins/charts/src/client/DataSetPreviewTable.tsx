@@ -15,7 +15,6 @@ import { Empty, Spin } from 'antd';
 export default ({ queryId }: { queryId: number }) => {
   const { dataSet, loading, error } = useGetDataSet(queryId);
   const columns = {};
-  console.log(dataSet);
   if (dataSet) {
     const dataKeys = Object.keys(dataSet[0]);
     for (const dataKey of dataKeys) {

@@ -71,7 +71,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
     const field = useField();
     const compiler = useCompile();
     const { chart, query } = chartBlockEngineMetaData;
-    console.log({ ...chart });
     const { fields } = useFieldsById(query.id);
     const dataSource = fields.map(field => {
       return {
@@ -97,7 +96,6 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
               };
               setChartBlockEngineMetaData(chartBlockEngineMetaData);
             }, [form.values.type]);
-            console.log(chartBlockEngineMetaData, '11111');
             return (
               <APIClientProvider apiClient={api}>
                 <SchemaComponentOptions

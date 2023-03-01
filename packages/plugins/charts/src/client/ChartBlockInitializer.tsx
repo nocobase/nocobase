@@ -62,7 +62,6 @@ export const ChartBlockInitializer = (props) => {
       componentType={'Kanban'}
       icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item: chartQueryMetadata }: { item: ChartQueryMetadata }) => {
-        console.log(chartQueryMetadata);
         const dataSource = chartQueryMetadata?.fields.map(field => {
           return {
             label: field.name,
@@ -85,7 +84,6 @@ export const ChartBlockInitializer = (props) => {
             };
             setChartBlockEngineMetaData(chartBlockEngineMetaData);
           }, [form.values.type]);
-          console.log(chartBlockEngineMetaData);
           return (
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions
