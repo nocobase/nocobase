@@ -39,7 +39,7 @@ export const FilterBlockProvider = (props: any) => {
 export const FilterBlockRecord = (props: any) => {
   const { children } = props;
   const collection = useCollection();
-  const { recordDataBlocks } = useFilter();
+  const { recordDataBlocks } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
   const association = useAssociation(props);
@@ -62,7 +62,7 @@ export const FilterBlockRecord = (props: any) => {
  * 返回一些方法用于收集和获取当前页面中的数据区块的信息
  * @returns
  */
-export const useFilter = () => {
+export const useFilterBlock = () => {
   const { dataBlocks } = React.useContext(FilterContext);
   return {
     recordDataBlocks: (block: DataBlock) => {

@@ -1,5 +1,5 @@
 import { useCollection } from '../collection-manager';
-import { useFilter } from './FilterProvider';
+import { useFilterBlock } from './FilterProvider';
 
 export enum FilterBlockType {
   FORM,
@@ -14,7 +14,7 @@ export enum FilterBlockType {
  * @returns
  */
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
-  const { getDataBlocks } = useFilter();
+  const { getDataBlocks } = useFilterBlock();
   const collection = useCollection();
 
   // Form 和 Collapse 仅支持同表的数据区块

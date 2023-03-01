@@ -1,13 +1,13 @@
 import { render } from '@testing-library/react';
 import React from 'react';
-import { FilterBlockProvider, useFilter } from '../FilterProvider';
+import { FilterBlockProvider, useFilterBlock } from '../FilterProvider';
 
 // TODO: make jest can parse css files
 describe('useFilter', () => {
   test('should get a empty array', () => {
     let getDataBlocks = null;
     const Comp = () => {
-      ({ getDataBlocks } = useFilter());
+      ({ getDataBlocks } = useFilterBlock());
       return null;
     };
     const App = () => {
@@ -25,7 +25,7 @@ describe('useFilter', () => {
     let getDataBlocks = null,
       recordDataBlocks = null;
     const Comp = () => {
-      ({ getDataBlocks, recordDataBlocks } = useFilter());
+      ({ getDataBlocks, recordDataBlocks } = useFilterBlock());
       return null;
     };
     const App = () => {
