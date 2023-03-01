@@ -213,7 +213,7 @@ export const ACLActionProvider = (props) => {
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
-  if (!actionPath.includes(':')) {
+  if (!actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
   if (!actionPath) {
