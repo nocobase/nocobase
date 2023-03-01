@@ -6,6 +6,7 @@ import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -33,7 +34,7 @@ export const FormDesigner = () => {
         resourceName={defaultResource}
       />
       <SchemaSettings.LinkageRules collectionName={name} />
-      {blockType === 'filter' ? <SchemaSettings.ConnectDataBlocks /> : null}
+      {blockType === 'filter' ? <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} /> : null}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

@@ -43,6 +43,7 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { useSupportedBlocks } from '../filter-provider/utils';
 import { EnableChildCollections } from './EnableChildCollections';
 
 interface SchemaSettingsProps {
@@ -449,8 +450,44 @@ SchemaSettings.Remove = (props: any) => {
 };
 
 SchemaSettings.ConnectDataBlocks = (props: any) => {
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
   const { t } = useTranslation();
-  return <SchemaSettings.Item eventKey="connectDataBlocks">{t('Connect data blocks')}</SchemaSettings.Item>;
+  const dataBlocks = useSupportedBlocks(props.type);
+
+  return (
+    <SchemaSettings.SubMenu title={t('Connect data blocks')}>
+      {/* TODO: 非同表之间可选择关系字段 */}
+      {dataBlocks.map((block) => {
+        return (
+          <SchemaSettings.SwitchItem
+            key={block.name}
+            title={block.title || block.name}
+            checked={fieldSchema['x-filter-targets']?.includes(block.name)}
+            onChange={(checked) => {
+              let targets = fieldSchema['x-filter-targets'] || [];
+
+              if (checked) {
+                targets.push(block.name);
+              } else {
+                targets = targets.filter((name) => name !== block.name);
+              }
+
+              fieldSchema['x-filter-targets'] = targets;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  'x-filter-targets': fieldSchema['x-filter-targets'],
+                },
+              });
+              dn.refresh();
+            }}
+          />
+        );
+      })}
+    </SchemaSettings.SubMenu>
+  );
 };
 
 SchemaSettings.SelectItem = (props) => {

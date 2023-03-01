@@ -9,10 +9,12 @@ type Collection = ReturnType<typeof useCollection>;
 export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
   name: string;
+  /** 用户自行设置的区块名称 */
+  title?: string;
   /** 与当前区块相关的数据表信息 */
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
-  doFilter: (params: any) => void;
+  doFilter: (params: any) => Promise<void>;
   association?: CollectionFieldOptions;
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
@@ -46,6 +48,7 @@ export const FilterBlockRecord = (props: any) => {
   if (props.block !== 'form' && props.blockType !== 'filter') {
     recordDataBlocks({
       name: field.props.name as string,
+      title: field.componentProps.title,
       doFilter: service.run,
       collection,
       association,

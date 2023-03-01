@@ -787,6 +787,8 @@ export const createFilterFormBlockSchema = (options) => {
     },
     'x-designer': 'FormV2.Designer',
     'x-component': 'CardItem',
+    // 保存当前筛选区块所能过滤的数据区块
+    'x-filter-targets': [],
     properties: {
       [uid()]: {
         type: 'void',

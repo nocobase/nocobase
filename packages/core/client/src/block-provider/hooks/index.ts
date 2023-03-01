@@ -202,17 +202,33 @@ export const useCreateActionProps = () => {
   };
 };
 
+const findFilterTargets = (fieldSchema): string[] => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      return fieldSchema['x-filter-targets'];
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+  return [];
+};
+
 export const useFilterBlockActionProps = () => {
   const form = useForm();
   const actionField = useField();
+  const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
+      const targets = findFilterTargets(fieldSchema);
+
       // 收集 filter 的值
       getDataBlocks().forEach(async (block) => {
+        // 此时表示用户还没有设置过与筛选区块相关联的数据区块
+        if (!targets.includes(block.name)) return;
+
         block.filters[actionField.props.name as string] = transformToFilter(form.values);
 
         try {
