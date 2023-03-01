@@ -25,7 +25,6 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const FormItem: any = observer((props: any) => {
-  const { useLabelStyle, labelStyle, ...restProps } = props;
   const field = useField();
   const ctx = useContext(BlockRequestContext);
   const schema = useFieldSchema();
@@ -45,8 +44,7 @@ export const FormItem: any = observer((props: any) => {
               flex-wrap: wrap;
             }
           `}`}
-          {...restProps}
-          labelStyle={Object.assign({}, labelStyle, useLabelStyle?.())}
+          {...props}
           extra={
             typeof field.description === 'string' ? (
               <div

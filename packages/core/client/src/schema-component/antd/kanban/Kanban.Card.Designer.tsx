@@ -64,7 +64,6 @@ export const KanbanCardDesigner = (props: any) => {
   const fields = useFormItemInitializerFields({
     readPretty: true,
     block: 'Kanban',
-    useLabelStyle: '{{useKanbanLabelStyle}}',
   });
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Kanban' });
 

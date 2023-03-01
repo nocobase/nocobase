@@ -194,7 +194,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
-  const { readPretty = form.readPretty, block = 'Form', useLabelStyle } = options || {};
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const actionCtx = useActionContext();
   const action = actionCtx?.fieldSchema?.['x-action'];
   const { snapshot } = useActionContext();
@@ -209,9 +209,6 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-designer': 'FormItem.Designer',
         'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
-        'x-decorator-props': {
-          useLabelStyle: useLabelStyle,
-        },
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {
           mode: 'links',
