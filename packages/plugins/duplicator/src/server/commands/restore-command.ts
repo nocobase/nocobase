@@ -7,34 +7,41 @@ export default function addRestoreCommand(app: Application) {
     .command('restore')
     .argument('<string>', 'restore file path')
     .option('-a, --app <appName>', 'sub app name if you want to restore into a sub app')
+    .option('-f, --force', 'force restore without warning')
     .action(async (restoreFilePath, options) => {
-      if (!options.app) {
-        await restoreActionCommand(app, restoreFilePath);
+      let importApp = app;
+
+      if (options.app) {
+        if (
+          !(await app.db.getCollection('applications').repository.findOne({
+            filter: { name: options.app },
+          }))
+        ) {
+          // create sub app if not exists
+          await app.db.getCollection('applications').repository.create({
+            values: {
+              name: options.app,
+            },
+          });
+        }
+
+        const subApp = await app.appManager.getApplication(options.app);
+
+        if (!subApp) {
+          app.log.error(`app ${options.app} not found`);
+          await app.stop();
+          return;
+        }
+
+        importApp = subApp;
+      }
+
+      // should confirm data will be overwritten
+      if (!options.force && !(await restoreWarning())) {
         return;
       }
 
-      if (
-        !(await app.db.getCollection('applications').repository.findOne({
-          filter: { name: options.app },
-        }))
-      ) {
-        // create sub app if not exists
-        await app.db.getCollection('applications').repository.create({
-          values: {
-            name: options.app,
-          },
-        });
-      }
-
-      const subApp = await app.appManager.getApplication(options.app);
-
-      if (!subApp) {
-        app.log.error(`app ${options.app} not found`);
-        await app.stop();
-        return;
-      }
-
-      await restoreActionCommand(subApp, restoreFilePath);
+      await restoreActionCommand(importApp, restoreFilePath);
     });
 }
 
@@ -57,11 +64,6 @@ async function restoreWarning() {
 }
 
 async function restoreActionCommand(app: Application, restoreFilePath: string) {
-  // should confirm data will be overwritten
-  if (!(await restoreWarning())) {
-    return;
-  }
-
   const restorer = new Restorer(app, restoreFilePath);
   await restorer.restore();
   await app.stop();
