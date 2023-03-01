@@ -12,14 +12,18 @@ import { useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 import Search from './Search';
 
+export type MapEditorType = 'point' | 'polygon' | 'lineString' | 'circle';
+
 export interface AMapComponentProps {
   value?: any;
   onChange?: (value: number[]) => void;
   disabled?: boolean;
   mapType: string;
   zoom: number;
-  type: 'pointy' | 'polygon' | 'lineString' | 'circle';
+  type: MapEditorType;
   style?: React.CSSProperties;
+  overlayCommonOptions?: AMap.PolylineOptions & AMap.PolygonOptions;
+  block?: boolean;
 }
 
 const methodMapping = {
@@ -54,14 +58,28 @@ const methodMapping = {
 };
 
 export interface AMapForwardedRefProps {
-  setOverlay: (t: keyof typeof methodMapping, v: any, o?: AMap.OverlayOptions) => any;
+  setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions) => any;
+  getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions) => any;
+  createMouseTool: (type: MapEditorType) => void;
+  createEditor: (type: MapEditorType) => void;
+  executeMouseTool: (type: MapEditorType) => void;
+
   aMap: any;
   map: AMap.Map;
+  editor: () => {
+    getTarget: () => AMap.Polygon;
+    setTarget: (o: any) => void;
+    close: () => void;
+  };
+  mouseTool: () => {
+    close: (clear?: boolean) => void;
+  };
+  overlay: AMap.Polygon;
 }
 
 const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, disabled, zoom = 13 } = props;
+  const { value, onChange, block = false, disabled = block, zoom = 13, overlayCommonOptions } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -70,13 +88,13 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
   const { getField } = useCollection();
-  const type = useMemo(() => {
+  const type = useMemo<MapEditorType>(() => {
     if (props.type) return props.type;
     const collectionField = getField(fieldSchema?.name);
     return collectionField?.interface;
   }, [props?.type, fieldSchema?.name]);
 
-  const overlay = useRef<any>();
+  const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
   const history = useHistory();
   const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
@@ -86,16 +104,17 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     strokeColor: '#4e9bff',
     fillColor: '#4e9bff',
     strokeOpacity: 1,
+    ...overlayCommonOptions,
   });
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
-      map.current?.remove(overlay.current);
+      overlay.current.remove();
     }
   });
 
   const setTarget = useMemoizedFn(() => {
-    if (!disabled && type !== 'point' && editor.current) {
+    if ((!disabled || block) && type !== 'point' && editor.current) {
       editor.current.setTarget(overlay.current);
       editor.current.open();
     }
@@ -123,25 +142,29 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       overlay.current = target;
       setTarget();
     }
-    onChange(nextValue);
+    onChange?.(nextValue);
   });
 
-  const createEditor = useMemoizedFn(() => {
-    const mapping = methodMapping[type as keyof typeof methodMapping];
+  const createEditor = useMemoizedFn((curType = type) => {
+    const mapping = methodMapping[curType];
     if (mapping && 'editor' in mapping && !editor.current) {
-      editor.current = new aMap.current[mapping.editor](map.current);
+      editor.current = new aMap.current[mapping.editor](map.current, null, {
+        createOptions: commonOptions,
+        editOptions: commonOptions,
+      });
       editor.current.on('adjust', function ({ target }) {
         onMapChange(target, true);
       });
       editor.current.on('move', function ({ target }) {
         onMapChange(target, true);
       });
+      return editor.current;
     }
   });
 
-  const executeMouseTool = useMemoizedFn(() => {
+  const executeMouseTool = useMemoizedFn((curType = type) => {
     if (!mouseTool.current || editor.current?.getTarget()) return;
-    const mapping = methodMapping[type as keyof typeof methodMapping];
+    const mapping = methodMapping[curType];
     if (!mapping) {
       return;
     }
@@ -150,15 +173,13 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     } as AMap.PolylineOptions);
   });
 
-  const createMouseTool = useMemoizedFn(() => {
+  const createMouseTool = useMemoizedFn((curType: MapEditorType = type) => {
     if (mouseTool.current) return;
-
     mouseTool.current = new aMap.current.MouseTool(map.current);
     mouseTool.current.on('draw', function ({ obj }) {
       onMapChange(obj);
     });
-
-    executeMouseTool();
+    executeMouseTool(curType);
   });
 
   const toCenter = (position, imm?: boolean) => {
@@ -174,7 +195,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
         editor.current.setTarget();
         editor.current.close();
       }
-      onChange(null);
+      onChange?.(null);
     };
     Modal.confirm({
       title: t('Clear the canvas'),
@@ -194,8 +215,8 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
   };
 
   const getOverlay = useCallback(
-    (t = type, v = value, o?: AMap.OverlayOptions) => {
-      const mapping = methodMapping[t as keyof typeof methodMapping];
+    (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
+      const mapping = methodMapping[t];
       if (!mapping) {
         return;
       }
@@ -211,7 +232,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     [commonOptions],
   );
 
-  const setOverlay = (t = type, v = value, o?: AMap.OverlayOptions) => {
+  const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
     const nextOverlay = getOverlay(t, v, o);
     nextOverlay.setMap(map.current);
@@ -233,13 +254,6 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     createEditor();
     setTarget();
   }, [value, needUpdateFlag, type, commonOptions]);
-
-  useImperativeHandle(ref, () => ({
-    setOverlay,
-    getOverlay,
-    aMap: aMap.current,
-    map: map.current,
-  }));
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -312,6 +326,19 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       editor.current = null;
     };
   }, [accessKey, type, securityJsCode]);
+
+  useImperativeHandle(ref, () => ({
+    setOverlay,
+    getOverlay,
+    createMouseTool,
+    createEditor,
+    executeMouseTool,
+    aMap: aMap.current,
+    map: map.current,
+    overlay: overlay.current,
+    mouseTool: () => mouseTool.current,
+    editor: () => editor.current,
+  }));
 
   if (!accessKey || errMessage) {
     return (
