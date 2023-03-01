@@ -49,14 +49,20 @@ export const useAuditLogsCollection = () => {
         },
       },
       {
-        name: 'collectionName',
-        type: 'string',
-        interface: 'input',
+        collectionName: 'auditLogs',
+        name: 'collection',
+        type: 'belongsTo',
+        interface: 'm2o',
+        target: 'collections',
+        targetKey: 'name',
+        sourceKey: 'id',
+        foreignKey: 'collectionName',
         uiSchema: {
-          title: '{{t("Collection display name")}}',
-          type: 'string',
-          'x-component': 'Input',
-          'x-component-props': { ellipsis: true },
+          type: 'object',
+          title: '{{t("Collection")}}',
+          'x-component': 'RecordPicker',
+          'x-component-props': { fieldNames: { value: 'name', label: 'title' }, ellipsis: true },
+          'x-read-pretty': true,
         },
       },
       {
@@ -122,6 +128,37 @@ export const useAuditChangesCollection = () => {
         uiSchema: {
           title: '{{t("After change")}}',
           'x-component': 'AuditLogsValue',
+        },
+      },
+    ],
+  };
+};
+
+export const useCollectionsCollection = () => {
+  return {
+    name: 'collections',
+    title: '{{t("Collections")}}',
+    fields: [
+      {
+        name: 'name',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Collection name")}}',
+          type: 'string',
+          'x-component': 'Input',
+          'x-component-props': { ellipsis: true },
+        },
+      },
+      {
+        name: 'title',
+        type: 'string',
+        interface: 'input',
+        uiSchema: {
+          title: '{{t("Collection display name")}}',
+          type: 'string',
+          'x-component': 'Input',
+          'x-component-props': { ellipsis: true },
         },
       },
     ],
