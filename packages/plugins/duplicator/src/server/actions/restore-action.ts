@@ -7,7 +7,9 @@ export async function restoreAction(ctx, next) {
   const tmpDir = os.tmpdir();
   const filePath = path.resolve(tmpDir, restoreKey);
 
-  const restorer = new Restorer(ctx.app, filePath);
+  const restorer = new Restorer(ctx.app, {
+    backUpFilePath: filePath,
+  });
 
   await restorer.restore({
     selectedOptionalGroupNames: selectedOptionalGroups,

@@ -2,7 +2,7 @@ import decompress from 'decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { AppMigrator } from './app-migrator';
+import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
@@ -12,10 +12,23 @@ export class Restorer extends AppMigrator {
   direction = 'restore' as const;
   backUpFilePath: string;
   decompressed: boolean = false;
+  importedCollections: string[] = [];
 
-  constructor(app: Application, backUpFilePath: string) {
-    super(app);
+  constructor(
+    app: Application,
+    options: AppMigratorOptions & {
+      backUpFilePath?: string;
+    },
+  ) {
+    super(app, options);
+    const { backUpFilePath } = options;
 
+    if (backUpFilePath) {
+      this.setBackUpFilePath(backUpFilePath);
+    }
+  }
+
+  setBackUpFilePath(backUpFilePath) {
     if (path.isAbsolute(backUpFilePath)) {
       this.backUpFilePath = backUpFilePath;
     } else if (path.basename(backUpFilePath) === backUpFilePath) {
@@ -25,8 +38,6 @@ export class Restorer extends AppMigrator {
       this.backUpFilePath = path.resolve(process.cwd(), backUpFilePath);
     }
   }
-
-  importedCollections: string[] = [];
 
   async parseBackupFile() {
     await this.decompressBackup(this.backUpFilePath);

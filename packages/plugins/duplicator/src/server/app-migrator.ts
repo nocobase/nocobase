@@ -8,6 +8,9 @@ import * as os from 'os';
 import path from 'path';
 import { CollectionGroupManager } from './collection-group-manager';
 
+export type AppMigratorOptions = {
+  workDir?: string;
+};
 abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
   public app: Application;
@@ -16,12 +19,7 @@ abstract class AppMigrator extends EventEmitter {
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
-  constructor(
-    app,
-    options?: {
-      workDir?: string;
-    },
-  ) {
+  constructor(app, options?: AppMigratorOptions) {
     super();
 
     this.app = app;

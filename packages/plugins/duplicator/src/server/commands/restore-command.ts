@@ -65,7 +65,9 @@ async function restoreWarning() {
 }
 
 async function restoreActionCommand(app: Application, restoreFilePath: string) {
-  const restorer = new Restorer(app, restoreFilePath);
+  const restorer = new Restorer(app, {
+    backUpFilePath: restoreFilePath,
+  });
   const restoreMeta = await restorer.parseBackupFile();
 
   const { requiredGroups, selectedOptionalGroups, selectedUserCollections } = restoreMeta;
