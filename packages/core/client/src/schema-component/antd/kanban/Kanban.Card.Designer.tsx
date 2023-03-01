@@ -94,7 +94,7 @@ export const KanbanCardDesigner = (props: any) => {
     },
     {
       type: 'item',
-      title: t('Display fields title'),
+      title: t('Display field title'),
       component: 'Kanban.Card.Designer.TitleSwitch',
       enable: true,
     } as SchemaInitializerItemOptions,
