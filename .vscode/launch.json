@@ -27,7 +27,7 @@
         "--inspect-brk",
         "test",
         "--runInBand",
-        "${fileBasenameNoExtension}"
+        "${file}"
       ],
       "skipFiles": [
         "<node_internals>/**"
