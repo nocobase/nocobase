@@ -10,15 +10,14 @@ export const CreateActionInitializer = (props) => {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {
-      // type: 'primary',
-      // icon: 'PlusOutlined',
+      openMode: 'drawer',
       component: 'CreateRecordAction',
     },
     properties: {
       drawer: {
         type: 'void',
         title: '{{ t("Add record") }}',
-        'x-component': 'Action.Drawer',
+        'x-component': 'Action.Container',
         'x-component-props': {
           className: 'nb-action-popup',
         },

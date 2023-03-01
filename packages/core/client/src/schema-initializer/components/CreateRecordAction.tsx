@@ -6,7 +6,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
-import { ActionContext, useCompile } from '../../schema-component';
+import { ActionContext, useCompile, useActionContext } from '../../schema-component';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -54,6 +54,7 @@ export const CreateRecordAction = observer((props) => {
   const { getChildrenCollections } = useCollectionManager();
   const inheritsCollections = getChildrenCollections(collection.name);
   const [currentCollection, setCurrentCollection] = useState(collection.name);
+  const ctx = useActionContext();
   const compile = useCompile();
   const { t } = useTranslation();
   const menu = (
@@ -75,7 +76,7 @@ export const CreateRecordAction = observer((props) => {
   );
   return (
     <div className={actionDesignerCss}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
         {inheritsCollections?.length > 0 ? (
           <Dropdown.Button
             type="primary"
