@@ -30,7 +30,7 @@ const chartConfig = {
   legend: false,
 };
 export const funnelTemplate = {
-  description: '1 个「无序名词」字段，1 个「数值」字段',
+  description: '1 「Unordered Noun」 field, 1 「Numeric」 field',
   type: 'Funnel',
   title: 'Funnel',
   iconId: 'icon-funnel',

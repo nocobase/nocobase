@@ -46,7 +46,7 @@ const chartConfig = {
   },
 };
 export const barTemplate = {
-  description: '1 个「时间」或「有序名词」字段，1 个「数值」字段，0 ～ 1 个「无序名词」',
+  description: '1 「time」 or 「ordered noun」 field, 1 「value」 field, 0~ 1 「unordered noun」',
   type: 'Bar',
   title: 'Bar',
   iconId: 'icon-bar',

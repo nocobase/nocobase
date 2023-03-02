@@ -43,7 +43,7 @@ const chartConfig = {
   area: {},
 };
 export const radarTemplate = {
-  description: '1 ~ 2 个「无序名词」字段，1 个「数值」字段',
+  description: '1~ 2 「Unordered Noun」 fields, 1 「Numeric」 field',
   type: 'Radar',
   title: 'Radar',
   iconId: 'icon-radar',

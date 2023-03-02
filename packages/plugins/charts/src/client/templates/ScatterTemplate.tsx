@@ -55,7 +55,7 @@ const chartConfig = {
   },
 };
 export const scatterTemplate = {
-  description: '1 个「数值」字段，0 ~ 1 个「无序名词」字段',
+  description: '1 「Numeric」 field, 0~ 1 「Unordered Noun」 field',
   type: 'Scatter',
   title: 'Scatter',
   iconId: 'icon-scatter',

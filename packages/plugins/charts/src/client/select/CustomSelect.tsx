@@ -7,6 +7,7 @@ import type { SelectProps } from 'antd';
 import { Popover, Select as AntdSelect } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
+import { lang } from '../locale';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
@@ -41,9 +42,8 @@ const InternalSelect = connect(
                 zIndex={99999999999}
                 content={() => (
                   <span>
-                    {i18n
-                      .t(option?.description)
-                      ?.split('，')
+                    {lang(option?.description)
+                      ?.split(',')
                       .map((item) => (
                         <p>{item}</p>
                       ))}
@@ -75,9 +75,8 @@ const InternalSelect = connect(
                 zIndex={99999999999}
                 content={() => (
                   <span>
-                    {i18n
-                      .t(option?.description)
-                      ?.split('，')
+                    {lang(option?.description)
+                      ?.split(',')
                       .map((item) => (
                         <p>{item}</p>
                       ))}

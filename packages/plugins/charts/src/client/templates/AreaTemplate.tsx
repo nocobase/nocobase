@@ -29,7 +29,7 @@ const chartConfig = {
   seriesField: '{{category}}',
 };
 export const areaTemplate = {
-  description: '1 个「时间」或「有序名词」字段，1 个「数值」字段,1 个「无序名词」字段(可选)',
+  description: '1 「time」or 「Ordered Noun」 field,1 「Numerical」 field,1 「Unordered Noun」 field (optional)',
   type: 'Area',
   title: 'Area',
   iconId: 'icon-area',
