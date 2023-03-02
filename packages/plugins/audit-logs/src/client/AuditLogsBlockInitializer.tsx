@@ -15,7 +15,7 @@ export const AuditLogsBlockInitializer = (props) => {
     tableColumnInitializers: 'AuditLogsTableColumnInitializers',
     tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
     tableBlockProvider: 'AuditLogsBlockProvider',
-    template: false,
+    disableTemplate: true,
   });
 
   return (

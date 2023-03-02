@@ -1,11 +1,10 @@
-import { DndContext } from '@dnd-kit/core';
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import cls from 'classnames';
 import React from 'react';
 import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
-import { SortableItem } from '../../common';
+import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
