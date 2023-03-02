@@ -824,6 +824,7 @@ export const createTableBlockSchema = (options) => {
     tableActionColumnInitializers,
     tableBlockProvider,
     template,
+    fixedParams = {},
     ...others
   } = options;
   const schema: ISchema = {
@@ -836,6 +837,9 @@ export const createTableBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize: 20,
+      },
+      fixedParams: {
+        appends: fixedParams.appends,
       },
       rowKey,
       showIndex: true,
