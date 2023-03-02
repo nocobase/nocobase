@@ -5,8 +5,8 @@ export * from './items';
 export {
   RecordBlockInitializersContext,
   RecordBlockInitializersProvider,
-  RecordBlockInitializersContextValue,
 } from './contexts/RecordBlockInitializersContext';
+export type { RecordBlockInitializersContextValue } from './contexts/RecordBlockInitializersContext';
 export {
   gridRowColWrap,
   useRecordCollectionDataSourceItems,

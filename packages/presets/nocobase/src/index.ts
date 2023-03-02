@@ -33,6 +33,7 @@ export class PresetNocoBase extends Plugin {
     'map',
     'snapshot-field',
     'graph-collection-manager',
+    'comments',
   ];
 
   splitNames(name: string) {
