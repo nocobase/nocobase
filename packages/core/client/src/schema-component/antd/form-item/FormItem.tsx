@@ -63,8 +63,8 @@ export const FormItem: any = observer((props: any) => {
   );
 });
 
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+FormItem.Designer = () => {
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
