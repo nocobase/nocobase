@@ -44,5 +44,9 @@
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",
     "pretty-quick": "^3.1.0"
+  },
+  "volta": {
+    "node": "18.14.2",
+    "yarn": "1.22.19"
   }
 }
