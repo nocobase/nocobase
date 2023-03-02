@@ -463,6 +463,7 @@ export default {
   "Use the same time zone (GMT) for all users": "Tüm kullanıcılar için aynı saat dilimini (GMT) kullanın",
   "Block title": "Blok başlığı",
   "Edit block title": "Blok başlığını düzenle",
+  "operater": "operatör",
   "Province/city/area name": "Semt/şehir/bölge adı",
   "Field component": "Alan bileşeni",
   "Subtable": "Alttablo",

@@ -6,6 +6,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import {
   EditComponent,
   EditDescription,
+  EditOperator,
   EditPattern,
   EditTitle,
   EditTitleField,
@@ -28,6 +29,7 @@ export const FilterFormDesigner = () => {
       <EditValidationRules />
       <EditComponent />
       <EditPattern />
+      <EditOperator />
       <EditTitleField />
       {collectionField && <SchemaSettings.Divider />}
       <SchemaSettings.Remove

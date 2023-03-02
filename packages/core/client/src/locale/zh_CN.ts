@@ -262,6 +262,7 @@ export default {
   "Edit block title": "编辑区块标题",
   "Block title": "区块标题",
   "Pattern": "模式",
+  "operator": "运算符",
   "Editable": "可编辑",
   "Readonly": "只读（禁止编辑）",
   "Easy-reading": "只读（阅读模式）",
