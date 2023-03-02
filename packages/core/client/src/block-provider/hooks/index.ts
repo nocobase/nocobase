@@ -202,14 +202,17 @@ export const useCreateActionProps = () => {
   };
 };
 
-const findFilterTargets = (fieldSchema): string[] => {
+const findFilterTargets = (fieldSchema) => {
   while (fieldSchema) {
     if (fieldSchema['x-filter-targets']) {
-      return fieldSchema['x-filter-targets'];
+      return {
+        targets: fieldSchema['x-filter-targets'],
+        uid: fieldSchema['x-uid'],
+      };
     }
     fieldSchema = fieldSchema.parent;
   }
-  return [];
+  return {};
 };
 
 export const useFilterBlockActionProps = () => {
@@ -222,7 +225,7 @@ export const useFilterBlockActionProps = () => {
 
   return {
     async onClick() {
-      const targets = findFilterTargets(fieldSchema);
+      const { targets, uid } = findFilterTargets(fieldSchema);
 
       actionField.data.loading = true;
       try {
@@ -232,7 +235,7 @@ export const useFilterBlockActionProps = () => {
             // 此时表示用户还没有设置过与筛选区块相关联的数据区块
             if (!targets.includes(block.name)) return;
 
-            block.filters[actionField.props.name as string] = transformToFilter(form.values, fieldSchema);
+            block.filters[uid] = transformToFilter(form.values, fieldSchema);
 
             const param = block.service.params?.[0] || {};
             return block.doFilter({
@@ -253,23 +256,40 @@ export const useFilterBlockActionProps = () => {
 
 export const useResetBlockActionProps = () => {
   const form = useForm();
-  const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField } = useCollection();
-  const filterByTk = useFilterByTk();
-  const currentRecord = useRecord();
-  const currentUser = useCurrentUserContext()?.data?.data;
+  const fieldSchema = useFieldSchema();
+  const { getDataBlocks } = useFilterBlock();
 
   actionField.data = actionField.data || {};
 
   return {
     async onClick() {
-      // TODO: implement reset action
-      // try {
-      //   actionField.data.loading = false;
-      // } catch (error) {
-      //   actionField.data.loading = false;
-      // }
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      form.reset();
+      actionField.data.loading = true;
+      try {
+        // 收集 filter 的值
+        await Promise.all(
+          getDataBlocks().map(async (block) => {
+            // 此时表示用户还没有设置过与筛选区块相关联的数据区块
+            if (!targets.includes(block.name)) return;
+
+            // 只清空当前筛选区块的数据
+            delete block.filters[uid];
+
+            const param = block.service.params?.[0] || {};
+            return block.doFilter({
+              ...param,
+              page: 1,
+              filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
+            });
+          }),
+        );
+        actionField.data.loading = false;
+      } catch (error) {
+        actionField.data.loading = false;
+      }
     },
   };
 };
