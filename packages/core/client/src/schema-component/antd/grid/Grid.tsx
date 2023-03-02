@@ -413,11 +413,14 @@ Grid.Row = observer((props) => {
 });
 
 Grid.Col = observer((props: any) => {
-  const { cols } = useContext(GridRowContext);
+  const { cols = [] } = useContext(GridRowContext);
   const schema = useFieldSchema();
   const field = useField();
-  const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-  const width = `calc(${w}% - 24px - 24px / ${cols.length})`;
+  let width = '100%';
+  if (cols?.length) {
+    const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
+    width = `calc(${w}% - 24px - 24px / ${cols.length})`;
+  }
   const { isOver, setNodeRef } = useDroppable({
     id: field.address.toString(),
     data: {

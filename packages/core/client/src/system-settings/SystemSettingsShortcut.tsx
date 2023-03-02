@@ -236,7 +236,7 @@ const schema2: ISchema = {
           },
           properties: {
             submit: {
-              title: 'Submit',
+              title: '{{t("Submit")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
