@@ -51,14 +51,15 @@ const InternalFormBlockProvider = (props) => {
 
 export const FormBlockProvider = (props) => {
   const record = useRecord();
-  const { collection } = props;
+  const { collection, resource } = props;
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const detailFlag = (Object.keys(record).length > 0 && designable) || __collection === collection;
   const createFlag = currentCollection.name === collection && !Object.keys(record).length;
+  const relationFlag = (Object.keys(record).length > 0 && designable) || __collection === resource?.split('.')?.[0];
   return (
-    (detailFlag || createFlag) && (
+    (detailFlag || createFlag || relationFlag) && (
       <BlockProvider {...props} block={'form'}>
         <InternalFormBlockProvider {...props} />
       </BlockProvider>
