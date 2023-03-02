@@ -10,7 +10,7 @@ export const DateFieldsSelect: React.FC<any> = observer((props) => {
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
   const { values } = useForm();
-  const fields = getCollectionFields(values?.config?.collection);
+  const fields = getCollectionFields(values?.collection);
 
   return (
     <Select

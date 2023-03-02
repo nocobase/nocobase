@@ -1,11 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   CloseOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Button, message, Modal, Tag, Alert } from 'antd';
+import { Button, message, Modal, Tag, Alert, Input } from 'antd';
 import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
@@ -76,17 +76,11 @@ function useUpdateAction() {
         message.error(lang('Node in executed workflow cannot be modified'));
         return;
       }
-      // TODO: how to do validation separately for each field? especially disabled for dynamic fields?
-      try {
-        await form.submit();
-      } catch (err) {
-        return;
-      }
+      await form.submit();
       await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {
-          title: form.values.title,
-          config: form.values.config
+          config: form.values
         }
       });
       ctx.setVisible(false);
@@ -312,26 +306,56 @@ export function JobButton() {
 }
 
 export function NodeDefaultView(props) {
+  const { data, children } = props;
   const compile = useCompile();
+  const api = useAPIClient();
+  const [editing, setEditing] = useState<boolean>(false);
+  const [editingTitle, setEditingTitle] = useState<string>(data.title);
+  const [editedTitle, setEditedTitle] = useState(data.title);
   const { workflow } = useFlowContext() ?? {};
   if (!workflow) {
     return null;
   }
 
-  const { data, children } = props;
   const instruction = instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
+  const typeTitle = compile(instruction.title);
+
+  async function onChangeTitle(next) {
+    const title = next || typeTitle;
+    if (title === editedTitle) {
+      setEditing(false);
+      setEditingTitle(title);
+      return;
+    }
+    await api.resource('flow_nodes', data.id).update?.({
+      filterByTk: data.id,
+      values: {
+        title
+      }
+    });
+    setEditedTitle(title);
+    setEditingTitle(title);
+    setEditing(false);
+  }
 
   return (
     <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
       <div className={cx(nodeCardClass)}>
         <div className={cx(nodeHeaderClass)}>
           <div className={cx(nodeMetaClass)}>
-            <Tag>{compile(instruction.title)}</Tag>
+            <Tag>{typeTitle}</Tag>
+            <span className="workflow-node-id">{data.id}</span>
           </div>
           <h4 className={cx(nodeTitleClass)}>
-            <strong>{data.title}</strong>
-            <span className="workflow-node-id">#{data.id}</span>
+            <Input.TextArea
+              value={editingTitle}
+              onChange={(ev) => setEditingTitle(ev.target.value)}
+              onFocus={() => setEditing(true)}
+              onBlur={(ev) => onChangeTitle(ev.target.value)}
+              autoSize
+              className={editing ? '' : 'display-title'}
+            />
           </h4>
           <RemoveButton />
           <JobButton />
@@ -359,15 +383,16 @@ export function NodeDefaultView(props) {
                     'x-decorator-props': {
                       disabled: workflow.executed,
                       useValues(options) {
-                        const d = useNodeContext();
+                        const { config } = useNodeContext();
                         return useRequest(() => {
-                          return Promise.resolve({ data: d });
+                          return Promise.resolve({ data: config });
                         }, options);
                       }
                     },
                     properties: {
                       ...(workflow.executed ? {
                         alert: {
+                          type: 'void',
                           'x-component': Alert,
                           'x-component-props': {
                             type: 'warning',
@@ -381,16 +406,8 @@ export function NodeDefaultView(props) {
                           },
                         }
                       } : {}),
-                      title: {
-                        type: 'string',
-                        name: 'title',
-                        title: '{{t("Name")}}',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                      },
-                      config: {
+                      fieldset: {
                         type: 'void',
-                        name: 'config',
                         'x-component': 'fieldset',
                         'x-component-props': {
                           className: css`

@@ -17,9 +17,8 @@ export default {
   type: 'parallel',
   group: 'control',
   fieldset: {
-    'config.mode': {
+    mode: {
       type: 'string',
-      name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',

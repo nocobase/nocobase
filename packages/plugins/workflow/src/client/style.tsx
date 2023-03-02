@@ -213,15 +213,31 @@ export const nodeHeaderClass = css`
 
 export const nodeMetaClass = css`
   margin-bottom: .5em;
-`;
-
-export const nodeTitleClass = css`
-  display: flex;
-  align-items: center;
-  font-weight: normal;
 
   .workflow-node-id{
     color: #999;
+
+    &:before{
+      content: "#"
+    }
+  }
+`;
+
+export const nodeTitleClass = css`
+
+.ant-input{
+    font-weight: bold;
+  }
+
+  .display-title{
+    transition: background-color .3s ease, border-color .3s ease;
+    border-color: #f7f7f7;
+    background-color: #f7f7f7;
+
+    &:hover{
+      border-color: #eee;
+      background-color: #eee;
+    }
   }
 `;
 

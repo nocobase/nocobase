@@ -16,7 +16,6 @@ import { lang, NAMESPACE } from "../locale";
 
 
 function useUpdateConfigAction() {
-  const { t } = useTranslation();
   const form = useForm();
   const api = useAPIClient();
   const { workflow } = useFlowContext() ?? {};
@@ -25,13 +24,15 @@ function useUpdateConfigAction() {
   return {
     async run() {
       if (workflow.executed) {
-        message.error(t('Trigger in executed workflow cannot be modified'));
+        message.error(lang('Trigger in executed workflow cannot be modified'));
         return;
       }
       await form.submit();
       await api.resource('workflows').update?.({
         filterByTk: workflow.id,
-        values: form.values
+        values: {
+          config: form.values
+        }
       });
       ctx.setVisible(false);
       refresh();
@@ -163,14 +164,28 @@ export const TriggerConfig = () => {
                 disabled: workflow.executed,
                 useValues(options) {
                   return useRequest(() => Promise.resolve({
-                    data: { config },
+                    data: config,
                   }), options);
                 },
               },
               properties: {
-                config: {
+                ...(executed ? {
+                  alert: {
+                    'x-component': Alert,
+                    'x-component-props': {
+                      type: 'warning',
+                      showIcon: true,
+                      message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                      className: css`
+                        width: 100%;
+                        font-size: 85%;
+                        margin-bottom: 2em;
+                      `
+                    },
+                  }
+                } : {}),
+                fieldset: {
                   type: 'void',
-                  name: 'config',
                   'x-component': 'fieldset',
                   'x-component-props': {
                     className: css`
@@ -180,24 +195,7 @@ export const TriggerConfig = () => {
                       }
                     `
                   },
-                  properties: {
-                    ...(executed ? {
-                      alert: {
-                        'x-component': Alert,
-                        'x-component-props': {
-                          type: 'warning',
-                          showIcon: true,
-                          message: `{{t("Trigger in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                          className: css`
-                            width: 100%;
-                            font-size: 85%;
-                            margin-bottom: 2em;
-                          `
-                        },
-                      }
-                    } : {}),
-                    ...fieldset
-                  }
+                  properties: fieldset
                 },
                 actions: executed
                 ? null

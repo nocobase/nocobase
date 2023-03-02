@@ -17,25 +17,16 @@ import { CollectionFieldInitializers } from '../components/CollectionFieldInitia
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 
 const FieldsSelect = observer((props) => {
+  const { filter = item => true, ...others } = props;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const { values, clearFormGraph, setValuesIn } = useForm();
+  const { values } = useForm();
   const fields = getCollectionFields(values?.config?.collection);
-  useFormEffects(() => {
-    onFieldValueChange('config.collection', (field) => {
-      clearFormGraph('config.changed');
-      setValuesIn('config.condition', null);
-    });
-  });
 
   return (
-    <Select {...props}>
+    <Select {...others}>
       {fields
-        .filter(field => (
-          !field.hidden
-          && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
-          && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-        ))
+        .filter(filter)
         .map(field => (
           <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
         ))}
@@ -61,40 +52,24 @@ export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
   fieldset: {
-    'config.collection': {
+    collection: {
       ...collection,
       ['x-reactions']: [
         ...collection['x-reactions'],
         {
-          target: 'config.mode',
+          target: 'changed',
+          effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              visible: '{{!!$self.value}}',
-            },
-          }
-        },
-        {
-          target: 'config.changed',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
-          }
-        },
-        {
-          target: 'config.condition',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
+              value: []
+            }
           }
         }
       ]
     },
-    'config.mode': {
+    mode: {
       type: 'number',
       title: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.mode',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -104,7 +79,15 @@ export default {
       required: true,
       'x-reactions': [
         {
-          target: 'config.changed',
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          }
+        },
+        {
+          target: 'changed',
           fulfill: {
             state: {
               disabled: `{{!($self.value & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
@@ -113,9 +96,8 @@ export default {
         },
       ]
     },
-    'config.changed': {
+    changed: {
       type: 'array',
-      name: 'changed',
       title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
@@ -123,13 +105,53 @@ export default {
       'x-component-props': {
         mode: 'multiple',
         placeholder: '{{t("Select Field")}}'
-      }
+      },
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          }
+        },
+      ]
     },
-    'config.condition': {
+    condition: {
       ...filter,
-      name: 'config.condition',
-      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`
-    }
+      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          }
+        },
+      ]
+    },
+    // appends: {
+    //   type: 'array',
+    //   title: `{{t("Prefetch fields", { ns: "${NAMESPACE}" })}}`,
+    //   description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'FieldsSelect',
+    //   'x-component-props': {
+    //     mode: 'multiple',
+    //     placeholder: '{{t("Select Field")}}'
+    //   },
+    //   'x-reactions': [
+    //     {
+    //       dependencies: ['collection'],
+    //       fulfill: {
+    //         state: {
+    //           visible: '{{!!$deps[0]}}',
+    //         },
+    //       }
+    //     },
+    //   ]
+    // },
   },
   scope: {
     useCollectionDataSource

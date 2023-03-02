@@ -30,8 +30,9 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     const type = keyPath.pop();
     const config = {};
     const [optionKey] = keyPath;
+    const instruction = instructions.get(type);
     if (optionKey) {
-      const { value } = instructions.get(type)?.options?.find(item => item.key === optionKey) ?? {};
+      const { value } = instruction.options?.find(item => item.key === optionKey) ?? {};
       Object.assign(config, value);
     }
 
@@ -40,6 +41,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
         type,
         upstreamId: upstream?.id ?? null,
         branchIndex,
+        title: compile(instruction.title),
         config
       }
     });
@@ -47,38 +49,39 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     onNodeAdded(node);
   }
 
-  const groups = [
-    { value: 'control', name: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
-    { value: 'collection', name: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
-    { value: 'manual', name: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
-    { value: 'extended', name: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
-  ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
+
+  const groups = [
+    { key: 'control', label: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
+    { key: 'collection', label: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
+    { key: 'manual', label: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
+    { key: 'extended', label: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
+  ]
+    .filter(group => instructionList.filter(item => item.group === group.key).length)
+    .map(group => {
+      const groupInstructions = instructionList.filter(item => item.group === group.key);
+
+      return {
+        ...group,
+        type: 'group',
+        children: groupInstructions.map(item => ({
+          key: item.type,
+          label: item.title,
+          type: item.options ? 'subMenu' : null,
+          children: item.options ? item.options.map(option => ({
+            key: option.key,
+            label: option.label,
+          })) : null
+        }))
+      };
+    });
 
   return (
     <div className={cx(addButtonClass)}>
       <Dropdown
         trigger={['click']}
         overlay={
-          <Menu onClick={ev => onCreate(ev)}>
-            {groups.map(group => {
-              const groupInstructions = instructionList.filter(item => item.group === group.value);
-              return groupInstructions.length ? (
-                <Menu.ItemGroup key={group.value} title={compile(group.name)}>
-                  {groupInstructions.map(item => item.options
-                  ? (
-                    <Menu.SubMenu key={item.type} title={compile(item.title)}>
-                      {item.options.map(option => (
-                        <Menu.Item key={option.key}>{compile(option.label)}</Menu.Item>
-                      ))}
-                    </Menu.SubMenu>
-                  )
-                  : (
-                    <Menu.Item key={item.type}>{compile(item.title)}</Menu.Item>
-                  ))}
-                </Menu.ItemGroup>
-              ) : null;
-            })}
+          <Menu onClick={ev => onCreate(ev)} items={compile(groups)}>
           </Menu>
         }
         disabled={workflow.executed}
