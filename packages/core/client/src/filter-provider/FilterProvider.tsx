@@ -14,10 +14,11 @@ export interface DataBlock {
   /** 与当前区块相关的数据表信息 */
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
-  doFilter: (params: any) => Promise<void>;
+  doFilter: (params: any, params2?: any) => Promise<void>;
   association?: CollectionFieldOptions;
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
+  service?: any;
 }
 
 interface FilterContextValue {
@@ -54,6 +55,7 @@ export const FilterBlockRecord = (props: any) => {
       collection,
       association,
       filters: {},
+      service,
     });
   }
 
@@ -68,10 +70,16 @@ export const useFilterBlock = () => {
   const { dataBlocks } = React.useContext(FilterContext);
   return {
     recordDataBlocks: (block: DataBlock) => {
-      // 避免重复收集
-      if (!dataBlocks.find((item) => item.name === block.name)) {
-        dataBlocks.push(block);
+      const existed = dataBlocks.find((item) => item.name === block.name);
+
+      if (existed) {
+        // 已经收集过的无需重复收集，但是需要更新一下 service，以获取最新的状态
+        existed.service = block.service;
+        return;
       }
+
+      // 避免重复收集
+      dataBlocks.push(block);
     },
     getDataBlocks: () => dataBlocks,
   };

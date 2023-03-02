@@ -234,8 +234,11 @@ export const useFilterBlockActionProps = () => {
 
             block.filters[actionField.props.name as string] = transformToFilter(form.values, fieldSchema);
 
+            const param = block.service.params?.[0] || {};
             return block.doFilter({
+              ...param,
               page: 1,
+              // TODO: 应该也需要合并数据区块中所设置的筛选条件
               filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
             });
           }),
