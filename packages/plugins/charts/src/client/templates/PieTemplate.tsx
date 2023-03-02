@@ -1,6 +1,7 @@
 import JSON5 from 'json5';
 import { i18n } from '@nocobase/client';
 import React from 'react';
+import { lang } from '../locale';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -18,7 +19,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-  message: '{{t("Invalid JSON format")}}',
+message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
@@ -52,7 +53,7 @@ export const pieTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Sector label / Dimensional")}}',
+        title: '{{t("Sector label / Dimensional",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -60,7 +61,7 @@ export const pieTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Sector Angle / Metric")}}',
+        title: '{{t("Sector Angle / Metric",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -71,7 +72,7 @@ export const pieTemplate = {
         properties: {
           template: {
             required: true,
-            title: '{{t("JSON config")}}',
+            title: '{{t("JSON config",{ns:"charts"})}}',
             type: 'string',
             default: JSON5.stringify(chartConfig, null, 2),
             'x-decorator': 'FormItem',
@@ -84,9 +85,9 @@ export const pieTemplate = {
           references: {
             type: 'string',
             'x-decorator': 'div',
-            'x-content': <span>{i18n.t('Json config references: ')}<a
+            'x-content': <span>{lang('Json config references: ')}<a
               href={'https://g2plot.antv.antgroup.com/api/plots/pie'}
-              target='_blank'>{i18n.t('Pie | G2Plot')}</a></span>,
+              target='_blank'>{lang('Pie | G2Plot')}</a></span>,
           },
         },
       },

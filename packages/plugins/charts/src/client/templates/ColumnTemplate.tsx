@@ -1,6 +1,7 @@
 import JSON5 from 'json5';
 import React from 'react';
 import { i18n } from '@nocobase/client';
+import { lang } from '../locale';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -18,7 +19,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-  message: '{{t("Invalid JSON format")}}',
+message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
@@ -84,7 +85,7 @@ export const columnTemplate = {
         properties: {
           template: {
             required: true,
-            title: '{{t("JSON config")}}',
+            title: '{{t("JSON config",{ns:"charts"})}}',
             type: 'string',
             default: JSON5.stringify(chartConfig, null, 2),
             'x-decorator': 'FormItem',
@@ -97,8 +98,8 @@ export const columnTemplate = {
           references: {
             type: 'string',
             'x-decorator': 'div',
-            'x-content': <span>{i18n.t('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/column'} target='_blank'>{i18n.t('Column | G2Plot')}</a></span>,
+            'x-content': <span>{lang('Json config references: ')}<a
+              href={'https://g2plot.antv.antgroup.com/api/plots/column'} target='_blank'>{lang('Column | G2Plot')}</a></span>,
           },
         },
       },
