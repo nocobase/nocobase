@@ -53,8 +53,9 @@ describe('duplicator api', () => {
     const packageInfoResponse = await app
       .agent()
       .post('/duplicator:upload')
-      .attach('file', path.resolve(__dirname, './fixtures/dump.nbdump'));
+      .attach('file', path.resolve(__dirname, './fixtures/dump.nbdump.fixture'));
 
+    console.log(packageInfoResponse.body);
     expect(packageInfoResponse.status).toBe(200);
     const data = packageInfoResponse.body.data;
 

@@ -23,7 +23,9 @@ export const getPackageContent = async (ctx, next) => {
   const file = ctx.file;
   const fileName = file.filename;
 
-  const restorer = new Restorer(ctx.app, file.path);
+  const restorer = new Restorer(ctx.app, {
+    backUpFilePath: file.path,
+  });
   const restoreMeta = await restorer.parseBackupFile();
 
   ctx.body = {
