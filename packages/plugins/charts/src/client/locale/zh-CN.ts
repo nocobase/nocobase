@@ -8,6 +8,7 @@ export default {
   Enable: '启用',
   'Chart':'图表',
   'Chart type': '图表类型',
+  'Chart title':'图表标题',
   'Chart config':'图表配置',
   'Edit chart block': '编辑图表区块',
   'Chart preview': '图表预览',

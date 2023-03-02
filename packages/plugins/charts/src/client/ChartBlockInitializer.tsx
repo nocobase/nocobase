@@ -107,6 +107,11 @@ export const ChartBlockInitializer = (props) => {
                           components={{ Options }}
                           schema={{
                             properties: {
+                              title: {
+                                title: lang('Chart title'),
+                                'x-component': 'Input',
+                                'x-decorator': 'FormItem',
+                              },
                               type: {
                                 title: lang('Chart type'),
                                 required: true,
@@ -188,7 +193,7 @@ export const ChartBlockInitializer = (props) => {
           };
           insert({
             type: 'void',
-            title: chartQueryMetadata?.title,
+            title: values?.title,
             'x-designer': 'ChartBlockEngine.Designer',
             'x-decorator': 'CardItem',
             'x-component': 'ChartBlockEngine',

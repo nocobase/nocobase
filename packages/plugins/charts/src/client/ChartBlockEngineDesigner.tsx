@@ -10,7 +10,7 @@ import {
   SchemaSettings,
   useAPIClient,
   useCompile,
-  useDesignable
+  useDesignable,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -120,6 +120,11 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                           components={{ Options }}
                           schema={{
                             properties: {
+                              title: {
+                                title: lang('Chart title'),
+                                'x-component': 'Input',
+                                'x-decorator': 'FormItem',
+                              },
                               type: {
                                 title: t('Chart type'),
                                 required: true,
@@ -151,7 +156,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         min-width: 600px;
                       `}
                     >
-                      <Card size="small" title={lang('Chart preview')}>
+                      <Card size='small' title={lang('Chart preview')}>
                         {/*  Chart Preview*/}
                         {chartBlockEngineMetaData && (
                           <>
@@ -173,7 +178,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         )}
                       </Card>
                       <Card
-                        size="small"
+                        size='small'
                         title={lang('Data preview')}
                         className={css`
                           margin-top: 8px;
@@ -200,6 +205,8 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
               query,
               chart: values,
             };
+            field.title = values.chart.title;
+            fieldSchema['title'] = values.chart.title;
             field.componentProps.chartBlockEngineMetaData = values;
             fieldSchema['x-component-props'].chartBlockEngineMetaData = values;
             dn.emit('patch', {
