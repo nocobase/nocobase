@@ -219,7 +219,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
           });
       }}
     >
-      {props.children || props.title || 'Edit chart block'}
+      {props.children || props.title || lang('Edit chart block')}
     </SchemaSettings.Item>
   );
 };
