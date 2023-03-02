@@ -22,7 +22,6 @@ export const FormDesigner = () => {
   const { t } = useTranslation();
   const { visible } = useActionContext();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-  const blockType = fieldSchema?.['x-decorator-props']?.blockType;
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -34,7 +33,6 @@ export const FormDesigner = () => {
         resourceName={defaultResource}
       />
       <SchemaSettings.LinkageRules collectionName={name} />
-      {blockType === 'filter' ? <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} /> : null}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

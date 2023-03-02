@@ -782,10 +782,8 @@ export const createFilterFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
-      // 与数据区块进行区分
-      blockType: 'filter',
     },
-    'x-designer': 'FormV2.Designer',
+    'x-designer': 'FormV2.FilterFormDesigner',
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],

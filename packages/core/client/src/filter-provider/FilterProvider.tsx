@@ -45,7 +45,8 @@ export const FilterBlockRecord = (props: any) => {
   const field = useField();
   const association = useAssociation(props);
 
-  if (props.block !== 'form' && props.blockType !== 'filter') {
+  // 表单类的区块不需要筛选
+  if (field.decoratorType !== 'FormBlockProvider') {
     recordDataBlocks({
       name: field.props.name as string,
       title: field.componentProps.title,
