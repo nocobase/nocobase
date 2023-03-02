@@ -197,6 +197,7 @@ export const getMentionUsers = (content: string) => {
 };
 
 export const getContent = (item: CommentItem) => {
+  if (!item.mentionUsers) return item.content;
   const reg = createReg('.*?', 'g');
   const replaces = [];
   let plainText = item.content.replace(reg, (match, p1) => {
