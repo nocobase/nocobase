@@ -11,7 +11,6 @@ export const RecordFormBlockInitializer = (props) => {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = targetCollection || useCollection();
   const association = useBlockAssociationContext();
-  console.log('RecordFormBlockInitializer', collection, association);
   return (
     <SchemaInitializer.Item
       icon={<FormOutlined />}

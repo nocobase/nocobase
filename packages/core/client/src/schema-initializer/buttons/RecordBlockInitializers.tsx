@@ -16,9 +16,11 @@ const recursiveParent = (schema: Schema) => {
 
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
-  const { getCollectionFields } = useCollectionManager();
+  const collection = useCollection();
+  const { getCollectionFields, getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collection.name);
   let fields = [];
-
+  const relationFields = [];
   if (fieldSchema['x-initializer']) {
     fields = useCollection().fields;
   } else {
@@ -27,15 +29,14 @@ const useRelationFields = () => {
       fields = getCollectionFields(collection);
     }
   }
-
-  const relationFields = fields
+  fields
     .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
-    .map((field) => {
+    .forEach((field) => {
       if (['hasOne', 'belongsTo'].includes(field.type)) {
-        return {
-          key: field.name,
+        relationFields.push({
+          key: `${field.colloectiion}_ ${field.name}`,
           type: 'subMenu',
-          title: field?.uiSchema?.title || field.name,
+          title: `${collection.title || collection.name}/${field?.uiSchema?.title || field.name}`,
           children: [
             {
               key: `${field.name}_details`,
@@ -44,22 +45,34 @@ const useRelationFields = () => {
               field,
               component: 'RecordReadPrettyAssociationFormBlockInitializer',
             },
-            // {
-            //   key: `${field.name}_form`,
-            //   type: 'item',
-            //   title: '{{t("Form")}}',
-            //   field,
-            //   component: 'RecordAssociationFormBlockInitializer',
-            // },
           ],
-        };
-      }
-
-      if (['hasMany', 'belongsToMany'].includes(field.type)) {
-        return {
+        });
+        childrenCollections.forEach((c) => {
+          const inheritRelateField = c.fields.find((v) => {
+            return v.name === field.name;
+          });
+          if (inheritRelateField) {
+            relationFields.push({
+              key: `${inheritRelateField.collectionName}_ ${inheritRelateField.name}`,
+              type: 'subMenu',
+              title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
+              children: [
+                {
+                  key: `${inheritRelateField.name}_details`,
+                  type: 'item',
+                  title: '{{t("Details")}}',
+                  field: inheritRelateField,
+                  component: 'RecordReadPrettyAssociationFormBlockInitializer',
+                },
+              ],
+            });
+          }
+        });
+      } else if (['hasMany', 'belongsToMany'].includes(field.type)) {
+        relationFields.push({
           key: field.name,
           type: 'subMenu',
-          title: field?.uiSchema?.title || field.name,
+          title: `${collection.title || collection.name}/${field?.uiSchema?.title || field.name}`,
           children: [
             {
               key: `${field.name}_table`,
@@ -90,17 +103,59 @@ const useRelationFields = () => {
               component: 'RecordAssociationCalendarBlockInitializer',
             },
           ],
-        };
+        });
+        childrenCollections.forEach((c) => {
+          const inheritRelateField = c.fields.find((v) => {
+            return v.name === field.name;
+          });
+          if (inheritRelateField) {
+            relationFields.push({
+              key: `${inheritRelateField.collectionName}_ ${inheritRelateField.name}`,
+              type: 'subMenu',
+              title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
+              children: [
+                {
+                  key: `${inheritRelateField.name}_details`,
+                  type: 'item',
+                  title: '{{t("Details")}}',
+                  field: inheritRelateField,
+                  component: 'RecordReadPrettyAssociationFormBlockInitializer',
+                },
+              ],
+            });
+          }
+        });
+      } else {
+        relationFields.push({
+          key: field.name,
+          type: 'item',
+          field,
+          title: `${collection.title || collection.name}/${field?.uiSchema?.title || field.name}`,
+          component: 'RecordAssociationBlockInitializer',
+        });
+        childrenCollections.forEach((c) => {
+          const inheritRelateField = c.fields.find((v) => {
+            return v.name === field.name;
+          });
+          if (inheritRelateField) {
+            relationFields.push({
+              key: `${inheritRelateField.collectionName}_ ${inheritRelateField.name}`,
+              type: 'subMenu',
+              title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
+              children: [
+                {
+                  key: `${inheritRelateField.name}_details`,
+                  type: 'item',
+                  title: '{{t("Details")}}',
+                  field: inheritRelateField,
+                  component: 'RecordReadPrettyAssociationFormBlockInitializer',
+                },
+              ],
+            });
+          }
+        });
       }
-
-      return {
-        key: field.name,
-        type: 'item',
-        field,
-        title: field?.uiSchema?.title || field.name,
-        component: 'RecordAssociationBlockInitializer',
-      };
-    }) as any;
+    });
   return relationFields;
 };
 
