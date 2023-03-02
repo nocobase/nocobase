@@ -55,7 +55,7 @@ export const lineTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Category axis / Dimension")}}',
+        title: '{{t("Category axis / Dimension",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -63,14 +63,14 @@ export const lineTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Value axis / Metrics")}}',
+        title: '{{t("Value axis / Metrics",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
       },
       category: {
         type: 'string',
-        title: '{{t("Color legend / Dimensional")}}',
+        title: '{{t("Color legend / Dimensional",{ns:"charts"}})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',

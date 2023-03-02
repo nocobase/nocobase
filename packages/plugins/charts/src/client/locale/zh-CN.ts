@@ -19,5 +19,10 @@ export default {
   'Create chart block': '创建图表区块',
   'Invalid JSON format':'无效的JSON格式',
   'Json config references: ':'JSON配置参考',
-  'Sector Angle / Metric':'扇形角 / 度量'
+  'Sector Angle / Metric':'扇形角 / 度量',
+  'Sector label / Dimensional':'扇形标签 / 纬度',
+  'Color legend / Dimensional':'颜色系列 / 纬度',
+  'Funnel Layer Width/Metrics':'漏斗层宽度 / 度量',
+  'Branch Tags/Dimensions':'分支标签 / 纬度',
+  'Branch Length/Metrics':'分支长度 / 度量'
 };

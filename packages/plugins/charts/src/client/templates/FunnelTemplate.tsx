@@ -19,7 +19,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
+  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
@@ -43,7 +43,7 @@ export const funnelTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Sector label / Dimensional")}}',
+        title: '{{t("Sector label / Dimensional",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -51,14 +51,14 @@ export const funnelTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Funnel Layer Width/Metrics")}}',
+        title: '{{t("Funnel Layer Width/Metrics",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
       },
       category: {
         type: 'string',
-        title: '{{t("Color legend / Dimensional")}}',
+        title: '{{t("Color legend / Dimensional",{ns:"charts"}})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -83,7 +83,8 @@ export const funnelTemplate = {
             type: 'string',
             'x-decorator': 'div',
             'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/funnel'} target='_blank'>{lang('Funnel | G2Plot')}</a></span>,
+              href={'https://g2plot.antv.antgroup.com/api/plots/funnel'}
+              target='_blank'>{lang('Funnel | G2Plot')}</a></span>,
           },
         },
       },

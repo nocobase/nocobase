@@ -56,7 +56,7 @@ export const radarTemplate = {
       dimension: {
         required: true,
         type: 'string',
-        title: '{{t("Branch Tags/Dimensions")}}',
+        title: '{{t("Branch Tags/Dimensions",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
@@ -64,7 +64,7 @@ export const radarTemplate = {
       metric: {
         required: true,
         type: 'string',
-        title: '{{t("Branch Length/Metrics")}}',
+        title: '{{t("Branch Length/Metrics",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
