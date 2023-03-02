@@ -3,9 +3,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import AMap, { AMapForwardedRefProps } from '../components/AMap';
 import { RecursionField, useFieldSchema, Schema } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
-import { ExpandOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Button } from 'antd';
+import { Button, Select, Space } from 'antd';
 import { useMapTranslation } from '../locale';
 
 export const MapBlock = (props) => {
@@ -17,11 +16,10 @@ export const MapBlock = (props) => {
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
   const [record, setRecord] = useState();
   const [visible, setVisible] = useState(false);
-  const [isSelecting, setSelecting] = useState(false);
+  const [selectingMode, setSelecting] = useState('');
   const { t } = useMapTranslation();
-
-  const isSelectingRef = useRef(false);
-  isSelectingRef.current = isSelecting;
+  const selectingModeRef = useRef(selectingMode);
+  selectingModeRef.current = selectingMode;
 
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
     const extData = overlay.getExtData();
@@ -49,8 +47,9 @@ export const MapBlock = (props) => {
     mapRef.current.editor().close();
   };
 
+  // selection
   useEffect(() => {
-    if (!isSelecting) {
+    if (selectingMode !== 'selection') {
       return;
     }
     if (!mapRef.current.editor()) {
@@ -60,12 +59,21 @@ export const MapBlock = (props) => {
       mapRef.current.executeMouseTool('polygon');
     }
     return () => {
-      mapRef.current.map.getAllOverlays().forEach((o) => {
-        setOverlayOptions(o, false);
-      });
       removeSelection();
     };
-  }, [isSelecting]);
+  }, [selectingMode]);
+
+  useEffect(() => {
+    if (selectingMode) {
+      return () => {
+        if (!selectingModeRef.current) {
+          mapRef.current.map.getAllOverlays().forEach((o) => {
+            setOverlayOptions(o, false);
+          });
+        }
+      };
+    }
+  }, [selectingMode]);
 
   const onSelectingComplete = useMemoizedFn(() => {
     const selectingOverlay = mapRef.current.editor().getTarget();
@@ -109,11 +117,13 @@ export const MapBlock = (props) => {
         const overlay: AMap.Polygon | AMap.Marker = e.target;
         const extData = overlay.getExtData();
         if (!extData) return;
-        if (isSelectingRef.current) {
-          // setSelectedRecordKeys((keys) =>
-          //   extData.selected ? keys.filter((key) => key !== extData.id) : [...keys, extData.id],
-          // );
-          // return;
+        if (selectingModeRef.current) {
+          if (selectingModeRef.current === 'click') {
+            setSelectedRecordKeys((keys) =>
+              extData.selected ? keys.filter((key) => key !== extData.id) : [...keys, extData.id],
+            );
+            setOverlayOptions(overlay);
+          }
           return;
         }
         const data = dataSource?.find((item) => {
@@ -162,29 +172,22 @@ export const MapBlock = (props) => {
           z-index: 999;
         `}
       >
-        <Button
-          style={{
-            color: isSelecting ? '#F18b62' : undefined,
-            borderColor: 'currentcolor',
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            setSelecting((v) => !v);
-          }}
-          icon={<ExpandOutlined />}
-        ></Button>
-      </div>
-      <div
-        className={css`
-          position: absolute;
-          bottom: 10px;
-          right: 10px;
-          z-index: 999;
-        `}
-      >
-        <Button type="primary" onClick={onSelectingComplete}>
-          {t('Confirm Selection')}
-        </Button>
+        <Space>
+          <Select
+            allowClear
+            placeholder={t('Selecting mode')}
+            onChange={setSelecting}
+            options={[
+              { label: t('Click'), value: 'click' },
+              { label: t('Selection'), value: 'selection' },
+            ]}
+          />
+          {selectingMode === 'selection' ? (
+            <Button type="primary" onClick={onSelectingComplete}>
+              {t('Confirm Selection')}
+            </Button>
+          ) : null}
+        </Space>
       </div>
       <RecordProvider record={record}>
         <MapBlockDrawer visible={visible} setVisible={setVisible} record={null} />
