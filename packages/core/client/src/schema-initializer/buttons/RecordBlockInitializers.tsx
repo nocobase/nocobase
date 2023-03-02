@@ -114,17 +114,29 @@ const useDetailCollections = (props) => {
       key: 'detail',
       type: 'subMenu',
       title: '{{t("Details")}}',
-      children: childrenCollections.map((c) => {
-        return {
-          key: c.name,
+      children: [
+        {
+          key: collection.name,
           type: 'item',
-          title: c?.title || c.name,
+          title: collection?.title || collection.name,
           component: 'RecordReadPrettyFormBlockInitializer',
           icon: false,
-          targetCollection: c,
+          targetCollection: collection,
           actionInitializers,
-        };
-      })
+        },
+      ].concat(
+        childrenCollections.map((c) => {
+          return {
+            key: c.name,
+            type: 'item',
+            title: c?.title || c.name,
+            component: 'RecordReadPrettyFormBlockInitializer',
+            icon: false,
+            targetCollection: c,
+            actionInitializers,
+          };
+        }),
+      ),
     } as SchemaInitializerItemOptions,
   ];
   return detailCollections;
@@ -140,17 +152,29 @@ const useFormCollections = (props) => {
       key: 'form',
       type: 'subMenu',
       title: '{{t("Form")}}',
-      children: childrenCollections.map((c) => {
-        return {
-          key: c.name,
+      children: [
+        {
+          key: collection.name,
           type: 'item',
-          title: c?.title || c.name,
+          title: collection?.title || collection.name,
           component: 'RecordFormBlockInitializer',
           icon: false,
-          targetCollection: c,
+          targetCollection: collection,
           actionInitializers,
-        };
-      }),
+        },
+      ].concat(
+        childrenCollections.map((c) => {
+          return {
+            key: c.name,
+            type: 'item',
+            title: c?.title || c.name,
+            component: 'RecordFormBlockInitializer',
+            icon: false,
+            targetCollection: c,
+            actionInitializers,
+          };
+        }),
+      ),
     } as SchemaInitializerItemOptions,
   ];
   return formCollections;
@@ -167,7 +191,6 @@ export const RecordBlockInitializers = (props: any) => {
       title={component ? null : t('Add block')}
       icon={'PlusOutlined'}
       items={[
-   
         {
           type: 'itemGroup',
           children: useDetailCollections(props),
