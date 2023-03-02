@@ -166,34 +166,27 @@ const useDetailCollections = (props) => {
   const childrenCollections = getChildrenCollections(collection.name);
   const detailCollections = [
     {
-      key: 'detail',
-      type: 'subMenu',
-      title: '{{t("Details")}}',
-      children: [
-        {
-          key: collection.name,
-          type: 'item',
-          title: collection?.title || collection.name,
-          component: 'RecordReadPrettyFormBlockInitializer',
-          icon: false,
-          targetCollection: collection,
-          actionInitializers,
-        },
-      ].concat(
-        childrenCollections.map((c) => {
-          return {
-            key: c.name,
-            type: 'item',
-            title: c?.title || c.name,
-            component: 'RecordReadPrettyFormBlockInitializer',
-            icon: false,
-            targetCollection: c,
-            actionInitializers,
-          };
-        }),
-      ),
-    } as SchemaInitializerItemOptions,
-  ];
+      key: collection.name,
+      type: 'item',
+      title: collection?.title || collection.name,
+      component: 'RecordReadPrettyFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    childrenCollections.map((c) => {
+      return {
+        key: c.name,
+        type: 'item',
+        title: c?.title || c.name,
+        component: 'RecordReadPrettyFormBlockInitializer',
+        icon: false,
+        targetCollection: c,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
   return detailCollections;
 };
 
@@ -204,34 +197,28 @@ const useFormCollections = (props) => {
   const childrenCollections = getChildrenCollections(collection.name);
   const formCollections = [
     {
-      key: 'form',
-      type: 'subMenu',
-      title: '{{t("Form")}}',
-      children: [
-        {
-          key: collection.name,
-          type: 'item',
-          title: collection?.title || collection.name,
-          component: 'RecordFormBlockInitializer',
-          icon: false,
-          targetCollection: collection,
-          actionInitializers,
-        },
-      ].concat(
-        childrenCollections.map((c) => {
-          return {
-            key: c.name,
-            type: 'item',
-            title: c?.title || c.name,
-            component: 'RecordFormBlockInitializer',
-            icon: false,
-            targetCollection: c,
-            actionInitializers,
-          };
-        }),
-      ),
-    } as SchemaInitializerItemOptions,
-  ];
+      key: collection.name,
+      type: 'item',
+      title: collection?.title || collection.name,
+      component: 'RecordFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    childrenCollections.map((c) => {
+      return {
+        key: c.name,
+        type: 'item',
+        title: c?.title || c.name,
+        component: 'RecordFormBlockInitializer',
+        icon: false,
+        targetCollection: c,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+
   return formCollections;
 };
 
@@ -247,11 +234,15 @@ export const RecordBlockInitializers = (props: any) => {
       icon={'PlusOutlined'}
       items={[
         {
-          type: 'itemGroup',
+          key: 'detail',
+          type: 'subMenu',
+          title: '{{t("Details")}}',
           children: useDetailCollections(props),
         },
         {
-          type: 'itemGroup',
+          key: 'form',
+          type: 'subMenu',
+          title: '{{t("Form")}}',
           children: useFormCollections(props),
         },
         {

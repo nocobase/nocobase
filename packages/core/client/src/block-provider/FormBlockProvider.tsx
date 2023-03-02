@@ -52,16 +52,13 @@ const InternalFormBlockProvider = (props) => {
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
-  const { __tableName } = record;
-  const { getInheritCollections } = useCollectionManager();
-  const inheritCollections = getInheritCollections(__tableName);
+  const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
-  const detailFlag =
-    Object.keys(record).length>0 && !(__tableName && !inheritCollections.includes(collection) && __tableName !== collection);
+  const detailFlag = (Object.keys(record).length > 0 && designable) || __collection === collection;
   const createFlag = currentCollection.name === collection && !Object.keys(record).length;
   return (
-    (designable || detailFlag || createFlag) && (
+    (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
         <InternalFormBlockProvider {...props} />
       </BlockProvider>
