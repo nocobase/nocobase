@@ -166,6 +166,7 @@ export const MapBlock = (props) => {
     <div
       className={css`
         position: relative;
+        height: 100%;
       `}
     >
       <div
