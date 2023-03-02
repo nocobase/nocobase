@@ -8,14 +8,14 @@ import { createMapBlockSchema } from './utils';
 
 export const MapBlockInitializer = (props) => {
   const { insert } = props;
-  const { t } = useMapTranslation();
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
+  const { t } = useMapTranslation();
 
   return (
     <DataBlockInitializer
       {...props}
-      componentType={'map'}
+      componentType={'Map'}
       icon={<TableOutlined />}
       onCreateBlockSchema={async ({ item }) => {
         const mapFieldOptions = getCollectionFieldsOptions(item.name, ['point', 'lineString', 'polygon']);
