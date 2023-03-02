@@ -116,24 +116,21 @@ export const AssociationFilterItemDesigner = (props) => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          const params = field.decoratorProps.params || {};
-          params.filter = filter;
-          field.decoratorProps.params = params;
-          fieldSchema['x-decorator-props']['params'] = params;
-          const filters = associationItemService.params?.[1]?.filters || {};
-          associationItemService.run(
-            {
-              ...associationItemService.params?.[0],
-              filter: mergeFilter([...Object.values(filters), filter]),
-              page: 1,
-            },
-            { filters },
-          );
+          const serviceFilter = associationItemService.params?.[0]?.filter ?? {};
+
+          Object.assign(serviceFilter, filter);
+
+          fieldSchema['x-decorator-props']['params'] = {
+            filter: serviceFilter,
+          };
+
+          associationItemService.run({
+            ...associationItemService.params?.[0],
+            filter: serviceFilter,
+          });
+
           dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-            },
+            schema: fieldSchema,
           });
         }}
       />
