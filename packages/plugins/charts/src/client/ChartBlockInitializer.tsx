@@ -16,11 +16,9 @@ import { ChartQueryBlockInitializer, ChartQueryMetadata } from './ChartQueryBloc
 import { css } from '@emotion/css';
 import JSON5 from 'json5';
 import DataSetPreviewTable from './DataSetPreviewTable';
-import { parseDataSetString } from './utils';
 import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
-import { ChartSvgs } from './ChartSvgs';
 import { Card } from 'antd';
-import { useFieldsById } from './hooks';
+import { lang, useChartsTranslation } from './locale';
 
 export const Options = observer((props) => {
   const form = useForm<ChartFormInterface>();
@@ -54,7 +52,6 @@ interface ChartFormInterface {
 
 export const ChartBlockInitializer = (props) => {
   const { insert } = props;
-  const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
   const api = useAPIClient();
   return (
@@ -70,7 +67,7 @@ export const ChartBlockInitializer = (props) => {
           };
         });
         let values = await FormDialog({
-          title: t('Create chart block'),
+          title: lang('Create chart block'),
           width: 1200,
           bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
         }, () => {
@@ -98,7 +95,7 @@ export const ChartBlockInitializer = (props) => {
                   `
                 }>
                   {/*  left*/}
-                  <Card title={i18n.t('Chart config')} size={'small'} className={
+                  <Card title={lang('Chart config')} size={'small'} className={
                     css`
                       flex: 1
                     `
@@ -111,7 +108,7 @@ export const ChartBlockInitializer = (props) => {
                           schema={{
                             properties: {
                               type: {
-                                title: t('Chart type'),
+                                title: lang('Chart type'),
                                 required: true,
                                 'x-component': 'CustomSelect',
                                 'x-decorator': 'FormItem',
@@ -142,7 +139,7 @@ export const ChartBlockInitializer = (props) => {
                       min-width: 600px;
                     `
                   }>
-                    <Card size='small' title={'Chart Preview'}>
+                    <Card size='small' title={lang('Chart preview')}>
                       {/*  Chart Preview*/}
                       {
                         chartBlockEngineMetaData
@@ -165,7 +162,7 @@ export const ChartBlockInitializer = (props) => {
                         </>
                       }
                     </Card>
-                    <Card size='small' title={'Data preview'} className={css`margin-top: 8px`}>
+                    <Card size='small' title={lang('Data preview')} className={css`margin-top: 8px`}>
                       {/*Data preview*/}
                       {
                         chartBlockEngineMetaData?.query?.id

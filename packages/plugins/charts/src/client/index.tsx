@@ -13,7 +13,7 @@ export default React.memo((props) => {
   children.push({
     key: 'chart',
     type: 'item',
-    title: '{{t("Chart")}}',
+    title: '{{t("Chart",{ns:"charts"})}}',
     component: 'ChartBlockInitializer',
   });
   return (

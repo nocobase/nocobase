@@ -20,6 +20,7 @@ import { ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { Options } from './ChartBlockInitializer';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { useFieldsById } from './hooks';
+import { lang } from './locale';
 import { templates } from './templates';
 
 const validateJSON = {
@@ -38,7 +39,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-  message: '{{t("Invalid JSON format")}}',
+  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 export const ChartBlockEngineDesigner = () => {
@@ -80,7 +81,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       onClick={async () => {
         FormDialog(
           {
-            title: 'Edit chart block',
+            title: lang('Edit chart block'),
             width: 1200,
             bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
           },
@@ -150,7 +151,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         min-width: 600px;
                       `}
                     >
-                      <Card size="small" title={'Chart Preview'}>
+                      <Card size="small" title={lang('Chart preview')}>
                         {/*  Chart Preview*/}
                         {chartBlockEngineMetaData && (
                           <>
@@ -173,7 +174,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       </Card>
                       <Card
                         size="small"
-                        title={'Data preview'}
+                        title={lang('Data preview')}
                         className={css`
                           margin-top: 8px;
                         `}
