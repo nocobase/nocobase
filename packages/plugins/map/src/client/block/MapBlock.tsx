@@ -43,21 +43,6 @@ export const MapBlock = (props) => {
     });
   };
 
-  // When isSelecting is true, the map will be in selecting mode.
-
-  useEffect(() => {
-    mapRef.current.map?.getAllOverlays().forEach((o) => {
-      if (selectedRecordKeys.includes(o.getExtData().id)) {
-        setOverlayOptions(o, true);
-      }
-    });
-    () => {
-      mapRef.current.map?.getAllOverlays().forEach((o) => {
-        setOverlayOptions(o, false);
-      });
-    };
-  }, [selectedRecordKeys]);
-
   const removeSelection = () => {
     mapRef.current.mouseTool().close(true);
     mapRef.current.editor().setTarget(null);

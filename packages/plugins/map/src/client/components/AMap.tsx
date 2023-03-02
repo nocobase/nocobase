@@ -151,6 +151,15 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       editor.current = new aMap.current[mapping.editor](map.current, null, {
         createOptions: commonOptions,
         editOptions: commonOptions,
+        controlPoint: {
+          ...commonOptions,
+          strokeWeight: 3,
+        },
+        midControlPoint: {
+          ...commonOptions,
+          strokeWeight: 2,
+          fillColor: '#fff',
+        },
       });
       editor.current.on('adjust', function ({ target }) {
         onMapChange(target, true);
