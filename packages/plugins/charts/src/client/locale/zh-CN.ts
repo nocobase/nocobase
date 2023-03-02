@@ -24,5 +24,6 @@ export default {
   'Color legend / Dimensional':'颜色系列 / 纬度',
   'Funnel Layer Width/Metrics':'漏斗层宽度 / 度量',
   'Branch Tags/Dimensions':'分支标签 / 纬度',
-  'Branch Length/Metrics':'分支长度 / 度量'
+  'Branch Length/Metrics':'分支长度 / 度量',
+  'Please check your chart config option':'请检查您的图表配置选项'
 };

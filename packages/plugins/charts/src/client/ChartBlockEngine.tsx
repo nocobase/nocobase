@@ -7,6 +7,7 @@ import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
 import JSON5 from 'json5';
 import { ChartQueryMetadata } from './ChartQueryBlockInitializer';
 import { Empty } from 'antd';
+import { lang } from './locale';
 
 export interface ChartBlockEngineMetaData {
   query: {
@@ -61,7 +62,7 @@ const ChartRenderComponent = ({
         if (!metric || !dimension) {
           return (
             <>
-              Please check your chart config option
+              {lang('Please check your chart config option')}
             </>
           );
         }
@@ -70,7 +71,7 @@ const ChartRenderComponent = ({
         if (config._xType !== chartConfig.type) {
           return (
             <>
-              Please check your chart config option
+              {lang('Please check your chart config option')}
             </>
           );
         }
@@ -112,7 +113,9 @@ const ChartBlockEngine = ({
   }
   if (!chartType || !renderComponent) {
     return (
-      <>Please check your chart config option</>
+      <>
+        {lang('Please check your chart config option')}
+      </>
     );
   }
 
