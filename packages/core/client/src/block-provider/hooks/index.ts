@@ -229,7 +229,7 @@ export const useFilterBlockActionProps = () => {
         // 此时表示用户还没有设置过与筛选区块相关联的数据区块
         if (!targets.includes(block.name)) return;
 
-        block.filters[actionField.props.name as string] = transformToFilter(form.values);
+        block.filters[actionField.props.name as string] = transformToFilter(form.values, fieldSchema);
 
         try {
           actionField.data.loading = true;

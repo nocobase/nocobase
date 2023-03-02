@@ -10,7 +10,6 @@ export const CreateFilterActionInitializer = (props) => {
     'x-designer': 'Action.Designer',
     'x-component-props': {
       type: 'primary',
-      htmlType: 'submit',
       useProps: '{{ useFilterBlockActionProps }}',
     },
   };

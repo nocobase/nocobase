@@ -1,6 +1,6 @@
 import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';
@@ -11,7 +11,7 @@ import { SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 
-const findFilterOperators = (fieldSchema) => {
+export const findFilterOperators = (fieldSchema: Schema) => {
   while (fieldSchema) {
     if (fieldSchema['x-filter-operators']) {
       return {
@@ -508,7 +508,6 @@ export const EditPattern = () => {
 
 export const EditOperator = () => {
   const compile = useCompile();
-  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { dn } = useDesignable();

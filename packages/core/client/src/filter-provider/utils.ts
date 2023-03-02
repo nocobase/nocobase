@@ -1,4 +1,6 @@
+import { Schema } from '@formily/react';
 import { useCollection } from '../collection-manager';
+import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
 export enum FilterBlockType {
@@ -32,12 +34,14 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   }
 };
 
-export const transformToFilter = (values: Record<string, any>) => {
+export const transformToFilter = (values: Record<string, any>, fieldSchema: Schema) => {
+  const { operators } = findFilterOperators(fieldSchema);
+
   return {
     $and: Object.keys(values).map((key) => {
       return {
         [key]: {
-          $includes: values[key],
+          [operators[key]]: values[key],
         },
       };
     }),
