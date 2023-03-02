@@ -7,14 +7,14 @@ import {
   useCompile
 } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
-import { Instruction, instructions, Node } from './nodes';
+import { Instruction, instructions } from './nodes';
 import { addButtonClass } from './style';
 import { NAMESPACE } from './locale';
 
 
 interface AddButtonProps {
   upstream;
-  branchIndex?: number;
+  branchIndex?: number | null;
 };
 
 export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
@@ -31,11 +31,11 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     const config = {};
     const [optionKey] = keyPath;
     if (optionKey) {
-      const { value } = instructions.get(type).options.find(item => item.key === optionKey);
+      const { value } = instructions.get(type)?.options?.find(item => item.key === optionKey) ?? {};
       Object.assign(config, value);
     }
 
-    const { data: { data: node } } = await resource.create({
+    const { data: { data: node } } = await resource.create!({
       values: {
         type,
         upstreamId: upstream?.id ?? null,
@@ -50,6 +50,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const groups = [
     { value: 'control', name: `{{t("Control", { ns: "${NAMESPACE}" })}}` },
     { value: 'collection', name: `{{t("Collection operations", { ns: "${NAMESPACE}" })}}` },
+    { value: 'manual', name: `{{t("Manual", { ns: "${NAMESPACE}" })}}` },
     { value: 'extended', name: `{{t("Extended types", { ns: "${NAMESPACE}" })}}` },
   ];
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);

@@ -1,4 +1,5 @@
 import Duration from "../components/Duration";
+import { JOB_STATUS } from "../constants";
 import { NAMESPACE } from "../locale";
 
 export default {
@@ -12,7 +13,8 @@ export default {
       title: `{{t("Duration", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Duration',
-      default: 60000
+      default: 60000,
+      required: true
     },
     'config.endStatus': {
       type: 'number',
@@ -24,9 +26,10 @@ export default {
         placeholder: `{{t("Select status", { ns: "${NAMESPACE}" })}}`,
       },
       enum: [
-        { label: `{{t("Succeed and continue", { ns: "${NAMESPACE}" })}}`, value: 1 },
-        { label: `{{t("Fail and exit", { ns: "${NAMESPACE}" })}}`, value: -1 },
-      ]
+        { label: `{{t("Succeed and continue", { ns: "${NAMESPACE}" })}}`, value: JOB_STATUS.RESOLVED },
+        { label: `{{t("Fail and exit", { ns: "${NAMESPACE}" })}}`, value: JOB_STATUS.FAILED },
+      ],
+      required: true
     }
   },
   view: {

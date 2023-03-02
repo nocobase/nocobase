@@ -11,9 +11,11 @@ export function afterCreateForForeignKeyField(db: Database) {
     const M = collection.model;
 
     const attr = M.rawAttributes[foreignKey];
+
     if (!attr) {
       throw new Error(`${collectionName}.${foreignKey} does not exists`);
     }
+
     return attribute2field(attr);
   }
 
@@ -148,7 +150,9 @@ export function afterCreateForForeignKeyField(db: Database) {
             hidden: true,
             autoCreate: true,
             isThrough: true,
+            sortable: false,
           },
+          context,
           transaction,
         });
       }

@@ -2,10 +2,8 @@ import { omit } from 'lodash';
 import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
-import { Repository } from '../repository';
 import { checkIdentifier } from '../utils';
 import { BelongsToField } from './belongs-to-field';
-import { ValueParser } from './field';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
@@ -124,48 +122,6 @@ export class BelongsToManyField extends RelationField {
 
     this.clearAccessors();
     delete collection.model.associations[this.name];
-  }
-
-  buildValueParser(ctx: any) {
-    return new ToManyValueParser(this, ctx);
-  }
-}
-
-export class ToManyValueParser extends ValueParser {
-  async setValue(value: any) {
-    const fieldNames = this.getFileNames();
-    console.log('fieldNames', fieldNames, this.ctx.column);
-    if (this.isInterface('chinaRegion')) {
-      const repository = this.field.database.getRepository(this.field.target) as Repository;
-      this.value = await Promise.all(
-        value.split('/').map(async (v) => {
-          const instance = await repository.findOne({ filter: { [fieldNames.label]: v.trim() } });
-          return instance ? instance.get(fieldNames.value) : v;
-        }),
-      );
-    } else {
-      const dataIndex = this.ctx?.column?.dataIndex || [];
-      if (Array.isArray(dataIndex) && dataIndex.length < 2) {
-        return;
-      }
-      const field = this.ctx.column.dataIndex[1];
-      const repository = this.field.database.getRepository(this.field.target) as Repository;
-      this.value = await Promise.all(
-        value.split(',').map(async (v) => {
-          const instance = await repository.findOne({ filter: { [field]: v.trim() } });
-          return instance ? instance.get(fieldNames.value) : v;
-        }),
-      );
-    }
-  }
-
-  getFileNames() {
-    const fieldNames = this.field.options?.uiSchema?.['x-component-props']?.['fieldNames'] || {};
-    return { label: 'id', value: 'id', ...fieldNames };
-  }
-
-  isInterface(name) {
-    return this.field.options.interface === name;
   }
 }
 

@@ -4,13 +4,178 @@ import { Button, Select } from "antd";
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
+import { Registry } from "@nocobase/utils/client";
+import { Variable, useCompile } from "@nocobase/client";
+import evaluators, { renderReference } from "@nocobase/evaluators/client";
+
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
 import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { Calculation } from "../calculators";
 import { lang, NAMESPACE } from "../locale";
+import { useWorkflowVariableOptions } from "../variable";
+import { RadioWithTooltip, RadioWithTooltipOption } from "../components/RadioWithTooltip";
 
+interface Calculator {
+  name: string;
+  type: 'boolean' | 'number' | 'string' | 'date' | 'unknown' | 'null' | 'array';
+  group: string;
+}
+
+export const calculators = new Registry<Calculator>();
+
+calculators.register('equal', {
+  name: '=',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('notEqual', {
+  name: '≠',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('gt', {
+  name: '>',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('gte', {
+  name: '≥',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('lt', {
+  name: '<',
+  type: 'boolean',
+  group: 'boolean',
+});
+calculators.register('lte', {
+  name: '≤',
+  type: 'boolean',
+  group: 'boolean',
+});
+
+calculators.register('add', {
+  name: '+',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('minus', {
+  name: '-',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('multiple', {
+  name: '*',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('divide', {
+  name: '/',
+  type: 'number',
+  group: 'number',
+});
+calculators.register('mod', {
+  name: '%',
+  type: 'number',
+  group: 'number',
+});
+
+calculators.register('includes', {
+  name: '{{t("contains")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notIncludes', {
+  name: '{{t("does not contain")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('startsWith', {
+  name: '{{t("starts with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notStartsWith', {
+  name: '{{t("not starts with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('endsWith', {
+  name: '{{t("ends with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('notEndsWith', {
+  name: '{{t("not ends with")}}',
+  type: 'boolean',
+  group: 'string'
+});
+calculators.register('concat', {
+  name: `{{t("concat", { ns: "${NAMESPACE}" })}}`,
+  type: 'string',
+  group: 'string'
+});
+
+const calculatorGroups = [
+  {
+    value: 'boolean',
+    title: '{{t("Comparision")}}',
+  },
+  {
+    value: 'number',
+    title: `{{t("Arithmetic calculation", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: 'string',
+    title: `{{t("String operation", { ns: "${NAMESPACE}" })}}`,
+  },
+  {
+    value: 'date',
+    title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
+  }
+];
+
+function getGroupCalculators(group) {
+  return Array.from(calculators.getEntities()).filter(([key, value]) => value.group  === group);
+}
+
+export function Calculation({ calculator, operands = [], onChange }) {
+  const compile = useCompile();
+  const options = useWorkflowVariableOptions();
+  return (
+    <fieldset className={css`
+      display: flex;
+      gap: .5em;
+      align-items: center;
+      flex-wrap: wrap;
+    `}>
+      <Variable.Input
+        value={operands[0]}
+        onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))}
+        scope={options}
+      />
+      <Select
+        value={calculator}
+        onChange={v => onChange({ operands, calculator: v })}
+        placeholder={lang('Calculator')}
+      >
+        {calculatorGroups.filter(group => Boolean(getGroupCalculators(group.value).length)).map(group => (
+          <Select.OptGroup key={group.value} label={compile(group.title)}>
+            {getGroupCalculators(group.value).map(([value, { name }]) => (
+              <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
+            ))}
+          </Select.OptGroup>
+        ))}
+      </Select>
+      <Variable.Input
+        value={operands[1]}
+        onChange={(v => onChange({ calculator, operands: [operands[0], v] }))}
+        scope={options}
+      />
+    </fieldset>
+  );
+}
 
 
 function CalculationItem({ value, onChange, onRemove }) {
@@ -18,7 +183,7 @@ function CalculationItem({ value, onChange, onRemove }) {
     return null;
   }
 
-  const { calculator, operands = [null] } = value;
+  const { calculator, operands = [] } = value;
 
   return (
     <div className={css`
@@ -73,12 +238,10 @@ function CalculationGroup({ value, onChange }) {
     <div className={cx('node-type-condition-group', css`
       position: relative;
       width: 100%;
-
       .node-type-condition-group{
         padding: .5em 1em;
         border: 1px dashed #ddd;
       }
-
       + button{
         position: absolute;
         right: 0;
@@ -88,7 +251,6 @@ function CalculationGroup({ value, onChange }) {
         display: flex;
         align-items: center;
         gap: .5em;
-
         .ant-select{
           width: auto;
           min-width: 6em;
@@ -116,7 +278,6 @@ function CalculationGroup({ value, onChange }) {
       <div className={css`
         button{
           padding: 0;
-
           &:not(:last-child){
             margin-right: 1em;
           }
@@ -155,28 +316,85 @@ export default {
       enum: [
         {
           value: true,
-          label: lang('Continue when "Yes"')
+          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`
         },
         {
           value: false,
-          label: lang('Branch into "Yes" and "No"')
+          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`
         }
       ],
+    },
+    'config.engine': {
+      type: 'string',
+      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
+      name: 'config.engine',
+      'x-decorator': 'FormItem',
+      'x-component': 'RadioWithTooltip',
+      'x-component-props': {
+        options: [
+          ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
+          ...Array.from(evaluators.getEntities())
+        ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
+      },
+      required: true,
+      default: 'basic',
     },
     'config.calculation': {
       type: 'string',
       name: 'config.calculation',
-      title: `{{t("Conditions", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
+      'x-reactions': {
+        dependencies: ['config.engine'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] === "basic"}}'
+          }
+        }
+      },
+      required: true
+    },
+    'config.expression': {
+      type: 'string',
+      title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
+      name: 'config.expression',
+      'x-decorator': 'FormItem',
+      'x-component': 'Variable.TextArea',
+      'x-component-props': {
+        scope: '{{useWorkflowVariableOptions}}'
+      },
+      ['x-validator'](value, rules, { form }) {
+        const { values } = form;
+        const { evaluate } = evaluators.get(values.config.engine);
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
+        try {
+          evaluate(exp);
+          return '';
+        } catch (e) {
+          return lang('Expression syntax error');
+        }
+      },
+      'x-reactions': {
+        dependencies: ['config.engine'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] !== "basic"}}'
+          },
+          schema: {
+            description: '{{renderReference($deps[0])}}',
+          }
+        }
+      },
+      required: true
     }
   },
   view: {
 
   },
   options: [
-    { label: lang('Continue when "Yes"'), key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: lang('Branch into "Yes" and "No"'), key: 'branch', value: { rejectOnFalse: false } }
+    { label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`, key: 'rejectOnFalse', value: { rejectOnFalse: true } },
+    { label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`, key: 'branch', value: { rejectOnFalse: false } }
   ],
   render(data) {
     const { t } = useTranslation();
@@ -224,7 +442,12 @@ export default {
       </NodeDefaultView>
     )
   },
+  scope: {
+    renderReference,
+    useWorkflowVariableOptions
+  },
   components: {
-    CalculationConfig
+    CalculationConfig,
+    RadioWithTooltip
   }
 };

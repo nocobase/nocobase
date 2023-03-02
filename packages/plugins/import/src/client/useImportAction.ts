@@ -22,6 +22,13 @@ const useImportSchema = (s: Schema) => {
   return { schema };
 };
 
+const toArr = (v: any) => {
+  if (!v || !Array.isArray(v)) {
+    return [];
+  }
+  return v;
+};
+
 export const useDownloadXlsxTemplateAction = () => {
   const { service, resource } = useBlockRequestContext();
   const apiClient = useAPIClient();
@@ -34,14 +41,11 @@ export const useDownloadXlsxTemplateAction = () => {
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      const columns = importColumns
+      const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
           if (!field) {
             return;
-          }
-          if (field.interface === 'chinaRegion') {
-            column.dataIndex.push('name');
           }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
@@ -50,6 +54,9 @@ export const useDownloadXlsxTemplateAction = () => {
               return;
             }
             column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
+          }
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
           }
           return column;
         })
@@ -88,14 +95,11 @@ export const useImportStartAction = () => {
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      const columns = importColumns
+      const columns = toArr(importColumns)
         .map((column) => {
           const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
           if (!field) {
             return;
-          }
-          if (field.interface === 'chinaRegion') {
-            column.dataIndex.push('name');
           }
           column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
           if (column.dataIndex.length > 1) {
@@ -105,12 +109,14 @@ export const useImportStartAction = () => {
             }
             column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
           }
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
+          }
           return column;
         })
         .filter(Boolean);
       let formData = new FormData();
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
-      console.log(form, uploadFiles);
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);

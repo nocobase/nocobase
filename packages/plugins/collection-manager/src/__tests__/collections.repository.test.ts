@@ -1,6 +1,7 @@
 import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
+import CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
 
 describe('collections repository', () => {
   let db: Database;
@@ -17,6 +18,49 @@ describe('collections repository', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should set collection schema from env', async () => {
+    if (!db.inDialect('postgres')) {
+      return;
+    }
+
+    const plugin = app.getPlugin<CollectionManagerPlugin>('collection-manager');
+    plugin.schema = 'testSchema';
+
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection.options.schema).toEqual('testSchema');
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'posts',
+        type: 'belongsToMany',
+        target: 'posts',
+        through: 'posts_tags',
+        foreignKey: 'tag_id',
+        otherKey: 'post_id',
+        interface: 'm2m',
+        collectionName: 'tags',
+      },
+      context: {},
+    });
+
+    const throughCollection = db.getCollection('posts_tags');
+    expect(throughCollection.options.schema).toEqual('testSchema');
   });
 
   test('create underscored field', async () => {
@@ -342,5 +386,173 @@ describe('collections repository', () => {
 
     const tableInfo4 = await getTableInfo();
     expect(tableInfo4['test_field']).not.toBeDefined();
+  });
+
+  it('should destroy relation field after foreignKey destroyed', async () => {
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'c1Z',
+        fields: [
+          {
+            type: 'string',
+            name: 'a',
+          },
+        ],
+      },
+    });
+
+    await Collection.repository.create({
+      context: {},
+      values: {
+        name: 'c2Z',
+      },
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        foreignKey: 'a',
+        target: 'c2Z',
+        type: 'belongsTo',
+        collectionName: 'c1Z',
+        interface: 'm2o',
+      },
+      context: {},
+    });
+
+    const foreignKey = await Field.repository.findOne({
+      filter: {
+        collectionName: 'c1Z',
+        name: 'a',
+      },
+    });
+
+    expect(foreignKey.get('isForeignKey')).toBeTruthy();
+
+    await Field.repository.destroy({
+      filter: {
+        name: 'a',
+      },
+      context: {},
+    });
+
+    expect(await Field.repository.findOne({ filter: { name: 'g1' } })).toBeFalsy();
+  });
+
+  it('should create field normal when repeat create and destroy', async () => {
+    const c1Z = await Collection.repository.create({
+      values: {
+        name: 'c1Z',
+      },
+      context: {},
+    });
+
+    const c2Z = await Collection.repository.create({
+      values: {
+        name: 'c2Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'a',
+        type: 'string',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'b',
+        type: 'integer',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g2',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'b',
+        collectionName: 'c1Z',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g3',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a',
+        collectionName: 'c1Z',
+        interface: 'm2o',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g1',
+        type: 'hasMany',
+        target: 'c1Z',
+        foreignKey: 'a',
+        collectionName: 'c2Z',
+        interface: 'o2m',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'g2',
+        type: 'hasMany',
+        target: 'c1Z',
+        foreignKey: 'b',
+        collectionName: 'c2Z',
+        interface: 'o2m',
+      },
+      context: {},
+    });
+
+    await Field.repository.destroy({
+      filter: {
+        collectionName: 'c1Z',
+        name: ['a', 'b'],
+      },
+      context: {},
+    });
+
+    expect(await Field.repository.count()).toBe(0);
+
+    await Field.repository.create({
+      values: {
+        name: 'g5',
+        type: 'belongsTo',
+        target: 'c2Z',
+        foreignKey: 'a1',
+        collectionName: 'c1Z',
+        interface: 'm2o',
+      },
+      context: {},
+    });
+
+    expect(await Field.repository.count()).toBe(2);
   });
 });

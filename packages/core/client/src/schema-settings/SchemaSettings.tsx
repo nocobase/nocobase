@@ -1,7 +1,8 @@
 import { css } from '@emotion/css';
-import { FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
+import _ from 'lodash';
 import { uid } from '@formily/shared';
 import {
   Alert,
@@ -33,11 +34,16 @@ import {
   useActionContext,
   useAPIClient,
   useCollection,
+  useCollectionManager,
   useCompile,
   useDesignable,
+  useCollectionFilterOptions,
 } from '..';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { FormLinkageRules } from './LinkageRules';
+import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -135,7 +141,9 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 SchemaSettings.Template = (props) => {
   const { componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
+  const compile = useCompile();
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -165,6 +173,7 @@ SchemaSettings.Template = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -176,6 +185,7 @@ SchemaSettings.Template = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${t(componentName)}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -218,7 +228,7 @@ const findGridSchema = (fieldSchema) => {
   return fieldSchema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'FormV2') {
       const f = s.reduceProperties((buf, s) => {
-        if (s['x-component'] === 'Grid') {
+        if (s['x-component'] === 'Grid' || s['x-component'] === 'BlockTemplate') {
           return s;
         }
         return buf;
@@ -251,6 +261,8 @@ const findBlockTemplateSchema = (fieldSchema) => {
 SchemaSettings.FormItemTemplate = (props) => {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
+  const compile = useCompile();
+  const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
   const api = useAPIClient();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
@@ -298,8 +310,13 @@ SchemaSettings.FormItemTemplate = (props) => {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
+        const { title } = getCollection(collectionName);
         const gridSchema = findGridSchema(fieldSchema);
         const values = await FormDialog(t('Save as template'), () => {
+          const componentTitle = {
+            FormItem: t('Form'),
+            ReadPrettyFormItem: t('Details'),
+          };
           return (
             <FormLayout layout={'vertical'}>
               <SchemaComponent
@@ -310,6 +327,7 @@ SchemaSettings.FormItemTemplate = (props) => {
                     name: {
                       title: t('Template name'),
                       required: true,
+                      default: `${compile(title)}_${componentTitle[componentName] || componentName}`,
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -616,6 +634,7 @@ SchemaSettings.ModalItem = (props) => {
     onSubmit,
     asyncGetInitialValues,
     initialValues,
+    width,
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -628,7 +647,7 @@ SchemaSettings.ModalItem = (props) => {
       {...others}
       onClick={async () => {
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
-        FormDialog(schema.title || title, () => {
+        FormDialog({ title: schema.title || title, width }, () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
@@ -687,6 +706,64 @@ SchemaSettings.BlockTitleItem = () => {
             ['x-uid']: fieldSchema['x-uid'],
             'x-component-props': fieldSchema['x-component-props'],
           },
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.LinkageRules = (props) => {
+  const { collectionName } = props;
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const { getTemplateById } = useSchemaTemplateManager();
+  const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
+  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Linkage rules')}
+      components={{ ArrayCollapse, FormLayout }}
+      width={750}
+      schema={
+        {
+          type: 'object',
+          title: t('Linkage rules'),
+          properties: {
+            fieldReaction: {
+              'x-component': FormLinkageRules,
+              'x-component-props': {
+                useProps: () => {
+                  const options = useCollectionFilterOptions(collectionName);
+                  return {
+                    options,
+                    defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
+                    type,
+                    linkageOptions: useLinkageCollectionFieldOptions(collectionName),
+                    collectionName,
+                  };
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(v) => {
+        const rules = [];
+        for (const rule of v.fieldReaction.rules) {
+          rules.push(_.pickBy(rule, _.identity));
+        }
+        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
+        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+        const schema = {
+          ['x-uid']: uid,
+        };
+
+        gridSchema['x-linkage-rules'] = rules;
+        schema['x-linkage-rules'] = rules;
+        dn.emit('patch', {
+          schema,
         });
         dn.refresh();
       }}

@@ -1,12 +1,12 @@
 # BlockProvider
 
-## 内核方法
+## Kernel Methods
 
 ### `<BlockProvider />`
 
 ### `useBlockRequestContext()`
 
-## 内置 BlockProvider 组件
+## Build-in BlockProvider Components
 
 ### `<CalendarBlockProvider />`
 

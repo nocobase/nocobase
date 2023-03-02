@@ -20,7 +20,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
         service,
         interfaces: { ...defaultInterfaces, ...ctx.interfaces, ...interfaces },
         templates: { ...defaultTemplates, ...templates },
-        collections,
+        collections: [...ctx.collections, ...collections],
         refreshCM,
       }}
     >
@@ -38,7 +38,7 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     action: 'list',
     params: {
       paginate: false,
-      appends: ['fields', 'fields.uiSchema','category'],
+      appends: ['fields', 'fields.uiSchema', 'category'],
       filter: {
         // inherit: false,
       },
@@ -75,13 +75,13 @@ export const RemoteCollectionManagerProvider = (props: any) => {
 
 export const CollectionCategroriesProvider = (props) => {
   const api = useAPIClient();
-  const options={
+  const options = {
     url: 'collectionCategories:list',
     params: {
       paginate: false,
-      sort:['sort']
+      sort: ['sort'],
     },
-  }
+  };
   const result = useRequest(options);
   if (result.loading) {
     return <Spin />;
@@ -91,11 +91,11 @@ export const CollectionCategroriesProvider = (props) => {
       value={{
         ...result,
         data: result?.data?.data,
-        refresh:async ()=>{
+        refresh: async () => {
           const { data } = await api.request(options);
           result.mutate(data);
           return data?.data || [];
-        }
+        },
       }}
     >
       {props.children}

@@ -63,6 +63,7 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
+import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -104,6 +105,30 @@ export type AddMigrationsOptions = {
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
 
+export const DialectVersionAccessors = {
+  sqlite: {
+    sql: 'select sqlite_version() as version',
+    get: (v: string) => v,
+  },
+  mysql: {
+    sql: 'select version() as version',
+    get: (v: string) => {
+      if (v.toLowerCase().includes('mariadb')) {
+        return '';
+      }
+      const m = /([\d+\.]+)/.exec(v);
+      return m[0];
+    },
+  },
+  postgres: {
+    sql: 'select version() as version',
+    get: (v: string) => {
+      const m = /([\d+\.]+)/.exec(v);
+      return semver.minVersion(m[0]).version;
+    },
+  },
+};
+
 class DatabaseVersion {
   db: Database;
 
@@ -112,33 +137,14 @@ class DatabaseVersion {
   }
 
   async satisfies(versions) {
-    const dialects = {
-      sqlite: {
-        sql: 'select sqlite_version() as version',
-        get: (v) => v,
-      },
-      mysql: {
-        sql: 'select version() as version',
-        get: (v) => {
-          const m = /([\d+\.]+)/.exec(v);
-          return m[0];
-        },
-      },
-      postgres: {
-        sql: 'select version() as version',
-        get: (v) => {
-          const m = /([\d+\.]+)/.exec(v);
-          return semver.minVersion(m[0]).version;
-        },
-      },
-    };
-    for (const dialect of Object.keys(dialects)) {
+    const accessors = DialectVersionAccessors;
+    for (const dialect of Object.keys(accessors)) {
       if (this.db.inDialect(dialect)) {
         if (!versions?.[dialect]) {
           return false;
         }
-        const [result] = (await this.db.sequelize.query(dialects[dialect].sql)) as any;
-        return semver.satisfies(dialects[dialect].get(result?.[0]?.version), versions[dialect]);
+        const [result] = (await this.db.sequelize.query(accessors[dialect].sql)) as any;
+        return semver.satisfies(accessors[dialect].get(result?.[0]?.version), versions[dialect]);
       }
     }
     return false;
@@ -150,6 +156,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   migrator: Umzug;
   migrations: Migrations;
   fieldTypes = new Map();
+  fieldValueParsers = new Map();
   options: IDatabaseOptions;
   models = new Map<string, ModelStatic<Model>>();
   repositories = new Map<string, RepositoryType>();
@@ -172,6 +179,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   constructor(options: DatabaseOptions) {
     super();
+
     this.version = new DatabaseVersion(this);
 
     const opts = {
@@ -226,6 +234,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         [key]: field,
       });
     }
+
+    registerFieldValueParsers(this);
 
     this.initOperators();
 
@@ -304,6 +314,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
           model.rawAttributes['id'].type = DataTypes.BIGINT;
           model.refreshAttributes();
         }
+      }
+    });
+
+    this.on('afterUpdateCollection', (collection, options) => {
+      if (collection.options.schema) {
+        collection.model._schema = collection.options.schema;
       }
     });
 
@@ -394,6 +410,31 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.options.tablePrefix || '';
   }
 
+  getFieldByPath(path: string) {
+    if (!path) {
+      return;
+    }
+
+    const [collectionName, associationName, ...args] = path.split('.');
+    let collection = this.getCollection(collectionName);
+
+    if (!collection) {
+      return;
+    }
+
+    const field = collection.getField(associationName);
+
+    if (!field) {
+      return;
+    }
+
+    if (args.length > 0) {
+      return this.getFieldByPath(`${field?.target}.${args.join('.')}`);
+    }
+
+    return field;
+  }
+
   /**
    * get exists collection by its name
    * @param name
@@ -471,6 +512,20 @@ export class Database extends EventEmitter implements AsyncEmitter {
     for (const [type, fieldType] of Object.entries(fieldTypes)) {
       this.fieldTypes.set(type, fieldType);
     }
+  }
+
+  registerFieldValueParsers(parsers: MapOf<any>) {
+    for (const [type, parser] of Object.entries(parsers)) {
+      this.fieldValueParsers.set(type, parser);
+    }
+  }
+
+  buildFieldValueParser<T extends BaseValueParser>(field: Field, ctx: any) {
+    const Parser = this.fieldValueParsers.has(field.type)
+      ? this.fieldValueParsers.get(field.type)
+      : this.fieldValueParsers.get('default');
+    const parser = new Parser(field, ctx);
+    return parser as T;
   }
 
   registerModels(models: MapOf<ModelStatic<any>>) {
@@ -607,6 +662,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     };
     return await authenticate();
+  }
+
+  async prepare() {
+    if (this.inDialect('postgres') && this.options.schema && this.options.schema != 'public') {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${this.options.schema}"`, null);
+    }
   }
 
   async reconnect() {

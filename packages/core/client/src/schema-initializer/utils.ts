@@ -1,8 +1,8 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
@@ -427,10 +427,18 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   }
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
+  const ctx = useContext(BlockRequestContext);
+  const exists = !!schema;
+
   return {
     schema,
     exists: !!schema,
     remove() {
+      if (ctx.field) {
+        ctx.field.data = ctx.field.data || {};
+        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+        ctx.field.data.activeFields.delete(schema.name);
+      }
       schema && rm(schema, remove);
     },
   };
@@ -807,10 +815,20 @@ export const createReadPrettyFormBlockSchema = (options) => {
 };
 
 export const createTableBlockSchema = (options) => {
-  const { collection, resource, rowKey, ...others } = options;
+  const {
+    collection,
+    resource,
+    rowKey,
+    tableActionInitializers,
+    tableColumnInitializers,
+    tableActionColumnInitializers,
+    tableBlockProvider,
+    template,
+    ...others
+  } = options;
   const schema: ISchema = {
     type: 'void',
-    'x-decorator': 'TableBlockProvider',
+    'x-decorator': tableBlockProvider ?? 'TableBlockProvider',
     'x-acl-action': `${resource || collection}:list`,
     'x-decorator-props': {
       collection,
@@ -822,6 +840,7 @@ export const createTableBlockSchema = (options) => {
       rowKey,
       showIndex: true,
       dragSort: false,
+      template: template ?? true,
       ...others,
     },
     'x-designer': 'TableBlockDesigner',
@@ -829,7 +848,7 @@ export const createTableBlockSchema = (options) => {
     properties: {
       actions: {
         type: 'void',
-        'x-initializer': 'TableActionInitializers',
+        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
@@ -840,7 +859,7 @@ export const createTableBlockSchema = (options) => {
       },
       [uid()]: {
         type: 'array',
-        'x-initializer': 'TableColumnInitializers',
+        'x-initializer': tableColumnInitializers ?? 'TableColumnInitializers',
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
@@ -857,7 +876,7 @@ export const createTableBlockSchema = (options) => {
             'x-decorator': 'TableV2.Column.ActionBar',
             'x-component': 'TableV2.Column',
             'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': 'TableActionColumnInitializers',
+            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
             properties: {
               actions: {
                 type: 'void',

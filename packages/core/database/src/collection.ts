@@ -351,9 +351,9 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-    this.options = newOptions;
 
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
+    this.options = newOptions;
 
     this.setFields(options.fields, false);
     this.setRepository(options.repository);
@@ -488,12 +488,18 @@ export class Collection<
 
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
-      indexes.map((item) => {
-        if (this.options.underscored) {
-          item.fields = item.fields.map((field) => snakeCase(field));
-        }
-        return item;
-      }),
+      indexes
+        .filter((item) => {
+          return item.fields.every((field) =>
+            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
+          );
+        })
+        .map((item) => {
+          if (this.options.underscored) {
+            item.fields = item.fields.map((field) => snakeCase(field));
+          }
+          return item;
+        }),
       'name',
     );
   }

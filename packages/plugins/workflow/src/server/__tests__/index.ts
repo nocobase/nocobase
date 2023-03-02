@@ -1,13 +1,13 @@
-import { MockServer, mockServer } from '@nocobase/test';
 import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
+import { MockServer, mockServer } from '@nocobase/test';
+
 import Plugin from '..';
-import calculators from '../calculators';
 import { JOB_STATUS } from '../constants';
 
 export function sleep(ms: number) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, ms);
   });
 }
@@ -23,43 +23,56 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
     name: 'workflow',
     instructions: {
       echo: {
-        run(node, { result }, execution) {
+        run(node, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result,
+            result
           };
-        },
+        }
       },
 
       error: {
-        run(node, input, execution) {
+        run(node, input, processor) {
           throw new Error('definite error');
-        },
+        }
       },
 
       'prompt->error': {
-        run(node, input, execution) {
+        run(node, input, processor) {
           return {
-            status: JOB_STATUS.PENDING,
+            status: JOB_STATUS.PENDING
           };
         },
-        resume(node, input, execution) {
+        resume(node, input, processor) {
           throw new Error('input failed');
-        },
+        }
+      },
+
+      customizedSuccess: {
+        run(node, input, processor) {
+          return {
+            status: 100
+          }
+        }
+      },
+
+      customizedError: {
+        run(node, input, processor) {
+          return {
+            status: -100
+          }
+        }
       },
     },
+    functions: {
+      no1: () => 1
+    }
   });
-
-  if (!calculators.get('no1')) {
-    calculators.register('no1', () => 1);
-  }
-
-  await app.db.clean({ drop: true });
 
   await app.load();
 
   await app.db.import({
-    directory: path.resolve(__dirname, './collections'),
+    directory: path.resolve(__dirname, './collections')
   });
 
   try {

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
+import { uid } from '@formily/shared';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
@@ -59,7 +60,7 @@ export const useFixedBlockDesignerSetting = () => {
     return (
       <SchemaSettings.SwitchItem
         title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']['fixedBlock']}
+        checked={fieldSchema['x-decorator-props']?.fixedBlock}
         onChange={async (fixedBlock) => {
           const decoratorProps = {
             ...fieldSchema['x-decorator-props'],
