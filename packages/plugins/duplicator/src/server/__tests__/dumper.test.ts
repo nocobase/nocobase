@@ -29,7 +29,7 @@ describe('dumper', () => {
     const dump = new Dumper(app);
     const dumpableCollections = await dump.dumpableCollections();
 
-    expect((dumpableCollections.collectionGroups || []).length).toBeGreaterThan(0);
-    expect(dumpableCollections.userCollections[0]).toEqual('test_collection');
+    expect((dumpableCollections.requiredGroups || []).length).toBeGreaterThan(0);
+    expect(dumpableCollections.userCollections[0]['name']).toEqual('test_collection');
   });
 });
