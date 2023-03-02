@@ -1,27 +1,26 @@
-import { ISchema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
-import React, { useCallback, useContext, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { css } from '@emotion/css';
+import { FormDialog, FormLayout } from '@formily/antd';
+import { SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import {
   APIClientProvider,
-  FormProvider,
-  GeneralSchemaDesigner, i18n,
+  GeneralSchemaDesigner,
+  i18n,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaSettings,
   useAPIClient,
   useCompile,
-  useDesignable,
+  useDesignable
 } from '@nocobase/client';
-import { FormDialog, FormLayout } from '@formily/antd';
-import { Options } from './ChartBlockInitializer';
-import { templates } from './templates';
-import { css } from '@emotion/css';
+import { Card } from 'antd';
 import JSON5 from 'json5';
-import DataSetPreviewTable from './DataSetPreviewTable';
-import { Button, Card } from 'antd';
-import { parseDataSetString } from './utils';
+import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChartBlockEngineMetaData } from './ChartBlockEngine';
+import { Options } from './ChartBlockInitializer';
+import DataSetPreviewTable from './DataSetPreviewTable';
 import { useFieldsById } from './hooks';
+import { templates } from './templates';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -47,9 +46,7 @@ export const ChartBlockEngineDesigner = () => {
   const { chartBlockEngineMetaData } = fieldSchema?.['x-component-props'];
   return (
     <GeneralSchemaDesigner>
-      <ChartBlockEngineDesignerInitializer
-        chartBlockEngineMetaData={chartBlockEngineMetaData}
-      />
+      <ChartBlockEngineDesignerInitializer chartBlockEngineMetaData={chartBlockEngineMetaData} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
@@ -62,58 +59,60 @@ export const ChartBlockEngineDesigner = () => {
 };
 
 export const ChartBlockEngineDesignerInitializer = (props) => {
-    const { chartBlockEngineMetaData }: { chartBlockEngineMetaData: ChartBlockEngineMetaData } = props;
-    const { t } = useTranslation();
-    const options = useContext(SchemaOptionsContext);
-    const { dn } = useDesignable();
-    const fieldSchema = useFieldSchema();
-    const api = useAPIClient();
-    const field = useField();
-    const compiler = useCompile();
-    const { chart, query } = chartBlockEngineMetaData;
-    const { fields } = useFieldsById(query.id);
-    const dataSource = fields.map(field => {
-      return {
-        label: field.name,
-        value: field.name,
-      };
-    });
-    return (
-      <SchemaSettings.Item
-        onClick={async () => {
-          FormDialog({
+  const { chartBlockEngineMetaData }: { chartBlockEngineMetaData: ChartBlockEngineMetaData } = props;
+  const { t } = useTranslation();
+  const options = useContext(SchemaOptionsContext);
+  const { dn } = useDesignable();
+  const fieldSchema = useFieldSchema();
+  const api = useAPIClient();
+  const field = useField();
+  const compiler = useCompile();
+  const { chart, query } = chartBlockEngineMetaData;
+  const { fields } = useFieldsById(query.id);
+  const dataSource = fields.map((field) => {
+    return {
+      label: field.name,
+      value: field.name,
+    };
+  });
+  return (
+    <SchemaSettings.Item
+      onClick={async () => {
+        FormDialog(
+          {
             title: 'Edit chart block',
             width: 1200,
             bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
-          }, (form) => {
+          },
+          (form) => {
             const [chartBlockEngineMetaData, setChartBlockEngineMetaData] = useState<ChartBlockEngineMetaData>(null);
             useEffect(() => {
               const chartBlockEngineMetaData = {
                 query: {
                   id: query?.id,
                 },
-                chart: form.values,//TODO
+                chart: form.values, //TODO
               };
               setChartBlockEngineMetaData(chartBlockEngineMetaData);
             }, [form.values.type]);
             return (
               <APIClientProvider apiClient={api}>
-                <SchemaComponentOptions
-                  scope={options.scope}
-                  components={{ ...options.components }}
-                >
-                  <section className={
-                    css`
+                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                  <section
+                    className={css`
                       display: flex;
                       gap: 16px;
-                    `
-                  }>
+                    `}
+                  >
                     {/*  left*/}
-                    <Card title={i18n.t('Chart config')} size={'small'} className={
-                      css`
-                        flex: 1
-                      `
-                    }>
+                    <Card
+                      bordered={false}
+                      title={i18n.t('Chart config')}
+                      size={'small'}
+                      className={css`
+                        flex: 1;
+                      `}
+                    >
                       <FormLayout layout={'vertical'}>
                         <SchemaComponent
                           scope={{ dataSource, JSON5 }}
@@ -145,17 +144,15 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                       </FormLayout>
                     </Card>
                     {/*  right*/}
-                    <div className={
-                      css`
+                    <div
+                      className={css`
                         flex: 1;
                         min-width: 600px;
-                      `
-                    }>
-                      <Card size='small' title={'Chart Preview'}>
+                      `}
+                    >
+                      <Card size="small" title={'Chart Preview'}>
                         {/*  Chart Preview*/}
-                        {
-                          chartBlockEngineMetaData
-                          &&
+                        {chartBlockEngineMetaData && (
                           <>
                             <SchemaComponent
                               schema={{
@@ -172,46 +169,49 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                               }}
                             />
                           </>
-                        }
+                        )}
                       </Card>
-                      <Card size='small' title={'Data preview'} className={css`margin-top: 8px`}>
+                      <Card
+                        size="small"
+                        title={'Data preview'}
+                        className={css`
+                          margin-top: 8px;
+                        `}
+                      >
                         {/*Data preview*/}
-                        {
-                          chartBlockEngineMetaData?.query?.id
-                          &&
+                        {chartBlockEngineMetaData?.query?.id && (
                           <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id} fields={fields} />
-                        }
+                        )}
                       </Card>
                     </div>
                   </section>
                 </SchemaComponentOptions>
               </APIClientProvider>
             );
+          },
+        )
+          .open({
+            initialValues: { ...chart }, //reset before chartBlockMetaData
           })
-            .open({
-              initialValues: { ...chart },//reset before chartBlockMetaData
-            })
-            .then((values) => {
-              //patch updates
-              values = {
-                query,
-                chart: values,
-              };
-              field.componentProps.chartBlockEngineMetaData = values;
-              fieldSchema['x-component-props'].chartBlockEngineMetaData = values;
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  'x-component-props': fieldSchema['x-component-props'],
-                },
-              });
-              dn.refresh();
+          .then((values) => {
+            //patch updates
+            values = {
+              query,
+              chart: values,
+            };
+            field.componentProps.chartBlockEngineMetaData = values;
+            fieldSchema['x-component-props'].chartBlockEngineMetaData = values;
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
             });
-        }}
-      >
-        {props.children || props.title || 'Edit chart block'}
-      </SchemaSettings.Item>
-    )
-      ;
-  }
-;
+            dn.refresh();
+          });
+      }}
+    >
+      {props.children || props.title || 'Edit chart block'}
+    </SchemaSettings.Item>
+  );
+};

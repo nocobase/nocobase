@@ -1,6 +1,6 @@
+import { i18n } from '@nocobase/client';
 import JSON5 from 'json5';
 import React from 'react';
-import { i18n } from '@nocobase/client';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -57,7 +57,7 @@ export const scatterTemplate = {
   description: '1 个「数值」字段，0 ~ 1 个「无序名词」字段',
   type: 'Scatter',
   title: 'Scatter',
-  iconId: 'icon-point',
+  iconId: 'icon-scatter',
   group: 2,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

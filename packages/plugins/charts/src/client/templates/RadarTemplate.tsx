@@ -1,6 +1,6 @@
+import { i18n } from '@nocobase/client';
 import JSON5 from 'json5';
 import React from 'react';
-import { i18n } from '@nocobase/client';
 
 const validateJSON = {
   validator: `{{(value, rule)=> {
@@ -45,7 +45,7 @@ export const radarTemplate = {
   description: '1 ~ 2 个「无序名词」字段，1 个「数值」字段',
   type: 'Radar',
   title: 'Radar',
-  iconId: 'icon-other',
+  iconId: 'icon-radar',
   group: 1,
   renderComponent: 'G2Plot',
   defaultChartOptions: chartConfig,

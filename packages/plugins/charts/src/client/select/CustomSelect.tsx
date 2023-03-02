@@ -1,13 +1,12 @@
 import { LoadingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { isValid, toArr } from '@formily/shared';
+import { isValid } from '@formily/shared';
+import { i18n, Icon } from '@nocobase/client';
 import type { SelectProps } from 'antd';
-import { Input, Popover, Select as AntdSelect } from 'antd';
+import { Popover, Select as AntdSelect } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames, getCurrentOptions } from './shared';
-import { css } from '@emotion/css';
-import { i18n } from '@nocobase/client';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
@@ -21,8 +20,8 @@ const InternalSelect = connect(
     const { ...others } = props;
     const { options, ...othersProps } = { ...others };
     const mode = props.mode || props.multiple ? 'multiple' : undefined;
-    const group1 = options.filter(option => option.group === 2);
-    const group2 = options.filter(option => option.group === 1);
+    const group1 = options.filter((option) => option.group === 2);
+    const group2 = options.filter((option) => option.group === 1);
     return (
       <AntdSelect
         showSearch
@@ -34,63 +33,73 @@ const InternalSelect = connect(
         }}
         mode={mode}
       >
-        <OptGroup label='基础图表'>
-          {
-            group1.map(option => (
-              <Option value={option.key} label={option.title}>
-                <Popover placement={'right'} zIndex={99999999999} content={() =>
-                  (<span>
-                      {
-                        i18n.t(option?.description)?.split('，').map(item => (<p>{item}</p>))
-                      }
-                    </span>
-                  )
-                } trigger='hover'>
-                  <div className={css`display: flex;
+        <OptGroup label="基础图表">
+          {group1.map((option) => (
+            <Option value={option.key} label={option.title}>
+              <Popover
+                placement={'right'}
+                zIndex={99999999999}
+                content={() => (
+                  <span>
+                    {i18n
+                      .t(option?.description)
+                      ?.split('，')
+                      .map((item) => (
+                        <p>{item}</p>
+                      ))}
+                  </span>
+                )}
+                trigger="hover"
+              >
+                <div
+                  className={css`
+                    display: flex;
                     gap: 4px;
-                    align-items: center`}>
-                    <svg width='1em' height='1em' fill='currentColor' aria-hidden='true' focusable='false' className=''>
-                      <use
-                        href={`#${option.iconId}`}>
-                      </use>
-                    </svg>
-                    <span role='img' aria-label={option.title}>
-                      {option.title}
-                    </span>
-                  </div>
-                </Popover>
-              </Option>
-            ))
-          }
+                    align-items: center;
+                  `}
+                >
+                  <Icon type={option.iconId} />
+                  <span role="img" aria-label={option.title}>
+                    {option.title}
+                  </span>
+                </div>
+              </Popover>
+            </Option>
+          ))}
         </OptGroup>
-        <OptGroup label='更多图表'>
-          {
-            group2.map(option => (
-              <Option value={option.key} label={option.title}>
-                <Popover placement={'right'} zIndex={99999999999} content={() => (
-                  (<span>
-                      {
-                        i18n.t(option?.description)?.split('，').map(item => (<p>{item}</p>))
-                      }
-                    </span>
-                  )
-                )} trigger='hover'>
-                  <div className={css`display: flex;
+        <OptGroup label="更多图表">
+          {group2.map((option) => (
+            <Option value={option.key} label={option.title}>
+              <Popover
+                placement={'right'}
+                zIndex={99999999999}
+                content={() => (
+                  <span>
+                    {i18n
+                      .t(option?.description)
+                      ?.split('，')
+                      .map((item) => (
+                        <p>{item}</p>
+                      ))}
+                  </span>
+                )}
+                trigger="hover"
+              >
+                <div
+                  className={css`
+                    display: flex;
                     gap: 4px;
-                    align-items: center`}>
-                    <svg width='1em' height='1em' fill='currentColor' aria-hidden='true' focusable='false' className=''>
-                      <use
-                        href={`#${option.iconId}`}>
-                      </use>
-                    </svg>
-                    <span role='img' aria-label={option.title}>
-                      {option.title}
-                    </span>
-                  </div>
-                </Popover>
-              </Option>
-            ))
-          }
+                    align-items: center;
+                  `}
+                >
+                  <Icon type={option.iconId} />
+                  <span role="img" aria-label={option.title}>
+                    {option.title}
+                  </span>
+                </div>
+              </Popover>
+            </Option>
+          ))}
         </OptGroup>
       </AntdSelect>
     );

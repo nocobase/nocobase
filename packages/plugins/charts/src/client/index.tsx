@@ -1,19 +1,15 @@
 import { SchemaComponentOptions, SchemaInitializerContext, SettingsCenterProvider } from '@nocobase/client';
-import React, { useContext, useEffect } from 'react';
+import React, { useContext } from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
 import { ChartBlockInitializer } from './ChartBlockInitializer';
 import { ChartQueryMetadataProvider } from './ChartQueryMetadataProvider';
+import './Icons';
 import { CustomSelect } from './select';
 import { QueriesTable } from './settings/QueriesTable';
-import { ChartSvgs } from './ChartSvgs';
 
 export default React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
-  useEffect(()=>{
-    const svgElement = new DOMParser().parseFromString(ChartSvgs,'text/html').querySelector('svg');
-    document.body.appendChild(svgElement);
-  },[])
   children.push({
     key: 'chart',
     type: 'item',
