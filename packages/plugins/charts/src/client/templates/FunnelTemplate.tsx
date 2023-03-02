@@ -58,7 +58,7 @@ export const funnelTemplate = {
       },
       category: {
         type: 'string',
-        title: '{{t("Color legend / Dimensional",{ns:"charts"}})}}',
+        title: '{{t("Color legend / Dimensional",{ns:"charts"})}}',
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         enum: '{{dataSource}}',
