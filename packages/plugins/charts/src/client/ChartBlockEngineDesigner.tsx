@@ -179,7 +179,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         {
                           chartBlockEngineMetaData?.query?.id
                           &&
-                          <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id} />
+                          <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id} fields={fields} />
                         }
                       </Card>
                     </div>

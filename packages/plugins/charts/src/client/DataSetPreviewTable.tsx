@@ -11,19 +11,19 @@ import React from 'react';
 import { uid } from '@formily/shared';
 import { useGetDataSet } from './ChartBlockEngine';
 import { Empty, Spin } from 'antd';
+import { useFieldsById } from './hooks';
 
-export default ({ queryId }: { queryId: number }) => {
+export default ({ queryId, fields }: { queryId: number, fields }) => {
   const { dataSet, loading, error } = useGetDataSet(queryId);
   const columns = {};
-  if (dataSet) {
-    const dataKeys = Object.keys(dataSet[0]);
-    for (const dataKey of dataKeys) {
-      columns[dataKey] = {
+  if (fields) {
+    for (const field of fields) {
+      columns[field.name] = {
         type: 'void',
-        title: dataKey,
+        title: field.name,
         'x-component': 'Table.Column',
         properties: {
-          [dataKey]: {
+          [field.name]: {
             type: 'string',
             'x-component': 'Input',
             'x-read-pretty': true,

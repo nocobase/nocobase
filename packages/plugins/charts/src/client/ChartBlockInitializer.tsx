@@ -20,6 +20,7 @@ import { parseDataSetString } from './utils';
 import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { ChartSvgs } from './ChartSvgs';
 import { Card } from 'antd';
+import { useFieldsById } from './hooks';
 
 export const Options = observer((props) => {
   const form = useForm<ChartFormInterface>();
@@ -169,7 +170,8 @@ export const ChartBlockInitializer = (props) => {
                       {
                         chartBlockEngineMetaData?.query?.id
                         &&
-                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id} />
+                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id}
+                                             fields={chartQueryMetadata?.fields} />
                       }
                     </Card>
                   </div>
