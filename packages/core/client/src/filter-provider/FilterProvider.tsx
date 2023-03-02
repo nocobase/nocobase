@@ -50,7 +50,7 @@ export const FilterBlockRecord = (props: any) => {
     recordDataBlocks({
       name: field.props.name as string,
       title: field.componentProps.title,
-      doFilter: service.run,
+      doFilter: service.runAsync,
       collection,
       association,
       filters: {},

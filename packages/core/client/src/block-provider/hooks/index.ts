@@ -224,24 +224,26 @@ export const useFilterBlockActionProps = () => {
     async onClick() {
       const targets = findFilterTargets(fieldSchema);
 
-      // 收集 filter 的值
-      getDataBlocks().forEach(async (block) => {
-        // 此时表示用户还没有设置过与筛选区块相关联的数据区块
-        if (!targets.includes(block.name)) return;
+      actionField.data.loading = true;
+      try {
+        // 收集 filter 的值
+        await Promise.all(
+          getDataBlocks().map(async (block) => {
+            // 此时表示用户还没有设置过与筛选区块相关联的数据区块
+            if (!targets.includes(block.name)) return;
 
-        block.filters[actionField.props.name as string] = transformToFilter(form.values, fieldSchema);
+            block.filters[actionField.props.name as string] = transformToFilter(form.values, fieldSchema);
 
-        try {
-          actionField.data.loading = true;
-          await block.doFilter({
-            page: 1,
-            filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
-          });
-          actionField.data.loading = false;
-        } catch (error) {
-          actionField.data.loading = false;
-        }
-      });
+            return block.doFilter({
+              page: 1,
+              filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
+            });
+          }),
+        );
+        actionField.data.loading = false;
+      } catch (error) {
+        actionField.data.loading = false;
+      }
     },
   };
 };
