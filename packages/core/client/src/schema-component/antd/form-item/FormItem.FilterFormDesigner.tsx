@@ -1,70 +1,16 @@
-import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
+import { ArrayCollapse, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import React, { useContext, useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
+import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
-import { BlockItem } from '../block-item';
-import { HTMLEncode } from '../input/shared';
-import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 
-const divWrap = (schema: ISchema) => {
-  return {
-    type: 'void',
-    'x-component': 'div',
-    properties: {
-      [schema.name || uid()]: schema,
-    },
-  };
-};
-
-export const FormItem: any = observer((props: any) => {
-  const field = useField();
-  const ctx = useContext(BlockRequestContext);
-  const schema = useFieldSchema();
-  useEffect(() => {
-    if (ctx?.block === 'form') {
-      ctx.field.data = ctx.field.data || {};
-      ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-      ctx.field.data.activeFields.add(schema.name);
-    }
-  }, []);
-  return (
-    <ACLCollectionFieldProvider>
-      <BlockItem className={'nb-form-item'}>
-        <Item
-          className={`${css`
-            & .ant-space {
-              flex-wrap: wrap;
-            }
-          `}`}
-          {...props}
-          extra={
-            typeof field.description === 'string' ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-                }}
-              />
-            ) : (
-              field.description
-            )
-          }
-        />
-      </BlockItem>
-    </ACLCollectionFieldProvider>
-  );
-});
-
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+export const FilterFormDesigner = () => {
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
@@ -203,25 +149,6 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
-        <SchemaSettings.SwitchItem
-          key="required"
-          title={t('Required')}
-          checked={fieldSchema.required as boolean}
-          onChange={(required) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.required = required;
-            fieldSchema['required'] = required;
-            schema['required'] = required;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
       {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
@@ -344,41 +271,6 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
-      {form && !form?.readPretty && collectionField?.uiSchema?.type && (
-        <SchemaSettings.ModalItem
-          title={t('Set default value')}
-          components={{ ArrayCollapse, FormLayout }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default value'),
-              properties: {
-                default: {
-                  ...collectionField.uiSchema,
-                  name: 'default',
-                  title: t('Default value'),
-                  'x-decorator': 'FormItem',
-                  default: fieldSchema.default || collectionField.defaultValue,
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={(v) => {
-            const schema: ISchema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            if (field.value !== v.default) {
-              field.value = v.default;
-            }
-            fieldSchema.default = v.default;
-            schema.default = v.default;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
       {form && !isSubFormAssocitionField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
@@ -420,27 +312,6 @@ FormItem.Designer = (props) => {
                 });
               },
             });
-          }}
-        />
-      )}
-      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
-        <SchemaSettings.SwitchItem
-          title={t('Enable link')}
-          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
-          onChange={(flag) => {
-            fieldSchema['x-component-props'] = {
-              ...fieldSchema?.['x-component-props'],
-              mode: flag ? 'links' : 'tags',
-            };
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-component-props': {
-                  ...fieldSchema?.['x-component-props'],
-                },
-              },
-            });
-            dn.refresh();
           }}
         />
       )}
@@ -538,5 +409,3 @@ FormItem.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
-
-FormItem.FilterFormDesigner = FilterFormDesigner;

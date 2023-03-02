@@ -1,4 +1,4 @@
-import { FilterFormDesigner } from './FilterForm.Designer';
+import { FilterFormDesigner } from './Form.FilterFormDesigner';
 import { Form as FormV2 } from './Form';
 import { DetailsDesigner, FormDesigner, ReadPrettyFormDesigner } from './Form.Designer';
 

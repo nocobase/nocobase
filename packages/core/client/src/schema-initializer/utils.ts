@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { SelectCollection } from './SelectCollection';
@@ -192,7 +192,7 @@ export const useInheritsTableColumnInitializerFields = () => {
   });
 };
 
-export const useFormItemInitializerFields = (options?: any) => {
+export const useFormItemInitializerFields = (options?: any, outSchema = {} as FieldOptions) => {
   const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
@@ -214,6 +214,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
+        ...outSchema,
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
@@ -763,7 +764,7 @@ export const createFormBlockSchema = (options) => {
 // TODO
 export const createFilterFormBlockSchema = (options) => {
   const {
-    formItemInitializers = 'FormItemInitializers',
+    formItemInitializers = 'FilterFormItemInitializers',
     actionInitializers = 'FilterFormActionInitializers',
     collection,
     resource,

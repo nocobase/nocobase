@@ -10,11 +10,10 @@ import {
 } from '../utils';
 import { useCompile } from '../../schema-component';
 
-
 // 表单里配置字段
 export const FormItemInitializers = (props: any) => {
   const { t } = useTranslation();
-  const { insertPosition, component } = props;
+  const { insertPosition, component, schema } = props;
   const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
   const inheritFields = useInheritsFormItemInitializerFields();
   const compile = useCompile();
@@ -22,21 +21,22 @@ export const FormItemInitializers = (props: any) => {
     {
       type: 'itemGroup',
       title: t('Display fields'),
-      children: useFormItemInitializerFields(),
+      children: useFormItemInitializerFields(undefined, schema),
     },
   ];
   if (inheritFields?.length > 0) {
     inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0].length&&fieldItems.push(
-        {
-          type: 'divider',
-        },
-        {
-          type: 'itemGroup',
-          title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-          children: Object.values(inherit)[0],
-        },
-      );
+      Object.values(inherit)[0].length &&
+        fieldItems.push(
+          {
+            type: 'divider',
+          },
+          {
+            type: 'itemGroup',
+            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+            children: Object.values(inherit)[0],
+          },
+        );
     });
   }
   associationFields.length > 0 &&
@@ -79,6 +79,19 @@ export const FormItemInitializers = (props: any) => {
       insertPosition={insertPosition}
       component={component}
       title={component ? null : t('Configure fields')}
+    />
+  );
+};
+
+export const FilterFormItemInitializers = (props: any) => {
+  return (
+    <FormItemInitializers
+      schema={{
+        type: 'string',
+        required: false,
+        'x-designer': 'FormItem.FilterFormDesigner',
+      }}
+      {...props}
     />
   );
 };
