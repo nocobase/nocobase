@@ -94,6 +94,17 @@ export const useSortFields = (collectionName: string) => {
     });
 };
 
+export const useChildrenCollections = (collectionName: string) => {
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+  return childrenCollections.map((collection: any) => {
+    return {
+      value: collection.name,
+      label: collection?.title || collection.name,
+    };
+  });
+};
+
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);

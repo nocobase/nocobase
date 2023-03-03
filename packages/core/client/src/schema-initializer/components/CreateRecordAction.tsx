@@ -1,13 +1,12 @@
-import React, { useState, forwardRef } from 'react';
+import React, { useState } from 'react';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Dropdown, Menu, Button } from 'antd';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
 import { ActionContext, useCompile, useActionContext } from '../../schema-component';
-import { useACLContext, useRecordPkValue, useResourceName, useACLRolesCheck } from '../../acl/ACLProvider';
+import { useRecordPkValue, useACLRolesCheck } from '../../acl/ACLProvider';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -49,13 +48,12 @@ export const actionDesignerCss = css`
 `;
 
 const actionAclCheck = (actionPath) => {
-  const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
+  const { data, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
   const recordPkValue = useRecordPkValue();
   const collection = useCollection();
-
   const resource = collection.resource;
   const parseAction = (actionPath: string, options: any = {}) => {
-    const [resourceName, actionName] = actionPath.split(':');
+    const [resourceName] = actionPath.split(':');
     if (data?.allowAll) {
       return {};
     }
@@ -84,11 +82,21 @@ export const CreateRecordAction = observer((props) => {
   const [visible, setVisible] = useState(false);
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
+  const enableChildren = fieldSchema['x-enable-children'] || [];
   const field = useField();
   const { getChildrenCollections } = useCollectionManager();
-  const inheritsCollections = getChildrenCollections(collection.name).filter((v) => {
-    return actionAclCheck(`${v.name}:create`);
-  });
+  const totalChildCollections = getChildrenCollections(collection.name);
+  const inheritsCollections = enableChildren
+    .map((k) => {
+      const childCollection = totalChildCollections.find((j) => j.name === k.collection);
+      return {
+        ...childCollection,
+        title: k.title,
+      };
+    })
+    .filter((v) => {
+      return actionAclCheck(`${v.name}:create`);
+    });
   const [currentCollection, setCurrentCollection] = useState(collection.name);
   const ctx = useActionContext();
   const compile = useCompile();
