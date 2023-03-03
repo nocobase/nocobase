@@ -3,6 +3,11 @@ export * from './SchemaInitializerProvider';
 export * from './types';
 export * from './items';
 export {
+  RecordBlockInitializersContext,
+  RecordBlockInitializersProvider,
+} from './contexts/RecordBlockInitializersContext';
+export type { RecordBlockInitializersContextValue } from './contexts/RecordBlockInitializersContext';
+export {
   gridRowColWrap,
   useRecordCollectionDataSourceItems,
   createTableBlockSchema,

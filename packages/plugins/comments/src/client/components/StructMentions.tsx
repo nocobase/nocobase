@@ -1,0 +1,81 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Mentions, MentionProps } from 'antd';
+import { OptionProps } from 'antd/es/mentions/index';
+import { useResource } from '@nocobase/client';
+import { useCommentTranslation } from '../locale';
+
+export interface StructMentionsValue {
+  content: string;
+  ats: string[];
+}
+
+export type StructMentionsProps = Omit<MentionProps, 'value' | 'onChange' | 'children'> & {
+  value?: string;
+  onChange?: (value: string) => void;
+  mentionUsers?: any[];
+};
+
+export const StructMentions = (props: StructMentionsProps) => {
+  const { value, onChange, mentionUsers = [] } = props;
+
+  const { t } = useCommentTranslation();
+  const [mentions, setMentions] = useState([]);
+  const [mentionsLoading, setMentionsLoading] = useState(false);
+  const [ats, setAts] = useState(mentionUsers);
+  const { list } = useResource('users');
+
+  const textareaRef = useRef<{ textarea: HTMLTextAreaElement }>();
+
+  let overrideValue = value ?? '';
+
+  for (let at of ats) {
+    const reg = createReg(at.id, 'g');
+    overrideValue = overrideValue.replace(reg, (match, p1) => {
+      return `@${at.nickname ?? p1}`;
+    });
+  }
+
+  const overrideOnChange = (content: string) => {
+    for (let at of ats) {
+      const reg = new RegExp(`([^>]?)@${at.nickname}([^<])`, 'g');
+      content = content.replaceAll(reg, `$1<a data-userid="${at.id}">@${at.nickname}</a>$2`);
+    }
+    onChange?.(content);
+  };
+
+  const handleMentionSearch = async (search: string) => {
+    setMentionsLoading(true);
+    const { data } = await list();
+    setMentions(data.data ?? []);
+    setMentionsLoading(false);
+  };
+
+  const handleSelect = (option: OptionProps, prefix: string) => {
+    setAts([...ats, mentions.find((i) => i.id === ~~option.key)]);
+  };
+
+  useEffect(() => {
+    overrideOnChange(overrideValue);
+  }, [ats]);
+
+  return (
+    <Mentions
+      ref={textareaRef as any}
+      value={overrideValue}
+      onChange={overrideOnChange}
+      rows={3}
+      placeholder={t('You can use @ to ref user here')}
+      onSearch={handleMentionSearch}
+      onSelect={handleSelect}
+      loading={mentionsLoading}
+    >
+      {mentions.map((m: { nickname: string; id: string }) => (
+        <Mentions.Option key={m.id} value={m.nickname}>
+          {m.nickname}
+        </Mentions.Option>
+      ))}
+    </Mentions>
+  );
+};
+
+export const createReg = (id: string, flag?: string) => new RegExp(`<a data-userid="(${id})">@(.*?)</a>`, flag);

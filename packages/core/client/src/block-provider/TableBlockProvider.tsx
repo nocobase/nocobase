@@ -90,6 +90,7 @@ export const TableBlockProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+
   return (
     <FormContext.Provider value={form}>
       <BlockProvider {...props} params={params}>
