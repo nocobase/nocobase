@@ -173,8 +173,8 @@ export const ChartBlockInitializer = (props) => {
                       {
                         chartBlockEngineMetaData?.query?.id
                         &&
-                          <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id}
-                                               fields={chartQueryMetadata?.fields} />
+                        <DataSetPreviewTable queryId={chartBlockEngineMetaData?.query?.id}
+                                             fields={chartQueryMetadata?.fields} />
                       }
                     </Card>
                   </div>
@@ -183,27 +183,27 @@ export const ChartBlockInitializer = (props) => {
             </APIClientProvider>
           );
         }).open({
-      initialValues: {},
-    });
-      if (values) {
-      const chartBlockEngineMetaData: ChartBlockEngineMetaData = {
-      query: {
-      id: chartQueryMetadata.id,
-    },
-      chart: values,
-    };
-      insert({
-      type: 'void',
-      title: values?.title,
-      'x-designer': 'ChartBlockEngine.Designer',
-      'x-decorator': 'CardItem',
-      'x-component': 'ChartBlockEngine',
-      'x-component-props': {
-      chartBlockEngineMetaData,
-    },
-    });
-    }
+          initialValues: {},
+        });
+        if (values) {
+          const chartBlockEngineMetaData: ChartBlockEngineMetaData = {
+            query: {
+              id: chartQueryMetadata.id,
+            },
+            chart: values,
+          };
+          insert({
+            type: 'void',
+            title: values?.title,
+            'x-designer': 'ChartBlockEngine.Designer',
+            'x-decorator': 'CardItem',
+            'x-component': 'ChartBlockEngine',
+            'x-component-props': {
+              chartBlockEngineMetaData,
+            },
+          });
+        }
       }}
-      />
-      );
-      };
+    />
+  );
+};
