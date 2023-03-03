@@ -11,13 +11,7 @@ export class AppManager extends EventEmitter {
   constructor(public app: Application) {
     super();
 
-    app.on('beforeStop', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.stop(options)),
-      );
-    });
-
-    app.on('afterDestroy', async (mainApp, options) => {
+    app.on('beforeDestroy', async (mainApp, options) => {
       return await Promise.all(
         [...this.applications.values()].map((application: Application) => application.destroy(options)),
       );
