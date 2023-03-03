@@ -894,6 +894,9 @@ export const createTableBlockSchema = (options) => {
     tableActionColumnInitializers,
     tableBlockProvider,
     disableTemplate,
+    TableBlockDesigner,
+    blockType,
+    pageSize = 20,
     ...others
   } = options;
   const schema: ISchema = {
@@ -905,100 +908,16 @@ export const createTableBlockSchema = (options) => {
       resource: resource || collection,
       action: 'list',
       params: {
-        pageSize: 20,
+        pageSize,
       },
       rowKey,
       showIndex: true,
       dragSort: false,
       disableTemplate: disableTemplate ?? false,
+      blockType,
       ...others,
     },
-    'x-designer': 'TableBlockDesigner',
-    'x-component': 'CardItem',
-    properties: {
-      actions: {
-        type: 'void',
-        'x-initializer': tableActionInitializers ?? 'TableActionInitializers',
-        'x-component': 'ActionBar',
-        'x-component-props': {
-          style: {
-            marginBottom: 16,
-          },
-        },
-        properties: {},
-      },
-      [uid()]: {
-        type: 'array',
-        'x-initializer': tableColumnInitializers ?? 'TableColumnInitializers',
-        'x-component': 'TableV2',
-        'x-component-props': {
-          rowKey: 'id',
-          rowSelection: {
-            type: 'checkbox',
-          },
-          useProps: '{{ useTableBlockProps }}',
-        },
-        properties: {
-          actions: {
-            type: 'void',
-            title: '{{ t("Actions") }}',
-            'x-action-column': 'actions',
-            'x-decorator': 'TableV2.Column.ActionBar',
-            'x-component': 'TableV2.Column',
-            'x-designer': 'TableV2.ActionColumnDesigner',
-            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
-            properties: {
-              actions: {
-                type: 'void',
-                'x-decorator': 'DndContext',
-                'x-component': 'Space',
-                'x-component-props': {
-                  split: '|',
-                },
-                properties: {},
-              },
-            },
-          },
-        },
-      },
-    },
-  };
-  // console.log(JSON.stringify(schema, null, 2));
-  return schema;
-};
-
-export const createFilterTableBlockSchema = (options) => {
-  const {
-    collection,
-    resource,
-    rowKey,
-    tableActionInitializers,
-    tableColumnInitializers,
-    tableActionColumnInitializers,
-    tableBlockProvider,
-    disableTemplate,
-    ...others
-  } = options;
-  const schema: ISchema = {
-    type: 'void',
-    'x-decorator': tableBlockProvider ?? 'TableBlockProvider',
-    'x-acl-action': `${resource || collection}:list`,
-    'x-decorator-props': {
-      collection,
-      resource: resource || collection,
-      action: 'list',
-      params: {
-        pageSize: 20,
-      },
-      rowKey,
-      showIndex: true,
-      dragSort: false,
-      disableTemplate: disableTemplate ?? false,
-      // 用于与数据区块做区分
-      blockType: 'filter',
-      ...others,
-    },
-    'x-designer': 'TableV2.FilterDesigner',
+    'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
     'x-component': 'CardItem',
     properties: {
       actions: {
