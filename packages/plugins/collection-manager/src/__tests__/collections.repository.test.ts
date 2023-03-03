@@ -555,4 +555,40 @@ describe('collections repository', () => {
 
     expect(await Field.repository.count()).toBe(2);
   });
+
+  it('should destroy field when collection set to difference schema', async () => {
+    if (db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
+    const collection = await Collection.repository.create({
+      values: {
+        name: 'test',
+        schema: 'test_schema',
+      },
+      context: {},
+    });
+
+    const field = await Field.repository.create({
+      values: {
+        name: 'test_field',
+        type: 'string',
+        collectionName: collection.get('name'),
+      },
+      context: {},
+    });
+
+    let err;
+    try {
+      await Field.repository.destroy({
+        filter: {
+          name: field.get('name'),
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
+  });
 });
