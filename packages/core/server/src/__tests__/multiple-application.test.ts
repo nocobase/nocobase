@@ -29,9 +29,13 @@ describe('multiple apps', () => {
   it('should listen stop event', async () => {
     const app = mockServer();
 
+    await app.start();
+
     const subApp1 = app.appManager.createApplication('sub1', {
       database: app.db,
     });
+
+    await subApp1.start();
 
     const subApp1StopFn = jest.fn();
 
@@ -42,6 +46,8 @@ describe('multiple apps', () => {
     expect(subApp1StopFn).toBeCalledTimes(1);
 
     await app.destroy();
+
+    expect(subApp1StopFn).toBeCalledTimes(1);
   });
 });
 

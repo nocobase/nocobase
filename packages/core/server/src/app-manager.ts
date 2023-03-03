@@ -16,6 +16,12 @@ export class AppManager extends EventEmitter {
         [...this.applications.values()].map((application: Application) => application.destroy(options)),
       );
     });
+
+    app.on('beforeStop', async (mainApp, options) => {
+      return await Promise.all(
+        [...this.applications.values()].map((application: Application) => application.stop(options)),
+      );
+    });
   }
 
   appSelector: AppSelector = (req: IncomingMessage) => this.app;
