@@ -432,7 +432,12 @@ FormItem.Designer = (props) => {
               mode: flag ? 'links' : 'tags',
             };
             dn.emit('patch', {
-              schema: fieldSchema,
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
             });
             dn.refresh();
           }}

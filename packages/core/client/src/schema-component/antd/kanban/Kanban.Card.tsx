@@ -19,7 +19,7 @@ export const KanbanCard: any = observer((props: any) => {
     useContext(KanbanCardContext);
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
-  const labelEnabled = fieldSchema['x-label-enabled'];
+  const labelDisabled = fieldSchema['x-label-disabled'];
 
   return (
     <SchemaComponentOptions components={{}} scope={{}}>
@@ -67,7 +67,7 @@ export const KanbanCard: any = observer((props: any) => {
             }
           `,
           {
-            'kanban-no-label': !labelEnabled,
+            'kanban-no-label': labelDisabled,
           },
         )}
       >

@@ -9,15 +9,18 @@ export const KanbanCardDesignerTitleSwitch = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
 
-  const enabled = fieldSchema['x-label-enabled'];
+  const disabled = fieldSchema['x-label-disabled'];
 
   const handleSwitch = () => {
-    fieldSchema['x-label-enabled'] = !enabled;
+    fieldSchema['x-label-disabled'] = !disabled;
     dn.emit('patch', {
-      schema: fieldSchema,
+      schema: {
+        'x-uid': fieldSchema['x-uid'],
+        'x-label-disabled': fieldSchema['x-label-disabled'],
+      },
     });
     dn.refresh();
   };
 
-  return <SchemaInitializer.SwitchItem checked={enabled} title={item.title} onClick={handleSwitch} />;
+  return <SchemaInitializer.SwitchItem checked={!disabled} title={item.title} onClick={handleSwitch} />;
 };

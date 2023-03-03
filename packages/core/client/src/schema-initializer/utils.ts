@@ -1068,7 +1068,7 @@ export const createKanbanBlockSchema = (options) => {
           card: {
             type: 'void',
             'x-read-pretty': true,
-            'x-label-enabled': false,
+            'x-label-disabled': true,
             'x-decorator': 'BlockItem',
             'x-component': 'Kanban.Card',
             'x-designer': 'Kanban.Card.Designer',
