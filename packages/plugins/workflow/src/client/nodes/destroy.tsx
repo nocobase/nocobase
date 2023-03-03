@@ -8,10 +8,9 @@ export default {
   type: 'destroy',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
-    'config.params': {
+    collection,
+    params: {
       type: 'object',
-      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {

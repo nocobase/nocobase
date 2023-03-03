@@ -14,8 +14,7 @@ export default {
   type: 'schedule',
   fieldset: {
     config: {
-      type: 'object',
-      name: 'config',
+      type: 'void',
       'x-component': 'ScheduleConfig',
       'x-component-props': {
       }
