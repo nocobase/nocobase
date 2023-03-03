@@ -1,8 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
+import Item from 'antd/lib/list/Item';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -30,9 +32,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: {
-            $and: [service?.params?.filter].filter(Boolean),
-          },
+          filter: mergeFilter([service?.params?.filter]),
         },
       },
       {
@@ -59,27 +59,39 @@ const InternalRemoteSelect = connect(
 
     const onSearch = async (search) => {
       run({
-        filter: {
-          $and: [
-            {
-              [fieldNames.label]: {
-                $includes: search,
-              },
+        filter: mergeFilter([
+          {
+            [fieldNames.label]: {
+              $includes: search,
             },
-            service?.params?.filter,
-          ].filter(Boolean),
-        },
+          },
+          service?.params?.filter,
+        ]),
       });
     };
 
+    const getOptionsByFieldNames = useCallback(
+      (item) => {
+        return Object.keys(fieldNames).reduce((obj, key) => {
+          const value = item[fieldNames[key]];
+          if (value) {
+            // support hidden, disabled, etc.
+            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
+              key === 'label' ? compile(value) : value;
+          }
+          return obj;
+        }, {} as any);
+      },
+      [fieldNames],
+    );
     const normalizeOptions = useCallback(
       (obj) => {
         if (objectValue || typeof obj === 'object') {
-          return { ...obj, [fieldNames.label]: compile(obj[fieldNames.label]) };
+          return getOptionsByFieldNames(obj);
         }
         return { [fieldNames.value]: obj, [fieldNames.label]: obj };
       },
-      [objectValue, fieldNames.value],
+      [objectValue, getOptionsByFieldNames],
     );
 
     const options = useMemo(() => {
@@ -90,13 +102,8 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
-      return (
-        data?.data?.map((item) => ({
-          ...item,
-          [fieldNames.label]: compile(item[fieldNames.label]),
-        })) || []
-      );
-    }, [data, fieldNames.label, objectValue, value]);
+      return data?.data?.map(getOptionsByFieldNames) || [];
+    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
 
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {

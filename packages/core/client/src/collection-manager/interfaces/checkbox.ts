@@ -18,13 +18,6 @@ export const checkbox: IField = {
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
-    showUnchecked: {
-      type: 'boolean',
-      title: '{{t("Display X when unchecked")}}',
-      default: false,
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-    }
   },
   filterable: {
     operators: operators.boolean,
