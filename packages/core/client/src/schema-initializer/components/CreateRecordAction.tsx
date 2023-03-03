@@ -7,6 +7,7 @@ import { observer } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
 import { ActionContext, useCompile, useActionContext } from '../../schema-component';
+import { useACLContext, useRecordPkValue, useResourceName, useACLRolesCheck } from '../../acl/ACLProvider';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -46,17 +47,51 @@ export const actionDesignerCss = css`
     }
   }
 `;
+
+const actionAclCheck = (actionPath) => {
+  const { data, getActionAlias, inResources, getResourceActionParams, getStrategyActionParams } = useACLRolesCheck();
+  const recordPkValue = useRecordPkValue();
+  const collection = useCollection();
+
+  const resource = collection.resource;
+  const parseAction = (actionPath: string, options: any = {}) => {
+    const [resourceName, actionName] = actionPath.split(':');
+    if (data?.allowAll) {
+      return {};
+    }
+    if (inResources(resourceName)) {
+      return getResourceActionParams(actionPath);
+    }
+    return getStrategyActionParams(actionPath);
+  };
+  if (!actionPath && resource) {
+    actionPath = `${resource}:create}`;
+  }
+  if (!actionPath?.includes(':')) {
+    actionPath = `${resource}:${actionPath}`;
+  }
+  if (!actionPath) {
+    return true;
+  }
+  const params = parseAction(actionPath, { recordPkValue });
+  if (!params) {
+    return false;
+  }
+  return true;
+};
+
 export const CreateRecordAction = observer((props) => {
   const [visible, setVisible] = useState(false);
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { getChildrenCollections } = useCollectionManager();
-  const inheritsCollections = getChildrenCollections(collection.name);
+  const inheritsCollections = getChildrenCollections(collection.name).filter((v) => {
+    return actionAclCheck(`${v.name}:create`);
+  });
   const [currentCollection, setCurrentCollection] = useState(collection.name);
   const ctx = useActionContext();
   const compile = useCompile();
-  const { t } = useTranslation();
   const menu = (
     <Menu>
       {inheritsCollections.map((option) => {
