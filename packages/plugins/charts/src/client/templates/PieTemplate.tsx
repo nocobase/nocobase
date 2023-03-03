@@ -1,29 +1,6 @@
 import JSON5 from 'json5';
-import { i18n } from '@nocobase/client';
-import React from 'react';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType:'Pie',
   appendPadding: 10,
   angleField: '{{metric}}',
   colorField: '{{dimension}}',
@@ -39,6 +16,7 @@ const chartConfig = {
   },
   interactions: [{ type: 'element-active' }],
 };
+
 export const pieTemplate = {
   description: '1 「Time」 or 「Order Noun」 field, 1 「Value」 field',
   title: 'Pie',
@@ -80,8 +58,8 @@ export const pieTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Pie | G2Plot","https://g2plot.antv.antgroup.com/api/plots/pie")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Pie | G2Plot","https://g2plot.antv.antgroup.com/api/plots/pie")}}',
+            'x-validator': { json5: true },
           },
         },
       },

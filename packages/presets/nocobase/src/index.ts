@@ -23,6 +23,7 @@ export class PresetNocoBase extends Plugin {
     'duplicator',
     'iframe-block',
     'formula-field',
+    'charts',
   ];
 
   localPlugins = [
@@ -33,7 +34,6 @@ export class PresetNocoBase extends Plugin {
     'map',
     'snapshot-field',
     'graph-collection-manager',
-    'charts',
   ];
 
   splitNames(name: string) {

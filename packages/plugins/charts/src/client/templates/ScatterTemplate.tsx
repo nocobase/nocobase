@@ -1,29 +1,6 @@
-import { i18n } from '@nocobase/client';
 import JSON5 from 'json5';
-import React from 'react';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType: 'Scatter',
   appendPadding: 10,
   xField: '{{metric}}',
   yField: '{{dimension}}',
@@ -54,6 +31,7 @@ const chartConfig = {
     },
   },
 };
+
 export const scatterTemplate = {
   description: '1 「Numeric」 field, 0~ 1 「Unordered Noun」 field',
   type: 'Scatter',
@@ -102,8 +80,8 @@ export const scatterTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description': '{{jsonConfigDesc("Scatter | G2Plot","https://g2plot.antv.antgroup.com/api/plots/scatter")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Scatter | G2Plot","https://g2plot.antv.antgroup.com/api/plots/scatter")}}',
+            'x-validator': { json5: true },
           },
         },
       },

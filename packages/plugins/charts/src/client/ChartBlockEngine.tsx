@@ -1,36 +1,38 @@
 import { useCompile, useRequest } from '@nocobase/client';
-import React from 'react';
-import { Spin } from 'antd';
-import chartRenderComponentsMap from './chartRenderComponents';
-import { templates } from './templates';
-import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
+import { Empty, Spin } from 'antd';
 import JSON5 from 'json5';
-import { ChartQueryMetadata } from './ChartQueryBlockInitializer';
-import { Empty } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
+import chartRenderComponentsMap from './chartRenderComponents';
 import { lang } from './locale';
+import { templates } from './templates';
+
+export interface IQueryConfig {
+  id: number;
+}
+export interface IChartConfig {
+  type: string;
+  template: string;
+  metric: string;
+  dimension: string;
+  category?: string;
+  [key: string]: any;
+}
 
 export interface ChartBlockEngineMetaData {
-  query: {
-    id: number
-    //vars
-  },
-  chart: {
-    type: string
-    template: string
-    metric: string
-    dimension: string
-    category?: string
-    [key: string]: any,
-  },
+  query: IQueryConfig;
+  chart: IChartConfig;
 }
 
 const ChartRenderComponent = ({
-                                chartBlockEngineMetaData,
-                              }: { chartBlockEngineMetaData: ChartBlockEngineMetaData }): JSX.Element => {
+  chartBlockEngineMetaData,
+}: {
+  chartBlockEngineMetaData: ChartBlockEngineMetaData;
+}): JSX.Element => {
   const compile = useCompile();
   const chartType = chartBlockEngineMetaData.chart.type;
   const renderComponent = templates.get(chartType)?.renderComponent;
-  const RenderComponent = chartRenderComponentsMap.get(renderComponent);//G2Plot | Echarts | D3 |Table
+  const RenderComponent = chartRenderComponentsMap.get(renderComponent); //G2Plot | Echarts | D3 |Table
   const chartConfig = chartBlockEngineMetaData.chart;
   const { loading, dataSet, error } = useGetDataSet(chartBlockEngineMetaData.query.id);
 
@@ -40,6 +42,16 @@ const ChartRenderComponent = ({
         <Empty description={<span>May be this chart block's query data has been deleted,please check!</span>} />
       </>
     );
+  }
+
+  const [currentConfig, setCurrentConfig] = useState<IChartConfig>({} as any);
+
+  useEffect(() => {
+    setCurrentConfig(chartConfig);
+  }, [JSON.stringify(chartConfig)]);
+
+  if (currentConfig.type !== chartConfig.type) {
+    return <></>;
   }
 
   switch (renderComponent) {
@@ -52,43 +64,24 @@ const ChartRenderComponent = ({
       } catch (e) {
         template = {};
       }
-      const config = compile({
-        ...finalChartOptions,
-        ...template,
-        data: dataSet,
-      }, { ...chartConfig, category: chartConfig?.category ?? '' });
+      const config = compile(
+        {
+          ...finalChartOptions,
+          ...template,
+          data: dataSet,
+        },
+        { ...chartConfig, category: chartConfig?.category ?? '' },
+      );
       if (config && chartConfig) {
         const { dimension, metric, category } = chartConfig;
         if (!metric || !dimension) {
-          return (
-            <>
-              {lang('Please check the chart config')}
-            </>
-          );
+          return <>{lang('Please check the chart config')}</>;
         }
       }
-      if (config && chartConfig) {
-        if (config._xType !== chartConfig.type) {
-          return (
-            <>
-              {lang('Please check the chart config')}
-            </>
-          );
-        }
-      }
-      return (
-        <>
-          {
-            loading
-              ?
-              <Spin />
-              :
-              <RenderComponent plot={chartConfig.type} config={config} />
-          }
-        </>
-      );
+      return <>{loading ? <Spin /> : <RenderComponent plot={chartConfig.type} config={config} />}</>;
     }
   }
+  return <></>;
 };
 
 export const useGetDataSet = (chartQueryId: number) => {
@@ -103,20 +96,16 @@ export const useGetDataSet = (chartQueryId: number) => {
   };
 };
 
-const ChartBlockEngine = ({
-                            chartBlockEngineMetaData,
-                          }: { chartBlockEngineMetaData: ChartBlockEngineMetaData }) => {
+const ChartBlockEngine = ({ chartBlockEngineMetaData }: { chartBlockEngineMetaData: ChartBlockEngineMetaData }) => {
   let renderComponent;
   const chartType = chartBlockEngineMetaData?.chart?.type;
+
   if (chartType) {
     renderComponent = templates.get(chartType)?.renderComponent;
   }
+
   if (!chartType || !renderComponent) {
-    return (
-      <>
-        {lang('Please check the chart config')}
-      </>
-    );
+    return <>{lang('Please check the chart config')}</>;
   }
 
   return (
@@ -128,6 +117,4 @@ const ChartBlockEngine = ({
 
 ChartBlockEngine.Designer = ChartBlockEngineDesigner;
 
-export {
-  ChartBlockEngine,
-};
+export { ChartBlockEngine };
