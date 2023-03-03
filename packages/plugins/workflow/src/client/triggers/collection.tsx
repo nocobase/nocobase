@@ -1,7 +1,6 @@
 import React from 'react';
 import { Select } from 'antd';
-import { onFieldValueChange } from '@formily/core';
-import { observer, useForm, useFormEffects } from '@formily/react';
+import { observer, useForm } from '@formily/react';
 
 import {
   SchemaInitializerItemOptions,
@@ -16,12 +15,12 @@ import { CollectionBlockInitializer } from '../components/CollectionBlockInitial
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 
-const FieldsSelect = observer((props) => {
-  const { filter = item => true, ...others } = props;
+const FieldsSelect = observer((props: any) => {
+  const { filter = () => true, ...others } = props;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
   const { values } = useForm();
-  const fields = getCollectionFields(values?.config?.collection);
+  const fields = getCollectionFields(values?.collection);
 
   return (
     <Select {...others}>
@@ -64,6 +63,15 @@ export default {
               value: []
             }
           }
+        },
+        {
+          target: 'condition',
+          effects: ['onFieldValueChange'],
+          fulfill: {
+            state: {
+              value: null
+            }
+          }
         }
       ]
     },
@@ -104,7 +112,14 @@ export default {
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
-        placeholder: '{{t("Select Field")}}'
+        placeholder: '{{t("Select Field")}}',
+        filter(field) {
+          return (
+            !field.hidden
+            && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
+            && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+          );
+        }
       },
       'x-reactions': [
         {
