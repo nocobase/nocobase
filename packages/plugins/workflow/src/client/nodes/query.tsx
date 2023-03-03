@@ -14,7 +14,7 @@ export default {
   type: 'query',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
+    collection,
     // 'config.multiple': {
     //   type: 'boolean',
     //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
@@ -25,9 +25,8 @@ export default {
     //     disabled: true
     //   }
     // },
-    'config.params': {
+    params: {
       type: 'object',
-      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {

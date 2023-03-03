@@ -7,18 +7,16 @@ export default {
   type: 'delay',
   group: 'control',
   fieldset: {
-    'config.duration': {
+    duration: {
       type: 'number',
-      name: 'config.duration',
       title: `{{t("Duration", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Duration',
       default: 60000,
       required: true
     },
-    'config.endStatus': {
+    endStatus: {
       type: 'number',
-      name: 'config.endStatus',
       title: `{{t("End Status", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
