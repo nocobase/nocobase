@@ -1,29 +1,6 @@
 import JSON5 from 'json5';
-import React from 'react';
-import { i18n } from '@nocobase/client';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType:'Column',
   appendPadding: 10,
   isGroup: true,
   yField: '{{metric}}',
@@ -45,6 +22,7 @@ const chartConfig = {
     },
   },
 };
+
 export const columnTemplate = {
   description: '1 「time」 or 「ordered noun」 field, 1 「value」 field, 0 to 1 「unordered noun」',
   type: 'Column',
@@ -93,8 +71,8 @@ export const columnTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Column | G2Plot","https://g2plot.antv.antgroup.com/api/plots/column")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Column | G2Plot","https://g2plot.antv.antgroup.com/api/plots/column")}}',
+            'x-validator': { json5: true },
           },
         },
       },

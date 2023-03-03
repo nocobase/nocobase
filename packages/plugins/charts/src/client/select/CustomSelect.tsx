@@ -2,12 +2,12 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid } from '@formily/shared';
-import { i18n, Icon } from '@nocobase/client';
+import { Icon } from '@nocobase/client';
 import type { SelectProps } from 'antd';
 import { Popover, Select as AntdSelect } from 'antd';
 import React from 'react';
-import { ReadPretty } from './ReadPretty';
 import { lang } from '../locale';
+import { ReadPretty } from './ReadPretty';
 
 type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
 
@@ -34,7 +34,7 @@ const InternalSelect = connect(
         }}
         mode={mode}
       >
-        <OptGroup label={lang('Basic chart')}>
+        <OptGroup label={lang('Basic charts')}>
           {group1.map((option) => (
             <Option value={option.key} label={lang(option.title)}>
               <Popover
@@ -45,11 +45,11 @@ const InternalSelect = connect(
                     {lang(option?.description)
                       ?.split(',')
                       .map((item) => (
-                        <p>{item}</p>
+                        <div>{item}</div>
                       ))}
                   </span>
                 )}
-                trigger='hover'
+                trigger="hover"
               >
                 <div
                   className={css`
@@ -59,7 +59,7 @@ const InternalSelect = connect(
                   `}
                 >
                   <Icon type={option.iconId} />
-                  <span role='img' aria-label={lang(option.title)}>
+                  <span role="img" aria-label={lang(option.title)}>
                     {lang(option.title)}
                   </span>
                 </div>
@@ -78,11 +78,11 @@ const InternalSelect = connect(
                     {lang(option?.description)
                       ?.split(',')
                       .map((item) => (
-                        <p>{item}</p>
+                        <div>{item}</div>
                       ))}
                   </span>
                 )}
-                trigger='hover'
+                trigger="hover"
               >
                 <div
                   className={css`
@@ -92,7 +92,7 @@ const InternalSelect = connect(
                   `}
                 >
                   <Icon type={option.iconId} />
-                  <span role='img' aria-label={lang(option.title)}>
+                  <span role="img" aria-label={lang(option.title)}>
                     {lang(option.title)}
                   </span>
                 </div>

@@ -1,29 +1,6 @@
 import JSON5 from 'json5';
-import { i18n } from '@nocobase/client';
-import React from 'react';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType:'Bar',
   appendPadding: 10,
   isGroup: true,
   yField: '{{dimension}}',
@@ -93,8 +70,8 @@ export const barTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Bar | G2Plot","https://g2plot.antv.antgroup.com/api/plots/bar")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Bar | G2Plot","https://g2plot.antv.antgroup.com/api/plots/bar")}}',
+            'x-validator': { json5: true },
           },
         },
       },

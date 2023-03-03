@@ -9,7 +9,7 @@ export default {
   'Chart': '图表',
   'Chart type': '图表类型',
   'Chart title': '图表标题',
-  'Basic chart': '基础图表',
+  'Basic charts': '基础图表',
   'More charts': '更多图表',
   'Chart config': '图表配置',
   'Area': '面积图',

@@ -1,33 +1,11 @@
 import JSON5 from 'json5';
-import React from 'react';
-import { i18n } from '@nocobase/client';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType: 'Area',
   yField: '{{metric}}',
   xField: '{{dimension}}',
   seriesField: '{{category}}',
 };
+
 export const areaTemplate = {
   description: '1 「time」or 「Ordered Noun」 field,1 「Numerical」 field,1 「Unordered Noun」 field (optional)',
   type: 'Area',
@@ -76,8 +54,8 @@ export const areaTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Area | G2Plot","https://g2plot.antv.antgroup.com/api/plots/area")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Area | G2Plot","https://g2plot.antv.antgroup.com/api/plots/area")}}',
+            'x-validator': { json5: true },
           },
         },
       },

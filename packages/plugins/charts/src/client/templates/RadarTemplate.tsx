@@ -1,29 +1,6 @@
-import { i18n } from '@nocobase/client';
 import JSON5 from 'json5';
-import React from 'react';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType: 'Radar',
   xField: '{{dimension}}',
   yField: '{{metric}}',
   appendPadding: [0, 10, 0, 10],
@@ -42,6 +19,7 @@ const chartConfig = {
   },
   area: {},
 };
+
 export const radarTemplate = {
   description: '1~ 2 「Unordered Noun」 fields, 1 「Numeric」 field',
   type: 'Radar',
@@ -84,7 +62,7 @@ export const radarTemplate = {
               autoSize: { minRows: 8, maxRows: 16 },
             },
             'description':'{{jsonConfigDesc("Radar | G2Plot","https://g2plot.antv.antgroup.com/api/plots/radar")}}',
-            'x-validator': validateJSON,
+            'x-validator': { json5: true },
           },
         },
       },

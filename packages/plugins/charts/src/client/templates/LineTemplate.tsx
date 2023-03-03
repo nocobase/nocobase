@@ -1,29 +1,6 @@
 import JSON5 from 'json5';
-import React from 'react';
-import { i18n } from '@nocobase/client';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType: 'Line',
   yField: '{{metric}}',
   xField: '{{dimension}}',
   seriesField: '{{category}}',
@@ -36,11 +13,7 @@ const chartConfig = {
     // },
   },
 };
-const arr = [{ a: '1', b: 2, c: 3 }, { a: '2', b: 2, c: 3 }, { a: '3', b: 2, c: 3 }, { a: '4', b: 2, c: 3 }, {
-  a: '5',
-  b: 2,
-  c: 3,
-}];
+
 export const lineTemplate = {
   description: '1 「Time」 or 「Order Noun」 field, 1 「Value」 field',
   type: 'Line',
@@ -89,8 +62,8 @@ export const lineTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Line | G2Plot","https://g2plot.antv.antgroup.com/api/plots/line")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Line | G2Plot","https://g2plot.antv.antgroup.com/api/plots/line")}}',
+            'x-validator': { json5: true },
           },
         },
       },

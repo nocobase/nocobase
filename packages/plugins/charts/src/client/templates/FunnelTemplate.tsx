@@ -1,34 +1,12 @@
-import { i18n } from '@nocobase/client';
 import JSON5 from 'json5';
-import React from 'react';
-import { lang } from '../locale';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
-};
 
 const chartConfig = {
-  _xType: 'Funnel',
   xField: '{{dimension}}',
   yField: '{{metric}}',
   seriesField: '{{category}}',
   legend: false,
 };
+
 export const funnelTemplate = {
   description: '1 「Unordered Noun」 field, 1 「Numeric」 field',
   type: 'Funnel',
@@ -77,8 +55,8 @@ export const funnelTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
-            'description':'{{jsonConfigDesc("Funnel | G2Plot","https://g2plot.antv.antgroup.com/api/plots/funnel")}}',
-            'x-validator': validateJSON,
+            description: '{{jsonConfigDesc("Funnel | G2Plot","https://g2plot.antv.antgroup.com/api/plots/funnel")}}',
+            'x-validator': { json5: true },
           },
         },
       },
