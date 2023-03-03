@@ -24,7 +24,7 @@ const ReadPretty = (props) => {
 
 const Input = (props) => {
   const { options } = props;
-  const { dataType, expression, engine = 'math.js' } = options;
+  const { dataType, expression, engine = 'math.js' } = options||{};
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   const form = useForm();
   const val = () => {

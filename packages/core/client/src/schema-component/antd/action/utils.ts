@@ -1,5 +1,7 @@
 import type { ISchema } from '@formily/react';
-
+import { last } from 'lodash';
+import { conditionAnalyse } from '../../common/utils/uitls';
+import { ActionType } from '../../../schema-settings/LinkageRules/type';
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -65,4 +67,42 @@ export const requestSettingsSchema: ISchema = {
       'x-validator': validateJSON,
     },
   },
+};
+
+export const linkageAction = (operator, field, condition, values, designable) => {
+  const displayResult = [field.display];
+  const disableResult = [field.disabled];
+  switch (operator) {
+    case ActionType.Visible:
+      if (conditionAnalyse(condition, values)) {
+        displayResult.push(operator);
+      }
+      field.display = last(displayResult);
+      break;
+    case ActionType.Hidden:
+      if (conditionAnalyse(condition, values)) {
+        if (!designable) {
+          displayResult.push(operator);
+        } else {
+          field.data = field.data || {};
+          field.data.hidden = true;
+        }
+      }
+      field.display = last(displayResult);
+      break;
+    case ActionType.Disabled:
+      if (conditionAnalyse(condition, values)) {
+        disableResult.push(true);
+      }
+      field.disabled = last(disableResult);
+      break;
+    case ActionType.Active:
+      if (conditionAnalyse(condition, values)) {
+        disableResult.push(false);
+      }
+      field.disabled = last(disableResult);
+      break;
+    default:
+      return null;
+  }
 };

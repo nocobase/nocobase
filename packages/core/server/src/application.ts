@@ -482,8 +482,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.db.inDialect('mysql')) {
       const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1') {
-        console.log(chalk.red(`mysql variable 'lower_case_table_names' must be set to '0' or '2'`));
+      if (result?.Value === '1' && !this.db.options.underscored) {
+        console.log(
+          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
+        );
         if (options?.exit) {
           process.exit();
         }

@@ -1,4 +1,4 @@
-import { connect, mapReadPretty } from '@formily/react';
+import { connect, mapReadPretty,mapProps } from '@formily/react';
 import { InputNumber } from 'antd';
 import React from 'react';
 import { ReadPretty } from '../input-number/ReadPretty';

@@ -4,11 +4,9 @@ export default {
   'View record': 'View record',
   'Add block': 'Add block',
   'Allow linking to multiple records': 'Allow linking to multiple records',
-  'Snapshot to description':
-    'It is used to create a snapshot of the table, save the current data of the pointed table, and save it only when the record to which it belongs is created, and will not be updated later.',
-  'Association field': 'Association field',
-  'Deep copy fields': 'Deep copy fields',
+  'When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.':
+    'When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.',
+  'The association field to snapshot': 'The association field to snapshot',
+  "Snapshot the snapshot's association fields": "Snapshot the snapshot's association fields",
   'Please select': 'Please select',
-  'When a record is created, relational data is backed up in a snapshot':
-    'When a record is created, relational data is backed up in a snapshot',
 };

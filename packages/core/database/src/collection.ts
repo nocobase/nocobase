@@ -351,8 +351,8 @@ export class Collection<
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
     let newOptions = lodash.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
-    this.context.database.emit('beforeUpdateCollection', this, newOptions);
 
+    this.context.database.emit('beforeUpdateCollection', this, newOptions);
     this.options = newOptions;
 
     this.setFields(options.fields, false);
@@ -542,8 +542,8 @@ export class Collection<
   public addSchemaTableName() {
     const tableName = this.model.tableName;
 
-    if (this.options.schema) {
-      return this.db.utils.addSchema(tableName, this.options.schema);
+    if (this.collectionSchema()) {
+      return this.db.utils.addSchema(tableName, this.collectionSchema());
     }
 
     return tableName;
@@ -551,5 +551,17 @@ export class Collection<
 
   public quotedTableName() {
     return this.db.utils.quoteTable(this.addSchemaTableName());
+  }
+
+  public collectionSchema() {
+    if (this.options.schema) {
+      return this.options.schema;
+    }
+
+    if (this.db.options.schema) {
+      return this.db.options.schema;
+    }
+
+    return undefined;
   }
 }

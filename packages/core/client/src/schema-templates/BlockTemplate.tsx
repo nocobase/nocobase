@@ -18,9 +18,12 @@ export const BlockTemplate = observer((props: any) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
+  const onSuccess = (data) => {
+    fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
+  };
   return template ? (
     <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
-      <RemoteSchemaComponent noForm uid={template?.uid} />
+      <RemoteSchemaComponent noForm uid={template?.uid} onSuccess={onSuccess} />
     </BlockTemplateContext.Provider>
   ) : null;
 });

@@ -23,17 +23,8 @@ export const Checkbox: ComposedCheckbox = connect(
       value: 'checked',
       onInput: 'onChange',
     },
-    (props, field) => {
-      // console.log({ props, field });
-      return {
-        ...props,
-      };
-    },
   ),
   mapReadPretty((props) => {
-    if (!isValid(props.value)) {
-      return null;
-    }
     if (props.value) {
       return <CheckOutlined style={{ color: '#52c41a' }} />;
     }
@@ -45,9 +36,11 @@ Checkbox.__ANT_CHECKBOX = true;
 
 Checkbox.Group = connect(
   AntdCheckbox.Group,
-  mapProps({
-    dataSource: 'options',
-  }),
+  mapProps(
+    {
+      dataSource: 'options',
+    },
+  ),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return null;
