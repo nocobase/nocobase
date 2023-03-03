@@ -172,7 +172,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   declare middleware: any;
 
-  stopped = true;
+  stopped = false;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -443,8 +443,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   async stop(options: any = {}) {
     if (this.stopped) return;
 
-    await this.emitAsync('beforeStop', this, options);
-
     try {
       // close database connection
       // silent if database already closed
@@ -454,6 +452,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     } catch (e) {
       console.log(e);
     }
+
+    await this.emitAsync('beforeStop', this, options);
 
     // close http server
     if (this.listenServer) {
@@ -525,10 +525,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
-    console.log(`emit beforeUpgrade event on ${this.name} application`);
     await this.emitAsync('beforeUpgrade', this, options);
-    console.log(`event beforeUpgrade on ${this.name} application has been emitted`);
-
     const force = false;
     await this.db.migrator.up();
     await this.db.sync({
