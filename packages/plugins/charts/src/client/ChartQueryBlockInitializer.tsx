@@ -1,8 +1,16 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog } from '@formily/antd';
-import { SchemaInitializer, SchemaInitializerButtonContext, useAPIClient } from '@nocobase/client';
+import { FormDialog, FormLayout } from '@formily/antd';
+import { SchemaOptionsContext } from '@formily/react';
+import {
+  SchemaComponent,
+  SchemaComponentOptions,
+  SchemaInitializer,
+  SchemaInitializerButtonContext,
+  useAPIClient
+} from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';
+import { getQueryTypeSchema } from './settings/queryTypes';
 
 export interface ChartQueryMetadata {
   id: number;
@@ -24,19 +32,47 @@ export const ChartQueryBlockInitializer = (props) => {
   const [items, setItems] = useState(defaultItems);
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
+  const options = useContext(SchemaOptionsContext);
   const onAddQuery = async (info) => {
-    await FormDialog('Add query', () => {
-      return <div>{info.key}</div>;
-    }).open({
+    const values = await FormDialog(
+      {
+        sql: 'Add SQL query',
+        json: 'Add JSON query',
+      }[info.key],
+      () => {
+        return (
+          <div>
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      title: {
+                        title: 'Title',
+                        required: true,
+                        'x-component': 'Input',
+                        'x-decorator': 'FormItem',
+                      },
+                      options: getQueryTypeSchema(info.key),
+                    },
+                  }}
+                />
+              </FormLayout>
+            </SchemaComponentOptions>
+          </div>
+        );
+      },
+    ).open({
       initialValues: {
         type: info.key,
       },
     });
-    // TODO 获取插入的 query data
-    const item = ctx.data[0] ?? {};
+    const { data } = await apiClient.resource('chartsQueries')?.create?.({ values });
+    const items = (await ctx.refresh()) as any;
+    const item = items.find((item) => item.id === data?.data?.id);
     onCreateBlockSchema({ item });
     setVisible(false);
-    console.log(info);
   };
   useEffect(() => {
     const chartQueryMetadata = ctx.data;

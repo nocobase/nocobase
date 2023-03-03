@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 
 export const ChartQueryMetadataContext = createContext({
   refresh: () => {},
-  data: [],
+  data: [] as any[],
 });
 
 export const ChartQueryMetadataProvider: React.FC = (props) => {
