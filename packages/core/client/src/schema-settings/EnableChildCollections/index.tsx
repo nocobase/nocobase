@@ -66,7 +66,7 @@ export const EnableChildCollections = observer((props: any) => {
                       'x-component': 'Select',
                       'x-component-props': {
                         style: {
-                          width: 250,
+                          width: 260,
                         },
                       },
                       'x-reactions': ['{{useAsyncDataSource(loadData)}}'],
@@ -77,7 +77,7 @@ export const EnableChildCollections = observer((props: any) => {
                       'x-component': 'Input',
                       'x-component-props': {
                         style: {
-                          width: 230,
+                          width: 235,
                         },
                       },
                     },
