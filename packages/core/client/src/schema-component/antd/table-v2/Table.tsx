@@ -442,6 +442,7 @@ export const Table: any = observer((props: any) => {
           ref={(ref) => {
             const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
             const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+            // TODO: 存在无限循环的情况，需要修复，开启 Fix block 的时候可复现
             setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
           }}
           rowKey={rowKey ?? defaultRowKey}
