@@ -1,30 +1,5 @@
 import { ISchema } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
-
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON5.parse(value);
-      if(!Array.isArray(val)){
-        return false;
-      }
-      if(typeof val[0] !== 'object'){
-        return false;
-      }
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format,must be an object array.",{ns:"charts"})}}',
-};
 export const json: ISchema = {
   type: 'object',
   properties: {
@@ -32,7 +7,7 @@ export const json: ISchema = {
       title: 'JSON',
       required: true,
       'x-component': 'Input.TextArea',
-      'x-validator': validateJSON,
+      'x-validator': { json5: true },
       'x-component-props': {
         autoSize: {
           maxRows: 20,
