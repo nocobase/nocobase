@@ -1,8 +1,18 @@
 import { TableOutlined } from '@ant-design/icons';
-import { SchemaInitializer, SchemaInitializerButtonContext, useAPIClient } from '@nocobase/client';
+import { FormDialog, FormLayout } from '@formily/antd';
+import { SchemaOptionsContext } from '@formily/react';
+import {
+  SchemaComponent,
+  SchemaComponentOptions,
+  SchemaInitializer,
+  SchemaInitializerButtonContext,
+  useAPIClient
+} from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';
+import { getQueryTypeSchema } from './settings/queryTypes';
 import { lang } from './locale';
+
 
 export interface ChartQueryMetadata {
   id: number;
@@ -24,16 +34,85 @@ export const ChartQueryBlockInitializer = (props) => {
   const [items, setItems] = useState(defaultItems);
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
+  const options = useContext(SchemaOptionsContext);
+  const onAddQuery = async (info) => {
+    const values = await FormDialog(
+      {
+        sql: 'Add SQL query',
+        json: 'Add JSON query',
+      }[info.key],
+      () => {
+        return (
+          <div>
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+              <FormLayout layout={'vertical'}>
+                <SchemaComponent
+                  schema={{
+                    type: 'object',
+                    properties: {
+                      title: {
+                        title: 'Title',
+                        required: true,
+                        'x-component': 'Input',
+                        'x-decorator': 'FormItem',
+                      },
+                      options: getQueryTypeSchema(info.key),
+                    },
+                  }}
+                />
+              </FormLayout>
+            </SchemaComponentOptions>
+          </div>
+        );
+      },
+    ).open({
+      initialValues: {
+        type: info.key,
+      },
+    });
+    const { data } = await apiClient.resource('chartsQueries')?.create?.({ values });
+    const items = (await ctx.refresh()) as any;
+    const item = items.find((item) => item.id === data?.data?.id);
+    onCreateBlockSchema({ item });
+    setVisible(false);
+  };
   useEffect(() => {
     const chartQueryMetadata = ctx.data;
     if (chartQueryMetadata && Array.isArray(chartQueryMetadata)) {
-      setItems([
-        {
-          type: 'itemGroup',
-          title: lang('Select query data'),
-          children: chartQueryMetadata,
-        },
-      ]);
+      setItems(
+        [
+          // {
+          //   type: 'itemGroup',
+          //   title: '{{t("Select chart query")}}',
+          //   children:
+          // },
+          {
+            type: 'subMenu',
+            title: 'Add chart query',
+            // component: AddChartQuery,
+            children: [
+              {
+                key: 'sql',
+                type: 'item',
+                title: 'SQL',
+                onClick: onAddQuery,
+              },
+              {
+                key: 'json',
+                type: 'item',
+                title: 'JSON',
+                onClick: onAddQuery,
+              },
+            ],
+          },
+          chartQueryMetadata.length
+            ? {
+                type: 'divider',
+              }
+            : null,
+          ...chartQueryMetadata,
+        ].filter(Boolean),
+      );
     }
   }, []);
   return (
