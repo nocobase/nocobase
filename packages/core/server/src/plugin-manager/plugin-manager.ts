@@ -38,7 +38,9 @@ export class PluginManager {
     this.app.db.registerRepositories({
       PluginManagerRepository,
     });
+
     this.collection = this.app.db.collection(collectionOptions);
+
     this.repository = this.collection.repository as PluginManagerRepository;
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
