@@ -2,20 +2,8 @@ import { TableOutlined } from '@ant-design/icons';
 import { SchemaInitializer, SchemaInitializerButtonContext, useAPIClient } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';
+import { lang } from './locale';
 
-// {
-//   "id": 5,
-//   "title": "Demo1",
-//   "type": "json",
-//   "fields": [
-//   {
-//     "name": "Date"
-//   },
-//   {
-//     "name": "scales"
-//   }
-// ]
-// }
 export interface ChartQueryMetadata {
   id: number;
   title: string;
@@ -27,7 +15,7 @@ export const ChartQueryBlockInitializer = (props) => {
   const defaultItems: any = [
     {
       type: 'itemGroup',
-      title: 'select a data source',
+      title: lang('Select query data'),
       children: [],
     },
   ];
@@ -42,7 +30,7 @@ export const ChartQueryBlockInitializer = (props) => {
       setItems([
         {
           type: 'itemGroup',
-          title: 'select a data source',
+          title: lang('Select query data'),
           children: chartQueryMetadata,
         },
       ]);

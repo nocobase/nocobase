@@ -8,6 +8,7 @@ export default {
   Enable: '启用',
   'Chart': '图表',
   'Queries':'查询列表',
+  'Select query data':'选择查询数据',
   'Type':'类型',
   'Chart type': '图表类型',
   'Chart title': '图表标题',
