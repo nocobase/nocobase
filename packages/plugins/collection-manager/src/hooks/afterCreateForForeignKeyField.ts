@@ -152,6 +152,7 @@ export function afterCreateForForeignKeyField(db: Database) {
             isThrough: true,
             sortable: false,
           },
+          context,
           transaction,
         });
       }
