@@ -156,7 +156,7 @@ export const OverridingFieldAction = (props) => {
             if (!disabled) {
               const { data } = await api.resource('collections.fields', record.collectionName).get({
                 filterByTk: record.name,
-                appends: ['uiSchema', 'reverseField'],
+                appends: ['reverseField'],
               });
               setData(data?.data);
               const interfaceConf = getInterface(record.interface);
