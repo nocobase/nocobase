@@ -162,8 +162,8 @@ const WithoutForm = (props) => {
   );
 };
 
-export const Form: React.FC<FormProps> & { Designer?: any; FilterFormDesigner?: any; ReadPrettyDesigner?: any } =
-  observer((props) => {
+export const Form: React.FC<FormProps> & { Designer?: any; FilterDesigner?: any; ReadPrettyDesigner?: any } = observer(
+  (props) => {
     const field = useField<Field>();
     const { form, disabled, ...others } = useProps(props);
     const formDisabled = disabled || field.disabled;
@@ -180,4 +180,5 @@ export const Form: React.FC<FormProps> & { Designer?: any; FilterFormDesigner?: 
         </form>
       </ConfigProvider>
     );
-  });
+  },
+);
