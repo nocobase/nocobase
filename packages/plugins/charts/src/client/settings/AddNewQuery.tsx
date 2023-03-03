@@ -14,6 +14,7 @@ import { Button, Dropdown, Menu } from 'antd';
 import React, { useMemo, useState } from 'react';
 import { useChartQueryMetadataContext } from '../ChartQueryMetadataProvider';
 import { getQueryTypeSchema } from './queryTypes';
+import { lang } from '../locale';
 
 const useCreateAction = () => {
   const { setVisible } = useActionContext();
@@ -72,10 +73,10 @@ const getSchema = (initialValue, { form, isNewRecord }) => {
       form,
       // initialValue: JSON.parse(JSON.stringify(initialValue)),
     },
-    title: isNewRecord ? 'Add query' : 'Edit query',
+    title: isNewRecord ? lang('Add query') : lang('Edit query'),
     properties: {
       title: {
-        title: 'Title',
+        title: lang('Title'),
         required: true,
         'x-component': 'Input',
         'x-decorator': 'FormItem',
@@ -87,14 +88,14 @@ const getSchema = (initialValue, { form, isNewRecord }) => {
         properties: {
           cancel: {
             'x-component': 'Action',
-            title: 'Cancel',
+            title: lang('Cancel'),
             'x-component-props': {
               useAction: '{{ useCloseAction }}',
             },
           },
           submit: {
             'x-component': 'Action',
-            title: 'Submit',
+            title: lang('Submit'),
             'x-component-props': {
               type: 'primary',
               useAction: '{{ useSubmitAction }}',
@@ -121,7 +122,7 @@ export const AddNewQuery = () => {
     >
       <Menu.Item key={'json'}>JSON</Menu.Item>
       <Menu.Item key={'sql'}>SQL</Menu.Item>
-      <Menu.Item key={'api'}>API</Menu.Item>
+      <Menu.Item disabled key={'api'}>API</Menu.Item>
       <Menu.Item disabled>Collection</Menu.Item>
     </Menu>
   );
@@ -129,7 +130,7 @@ export const AddNewQuery = () => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown overlay={menu}>
         <Button icon={<PlusOutlined />} type={'primary'}>
-          Add new <DownOutlined />
+          {lang("Add query")} <DownOutlined />
         </Button>
       </Dropdown>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useCreateAction }} />
@@ -150,7 +151,7 @@ export const EditQuery = () => {
           setVisible(true);
         }}
       >
-        Edit
+        {lang("Edit")}
       </a>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useUpdateAction }} />
     </ActionContext.Provider>

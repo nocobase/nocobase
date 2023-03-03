@@ -23,7 +23,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-  message: '{{t("Invalid JSON format,must be an object array.")}}',
+  message: '{{t("Invalid JSON format,must be an object array.",{ns:"charts"})}}',
 };
 export const json: ISchema = {
   type: 'object',
