@@ -7,8 +7,8 @@ import { SchemaComponent } from '../../schema-component';
 export const EnableChildCollections = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
-  console.log(defaultValues);
-  const childCollections = useChildrenCollections(collectionName);
+  const totalChildCollections = useChildrenCollections(collectionName);
+
   return (
     <SchemaComponent
       schema={{
@@ -33,8 +33,9 @@ export const EnableChildCollections = observer((props: any) => {
                     },
                     collection: {
                       type: 'string',
-                      enum: childCollections,
+                      enum: totalChildCollections,
                       'x-decorator': 'FormItem',
+                      required: true,
                       'x-component': 'Select',
                       'x-component-props': {
                         style: {
