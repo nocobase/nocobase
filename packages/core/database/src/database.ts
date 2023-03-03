@@ -381,6 +381,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    options = lodash.cloneDeep(options);
+
     if (this.options.underscored) {
       options.underscored = true;
     }

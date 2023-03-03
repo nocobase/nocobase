@@ -344,7 +344,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
-      console.log(`Reload the application configuration`);
+      console.log(`Reload the ${this.name} application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
