@@ -20,6 +20,7 @@ describe('application', () => {
         dialect: 'sqlite',
         dialectModule: require('sqlite3'),
         storage: ':memory:',
+        logging: false,
       },
       resourcer: {
         prefix: '/api',

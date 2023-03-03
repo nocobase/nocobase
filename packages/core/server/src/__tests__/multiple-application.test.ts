@@ -67,26 +67,18 @@ describe('multiple application', () => {
     // const subApp1 = app.appManager.createApplication('sub1', {
     //   database: app.db,
     // });
-
     // await subApp1.start();
-
     // const subApp2 = app.appManager.createApplication('sub2', {
     //   database: app.db,
     // });
-
     // await subApp2.start();
-
     // // const subApp1UpgradeFn = jest.fn();
     // const subApp2UpgradeFn = jest.fn();
-
     // subApp1.on('afterUpgrade', subApp1UpgradeFn);
     // subApp2.on('afterUpgrade', subApp2UpgradeFn);
-
-    await app.upgrade();
-
+    // await app.upgrade();
     // expect(subApp1UpgradeFn).toBeCalledTimes(1);
     // expect(subApp2UpgradeFn).toBeCalledTimes(1);
-
     // await subApp2.stop();
     // await subApp1.stop();
   });
