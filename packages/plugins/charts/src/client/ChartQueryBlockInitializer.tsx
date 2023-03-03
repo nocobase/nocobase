@@ -38,8 +38,8 @@ export const ChartQueryBlockInitializer = (props) => {
   const onAddQuery = async (info) => {
     const values = await FormDialog(
       {
-        sql: 'Add SQL query',
-        json: 'Add JSON query',
+        sql: lang( 'Add SQL query' ),
+        json: lang( 'Add JSON query' ),
       }[info.key],
       () => {
         return (
@@ -51,7 +51,7 @@ export const ChartQueryBlockInitializer = (props) => {
                     type: 'object',
                     properties: {
                       title: {
-                        title: 'Title',
+                        title: lang('Title'),
                         required: true,
                         'x-component': 'Input',
                         'x-decorator': 'FormItem',
@@ -88,7 +88,7 @@ export const ChartQueryBlockInitializer = (props) => {
           // },
           {
             type: 'subMenu',
-            title: 'Add chart query',
+            title: lang('Add chart query'),
             // component: AddChartQuery,
             children: [
               {

@@ -112,7 +112,7 @@ export const chartsQueriesSchema: ISchema = {
               'x-component-props': {
                 useAction: '{{ useDestroyAllSelectedQueriesAction }}',
                 confirm: {
-                  title: '{{t(\'Delete queries\')}}',
+                  title: '{{t("Delete queries",{ns:"charts"})}}',
                   content: '{{t(\'Are you sure you want to delete it?\')}}',
                 },
               },
@@ -301,7 +301,7 @@ export const chartsQueriesSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {
-                          title: '{{t(\'Delete role\')}}',
+                          title: '{{t("Delete query",{ns:"charts"})}}',
                           content: '{{t(\'Are you sure you want to delete it?\')}}',
                         },
                         useAction: '{{ useDestroyQueryItemAction }}',
