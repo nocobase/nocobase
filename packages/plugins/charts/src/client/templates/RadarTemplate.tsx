@@ -83,14 +83,8 @@ export const radarTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Radar | G2Plot","https://g2plot.antv.antgroup.com/api/plots/radar")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/radar'}
-              target='_blank'>{lang('Radar | G2Plot')}</a></span>,
           },
         },
       },

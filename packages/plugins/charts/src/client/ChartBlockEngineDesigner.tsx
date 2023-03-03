@@ -23,6 +23,17 @@ import { useFieldsById } from './hooks';
 import { lang } from './locale';
 import { templates } from './templates';
 
+export const jsonConfigDesc = (title: string, link: string) => {
+  return (
+    <span>
+      {lang('Json config references: ')}
+      <a href={link} target='_blank'>
+        {lang(title)}
+      </a>
+    </span>
+  );
+};
+
 const validateJSON = {
   validator: `{{(value, rule)=> {
     if (!value) {
@@ -116,7 +127,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                     >
                       <FormLayout layout={'vertical'}>
                         <SchemaComponent
-                          scope={{ dataSource, JSON5 }}
+                          scope={{ dataSource, JSON5, jsonConfigDesc }}
                           components={{ Options }}
                           schema={{
                             properties: {

@@ -76,14 +76,8 @@ export const areaTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Area | G2Plot","https://g2plot.antv.antgroup.com/api/plots/area")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{i18n.t('Json config references: ',{ns:"charts"})}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/area'}
-              target='_blank'>{lang('Area | G2Plot')}</a></span>,
           },
         },
       },

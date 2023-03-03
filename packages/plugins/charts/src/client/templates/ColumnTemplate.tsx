@@ -93,13 +93,8 @@ export const columnTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Column | G2Plot","https://g2plot.antv.antgroup.com/api/plots/column")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/column'} target='_blank'>{lang('Column | G2Plot')}</a></span>,
           },
         },
       },

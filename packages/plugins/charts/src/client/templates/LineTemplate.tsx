@@ -19,11 +19,11 @@ const validateJSON = {
       return false;
     }
   }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
+  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
-  _xType:'Line',
+  _xType: 'Line',
   yField: '{{metric}}',
   xField: '{{dimension}}',
   seriesField: '{{category}}',
@@ -89,14 +89,8 @@ export const lineTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Line | G2Plot","https://g2plot.antv.antgroup.com/api/plots/line")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/line'}
-              target='_blank'>{lang('Line | G2Plot')}</a></span>,
           },
         },
       },

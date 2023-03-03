@@ -93,14 +93,8 @@ export const barTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Bar | G2Plot","https://g2plot.antv.antgroup.com/api/plots/bar")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/bar'}
-              target='_blank'>{lang('Bar | G2Plot')}</a></span>,
           },
         },
       },

@@ -19,7 +19,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
+  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
@@ -102,14 +102,8 @@ export const scatterTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description': '{{jsonConfigDesc("Scatter | G2Plot","https://g2plot.antv.antgroup.com/api/plots/scatter")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/scatter'}
-              target='_blank'>{lang('Scatter | G2Plot')}</a></span>,
           },
         },
       },

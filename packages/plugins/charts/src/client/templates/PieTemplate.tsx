@@ -80,14 +80,8 @@ export const pieTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Pie | G2Plot","https://g2plot.antv.antgroup.com/api/plots/pie")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/pie'}
-              target='_blank'>{lang('Pie | G2Plot')}</a></span>,
           },
         },
       },

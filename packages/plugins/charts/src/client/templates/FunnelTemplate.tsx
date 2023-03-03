@@ -77,14 +77,8 @@ export const funnelTemplate = {
             'x-component-props': {
               autoSize: { minRows: 8, maxRows: 16 },
             },
+            'description':'{{jsonConfigDesc("Funnel | G2Plot","https://g2plot.antv.antgroup.com/api/plots/funnel")}}',
             'x-validator': validateJSON,
-          },
-          references: {
-            type: 'string',
-            'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
-              href={'https://g2plot.antv.antgroup.com/api/plots/funnel'}
-              target='_blank'>{lang('Funnel | G2Plot')}</a></span>,
           },
         },
       },
