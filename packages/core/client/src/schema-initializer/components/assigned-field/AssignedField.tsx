@@ -114,10 +114,10 @@ export const AssignedField = (props: any) => {
   const dateTimeFields = ['createdAt', 'datetime', 'time', 'updatedAt'];
   useEffect(() => {
     const opt = [
-      {
-        name: 'currentRecord',
-        title: t('Current record'),
-      },
+      // {
+      //   name: 'currentRecord',
+      //   title: t('Current record'),
+      // },
       {
         name: 'currentUser',
         title: t('Current user'),
