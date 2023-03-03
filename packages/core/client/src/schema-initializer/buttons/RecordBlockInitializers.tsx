@@ -179,16 +179,22 @@ export const RecordBlockInitializers = (props: any) => {
       icon={'PlusOutlined'}
       items={[
         {
-          key: 'detail',
-          type: 'subMenu',
-          title: '{{t("Details")}}',
-          children: useDetailCollections(props),
-        },
-        {
-          key: 'form',
-          type: 'subMenu',
-          title: '{{t("Form")}}',
-          children: useFormCollections(props),
+          type: 'itemGroup',
+          title: '{{t("Current record blocks")}}',
+          children: [
+            {
+              key: 'detail',
+              type: 'subMenu',
+              title: '{{t("Details")}}',
+              children: useDetailCollections(props),
+            },
+            {
+              key: 'form',
+              type: 'subMenu',
+              title: '{{t("Form")}}',
+              children: useFormCollections(props),
+            },
+          ],
         },
         {
           type: 'itemGroup',
