@@ -42,7 +42,7 @@ export function JSONInput(props) {
       return;
     }
 
-    const variable = `"{{${selected.join('.')}}}"`;
+    const variable = `{{${selected.join('.')}}}`;
 
     const { textArea } = inputRef.current.resizableTextArea;
     const nextValue = textArea.value.slice(0, textArea.selectionStart) + variable + textArea.value.slice(textArea.selectionEnd);

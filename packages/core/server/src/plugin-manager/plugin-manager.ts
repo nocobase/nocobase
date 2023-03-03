@@ -176,6 +176,7 @@ export class PluginManager {
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
     }
+
     let name: string;
     if (typeof plugin === 'string') {
       name = plugin;
@@ -192,7 +193,9 @@ export class PluginManager {
       enabled: true,
       ...options,
     });
+
     const pluginName = instance.getName();
+
     if (this.plugins.has(pluginName)) {
       throw new Error(`plugin name [${pluginName}] already exists`);
     }
@@ -223,7 +226,12 @@ export class PluginManager {
     if (Array.isArray(plugin)) {
       const t = transaction || (await this.app.db.sequelize.transaction());
       try {
-        const items = await Promise.all(plugin.map((p) => this.add(p, options, t)));
+        const items = [];
+
+        for (const p of plugin) {
+          items.push(await this.add(p, options, t));
+        }
+
         await t.commit();
         return items;
       } catch (error) {
@@ -231,20 +239,26 @@ export class PluginManager {
         throw error;
       }
     }
+
     const packageName = await PluginManager.findPackage(plugin);
-    const packageJson = require(`${packageName}/package.json`);
+
     await this.generateClientFile(plugin, packageName);
+
     const instance = this.addStatic(plugin, {
       ...options,
       async: true,
     });
+
     let model = await this.repository.findOne({
       transaction,
       filter: { name: plugin },
     });
+
+    const packageJson = PluginManager.getPackageJson(packageName);
+
     if (!model) {
       const { enabled, builtIn, installed, ...others } = options;
-      model = await this.repository.create({
+      await this.repository.create({
         transaction,
         values: {
           name: plugin,
@@ -335,6 +349,10 @@ export class PluginManager {
     }
     await this.repository.remove(name);
     this.app.reload();
+  }
+
+  static getPackageJson(packageName: string) {
+    return require(`${packageName}/package.json`);
   }
 
   static getPackageName(name: string) {
