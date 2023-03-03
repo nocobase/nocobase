@@ -77,7 +77,6 @@ const InternalSelect = connect(
       }
       return v;
     };
-    console.log('props', props);
     if (objectValue) {
       return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
     }
@@ -98,7 +97,6 @@ const InternalSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

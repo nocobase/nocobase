@@ -89,7 +89,10 @@ export default observer(({ value, disabled, onChange }: any) => {
                           type: 'void',
                           properties: {
                             [field.name]: {
-                              'x-component': ConstantCompoent
+                              'x-component': ConstantCompoent,
+                              ['x-validator']() {
+                                return '';
+                              }
                             }
                           }
                         }}
