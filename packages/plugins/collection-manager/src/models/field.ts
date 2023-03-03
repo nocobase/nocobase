@@ -1,4 +1,4 @@
-import Database, { Collection, MagicAttributeModel, snakeCase } from '@nocobase/database';
+import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
 import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
@@ -35,15 +35,6 @@ export class FieldModel extends MagicAttributeModel {
     }
 
     const options = this.get();
-
-    if (options.uiSchemaUid) {
-      const UISchema = this.db.getModel('uiSchemas');
-      const uiSchema = await UISchema.findByPk(options.uiSchemaUid, {
-        transaction: loadOptions.transaction,
-      });
-
-      Object.assign(options, { uiSchema: uiSchema.get() });
-    }
 
     return collection.setField(name, options);
   }
