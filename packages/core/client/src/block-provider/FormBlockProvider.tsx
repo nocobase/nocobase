@@ -3,7 +3,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -56,7 +56,7 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const detailFlag = (Object.keys(record).length > 0 && designable) || __collection === collection;
-  const createFlag = currentCollection.name === collection && !Object.keys(record).length;
+  const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
   const relationFlag = (Object.keys(record).length > 0 && designable) || __collection === resource?.split('.')?.[0];
   return (
     (detailFlag || createFlag || relationFlag) && (
