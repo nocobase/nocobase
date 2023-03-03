@@ -812,7 +812,6 @@ SchemaSettings.EnableChildCollections = (props) => {
         };
         fieldSchema['x-enable-children'] = enableChildren;
         schema['x-enable-children'] = enableChildren;
-        console.log(schema);
         dn.emit('patch', {
           schema,
         });

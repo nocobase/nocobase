@@ -1,14 +1,42 @@
-import { css } from '@emotion/css';
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, useForm } from '@formily/react';
 import React from 'react';
-import { useChildrenCollections } from '../../collection-manager/action-hooks';
-import { SchemaComponent } from '../../schema-component';
+import { action } from '@formily/reactive';
+import { SchemaComponent, useCompile } from '../../schema-component';
+import { useCollectionManager } from '../../collection-manager';
 
 export const EnableChildCollections = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
-  console.log(defaultValues);
-  const childCollections = useChildrenCollections(collectionName);
+  const form = useForm();
+  const compile = useCompile();
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+
+  const useAsyncDataSource = (service: any) => {
+    return (field: any, options?: any) => {
+      field.loading = true;
+      service(field, options).then(
+        action.bound((data: any) => {
+          field.dataSource = data;
+          field.loading = false;
+          if (field.initialValue) {
+            field.disabled = true;
+          }
+        }),
+      );
+    };
+  };
+  const loadData = async (field) => {
+    const { childrenCollections: childCollections } = form.values?.enableChildren;
+    return childrenCollections
+      .filter((v) => {
+        return !childCollections.find((k) => k.collection === v.name) || field.initialValue;
+      })
+      ?.map((collection: any) => ({
+        label: compile(collection.title),
+        value: collection.name,
+      }));
+  };
   return (
     <SchemaComponent
       schema={{
@@ -33,14 +61,15 @@ export const EnableChildCollections = observer((props: any) => {
                     },
                     collection: {
                       type: 'string',
-                      enum: childCollections,
                       'x-decorator': 'FormItem',
+                      required: true,
                       'x-component': 'Select',
                       'x-component-props': {
                         style: {
-                          width: 250,
+                          width: 260,
                         },
                       },
+                      'x-reactions': ['{{useAsyncDataSource(loadData)}}'],
                     },
                     title: {
                       type: 'string',
@@ -48,7 +77,7 @@ export const EnableChildCollections = observer((props: any) => {
                       'x-component': 'Input',
                       'x-component-props': {
                         style: {
-                          width: 230,
+                          width: 235,
                         },
                       },
                     },
@@ -71,6 +100,7 @@ export const EnableChildCollections = observer((props: any) => {
           },
         },
       }}
+      scope={{ useAsyncDataSource, loadData }}
     />
   );
 });

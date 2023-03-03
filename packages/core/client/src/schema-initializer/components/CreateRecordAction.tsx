@@ -91,7 +91,7 @@ export const CreateRecordAction = observer((props) => {
       const childCollection = totalChildCollections.find((j) => j.name === k.collection);
       return {
         ...childCollection,
-        title: k.title,
+        title: k.title||childCollection.title,
       };
     })
     .filter((v) => {
