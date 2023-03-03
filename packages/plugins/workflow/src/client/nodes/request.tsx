@@ -154,7 +154,7 @@ export default {
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
         className: css`
-          font-size: 85%;
+          font-size: 90%;
           font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
         `
       },

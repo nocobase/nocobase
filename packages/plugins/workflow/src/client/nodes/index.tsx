@@ -10,9 +10,9 @@ import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
 import { Registry } from '@nocobase/utils/client';
-import { SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { ActionContext, SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
 
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeHeaderClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 
@@ -147,7 +147,7 @@ export function Node({ data }) {
 export function RemoveButton() {
   const { t } = useTranslation();
   const api = useAPIClient();
-  const { workflow, nodes, onNodeRemoved } = useFlowContext() ?? {};
+  const { workflow, nodes, refresh } = useFlowContext() ?? {};
   const current = useNodeContext();
   if (!workflow) {
     return null;
@@ -156,10 +156,10 @@ export function RemoveButton() {
 
   async function onRemove() {
     async function onOk() {
-      const { data: { data: node } } = await resource.destroy?.({
+      await resource.destroy?.({
         filterByTk: current.id
       });
-      onNodeRemoved(node);
+      refresh();
     }
 
     const usingNodes = nodes.filter(node => {
@@ -219,6 +219,7 @@ export function JobButton() {
         className={cx('workflow-node-job-button', css`
           border: 2px solid #d9d9d9;
           border-radius: 50%;
+          cursor: not-allowed;
         `)}
       />
     );
@@ -309,151 +310,158 @@ export function NodeDefaultView(props) {
   const { data, children } = props;
   const compile = useCompile();
   const api = useAPIClient();
-  const [editing, setEditing] = useState<boolean>(false);
-  const [editingTitle, setEditingTitle] = useState<string>(data.title);
-  const [editedTitle, setEditedTitle] = useState(data.title);
-  const { workflow } = useFlowContext() ?? {};
-  if (!workflow) {
-    return null;
-  }
+  const { workflow, refresh } = useFlowContext() ?? {};
 
   const instruction = instructions.get(data.type);
   const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const typeTitle = compile(instruction.title);
 
+  const [editingTitle, setEditingTitle] = useState<string>(data.title ?? typeTitle);
+  const [editingConfig, setEditingConfig] = useState(false);
+
   async function onChangeTitle(next) {
     const title = next || typeTitle;
-    if (title === editedTitle) {
-      setEditing(false);
-      setEditingTitle(title);
+    setEditingTitle(title);
+    if (title === data.title) {
       return;
     }
-    await api.resource('flow_nodes', data.id).update?.({
+    await api.resource('flow_nodes').update?.({
       filterByTk: data.id,
       values: {
         title
       }
     });
-    setEditedTitle(title);
-    setEditingTitle(title);
-    setEditing(false);
+    refresh();
+  }
+
+  function onOpenDrawer(ev) {
+    if (ev.target === ev.currentTarget) {
+      setEditingConfig(true);
+      return;
+    }
+    const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
+    for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
+      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+        setEditingConfig(true);
+        ev.stopPropagation();
+        return;
+      }
+    }
   }
 
   return (
     <div className={cx(nodeClass, `workflow-node-type-${data.type}`)}>
-      <div className={cx(nodeCardClass)}>
-        <div className={cx(nodeHeaderClass)}>
-          <div className={cx(nodeMetaClass)}>
-            <Tag>{typeTitle}</Tag>
-            <span className="workflow-node-id">{data.id}</span>
-          </div>
-          <h4 className={cx(nodeTitleClass)}>
-            <Input.TextArea
-              value={editingTitle}
-              onChange={(ev) => setEditingTitle(ev.target.value)}
-              onFocus={() => setEditing(true)}
-              onBlur={(ev) => onChangeTitle(ev.target.value)}
-              autoSize
-              className={editing ? '' : 'display-title'}
-            />
-          </h4>
-          <RemoveButton />
-          <JobButton />
+      <div className={cx(nodeCardClass, { configuring: editingConfig })} onClick={onOpenDrawer}>
+        <div className={cx(nodeMetaClass, 'workflow-node-meta')}>
+          <Tag>{typeTitle}</Tag>
+          <span className="workflow-node-id">{data.id}</span>
         </div>
-        <SchemaComponent
-          scope={instruction.scope}
-          components={instruction.components}
-          schema={{
-            type: 'void',
-            properties: {
-              ...(instruction.view ? { view: instruction.view } : {}),
-              config: {
-                type: 'void',
-                title: detailText,
-                'x-component': 'Action.Link',
-                'x-component-props': {
-                  type: 'primary',
+        <div>
+          <Input.TextArea
+            disabled={workflow.executed}
+            value={editingTitle}
+            onChange={(ev) => setEditingTitle(ev.target.value)}
+            onBlur={(ev) => onChangeTitle(ev.target.value)}
+            autoSize
+          />
+        </div>
+        <RemoveButton />
+        <JobButton />
+        <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+          <SchemaComponent
+            scope={instruction.scope}
+            components={instruction.components}
+            schema={{
+              type: 'void',
+              properties: {
+                ...(instruction.view ? { view: instruction.view } : {}),
+                config: {
+                  type: 'void',
+                  'x-content': detailText,
+                  'x-component': Button,
+                  'x-component-props': {
+                    type: 'link',
+                    className: 'workflow-node-config-button'
+                  },
                 },
-                properties: {
-                  [`${instruction.type}_${data.id}`]: {
-                    type: 'void',
-                    title: instruction.title,
-                    'x-component': 'Action.Drawer',
-                    'x-decorator': 'Form',
-                    'x-decorator-props': {
-                      disabled: workflow.executed,
-                      useValues(options) {
-                        const { config } = useNodeContext();
-                        return useRequest(() => {
-                          return Promise.resolve({ data: config });
-                        }, options);
-                      }
-                    },
-                    properties: {
-                      ...(workflow.executed ? {
-                        alert: {
-                          type: 'void',
-                          'x-component': Alert,
-                          'x-component-props': {
-                            type: 'warning',
-                            showIcon: true,
-                            message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                            className: css`
-                              width: 100%;
-                              font-size: 85%;
-                              margin-bottom: 2em;
-                            `
-                          },
-                        }
-                      } : {}),
-                      fieldset: {
+                [`${instruction.type}_${data.id}`]: {
+                  type: 'void',
+                  title: instruction.title,
+                  'x-component': 'Action.Drawer',
+                  'x-decorator': 'Form',
+                  'x-decorator-props': {
+                    disabled: workflow.executed,
+                    useValues(options) {
+                      const { config } = useNodeContext();
+                      return useRequest(() => {
+                        return Promise.resolve({ data: config });
+                      }, options);
+                    }
+                  },
+                  properties: {
+                    ...(workflow.executed ? {
+                      alert: {
                         type: 'void',
-                        'x-component': 'fieldset',
+                        'x-component': Alert,
                         'x-component-props': {
+                          type: 'warning',
+                          showIcon: true,
+                          message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
                           className: css`
-                            .ant-input,
-                            .ant-select,
-                            .ant-cascader-picker,
-                            .ant-picker,
-                            .ant-input-number,
-                            .ant-input-affix-wrapper{
-                              width: auto;
-                              min-width: 6em;
-                            }
+                            width: 100%;
+                            font-size: 85%;
+                            margin-bottom: 2em;
                           `
                         },
-                        properties: instruction.fieldset
+                      }
+                    } : {}),
+                    fieldset: {
+                      type: 'void',
+                      'x-component': 'fieldset',
+                      'x-component-props': {
+                        className: css`
+                          .ant-input,
+                          .ant-select,
+                          .ant-cascader-picker,
+                          .ant-picker,
+                          .ant-input-number,
+                          .ant-input-affix-wrapper{
+                            width: auto;
+                            min-width: 6em;
+                          }
+                        `
                       },
-                      actions: workflow.executed
-                      ? null
-                      : {
-                        type: 'void',
-                        'x-component': 'Action.Drawer.Footer',
-                        properties: {
-                          cancel: {
-                            title: '{{t("Cancel")}}',
-                            'x-component': 'Action',
-                            'x-component-props': {
-                              useAction: '{{ cm.useCancelAction }}',
-                            },
-                          },
-                          submit: {
-                            title: '{{t("Submit")}}',
-                            'x-component': 'Action',
-                            'x-component-props': {
-                              type: 'primary',
-                              useAction: useUpdateAction,
-                            },
+                      properties: instruction.fieldset
+                    },
+                    actions: workflow.executed
+                    ? null
+                    : {
+                      type: 'void',
+                      'x-component': 'Action.Drawer.Footer',
+                      properties: {
+                        cancel: {
+                          title: '{{t("Cancel")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            useAction: '{{ cm.useCancelAction }}',
                           },
                         },
-                      }
+                        submit: {
+                          title: '{{t("Submit")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'primary',
+                            useAction: useUpdateAction,
+                          },
+                        },
+                      },
                     }
-                  } as ISchema
-                }
+                  }
+                } as ISchema
               }
-            }
-          }}
-        />
+            }}
+          />
+        </ActionContext.Provider>
       </div>
       {children}
     </div>

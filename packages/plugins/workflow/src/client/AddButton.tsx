@@ -20,7 +20,7 @@ interface AddButtonProps {
 export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
   const compile = useCompile();
   const api = useAPIClient();
-  const { workflow, onNodeAdded } = useFlowContext() ?? {};
+  const { workflow, refresh } = useFlowContext() ?? {};
   if (!workflow) {
     return null;
   }
@@ -46,7 +46,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
       }
     });
 
-    onNodeAdded(node);
+    refresh();
   }
 
   const instructionList = (Array.from(instructions.getValues()) as Instruction[]);
@@ -80,10 +80,7 @@ export function AddButton({ upstream, branchIndex = null }: AddButtonProps) {
     <div className={cx(addButtonClass)}>
       <Dropdown
         trigger={['click']}
-        overlay={
-          <Menu onClick={ev => onCreate(ev)} items={compile(groups)}>
-          </Menu>
-        }
+        overlay={<Menu onClick={ev => onCreate(ev)} items={compile(groups)} />}
         disabled={workflow.executed}
       >
         <Button shape="circle" icon={<PlusOutlined />} />
