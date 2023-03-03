@@ -1,27 +1,23 @@
-import { AppstoreAddOutlined, SettingOutlined } from '@ant-design/icons';
-import { Dropdown, Menu } from 'antd';
+import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Dropdown, Menu } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { PluginManager } from '../plugin-manager';
 import { ActionContext, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
-  const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const history = useHistory();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <PluginManager.Toolbar.Item
-        icon={<AppstoreAddOutlined />}
-        title={t('Plugin manager')}
-        onClick={() => {
-          history.push('/admin/pm/list');
-        }}
-      />
-    </ActionContext.Provider>
+    <Button
+      icon={<ApiOutlined />}
+      title={t('Plugin manager')}
+      onClick={() => {
+        history.push('/admin/pm/list');
+      }}
+    />
   );
 };
 
@@ -76,10 +72,10 @@ export const SettingsCenterDropdown = () => {
           </Menu>
         }
       >
-        <PluginManager.Toolbar.Item
+        <Button
           icon={<SettingOutlined />}
           // title={t('All plugin settings')}
-        ></PluginManager.Toolbar.Item>
+        />
       </Dropdown>
     </ActionContext.Provider>
   );

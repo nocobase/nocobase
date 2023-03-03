@@ -1,9 +1,9 @@
+import Database, { IDatabaseOptions } from '@nocobase/database';
 import Application, { AppManager, InstallOptions, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
-import * as path from 'path';
-import { ApplicationModel } from './models/application';
-import Database, { IDatabaseOptions, Model, Transactionable } from '@nocobase/database';
 import lodash from 'lodash';
+import * as path from 'path';
+import { resolve } from 'path';
+import { ApplicationModel } from './models/application';
 
 export type AppDbCreator = (app: Application) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -87,10 +87,10 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async install(options?: InstallOptions) {
-    const repo = this.db.getRepository<any>('collections');
-    if (repo) {
-      await repo.db2cm('applications');
-    }
+    // const repo = this.db.getRepository<any>('collections');
+    // if (repo) {
+    //   await repo.db2cm('applications');
+    // }
   }
 
   beforeLoad(): void {

@@ -14,28 +14,19 @@ export default defineCollection({
       type: 'uid',
       name: 'name',
       primaryKey: true,
-      prefix: 'a',
-      interface: 'input',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Application name")}}',
-        'x-component': 'Input',
-      },
+    },
+    {
+      type: 'string',
+      name: 'title',
+    },
+    {
+      type: 'string',
+      name: 'icon',
     },
     {
       type: 'string',
       name: 'status',
-      interface: 'radioGroup',
       defaultValue: 'pending',
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Application status")}}',
-        'x-component': 'Radio.Group',
-        enum: [
-          { label: '创建中', value: 'pending' },
-          { label: '运行中', value: 'running' },
-        ],
-      },
     },
     {
       type: 'json',

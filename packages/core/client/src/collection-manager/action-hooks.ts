@@ -1,4 +1,4 @@
-import { useForm } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
@@ -174,15 +174,19 @@ export const useFilterAction = () => {
 
 export const useCreateAction = () => {
   const form = useForm();
+  const field = useField();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
       await resource.create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
     },
   };
@@ -231,6 +235,7 @@ export const useMoveAction = () => {
 };
 
 export const useUpdateAction = () => {
+  const field = useField();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -239,9 +244,12 @@ export const useUpdateAction = () => {
   return {
     async run() {
       await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
       await resource.update({ filterByTk, values: form.values });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
     },
   };
