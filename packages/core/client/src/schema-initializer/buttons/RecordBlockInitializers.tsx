@@ -105,10 +105,7 @@ const useRelationFields = () => {
 };
 
 const useDetailCollections = (props) => {
-  const { actionInitializers } = props;
-  const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collection.name);
+  const { actionInitializers, childrenCollections, collection } = props;
   const detailCollections = [
     {
       key: collection.name,
@@ -136,10 +133,7 @@ const useDetailCollections = (props) => {
 };
 
 const useFormCollections = (props) => {
-  const { actionInitializers } = props;
-  const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collection.name);
+  const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
     {
       key: collection.name,
@@ -169,7 +163,11 @@ const useFormCollections = (props) => {
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
-  const { insertPosition, component } = props;
+  const { insertPosition, component, actionInitializers } = props;
+  const collection = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collection.name);
+  const hasChildCollection = childrenCollections?.length > 0;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -181,20 +179,36 @@ export const RecordBlockInitializers = (props: any) => {
         {
           type: 'itemGroup',
           title: '{{t("Current record blocks")}}',
-          children: [
-            {
-              key: 'detail',
-              type: 'subMenu',
-              title: '{{t("Details")}}',
-              children: useDetailCollections(props),
-            },
-            {
-              key: 'form',
-              type: 'subMenu',
-              title: '{{t("Form")}}',
-              children: useFormCollections(props),
-            },
-          ],
+          children: hasChildCollection
+            ? [
+                {
+                  key: 'details',
+                  type: 'subMenu',
+                  title: '{{t("Details")}}',
+                  children: useDetailCollections({ ...props, childrenCollections, collection }),
+                },
+                {
+                  key: 'form',
+                  type: 'subMenu',
+                  title: '{{t("Form")}}',
+                  children: useFormCollections({ ...props, childrenCollections, collection }),
+                },
+              ]
+            : [
+                {
+                  key: 'details',
+                  type: 'item',
+                  title: '{{t("Details")}}',
+                  component: 'RecordReadPrettyFormBlockInitializer',
+                  actionInitializers,
+                },
+                {
+                  key: 'form',
+                  type: 'item',
+                  title: '{{t("Form")}}',
+                  component: 'RecordFormBlockInitializer',
+                },
+              ],
         },
         {
           type: 'itemGroup',
