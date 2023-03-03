@@ -823,8 +823,8 @@ export const createTableBlockSchema = (options) => {
     tableColumnInitializers,
     tableActionColumnInitializers,
     tableBlockProvider,
-    template,
     fixedParams = {},
+    disableTemplate,
     ...others
   } = options;
   const schema: ISchema = {
@@ -844,7 +844,7 @@ export const createTableBlockSchema = (options) => {
       rowKey,
       showIndex: true,
       dragSort: false,
-      template: template ?? true,
+      disableTemplate: disableTemplate ?? false,
       ...others,
     },
     'x-designer': 'TableBlockDesigner',

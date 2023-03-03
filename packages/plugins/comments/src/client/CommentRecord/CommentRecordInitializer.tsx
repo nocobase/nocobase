@@ -11,7 +11,7 @@ export const CommentRecordInitializer = (props) => {
     tableColumnInitializers: 'CommentRecordTableColumnInitializers',
     tableActionColumnInitializers: 'CommentRecordTableActionColumnInitializers',
     tableBlockProvider: 'CommentRecordBlockProvider',
-    template: false,
+    disableTemplate: true,
     fixedParams: {
       appends: ['mentionUsers'],
     },
