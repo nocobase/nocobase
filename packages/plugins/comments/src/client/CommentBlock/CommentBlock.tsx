@@ -163,7 +163,7 @@ export const CommentBlock = (props) => {
                 : []
             }
             author={<a>{i.createdBy.nickname}</a>}
-            content={<ReadPretty.Html value={getContent(i)} />}
+            content={<ReadPretty.Html value={i.content} />}
           />
         ))
       ) : (
@@ -189,37 +189,13 @@ export const getMentionUsers = (content: string) => {
   const reg = createReg('.*?', 'g');
   const atIds: number[] = [];
 
-  content.replace(reg, (match, p1) => atIds.push(~~p1) as unknown as string);
+  content.replace(reg, (match, p1) => {
+    return atIds.push(~~p1) as unknown as string;
+  });
 
   const mentionUsers = Array.from(new Set([...atIds]));
 
   return mentionUsers;
-};
-
-export const getContent = (item: CommentItem) => {
-  if (!item.mentionUsers) return item.content;
-  const reg = createReg('.*?', 'g');
-  const replaces = [];
-  let plainText = item.content.replace(reg, (match, p1) => {
-    const name = item.mentionUsers.find((i) => i.id === ~~p1)?.nickname ?? p1;
-    replaces.push(`@${name}`);
-    return `@${name}`;
-  });
-
-  if (replaces.length) {
-    let splits = [];
-    for (let r of replaces) {
-      const index = plainText.search(r);
-      const before = plainText.slice(0, index);
-      const main = `<a>${plainText.slice(index, index + r.length)}</a>`;
-      plainText = plainText.slice(index + r.length);
-      splits.push(before, main);
-    }
-    splits.push(plainText);
-    return splits.filter((i) => i).join('');
-  } else {
-    return plainText;
-  }
 };
 
 CommentBlock.Designer = CommentBlockDesigner;

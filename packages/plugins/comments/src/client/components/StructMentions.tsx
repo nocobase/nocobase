@@ -37,7 +37,8 @@ export const StructMentions = (props: StructMentionsProps) => {
 
   const overrideOnChange = (content: string) => {
     for (let at of ats) {
-      content = content.replace(`@${at.nickname}`, `{{at ${at.id}}}`);
+      const reg = new RegExp(`([^>]?)@${at.nickname}([^<])`, 'g');
+      content = content.replaceAll(reg, `$1<a data-userid="${at.id}">@${at.nickname}</a>$2`);
     }
     onChange?.(content);
   };
@@ -77,4 +78,4 @@ export const StructMentions = (props: StructMentionsProps) => {
   );
 };
 
-export const createReg = (id: string, flag?: string) => new RegExp(`\\{\\{at (${id})\\}\\}`, flag);
+export const createReg = (id: string, flag?: string) => new RegExp(`<a data-userid="(${id})">@(.*?)</a>`, flag);

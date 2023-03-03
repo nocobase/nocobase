@@ -1,18 +1,23 @@
 import React from 'react';
 import { observer } from '@formily/react';
+import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { Input as AntdInput } from 'antd';
 import { useRecord, ReadPretty } from '@nocobase/client';
-import { getContent, CommentItem } from '../../CommentBlock/CommentBlock';
 
-export const CommentRecordContent = observer(() => {
+export const InnerCommentRecordContent = observer(() => {
   const record = useRecord();
-  const content = getContent(record as CommentItem);
-
   return (
     <ReadPretty.Html
       ellipsis
       forceHtmlEllipsis
-      value={content}
+      value={record.content}
       htmlStyle={{ overflow: 'hidden', textOverflow: 'ellipsis' }}
     />
   );
 });
+
+export const CommentRecordContent = connect(
+  AntdInput,
+  mapProps((props, field) => props),
+  mapReadPretty(InnerCommentRecordContent),
+);
