@@ -11,23 +11,28 @@ export class AppManager extends EventEmitter {
   constructor(public app: Application) {
     super();
 
-    app.on('beforeDestroy', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.destroy(options)),
-      );
-    });
+    const passEventToSubApps = (eventName, method) => {
+      app.on(eventName, async (mainApp, options) => {
+        for (const application of this.applications.values()) {
+          console.log(`call ${method} on ${application.name} because ${eventName} of ${mainApp.name}`);
+          await application[method](options);
+        }
+      });
+    };
 
-    app.on('beforeStop', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.stop(options)),
-      );
-    });
+    passEventToSubApps('beforeDestroy', 'destroy');
+    passEventToSubApps('beforeStop', 'stop');
+    // passEventToSubApps('afterUpgrade', 'upgrade');
   }
 
   appSelector: AppSelector = (req: IncomingMessage) => this.app;
 
   createApplication(name: string, options: ApplicationOptions): Application {
-    const application = new Application(options);
+    const application = new Application({
+      ...options,
+      name,
+    });
+
     this.applications.set(name, application);
     return application;
   }

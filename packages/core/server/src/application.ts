@@ -525,7 +525,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async upgrade(options: any = {}) {
+    console.log(`emit beforeUpgrade event on ${this.name} application`);
     await this.emitAsync('beforeUpgrade', this, options);
+    console.log(`event beforeUpgrade on ${this.name} application has been emitted`);
+
     const force = false;
     await this.db.migrator.up();
     await this.db.sync({
