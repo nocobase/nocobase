@@ -81,7 +81,7 @@ export const areaTemplate = {
           references: {
             type: 'string',
             'x-decorator': 'div',
-            'x-content': <span>{lang('Json config references: ')}<a
+            'x-content': <span>{i18n.t('Json config references: ',{ns:"charts"})}<a
               href={'https://g2plot.antv.antgroup.com/api/plots/area'}
               target='_blank'>{lang('Area | G2Plot')}</a></span>,
           },

@@ -34,9 +34,9 @@ const InternalSelect = connect(
         }}
         mode={mode}
       >
-        <OptGroup label="基础图表">
+        <OptGroup label={lang('Basic chart')}>
           {group1.map((option) => (
-            <Option value={option.key} label={option.title}>
+            <Option value={option.key} label={lang(option.title)}>
               <Popover
                 placement={'right'}
                 zIndex={99999999999}
@@ -49,7 +49,7 @@ const InternalSelect = connect(
                       ))}
                   </span>
                 )}
-                trigger="hover"
+                trigger='hover'
               >
                 <div
                   className={css`
@@ -59,17 +59,17 @@ const InternalSelect = connect(
                   `}
                 >
                   <Icon type={option.iconId} />
-                  <span role="img" aria-label={option.title}>
-                    {option.title}
+                  <span role='img' aria-label={lang(option.title)}>
+                    {lang(option.title)}
                   </span>
                 </div>
               </Popover>
             </Option>
           ))}
         </OptGroup>
-        <OptGroup label="更多图表">
+        <OptGroup label={lang('More charts')}>
           {group2.map((option) => (
-            <Option value={option.key} label={option.title}>
+            <Option value={option.key} label={lang(option.title)}>
               <Popover
                 placement={'right'}
                 zIndex={99999999999}
@@ -82,7 +82,7 @@ const InternalSelect = connect(
                       ))}
                   </span>
                 )}
-                trigger="hover"
+                trigger='hover'
               >
                 <div
                   className={css`
@@ -92,8 +92,8 @@ const InternalSelect = connect(
                   `}
                 >
                   <Icon type={option.iconId} />
-                  <span role="img" aria-label={option.title}>
-                    {option.title}
+                  <span role='img' aria-label={lang(option.title)}>
+                    {lang(option.title)}
                   </span>
                 </div>
               </Popover>
