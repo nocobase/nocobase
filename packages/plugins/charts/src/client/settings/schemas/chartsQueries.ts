@@ -17,7 +17,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Title")}}',
+        title: '{{t("Title",{ns:"charts"})}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -28,7 +28,7 @@ const collection = {
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '{{t("Type")}}',
+        title: '{{t("Type",{ns:"charts"})}}',
         type: 'string',
         'x-component': 'Select',
         required: true,
@@ -119,7 +119,7 @@ export const chartsQueriesSchema: ISchema = {
             },
             create: {
               type: 'void',
-              title: '{{t("Add new")}}',
+              title: '{{t("Add query")}}',
               'x-component': 'AddNewQuery',
               'x-component-props': {
                 type: 'primary',
@@ -143,7 +143,7 @@ export const chartsQueriesSchema: ISchema = {
                       );
                     },
                   },
-                  title: '{{t("Add new")}}',
+                  title: '{{t("Add query",{ns:"charts"})}}',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -158,14 +158,14 @@ export const chartsQueriesSchema: ISchema = {
                       'x-component': 'Action.Drawer.Footer',
                       properties: {
                         cancel: {
-                          title: '{{t("Cancel")}}',
+                          title: '{{t("Cancel",{ns:"charts"})}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             useAction: '{{ cm.useCancelAction }}',
                           },
                         },
                         submit: {
-                          title: '{{t("Submit")}}',
+                          title: '{{t("Submit",{ns:"charts"})}}',
                           'x-component': 'Action',
                           'x-component-props': {
                             type: 'primary',
@@ -275,14 +275,14 @@ export const chartsQueriesSchema: ISchema = {
                               'x-component': 'Action.Drawer.Footer',
                               properties: {
                                 cancel: {
-                                  title: '{{t("Cancel")}}',
+                                  title: '{{t("Cancel",{ns:"charts"})}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     useAction: '{{ cm.useCancelAction }}',
                                   },
                                 },
                                 submit: {
-                                  title: '{{t("Submit")}}',
+                                  title: '{{t("Submit",{ns:"charts"})}}',
                                   'x-component': 'Action',
                                   'x-component-props': {
                                     type: 'primary',

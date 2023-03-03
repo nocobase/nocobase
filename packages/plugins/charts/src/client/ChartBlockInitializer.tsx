@@ -59,7 +59,6 @@ export const ChartBlockInitializer = (props) => {
     <ChartQueryBlockInitializer
       {...props}
       componentType={'Kanban'}
-      icon={<FormOutlined />}
       onCreateBlockSchema={async ({ item: chartQueryMetadata }: { item: ChartQueryMetadata }) => {
         const dataSource = chartQueryMetadata?.fields.map(field => {
           return {

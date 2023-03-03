@@ -11,6 +11,8 @@ import {
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';
 import { getQueryTypeSchema } from './settings/queryTypes';
+import { lang } from './locale';
+
 
 export interface ChartQueryMetadata {
   id: number;
@@ -23,7 +25,7 @@ export const ChartQueryBlockInitializer = (props) => {
   const defaultItems: any = [
     {
       type: 'itemGroup',
-      title: 'select a data source',
+      title: lang('Select query data'),
       children: [],
     },
   ];

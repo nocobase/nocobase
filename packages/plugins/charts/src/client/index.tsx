@@ -40,6 +40,7 @@ export default React.memo((props) => {
   children.push({
     key: 'chart',
     type: 'item',
+    icon: 'PieChartOutlined',
     title: '{{t("Chart",{ns:"charts"})}}',
     component: 'ChartBlockInitializer',
   });
@@ -48,11 +49,11 @@ export default React.memo((props) => {
       <SettingsCenterProvider
         settings={{
           charts: {
-            title: '{{t("Charts")}}',
+            title: '{{t("Chart",{ns:"charts"})}}',
             icon: 'PieChartOutlined',
             tabs: {
               queries: {
-                title: '{{t("Queries")}}',
+                title: '{{t("Queries",{ns:"charts"})}}',
                 component: () => <QueriesTable />,
               },
             },
