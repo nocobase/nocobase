@@ -19,6 +19,7 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { ChartBlockEngine, ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { Card } from 'antd';
 import { lang, useChartsTranslation } from './locale';
+import { jsonConfigDesc } from './ChartBlockEngineDesigner';
 
 export const Options = observer((props) => {
   const form = useForm<ChartFormInterface>();
@@ -103,7 +104,7 @@ export const ChartBlockInitializer = (props) => {
                     <FormProvider form={form}>
                       <FormLayout layout={'vertical'}>
                         <SchemaComponent
-                          scope={{ dataSource, JSON5 }}
+                          scope={{ dataSource, JSON5, jsonConfigDesc }}
                           components={{ Options }}
                           schema={{
                             properties: {

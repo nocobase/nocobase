@@ -62,7 +62,7 @@ const ChartRenderComponent = ({
         if (!metric || !dimension) {
           return (
             <>
-              {lang('Please check your chart config option')}
+              {lang('Please check the chart config')}
             </>
           );
         }
@@ -71,7 +71,7 @@ const ChartRenderComponent = ({
         if (config._xType !== chartConfig.type) {
           return (
             <>
-              {lang('Please check your chart config option')}
+              {lang('Please check the chart config')}
             </>
           );
         }
@@ -114,7 +114,7 @@ const ChartBlockEngine = ({
   if (!chartType || !renderComponent) {
     return (
       <>
-        {lang('Please check your chart config option')}
+        {lang('Please check the chart config')}
       </>
     );
   }

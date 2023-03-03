@@ -36,7 +36,7 @@ export default {
   'Funnel Layer Width/Metrics': '漏斗层宽度 / 度量',
   'Branch Tags/Dimensions': '分支标签 / 纬度',
   'Branch Length/Metrics': '分支长度 / 度量',
-  'Please check your chart config option': '请检查您的图表配置选项',
+  'Please check the chart config': '请检查图表配置',
   '1 「time」or 「Ordered Noun」 field,1 「Numerical」 field,1 「Unordered Noun」 field (optional)': '1 个「时间」或「有序名词」字段,1 个「数值」字段,1 个「无序名词」字段(可选)',
   '1 「time」 or 「ordered noun」 field, 1 「value」 field, 0~ 1 「unordered noun」': '1 个「时间」或「有序名词」字段,1 个「数值」字段,0 ～ 1 个「无序名词」',
   '1 「time」 or 「ordered noun」 field, 1 「value」 field, 0 to 1 「unordered noun」': '1 个「时间」或「有序名词」字段,1 个「数值」字段,0 ～ 1 个「无序名词」',
