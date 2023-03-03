@@ -30,7 +30,7 @@ export const EnableChildCollections = observer((props: any) => {
     const { childrenCollections: childCollections } = form.values?.enableChildren;
     return childrenCollections
       .filter((v) => {
-        return !childCollections.find((k) => k.collection === v.name) || field.initialValue;
+        return !childCollections.find((k) => k.collection === v.name) || field.initialValue || v.name === field.value;
       })
       ?.map((collection: any) => ({
         label: compile(collection.title),
