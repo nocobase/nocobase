@@ -10,9 +10,8 @@ import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlockDesignerSetting } from '../page';
 
-export const TableBlockDesigner = () => {
+export const FilterTableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();

@@ -50,7 +50,13 @@ export const BlockInitializers = {
       title: '{{t("Filter blocks")}}',
       children: [
         {
-          key: 'form',
+          key: 'filterTable',
+          type: 'item',
+          title: '{{t("Table")}}',
+          component: 'FilterTableBlockInitializer',
+        },
+        {
+          key: 'filterForm',
           type: 'item',
           title: '{{t("Form")}}',
           component: 'FilterFormBlockInitializer',

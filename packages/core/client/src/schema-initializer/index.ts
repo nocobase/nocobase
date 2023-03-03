@@ -6,6 +6,8 @@ export {
   gridRowColWrap,
   useRecordCollectionDataSourceItems,
   createTableBlockSchema,
+  createFilterTableBlockSchema,
+  createFilterFormBlockSchema,
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,

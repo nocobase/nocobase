@@ -450,7 +450,6 @@ SchemaSettings.Remove = (props: any) => {
 };
 
 SchemaSettings.ConnectDataBlocks = (props: any) => {
-  const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -555,7 +554,6 @@ SchemaSettings.PopupItem = (props) => {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
-  const actx = useActionContext();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item
