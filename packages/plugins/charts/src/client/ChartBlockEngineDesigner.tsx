@@ -193,6 +193,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         title={lang('Data preview')}
                         className={css`
                           margin-top: 8px;
+                          overflow: scroll;
                         `}
                       >
                         {/*Data preview*/}
