@@ -10,7 +10,7 @@ import {
   SchemaSettings,
   useAPIClient,
   useCompile,
-  useDesignable,
+  useDesignable
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -78,7 +78,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const field = useField();
-  const compiler = useCompile();
+  const compile = useCompile();
   const { chart, query } = chartBlockEngineMetaData;
   const { fields } = useFieldsById(query.id);
   const dataSource = fields.map((field) => {
@@ -92,6 +92,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
       onClick={async () => {
         FormDialog(
           {
+            okText: compile('{{t("Submit")}}'),
             title: lang('Edit chart block'),
             width: 1200,
             bodyStyle: { background: '#f0f2f5', maxHeight: '65vh', overflow: 'auto' },
@@ -113,14 +114,14 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                   <section
                     className={css`
                       display: flex;
-                      gap: 16px;
+                      gap: 24px;
                     `}
                   >
                     {/*  left*/}
                     <Card
                       bordered={false}
                       title={i18n.t('Chart config')}
-                      size={'small'}
+                      size={'default'}
                       className={css`
                         flex: 1;
                       `}
@@ -167,7 +168,7 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         min-width: 600px;
                       `}
                     >
-                      <Card size='small' title={lang('Chart preview')}>
+                      <Card size={'default'} title={lang('Chart preview')}>
                         {/*  Chart Preview*/}
                         {chartBlockEngineMetaData && (
                           <>
@@ -189,10 +190,10 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                         )}
                       </Card>
                       <Card
-                        size='small'
+                        size={'default'}
                         title={lang('Data preview')}
                         className={css`
-                          margin-top: 8px;
+                          margin-top: 24px;
                           overflow: scroll;
                         `}
                       >

@@ -5,15 +5,13 @@ import {
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  Table,
+  TableV2
 } from '@nocobase/client';
-import React from 'react';
-import { uid } from '@formily/shared';
-import { useGetDataSet } from './ChartBlockEngine';
 import { Empty, Spin } from 'antd';
-import { useFieldsById } from './hooks';
+import React from 'react';
+import { useGetDataSet } from './ChartBlockEngine';
 
-export default ({ queryId, fields }: { queryId: number, fields }) => {
+export default ({ queryId, fields }: { queryId: number; fields }) => {
   const { dataSet, loading, error } = useGetDataSet(queryId);
   const columns = {};
   if (fields) {
@@ -21,7 +19,10 @@ export default ({ queryId, fields }: { queryId: number, fields }) => {
       columns[field.name] = {
         type: 'void',
         title: field.name,
-        'x-component': 'Table.Column',
+        'x-component': 'TableV2.Column',
+        'x-component-props': {
+          // width: 200,
+        },
         properties: {
           [field.name]: {
             type: 'string',
@@ -36,13 +37,13 @@ export default ({ queryId, fields }: { queryId: number, fields }) => {
     type: 'void',
     properties: {
       input: {
-        type: 'void',
-        'x-component': 'Table.Void',
+        type: 'array',
+        'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
-          dataSource: '{{dataSet}}',
           scroll: { y: 300 },
         },
+        default: dataSet,
         properties: columns,
       },
     },
@@ -63,7 +64,7 @@ export default ({ queryId, fields }: { queryId: number, fields }) => {
       </>
     );
   return (
-    <SchemaComponentProvider scope={{ dataSet }} components={{ Table, Input, FormItem }}>
+    <SchemaComponentProvider scope={{ dataSet }} components={{ TableV2, Input, FormItem }}>
       <BlockSchemaComponentProvider>
         <SchemaComponent schema={schema} />
       </BlockSchemaComponentProvider>
