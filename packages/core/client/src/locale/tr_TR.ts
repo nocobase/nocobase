@@ -15,6 +15,7 @@ export default {
   "Time": "Saat",
   "Event": "Olay",
   "None": "Boş",
+  "Unconnected": "Bağlantı yok",
   "System settings": "Sistem ayarları",
   "System title": "Sistem başlığı",
   "Logo": "Logo",

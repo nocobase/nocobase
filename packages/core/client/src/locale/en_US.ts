@@ -15,6 +15,7 @@ export default {
   "Time": "Time",
   "Event": "Event",
   "None": "None",
+  "Unconnected": "Unconnected",
   "System settings": "System settings",
   "System title": "System title",
   "Logo": "Logo",

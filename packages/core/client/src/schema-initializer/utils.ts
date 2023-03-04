@@ -919,6 +919,7 @@ export const createTableBlockSchema = (options) => {
     },
     'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
     'x-component': 'CardItem',
+    'x-filter-targets': [],
     properties: {
       actions: {
         type: 'void',

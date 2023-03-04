@@ -202,7 +202,17 @@ export const useCreateActionProps = () => {
   };
 };
 
-const findFilterTargets = (fieldSchema) => {
+interface FilterTarget {
+  targets?: {
+    /** collection name */
+    name: string;
+    /** associated fields */
+    field?: string;
+  }[];
+  uid?: string;
+}
+
+export const findFilterTargets = (fieldSchema): FilterTarget => {
   while (fieldSchema) {
     if (fieldSchema['x-filter-targets']) {
       return {
@@ -215,6 +225,16 @@ const findFilterTargets = (fieldSchema) => {
   return {};
 };
 
+export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets']) => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      fieldSchema['x-filter-targets'] = targets;
+      return;
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+};
+
 export const useFilterBlockActionProps = () => {
   const form = useForm();
   const actionField = useField();
@@ -225,15 +245,15 @@ export const useFilterBlockActionProps = () => {
 
   return {
     async onClick() {
-      const { targets, uid } = findFilterTargets(fieldSchema);
+      const { targets = [], uid } = findFilterTargets(fieldSchema);
 
       actionField.data.loading = true;
       try {
         // 收集 filter 的值
         await Promise.all(
           getDataBlocks().map(async (block) => {
-            // 此时表示用户还没有设置过与筛选区块相关联的数据区块
-            if (!targets.includes(block.name)) return;
+            const target = targets.find((target) => target.name === block.name);
+            if (!target) return;
 
             block.filters[uid] = transformToFilter(form.values, fieldSchema);
 
@@ -272,8 +292,8 @@ export const useResetBlockActionProps = () => {
         // 收集 filter 的值
         await Promise.all(
           getDataBlocks().map(async (block) => {
-            // 此时表示用户还没有设置过与筛选区块相关联的数据区块
-            if (!targets.includes(block.name)) return;
+            const target = targets.find((target) => target.name === block.name);
+            if (!target) return;
 
             // 只清空当前筛选区块的数据
             delete block.filters[uid];

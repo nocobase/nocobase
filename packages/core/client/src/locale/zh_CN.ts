@@ -15,6 +15,7 @@ export default {
   "Time": "时间",
   "Event": "事件",
   "None": "无",
+  "Unconnected": "未连接",
   "System settings": "系统设置",
   "System title": "系统名称",
   "Logo": "Logo",

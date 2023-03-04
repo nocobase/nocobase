@@ -3,8 +3,11 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { SchemaComponentOptions, useFixedSchema } from '../schema-component';
+import { SchemaComponentOptions, useFixedSchema, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { useFilterBlock } from '../filter-provider/FilterProvider';
+import { findFilterTargets } from './hooks';
+import { mergeFilter } from './SharedFilterProvider';
 
 export const TableBlockContext = createContext<any>({});
 
@@ -101,7 +104,7 @@ export const TableBlockProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema?.['x-decorator-props']||{};
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
@@ -114,7 +117,7 @@ export const TableBlockProvider = (props) => {
         params['tree'] = true;
       }
     } else {
-      const f = collection.fields.find(f => f.treeChildren);
+      const f = collection.fields.find((f) => f.treeChildren);
       if (f) {
         childrenColumnName = f.name;
       }
@@ -145,6 +148,8 @@ export const useTableBlockProps = () => {
   const fieldSchema = useFieldSchema();
   const ctx = useTableBlockContext();
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
+  const { getDataBlocks } = useFilterBlock();
+
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -193,7 +198,31 @@ export const useTableBlockProps = () => {
     onClickRow(record, setSelectedRowKeys) {
       if (ctx.blockType !== 'filter') return;
 
-      const value = [record[ctx.rowKey || 'id']];
+      const value = [record[ctx.rowKey]];
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      getDataBlocks().forEach((block) => {
+        const target = targets.find((target) => target.name === block.name);
+        if (!target) return;
+
+        block.filters[uid] = {
+          $and: [
+            {
+              [target.field || ctx.rowKey]: {
+                [target.field ? '$in' : '$eq']: value,
+              },
+            },
+          ],
+        };
+
+        const param = block.service.params?.[0] || {};
+        return block.doFilter({
+          ...param,
+          page: 1,
+          // TODO: 应该也需要合并数据区块中所设置的筛选条件
+          filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
+        });
+      });
 
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = value;

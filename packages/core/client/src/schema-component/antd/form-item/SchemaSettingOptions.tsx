@@ -506,6 +506,20 @@ export const EditPattern = () => {
   ) : null;
 };
 
+/**
+ * 如果用户没有手动设置过 operator，那么在筛选的时候 operator 会是空的，
+ * 该方法确保 operator 一定有值（需要在 FormItem 中调用）
+ */
+export const useEnsureOperatorsValid = () => {
+  const fieldSchema = useFieldSchema();
+  const operatorList = useOperatorList();
+  const { operators: storedOperators } = findFilterOperators(fieldSchema);
+
+  if (operatorList.length && !storedOperators[fieldSchema.name]) {
+    storedOperators[fieldSchema.name] = operatorList[0].value;
+  }
+};
+
 export const EditOperator = () => {
   const compile = useCompile();
   const fieldSchema = useFieldSchema();

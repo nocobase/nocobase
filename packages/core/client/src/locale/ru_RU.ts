@@ -15,6 +15,7 @@ export default {
   "Time": "Время",
   "Event": "Событие",
   "None": "Ничего",
+  "Unconnected": "Не подключен",
   "System settings": "Системные настройки",
   "System title": "Системный заголовок",
   "Logo": "Логотип",

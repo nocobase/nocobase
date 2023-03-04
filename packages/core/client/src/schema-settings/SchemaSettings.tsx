@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -43,7 +43,8 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { useSupportedBlocks } from '../filter-provider/utils';
+import { isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { EnableChildCollections } from './EnableChildCollections';
 
 interface SchemaSettingsProps {
@@ -453,31 +454,71 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const collection = useCollection();
   const dataBlocks = useSupportedBlocks(props.type);
+  let { targets = [], uid } = findFilterTargets(fieldSchema);
 
   return (
     <SchemaSettings.SubMenu title={t('Connect data blocks')}>
-      {/* TODO: 非同表之间可选择关系字段 */}
       {dataBlocks.map((block) => {
+        if (isSameCollection(block.collection, collection)) {
+          return (
+            <SchemaSettings.SwitchItem
+              key={block.name}
+              title={block.title || block.name}
+              checked={targets.some((target) => target.name === block.name)}
+              onChange={(checked) => {
+                if (checked) {
+                  targets.push({ name: block.name });
+                } else {
+                  targets = targets.filter((target) => target.name !== block.name);
+                }
+
+                updateFilterTargets(fieldSchema, targets);
+                dn.emit('patch', {
+                  schema: {
+                    ['x-uid']: uid,
+                    'x-filter-targets': targets,
+                  },
+                });
+                dn.refresh();
+              }}
+            />
+          );
+        }
+
+        const target = targets.find((target) => target.name === block.name);
+        // 与筛选区块的数据表具有关系的表
         return (
-          <SchemaSettings.SwitchItem
+          <SchemaSettings.SelectItem
+            openOnHover
             key={block.name}
             title={block.title || block.name}
-            checked={fieldSchema['x-filter-targets']?.includes(block.name)}
-            onChange={(checked) => {
-              let targets = fieldSchema['x-filter-targets'] || [];
-
-              if (checked) {
-                targets.push(block.name);
+            value={target?.field || ''}
+            options={[
+              ...block.associatedFields.map((field) => {
+                return {
+                  label: field.name,
+                  value: `${field.name}.${field.targetKey}`,
+                };
+              }),
+              {
+                label: t('Unconnected'),
+                value: '',
+              },
+            ]}
+            onChange={(value) => {
+              if (value === '') {
+                targets = targets.filter((target) => target.name !== block.name);
               } else {
-                targets = targets.filter((name) => name !== block.name);
+                targets = targets.filter((target) => target.name !== block.name);
+                targets.push({ name: block.name, field: value });
               }
-
-              fieldSchema['x-filter-targets'] = targets;
+              updateFilterTargets(fieldSchema, targets);
               dn.emit('patch', {
                 schema: {
-                  ['x-uid']: fieldSchema['x-uid'],
-                  'x-filter-targets': fieldSchema['x-filter-targets'],
+                  ['x-uid']: uid,
+                  'x-filter-targets': targets,
                 },
               });
               dn.refresh();
@@ -490,17 +531,33 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
 };
 
 SchemaSettings.SelectItem = (props) => {
-  const { title, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
+  const [open, setOpen] = useState(false);
+
+  const onClick = (...args) => {
+    setOpen(false);
+    _onClick?.(...args);
+  };
+
+  // 鼠标 hover 时，打开下拉框
+  const moreProps = openOnHover
+    ? {
+        onMouseEnter: useCallback(() => setOpen(true), []),
+        open,
+      }
+    : {};
+
   return (
-    <SchemaSettings.Item {...others}>
+    <SchemaSettings.Item {...others} onClick={onClick}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
           bordered={false}
           defaultValue={value}
-          onChange={onChange}
+          onChange={(...arg) => (setOpen(false), onChange(...arg))}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          {...moreProps}
         />
       </div>
     </SchemaSettings.Item>

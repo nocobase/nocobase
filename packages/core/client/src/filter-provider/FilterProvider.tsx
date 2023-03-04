@@ -3,6 +3,7 @@ import React, { createContext, useMemo } from 'react';
 import { useAssociation, useBlockRequestContext } from '../block-provider';
 import { SharedFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
+import { useAssociatedFields } from './utils';
 
 type Collection = ReturnType<typeof useCollection>;
 
@@ -15,7 +16,8 @@ export interface DataBlock {
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any, params2?: any) => Promise<void>;
-  association?: CollectionFieldOptions;
+  /** 数据区块表中所有的关系字段 */
+  associatedFields?: CollectionFieldOptions[];
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
   service?: any;
@@ -44,7 +46,7 @@ export const FilterBlockRecord = (props: any) => {
   const { recordDataBlocks } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
-  const association = useAssociation(props);
+  const associatedFields = useAssociatedFields();
 
   // 表单类的区块和所有筛选区块不需要筛选
   if (field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter') {
@@ -53,7 +55,7 @@ export const FilterBlockRecord = (props: any) => {
       title: field.componentProps.title,
       doFilter: service.runAsync,
       collection,
-      association,
+      associatedFields,
       filters: {},
       service,
     });

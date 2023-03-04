@@ -1,16 +1,12 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../../collection-manager';
+import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 
 export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();
-  const { fields } = useCollection();
-
-  const associatedFields = fields.filter((field) =>
-    ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface),
-  );
+  const associatedFields = useAssociatedFields();
 
   const items: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',

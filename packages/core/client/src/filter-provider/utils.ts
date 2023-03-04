@@ -1,5 +1,5 @@
 import { Schema } from '@formily/react';
-import { useCollection } from '../collection-manager';
+import { Collection, useCollection } from '../collection-manager';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
@@ -22,14 +22,17 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   // Form 和 Collapse 仅支持同表的数据区块
   if (filterBlockType === FilterBlockType.FORM || filterBlockType === FilterBlockType.COLLAPSE) {
     return getDataBlocks().filter((block) => {
-      return block.collection.name === collection.name;
+      return isSameCollection(block.collection, collection);
     });
   }
 
   // Table 和 Tree 支持同表或者关系表的数据区块
   if (filterBlockType === FilterBlockType.TABLE || filterBlockType === FilterBlockType.TREE) {
     return getDataBlocks().filter((block) => {
-      return block.collection.name === collection.name || block.association?.target === collection.name;
+      return (
+        isSameCollection(block.collection, collection) ||
+        block.associatedFields.some((field) => field.target === collection.name)
+      );
     });
   }
 };
@@ -46,4 +49,18 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
       };
     }),
   };
+};
+
+export const useAssociatedFields = () => {
+  const { fields } = useCollection();
+
+  return (
+    fields.filter((field) =>
+      ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface),
+    ) || []
+  );
+};
+
+export const isSameCollection = (c1: Collection, c2: Collection) => {
+  return c1.name === c2.name;
 };
