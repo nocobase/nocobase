@@ -248,7 +248,6 @@ export const useCustomizeUpdateActionProps = () => {
 export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
   const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
@@ -261,23 +260,20 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
   return {
     async onClick() {
-      const {
-        assignedValues: originalAssignedValues = {},
-        onSuccess,
-        updateMode,
-      } = actionSchema?.['x-action-settings'] ?? {};
+      const { assignedValues = {}, onSuccess, updateMode } = actionSchema?.['x-action-settings'] ?? {};
       actionField.data = field.data || {};
       actionField.data.loading = true;
-      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentUser });
+
       Modal.confirm({
         title: t('Bulk update'),
         content: updateMode === 'selected' ? t('Update selected data?') : t('Update all data?'),
         async onOk() {
           const { filter } = service.params?.[0] ?? {};
-          const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
+          const updateData: { filter?: any; values: any; forceUpdate: boolean; parse: boolean } = {
             values: { ...assignedValues },
             filter,
             forceUpdate: false,
+            parse: true,
           };
           if (updateMode === 'selected') {
             if (!selectedRowKeys?.length) {
