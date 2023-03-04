@@ -1,4 +1,3 @@
-import { FormOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
@@ -18,8 +17,7 @@ export const ChartBlockInitializer = (props) => {
   return (
     <DataBlockInitializer
       {...props}
-      componentType={'Kanban'}
-      icon={<FormOutlined />}
+      componentType={'Charts'}
       onCreateBlockSchema={async ({ item }) => {
         const values = await FormDialog(t('Create chart block'), () => {
           return (

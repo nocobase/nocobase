@@ -5,7 +5,7 @@ import {
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  TableV2
+  TableV2,
 } from '@nocobase/client';
 import { Empty, Spin } from 'antd';
 import React from 'react';

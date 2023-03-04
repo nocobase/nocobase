@@ -18,7 +18,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
+message: '{{t("Invalid JSON format")}}',
 };
 
 export const requestSettingsSchema: ISchema = {
