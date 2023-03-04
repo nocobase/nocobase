@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 
@@ -41,6 +41,7 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
@@ -48,7 +49,7 @@ export const ActionDesigner = (props) => {
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
   const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
-
+  const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -379,6 +380,8 @@ export const ActionDesigner = (props) => {
             }}
           />
         )}
+
+        {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
         <SchemaSettings.Divider />
         <SchemaSettings.Remove
           removeParentsIfNoChildren
