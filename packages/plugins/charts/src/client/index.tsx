@@ -43,13 +43,18 @@ export default React.memo((props) => {
   const api = useAPIClient();
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
-  children.push({
-    key: 'chart',
-    type: 'item',
-    icon: 'PieChartOutlined',
-    title: '{{t("Chart",{ns:"charts"})}}',
-    component: 'ChartBlockInitializer',
-  });
+  if (children) {
+    const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');
+    if (!hasChartItem) {
+      children.push({
+        key: 'chart',
+        type: 'item',
+        icon: 'PieChartOutlined',
+        title: '{{t("Chart",{ns:"charts"})}}',
+        component: 'ChartBlockInitializer',
+      });
+    }
+  }
   const validateSQL = (sql) => {
     return new Promise((resolve) => {
       api
