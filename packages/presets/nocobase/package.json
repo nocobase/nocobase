@@ -33,6 +33,7 @@
     "@nocobase/plugin-users": "0.9.1-alpha.1",
     "@nocobase/plugin-verification": "0.9.1-alpha.1",
     "@nocobase/plugin-workflow": "0.9.1-alpha.1",
+    "@nocobase/plugin-charts": "0.9.1-alpha.1",
     "@nocobase/server": "0.9.1-alpha.1"
   },
   "repository": {

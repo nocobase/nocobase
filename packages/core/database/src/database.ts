@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
@@ -372,6 +372,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   inDialect(...dialect: string[]) {
     return dialect.includes(this.sequelize.getDialect());
+  }
+
+  escapeId(identifier: string) {
+    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
   }
 
   /**
