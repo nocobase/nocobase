@@ -34,9 +34,8 @@ export default {
   type: 'manual',
   group: 'manual',
   fieldset: {
-    'config.assignees': {
+    assignees: {
       type: 'array',
-      name: 'config.assignees',
       title: `{{t("Assignees", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'AssigneesSelect',
@@ -53,15 +52,14 @@ export default {
       required: true,
       default: [],
     },
-    'config.mode': {
+    mode: {
       type: 'number',
-      name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'ModeConfig',
       default: 1,
       'x-reactions': {
-        dependencies: ['config.assignees'],
+        dependencies: ['assignees'],
         fulfill: {
           state: {
             visible: '{{$deps[0].length > 1}}',
@@ -69,7 +67,7 @@ export default {
         },
       }
     },
-    'config.schema': {
+    schema: {
       type: 'void',
       title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',

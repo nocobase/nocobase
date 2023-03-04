@@ -14,10 +14,7 @@ export default {
   type: 'create',
   group: 'collection',
   fieldset: {
-    'config.collection': {
-      ...collection,
-      name: 'config.collection'
-    },
+    collection,
     // multiple: {
     //   type: 'boolean',
     //   title: '多条数据',
@@ -28,7 +25,7 @@ export default {
     //     disabled: true
     //   }
     // },
-    'config.params.values': values
+    'params.values': values
   },
   view: {
 
