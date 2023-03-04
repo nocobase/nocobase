@@ -70,6 +70,7 @@ export interface AMapForwardedRefProps {
     getTarget: () => AMap.Polygon;
     setTarget: (o: any) => void;
     close: () => void;
+    on: (event: string, callback: (e: any) => void) => void;
   };
   mouseTool: () => {
     close: (clear?: boolean) => void;

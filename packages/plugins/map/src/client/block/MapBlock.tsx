@@ -4,7 +4,8 @@ import AMap, { AMapForwardedRefProps } from '../components/AMap';
 import { RecursionField, useFieldSchema, Schema } from '@formily/react';
 import { useMemoizedFn } from 'ahooks';
 import { css } from '@emotion/css';
-import { Button, Select, Space } from 'antd';
+import { Button, Space } from 'antd';
+import { ExpandOutlined, EnvironmentOutlined, CheckOutlined } from '@ant-design/icons';
 import { useMapTranslation } from '../locale';
 
 export const MapBlock = (props) => {
@@ -172,20 +173,36 @@ export const MapBlock = (props) => {
           z-index: 999;
         `}
       >
-        <Space>
-          <Select
-            allowClear
-            placeholder={t('Selecting mode')}
-            onChange={setSelecting}
-            options={[
-              { label: t('Click'), value: 'click' },
-              { label: t('Selection'), value: 'selection' },
-            ]}
-          />
+        <Space direction="vertical">
+          <Button
+            style={{
+              color: !selectingMode ? '#F18b62' : undefined,
+              borderColor: 'currentcolor',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelecting('');
+            }}
+            icon={<EnvironmentOutlined />}
+          ></Button>
+          <Button
+            style={{
+              color: selectingMode === 'selection' ? '#F18b62' : undefined,
+              borderColor: 'currentcolor',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelecting('selection');
+            }}
+            icon={<ExpandOutlined />}
+          ></Button>
           {selectingMode === 'selection' ? (
-            <Button type="primary" onClick={onSelectingComplete}>
-              {t('Confirm Selection')}
-            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              title={t('Confirm selection')}
+              onClick={onSelectingComplete}
+            ></Button>
           ) : null}
         </Space>
       </div>
