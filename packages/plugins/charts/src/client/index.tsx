@@ -1,5 +1,10 @@
 import { registerValidateRules } from '@formily/core';
-import { SchemaComponentOptions, SchemaInitializerContext, SettingsCenterProvider } from '@nocobase/client';
+import {
+  SchemaComponentOptions,
+  SchemaInitializerContext,
+  SettingsCenterProvider,
+  useAPIClient
+} from '@nocobase/client';
 import JSON5 from 'json5';
 import React, { useContext } from 'react';
 import { ChartBlockEngine } from './ChartBlockEngine';
@@ -35,6 +40,7 @@ registerValidateRules({
 });
 
 export default React.memo((props) => {
+  const api = useAPIClient();
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
   children.push({
@@ -44,23 +50,44 @@ export default React.memo((props) => {
     title: '{{t("Chart",{ns:"charts"})}}',
     component: 'ChartBlockInitializer',
   });
+  const validateSQL = (sql) => {
+    return new Promise((resolve) => {
+      api
+        .request({
+          url: 'chartsQueries:validate',
+          method: 'post',
+          data: {
+            sql,
+          },
+        })
+        .then(({ data }) => {
+          resolve(data?.data?.errorMessage);
+        })
+        .catch(() => {
+          resolve('Invalid SQL');
+        });
+    });
+  };
   return (
     <ChartQueryMetadataProvider>
       <SettingsCenterProvider
         settings={{
           charts: {
-            title: '{{t("Chart",{ns:"charts"})}}',
+            title: '{{t("Charts", {ns:"charts"})}}',
             icon: 'PieChartOutlined',
             tabs: {
               queries: {
-                title: '{{t("Queries",{ns:"charts"})}}',
-                component: () => <QueriesTable />,
+                title: '{{t("Queries", {ns:"charts"})}}',
+                component: QueriesTable,
               },
             },
           },
         }}
       >
-        <SchemaComponentOptions components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}>
+        <SchemaComponentOptions
+          scope={{ validateSQL }}
+          components={{ CustomSelect, ChartBlockInitializer, ChartBlockEngine }}
+        >
           <SchemaInitializerContext.Provider value={items}>{props.children}</SchemaInitializerContext.Provider>
         </SchemaComponentOptions>
       </SettingsCenterProvider>

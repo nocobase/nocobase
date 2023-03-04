@@ -10,9 +10,8 @@ import {
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';
-import { getQueryTypeSchema } from './settings/queryTypes';
 import { lang } from './locale';
-
+import { getQueryTypeSchema } from './settings/queryTypes';
 
 export interface ChartQueryMetadata {
   id: number;
@@ -35,11 +34,11 @@ export const ChartQueryBlockInitializer = (props) => {
   const apiClient = useAPIClient();
   const ctx = useChartQueryMetadataContext();
   const options = useContext(SchemaOptionsContext);
-  const onAddQuery = async (info) => {
-    const values = await FormDialog(
+  const onAddQuery = (info) => {
+    FormDialog(
       {
-        sql: lang( 'Add SQL query' ),
-        json: lang( 'Add JSON query' ),
+        sql: lang('Add SQL query'),
+        json: lang('Add JSON query'),
       }[info.key],
       () => {
         return (
@@ -65,27 +64,41 @@ export const ChartQueryBlockInitializer = (props) => {
           </div>
         );
       },
-    ).open({
-      initialValues: {
-        type: info.key,
-      },
-    });
-    const { data } = await apiClient.resource('chartsQueries')?.create?.({ values });
-    const items = (await ctx.refresh()) as any;
-    const item = items.find((item) => item.id === data?.data?.id);
-    onCreateBlockSchema({ item });
-    setVisible(false);
+    )
+      .open({
+        initialValues: {
+          type: info.key,
+        },
+      })
+      .then(async (values) => {
+        try {
+          const { data } = await apiClient.resource('chartsQueries')?.create?.({ values });
+          const items = (await ctx.refresh()) as any;
+          const item = items.find((item) => item.id === data?.data?.id);
+          onCreateBlockSchema({ item });
+          setVisible(false);
+        } catch (error) {}
+      })
+      .catch(() => {});
   };
   useEffect(() => {
     const chartQueryMetadata = ctx.data;
     if (chartQueryMetadata && Array.isArray(chartQueryMetadata)) {
       setItems(
         [
-          // {
-          //   type: 'itemGroup',
-          //   title: '{{t("Select chart query")}}',
-          //   children:
-          // },
+          chartQueryMetadata.length > 0
+            ? {
+                type: 'itemGroup',
+                title: '{{t("Select chart query", {ns: "charts"})}}',
+                children: chartQueryMetadata,
+              }
+            : null,
+          chartQueryMetadata.length > 0
+            ? {
+                type: 'divider',
+              }
+            : null,
+          ,
           {
             type: 'subMenu',
             title: lang('Add chart query'),
@@ -105,12 +118,6 @@ export const ChartQueryBlockInitializer = (props) => {
               },
             ],
           },
-          chartQueryMetadata.length
-            ? {
-                type: 'divider',
-              }
-            : null,
-          ...chartQueryMetadata,
         ].filter(Boolean),
       );
     }

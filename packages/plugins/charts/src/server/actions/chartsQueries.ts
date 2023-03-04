@@ -1,15 +1,30 @@
-import { query } from '../query';
 import JSON5 from 'json5';
+import { query } from '../query';
 
 export const getData = async (ctx, next) => {
   const { filterByTk } = ctx.action.params;
   const r = ctx.db.getRepository('chartsQueries');
   const instance = await r.findOne({ filterByTk });
-  const result = await query[instance.type](instance.options, { db: ctx.db });
-  if(typeof result === 'string'){
+  const result = await query[instance.type](instance.options, { db: ctx.db, skipError: true });
+  if (typeof result === 'string') {
     ctx.body = JSON5.parse(result);
-  }else{
+  } else {
     ctx.body = result;
+  }
+  return next();
+};
+
+export const validate = async (ctx, next) => {
+  const { values } = ctx.action.params;
+  ctx.body = {
+    errorMessage: '',
+  };
+  try {
+    await query.sql(values, { db: ctx.db, validateSQL: true });
+  } catch (error) {
+    ctx.body = {
+      errorMessage: error.message,
+    };
   }
   return next();
 };

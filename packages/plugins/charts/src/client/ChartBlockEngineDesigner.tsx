@@ -132,11 +132,11 @@ export const ChartBlockEngineDesignerInitializer = (props) => {
                           components={{ Options }}
                           schema={{
                             properties: {
-                              title: {
-                                title: lang('Chart title'),
-                                'x-component': 'Input',
-                                'x-decorator': 'FormItem',
-                              },
+                              // title: {
+                              //   title: lang('Chart title'),
+                              //   'x-component': 'Input',
+                              //   'x-decorator': 'FormItem',
+                              // },
                               type: {
                                 title: t('Chart type'),
                                 required: true,

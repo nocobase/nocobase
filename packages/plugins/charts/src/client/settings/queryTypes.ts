@@ -27,6 +27,10 @@ export const sql: ISchema = {
       required: true,
       'x-component': 'Input.TextArea',
       'x-decorator': 'FormItem',
+      'x-validator': {
+        triggerType: 'onBlur',
+        validator: '{{validateSQL}}',
+      },
       'x-component-props': {
         autoSize: {
           maxRows: 20,
