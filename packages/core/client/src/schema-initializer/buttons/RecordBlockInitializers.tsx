@@ -115,11 +115,32 @@ const useRelationFields = () => {
               title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
               children: [
                 {
-                  key: `${inheritRelateField.name}_details`,
+                  key: `${field.name}_table`,
+                  type: 'item',
+                  title: '{{t("Table")}}',
+                  field,
+                  component: 'RecordAssociationBlockInitializer',
+                },
+                {
+                  key: `${field.name}_details`,
                   type: 'item',
                   title: '{{t("Details")}}',
-                  field: inheritRelateField,
-                  component: 'RecordReadPrettyAssociationFormBlockInitializer',
+                  field,
+                  component: 'RecordAssociationDetailsBlockInitializer',
+                },
+                {
+                  key: `${field.name}_form`,
+                  type: 'item',
+                  title: '{{t("Form")}}',
+                  field,
+                  component: 'RecordAssociationFormBlockInitializer',
+                },
+                {
+                  key: `${field.name}_calendar`,
+                  type: 'item',
+                  title: '{{t("Calendar")}}',
+                  field,
+                  component: 'RecordAssociationCalendarBlockInitializer',
                 },
               ],
             });
@@ -140,17 +161,10 @@ const useRelationFields = () => {
           if (inheritRelateField) {
             relationFields.push({
               key: `${inheritRelateField.collectionName}_ ${inheritRelateField.name}`,
-              type: 'subMenu',
+              type: 'item',
+              field:inheritRelateField,
               title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
-              children: [
-                {
-                  key: `${inheritRelateField.name}_details`,
-                  type: 'item',
-                  title: '{{t("Details")}}',
-                  field: inheritRelateField,
-                  component: 'RecordReadPrettyAssociationFormBlockInitializer',
-                },
-              ],
+              component: 'RecordAssociationBlockInitializer',
             });
           }
         });
