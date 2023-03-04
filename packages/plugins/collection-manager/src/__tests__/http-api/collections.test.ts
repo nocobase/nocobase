@@ -460,7 +460,7 @@ describe('collections repository', () => {
 
     const columnName = collection.model.rawAttributes.testField.field;
 
-    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(collection.model.tableName);
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(collection.addSchemaTableName());
 
     expect(tableInfo[columnName]).toBeDefined();
   });
@@ -529,6 +529,8 @@ describe('collections repository', () => {
     const afterIndexes = (await app.db.sequelize
       .getQueryInterface()
       .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
+
+    console.log(afterIndexes);
 
     expect(
       afterIndexes.find(
