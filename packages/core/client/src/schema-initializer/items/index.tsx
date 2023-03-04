@@ -8,7 +8,6 @@ export * from './BlockInitializer';
 export * from './BulkDestroyActionInitializer';
 export * from './BulkEditSubmitActionInitializer';
 export * from './CalendarBlockInitializer';
-export * from './ChartBlockInitializer';
 export * from './CollectionFieldInitializer';
 export * from './CreateActionInitializer';
 export * from './CreateFormBlockInitializer';
@@ -43,4 +42,3 @@ export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
-
