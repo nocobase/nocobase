@@ -172,8 +172,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   declare middleware: any;
 
-  stopped = false;
-
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
@@ -433,7 +431,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStart', this, options);
-    this.stopped = false;
   }
 
   listen(...args): Server {
@@ -441,8 +438,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
-    if (this.stopped) return;
-
     try {
       // close database connection
       // silent if database already closed
@@ -462,7 +457,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
-    this.stopped = true;
   }
 
   async destroy(options: any = {}) {

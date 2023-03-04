@@ -40,10 +40,6 @@ describe('multiple apps', () => {
     await app.stop();
 
     expect(subApp1StopFn).toBeCalledTimes(1);
-
-    await app.destroy();
-
-    expect(subApp1StopFn).toBeCalledTimes(1);
   });
 });
 
