@@ -10,7 +10,7 @@ import {
   SchemaSettings,
   useAPIClient,
   useCompile,
-  useDesignable
+  useDesignable,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';
@@ -27,7 +27,7 @@ export const jsonConfigDesc = (title: string, link: string) => {
   return (
     <span>
       {lang('Json config references: ')}
-      <a href={link} target='_blank'>
+      <a href={link} target="_blank">
         {lang(title)}
       </a>
     </span>

@@ -1,2 +1,2 @@
 export * from './CustomSelect';
-export * from './shared'
+export * from './shared';

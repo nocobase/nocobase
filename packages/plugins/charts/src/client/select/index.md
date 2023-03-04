@@ -5,7 +5,7 @@ group:
   path: /schema-components
 ---
 
-# Select 
+# Select
 
 ## Examples
 

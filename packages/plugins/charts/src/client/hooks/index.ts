@@ -7,7 +7,7 @@ const useFieldsById = (queryId: number) => {
   useEffect(() => {
     const chartQueryList = ctx?.data;
     if (chartQueryList && Array.isArray(chartQueryList)) {
-      const currentQuery = chartQueryList.find(chartQuery => chartQuery.id === queryId);
+      const currentQuery = chartQueryList.find((chartQuery) => chartQuery.id === queryId);
       setFields(currentQuery?.fields);
     }
   }, [queryId]);
@@ -16,6 +16,4 @@ const useFieldsById = (queryId: number) => {
   };
 };
 
-export {
-  useFieldsById,
-};
+export { useFieldsById };

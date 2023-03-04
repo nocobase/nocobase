@@ -16,9 +16,11 @@ export const QueriesTable = () => {
   const { t } = useTranslation();
   return (
     <Card bordered={false}>
-      <SchemaComponent scope={{ JSON5, useDestroyQueryItemAction, useDestroyAllSelectedQueriesAction }}
-                       schema={chartsQueriesSchema}
-                       components={{ AddNewQuery, EditQuery, ConfigureFields }} />
+      <SchemaComponent
+        scope={{ JSON5, useDestroyQueryItemAction, useDestroyAllSelectedQueriesAction }}
+        schema={chartsQueriesSchema}
+        components={{ AddNewQuery, EditQuery, ConfigureFields }}
+      />
     </Card>
   );
 };

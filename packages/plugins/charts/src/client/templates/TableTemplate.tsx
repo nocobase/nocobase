@@ -16,7 +16,7 @@ const validateJSON = {
       return false;
     }
   }}}`,
-message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
+  message: '{{t("Invalid JSON format",{ ns: "charts" })}}',
 };
 
 const chartConfig = {
@@ -43,7 +43,6 @@ export const tableTemplate = {
   defaultChartOptions: chartConfig,
   configurableProperties: {
     type: 'void',
-    properties: {
-    },
+    properties: {},
   },
 };

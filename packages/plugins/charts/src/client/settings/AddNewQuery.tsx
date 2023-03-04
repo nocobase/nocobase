@@ -8,7 +8,7 @@ import {
   useActionContext,
   useRecord,
   useResourceActionContext,
-  useResourceContext
+  useResourceContext,
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useMemo, useState } from 'react';
@@ -122,7 +122,9 @@ export const AddNewQuery = () => {
     >
       <Menu.Item key={'json'}>JSON</Menu.Item>
       <Menu.Item key={'sql'}>SQL</Menu.Item>
-      <Menu.Item disabled key={'api'}>API</Menu.Item>
+      <Menu.Item disabled key={'api'}>
+        API
+      </Menu.Item>
       <Menu.Item disabled>Collection</Menu.Item>
     </Menu>
   );
@@ -130,7 +132,7 @@ export const AddNewQuery = () => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown overlay={menu}>
         <Button icon={<PlusOutlined />} type={'primary'}>
-          {lang("Add query")} <DownOutlined />
+          {lang('Add query')} <DownOutlined />
         </Button>
       </Dropdown>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useCreateAction }} />
@@ -151,7 +153,7 @@ export const EditQuery = () => {
           setVisible(true);
         }}
       >
-        {lang("Edit")}
+        {lang('Edit')}
       </a>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useUpdateAction }} />
     </ActionContext.Provider>

@@ -6,7 +6,7 @@ import {
   SchemaComponentOptions,
   SchemaInitializer,
   SchemaInitializerButtonContext,
-  useAPIClient
+  useAPIClient,
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
 import { useChartQueryMetadataContext } from './ChartQueryMetadataProvider';

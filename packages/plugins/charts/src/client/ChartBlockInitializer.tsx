@@ -4,10 +4,11 @@ import { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
-  FormProvider, SchemaComponent,
+  FormProvider,
+  SchemaComponent,
   SchemaComponentOptions,
   useAPIClient,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import JSON5 from 'json5';

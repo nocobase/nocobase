@@ -3,7 +3,7 @@ import {
   SchemaComponentOptions,
   SchemaInitializerContext,
   SettingsCenterProvider,
-  useAPIClient
+  useAPIClient,
 } from '@nocobase/client';
 import JSON5 from 'json5';
 import React, { useContext } from 'react';

@@ -113,7 +113,7 @@ export const chartsQueriesSchema: ISchema = {
                 useAction: '{{ useDestroyAllSelectedQueriesAction }}',
                 confirm: {
                   title: '{{t("Delete queries",{ns:"charts"})}}',
-                  content: '{{t(\'Are you sure you want to delete it?\')}}',
+                  content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
@@ -302,7 +302,7 @@ export const chartsQueriesSchema: ISchema = {
                       'x-component-props': {
                         confirm: {
                           title: '{{t("Delete query",{ns:"charts"})}}',
-                          content: '{{t(\'Are you sure you want to delete it?\')}}',
+                          content: "{{t('Are you sure you want to delete it?')}}",
                         },
                         useAction: '{{ useDestroyQueryItemAction }}',
                       },

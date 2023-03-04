@@ -8,20 +8,24 @@ const validateArray = (value) => {
     return 'Please input validate dataset';
   }
   if (Array.isArray(value)) {
-    if (value.every((item) => {
-      return typeof item === 'object' && Object.keys(item).length > 1;
-    }))
+    if (
+      value.every((item) => {
+        return typeof item === 'object' && Object.keys(item).length > 1;
+      })
+    )
       return true;
   }
   return 'Please input validate dataset';
 };
 
-const parseDataSetString=(str)=>{
+const parseDataSetString = (str) => {
   const dataSetDataArray = JSON5.parse(str);
   if (Array.isArray(dataSetDataArray)) {
-    if (dataSetDataArray.every((item) => {
-      return typeof item === 'object' && Object.keys(item).length > 1;
-    }))
+    if (
+      dataSetDataArray.every((item) => {
+        return typeof item === 'object' && Object.keys(item).length > 1;
+      })
+    )
       dataSetDataArray.map((item) => {
         if (!item?.id) {
           item.id = uid();
@@ -29,11 +33,7 @@ const parseDataSetString=(str)=>{
         return item;
       });
   }
-  return dataSetDataArray
-}
-
-
-export {
-  validateArray,
-  parseDataSetString
+  return dataSetDataArray;
 };
+
+export { validateArray, parseDataSetString };
