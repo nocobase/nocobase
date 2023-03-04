@@ -308,7 +308,7 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.model.tableName, options);
+      await queryInterface.dropTable(this.addSchemaTableName(), options);
     }
     this.remove();
   }
