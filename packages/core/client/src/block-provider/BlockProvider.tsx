@@ -192,6 +192,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
               width: 200px;
               flex: 0 0 auto;
             `}
+            style={props.associationFilterStyle}
           >
             <RecursionField
               schema={fieldSchema}

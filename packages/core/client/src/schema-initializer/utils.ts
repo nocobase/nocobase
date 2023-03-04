@@ -972,6 +972,35 @@ export const createTableBlockSchema = (options) => {
   return schema;
 };
 
+export const createCollapseBlockSchema = (options) => {
+  const { collection, blockType } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-decorator': 'TableBlockProvider',
+    'x-decorator-props': {
+      collection,
+      blockType,
+      associationFilterStyle: {
+        width: '100%',
+      },
+    },
+    'x-designer': 'AssociationFilter.BlockDesigner',
+    'x-component': 'CardItem',
+    'x-filter-targets': [],
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-action': 'associateFilter',
+        'x-initializer': 'AssociationFilter.Initializer',
+        'x-component': 'AssociationFilter',
+        properties: {},
+      },
+    },
+  };
+
+  return schema;
+};
+
 export const createTableSelectorSchema = (options) => {
   const { collection, resource, rowKey, ...others } = options;
   const schema: ISchema = {

@@ -515,7 +515,7 @@ export const useEnsureOperatorsValid = () => {
   const operatorList = useOperatorList();
   const { operators: storedOperators } = findFilterOperators(fieldSchema);
 
-  if (operatorList.length && !storedOperators[fieldSchema.name]) {
+  if (storedOperators && operatorList.length && !storedOperators[fieldSchema.name]) {
     storedOperators[fieldSchema.name] = operatorList[0].value;
   }
 };

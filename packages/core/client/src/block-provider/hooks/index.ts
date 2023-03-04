@@ -4,12 +4,12 @@ import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { useContext } from 'react';
+import { ChangeEvent, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useFormBlockContext, useTableBlockContext } from '../..';
-import { useAPIClient } from '../../api-client';
+import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
+import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
@@ -776,5 +776,182 @@ export const useDetailsPaginationProps = () => {
       marginTop: 24,
       textAlign: 'center',
     },
+  };
+};
+
+export const useAssociationFilterProps = () => {
+  const collectionField = AssociationFilter.useAssociationField();
+  const { service, props: blockProps } = useBlockRequestContext();
+  const fieldSchema = useFieldSchema();
+  const valueKey = collectionField?.targetKey || 'id';
+  const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+  const collectionFieldName = collectionField.name;
+  const { data, params, run } = useRequest(
+    {
+      resource: collectionField.target,
+      action: 'list',
+      params: {
+        fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
+      },
+    },
+    {
+      refreshDeps: [labelKey, valueKey],
+      debounceWait: 300,
+    },
+  );
+
+  const list = data?.data || [];
+  const onSelected = (value) => {
+    const filters = service.params?.[1]?.filters || {};
+
+    if (value.length) {
+      filters[`af.${collectionFieldName}`] = {
+        [`${collectionFieldName}.${valueKey}.$in`]: value,
+      };
+    } else {
+      delete filters[`af.${collectionFieldName}`];
+    }
+
+    service.run(
+      {
+        ...service.params?.[0],
+        pageSize: 200,
+        page: 1,
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+      },
+      { filters },
+    );
+  };
+  const handleSearchInput = (e: ChangeEvent<any>) => {
+    run({
+      ...params?.[0],
+      filter: {
+        [`${labelKey}.$includes`]: e.target.value,
+      },
+    });
+  };
+
+  return {
+    /** 渲染 Collapse 的列表数据 */
+    list,
+    onSelected,
+    handleSearchInput,
+    params,
+    run,
+  };
+};
+
+export const useOptionalFieldList = () => {
+  const { currentFields = [] } = useCollection();
+
+  return currentFields.filter((field) => isOptionalField(field) && field.uiSchema.enum);
+};
+
+const isOptionalField = (field) => {
+  const optionalInterfaces = ['select', 'multipleSelect', 'checkbox', 'checkboxGroup', 'chinaRegion'];
+  return optionalInterfaces.includes(field.interface);
+};
+
+export const useAssociationFilterBlockProps = () => {
+  const collectionField = AssociationFilter.useAssociationField();
+  const fieldSchema = useFieldSchema();
+  const optionalFieldList = useOptionalFieldList();
+  const { getDataBlocks } = useFilterBlock();
+  const collectionFieldName = collectionField.name;
+
+  let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+
+  if (isOptionalField(fieldSchema)) {
+    const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
+    const operatorMap = {
+      select: '$in',
+      multipleSelect: '$anyOf',
+      checkbox: '$in',
+      checkboxGroup: '$anyOf',
+    };
+    const _list = field?.uiSchema?.enum || [];
+    valueKey = 'value';
+    labelKey = 'label';
+    list = _list;
+    params = {};
+    run = () => {};
+    filterKey = `${field.name}.${operatorMap[field.interface]}`;
+    handleSearchInput = (e) => {
+      // TODO: 列表没有刷新，在这个 hook 中使用 useState 会 re-render 次数过多的错误
+      const value = e.target.value;
+      if (!value) {
+        list = _list;
+        return;
+      }
+      list = (_list as any[]).filter((item) => item.label.includes(value));
+    };
+  } else {
+    valueKey = collectionField?.targetKey || 'id';
+    labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+    ({ data, params, run } = useRequest(
+      {
+        resource: collectionField.target,
+        action: 'list',
+        params: {
+          fields: [labelKey, valueKey],
+          pageSize: 200,
+          page: 1,
+        },
+      },
+      {
+        refreshDeps: [labelKey, valueKey],
+        debounceWait: 300,
+      },
+    ));
+    filterKey = `${collectionFieldName}.${valueKey}.$in`;
+
+    list = data?.data || [];
+
+    handleSearchInput = (e: ChangeEvent<any>) => {
+      run({
+        ...params?.[0],
+        filter: {
+          [`${labelKey}.$includes`]: e.target.value,
+        },
+      });
+    };
+  }
+
+  onSelected = (value) => {
+    const { targets, uid } = findFilterTargets(fieldSchema);
+
+    getDataBlocks().forEach((block) => {
+      const target = targets.find((target) => target.name === block.name);
+      if (!target) return;
+
+      if (value.length) {
+        block.filters[uid] = {
+          [filterKey]: value,
+        };
+      } else {
+        delete block.filters[uid];
+      }
+
+      const param = block.service.params?.[0] || {};
+      return block.doFilter({
+        ...param,
+        page: 1,
+        // TODO: 应该也需要合并数据区块中所设置的筛选条件
+        filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
+      });
+    });
+  };
+
+  return {
+    /** 渲染 Collapse 的列表数据 */
+    list,
+    onSelected,
+    handleSearchInput,
+    params,
+    run,
+    valueKey,
+    labelKey,
   };
 };

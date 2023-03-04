@@ -53,6 +53,7 @@ export default {
   "Filter blocks": "Просеивающие блоки",
   "Table": "Таблица",
   "Form": "Форма",
+  "Collapse": "Свернуть",
   "Select data source": "Выбрать источник данных",
   "Calendar": "Календарь",
   "Kanban": "Канбан",

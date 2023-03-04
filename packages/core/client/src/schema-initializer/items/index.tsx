@@ -41,6 +41,7 @@ export * from './SubmitActionInitializer';
 export * from './TableActionColumnInitializer';
 export * from './TableBlockInitializer';
 export * from './FilterTableBlockInitializer';
+export * from './FilterCollapseBlockInitializer';
 export * from './TableCollectionFieldInitializer';
 export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';

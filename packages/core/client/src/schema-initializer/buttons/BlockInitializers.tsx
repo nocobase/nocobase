@@ -61,6 +61,12 @@ export const BlockInitializers = {
           title: '{{t("Form")}}',
           component: 'FilterFormBlockInitializer',
         },
+        {
+          key: 'filterCollapse',
+          type: 'item',
+          title: '{{t("Collapse")}}',
+          component: 'FilterCollapseBlockInitializer',
+        },
       ],
     },
     {

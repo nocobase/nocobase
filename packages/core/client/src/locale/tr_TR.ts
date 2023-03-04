@@ -53,6 +53,7 @@ export default {
   "Filter blocks": "Filtre blokları",
   "Table": "Tablo",
   "Form": "Form",
+  "Collapse": "Daralt",
   "Select data source": "Veri kaynağını seç",
   "Calendar": "Takvim",
   "Kanban": "Kanban",
