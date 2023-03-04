@@ -7,6 +7,8 @@ import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import { Checkbox, DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
 
+import { toDbType } from '../../utils';
+
 const TypedComponents = {
   boolean: Checkbox,
   integer: InputNumber,
@@ -30,9 +32,14 @@ export const Result = (props) => {
       let v;
       try {
         v = evaluate(expression, scope);
+        v = toDbType(v, dataType);
       } catch (error) {
         v = null;
       }
+      if ((v == null && value == null) || JSON.stringify(v) === JSON.stringify(value)) {
+        return;
+      }
+      // console.log(options.name, v, value, props.defaultValue);
       form.setValuesIn(options.name, v);
     });
   });
