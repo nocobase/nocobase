@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import Database from './database';
 import { IdentifierError } from './errors/identifier-error';
 import { Model } from './model';
+import lodash from 'lodash';
 
 type HandleAppendsQueryOptions = {
   templateModel: any;
@@ -96,15 +97,15 @@ function patchShowConstraintsQuery(queryGenerator, db) {
       'is_deferrable AS "isDeferrable",',
       'initially_deferred AS "initiallyDeferred"',
       'from INFORMATION_SCHEMA.table_constraints',
-      `WHERE table_name='${tableName}'`,
+      `WHERE table_name='${lodash.isPlainObject(tableName) ? tableName.tableName : tableName}'`,
     ];
 
     if (!constraintName) {
       lines.push(`AND constraint_name='${constraintName}'`);
     }
 
-    if (db.options.schema && db.options.schema !== 'public') {
-      lines.push(`AND table_schema='${db.options.schema}'`);
+    if (lodash.isPlainObject(tableName) && tableName.schema) {
+      lines.push(`AND table_schema='${tableName.schema}'`);
     }
 
     return lines.join(' ');

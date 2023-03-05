@@ -1,4 +1,4 @@
-import Database, { Collection, MagicAttributeModel, snakeCase } from '@nocobase/database';
+import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
 import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
@@ -120,7 +120,11 @@ export class FieldModel extends MagicAttributeModel {
     let constraintName = `${tableName}_${field.name}_uk`;
 
     if (existUniqueIndex) {
-      const existsUniqueConstraints = await queryInterface.showConstraint(tableName, constraintName, {});
+      const existsUniqueConstraints = await queryInterface.showConstraint(
+        collection.addSchemaTableName(),
+        constraintName,
+        {},
+      );
 
       existsUniqueConstraint = existsUniqueConstraints[0];
     }
@@ -135,12 +139,16 @@ export class FieldModel extends MagicAttributeModel {
         name: constraintName,
         transaction: options.transaction,
       });
+
+      this.db.logger.info(`add unique index ${constraintName}`);
     }
 
     if (!unique && existsUniqueConstraint) {
       await queryInterface.removeConstraint(collection.addSchemaTableName(), constraintName, {
         transaction: options.transaction,
       });
+
+      this.db.logger.info(`remove unique index ${constraintName}`);
     }
   }
 

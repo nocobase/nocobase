@@ -1,9 +1,11 @@
+import { connect, mapReadPretty } from '@formily/react';
+
 import Expression from './Expression';
 import Result from './Result';
 
 export const Formula = () => null;
 
-Formula.Result = Result;
 Formula.Expression = Expression;
+Formula.Result = connect(Result);
 
 export default Formula;

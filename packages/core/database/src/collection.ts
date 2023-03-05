@@ -308,13 +308,13 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.model.tableName, options);
+      await queryInterface.dropTable(this.addSchemaTableName(), options);
     }
     this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
-    return this.db.collectionExistsInDb(this.name, options);
+    return this.db.queryInterface.collectionTableExists(this, options);
   }
 
   removeField(name: string): void | Field {
@@ -560,6 +560,10 @@ export class Collection<
 
     if (this.db.options.schema) {
       return this.db.options.schema;
+    }
+
+    if (this.db.inDialect('postgres')) {
+      return 'public';
     }
 
     return undefined;
