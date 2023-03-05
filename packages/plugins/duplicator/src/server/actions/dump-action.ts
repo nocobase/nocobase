@@ -1,16 +1,19 @@
 import { Dumper } from '../dumper';
 import send from 'koa-send';
+import { getApp } from './get-app';
 
 export default async function dumpAction(ctx, next) {
-  const app = ctx.app;
-  const dumper = new Dumper(app);
-
   const data = <
     {
       selectedOptionalGroupNames: string[];
       selectedUserCollections: string[];
+      app?: string;
     }
   >ctx.request.body;
+
+  const app = await getApp(ctx, data.app);
+
+  const dumper = new Dumper(app);
 
   const { filePath, dirname } = await dumper.dump(data);
 

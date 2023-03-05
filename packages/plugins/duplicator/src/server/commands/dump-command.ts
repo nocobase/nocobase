@@ -8,19 +8,20 @@ export default function addDumpCommand(app: Application) {
     .command('dump')
     .option('-a, --app <appName>', 'sub app name if you dump sub app in multiple apps')
     .action(async (options) => {
-      if (!options.app) {
-        await dumpCommandAction(app);
-        return;
+      let dumpApp = app;
+
+      if (options.app) {
+        const subApp = await app.appManager.getApplication(options.app);
+        if (!subApp) {
+          app.log.error(`app ${options.app} not found`);
+          await app.stop();
+          return;
+        }
+
+        dumpApp = subApp;
       }
 
-      const subApp = await app.appManager.getApplication(options.app);
-      if (!subApp) {
-        app.log.error(`app ${options.app} not found`);
-        await app.stop();
-        return;
-      }
-
-      await dumpCommandAction(subApp);
+      await dumpCommandAction(dumpApp);
     });
 }
 
