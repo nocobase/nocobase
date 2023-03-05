@@ -69,12 +69,12 @@ export default {
     uiSchema: {
       type: 'number',
       // title,
-      'x-disabled': true,
       'x-component': 'Formula.Result',
       'x-component-props': {
         stringMode: true,
         step: '1',
       },
+      'x-read-pretty': true
     },
   },
   properties: {
@@ -162,7 +162,6 @@ export default {
           'select',
           'multipleSelect',
 
-          'snapshot'
           // 'json'
         ],
         useCurrentFields: '{{ useCurrentFields }}',
