@@ -66,6 +66,7 @@ import DatabaseUtils from './database-utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
+import { Logger } from '@nocobase/logger';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -181,6 +182,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
 
+  logger: Logger;
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -284,6 +287,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+  }
+
+  setLogger(logger: Logger) {
+    this.logger = logger;
   }
 
   initListener() {

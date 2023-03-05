@@ -530,8 +530,6 @@ describe('collections repository', () => {
       .getQueryInterface()
       .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
 
-    console.log(afterIndexes);
-
     expect(
       afterIndexes.find(
         (index) => index.unique == true && index.fields[0].attribute == columnName && index.fields.length === 1,
