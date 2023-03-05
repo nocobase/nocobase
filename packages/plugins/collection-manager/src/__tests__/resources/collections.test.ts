@@ -23,13 +23,12 @@ describe('collections', () => {
         },
       });
     const collection = app.db.getCollection('test');
-    const r1 = await collection.existsInDb();
-    expect(r1).toBe(true);
+    expect(await collection.existsInDb()).toBeTruthy();
     await app.agent().resource('collections').destroy({
       filterByTk: 'test',
     });
-    const r2 = await collection.existsInDb();
-    expect(r2).toBe(false);
+
+    expect(await collection.existsInDb()).toBeFalsy();
   });
 
   test('remove collection 2', async () => {

@@ -12,12 +12,11 @@ export default class PostgresQueryInterface extends QueryInterface {
     const tableName = collection.model.tableName;
     const schema = collection.collectionSchema() || 'public';
 
-    const sql = `SELECT FROM information_schema.tables
+    const sql = `SELECT EXISTS(SELECT 1 FROM information_schema.tables
                  WHERE  table_schema = '${schema}'
-                 AND    table_name   = '${tableName}'`;
+                 AND    table_name   = '${tableName}')`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
-    console.log({ results });
-    return results.length > 0;
+    return results[0]['exists'];
   }
 }

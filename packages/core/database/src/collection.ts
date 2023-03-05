@@ -314,7 +314,7 @@ export class Collection<
   }
 
   async existsInDb(options?: Transactionable) {
-    return this.db.collectionExistsInDb(this.name, options);
+    return this.db.queryInterface.collectionTableExists(this, options);
   }
 
   removeField(name: string): void | Field {
@@ -560,6 +560,10 @@ export class Collection<
 
     if (this.db.options.schema) {
       return this.db.options.schema;
+    }
+
+    if (this.db.inDialect('postgres')) {
+      return 'public';
     }
 
     return undefined;
