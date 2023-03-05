@@ -441,6 +441,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
+    await this.emitAsync('beforeStop', this, options);
+
+    // close http server
+    if (this.listenServer) {
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
+    }
+
     try {
       // close database connection
       // silent if database already closed
@@ -449,14 +457,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     } catch (e) {
       console.log(e);
-    }
-
-    await this.emitAsync('beforeStop', this, options);
-
-    // close http server
-    if (this.listenServer) {
-      await promisify(this.listenServer.close).call(this.listenServer);
-      this.listenServer = null;
     }
 
     await this.emitAsync('afterStop', this, options);
