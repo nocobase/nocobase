@@ -59,7 +59,7 @@ describe('field defaultValue', () => {
     const response2 = await app.agent().resource('test1').create();
     expect(response2.body.data.field1).toBe('cba');
 
-    const results = await app.db.sequelize.getQueryInterface().describeTable(TestCollection.addSchemaTableName());
+    const results = await app.db.sequelize.getQueryInterface().describeTable(TestCollection.getTableNameWithSchema());
 
     expect(results.field1.defaultValue).toBe('cba');
   });
