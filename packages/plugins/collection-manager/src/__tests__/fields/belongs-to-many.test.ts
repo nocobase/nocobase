@@ -51,5 +51,29 @@ describe('belongsToMany', () => {
     });
 
     expect(throughCollection.get('sortable')).toEqual(false);
+    const collectionManagerSchema = process.env.COLLECTION_MANAGER_SCHEMA;
+    const mainSchema = process.env.DB_SCHEMA || 'public';
+
+    if (collectionManagerSchema && mainSchema != collectionManagerSchema && db.inDialect('postgres')) {
+      expect(throughCollection.get('schema')).toEqual(collectionManagerSchema);
+
+      const tableName = db.getCollection('post_tags').model.tableName;
+
+      const mainSchema = process.env.DB_SCHEMA || 'public';
+
+      const tableExists = async (tableName: string, schema: string) => {
+        const sql = `SELECT EXISTS(SELECT 1 FROM information_schema.tables
+                 WHERE  table_schema = '${schema}'
+                 AND    table_name   = '${tableName}')`;
+
+        const results = await db.sequelize.query(sql, { type: 'SELECT' });
+
+        const exists = results[0]['exists'];
+        return exists;
+      };
+
+      expect(await tableExists(tableName, collectionManagerSchema)).toBe(true);
+      expect(await tableExists(tableName, mainSchema)).toBe(false);
+    }
   });
 });
