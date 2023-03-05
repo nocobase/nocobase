@@ -7,7 +7,6 @@ export class SyncRunner {
 
     const inheritedCollection = model.collection as InheritedCollection;
     const db = inheritedCollection.context.database;
-    const schemaName = db.options.schema || 'public';
 
     const dialect = db.sequelize.getDialect();
 
@@ -27,12 +26,7 @@ export class SyncRunner {
       );
     }
 
-    const parentTables = parents.map((parent) => parent.model.tableName);
-
-    const tableName = model.tableName;
-
-    const schemaTableName = db.utils.addSchema(tableName);
-    const quoteTableName = db.utils.quoteTable(tableName);
+    const tableName = inheritedCollection.addSchemaTableName();
 
     const attributes = model.tableAttributes;
 
@@ -43,13 +37,14 @@ export class SyncRunner {
     let maxSequenceVal = 0;
     let maxSequenceName;
 
+    // find max sequence
     if (childAttributes.id && childAttributes.id.autoIncrement) {
-      for (const parent of parentTables) {
+      for (const parent of parents) {
         const sequenceNameResult = await queryInterface.sequelize.query(
           `SELECT column_default
            FROM information_schema.columns
-           WHERE table_name = '${parent}'
-            and table_schema = '${schemaName}'
+           WHERE table_name = '${parent.model.tableName}'
+            and table_schema = '${parent.collectionSchema()}'
              and "column_name" = 'id';`,
           {
             transaction,
@@ -88,22 +83,24 @@ export class SyncRunner {
       }
     }
 
-    await this.createTable(schemaTableName, childAttributes, options, model, parentTables, db);
+    await this.createTable(tableName, childAttributes, options, model, parents);
 
+    // if we have max sequence, set it to child table
     if (maxSequenceName) {
-      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
-        (parent) => db.getCollection(parent).model.tableName,
+      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
+        db.getCollection(parent).addSchemaTableName(),
       );
 
-      const sequenceTables = [...parentsDeep, tableName.toString()];
+      const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
-        const queryName =
-          Boolean(sequenceTable.match(/[A-Z]/)) && !sequenceTable.includes(`"`) ? `"${sequenceTable}"` : sequenceTable;
+        const tableName = sequenceTable.tableName;
+        const schemaName = sequenceTable.schema;
+
+        const queryName = Boolean(tableName.match(/[A-Z]/)) && !tableName.includes(`"`) ? `"${tableName}"` : tableName;
 
         const idColumnQuery = await queryInterface.sequelize.query(
-          `
-          SELECT column_name
+          `SELECT column_name
 FROM information_schema.columns
 WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schemaName}';
           `,
@@ -117,7 +114,7 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
         }
 
         await queryInterface.sequelize.query(
-          `alter table "${schemaName}"."${sequenceTable}"
+          `alter table ${db.utils.quoteTable(sequenceTable)}
             alter column id set default nextval('${maxSequenceName}')`,
           {
             transaction,
@@ -139,7 +136,7 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
     }
   }
 
-  static async createTable(tableName, attributes, options, model, parentTables, db) {
+  static async createTable(tableName, attributes, options, model, parents) {
     let sql = '';
 
     options = { ...options };
@@ -164,9 +161,9 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
 
     sql = `${queryGenerator.createTableQuery(tableName, attributes, options)}`.replace(
       ';',
-      ` INHERITS (${parentTables
+      ` INHERITS (${parents
         .map((t) => {
-          return db.utils.quoteTable(db.utils.addSchema(t, db.options.schema));
+          return t.addSchemaTableName();
         })
         .join(', ')});`,
     );
