@@ -761,7 +761,6 @@ export const createFormBlockSchema = (options) => {
   return schema;
 };
 
-// TODO
 export const createFilterFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'FilterFormItemInitializers',

@@ -1,5 +1,5 @@
 import { useField } from '@formily/react';
-import React, { createContext, useEffect, useMemo } from 'react';
+import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider';
 import { SharedFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
@@ -21,6 +21,8 @@ export interface DataBlock {
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
   service?: any;
+  /** 区块所对应的 DOM 容器 */
+  dom: HTMLElement;
 }
 
 interface FilterContextValue {
@@ -46,12 +48,7 @@ export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) =
   const { service } = useBlockRequestContext();
   const field = useField();
   const associatedFields = useAssociatedFields();
-
-  useEffect(() => {
-    return () => {
-      removeDataBlock(field.props.name as string);
-    };
-  }, []);
+  const container = useRef(null);
 
   const shouldApplyFilter = field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter';
 
@@ -64,12 +61,18 @@ export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) =
       associatedFields,
       filters: {},
       service,
+      dom: container.current,
     });
   };
 
-  if (shouldApplyFilter) addBlockToDataBlocks();
+  useEffect(() => {
+    if (shouldApplyFilter) addBlockToDataBlocks();
+    return () => {
+      removeDataBlock(field.props.name as string);
+    };
+  }, []);
 
-  return <>{children}</>;
+  return <div ref={container}>{children}</div>;
 };
 
 /**

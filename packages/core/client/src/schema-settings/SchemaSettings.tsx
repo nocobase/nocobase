@@ -459,6 +459,19 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
   const dataBlocks = useSupportedBlocks(props.type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const Content = dataBlocks.map((block) => {
+    const onHover = () => {
+      const dom = block.dom;
+      dom.style.outline = '2px solid #F18B62';
+      dom.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    };
+    const onLeave = () => {
+      const dom = block.dom;
+      dom.style.transition = '';
+      dom.style.outline = 'none';
+    };
     if (isSameCollection(block.collection, collection)) {
       return (
         <SchemaSettings.SwitchItem
@@ -481,6 +494,8 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
             });
             dn.refresh();
           }}
+          onMouseEnter={onHover}
+          onMouseLeave={onLeave}
         />
       );
     }
@@ -521,6 +536,8 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
           });
           dn.refresh();
         }}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
       />
     );
   });
