@@ -1,5 +1,5 @@
 import { useField } from '@formily/react';
-import React, { createContext, useMemo } from 'react';
+import React, { createContext, useEffect, useMemo } from 'react';
 import { useBlockRequestContext } from '../block-provider';
 import { SharedFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
@@ -25,6 +25,7 @@ export interface DataBlock {
 
 interface FilterContextValue {
   dataBlocks: DataBlock[];
+  setDataBlocks: React.Dispatch<React.SetStateAction<DataBlock[]>>;
 }
 
 const FilterContext = createContext<FilterContextValue>(null);
@@ -35,16 +36,22 @@ const FilterContext = createContext<FilterContextValue>(null);
  * @returns
  */
 export const FilterBlockProvider: React.FC = ({ children }) => {
-  const value = useMemo(() => ({ dataBlocks: [] }), []);
-  return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
+  const [dataBlocks, setDataBlocks] = React.useState<DataBlock[]>([]);
+  return <FilterContext.Provider value={{ dataBlocks, setDataBlocks }}>{children}</FilterContext.Provider>;
 };
 
 export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) => {
   const collection = useCollection();
-  const { recordDataBlocks } = useFilterBlock();
+  const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
   const associatedFields = useAssociatedFields();
+
+  useEffect(() => {
+    return () => {
+      removeDataBlock(field.props.name as string);
+    };
+  }, []);
 
   const shouldApplyFilter = field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter';
 
@@ -70,7 +77,7 @@ export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) =
  * @returns
  */
 export const useFilterBlock = () => {
-  const { dataBlocks } = React.useContext(FilterContext);
+  const { dataBlocks, setDataBlocks } = React.useContext(FilterContext);
   const recordDataBlocks = (block: DataBlock) => {
     const existingBlock = dataBlocks.find((item) => item.name === block.name);
 
@@ -80,9 +87,12 @@ export const useFilterBlock = () => {
       return;
     }
 
-    dataBlocks.push(block);
+    setDataBlocks((prev) => [...prev, block]);
   };
   const getDataBlocks = () => dataBlocks;
+  const removeDataBlock = (name: string) => {
+    setDataBlocks((prev) => prev.filter((item) => item.name !== name));
+  };
 
-  return { recordDataBlocks, getDataBlocks };
+  return { recordDataBlocks, getDataBlocks, removeDataBlock };
 };
