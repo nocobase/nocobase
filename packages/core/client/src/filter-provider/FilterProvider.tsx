@@ -1,6 +1,6 @@
 import { useField } from '@formily/react';
 import React, { createContext, useMemo } from 'react';
-import { useAssociation, useBlockRequestContext } from '../block-provider';
+import { useBlockRequestContext } from '../block-provider';
 import { SharedFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { useAssociatedFields } from './utils';
@@ -34,22 +34,21 @@ const FilterContext = createContext<FilterContextValue>(null);
  * @param props
  * @returns
  */
-export const FilterBlockProvider = (props: any) => {
-  const { children } = props;
+export const FilterBlockProvider: React.FC = ({ children }) => {
   const value = useMemo(() => ({ dataBlocks: [] }), []);
   return <FilterContext.Provider value={value}>{children}</FilterContext.Provider>;
 };
 
-export const FilterBlockRecord = (props: any) => {
-  const { children } = props;
+export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) => {
   const collection = useCollection();
   const { recordDataBlocks } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
   const associatedFields = useAssociatedFields();
 
-  // 表单类的区块和所有筛选区块不需要筛选
-  if (field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter') {
+  const shouldApplyFilter = field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter';
+
+  const addBlockToDataBlocks = () => {
     recordDataBlocks({
       name: field.props.name as string,
       title: field.componentProps.title,
@@ -59,7 +58,9 @@ export const FilterBlockRecord = (props: any) => {
       filters: {},
       service,
     });
-  }
+  };
+
+  if (shouldApplyFilter) addBlockToDataBlocks();
 
   return <>{children}</>;
 };
@@ -70,19 +71,18 @@ export const FilterBlockRecord = (props: any) => {
  */
 export const useFilterBlock = () => {
   const { dataBlocks } = React.useContext(FilterContext);
-  return {
-    recordDataBlocks: (block: DataBlock) => {
-      const existed = dataBlocks.find((item) => item.name === block.name);
+  const recordDataBlocks = (block: DataBlock) => {
+    const existingBlock = dataBlocks.find((item) => item.name === block.name);
 
-      if (existed) {
-        // 已经收集过的无需重复收集，但是需要更新一下 service，以获取最新的状态
-        existed.service = block.service;
-        return;
-      }
+    if (existingBlock) {
+      // 需要更新一下 service，以获取最新的状态
+      existingBlock.service = block.service;
+      return;
+    }
 
-      // 避免重复收集
-      dataBlocks.push(block);
-    },
-    getDataBlocks: () => dataBlocks,
+    dataBlocks.push(block);
   };
+  const getDataBlocks = () => dataBlocks;
+
+  return { recordDataBlocks, getDataBlocks };
 };
