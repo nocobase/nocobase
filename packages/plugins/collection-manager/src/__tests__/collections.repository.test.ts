@@ -249,7 +249,7 @@ describe('collections repository', () => {
 
     const testCollection = db.getCollection('tests');
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
+      await db.sequelize.getQueryInterface().describeTable(testCollection.getTableNameWithSchema());
 
     const tableInfo0 = await getTableInfo();
     expect(tableInfo0['date_a']).toBeDefined();
@@ -286,7 +286,7 @@ describe('collections repository', () => {
 
     const testCollection = db.getCollection('tests');
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
+      await db.sequelize.getQueryInterface().describeTable(testCollection.getTableNameWithSchema());
 
     const tableInfo0 = await getTableInfo();
     expect(tableInfo0[createdAt]).toBeDefined();
@@ -339,7 +339,7 @@ describe('collections repository', () => {
       testCollection.model.rawAttributes.test_field.field === testCollection.model.rawAttributes.testField.field,
     ).toBe(true);
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
+      await db.sequelize.getQueryInterface().describeTable(testCollection.getTableNameWithSchema());
 
     const tableInfo0 = await getTableInfo();
 

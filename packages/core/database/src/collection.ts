@@ -319,7 +319,7 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.addSchemaTableName(), options);
+      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
     this.remove();
   }
@@ -550,7 +550,7 @@ export class Collection<
     return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 
-  public addSchemaTableName() {
+  public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
     if (this.collectionSchema()) {
@@ -561,7 +561,7 @@ export class Collection<
   }
 
   public quotedTableName() {
-    return this.db.utils.quoteTable(this.addSchemaTableName());
+    return this.db.utils.quoteTable(this.getTableNameWithSchema());
   }
 
   public collectionSchema() {

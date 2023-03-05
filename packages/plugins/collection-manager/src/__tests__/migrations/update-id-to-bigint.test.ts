@@ -1,11 +1,10 @@
 import { Database, MigrationContext } from '@nocobase/database';
 import lodash from 'lodash';
 import Migrator from '../../migrations/20221121111113-update-id-to-bigint';
-
-const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe.skip : describe.skip);
-
 import { MockServer } from '@nocobase/test';
 import { createApp } from '../index';
+
+const excludeSqlite = () => (process.env.DB_DIALECT != 'sqlite' ? describe.skip : describe.skip);
 
 excludeSqlite()('update id to bigint  test', () => {
   let app: MockServer;
@@ -69,7 +68,7 @@ excludeSqlite()('update id to bigint  test', () => {
 
     const assertBigInt = async (collectionName, fieldName) => {
       const tableName = db.getCollection(collectionName)
-        ? db.getCollection(collectionName).addSchemaTableName()
+        ? db.getCollection(collectionName).getTableNameWithSchema()
         : collectionName;
 
       const tableInfo = await db.sequelize.getQueryInterface().describeTable(tableName);
@@ -91,7 +90,7 @@ excludeSqlite()('update id to bigint  test', () => {
 
     let usersTableInfo = await db.sequelize
       .getQueryInterface()
-      .describeTable(db.getCollection('users').addSchemaTableName());
+      .describeTable(db.getCollection('users').getTableNameWithSchema());
 
     assertInteger(usersTableInfo.id.type);
 
