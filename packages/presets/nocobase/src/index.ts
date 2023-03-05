@@ -23,6 +23,7 @@ export class PresetNocoBase extends Plugin {
     'duplicator',
     'iframe-block',
     'formula-field',
+    'charts',
   ];
 
   localPlugins = [

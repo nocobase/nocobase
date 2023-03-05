@@ -117,8 +117,7 @@ export function WorkflowCanvas() {
     <FlowContext.Provider value={{
       workflow,
       nodes,
-      onNodeAdded: refresh,
-      onNodeRemoved: refresh
+      refresh,
     }}>
       <div className="workflow-toolbar">
         <header>
