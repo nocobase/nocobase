@@ -78,7 +78,7 @@ const InternalSelect = connect(
       return v;
     };
     if (objectValue) {
-      return <ObjectSelect {...others} mode={mode} />;
+      return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
     }
     return (
       <AntdSelect
@@ -97,7 +97,6 @@ const InternalSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

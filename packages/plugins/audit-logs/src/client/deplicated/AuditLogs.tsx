@@ -7,7 +7,8 @@ import {
   SchemaComponent,
   TableBlockProvider,
   useCollection,
-  useCompile, useRecord
+  useCompile,
+  useRecord,
 } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 import { AuditLogsDesigner } from './AuditLogsDesigner';
@@ -106,7 +107,7 @@ export const AuditLogs: any = () => {
           'x-read-pretty': true,
         },
       },
-    }
+    };
   }
   return (
     <SchemaComponent
@@ -454,10 +455,13 @@ AuditLogs.Decorator = observer((props: any) => {
     const filterByTk = record?.[parent.filterTargetKey || 'id'];
     if (filter) {
       filter = {
-        $and: [filter, {
-          collectionName: parent.name,
-          recordId: `${filterByTk}`,
-        }],
+        $and: [
+          filter,
+          {
+            collectionName: parent.name,
+            recordId: `${filterByTk}`,
+          },
+        ],
       };
     } else {
       filter = {

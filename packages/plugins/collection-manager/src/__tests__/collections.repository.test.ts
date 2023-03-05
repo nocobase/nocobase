@@ -1,6 +1,7 @@
 import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
+import CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
 
 describe('collections repository', () => {
   let db: Database;
@@ -17,6 +18,49 @@ describe('collections repository', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should set collection schema from env', async () => {
+    if (!db.inDialect('postgres')) {
+      return;
+    }
+
+    const plugin = app.getPlugin<CollectionManagerPlugin>('collection-manager');
+    plugin.schema = 'testSchema';
+
+    await Collection.repository.create({
+      values: {
+        name: 'posts',
+      },
+      context: {},
+    });
+
+    const postsCollection = db.getCollection('posts');
+    expect(postsCollection.options.schema).toEqual('testSchema');
+
+    await Collection.repository.create({
+      values: {
+        name: 'tags',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'posts',
+        type: 'belongsToMany',
+        target: 'posts',
+        through: 'posts_tags',
+        foreignKey: 'tag_id',
+        otherKey: 'post_id',
+        interface: 'm2m',
+        collectionName: 'tags',
+      },
+      context: {},
+    });
+
+    const throughCollection = db.getCollection('posts_tags');
+    expect(throughCollection.options.schema).toEqual('testSchema');
   });
 
   test('create underscored field', async () => {
@@ -510,5 +554,41 @@ describe('collections repository', () => {
     });
 
     expect(await Field.repository.count()).toBe(2);
+  });
+
+  it('should destroy field when collection set to difference schema', async () => {
+    if (db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
+    const collection = await Collection.repository.create({
+      values: {
+        name: 'test',
+        schema: 'test_schema',
+      },
+      context: {},
+    });
+
+    const field = await Field.repository.create({
+      values: {
+        name: 'test_field',
+        type: 'string',
+        collectionName: collection.get('name'),
+      },
+      context: {},
+    });
+
+    let err;
+    try {
+      await Field.repository.destroy({
+        filter: {
+          name: field.get('name'),
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
   });
 });

@@ -162,6 +162,7 @@ export default {
           'select',
           'multipleSelect',
 
+          'snapshot'
           // 'json'
         ],
         useCurrentFields: '{{ useCurrentFields }}',

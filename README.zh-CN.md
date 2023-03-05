@@ -66,6 +66,10 @@ NocoBase 采用插件化架构，所有新功能都可以通过开发和安装�
 
 ![](https://www.nocobase.com/images/wechat.png)  
 
+欢迎加入用户微信群：
+
+![](https://www.nocobase.com/images/wechat-group.png)
+
 ## 安装
 
 NocoBase 支持三种安装方式：

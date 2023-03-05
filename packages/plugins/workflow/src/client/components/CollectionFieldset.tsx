@@ -33,8 +33,8 @@ export default observer(({ value, disabled, onChange }: any) => {
   const compile = useCompile();
   const form = useForm();
   const { getCollection, getCollectionFields } = useCollectionManager();
-  const { values: data } = useForm();
-  const collectionName = data?.config?.collection;
+  const { values: config } = useForm();
+  const collectionName = config?.collection;
   const fields = getCollectionFields(collectionName)
     .filter(field => (
       !field.hidden
@@ -89,7 +89,10 @@ export default observer(({ value, disabled, onChange }: any) => {
                           type: 'void',
                           properties: {
                             [field.name]: {
-                              'x-component': ConstantCompoent
+                              'x-component': ConstantCompoent,
+                              ['x-validator']() {
+                                return '';
+                              }
                             }
                           }
                         }}

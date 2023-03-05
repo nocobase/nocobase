@@ -10,7 +10,7 @@ type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
 };
 
 const mapTimeFormat = function () {
-  return (props: any) => {
+  return (props: any, field) => {
     const format = props['format'] || 'HH:mm:ss';
     const onChange = props.onChange;
     return {

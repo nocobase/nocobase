@@ -1,6 +1,8 @@
 FROM node:16 as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
-ARG COMIT_HASH
+ARG COMMIT_HASH
+ARG APPEND_PRESET_LOCAL_PLUGINS
+ARG BEFORE_PACK_NOCOBASE="ls -l"
 
 RUN apt-get update && apt-get install -y jq
 WORKDIR /tmp
@@ -23,9 +25,12 @@ RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production \
+  && yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS \
   && cd /app/my-nocobase-app \
   && yarn install --production
+
+WORKDIR /app/my-nocobase-app
+RUN $BEFORE_PACK_NOCOBASE
 
 RUN cd /app \
   && rm -rf my-nocobase-app/packages/app/client/src/.umi \
@@ -50,7 +55,7 @@ COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMIT_HASH" >> /app/nocobase/storage/uploads/COMIT_HASH
+RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 

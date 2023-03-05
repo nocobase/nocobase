@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager } from '../..';
+import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -104,27 +104,70 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useInheritFields = (props) => {
-  const { actionInitializers } = props;
-  const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
-  const childrenCollections = getChildrenCollections(collection.name);
-  return childrenCollections.map((c) => {
-    return {
-      key: c.key,
+const useDetailCollections = (props) => {
+  const { actionInitializers, childrenCollections, collection } = props;
+  const detailCollections = [
+    {
+      key: collection.name,
       type: 'item',
-      title: c?.title || c.name,
+      title: collection?.title || collection.name,
       component: 'RecordReadPrettyFormBlockInitializer',
       icon: false,
-      targetCollection: c,
+      targetCollection: collection,
       actionInitializers,
-    };
-  });
+    },
+  ].concat(
+    childrenCollections.map((c) => {
+      return {
+        key: c.name,
+        type: 'item',
+        title: c?.title || c.name,
+        component: 'RecordReadPrettyFormBlockInitializer',
+        icon: false,
+        targetCollection: c,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+  return detailCollections;
+};
+
+const useFormCollections = (props) => {
+  const { actionInitializers, childrenCollections, collection } = props;
+  const formCollections = [
+    {
+      key: collection.name,
+      type: 'item',
+      title: collection?.title || collection.name,
+      component: 'RecordFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    childrenCollections.map((c) => {
+      return {
+        key: c.name,
+        type: 'item',
+        title: c?.title || c.name,
+        component: 'RecordFormBlockInitializer',
+        icon: false,
+        targetCollection: c,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+
+  return formCollections;
 };
 
 export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component, actionInitializers } = props;
+  const collection = useCollection();
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collection.name);
+  const hasChildCollection = childrenCollections?.length > 0;
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -136,26 +179,36 @@ export const RecordBlockInitializers = (props: any) => {
         {
           type: 'itemGroup',
           title: '{{t("Current record blocks")}}',
-          children: [
-            {
-              key: 'details',
-              type: 'item',
-              title: '{{t("Details")}}',
-              component: 'RecordReadPrettyFormBlockInitializer',
-              actionInitializers,
-            },
-            {
-              key: 'form',
-              type: 'item',
-              title: '{{t("Form")}}',
-              component: 'RecordFormBlockInitializer',
-            },
-          ],
-        },
-        {
-          type: 'itemGroup',
-          title: '{{t("Children collection blocks")}}',
-          children: useInheritFields(props),
+          children: hasChildCollection
+            ? [
+                {
+                  key: 'details',
+                  type: 'subMenu',
+                  title: '{{t("Details")}}',
+                  children: useDetailCollections({ ...props, childrenCollections, collection }),
+                },
+                {
+                  key: 'form',
+                  type: 'subMenu',
+                  title: '{{t("Form")}}',
+                  children: useFormCollections({ ...props, childrenCollections, collection }),
+                },
+              ]
+            : [
+                {
+                  key: 'details',
+                  type: 'item',
+                  title: '{{t("Details")}}',
+                  component: 'RecordReadPrettyFormBlockInitializer',
+                  actionInitializers,
+                },
+                {
+                  key: 'form',
+                  type: 'item',
+                  title: '{{t("Form")}}',
+                  component: 'RecordFormBlockInitializer',
+                },
+              ],
         },
         {
           type: 'itemGroup',

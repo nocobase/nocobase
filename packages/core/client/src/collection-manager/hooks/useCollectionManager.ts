@@ -1,6 +1,6 @@
 import { clone } from '@formily/shared';
 import { CascaderProps } from 'antd';
-import { reduce, unionBy, uniq } from 'lodash';
+import { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
@@ -72,7 +72,7 @@ export const useCollectionManager = () => {
         children.push(v);
         return getChildren(collectionKey);
       });
-      return children;
+      return uniqBy(children, 'key');
     };
     return getChildren(name);
   };
