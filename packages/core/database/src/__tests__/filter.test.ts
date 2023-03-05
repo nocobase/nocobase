@@ -33,7 +33,7 @@ describe('filter', () => {
 
     await db.sync();
 
-    await UserCollection.repository.create({
+    const user = await UserCollection.repository.create({
       values: {
         name: 'John',
         posts: [
@@ -50,7 +50,7 @@ describe('filter', () => {
     const response = await UserCollection.repository.find({
       filter: {
         'posts.createdAt': {
-          $dateOn: '2023-03-05 05:12:52.412+00',
+          $dateOn: user.get('createdAt'),
         },
       },
     });
