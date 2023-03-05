@@ -1,5 +1,5 @@
 import QueryInterface from './query-interface';
-import { Collection } from '@nocobase/database';
+import { Collection } from '../collection';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
