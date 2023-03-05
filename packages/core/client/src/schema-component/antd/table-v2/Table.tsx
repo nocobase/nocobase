@@ -96,7 +96,7 @@ const SortableRow = (props) => {
     <tr
       ref={active?.id !== id ? setNodeRef : null}
       {...props}
-      className={classNames({ [className]: active && isOver })}
+      className={classNames(props.className, { [className]: active && isOver })}
     />
   );
 };
