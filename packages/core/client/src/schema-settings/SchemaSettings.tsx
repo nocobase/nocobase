@@ -10,6 +10,7 @@ import {
   Cascader,
   CascaderProps,
   Dropdown,
+  Empty,
   Menu,
   MenuItemProps,
   Modal,
@@ -457,75 +458,76 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
   const collection = useCollection();
   const dataBlocks = useSupportedBlocks(props.type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
+  const Content = dataBlocks.map((block) => {
+    if (isSameCollection(block.collection, collection)) {
+      return (
+        <SchemaSettings.SwitchItem
+          key={block.name}
+          title={block.title || block.name}
+          checked={targets.some((target) => target.name === block.name)}
+          onChange={(checked) => {
+            if (checked) {
+              targets.push({ name: block.name });
+            } else {
+              targets = targets.filter((target) => target.name !== block.name);
+            }
+
+            updateFilterTargets(fieldSchema, targets);
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: uid,
+                'x-filter-targets': targets,
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      );
+    }
+
+    const target = targets.find((target) => target.name === block.name);
+    // 与筛选区块的数据表具有关系的表
+    return (
+      <SchemaSettings.SelectItem
+        openOnHover
+        key={block.name}
+        title={block.title || block.name}
+        value={target?.field || ''}
+        options={[
+          ...block.associatedFields.map((field) => {
+            return {
+              label: field.name,
+              value: `${field.name}.${field.targetKey}`,
+            };
+          }),
+          {
+            label: t('Unconnected'),
+            value: '',
+          },
+        ]}
+        onChange={(value) => {
+          if (value === '') {
+            targets = targets.filter((target) => target.name !== block.name);
+          } else {
+            targets = targets.filter((target) => target.name !== block.name);
+            targets.push({ name: block.name, field: value });
+          }
+          updateFilterTargets(fieldSchema, targets);
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: uid,
+              'x-filter-targets': targets,
+            },
+          });
+          dn.refresh();
+        }}
+      />
+    );
+  });
 
   return (
     <SchemaSettings.SubMenu title={t('Connect data blocks')}>
-      {dataBlocks.map((block) => {
-        if (isSameCollection(block.collection, collection)) {
-          return (
-            <SchemaSettings.SwitchItem
-              key={block.name}
-              title={block.title || block.name}
-              checked={targets.some((target) => target.name === block.name)}
-              onChange={(checked) => {
-                if (checked) {
-                  targets.push({ name: block.name });
-                } else {
-                  targets = targets.filter((target) => target.name !== block.name);
-                }
-
-                updateFilterTargets(fieldSchema, targets);
-                dn.emit('patch', {
-                  schema: {
-                    ['x-uid']: uid,
-                    'x-filter-targets': targets,
-                  },
-                });
-                dn.refresh();
-              }}
-            />
-          );
-        }
-
-        const target = targets.find((target) => target.name === block.name);
-        // 与筛选区块的数据表具有关系的表
-        return (
-          <SchemaSettings.SelectItem
-            openOnHover
-            key={block.name}
-            title={block.title || block.name}
-            value={target?.field || ''}
-            options={[
-              ...block.associatedFields.map((field) => {
-                return {
-                  label: field.name,
-                  value: `${field.name}.${field.targetKey}`,
-                };
-              }),
-              {
-                label: t('Unconnected'),
-                value: '',
-              },
-            ]}
-            onChange={(value) => {
-              if (value === '') {
-                targets = targets.filter((target) => target.name !== block.name);
-              } else {
-                targets = targets.filter((target) => target.name !== block.name);
-                targets.push({ name: block.name, field: value });
-              }
-              updateFilterTargets(fieldSchema, targets);
-              dn.emit('patch', {
-                schema: {
-                  ['x-uid']: uid,
-                  'x-filter-targets': targets,
-                },
-              });
-              dn.refresh();
-            }}
-          />
-        );
-      })}
+      {Content.length ? Content : <Empty style={{ width: 120 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />}
     </SchemaSettings.SubMenu>
   );
 };
