@@ -811,7 +811,15 @@ SchemaSettings.EnableChildCollections = (props) => {
           ['x-uid']: uid,
         };
         fieldSchema['x-enable-children'] = enableChildren;
+        fieldSchema['x-component-props'] = {
+          openMode: 'drawer',
+          component: 'CreateRecordAction',
+        };
         schema['x-enable-children'] = enableChildren;
+        schema['x-component-props'] = {
+          openMode: 'drawer',
+          component: 'CreateRecordAction',
+        };
         dn.emit('patch', {
           schema,
         });

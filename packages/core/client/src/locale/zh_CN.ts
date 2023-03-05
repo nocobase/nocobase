@@ -33,6 +33,7 @@ export default {
   "Delete": "删除",
   "UI editor": "界面配置",
   "Collection": "数据表",
+  "Enable child collections":"启用子表",
   "Collections & Fields": "数据表配置",
   "All collections":"全部数据表",
   "Add category":"添加分类",

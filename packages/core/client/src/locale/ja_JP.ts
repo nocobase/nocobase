@@ -33,6 +33,7 @@ export default {
   "Delete": "削除",
   "UI editor": "UI エディタ",
   "Collection": "コレクション",
+  "Enable child collections":"启用子表",
   "Collections & Fields": "コレクションとフィールド",
   "All collections":"すべてのデータテーブル",
   "Add category":"分類の追加",
