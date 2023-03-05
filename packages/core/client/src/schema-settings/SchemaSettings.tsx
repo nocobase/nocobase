@@ -504,7 +504,6 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
     // 与筛选区块的数据表具有关系的表
     return (
       <SchemaSettings.SelectItem
-        openOnHover
         key={block.name}
         title={block.title || block.name}
         value={target?.field || ''}
@@ -536,6 +535,7 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
           });
           dn.refresh();
         }}
+        onClick={(e) => e.stopPropagation()}
         onMouseEnter={onHover}
         onMouseLeave={onLeave}
       />
@@ -567,7 +567,7 @@ SchemaSettings.SelectItem = (props) => {
     : {};
 
   return (
-    <SchemaSettings.Item {...others} onClick={onClick}>
+    <SchemaSettings.Item {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
@@ -576,6 +576,7 @@ SchemaSettings.SelectItem = (props) => {
           onChange={(...arg) => (setOpen(false), onChange(...arg))}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          onClick={onClick}
           {...moreProps}
         />
       </div>
