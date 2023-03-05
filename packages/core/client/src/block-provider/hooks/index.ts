@@ -879,7 +879,7 @@ export const useAssociationFilterBlockProps = () => {
     run = () => {};
     filterKey = `${field.name}.${operatorMap[field.interface]}`;
     handleSearchInput = (e) => {
-      // TODO: 列表没有刷新，在这个 hook 中使用 useState 会 re-render 次数过多的错误
+      // TODO: 列表没有刷新，在这个 hook 中使用 useState 会产生 re-render 次数过多的错误
       const value = e.target.value;
       if (!value) {
         list = _list;
@@ -926,12 +926,14 @@ export const useAssociationFilterBlockProps = () => {
       const target = targets.find((target) => target.name === block.name);
       if (!target) return;
 
+      const key = `${uid}${fieldSchema.name}`;
+
       if (value.length) {
-        block.filters[uid] = {
+        block.filters[key] = {
           [filterKey]: value,
         };
       } else {
-        delete block.filters[uid];
+        delete block.filters[key];
       }
 
       const param = block.service.params?.[0] || {};
