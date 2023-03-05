@@ -2,7 +2,6 @@ import { render } from '@testing-library/react';
 import React from 'react';
 import { FilterBlockProvider, useFilterBlock } from '../FilterProvider';
 
-// TODO: make jest can parse css files
 describe('useFilter', () => {
   test('should get a empty array', () => {
     let getDataBlocks = null;

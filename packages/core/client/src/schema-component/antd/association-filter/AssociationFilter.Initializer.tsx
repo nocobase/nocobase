@@ -54,8 +54,6 @@ export const AssociationFilterInitializer = () => {
     },
   }));
 
-  console.log('optionalList', optionalList);
-
   const associatedFieldGroup: SchemaInitializerItemOptions = {
     type: 'itemGroup',
     title: t('Association fields'),
