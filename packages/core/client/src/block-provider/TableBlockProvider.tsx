@@ -194,8 +194,7 @@ export const useTableBlockProps = () => {
         : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
-    // 该方法是专门为筛选区块服务的
-    onClickRow(record, setSelectedRowKeys) {
+    onClickRow(record, setSelectedRowKeys, selectedRowKeys) {
       if (ctx.blockType !== 'filter') return;
 
       const value = [record[ctx.rowKey]];
@@ -205,15 +204,19 @@ export const useTableBlockProps = () => {
         const target = targets.find((target) => target.name === block.name);
         if (!target) return;
 
-        block.filters[uid] = {
-          $and: [
-            {
-              [target.field || ctx.rowKey]: {
-                [target.field ? '$in' : '$eq']: value,
+        if (selectedRowKeys.includes(record[ctx.rowKey])) {
+          delete block.filters[uid];
+        } else {
+          block.filters[uid] = {
+            $and: [
+              {
+                [target.field || ctx.rowKey]: {
+                  [target.field ? '$in' : '$eq']: value,
+                },
               },
-            },
-          ],
-        };
+            ],
+          };
+        }
 
         const param = block.service.params?.[0] || {};
         return block.doFilter({
@@ -227,7 +230,7 @@ export const useTableBlockProps = () => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = value;
       // 更新表格的选中状态
-      setSelectedRowKeys(value);
+      setSelectedRowKeys((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : value));
     },
   };
 };
