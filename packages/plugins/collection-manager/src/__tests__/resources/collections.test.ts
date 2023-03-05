@@ -13,7 +13,7 @@ describe('collections', () => {
     await app.destroy();
   });
 
-  test('remove collection', async () => {
+  test('remove collection 1', async () => {
     await app
       .agent()
       .resource('collections')
@@ -32,7 +32,7 @@ describe('collections', () => {
     expect(r2).toBe(false);
   });
 
-  test('remove collection', async () => {
+  test('remove collection 2', async () => {
     await app
       .agent()
       .resource('collections')
@@ -77,7 +77,7 @@ describe('collections', () => {
     expect(count).toBe(0);
   });
 
-  test('remove collection', async () => {
+  test('remove collection 3', async () => {
     await app
       .agent()
       .resource('collections')

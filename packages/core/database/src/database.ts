@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,12 +58,14 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
+import buildQueryInterface from './query-interface/query-interface-builder';
+import QueryInterface from './query-interface/query-interface';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -166,6 +168,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
+  queryInterface: QueryInterface;
+
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
@@ -211,6 +215,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.options = opts;
 
     this.sequelize = new Sequelize(opts);
+
+    this.queryInterface = buildQueryInterface(this);
 
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
@@ -631,15 +637,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
     const collection = this.getCollection(name);
+
     if (!collection) {
       return false;
     }
 
-    const tables = await this.sequelize.getQueryInterface().showAllTables({
-      transaction: options?.transaction,
-    });
-
-    return tables.includes(this.getCollection(name).model.tableName);
+    return await this.queryInterface.collectionTableExists(collection, options);
   }
 
   public isSqliteMemory() {
