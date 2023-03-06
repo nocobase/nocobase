@@ -52,7 +52,6 @@ WORKDIR /app/nocobase
 
 RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMIT_HASH" >> /app/nocobase/storage/uploads/COMIT_HASH
 
-RUN touch /app/nocobase/packages/app/client/dist/index.html
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
 CMD ["/app/docker-entrypoint.sh"]
