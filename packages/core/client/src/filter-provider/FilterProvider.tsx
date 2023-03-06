@@ -20,6 +20,8 @@ export interface DataBlock {
   associatedFields?: CollectionFieldOptions[];
   /** 存储筛选区块中的筛选条件 */
   filters: Record<string, SharedFilter>;
+  /** 通过右上角菜单设置的过滤条件 */
+  defaultFilter?: SharedFilter;
   service?: any;
   /** 区块所对应的 DOM 容器 */
   dom: HTMLElement;
@@ -42,7 +44,13 @@ export const FilterBlockProvider: React.FC = ({ children }) => {
   return <FilterContext.Provider value={{ dataBlocks, setDataBlocks }}>{children}</FilterContext.Provider>;
 };
 
-export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) => {
+export const FilterBlockRecord = ({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params?: { filter: SharedFilter };
+}) => {
   const collection = useCollection();
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();
@@ -59,6 +67,7 @@ export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) =
       doFilter: service.runAsync,
       collection,
       associatedFields,
+      defaultFilter: params.filter || {},
       filters: {},
       service,
       dom: container.current,
@@ -67,6 +76,9 @@ export const FilterBlockRecord = ({ children }: { children: React.ReactNode }) =
 
   useEffect(() => {
     if (shouldApplyFilter) addBlockToDataBlocks();
+  }, [params?.filter, service]);
+
+  useEffect(() => {
     return () => {
       removeDataBlock(field.props.name as string);
     };
@@ -85,8 +97,9 @@ export const useFilterBlock = () => {
     const existingBlock = dataBlocks.find((item) => item.name === block.name);
 
     if (existingBlock) {
-      // 需要更新一下 service，以获取最新的状态
+      // 这里的值有可能会变化，所以需要更新
       existingBlock.service = block.service;
+      existingBlock.defaultFilter = block.defaultFilter;
       return;
     }
 

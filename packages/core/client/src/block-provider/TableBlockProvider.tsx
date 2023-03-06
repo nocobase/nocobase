@@ -204,10 +204,14 @@ export const useTableBlockProps = () => {
         const target = targets.find((target) => target.name === block.name);
         if (!target) return;
 
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
         if (selectedRowKeys.includes(record[ctx.rowKey])) {
-          delete block.filters[uid];
+          delete storedFilter[uid];
         } else {
-          block.filters[uid] = {
+          storedFilter[uid] = {
             $and: [
               {
                 [target.field || ctx.rowKey]: {
@@ -218,13 +222,19 @@ export const useTableBlockProps = () => {
           };
         }
 
-        const param = block.service.params?.[0] || {};
-        return block.doFilter({
-          ...param,
-          page: 1,
-          // TODO: 应该也需要合并数据区块中所设置的筛选条件
-          filter: mergeFilter([...Object.values(block.filters).map((filter) => removeNullCondition(filter))]),
-        });
+        const mergedFilter = mergeFilter([
+          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+          block.defaultFilter,
+        ]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
       });
 
       ctx.field.data = ctx?.field?.data || {};
