@@ -18,8 +18,6 @@ export interface DataBlock {
   doFilter: (params: any, params2?: any) => Promise<void>;
   /** 数据区块表中所有的关系字段 */
   associatedFields?: CollectionFieldOptions[];
-  /** 存储筛选区块中的筛选条件 */
-  filters: Record<string, SharedFilter>;
   /** 通过右上角菜单设置的过滤条件 */
   defaultFilter?: SharedFilter;
   service?: any;
@@ -68,7 +66,6 @@ export const FilterBlockRecord = ({
       collection,
       associatedFields,
       defaultFilter: params.filter || {},
-      filters: {},
       service,
       dom: container.current,
     });
