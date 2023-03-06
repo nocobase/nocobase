@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
@@ -51,10 +51,11 @@ const InternalFormBlockProvider = (props) => {
 
 export const FormBlockProvider = (props) => {
   const record = useRecord();
-  const { collection, resource } = props;
+  const { collection, resource, association } = props;
   const { __collection, __parent } = record;
   const currentCollection = useCollection();
-  const { getInheritCollections } = useCollectionManager();
+  const { getInheritCollections, getCollectionJoinField, getCollection } = useCollectionManager();
+
   const { designable } = useDesignable();
   let detailFlag = false;
   if (Object.keys(record).length > 0 && Object.keys(__parent).length === 0) {
@@ -72,8 +73,11 @@ export const FormBlockProvider = (props) => {
       if (viewOwnRelation) {
         relationFlag = true;
       } else {
+        const childCollection = getCollection(__collection || __parent?.__collection);
+        const collectionField = getCollectionJoinField(association);
+        const flag = childCollection.fields.find((v) => v.name === collectionField.name);
         const inheritCollections = getInheritCollections(__parent?.__collection || __collection);
-        relationFlag = inheritCollections.includes(resource?.split('.')?.[0]);
+        relationFlag = !flag && inheritCollections.includes(resource?.split('.')?.[0]);
       }
     }
   }
