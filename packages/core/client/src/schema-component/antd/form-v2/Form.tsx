@@ -132,6 +132,7 @@ const WithForm = (props) => {
       });
     });
     return () => {
+      form.reset();
       form.removeEffects(id);
     };
   }, [linkageRules]);
