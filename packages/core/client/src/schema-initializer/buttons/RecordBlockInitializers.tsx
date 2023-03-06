@@ -257,6 +257,7 @@ const useRecordPickerDetailCollections = (props) => {
         component: 'RecordReadPrettyFormBlockInitializer',
         icon: false,
         targetCollection: c.targetCollection,
+        targetAssociation: c.targetAssociation,
         actionInitializers,
       };
     }),
@@ -286,6 +287,7 @@ const useRecordPickerFormCollections = (props) => {
         component: 'RecordReadPrettyFormBlockInitializer',
         icon: false,
         targetCollection: c.targetCollection,
+        targetAssociation: c.targetAssociation,
         actionInitializers,
       };
     }),
@@ -310,7 +312,11 @@ export const RecordBlockInitializers = (props: any) => {
         return v.name === collectionField.name;
       });
       if (inheritRelateField) {
-        return { ...k, targetCollection: getCollection(inheritRelateField?.target) };
+        return {
+          ...k,
+          targetCollection: getCollection(inheritRelateField?.target),
+          targetAssociation: `${inheritRelateField.collectionName}.${inheritRelateField.name}`,
+        };
       }
     })
     .filter((v) => {

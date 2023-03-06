@@ -14,11 +14,12 @@ export const RecordReadPrettyFormBlockInitializer = (props) => {
     insert,
     icon = true,
     targetCollection,
+    targetAssociation,
     ...others
   } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const collection = targetCollection || useCollection();
-  const association = useBlockAssociationContext();
+  const association =targetAssociation|| useBlockAssociationContext();
   const { block } = useBlockRequestContext();
   const actionInitializers =
     block !== 'TableField' ? props.actionInitializers || 'ReadPrettyFormActionInitializers' : null;
