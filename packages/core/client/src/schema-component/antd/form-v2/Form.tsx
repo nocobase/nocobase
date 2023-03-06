@@ -77,7 +77,9 @@ const WithForm = (props) => {
         setFormValueChanged?.(true);
       });
     });
-    form.disabled = props.disabled;
+    if (props.disabled) {
+      form.disabled = props.disabled;
+    }
     return () => {
       form.removeEffects(id);
     };
