@@ -5,7 +5,7 @@ import {
   useRecord,
   useRequest,
   useResourceActionContext,
-  useResourceContext,
+  useResourceContext
 } from '@nocobase/client';
 import { useChartQueryMetadataContext } from '../../ChartQueryMetadataProvider';
 
@@ -75,7 +75,7 @@ export const useDestroyAllSelectedQueriesAction = () => {
 export const chartsQueriesSchema: ISchema = {
   type: 'object',
   properties: {
-    block1: {
+    [uid()]: {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
