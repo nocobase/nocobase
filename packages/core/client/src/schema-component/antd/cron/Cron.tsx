@@ -5,8 +5,6 @@ import React from 'react';
 import { Cron as ReactCron, CronProps } from 'react-js-cron';
 import { useAPIClient } from '../../../api-client';
 
-type ComposedCron = React.FC<CronProps> & {};
-
 const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
   return (
@@ -36,7 +34,7 @@ const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: strin
   );
 };
 
-export const ReadPretty = (props) => {
+const ReadPretty = (props) => {
   const api = useAPIClient();
   const locale = api.auth.getLocale();
   return props.value ? (
@@ -49,6 +47,14 @@ export const ReadPretty = (props) => {
   ) : null;
 };
 
-export const Cron: ComposedCron = connect(Input, mapReadPretty(ReadPretty));
+type ComposedCron = React.FC<CronProps> & {
+  ReadPretty: typeof ReadPretty;
+};
+
+export const Cron = connect(Input, mapReadPretty(ReadPretty)) as unknown as typeof Input & {
+  ReadPretty;
+};
+
+Cron.ReadPretty = ReadPretty;
 
 export default Cron;

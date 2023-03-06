@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, SelectProps } from 'antd';
-import Cron, { ReadPretty as CronReadPretty } from './Cron';
+import Cron from './Cron';
 import { connect, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
@@ -83,7 +83,7 @@ const ReadPretty = (props: CronSetProps) => {
     return value && options?.find((o) => o.value === value)?.label;
   }, [options, value]);
 
-  return <>{value && (label ? compile(label) : <CronReadPretty {...props} />)}</>;
+  return <>{value && (label ? compile(label) : <Cron.ReadPretty {...props} />)}</>;
 };
 
 export const CronSet = connect(CronSetInternal, mapReadPretty(ReadPretty));
