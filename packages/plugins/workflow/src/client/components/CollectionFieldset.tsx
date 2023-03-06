@@ -13,8 +13,8 @@ function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
-  const { values: data } = useForm();
-  const fields = getCollectionFields(data?.config?.collection);
+  const { values: config } = useForm();
+  const fields = getCollectionFields(config?.collection);
   const { type } = fields.find(item => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
