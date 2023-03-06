@@ -3,7 +3,9 @@ import EventEmitter from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import Application, { ApplicationOptions } from './application';
 
-type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
+type AppSelectorReturn = Application | string | undefined | null;
+
+type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
@@ -24,7 +26,7 @@ export class AppManager extends EventEmitter {
     passEventToSubApps('afterUpgrade', 'upgrade');
   }
 
-  appSelector: AppSelector = (req: IncomingMessage) => this.app;
+  appSelector: AppSelector = async (req: IncomingMessage) => this.app;
 
   createApplication(name: string, options: ApplicationOptions): Application {
     const application = new Application({
@@ -70,7 +72,7 @@ export class AppManager extends EventEmitter {
     return async (req: IncomingMessage, res: ServerResponse) => {
       const appManager = this.app.appManager;
 
-      let handleApp: any = appManager.appSelector(req) || appManager.app;
+      let handleApp: any = (await appManager.appSelector(req)) || appManager.app;
 
       if (typeof handleApp === 'string') {
         handleApp = await appManager.getApplication(handleApp);

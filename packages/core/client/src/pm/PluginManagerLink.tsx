@@ -46,20 +46,18 @@ export const SettingsCenterDropdown = () => {
         placement="bottom"
         overlay={
           <Menu>
-            <Menu.ItemGroup title={t('Bookmark')}>
-              {bookmarkTabs.map((tab) => {
-                return (
-                  <Menu.Item
-                    onClick={() => {
-                      history.push('/admin/settings/' + tab.path);
-                    }}
-                    key={tab.path}
-                  >
-                    {compile(tab.title)}
-                  </Menu.Item>
-                );
-              })}
-            </Menu.ItemGroup>
+            {bookmarkTabs.map((tab) => {
+              return (
+                <Menu.Item
+                  onClick={() => {
+                    history.push('/admin/settings/' + tab.path);
+                  }}
+                  key={tab.path}
+                >
+                  {compile(tab.title)}
+                </Menu.Item>
+              );
+            })}
             <Menu.Divider></Menu.Divider>
             <Menu.Item
               onClick={() => {

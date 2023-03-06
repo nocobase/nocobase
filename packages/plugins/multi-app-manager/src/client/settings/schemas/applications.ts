@@ -28,14 +28,23 @@ const collection = {
     },
     {
       type: 'string',
-      name: 'title',
+      name: 'displayName',
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("App Title")}}',
+        title: '{{t("App display name")}}',
         required: true,
         'x-component': 'Input',
-        'x-validator': 'uid',
+      },
+    },
+    {
+      type: 'string',
+      name: 'pinned',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        'x-content': '{{t("Pin to menu")}}',
+        'x-component': 'Checkbox',
       },
     },
     {
@@ -155,12 +164,21 @@ export const schema: ISchema = {
                   },
                   title: '{{t("Add new")}}',
                   properties: {
-                    title: {
+                    displayName: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                     },
                     name: {
                       'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
+                    pinned: {
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                    },
+                    cname: {
+                      title: '{{t("Custom domain")}}',
+                      'x-component': 'Input',
                       'x-decorator': 'FormItem',
                     },
                     footer: {
@@ -202,13 +220,13 @@ export const schema: ISchema = {
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
           },
           properties: {
-            title: {
+            displayName: {
               type: 'void',
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
-                title: {
-                  type: 'number',
+                displayName: {
+                  type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
@@ -220,6 +238,19 @@ export const schema: ISchema = {
               'x-component': 'Table.Column',
               properties: {
                 name: {
+                  type: 'string',
+                  'x-component': 'CollectionField',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            pinned: {
+              type: 'void',
+              title: '{{t("Pin to menu")}}',
+              'x-decorator': 'Table.Column.Decorator',
+              'x-component': 'Table.Column',
+              properties: {
+                pinned: {
                   type: 'string',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
@@ -258,8 +289,17 @@ export const schema: ISchema = {
                           },
                           title: '{{t("Edit")}}',
                           properties: {
-                            title: {
+                            displayName: {
                               'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
+                            pinned: {
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                            },
+                            cname: {
+                              title: '{{t("Custom domain")}}',
+                              'x-component': 'Input',
                               'x-decorator': 'FormItem',
                             },
                             footer: {

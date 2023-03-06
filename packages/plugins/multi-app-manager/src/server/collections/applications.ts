@@ -17,7 +17,16 @@ export default defineCollection({
     },
     {
       type: 'string',
-      name: 'title',
+      name: 'displayName',
+    },
+    {
+      type: 'string',
+      name: 'cname',
+      unique: true,
+    },
+    {
+      type: 'boolean',
+      name: 'pinned',
     },
     {
       type: 'string',

@@ -10,13 +10,14 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
+import { Settings } from './Settings';
 
 const MultiAppManager = () => {
   const history = useHistory();
   const { data, loading, run } = useRequest(
     {
       resource: 'applications',
-      action: 'list',
+      action: 'listPinned',
     },
     {
       manual: true,
@@ -32,7 +33,7 @@ const MultiAppManager = () => {
               window.open(`/apps/${app.name}/admin/`, '_blank');
             }}
           >
-            {app.title || app.name}
+            {app.displayName || app.name}
           </Menu.Item>
         );
       })}
@@ -69,12 +70,16 @@ export default (props) => {
         <SettingsCenterProvider
           settings={{
             'multi-app-manager': {
-              title: 'App manager',
+              title: 'Multi-app manager',
               icon: 'AppstoreOutlined',
               tabs: {
                 applications: {
                   title: 'Applications',
                   component: () => <AppManager />,
+                },
+                settings: {
+                  title: 'Settings',
+                  component: () => <Settings />,
                 },
               },
             },
