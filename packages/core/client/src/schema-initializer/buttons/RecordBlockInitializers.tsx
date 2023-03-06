@@ -1,7 +1,8 @@
+import { kebabCase } from '@antv/g2plot/lib/utils';
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
+import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions, useRecord } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -162,7 +163,7 @@ const useRelationFields = () => {
             relationFields.push({
               key: `${inheritRelateField.collectionName}_ ${inheritRelateField.name}`,
               type: 'item',
-              field:inheritRelateField,
+              field: inheritRelateField,
               title: `${c.title || c.name}/${inheritRelateField?.uiSchema?.title || inheritRelateField.name}`,
               component: 'RecordAssociationBlockInitializer',
             });
@@ -230,13 +231,161 @@ const useFormCollections = (props) => {
   return formCollections;
 };
 
+const getRecordPickerSchema = (fieldSchema) => {
+  return fieldSchema?.parent?.parent?.parent;
+};
+
+const useRecordPickerDetailCollections = (props) => {
+  const { actionInitializers, associateOverideField, collection, collectionField, resourceName } = props;
+  const detailCollections = [
+    {
+      key: collection.name,
+      type: 'item',
+      title: `${resourceName?.title || resourceName.name} / ${collectionField?.uiSchema.title}`,
+      component: 'RecordReadPrettyFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    associateOverideField.map((c) => {
+      const overridRelationField = c.fields.find((v) => v.name === collectionField.name);
+      return {
+        key: c.targetCollection.name,
+        type: 'item',
+        title: `${c?.title || c.name}/${overridRelationField.uiSchema.title}`,
+        component: 'RecordReadPrettyFormBlockInitializer',
+        icon: false,
+        targetCollection: c.targetCollection,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+  return detailCollections;
+};
+
+const useRecordPickerFormCollections = (props) => {
+  const { actionInitializers, associateOverideField, collection, collectionField, resourceName } = props;
+  const detailCollections = [
+    {
+      key: collection.name,
+      type: 'item',
+      title: `${resourceName?.title || resourceName.name} / ${collectionField?.uiSchema.title}`,
+      component: 'RecordReadPrettyFormBlockInitializer',
+      icon: false,
+      targetCollection: collection,
+      actionInitializers,
+    },
+  ].concat(
+    associateOverideField.map((c) => {
+      const overridRelationField = c.fields.find((v) => v.name === collectionField.name);
+      return {
+        key: c.targetCollection.name,
+        type: 'item',
+        title: `${c?.title || c.name}/${overridRelationField.uiSchema.title}`,
+        component: 'RecordReadPrettyFormBlockInitializer',
+        icon: false,
+        targetCollection: c.targetCollection,
+        actionInitializers,
+      };
+    }),
+  ) as SchemaInitializerItemOptions[];
+  return detailCollections;
+};
+
 export const RecordBlockInitializers = (props: any) => {
+  const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { insertPosition, component, actionInitializers } = props;
   const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections, getCollectionJoinField, getCollection } = useCollectionManager();
   const childrenCollections = getChildrenCollections(collection.name);
   const hasChildCollection = childrenCollections?.length > 0;
+  const recordPickerSchema = getRecordPickerSchema(fieldSchema);
+  const isAssociateInitializers = recordPickerSchema['x-component'] === 'RecordPicker.Viewer';
+  const collectionField = getCollectionJoinField(recordPickerSchema?.parent['x-collection-field']);
+  const associateOverideField = getChildrenCollections(collectionField?.collectionName)
+    .map((k) => {
+      const inheritRelateField = k.fields.find((v) => {
+        return v.name === collectionField.name;
+      });
+      if (inheritRelateField) {
+        return { ...k, targetCollection: getCollection(inheritRelateField?.target) };
+      }
+    })
+    .filter((v) => {
+      return v;
+    });
+  const resourceName = getCollection(collectionField?.collectionName);
+
+  const getCurrentRecordBlock = () => {
+    const currentRecordBlockItems = [
+      {
+        key: 'details',
+        type: 'item',
+        title: '{{t("Details")}}',
+        component: 'RecordReadPrettyFormBlockInitializer',
+        actionInitializers,
+      },
+      {
+        key: 'form',
+        type: 'item',
+        title: '{{t("Form")}}',
+        component: 'RecordFormBlockInitializer',
+      },
+    ];
+    if (isAssociateInitializers) {
+      if (associateOverideField.length > 0) {
+        return [
+          {
+            key: 'details',
+            type: 'subMenu',
+            title: '{{t("Details")}}',
+            children: useRecordPickerDetailCollections({
+              ...props,
+              associateOverideField,
+              collection,
+              collectionField,
+              resourceName,
+            }),
+          },
+          {
+            key: 'form',
+            type: 'subMenu',
+            title: '{{t("Form")}}',
+            children: useRecordPickerFormCollections({
+              ...props,
+              associateOverideField,
+              collection,
+              collectionField,
+              resourceName,
+            }),
+          },
+        ];
+      } else {
+        return currentRecordBlockItems;
+      }
+    } else {
+      if (hasChildCollection) {
+        return [
+          {
+            key: 'details',
+            type: 'subMenu',
+            title: '{{t("Details")}}',
+            children: useDetailCollections({ ...props, childrenCollections, collection }),
+          },
+          {
+            key: 'form',
+            type: 'subMenu',
+            title: '{{t("Form")}}',
+            children: useFormCollections({ ...props, childrenCollections, collection }),
+          },
+        ];
+      }
+      return currentRecordBlockItems;
+    }
+  };
+
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -248,36 +397,7 @@ export const RecordBlockInitializers = (props: any) => {
         {
           type: 'itemGroup',
           title: '{{t("Current record blocks")}}',
-          children: hasChildCollection
-            ? [
-                {
-                  key: 'details',
-                  type: 'subMenu',
-                  title: '{{t("Details")}}',
-                  children: useDetailCollections({ ...props, childrenCollections, collection }),
-                },
-                {
-                  key: 'form',
-                  type: 'subMenu',
-                  title: '{{t("Form")}}',
-                  children: useFormCollections({ ...props, childrenCollections, collection }),
-                },
-              ]
-            : [
-                {
-                  key: 'details',
-                  type: 'item',
-                  title: '{{t("Details")}}',
-                  component: 'RecordReadPrettyFormBlockInitializer',
-                  actionInitializers,
-                },
-                {
-                  key: 'form',
-                  type: 'item',
-                  title: '{{t("Form")}}',
-                  component: 'RecordFormBlockInitializer',
-                },
-              ],
+          children: getCurrentRecordBlock(),
         },
         {
           type: 'itemGroup',
