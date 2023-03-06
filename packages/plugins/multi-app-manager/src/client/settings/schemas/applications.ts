@@ -85,7 +85,7 @@ export const useDestroyAll = () => {
 export const schema: ISchema = {
   type: 'object',
   properties: {
-    block1: {
+    [uid()]: {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {
