@@ -3,7 +3,7 @@ import { useField } from '@formily/react';
 import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollection } from '../collection-manager';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -54,6 +54,7 @@ export const FormBlockProvider = (props) => {
   const { collection, resource } = props;
   const { __collection, __parent } = record;
   const currentCollection = useCollection();
+  const { getInheritCollections } = useCollectionManager();
   const { designable } = useDesignable();
   let detailFlag = false;
   if (Object.keys(record).length > 0 && Object.keys(__parent).length === 0) {
@@ -63,9 +64,19 @@ export const FormBlockProvider = (props) => {
     }
   }
   const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
-  const relationFlag =
-    (Object.keys(record).length > 0 && designable) ||
-    [__collection, __parent?.__collection].includes(resource?.split('.')?.[0]);
+  let relationFlag = false;
+  if (Object.keys(record).length > 0 && Object.keys(__parent).length > 0) {
+    relationFlag = true;
+    if (!designable) {
+      const viewOwnRelation = [__collection, __parent?.__collection].includes(resource?.split('.')?.[0]);
+      if (viewOwnRelation) {
+        relationFlag = true;
+      } else {
+        const inheritCollections = getInheritCollections(__parent?.__collection);
+        relationFlag = inheritCollections.includes(resource?.split('.')?.[0]);
+      }
+    }
+  }
   return (
     (detailFlag || createFlag || relationFlag) && (
       <BlockProvider {...props} block={'form'}>
