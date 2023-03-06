@@ -3,7 +3,7 @@ import { DataTypes } from 'sequelize';
 import { BaseFieldOptions, Field } from '@nocobase/database';
 import evaluators from '@nocobase/evaluators';
 
-import { DataTypeTransformers, toDbType } from '../utils';
+import { toDbType } from '../utils';
 
 export interface FormulaFieldOptions extends BaseFieldOptions {
   type: 'formula',
@@ -102,7 +102,7 @@ export class FormulaField extends Field {
 
   bind() {
     super.bind();
-    this.on('afterSync', this.initFieldData);
+    // this.on('afterSync', this.initFieldData);
     // TODO: should not depends on fields table (which is defined by other plugin)
     this.database.on('fields.afterUpdate', this.updateFieldData);
     this.on('beforeSave', this.calculateField);
@@ -113,6 +113,6 @@ export class FormulaField extends Field {
     this.off('beforeSave', this.calculateField);
     // TODO: should not depends on fields table
     this.database.off('fields.afterUpdate', this.updateFieldData);
-    this.off('afterSync', this.initFieldData);
+    // this.off('afterSync', this.initFieldData);
   }
 }
