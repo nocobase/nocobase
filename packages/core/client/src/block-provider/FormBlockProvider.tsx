@@ -55,9 +55,12 @@ export const FormBlockProvider = (props) => {
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
-  let detailFlag = true;
-  if (!designable && __collection) {
-    detailFlag = __collection === collection;
+  let detailFlag = false;
+  if (Object.keys(record).length > 0) {
+    detailFlag = true;
+    if (!designable && __collection) {
+      detailFlag = __collection === collection;
+    }
   }
   const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
   return (
