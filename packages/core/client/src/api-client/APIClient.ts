@@ -24,6 +24,10 @@ export class APIClient extends APIClientSDK {
   interceptors() {
     this.axios.interceptors.request.use((config) => {
       config.headers['X-With-ACL-Meta'] = true;
+      const match = location.pathname.match(/^\/apps\/([^/]*)\//);
+      if (match) {
+        config.headers['X-App'] = match[1];
+      }
       return config;
     });
     super.interceptors();

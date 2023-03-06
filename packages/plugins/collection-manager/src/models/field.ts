@@ -1,5 +1,5 @@
-import Database, { Collection, Field, MagicAttributeModel } from '@nocobase/database';
-import { SyncOptions, Transactionable, UniqueConstraintError } from 'sequelize';
+import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import { SyncOptions, Transactionable } from 'sequelize';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -8,58 +8,6 @@ interface LoadOptions extends Transactionable {
 
 interface MigrateOptions extends SyncOptions, Transactionable {
   isNew?: boolean;
-}
-
-async function migrate(field: Field, options: MigrateOptions): Promise<void> {
-  const { unique } = field.options;
-  const { model } = field.collection;
-
-  const ukName = `${model.tableName}_${field.name}_uk`;
-  const queryInterface = model.sequelize.getQueryInterface();
-  const fieldAttribute = model.rawAttributes[field.name];
-
-  // @ts-ignore
-  const existedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
-    transaction: options.transaction,
-  })) as any[];
-
-  const constraintBefore = existedConstraints.find((item) => item.constraintName === ukName);
-
-  if (typeof fieldAttribute?.unique !== 'undefined') {
-    if (constraintBefore && !unique) {
-      await queryInterface.removeConstraint(model.tableName, ukName, { transaction: options.transaction });
-    }
-
-    fieldAttribute.unique = Boolean(constraintBefore);
-  }
-
-  await field.sync(options);
-
-  if (!constraintBefore && unique) {
-    await queryInterface.addConstraint(model.tableName, {
-      type: 'unique',
-      fields: [field.name],
-      name: ukName,
-      transaction: options.transaction,
-    });
-  }
-
-  if (typeof fieldAttribute?.unique !== 'undefined') {
-    fieldAttribute.unique = unique;
-  }
-
-  // @ts-ignore
-  const updatedConstraints = (await queryInterface.showConstraint(model.tableName, ukName, {
-    transaction: options.transaction,
-  })) as any[];
-
-  const indexAfter = updatedConstraints.find((item) => item.constraintName === ukName);
-
-  if (unique && !indexAfter) {
-    throw new UniqueConstraintError({
-      fields: { [field.name]: undefined },
-    });
-  }
 }
 
 export class FieldModel extends MagicAttributeModel {
@@ -106,10 +54,24 @@ export class FieldModel extends MagicAttributeModel {
       field = await this.load({
         transaction: options.transaction,
       });
+
       if (!field) {
         return;
       }
-      await migrate(field, options);
+      const collection = this.getFieldCollection();
+
+      if (isNew && collection.model.rawAttributes[this.get('name')] && this.get('unique')) {
+        // trick: set unique to false to avoid auto sync unique index
+        collection.model.rawAttributes[this.get('name')].unique = false;
+      }
+
+      await field.sync(options);
+
+      if (isNew && this.get('unique')) {
+        await this.syncUniqueIndex({
+          transaction: options.transaction,
+        });
+      }
     } catch (error) {
       // field sync failed, delete from memory
       if (isNew && field) {
@@ -136,6 +98,60 @@ export class FieldModel extends MagicAttributeModel {
     });
   }
 
+  async syncUniqueIndex(options: Transactionable) {
+    const unique = this.get('unique');
+    const collection = this.getFieldCollection();
+    const field = collection.getField(this.get('name'));
+    const columnName = collection.model.rawAttributes[this.get('name')].field;
+    const tableName = collection.model.tableName;
+
+    const queryInterface = this.db.sequelize.getQueryInterface() as any;
+
+    const existsIndexes = await queryInterface.showIndex(collection.addSchemaTableName(), {
+      transaction: options.transaction,
+    });
+
+    const existUniqueIndex = existsIndexes.find((item) => {
+      return item.unique && item.fields[0].attribute === columnName && item.fields.length === 1;
+    });
+
+    let existsUniqueConstraint;
+
+    let constraintName = `${tableName}_${field.name}_uk`;
+
+    if (existUniqueIndex) {
+      const existsUniqueConstraints = await queryInterface.showConstraint(
+        collection.addSchemaTableName(),
+        constraintName,
+        {},
+      );
+
+      existsUniqueConstraint = existsUniqueConstraints[0];
+    }
+
+    if (unique && !existsUniqueConstraint) {
+      // @ts-ignore
+      await collection.sync({ ...options, force: false, alter: { drop: false } });
+
+      await queryInterface.addConstraint(collection.addSchemaTableName(), {
+        type: 'unique',
+        fields: [columnName],
+        name: constraintName,
+        transaction: options.transaction,
+      });
+
+      this.db.logger.info(`add unique index ${constraintName}`);
+    }
+
+    if (!unique && existsUniqueConstraint) {
+      await queryInterface.removeConstraint(collection.addSchemaTableName(), constraintName, {
+        transaction: options.transaction,
+      });
+
+      this.db.logger.info(`remove unique index ${constraintName}`);
+    }
+  }
+
   async syncDefaultValue(
     options: Transactionable & {
       defaultValue: any;
@@ -152,8 +168,8 @@ export class FieldModel extends MagicAttributeModel {
     const queryInterface = collection.db.sequelize.getQueryInterface();
 
     await queryInterface.changeColumn(
-      collection.model.tableName,
-      this.get('name'),
+      collection.addSchemaTableName(),
+      collection.model.rawAttributes[this.get('name')].field,
       {
         type: field.dataType,
         defaultValue: options.defaultValue,

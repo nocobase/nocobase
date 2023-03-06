@@ -178,7 +178,7 @@ export default class FilterParser {
           origins.push(attr);
           // if it is target model attribute
           if (target.rawAttributes[attr]) {
-            associationKeys.push(attr);
+            associationKeys.push(target.rawAttributes[attr].field || attr);
             target = null;
           } else if (target.associations[attr]) {
             // if it is target model association (nested association filter)

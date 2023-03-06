@@ -6,7 +6,6 @@ import { NAMESPACE } from "../locale";
 export const collection = {
   type: 'string',
   title: '{{t("Collection")}}',
-  name: 'config.collection',
   required: true,
   'x-reactions': ['{{useCollectionDataSource()}}'],
   'x-decorator': 'FormItem',
@@ -19,7 +18,6 @@ export const collection = {
 export const values = {
   type: 'object',
   title: '{{t("Fields values")}}',
-  name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -34,7 +32,6 @@ export const values = {
 export const filter = {
   type: 'object',
   title: '{{t("Filter")}}',
-  name: 'config.params.filter',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -46,7 +43,7 @@ export const filter = {
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.config?.collection);
+      const options = useCollectionFilterOptions(values?.collection);
       return {
         options,
         className: css`
@@ -55,6 +52,6 @@ export const filter = {
         `
       };
     },
-    dynamicComponent: 'VariableComponent'
+    dynamicComponent: 'FilterDynamicComponent'
   }
 };

@@ -94,6 +94,17 @@ export const useSortFields = (collectionName: string) => {
     });
 };
 
+export const useChildrenCollections = (collectionName: string) => {
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+  return childrenCollections.map((collection: any) => {
+    return {
+      value: collection.name,
+      label: collection?.title || collection.name,
+    };
+  });
+};
+
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
@@ -329,5 +340,9 @@ export const useFilterActionProps = () => {
   const { collection } = useResourceContext();
   const options = useFilterFieldOptions(collection.fields);
   const service = useResourceActionContext();
-  return useFilterFieldProps({ options, params: service.params, service });
+  return useFilterFieldProps({
+    options,
+    params: service.state?.params?.[0] || service.params,
+    service,
+  });
 };

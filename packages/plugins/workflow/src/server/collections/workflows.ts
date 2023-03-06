@@ -2,6 +2,8 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default function () {
   return {
+    namespace: 'workflow',
+    duplicator: 'required',
     name: 'workflows',
     fields: [
       {
@@ -28,7 +30,7 @@ export default function () {
         required: true
       },
       {
-        type: 'jsonb',
+        type: 'json',
         name: 'config',
         required: true,
         defaultValue: {}
@@ -41,11 +43,13 @@ export default function () {
       {
         type: 'hasMany',
         name: 'nodes',
-        target: 'flow_nodes'
+        target: 'flow_nodes',
+        onDelete: 'CASCADE'
       },
       {
         type: 'hasMany',
-        name: 'executions'
+        name: 'executions',
+        onDelete: 'CASCADE'
       },
       {
         type: 'integer',
@@ -60,7 +64,7 @@ export default function () {
       {
         type: 'boolean',
         name: 'current',
-        defaultValue: null
+        defaultValue: false
       },
       {
         type: 'hasMany',

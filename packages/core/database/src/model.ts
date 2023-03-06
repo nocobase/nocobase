@@ -1,9 +1,8 @@
 import lodash from 'lodash';
-import { DataTypes, Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
-import type { InheritedCollection } from './inherited-collection';
 import { SyncRunner } from './sync-runner';
 
 const _ = lodash;
@@ -28,6 +27,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   public static collection: Collection;
 
   [key: string]: any;
+
   protected _changedWithAssociations = new Set();
   protected _previousDataValuesWithAssociations = {};
 
@@ -152,6 +152,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
   static async sync(options) {
     const model = this as any;
+
+    const _schema = model._schema;
+
+    if (_schema && _schema != 'public') {
+      await this.sequelize.query(`CREATE SCHEMA IF NOT EXISTS "${_schema}";`, {
+        raw: true,
+        transaction: options?.transaction,
+      });
+    }
 
     // fix sequelize sync with model that not have any column
     if (Object.keys(model.tableAttributes).length === 0) {

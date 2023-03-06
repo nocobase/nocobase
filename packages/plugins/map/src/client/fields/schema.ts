@@ -5,8 +5,8 @@ import { generateNTemplate } from '../locale';
 
 const { defaultProps } = interfacesProperties;
 
-if (Array.isArray(defaultProps.type.enum)) {
-  defaultProps.type.enum.push(
+if (Array.isArray(interfacesProperties.type.enum)) {
+  interfacesProperties.type.enum.push(
     {
       label: 'Point',
       value: 'point',

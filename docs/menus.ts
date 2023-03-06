@@ -45,11 +45,11 @@ export default {
       ],
     },
     {
-      title: 'Release',
-      'title.zh-CN': '版本发布',
+      title: 'Roadmap & Releases',
+      'title.zh-CN': '路线图 & 发布',
       'title.TR-TR': 'Sürüm',
       type: 'group',
-      children: ['/welcome/release/index', '/welcome/release/v08-changelog'],
+      children: ['/welcome/release/roadmap', '/welcome/release/index', '/welcome/release/v08-changelog'],
     },
     {
       title: 'Community',
@@ -244,7 +244,7 @@ export default {
           title: 'SchemaDesigner',
           'title.zh-CN': 'SchemaDesigner',
           'title.TR-TR': 'Şema Tasarımcısı',
-          
+
           type: 'subMenu',
           children: [
             '/api/client/schema-designer/schema-component',

@@ -6,12 +6,13 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { InheritedCollection } from '../inherited-collection';
 import { ModelEventTypes } from '../types';
+import { snakeCase } from '../utils';
 
 export interface FieldContext {
   database: Database;
@@ -39,9 +40,9 @@ export abstract class Field {
   [key: string]: any;
 
   constructor(options?: any, context?: FieldContext) {
-    this.context = context;
-    this.database = context.database;
-    this.collection = context.collection;
+    this.context = context as any;
+    this.database = this.context.database;
+    this.collection = this.context.collection;
     this.options = options || {};
     this.init();
   }
@@ -89,6 +90,18 @@ export abstract class Field {
     return this.collection.removeField(this.name);
   }
 
+  columnName() {
+    if (this.options.field) {
+      return this.options.field;
+    }
+
+    if (this.database.options.underscored) {
+      return snakeCase(this.name);
+    }
+
+    return this.name;
+  }
+
   async removeFromDb(options?: QueryInterfaceOptions) {
     const attribute = this.collection.model.rawAttributes[this.name];
 
@@ -113,14 +126,19 @@ export abstract class Field {
     }
     if (this.collection.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
-      if (['createdAt', 'updatedAt', 'deletedAt'].includes(this.name)) {
+      let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
+      if (this.database.options.underscored) {
+        timestampsFields = timestampsFields.map((field) => snakeCase(field));
+      }
+      if (timestampsFields.includes(this.columnName())) {
+        this.collection.fields.delete(this.name);
         return;
       }
     }
     // 排序字段通过 sortable 控制
     const sortable = this.collection.options.sortable;
     if (sortable) {
-      let sortField: string;
+      let sortField: any;
       if (sortable === true) {
         sortField = 'sort';
       } else if (typeof sortable === 'string') {
@@ -132,19 +150,28 @@ export abstract class Field {
         return;
       }
     }
-    if (this.options.field && this.name !== this.options.field) {
-      // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
-      this.remove();
-      return;
-    }
+
+    // if (this.options.field && this.name !== this.options.field) {
+    //   // field 指向的是真实的字段名，如果与 name 不一样，说明字段只是引用
+    //   this.remove();
+    //   return;
+    // }
+
+    const columnReferencesCount = _.filter(
+      this.collection.model.rawAttributes,
+      (attr) => attr.field == this.columnName(),
+    ).length;
+
     if (
-      await this.existsInDb({
+      (await this.existsInDb({
         transaction: options?.transaction,
-      })
+      })) &&
+      columnReferencesCount == 1
     ) {
       const queryInterface = this.database.sequelize.getQueryInterface();
-      await queryInterface.removeColumn(this.collection.model.tableName, this.name, options);
+      await queryInterface.removeColumn(this.collection.addSchemaTableName(), this.columnName(), options);
     }
+
     this.remove();
   }
 
@@ -154,18 +181,22 @@ export abstract class Field {
     };
     let sql;
     if (this.database.sequelize.getDialect() === 'sqlite') {
-      sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.name}'`;
+      sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.columnName()}'`;
     } else if (this.database.inDialect('mysql')) {
       sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS
-        where TABLE_SCHEMA='${this.database.options.database}' AND TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
+        where TABLE_SCHEMA='${this.database.options.database}' AND TABLE_NAME='${
+        this.collection.model.tableName
+      }' AND column_name='${this.columnName()}'
       `;
     } else {
       sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS
-        where TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.name}'
+        where TABLE_NAME='${
+          this.collection.model.tableName
+        }' AND column_name='${this.columnName()}' AND table_schema='${this.collection.collectionSchema() || 'public'}'
       `;
     }
     const [rows] = await this.database.sequelize.query(sql, opts);

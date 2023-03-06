@@ -1,6 +1,6 @@
 import { useCollectionDataSource } from '@nocobase/client';
 
-import { VariableComponent } from '../calculators';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
 
 export default {
@@ -8,10 +8,9 @@ export default {
   type: 'destroy',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
-    'config.params': {
+    collection,
+    params: {
       type: 'object',
-      name: 'config.params',
       title: '',
       'x-decorator': 'FormItem',
       properties: {
@@ -26,6 +25,6 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent
+    FilterDynamicComponent
   }
 };

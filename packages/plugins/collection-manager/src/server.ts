@@ -1,26 +1,32 @@
 import path from 'path';
-
-import lodash from 'lodash';
 import { UniqueConstraintError } from 'sequelize';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
+import { Mutex } from 'async-mutex';
 
 import { CollectionRepository } from '.';
 import {
   afterCreateForForeignKeyField,
   afterCreateForReverseField,
-  beforeCreateForChildrenCollection,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
 import { CollectionModel, FieldModel } from './models';
+import * as process from 'process';
+import lodash from 'lodash';
 
 export class CollectionManagerPlugin extends Plugin {
+  public schema: string;
+
   async beforeLoad() {
+    if (process.env.COLLECTION_MANAGER_SCHEMA) {
+      this.schema = process.env.COLLECTION_MANAGER_SCHEMA;
+    }
+
     this.app.db.registerModels({
       CollectionModel,
       FieldModel,
@@ -47,25 +53,29 @@ export class CollectionManagerPlugin extends Plugin {
       ],
     });
 
-    this.app.db.on('fields.beforeUpdate', async (model, options) => {
-      const newValue = options.values;
-      if (
-        model.get('reverseKey') &&
-        lodash.get(newValue, 'reverseField') &&
-        !lodash.get(newValue, 'reverseField.key')
-      ) {
-        const field = await this.app.db
-          .getModel('fields')
-          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
-        if (field) {
-          throw new Error('cant update field without a reverseField key');
-        }
+    this.app.db.on('collections.beforeCreate', async (model) => {
+      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm') {
+        model.set('schema', this.schema);
       }
+    });
+
+    this.app.db.on(
+      'collections.afterCreateWithAssociations',
+      async (model: CollectionModel, { context, transaction }) => {
+        if (context) {
+          await model.migrate({
+            transaction,
+          });
+        }
+      },
+    );
+
+    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      await model.remove(options);
     });
 
     // 要在 beforeInitOptions 之前处理
     this.app.db.on('fields.beforeCreate', beforeCreateForReverseField(this.app.db));
-    this.app.db.on('fields.beforeCreate', beforeCreateForChildrenCollection(this.app.db));
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {
       const collectionName = model.get('collectionName');
@@ -90,17 +100,6 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
 
-    this.app.db.on(
-      'collections.afterCreateWithAssociations',
-      async (model: CollectionModel, { context, transaction }) => {
-        if (context) {
-          await model.migrate({
-            transaction,
-          });
-        }
-      },
-    );
-
     this.app.db.on('fields.afterCreate', async (model: FieldModel, { context, transaction }) => {
       if (context) {
         await model.migrate({
@@ -113,6 +112,22 @@ export class CollectionManagerPlugin extends Plugin {
     // after migrate
     this.app.db.on('fields.afterCreate', afterCreateForForeignKeyField(this.app.db));
 
+    this.app.db.on('fields.beforeUpdate', async (model, options) => {
+      const newValue = options.values;
+      if (
+        model.get('reverseKey') &&
+        lodash.get(newValue, 'reverseField') &&
+        !lodash.get(newValue, 'reverseField.key')
+      ) {
+        const field = await this.app.db
+          .getModel('fields')
+          .findByPk(model.get('reverseKey'), { transaction: options.transaction });
+        if (field) {
+          throw new Error('cant update field without a reverseField key');
+        }
+      }
+    });
+
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, { context, transaction }) => {
       const prevOptions = model.previous('options');
       const currentOptions = model.get('options');
@@ -122,7 +137,7 @@ export class CollectionManagerPlugin extends Plugin {
         const next = currentOptions['unique'];
 
         if (Boolean(prev) !== Boolean(next)) {
-          await model.migrate({ transaction });
+          await model.syncUniqueIndex({ transaction });
         }
       }
 
@@ -149,12 +164,12 @@ export class CollectionManagerPlugin extends Plugin {
 
     // before field remove
     this.app.db.on('fields.beforeDestroy', beforeDestroyForeignKey(this.app.db));
-    this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
-      await model.remove(options);
-    });
 
-    this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
-      await model.remove(options);
+    const mutex = new Mutex();
+    this.app.db.on('fields.beforeDestroy', async (model: FieldModel, options) => {
+      await mutex.runExclusive(async () => {
+        await model.remove(options);
+      });
     });
 
     this.app.db.on('fields.afterDestroy', async (model: FieldModel, options) => {
@@ -244,6 +259,12 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
       await next();
+    });
+
+    this.app.db.extendCollection({
+      name: 'collectionCategory',
+      namespace: 'collection-manager',
+      duplicator: 'required',
     });
   }
 }

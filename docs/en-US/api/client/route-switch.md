@@ -42,7 +42,7 @@ interface RouteProps {
 }
 ```
 
-## 完整示例
+## Full Example
 
 ```tsx | pure
 import React from 'react';

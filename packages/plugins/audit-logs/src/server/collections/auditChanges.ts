@@ -1,6 +1,8 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
+  namespace: 'audit-logs',
+  duplicator: 'optional',
   name: 'auditChanges',
   title: '变动值',
   createdBy: false,

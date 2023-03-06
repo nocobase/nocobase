@@ -41,6 +41,7 @@ export interface ApplicationOptions {
   acl?: boolean;
   logger?: AppLoggerOptions;
   pmSock?: string;
+  name?: string;
 }
 
 export interface DefaultState extends KoaDefaultState {
@@ -101,6 +102,8 @@ export class ApplicationVersion {
     if (!app.db.hasCollection('applicationVersion')) {
       app.db.collection({
         name: 'applicationVersion',
+        namespace: 'core',
+        duplicator: 'required',
         timestamps: false,
         fields: [{ name: 'value', type: 'string' }],
       });
@@ -218,6 +221,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._logger;
   }
 
+  get name() {
+    return this.options.name || 'main';
+  }
+
   protected init() {
     const options = this.options;
     const logger = createAppLogger(options.logger);
@@ -276,12 +283,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    return new Database({
+    const db = new Database({
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
     });
+
+    db.setLogger(this._logger);
+    return db;
   }
 
   getVersion() {
@@ -370,7 +380,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log(chalk.red(error.message));
       process.exit(1);
     }
+
     await this.dbVersionCheck({ exit: true });
+
+    await this.db.prepare();
 
     if (argv?.[2] !== 'upgrade') {
       await this.load({
@@ -472,8 +485,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.db.inDialect('mysql')) {
       const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1') {
-        console.log(chalk.red(`mysql variable 'lower_case_table_names' must be set to '0' or '2'`));
+      if (result?.Value === '1' && !this.db.options.underscored) {
+        console.log(
+          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
+        );
         if (options?.exit) {
           process.exit();
         }
@@ -521,6 +536,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
+
+  toJSON() {
+    return {
+      appName: this.name,
+    };
+  }
 }
 
 applyMixins(Application, [AsyncEmitter]);

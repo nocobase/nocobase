@@ -28,6 +28,8 @@ i18n
     // },
     // ns: ['client'],
     resources: {},
+    keySeparator: false,
+    nsSeparator: false,
   });
 
 i18n.on('languageChanged', (lng) => {

@@ -3,8 +3,6 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-
-
 describe('workflow > instructions > delay', () => {
   let app: Application;
   let db: Database;
@@ -16,6 +14,7 @@ describe('workflow > instructions > delay', () => {
     app = await getApp();
 
     db = app.db;
+
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
 
@@ -24,8 +23,8 @@ describe('workflow > instructions > delay', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -37,8 +36,8 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.RESOLVED
-        }
+          endStatus: JOB_STATUS.RESOLVED,
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -63,7 +62,7 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.REJECTED
+          endStatus: JOB_STATUS.FAILED
         }
       });
 
@@ -79,9 +78,9 @@ describe('workflow > instructions > delay', () => {
       await sleep(2000);
 
       const [e2] = await workflow.getExecutions();
-      expect(e2.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(e2.status).toEqual(EXECUTION_STATUS.FAILED);
       const [j2] = await e2.getJobs();
-      expect(j2.status).toBe(JOB_STATUS.REJECTED);
+      expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
     it('delay to resolve and rollback in downstream node', async () => {
@@ -89,8 +88,8 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.RESOLVED
-        }
+          endStatus: JOB_STATUS.RESOLVED,
+        },
       });
       const n2 = await workflow.createNode({
         type: 'create',
@@ -98,11 +97,11 @@ describe('workflow > instructions > delay', () => {
           collection: 'comment',
           params: {
             values: {
-              status: 'should be number but use string to raise an error'
-            }
-          }
+              status: 'should be number but use string to raise an error',
+            },
+          },
         },
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
       await n1.setDownstream(n2);
 
@@ -118,10 +117,10 @@ describe('workflow > instructions > delay', () => {
       await sleep(2000);
 
       const [e2] = await workflow.getExecutions();
-      expect(e2.status).toEqual(EXECUTION_STATUS.REJECTED);
+      expect(e2.status).toEqual(EXECUTION_STATUS.ERROR);
       const [j2, j3] = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
-      expect(j3.status).toBe(JOB_STATUS.REJECTED);
+      expect(j3.status).toBe(JOB_STATUS.ERROR);
     });
   });
 
@@ -131,8 +130,8 @@ describe('workflow > instructions > delay', () => {
         type: 'delay',
         config: {
           duration: 2000,
-          endStatus: JOB_STATUS.RESOLVED
-        }
+          endStatus: JOB_STATUS.RESOLVED,
+        },
       });
     });
 

@@ -4,10 +4,10 @@
 
 Aşağıdaki gereksinimlere sahip olduğunuza emin olun:
 
-- Node.js 14+, Yarn 1.22.x kurulu olmalı
+- Node.js 16+, Yarn 1.22.x kurulu olmalı
 - SQLite 3.x, MySQL 8.x, PostgreSQL 10.x veritabanlarından birisinin kurulup yapılandırıldığı ve çalışır durumda olduğuna emin olun
 
-Lütfen Node.js 14.x veya üstünün kurulu olduğundan emin olun. En son LTS sürümünü resmi web sitesinden indirebilir ve yükleyebilirsiniz. Node.js ile uzun süre çalışmayı planlıyorsanız, Node.js sürümlerini yönetmek için nvm (veya Win sistemleri için nvm-windows) kullanmanız önerilir.
+Lütfen Node.js 16.x veya üstünün kurulu olduğundan emin olun. En son LTS sürümünü resmi web sitesinden indirebilir ve yükleyebilirsiniz. Node.js ile uzun süre çalışmayı planlıyorsanız, Node.js sürümlerini yönetmek için nvm (veya Win sistemleri için nvm-windows) kullanmanız önerilir.
 
 ```bash
 $ node -v

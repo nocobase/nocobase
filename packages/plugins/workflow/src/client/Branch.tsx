@@ -9,8 +9,13 @@ export function Branch({
   entry = null,
   branchIndex = null,
   controller = null
+}: {
+  from?: any;
+  entry?: any;
+  branchIndex?: number | null;
+  controller?: any
 }) {
-  const list = [];
+  const list: any[] = [];
   for (let node = entry; node; node = node.downstream) {
     list.push(node);
   }

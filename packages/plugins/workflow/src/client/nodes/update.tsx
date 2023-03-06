@@ -1,6 +1,6 @@
 import { useCollectionDataSource } from '@nocobase/client';
 
-import { VariableComponent } from '../calculators';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
@@ -12,12 +12,19 @@ export default {
   type: 'update',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
-    'config.params.filter': {
-      ...filter,
-      title: `{{t("Only update records matching conditions", { ns: "${NAMESPACE}" })}}`,
-    },
-    'config.params.values': values
+    collection,
+    params: {
+      type: 'object',
+      title: '',
+      'x-decorator': 'FormItem',
+      properties: {
+        filter: {
+          ...filter,
+          title: `{{t("Only update records matching conditions", { ns: "${NAMESPACE}" })}}`,
+        },
+        values
+      }
+    }
   },
   view: {
 
@@ -26,7 +33,7 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent,
+    FilterDynamicComponent,
     CollectionFieldset
   }
 };

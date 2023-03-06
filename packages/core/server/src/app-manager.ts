@@ -8,7 +8,7 @@ type AppSelector = (req: IncomingMessage) => Application | string | undefined | 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
 
-  constructor(private app: Application) {
+  constructor(public app: Application) {
     super();
 
     app.on('beforeStop', async (mainApp, options) => {
@@ -52,10 +52,11 @@ export class AppManager extends EventEmitter {
     return server.listen(...args);
   }
 
-  async getApplication(appName: string): Promise<null | Application> {
+  async getApplication(appName: string, options = {}): Promise<null | Application> {
     await this.emitAsync('beforeGetApplication', {
       appManager: this,
       name: appName,
+      options,
     });
 
     return this.applications.get(appName);
@@ -63,10 +64,13 @@ export class AppManager extends EventEmitter {
 
   callback() {
     return async (req: IncomingMessage, res: ServerResponse) => {
-      let handleApp: any = this.appSelector(req) || this.app;
+      const appManager = this.app.appManager;
+
+      let handleApp: any = appManager.appSelector(req) || appManager.app;
 
       if (typeof handleApp === 'string') {
-        handleApp = await this.getApplication(handleApp);
+        handleApp = await appManager.getApplication(handleApp);
+
         if (!handleApp) {
           res.statusCode = 404;
           return res.end(
@@ -74,7 +78,7 @@ export class AppManager extends EventEmitter {
               redirectTo: process.env.APP_NOT_FOUND_REDIRECT_TO,
               errors: [
                 {
-                  message: 'Not Found',
+                  message: 'Application Not Found',
                 },
               ],
             }),
