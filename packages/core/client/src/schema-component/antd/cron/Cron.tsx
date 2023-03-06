@@ -5,7 +5,7 @@ import React from 'react';
 import { Cron as ReactCron, CronProps } from 'react-js-cron';
 import { useAPIClient } from '../../../api-client';
 
-const Input = (props: Exclude<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
+const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
   return (
     <fieldset
@@ -45,10 +45,6 @@ const ReadPretty = (props) => {
       })}
     </span>
   ) : null;
-};
-
-type ComposedCron = React.FC<CronProps> & {
-  ReadPretty: typeof ReadPretty;
 };
 
 export const Cron = connect(Input, mapReadPretty(ReadPretty)) as unknown as typeof Input & {

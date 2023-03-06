@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Select, SelectProps } from 'antd';
 import Cron from './Cron';
-import { connect, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 
@@ -63,7 +63,7 @@ const CronSetInternal = (props: CronSetProps) => {
   return (
     <fieldset>
       <Select {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
-      {isCustomize ? <Cron value={value} setValue={(v) => onCronChange(v, true)} clearButton={false} /> : null}
+      {isCustomize ? <Cron value={value} onChange={(v) => onCronChange(v, true)} clearButton={false} /> : null}
     </fieldset>
   );
 };
