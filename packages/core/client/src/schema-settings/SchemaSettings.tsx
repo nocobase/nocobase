@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse, ArrayItems } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
@@ -43,6 +43,7 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { EnableChildCollections } from './EnableChildCollections';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -762,6 +763,55 @@ SchemaSettings.LinkageRules = (props) => {
 
         gridSchema['x-linkage-rules'] = rules;
         schema['x-linkage-rules'] = rules;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+SchemaSettings.EnableChildCollections = (props) => {
+  const { collectionName } = props;
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Enable child collections')}
+      components={{ ArrayItems, FormLayout }}
+      width={600}
+      schema={
+        {
+          type: 'object',
+          title: t('Enable child collections'),
+          properties: {
+            enableChildren: {
+              'x-component': EnableChildCollections,
+              'x-component-props': {
+                useProps: () => {
+                  return {
+                    defaultValues: fieldSchema?.['x-enable-children'],
+                    collectionName,
+                  };
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(v) => {
+        const enableChildren = [];
+        for (const item of v.enableChildren.childrenCollections) {
+          enableChildren.push(_.pickBy(item, _.identity));
+        }
+        const uid = fieldSchema['x-uid'];
+        const schema = {
+          ['x-uid']: uid,
+        };
+        fieldSchema['x-enable-children'] = enableChildren;
+        schema['x-enable-children'] = enableChildren;
         dn.emit('patch', {
           schema,
         });
