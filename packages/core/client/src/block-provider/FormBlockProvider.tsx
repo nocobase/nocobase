@@ -65,14 +65,14 @@ export const FormBlockProvider = (props) => {
   }
   const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
   let relationFlag = false;
-  if (Object.keys(record).length > 0 && Object.keys(__parent).length > 0) {
+  if (Object.keys(record).length > 0 || Object.keys(__parent).length > 0) {
     relationFlag = true;
     if (!designable) {
       const viewOwnRelation = [__collection, __parent?.__collection].includes(resource?.split('.')?.[0]);
       if (viewOwnRelation) {
         relationFlag = true;
       } else {
-        const inheritCollections = getInheritCollections(__parent?.__collection);
+        const inheritCollections = getInheritCollections(__parent?.__collection||__collection);
         relationFlag = inheritCollections.includes(resource?.split('.')?.[0]);
       }
     }
