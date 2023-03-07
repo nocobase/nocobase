@@ -320,6 +320,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     const handleRequest = (req, res) => {
       const ctx = this.createContext(req, res);
+
       // @ts-ignore
       return this.handleRequest(ctx, fn);
     };
