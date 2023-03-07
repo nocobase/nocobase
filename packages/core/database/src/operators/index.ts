@@ -7,4 +7,5 @@ export default {
   ...require('./ne').default,
   ...require('./notIn').default,
   ...require('./boolean').default,
+  ...require('./child-collection').default,
 };
