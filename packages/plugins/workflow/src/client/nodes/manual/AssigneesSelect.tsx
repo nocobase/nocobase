@@ -26,9 +26,10 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
         service={{
           resource: 'users'
         }}
+        manual={false}
         value={value[0]}
         onChange={(v) => {
-          onChange([v]);
+          onChange(v != null ? [v] : []);
         }}
       />
     </Variable.Input>

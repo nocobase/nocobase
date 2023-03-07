@@ -41,13 +41,6 @@ export default {
       'x-component': 'AssigneesSelect',
       'x-component-props': {
         // multiple: true,
-        // fieldNames: {
-        //   label: 'nickname',
-        //   value: 'id',
-        // },
-        // service: {
-        //   resource: 'users'
-        // },
       },
       required: true,
       default: [],
