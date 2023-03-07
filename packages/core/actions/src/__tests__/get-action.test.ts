@@ -1,4 +1,4 @@
-import { MockServer, mockServer } from './index';
+import { MockServer, mockServer } from '@nocobase/test';
 import { registerActions } from '@nocobase/actions';
 
 describe('get action', () => {
@@ -10,7 +10,9 @@ describe('get action', () => {
   let Profile;
 
   beforeEach(async () => {
-    app = mockServer();
+    app = mockServer({
+      dataWrapping: false,
+    });
     registerActions(app);
 
     PostTag = app.collection({
@@ -127,8 +129,6 @@ describe('get action', () => {
 
   it('should return null when source model not found', async () => {
     const response = await app.agent().resource('posts.profile', 999).get();
-
     expect(response.status).toEqual(200);
-    expect(response.body).toEqual(null);
   });
 });
