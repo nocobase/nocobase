@@ -1,4 +1,3 @@
-import fields from '../../../../../plugins/collection-manager/src/collections/fields';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
@@ -15,6 +14,45 @@ pgOnly()('collection inherits', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should list data filtered by child type', async () => {
+    const rootCollection = db.collection({
+      name: 'root',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const child1Collection = db.collection({
+      name: 'child1',
+      inherits: ['root'],
+    });
+
+    const child2Collection = db.collection({
+      name: 'child2',
+      inherits: ['root'],
+    });
+
+    await db.sync();
+
+    await rootCollection.repository.create({
+      values: {
+        name: 'root1',
+      },
+    });
+
+    await child1Collection.repository.create({
+      values: [{ name: 'child1-1' }, { name: 'child1-2' }],
+    });
+
+    await child2Collection.repository.create({
+      values: [{ name: 'child2-1' }, { name: 'child2-2' }],
+    });
+
+    const records = await rootCollection.repository.find({
+      filter: {
+        __tableName: 'child1',
+      },
+    });
   });
 
   it('should list collection name in relation repository', async () => {
