@@ -510,12 +510,14 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
         title={block.title || block.name}
         value={target?.field || ''}
         options={[
-          ...block.associatedFields.map((field) => {
-            return {
-              label: compile(field.uiSchema.title) || field.name,
-              value: `${field.name}.${field.targetKey}`,
-            };
-          }),
+          ...block.associatedFields
+            .filter((field) => field.target === collection.name)
+            .map((field) => {
+              return {
+                label: compile(field.uiSchema.title) || field.name,
+                value: `${field.name}.${field.targetKey}`,
+              };
+            }),
           {
             label: t('Unconnected'),
             value: '',
