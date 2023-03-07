@@ -364,9 +364,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
       if (dataCollection.isParent()) {
         for (const row of data) {
-          const rowCollectionName = this.tableNameCollectionMap.get(
-            findOptions.raw ? row['__tableName'] : row.get('__tableName'),
-          ).name;
+          const tableName = findOptions.raw ? row['__tableName'] : row.get('__tableName');
+
+          const rowCollection = this.tableNameCollectionMap.get(tableName);
+
+          if (!rowCollection) {
+            throw new Error(
+              `Can not find collection by table name ${tableName}, current collections: ${Array.from(
+                this.tableNameCollectionMap.keys(),
+              ).join(', ')}`,
+            );
+          }
+
+          const rowCollectionName = rowCollection.name;
 
           findOptions.raw
             ? (row['__collection'] = rowCollectionName)
