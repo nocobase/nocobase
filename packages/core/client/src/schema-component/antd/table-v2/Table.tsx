@@ -180,11 +180,13 @@ export const Table: any = observer((props: any) => {
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
 
-  const onRow = (record) => {
-    return {
-      onClick: () => onClickRow(record, setSelectedRowKeys, selectedRowKeys),
-    };
-  };
+  const onRow = onClickRow
+    ? (record) => {
+        return {
+          onClick: () => onClickRow(record, setSelectedRowKeys, selectedRowKeys),
+        };
+      }
+    : null;
 
   useEffect(() => {
     field.setValidator((value) => {
