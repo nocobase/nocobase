@@ -78,7 +78,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       transaction
     });
     includeFields.forEach(field => {
-      data.set(field, included.get(field), { raw: true });
+      data.set(field, included!.get(field), { raw: true });
     });
   }
 
