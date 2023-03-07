@@ -20,7 +20,7 @@ export const useValues = (options) => {
   const logic = useContext(FilterLogicContext);
 
   const value2data = () => {
-    field.data = { ...field.initialValue };
+    field.data = { ...(field.initialValue || field.value) };
     const dataIndex = field.initialValue?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];

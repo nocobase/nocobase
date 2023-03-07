@@ -51,7 +51,6 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
           allowClear
           treeData={compile(fields)}
           onChange={(value) => {
-            console.log(value)
             setDataIndex(value);
           }}
           placeholder={t('Select Field')}
