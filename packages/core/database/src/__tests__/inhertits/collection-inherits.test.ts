@@ -1,6 +1,7 @@
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
+import { BelongsToManyRepository } from '@nocobase/database';
 
 if (process.env.DB_DIALECT == 'postgres') {
   describe('collection inherits', () => {
@@ -114,18 +115,18 @@ if (process.env.DB_DIALECT == 'postgres') {
         },
       });
 
-      // const person1 = await personCollection.repository.findOne({});
-      //
-      // const tags = await personCollection.repository
-      //   .relation<BelongsToManyRepository>('tags')
-      //   .of(person1.get('id'))
-      //   .find({});
-      //
-      // const personTag = tags.find((tag) => tag.get('name') === 'personTag');
-      // const studentTag = tags.find((tag) => tag.get('name') === 'studentTag');
-      //
-      // expect(personTag.get('__collection')).toEqual(personTagCollection.name);
-      // expect(studentTag.get('__collection')).toEqual(studentTagCollection.name);
+      const person1 = await personCollection.repository.findOne({});
+
+      const tags = await personCollection.repository
+        .relation<BelongsToManyRepository>('tags')
+        .of(person1.get('id'))
+        .find({});
+
+      const personTag = tags.find((tag) => tag.get('name') === 'personTag');
+      const studentTag = tags.find((tag) => tag.get('name') === 'studentTag');
+
+      expect(personTag.get('__collection')).toEqual(personTagCollection.name);
+      expect(studentTag.get('__collection')).toEqual(studentTagCollection.name);
     });
 
     it('should create inherits with table name contains upperCase', async () => {
