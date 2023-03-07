@@ -294,6 +294,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   initListener() {
+    this.on('afterConnect', async () => {
+      if (this.inDialect('postgres')) {
+        // limit the search path to public schema
+        await this.sequelize.query('SET search_path = public');
+      }
+    });
+
     this.on('beforeDefine', (model, options) => {
       if (this.options.underscored) {
         options.underscored = true;
