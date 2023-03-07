@@ -16,6 +16,7 @@ export async function get(ctx: Context, next) {
   });
 
   ctx.body = instance || null;
+  ctx.body = 200;
 
   await next();
 }
