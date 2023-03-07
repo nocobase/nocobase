@@ -21,4 +21,4 @@ export default {
       [Op.notIn]: mapVal(values, db),
     };
   },
-};
+} as Record<string, any>;
