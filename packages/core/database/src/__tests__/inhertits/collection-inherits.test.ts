@@ -48,11 +48,15 @@ pgOnly()('collection inherits', () => {
       values: [{ name: 'child2-1' }, { name: 'child2-2' }],
     });
 
+    const child1Oid = await db.sequelize.query(`SELECT '${child1Collection.tableNameAsString()}'::regclass::oid`);
+
     const records = await rootCollection.repository.find({
       filter: {
-        __tableName: 'child1',
+        tableoid: [child1Oid[0]['oid']],
       },
     });
+
+    expect(records.every((r) => r.get('__collection') === child1Collection.name)).toBe(true);
   });
 
   it('should list collection name in relation repository', async () => {
