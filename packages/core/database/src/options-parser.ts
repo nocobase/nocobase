@@ -110,10 +110,7 @@ export class OptionsParser {
   }
 
   protected inheritFromSubQuery(): any {
-    return [
-      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
-      '__tableName',
-    ];
+    return [Sequelize.literal(`replace(tableoid::regclass::TEXT, '"', '')`), '__tableName'];
   }
 
   protected parseFields(filterParams: any) {

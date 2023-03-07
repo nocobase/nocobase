@@ -82,7 +82,7 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
-    this.db.tableNameCollectionMap.set(this.model.tableName, this);
+    this.db.tableNameCollectionMap.set(this.tableNameAsString({ ignorePublicSchema: true }), this);
 
     if (!options.inherits) {
       this.setFields(options.fields);
@@ -551,6 +551,22 @@ export class Collection<
     }
 
     return tableName;
+  }
+
+  public tableNameAsString(options?: { ignorePublicSchema: boolean }) {
+    const tableNameWithSchema = this.getTableNameWithSchema();
+    if (lodash.isString(tableNameWithSchema)) {
+      return tableNameWithSchema;
+    }
+
+    const schema = tableNameWithSchema.schema;
+    const tableName = tableNameWithSchema.tableName;
+
+    if (options?.ignorePublicSchema && schema === 'public') {
+      return tableName;
+    }
+
+    return `${schema}.${tableName}`;
   }
 
   public quotedTableName() {
