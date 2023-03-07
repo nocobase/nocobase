@@ -458,6 +458,8 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
   const collection = useCollection();
   const dataBlocks = useSupportedBlocks(props.type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
+  const compile = useCompile();
+
   const Content = dataBlocks.map((block) => {
     const onHover = () => {
       const dom = block.dom;
@@ -510,7 +512,7 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
         options={[
           ...block.associatedFields.map((field) => {
             return {
-              label: field.name,
+              label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${field.targetKey}`,
             };
           }),
