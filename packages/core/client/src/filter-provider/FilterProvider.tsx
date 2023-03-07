@@ -65,7 +65,7 @@ export const FilterBlockRecord = ({
       doFilter: service.runAsync,
       collection,
       associatedFields,
-      defaultFilter: params.filter || {},
+      defaultFilter: params?.filter || {},
       service,
       dom: container.current,
     });
