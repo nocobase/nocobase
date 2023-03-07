@@ -328,6 +328,50 @@ describe('collection sync', () => {
     expect(error).toBeInstanceOf(IdentifierError);
   });
 
+  it('should throw error when collection has same table name and same schema', async () => {
+    const c1 = db.collection({
+      name: 'test',
+      tableName: 'test',
+      schema: 'public',
+    });
+
+    let err;
+
+    try {
+      const c2 = db.collection({
+        name: 'test2',
+        tableName: 'test',
+        schema: 'public',
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err.message).toContain('have same tableName');
+  });
+
+  it('should allow same table name in difference schema', async () => {
+    const c1 = db.collection({
+      name: 'test',
+      tableName: 'test',
+      schema: 'public',
+    });
+
+    let err;
+
+    try {
+      const c2 = db.collection({
+        name: 'test2',
+        tableName: 'test',
+        schema: 'other_schema',
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
+  });
+
   test('limit field name length', async () => {
     const longFieldName =
       'this_is_a_very_long_field_name_that_should_be_truncated_this_is_a_very_long_field_name_that_should_be_truncated';

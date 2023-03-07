@@ -100,7 +100,11 @@ export class Collection<
   private checkTableName() {
     const tableName = this.tableName();
     for (const [k, collection] of this.db.collections) {
-      if (collection.name != this.options.name && tableName === collection.tableName()) {
+      if (
+        collection.name != this.options.name &&
+        tableName === collection.tableName() &&
+        collection.collectionSchema() === this.collectionSchema()
+      ) {
         throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
       }
     }
