@@ -120,11 +120,15 @@ describe('get action', () => {
 
     const postProfile = await Profile.repository.findOne();
 
-    const response = await app
-      .agent()
-      .resource('posts.profile', p1.get('id'))
-      .get();
+    const response = await app.agent().resource('posts.profile', p1.get('id')).get();
 
     expect(response.body['id']).toEqual(postProfile.get('id'));
+  });
+
+  it('should return null when source model not found', async () => {
+    const response = await app.agent().resource('posts.profile', 999).get();
+
+    expect(response.status).toEqual(200);
+    expect(response.body).toEqual(null);
   });
 });
