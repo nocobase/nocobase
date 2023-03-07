@@ -1,5 +1,7 @@
+import fields from '../../../../../plugins/collection-manager/src/collections/fields';
 import Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
+import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import { mockDatabase } from '../index';
 import pgOnly from './helper';
 
@@ -13,6 +15,71 @@ pgOnly()('collection inherits', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should list collection name in relation repository', async () => {
+    const personTagCollection = db.collection({
+      name: 'personTags',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const studentTagCollection = db.collection({
+      name: 'studentTags',
+      inherits: ['personTags'],
+      fields: [{ name: 'school', type: 'string' }],
+    });
+
+    const personCollection = db.collection({
+      name: 'person',
+      fields: [{ name: 'tags', type: 'belongsToMany', target: 'personTags' }],
+    });
+
+    const studentCollection = db.collection({
+      name: 'student',
+      inherits: ['person'],
+      fields: [],
+    });
+
+    await db.sync();
+
+    const studentTag1 = await studentTagCollection.repository.create({
+      values: {
+        name: 'studentTag',
+        school: 'school1',
+      },
+    });
+
+    const personTag1 = await personTagCollection.repository.create({
+      values: {
+        name: 'personTag',
+      },
+    });
+
+    await studentCollection.repository.create({
+      values: {
+        tags: [
+          {
+            id: studentTag1.get('id'),
+          },
+          {
+            id: personTag1.get('id'),
+          },
+        ],
+      },
+    });
+
+    const person1 = await personCollection.repository.findOne({});
+
+    const tags = await personCollection.repository
+      .relation<BelongsToManyRepository>('tags')
+      .of(person1.get('id'))
+      .find({});
+
+    const personTag = tags.find((tag) => tag.get('name') === 'personTag');
+    const studentTag = tags.find((tag) => tag.get('name') === 'studentTag');
+
+    expect(personTag.get('__collection')).toEqual(personTagCollection.name);
+    expect(studentTag.get('__collection')).toEqual(studentTagCollection.name);
   });
 
   it('should create inherits with table name contains upperCase', async () => {

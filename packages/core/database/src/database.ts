@@ -360,6 +360,22 @@ export class Database extends EventEmitter implements AsyncEmitter {
         options.schema = this.options.schema;
       }
     });
+
+    this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
+      if (dataCollection.isParent()) {
+        for (const row of data) {
+          const rowCollectionName = this.tableNameCollectionMap.get(
+            findOptions.raw ? row['__tableName'] : row.get('__tableName'),
+          ).name;
+
+          findOptions.raw
+            ? (row['__collection'] = rowCollectionName)
+            : row.set('__collection', rowCollectionName, {
+                raw: true,
+              });
+        }
+      }
+    });
   }
 
   addMigration(item: MigrationItem) {
