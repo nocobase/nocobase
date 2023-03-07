@@ -7,7 +7,6 @@ import { useWorkflowVariableOptions } from '../../variable';
 
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
   const scope = useWorkflowVariableOptions();
-  console.log(value);
 
   return (
     <Variable.Input

@@ -1,6 +1,6 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { collection, values } from '../schemas/collection';
+import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
@@ -25,7 +25,13 @@ export default {
     //     disabled: true
     //   }
     // },
-    'params.values': values
+    params: {
+      type: 'object',
+      properties: {
+        values,
+        appends
+      }
+    }
   },
   view: {
 

@@ -78,7 +78,7 @@ export default observer(({ value, disabled, onChange }: any) => {
                     }
                   `}>
                     <Variable.Input
-                      scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
+                      scope={scope}
                       value={value[field.name]}
                       onChange={(next) => {
                         onChange({ ...value, [field.name]: next });

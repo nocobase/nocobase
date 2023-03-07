@@ -18,6 +18,10 @@ export default {
       defaultValue: 0
     },
     {
+      type: 'belongsTo',
+      name: 'category'
+    },
+    {
       type: 'hasMany',
       name: 'comments'
     },

@@ -53,5 +53,52 @@ describe('workflow > instructions > create', () => {
       const [job] = await execution.getJobs();
       expect(job.result.postId).toBe(post.id);
     });
+
+    it('params.appends: belongsTo', async () => {
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'comments',
+          params: {
+            values: {
+              postId: '{{$context.data.id}}'
+            },
+            appends: ['post'],
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.post.id).toBe(post.id);
+    });
+
+    it('params.appends: belongsToMany', async () => {
+      const n1 = await workflow.createNode({
+        type: 'create',
+        config: {
+          collection: 'tags',
+          params: {
+            values: {
+              posts: ['{{$context.data.id}}']
+            },
+            appends: ['posts'],
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.posts.length).toBe(1);
+      expect(job.result.posts[0].id).toBe(post.id);
+    });
   });
 });
