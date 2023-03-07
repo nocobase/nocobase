@@ -384,9 +384,9 @@ export const EditComponent = () => {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const interfaceConfig = getInterface(collectionField?.interface);
   const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
+  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
 
-  return form && !isSubFormAssocitionField && fieldComponentOptions ? (
+  return form && !isSubFormAssociationField && fieldComponentOptions ? (
     <SchemaSettings.SelectItem
       title={t('Field component')}
       options={fieldComponentOptions}
