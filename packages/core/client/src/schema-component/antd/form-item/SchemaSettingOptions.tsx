@@ -11,15 +11,15 @@ import { SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 
-export const findFilterOperators = (fieldSchema: Schema) => {
-  while (fieldSchema) {
-    if (fieldSchema['x-filter-operators']) {
+export const findFilterOperators = (schema: Schema) => {
+  while (schema) {
+    if (schema['x-filter-operators']) {
       return {
-        operators: fieldSchema['x-filter-operators'],
-        uid: fieldSchema['x-uid'],
+        operators: schema['x-filter-operators'],
+        uid: schema['x-uid'],
       };
     }
-    fieldSchema = fieldSchema.parent;
+    schema = schema.parent;
   }
   return {};
 };

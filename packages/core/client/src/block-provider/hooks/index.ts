@@ -240,6 +240,7 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { getField } = useCollection();
 
   actionField.data = actionField.data || {};
 
@@ -259,7 +260,7 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
+            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema, getField));
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),

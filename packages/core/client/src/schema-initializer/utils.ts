@@ -242,7 +242,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface, getCollectionFields } = useCollectionManager();
   const form = useForm();
-  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const { readPretty = form.readPretty, block = 'Form', outSchema = {} } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
   const groups = fields
     ?.filter((field) => {
@@ -267,6 +267,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
+            ...outSchema,
           };
           return {
             type: 'item',
@@ -298,7 +299,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const form = useForm();
-    const { readPretty = form.readPretty, block = 'Form' } = options || {};
+    const { readPretty = form.readPretty, block = 'Form', outSchema = {} } = options || {};
     const targetCollection = getCollection(v);
     return {
       [targetCollection.title]: fields

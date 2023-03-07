@@ -1,5 +1,6 @@
 import { Schema } from '@formily/react';
-import { Collection, useCollection } from '../collection-manager';
+import { isObj } from '@formily/shared';
+import { Collection, FieldOptions, useCollection } from '../collection-manager';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
@@ -37,16 +38,28 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   }
 };
 
-export const transformToFilter = (values: Record<string, any>, fieldSchema: Schema) => {
+export const transformToFilter = (values: Record<string, any>, fieldSchema: Schema, getField) => {
   const { operators } = findFilterOperators(fieldSchema);
 
   return {
     $and: Object.keys(values).map((key) => {
-      return {
-        [key]: {
-          [operators[key]]: values[key],
-        },
-      };
+      // 非关系字段
+      if (operators[key]) {
+        return {
+          [key]: {
+            [operators[key]]: values[key],
+          },
+        };
+      } else {
+        const collectionField = getField?.(key);
+        const targetKey = collectionField?.targetKey || 'id';
+        // 关系字段
+        return {
+          [`${key}.${targetKey}`]: {
+            $in: isObj(values[key]) ? values[key][targetKey] : values[key],
+          },
+        };
+      }
     }),
   };
 };
@@ -54,11 +67,11 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
 export const useAssociatedFields = () => {
   const { fields } = useCollection();
 
-  return (
-    fields.filter((field) =>
-      ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface),
-    ) || []
-  );
+  return fields.filter((field) => isAssocField(field)) || [];
+};
+
+const isAssocField = (field: FieldOptions) => {
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface);
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {

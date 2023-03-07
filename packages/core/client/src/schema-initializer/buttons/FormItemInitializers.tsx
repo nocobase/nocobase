@@ -14,8 +14,12 @@ import { useCompile } from '../../schema-component';
 export const FormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component, schema } = props;
-  const associationFields = useAssociatedFormItemInitializerFields({ readPretty: true, block: 'Form' });
-  const inheritFields = useInheritsFormItemInitializerFields();
+  const associationFields = useAssociatedFormItemInitializerFields({
+    readPretty: true,
+    block: 'Form',
+    outSchema: schema,
+  });
+  const inheritFields = useInheritsFormItemInitializerFields({ outSchema: schema });
   const compile = useCompile();
   const fieldItems: any[] = [
     {
