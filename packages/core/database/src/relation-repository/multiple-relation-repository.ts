@@ -42,6 +42,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
 
+    if (!sourceModel) return [];
+
     if (findOptions.include && findOptions.include.length > 0) {
       const ids = (
         await sourceModel[getAccessor]({
@@ -103,6 +105,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
+    if (!sourceModel) return 0;
+
     const queryOptions = this.buildQueryOptions(options);
 
     const count = await sourceModel[this.accessors().get]({

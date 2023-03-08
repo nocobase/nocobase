@@ -375,7 +375,7 @@ export function NodeDefaultView(props) {
               type: 'void',
               properties: {
                 ...(instruction.view ? { view: instruction.view } : {}),
-                config: {
+                button: {
                   type: 'void',
                   'x-content': detailText,
                   'x-component': Button,
