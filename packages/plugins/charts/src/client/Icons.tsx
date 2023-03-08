@@ -87,6 +87,14 @@ const AreaChart = () => (
   </svg>
 );
 
+const OtherChart = () => (
+  <svg width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" viewBox="0 0 1024 1024">
+    <path d="M193 479.1l219 0c35.3 0 64-28.7 64-64L476 192c0-35.3-28.7-64-64-64L193 128c-35.3 0-64 28.7-64 64l0 223.1C129 450.4 157.7 479.1 193 479.1zM193 193l219 0 0 223.1L193 416.1 193 193z"></path>
+    <path d="M613 479.1l219 0c35.3 0 64-28.7 64-64L896 192c0-35.3-28.7-64-64-64L613 128c-35.3 0-64 28.7-64 64l0 223.1C549 450.4 577.7 479.1 613 479.1zM613 193l219 0 0 223.1L613 416.1 613 193z"></path>
+    <path d="M418 543 199 543c-35.3 0-64 28.7-64 64l0 223.1c0 35.3 28.7 64 64 64l219 0c35.3 0 64-28.7 64-64L482 607C482 571.7 453.3 543 418 543zM418 831.1 199 831.1 199 608l219 0L418 831.1z"></path>
+    <path d="M838 543 619 543c-35.3 0-64 28.7-64 64l0 223.1c0 35.3 28.7 64 64 64l219 0c35.3 0 64-28.7 64-64L902 607C902 571.7 873.3 543 838 543zM838 831.1 619 831.1 619 608l219 0L838 831.1z"></path>
+  </svg>
+);
 Icon.register({
   'icon-area': (props) => <Icon component={AreaChart} {...props} />,
   'icon-pie': (props) => <Icon component={PieChart} {...props} />,
@@ -96,4 +104,5 @@ Icon.register({
   'icon-bar': (props) => <Icon component={BarChart} {...props} />,
   'icon-column': (props) => <Icon component={ColumnChart} {...props} />,
   'icon-scatter': (props) => <Icon component={ScatterChart} {...props} />,
+  'icon-other': (props) => <Icon component={OtherChart} {...props} />,
 });

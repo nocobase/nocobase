@@ -80,6 +80,15 @@ const ChartRenderComponent = ({
       }
       return <>{loading ? <Spin /> : <RenderComponent plot={chartConfig.type} config={config} />}</>;
     }
+    case 'IndicatorKanban': {
+      if (chartConfig) {
+        const { metric } = chartConfig;
+        if (!metric) {
+          return <>{lang('Please check the chart config')}</>;
+        }
+      }
+      return <>{loading ? <Spin /> : <RenderComponent dataSet={dataSet} config={chartConfig} />}</>;
+    }
   }
   return <></>;
 };

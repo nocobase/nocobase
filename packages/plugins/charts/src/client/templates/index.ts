@@ -7,6 +7,7 @@ import { tableTemplate } from './TableTemplate';
 import { scatterTemplate } from './ScatterTemplate';
 import { radarTemplate } from './RadarTemplate';
 import { funnelTemplate } from './FunnelTemplate';
+import { indicatorKanbanTemplate } from './IndicatorKanbanTemplate';
 
 export const templates = new Map();
 
@@ -18,4 +19,5 @@ templates.set('Column', columnTemplate);
 templates.set('Scatter', scatterTemplate);
 templates.set('Radar', radarTemplate);
 templates.set('Funnel', funnelTemplate);
+templates.set('IndicatorKanban', indicatorKanbanTemplate);
 // templates.set('DataSetPreviewTable', tableTemplate);
