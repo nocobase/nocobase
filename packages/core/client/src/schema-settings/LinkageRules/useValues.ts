@@ -1,6 +1,5 @@
 import { useField } from '@formily/react';
-import { useContext, useEffect } from 'react';
-import { FilterLogicContext } from './context';
+import { useEffect } from 'react';
 
 const findOption = (dataIndex = [], options) => {
   let items = options;
@@ -17,7 +16,6 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = (options) => {
   const field = useField<any>();
-  const logic = useContext(FilterLogicContext);
 
   const value2data = () => {
     field.data = { ...(field.initialValue || field.value) };
@@ -27,7 +25,7 @@ export const useValues = (options) => {
     field.data.operators = operators;
     field.data.schema = option?.schema;
   };
-  useEffect(value2data, [logic]);
+  useEffect(value2data, [options]);
   return {
     fields: options,
     ...field.data,
@@ -36,9 +34,6 @@ export const useValues = (options) => {
       field.data = field.data || {};
       const operators = option?.operators;
       field.data.operators = operators?.filter((v) => {
-        // if (dataIndex.length > 1) {
-        //   return v.value !== 'value';
-        // }
         return true;
       });
       field.data.schema = option?.schema;
