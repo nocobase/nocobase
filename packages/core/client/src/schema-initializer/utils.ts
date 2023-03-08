@@ -192,7 +192,7 @@ export const useInheritsTableColumnInitializerFields = () => {
   });
 };
 
-export const useFormItemInitializerFields = (options?: any, outSchema = {} as FieldOptions) => {
+export const useFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
@@ -213,7 +213,52 @@ export const useFormItemInitializerFields = (options?: any, outSchema = {} as Fi
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
-        ...outSchema,
+      };
+      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
+      const resultItem = {
+        type: 'item',
+        title: field?.uiSchema?.title || field.name,
+        component: 'CollectionFieldInitializer',
+        remove: removeGridFormItem,
+        schemaInitialize: (s) => {
+          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty, action });
+        },
+        schema,
+      } as SchemaInitializerItemOptions;
+      if (block == 'Kanban') {
+        resultItem['find'] = (schema: Schema, key: string, action: string) => {
+          const s = findSchema(schema, 'x-component', block);
+          return findSchema(s, key, action);
+        };
+      }
+
+      return resultItem;
+    });
+};
+
+// 筛选表单相关
+export const useFilterFormItemInitializerFields = (options?: any) => {
+  const { name, currentFields } = useCollection();
+  const { getInterface } = useCollectionManager();
+  const form = useForm();
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const { snapshot, fieldSchema } = useActionContext();
+  const action = fieldSchema?.['x-action'];
+
+  return currentFields
+    ?.filter((field) => field?.interface && !field?.isForeignKey)
+    ?.map((field) => {
+      const interfaceConfig = getInterface(field.interface);
+      const schema = {
+        type: 'string',
+        name: field.name,
+        required: false,
+        'x-designer': 'FormItem.FilterFormDesigner',
+        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+        'x-decorator': 'FormItem',
+        'x-collection-field': `${name}.${field.name}`,
+        'x-component-props': {},
+        'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
@@ -241,7 +286,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
   const { getInterface, getCollectionFields } = useCollectionManager();
   const form = useForm();
-  const { readPretty = form.readPretty, block = 'Form', outSchema = {} } = options || {};
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
   const groups = fields
     ?.filter((field) => {
@@ -266,7 +311,57 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             },
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}.${subField.name}`,
-            ...outSchema,
+          };
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, block, readPretty });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
+
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items,
+      } as SchemaInitializerItemOptions;
+    });
+  return groups;
+};
+
+// 筛选表单相关
+export const useFilterAssociatedFormItemInitializerFields = (options?: any) => {
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+  const form = useForm();
+  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
+  const groups = fields
+    ?.filter((field) => {
+      return interfaces.includes(field.interface);
+    })
+    ?.map((field) => {
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            type: 'string',
+            name: `${field.name}.${subField.name}`,
+            required: false,
+            'x-designer': 'FormItem.FilterFormDesigner',
+            'x-component': 'CollectionField',
+            'x-read-pretty': readPretty,
+            'x-component-props': {
+              'pattern-disable': block === 'Form' && readPretty,
+            },
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
           };
           return {
             type: 'item',
@@ -298,7 +393,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
     const form = useForm();
-    const { readPretty = form.readPretty, block = 'Form', outSchema = {} } = options || {};
+    const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
       [targetCollection.title]: fields
@@ -310,6 +405,50 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
+            'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}`,
+            'x-component-props': {},
+            'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
+          };
+          return {
+            type: 'item',
+            title: field?.uiSchema?.title || field.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        }),
+    };
+  });
+};
+
+// 筛选表单相关
+export const useFilterInheritsFormItemInitializerFields = (options?) => {
+  const { name } = useCollection();
+  const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
+  const inherits = getInheritCollections(name);
+  const { snapshot } = useActionContext();
+
+  return inherits?.map((v) => {
+    const fields = getParentCollectionFields(v, name);
+    const form = useForm();
+    const { readPretty = form.readPretty, block = 'Form' } = options || {};
+    const targetCollection = getCollection(v);
+    return {
+      [targetCollection.title]: fields
+        ?.filter((field) => field?.interface && !field?.isForeignKey)
+        ?.map((field) => {
+          const interfaceConfig = getInterface(field.interface);
+          const schema = {
+            type: 'string',
+            name: field.name,
+            title: field?.uiSchema?.title || field.name,
+            required: false,
+            'x-designer': 'FormItem.FilterFormDesigner',
             'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
