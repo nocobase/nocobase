@@ -231,6 +231,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     const options = this.options;
     const logger = createAppLogger(options.logger);
     this._logger = logger.instance;
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore
@@ -293,6 +294,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     db.setLogger(this._logger);
+
     return db;
   }
 

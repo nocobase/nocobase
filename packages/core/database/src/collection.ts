@@ -192,6 +192,7 @@ export class Collection<
 
     this.on('field.afterRemove', (field: Field) => {
       field.unbind();
+      this.db.emit('field.afterRemove', field);
     });
   }
 

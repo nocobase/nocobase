@@ -20,7 +20,7 @@ export class FieldModel extends MagicAttributeModel {
   }
 
   async load(loadOptions?: LoadOptions) {
-    const { skipExist = false } = loadOptions || {};
+    const { skipExist = false, transaction } = loadOptions || {};
     const collectionName = this.get('collectionName');
 
     if (!this.db.hasCollection(collectionName)) {
@@ -36,7 +36,14 @@ export class FieldModel extends MagicAttributeModel {
 
     const options = this.get();
 
-    return collection.setField(name, options);
+    const field = collection.setField(name, options);
+
+    await this.db.emitAsync('field:loaded', {
+      fieldKey: this.get('key'),
+      transaction,
+    });
+
+    return field;
   }
 
   async migrate({ isNew, ...options }: MigrateOptions = {}) {
