@@ -56,7 +56,7 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
         // 关系字段
         return {
           [`${key}.${targetKey}`]: {
-            $in: isObj(values[key]) ? values[key][targetKey] : values[key],
+            $eq: isObj(values[key]) ? values[key][targetKey] : values[key],
           },
         };
       }
