@@ -6,6 +6,7 @@ import { FilterContext } from '../../schema-component/antd/filter/context';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { LinkageCopy } from './components/LinkageCopy';
+import { ArrayCollapse } from './components/LinkageHeader';
 
 export const FormLinkageRules = observer((props: any) => {
   const fieldSchema = useFieldSchema();
@@ -14,6 +15,7 @@ export const FormLinkageRules = observer((props: any) => {
   return (
     <FilterContext.Provider value={{ field: options, fieldSchema, dynamicComponent, options: options || [] }}>
       <SchemaComponent
+        components={{ ArrayCollapse }}
         schema={{
           type: 'object',
           properties: {
@@ -29,14 +31,10 @@ export const FormLinkageRules = observer((props: any) => {
                 type: 'object',
                 'x-component': 'ArrayCollapse.CollapsePanel',
                 'x-component-props': {
-                  header: '{{ t("Linkage rule") }}',
-                  extra: <LinkageCopy/>,
+                  extra: <LinkageCopy />,
+                  header: '',
                 },
                 properties: {
-                  index: {
-                    type: 'void',
-                    'x-component': 'ArrayCollapse.Index',
-                  },
                   layout: {
                     type: 'void',
                     'x-component': 'FormLayout',

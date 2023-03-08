@@ -25,7 +25,6 @@ export const LinkageCopy = React.forwardRef((props: any, ref) => {
         e.stopPropagation();
         if (array.props?.disabled) return;
         const value = clone(array?.field?.value[index]);
-        console.log(value)
         const distIndex = index + 1;
         array.field?.insert?.(distIndex, value);
         //@ts-ignore

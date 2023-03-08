@@ -736,7 +736,9 @@ SchemaSettings.LinkageRules = (props) => {
               'x-component': FormLinkageRules,
               'x-component-props': {
                 useProps: () => {
-                  const options = useCollectionFilterOptions(collectionName);
+                  const options = useCollectionFilterOptions(collectionName).filter(
+                    (v) => !['o2m', 'm2m'].includes(v.interface),
+                  );
                   return {
                     options,
                     defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
