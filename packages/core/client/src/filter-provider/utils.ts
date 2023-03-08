@@ -1,6 +1,7 @@
 import { Schema } from '@formily/react';
 import { isObj } from '@formily/shared';
 import { Collection, FieldOptions, useCollection } from '../collection-manager';
+import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
@@ -52,7 +53,7 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
         };
       } else {
         const collectionField = getField?.(key);
-        const targetKey = collectionField?.targetKey || 'id';
+        const targetKey = getTargetKey(collectionField);
         // 关系字段
         return {
           [`${key}.${targetKey}`]: {
