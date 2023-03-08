@@ -8,20 +8,20 @@ import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
 
 const LinkageRulesTitle = (props) => {
-  const { item } = props;
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
+  const value = array?.field?.value[index];
   return (
     <Input.TextArea
-      value={item.title || t('linkage rule')}
+      value={value.title || t('linkage rule')}
       onChange={(ev) => {
         ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...item, title: ev.target.value });
+        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
       }}
       onBlur={(ev) => {
         ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...item, title: ev.target.value });
+        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
       }}
       autoSize
       style={{ width: '70%', border: 'none' }}
