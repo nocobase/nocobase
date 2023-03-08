@@ -43,25 +43,30 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
   const { operators } = findFilterOperators(fieldSchema);
 
   return {
-    $and: Object.keys(values).map((key) => {
-      // 非关系字段
-      if (operators[key]) {
-        return {
-          [key]: {
-            [operators[key]]: values[key],
-          },
-        };
-      } else {
+    $and: Object.keys(values)
+      .map((key) => {
         const collectionField = getField?.(key);
-        const targetKey = getTargetKey(collectionField);
         // 关系字段
-        return {
-          [`${key}.${targetKey}`]: {
-            $eq: isObj(values[key]) ? values[key][targetKey] : values[key],
-          },
-        };
-      }
-    }),
+        if (isAssocField(collectionField)) {
+          const targetKey = getTargetKey(collectionField);
+          return {
+            [`${key}.${targetKey}`]: {
+              $eq: isObj(values[key]) ? values[key][targetKey] : values[key],
+            },
+          };
+        } else if (operators[key]) {
+          // 普通字段
+          return {
+            [key]: {
+              [operators[key]]: values[key],
+            },
+          };
+        }
+
+        // 不能被过滤的字段
+        return null;
+      })
+      .filter(Boolean),
   };
 };
 
@@ -71,8 +76,8 @@ export const useAssociatedFields = () => {
   return fields.filter((field) => isAssocField(field)) || [];
 };
 
-const isAssocField = (field: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface);
+const isAssocField = (field?: FieldOptions) => {
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field?.interface);
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {
