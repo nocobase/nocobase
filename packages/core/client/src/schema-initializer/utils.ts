@@ -197,9 +197,8 @@ export const useFormItemInitializerFields = (options?: any, outSchema = {} as Fi
   const { getInterface } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
-  const actionCtx = useActionContext();
-  const action = actionCtx?.fieldSchema?.['x-action'];
-  const { snapshot } = useActionContext();
+  const { snapshot, fieldSchema } = useActionContext();
+  const action = fieldSchema?.['x-action'];
 
   return currentFields
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
