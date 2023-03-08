@@ -95,16 +95,18 @@ export const Action: ComposedAction = observer((props: any) => {
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
-  const linkageRules = (fieldSchema?.['x-linkage-rules'] || []).filter((k) => !k.disabled);
-  const { designable, } = useDesignable();
-  const tarComponent=useComponent(component)||component;
+  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+  const { designable } = useDesignable();
+  const tarComponent = useComponent(component) || component;
   useEffect(() => {
     field.linkageProperty = {};
-    linkageRules.map((v) => {
-      return v.actions?.map((h) => {
-        linkageAction(h.operator, field, v.condition, values, designable);
+    linkageRules
+      .filter((k) => !k.disabled)
+      .map((v) => {
+        return v.actions?.map((h) => {
+          linkageAction(h.operator, field, v.condition, values, designable);
+        });
       });
-    });
   }, [linkageRules, values]);
   const renderButton = () => (
     <SortableItem
