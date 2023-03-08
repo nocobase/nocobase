@@ -92,10 +92,7 @@ export const FormItemInitializers = (props: any) => {
 export const FilterFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
-  const associationFields = useFilterAssociatedFormItemInitializerFields({
-    readPretty: true,
-    block: 'Form',
-  });
+  const associationFields = useFilterAssociatedFormItemInitializerFields();
   const inheritFields = useFilterInheritsFormItemInitializerFields();
   const compile = useCompile();
   const fieldItems: any[] = [

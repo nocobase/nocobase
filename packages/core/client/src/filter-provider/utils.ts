@@ -76,7 +76,7 @@ export const useAssociatedFields = () => {
   return fields.filter((field) => isAssocField(field)) || [];
 };
 
-const isAssocField = (field?: FieldOptions) => {
+export const isAssocField = (field?: FieldOptions) => {
   return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field?.interface);
 };
 

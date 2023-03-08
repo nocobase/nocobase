@@ -43,43 +43,41 @@ export const EditTitle = () => {
   const { dn } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
 
-  return (
-    collectionField && (
-      <SchemaSettings.ModalItem
-        key="edit-field-title"
-        title={t('Edit field title')}
-        schema={
-          {
-            type: 'object',
-            title: t('Edit field title'),
-            properties: {
-              title: {
-                title: t('Field title'),
-                default: field?.title,
-                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {},
-              },
+  return collectionField ? (
+    <SchemaSettings.ModalItem
+      key="edit-field-title"
+      title={t('Edit field title')}
+      schema={
+        {
+          type: 'object',
+          title: t('Edit field title'),
+          properties: {
+            title: {
+              title: t('Field title'),
+              default: field?.title,
+              description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-component-props': {},
             },
-          } as ISchema
+          },
+        } as ISchema
+      }
+      onSubmit={({ title }) => {
+        if (title) {
+          field.title = title;
+          fieldSchema.title = title;
+          dn.emit('patch', {
+            schema: {
+              'x-uid': fieldSchema['x-uid'],
+              title: fieldSchema.title,
+            },
+          });
         }
-        onSubmit={({ title }) => {
-          if (title) {
-            field.title = title;
-            fieldSchema.title = title;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                title: fieldSchema.title,
-              },
-            });
-          }
-          dn.refresh();
-        }}
-      />
-    )
-  );
+        dn.refresh();
+      }}
+    />
+  ) : null;
 };
 
 export const EditDescription = () => {

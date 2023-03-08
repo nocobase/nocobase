@@ -31,7 +31,7 @@ export const FilterFormDesigner = () => {
       <EditPattern />
       <EditOperator />
       <EditTitleField />
-      {collectionField && <SchemaSettings.Divider />}
+      {collectionField ? <SchemaSettings.Divider /> : null}
       <SchemaSettings.Remove
         key="remove"
         removeParentsIfNoChildren
