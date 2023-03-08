@@ -7,7 +7,6 @@ import cls from 'classnames';
 import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
 
-
 const LinkageRulesTitle = (props) => {
   const { item } = props;
   const array = ArrayBase.useArray();
@@ -15,7 +14,7 @@ const LinkageRulesTitle = (props) => {
   const { t } = useTranslation();
   return (
     <Input.TextArea
-      value={item.title ||  t("linkage rule") }
+      value={item.title || t('linkage rule')}
       onChange={(ev) => {
         ev.stopPropagation();
         array.field.value.splice(index, 1, { ...item, title: ev.target.value });
@@ -25,7 +24,7 @@ const LinkageRulesTitle = (props) => {
         array.field.value.splice(index, 1, { ...item, title: ev.target.value });
       }}
       autoSize
-      style={{ width: '70%' }}
+      style={{ width: '70%', border: 'none' }}
       onClick={(e) => {
         e.stopPropagation();
       }}
