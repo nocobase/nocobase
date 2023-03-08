@@ -18,7 +18,24 @@ export const query = {
   ) => {
     try {
       // 分号截取，只取第一段
-      const sql: string = options.sql.trim().split(';').shift();
+      let sql = options.sql.trim().split(';').shift();
+      // 处理变量
+      const variables = options?.variables;
+      if (variables && Array.isArray(variables) && variables.length > 0) {
+        const extra = {};
+        variables.forEach((variable) => {
+          const { key, value } = variable;
+          extra[key] = value;
+        });
+        const reg = /{{(.*?)}}/g;
+        sql = sql.replace(reg, (match, key) => {
+          if (extra[key]) {
+            return extra[key];
+          } else {
+            return match;
+          }
+        });
+      }
       if (!sql) {
         throw new Error('SQL is empty');
       }

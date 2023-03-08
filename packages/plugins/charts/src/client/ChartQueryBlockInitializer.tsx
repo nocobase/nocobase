@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { ArrayItems, FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   SchemaComponent,
@@ -43,7 +43,7 @@ export const ChartQueryBlockInitializer = (props) => {
       () => {
         return (
           <div>
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+            <SchemaComponentOptions scope={options.scope} components={{ ...options.components, ArrayItems }}>
               <FormLayout layout={'vertical'}>
                 <SchemaComponent
                   schema={{

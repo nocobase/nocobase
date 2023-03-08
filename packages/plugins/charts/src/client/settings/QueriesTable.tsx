@@ -10,6 +10,7 @@ import {
   useDestroyQueryItemAction,
 } from './schemas/chartsQueries';
 import JSON5 from 'json5';
+import { ArrayItems } from '@formily/antd';
 
 export const QueriesTable = () => {
   const [visible, setVisible] = useState(false);
@@ -19,7 +20,7 @@ export const QueriesTable = () => {
       <SchemaComponent
         scope={{ JSON5, useDestroyQueryItemAction, useDestroyAllSelectedQueriesAction }}
         schema={chartsQueriesSchema}
-        components={{ AddNewQuery, EditQuery, ConfigureFields }}
+        components={{ AddNewQuery, EditQuery, ConfigureFields, ArrayItems }}
       />
     </Card>
   );
