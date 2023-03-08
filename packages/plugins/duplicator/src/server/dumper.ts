@@ -8,7 +8,8 @@ import path from 'path';
 import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
-import { CollectionGroup, CollectionGroupManager } from './collection-group-manager';
+import { CollectionGroupManager } from './collection-group-manager';
+import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
