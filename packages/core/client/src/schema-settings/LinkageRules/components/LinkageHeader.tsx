@@ -5,23 +5,24 @@ import { RecursionField, useField, useFieldSchema, observer, ISchema } from '@fo
 import { toArr } from '@formily/shared';
 import cls from 'classnames';
 import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
+import { useTranslation } from 'react-i18next';
+
 
 const LinkageRulesTitle = (props) => {
+  const { item } = props;
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
-  const values = array?.field?.value[index];
-  const [title, setTitle] = useState<string>(values.title || 'Linkage rules');
+  const { t } = useTranslation();
   return (
     <Input.TextArea
-      value={title}
+      value={item.title ||  t("linkage rule") }
       onChange={(ev) => {
         ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...values, title: ev.target.value });
-        setTitle(ev.target.value);
+        array.field.value.splice(index, 1, { ...item, title: ev.target.value });
       }}
       onBlur={(ev) => {
         ev.stopPropagation();
-        setTitle(ev.target.value);
+        array.field.value.splice(index, 1, { ...item, title: ev.target.value });
       }}
       autoSize
       style={{ width: '70%' }}
@@ -149,7 +150,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer((props: IArrayColla
                     {header}
                   </Badge>
                 ) : (
-                  <LinkageRulesTitle index={index} />
+                  <LinkageRulesTitle item={item.initialValue || item} index={index} />
                 )}
               </ArrayBase.Item>
             );
