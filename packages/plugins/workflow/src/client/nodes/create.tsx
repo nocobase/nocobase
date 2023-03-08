@@ -6,6 +6,7 @@ import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { useCollectionFieldOptions } from '../variable';
+import { FieldsSelect } from '../components/FieldsSelect';
 
 
 
@@ -40,7 +41,8 @@ export default {
     useCollectionDataSource
   },
   components: {
-    CollectionFieldset
+    CollectionFieldset,
+    FieldsSelect
   },
   getOptions(config, types) {
     return useCollectionFieldOptions({ collection: config.collection, types });
