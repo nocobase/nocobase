@@ -7,6 +7,7 @@ import { FilterDynamicComponent } from './FilterDynamicComponent';
 import { LinkageRuleActionGroup } from './LinkageRuleActionGroup';
 import { LinkageCopy } from './components/LinkageCopy';
 import { ArrayCollapse } from './components/LinkageHeader';
+import { EnableLinkage } from './components/EnableLinkage';
 
 export const FormLinkageRules = observer((props: any) => {
   const fieldSchema = useFieldSchema();
@@ -31,8 +32,7 @@ export const FormLinkageRules = observer((props: any) => {
                 type: 'object',
                 'x-component': 'ArrayCollapse.CollapsePanel',
                 'x-component-props': {
-                  extra: <LinkageCopy />,
-                  header: '',
+                  extra: [<LinkageCopy />, <EnableLinkage />],
                 },
                 properties: {
                   layout: {
