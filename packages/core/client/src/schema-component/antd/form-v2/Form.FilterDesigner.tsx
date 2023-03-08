@@ -24,7 +24,7 @@ export const FilterDesigner = () => {
         resourceName={defaultResource}
       />
       <SchemaSettings.LinkageRules collectionName={name} />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} emptyDescription={'仅支持同表数据区块'} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

@@ -19,7 +19,7 @@ export const AssociationFilterBlockDesigner = () => {
         collectionName={name}
         resourceName={defaultResource}
       />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.COLLAPSE} />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.COLLAPSE} emptyDescription={'仅支持同表数据区块'} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

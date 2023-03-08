@@ -44,7 +44,7 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { EnableChildCollections } from './EnableChildCollections';
 
@@ -451,12 +451,13 @@ SchemaSettings.Remove = (props: any) => {
   );
 };
 
-SchemaSettings.ConnectDataBlocks = (props: any) => {
+SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescription?: string }) => {
+  const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
-  const dataBlocks = useSupportedBlocks(props.type);
+  const dataBlocks = useSupportedBlocks(type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
 
@@ -555,7 +556,11 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
 
   return (
     <SchemaSettings.SubMenu title={t('Connect data blocks')}>
-      {Content.length ? Content : <Empty style={{ width: 120 }} image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+      {Content.length ? (
+        Content
+      ) : (
+        <Empty style={{ width: 160 }} description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      )}
     </SchemaSettings.SubMenu>
   );
 };
