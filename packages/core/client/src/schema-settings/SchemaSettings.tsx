@@ -47,6 +47,7 @@ import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { EnableChildCollections } from './EnableChildCollections';
+import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -523,7 +524,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
             .map((field) => {
               return {
                 label: compile(field.uiSchema.title) || field.name,
-                value: `${field.name}.${field.targetKey}`,
+                value: `${field.name}.${getTargetKey(field)}`,
               };
             }),
           {
