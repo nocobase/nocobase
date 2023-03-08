@@ -463,7 +463,11 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
   const Content = dataBlocks.map((block) => {
     const onHover = () => {
       const dom = block.dom;
-      dom.style.outline = '2px solid #F18B62';
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = 'block';
+      }
+      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
       dom.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
@@ -471,8 +475,11 @@ SchemaSettings.ConnectDataBlocks = (props: any) => {
     };
     const onLeave = () => {
       const dom = block.dom;
-      dom.style.transition = '';
-      dom.style.outline = 'none';
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = null;
+      }
+      dom.style.boxShadow = 'none';
     };
     if (isSameCollection(block.collection, collection)) {
       return (
