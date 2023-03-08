@@ -70,13 +70,20 @@ export const requestSettingsSchema: ISchema = {
 };
 
 export const linkageAction = (operator, field, condition, values, designable) => {
-  const displayResult = [field.display];
-  const disableResult = [field.disabled];
+  const disableResult = field?.linkageProperty?.disabled || [field?.disabled];
+  const displayResult = field?.linkageProperty?.display || [field?.display];
+
   switch (operator) {
     case ActionType.Visible:
       if (conditionAnalyse(condition, values)) {
         displayResult.push(operator);
+        field.data = field.data || {};
+        field.data.hidden = false;
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: displayResult,
+      };
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
@@ -88,18 +95,30 @@ export const linkageAction = (operator, field, condition, values, designable) =>
           field.data.hidden = true;
         }
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: displayResult,
+      };
       field.display = last(displayResult);
       break;
     case ActionType.Disabled:
       if (conditionAnalyse(condition, values)) {
         disableResult.push(true);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: disableResult,
+      };
       field.disabled = last(disableResult);
       break;
     case ActionType.Active:
       if (conditionAnalyse(condition, values)) {
         disableResult.push(false);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: disableResult,
+      };
       field.disabled = last(disableResult);
       break;
     default:

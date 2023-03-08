@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
+import { uid } from '@formily/shared';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
 import { useDesignable } from '../../hooks';
@@ -63,10 +64,11 @@ export const ActionBar = observer((props: any) => {
           </Space>
           <Space>
             {fieldSchema.mapProperties((schema, key) => {
+              const name = uid();
               if (schema['x-align'] === 'left') {
                 return null;
               }
-              return <RecursionField key={key} name={key} schema={schema} />;
+              return <RecursionField key={name} name={name} schema={schema} />;
             })}
           </Space>
         </DndContext>
