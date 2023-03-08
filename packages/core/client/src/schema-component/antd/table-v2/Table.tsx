@@ -407,8 +407,10 @@ export const Table: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
-
   const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
+  const tableRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
@@ -420,22 +422,23 @@ export const Table: any = observer((props: any) => {
         };
   }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
-  const elementRef = useRef<HTMLDivElement>();
   const calcTableSize = () => {
-    if (!elementRef.current) return;
-    const clientRect = elementRef.current?.getBoundingClientRect();
-    setTableHeight(Math.ceil(clientRect?.height || 0));
-  };
-  useEventListener('resize', calcTableSize);
+    if (!containerRef.current || !tableRef.current) return;
+    const clientRect = containerRef.current.getBoundingClientRect();
+    setTableHeight(Math.ceil(clientRect.height || 0));
 
-  const mountedRef: RefCallback<HTMLDivElement> = (ref) => {
-    elementRef.current = ref;
-    calcTableSize();
+    const headerHeight = tableRef.current.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+    const paginationHeight =
+      tableRef.current.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+    setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
   };
+
+  useEffect(calcTableSize, []);
+  useEventListener('resize', calcTableSize);
 
   return (
     <div
-      ref={mountedRef}
+      ref={containerRef}
       className={css`
         height: 100%;
         overflow: hidden;
@@ -450,12 +453,7 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
-          ref={(ref) => {
-            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-            // TODO: 存在无限循环的情况，需要修复，开启 Fix block 的时候可复现
-            // setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-          }}
+          ref={tableRef}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
