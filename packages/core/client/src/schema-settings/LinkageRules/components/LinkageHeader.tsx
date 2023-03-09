@@ -6,7 +6,7 @@ import { toArr } from '@formily/shared';
 import cls from 'classnames';
 import { CopyOutlined } from '@ant-design/icons';
 import { clone } from 'lodash';
-import { ArrayBase, ArrayBaseMixins, IArrayBaseContext } from '@formily/antd';
+import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
 
 const LinkageRulesTitle = (props) => {
@@ -252,10 +252,7 @@ ArrayCollapse.Copy = React.forwardRef((props: any, ref) => {
         e.stopPropagation();
         if (array.props?.disabled) return;
         const value = clone(array?.field?.value[index]);
-        const distIndex = index + 1;
-        array.field?.insert?.(distIndex, value);
-        const values = array.field.value;
-        array.field.value = values.filter((v) => v.actions);
+        array.field.push(value);
         if (props.onClick) {
           props.onClick(e);
         }
