@@ -10,7 +10,6 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
-import { Settings } from './Settings';
 
 const MultiAppManager = () => {
   const history = useHistory();
@@ -77,10 +76,10 @@ export default (props) => {
                   title: 'Applications',
                   component: () => <AppManager />,
                 },
-                settings: {
-                  title: 'Settings',
-                  component: () => <Settings />,
-                },
+                // settings: {
+                //   title: 'Settings',
+                //   component: () => <Settings />,
+                // },
               },
             },
           }}
