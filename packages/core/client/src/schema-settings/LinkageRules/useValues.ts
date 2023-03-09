@@ -21,7 +21,7 @@ export const useValues = (options) => {
 
   const value2data = () => {
     field.data = { ...(field.initialValue || field.value) };
-    const dataIndex = field.initialValue?.targetFields;
+    const dataIndex = field.data?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
     field.data.operators = operators;
