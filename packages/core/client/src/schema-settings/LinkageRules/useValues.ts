@@ -1,7 +1,5 @@
 import { useField } from '@formily/react';
 import { useEffect, useContext } from 'react';
-import flat from 'flat';
-import get from 'lodash/get';
 import { LinkageLogicContext } from './context';
 
 const findOption = (dataIndex = [], options) => {
@@ -22,16 +20,12 @@ export const useValues = (options) => {
   const logic = useContext(LinkageLogicContext);
 
   const value2data = () => {
-    field.data = field.data || {};
-    const values = flat(field.value);
-    const dataIndex = field.value?.targetFields;
+    field.data = { ...(field.initialValue || field.value) };
+    const dataIndex = field.initialValue?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
     field.data.operators = operators;
     field.data.schema = option?.schema;
-    field.data.operator = values.operator;
-    field.data.value = get(field.value, `value.value`);
-    console.log(field.data);
   };
   useEffect(value2data, [logic]);
   return {
