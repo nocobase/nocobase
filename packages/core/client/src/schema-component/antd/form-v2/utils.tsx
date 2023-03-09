@@ -70,8 +70,6 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
         ...field.linkageProperty,
         value: valueResult,
       };
-      console.log(field,valueResult)
-      console.log(last(valueResult) === undefined ? field.value : last(valueResult))
       setTimeout(() => (field.value = last(valueResult) === undefined ? field.value : last(valueResult)));
       break;
     default:
