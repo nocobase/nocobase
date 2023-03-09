@@ -937,7 +937,6 @@ export const createFilterFormBlockSchema = (options) => {
             'x-component-props': {
               layout: 'one-column',
               style: {
-                marginTop: 24,
                 float: 'right',
               },
             },
