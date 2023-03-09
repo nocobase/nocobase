@@ -18,14 +18,14 @@ export const useValues = (options) => {
   const field = useField<any>();
 
   const value2data = () => {
-    field.data = { ...(field.initialValue || field.value) };
+    field.data = { ...field.initialValue };
     const dataIndex = field.data?.targetFields;
     const option = (dataIndex && findOption(dataIndex, options)) || {};
     const operators = option?.operators || [];
     field.data.operators = operators;
     field.data.schema = option?.schema;
   };
-  useEffect(value2data, [options]);
+  useEffect(value2data, []);
   return {
     fields: options,
     ...field.data,
