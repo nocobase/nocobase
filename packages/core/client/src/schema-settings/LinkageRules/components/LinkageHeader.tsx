@@ -4,7 +4,9 @@ import { ArrayField } from '@formily/core';
 import { RecursionField, useField, useFieldSchema, observer, ISchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import cls from 'classnames';
-import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
+import { CopyOutlined } from '@ant-design/icons';
+import { clone } from 'lodash';
+import { ArrayBase, ArrayBaseMixins, IArrayBaseContext } from '@formily/antd';
 import { useTranslation } from 'react-i18next';
 
 const LinkageRulesTitle = (props) => {
@@ -35,34 +37,40 @@ const LinkageRulesTitle = (props) => {
 export interface IArrayCollapseProps extends CollapseProps {
   defaultOpenPanelCount?: number;
 }
-type ComposedArrayCollapse = React.FC<IArrayCollapseProps> &
+type ComposedArrayCollapse = React.FC<React.PropsWithChildren<IArrayCollapseProps>> &
   ArrayBaseMixins & {
-    CollapsePanel?: React.FC<CollapsePanelProps>;
+    CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
   };
 
 const isAdditionComponent = (schema: ISchema) => {
-  return schema['x-component']?.indexOf('Addition') > -1;
+  return schema['x-component']?.indexOf?.('Addition') > -1;
 };
 
 const isIndexComponent = (schema: ISchema) => {
-  return schema['x-component']?.indexOf('Index') > -1;
+  return schema['x-component']?.indexOf?.('Index') > -1;
 };
 
 const isRemoveComponent = (schema: ISchema) => {
-  return schema['x-component']?.indexOf('Remove') > -1;
+  return schema['x-component']?.indexOf?.('Remove') > -1;
 };
 
 const isMoveUpComponent = (schema: ISchema) => {
-  return schema['x-component']?.indexOf('MoveUp') > -1;
+  return schema['x-component']?.indexOf?.('MoveUp') > -1;
 };
 
 const isMoveDownComponent = (schema: ISchema) => {
-  return schema['x-component']?.indexOf('MoveDown') > -1;
+  return schema['x-component']?.indexOf?.('MoveDown') > -1;
 };
-
+const isCopyComponent = (schema: ISchema) => {
+  return schema['x-component']?.indexOf?.('Copy') > -1;
+};
 const isOperationComponent = (schema: ISchema) => {
   return (
-    isAdditionComponent(schema) || isRemoveComponent(schema) || isMoveDownComponent(schema) || isMoveUpComponent(schema)
+    isAdditionComponent(schema) ||
+    isRemoveComponent(schema) ||
+    isMoveDownComponent(schema) ||
+    isMoveUpComponent(schema) ||
+    isCopyComponent(schema)
   );
 };
 
@@ -124,17 +132,18 @@ export const ArrayCollapse: ComposedArrayCollapse = observer((props: IArrayColla
       >
         {dataSource.map((item, index) => {
           const items = Array.isArray(schema.items) ? schema.items[index] || schema.items[0] : schema.items;
+
           const panelProps = field.query(`${field.address}.${index}`).get('componentProps');
           const props: CollapsePanelProps = items['x-component-props'];
           const header = () => {
-            const header = panelProps?.header || props.header || field.title;
+            const header = `${panelProps?.header || props.header || field.title}`;
             const path = field.address.concat(index);
             const errors = field.form.queryFeedbacks({
               type: 'error',
               address: `${path}.**`,
             });
             return (
-              <ArrayBase.Item index={index} record={item}>
+              <ArrayBase.Item index={index} record={() => field.value?.[index]}>
                 <RecursionField
                   schema={items}
                   name={index}
@@ -166,7 +175,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer((props: IArrayColla
                 }}
                 onlyRenderProperties
               />
-              {props?.extra}
+              {panelProps?.extra}
             </ArrayBase.Item>
           );
 
@@ -205,7 +214,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer((props: IArrayColla
   );
 });
 
-const CollapsePanel: React.FC<CollapsePanelProps> = ({ children }) => {
+const CollapsePanel: React.FC<React.PropsWithChildren<CollapsePanelProps>> = ({ children }) => {
   return <Fragment>{children}</Fragment>;
 };
 
@@ -220,3 +229,37 @@ ArrayCollapse.CollapsePanel = CollapsePanel;
 ArrayBase.mixin(ArrayCollapse);
 
 export default ArrayCollapse;
+
+//@ts-ignore
+ArrayCollapse.Copy = React.forwardRef((props: any, ref) => {
+  const self = useField();
+  const array = ArrayBase.useArray();
+  const index = ArrayBase.useIndex(props.index);
+  if (!array) return null;
+  if (array.field?.pattern !== 'editable') return null;
+  return (
+    <CopyOutlined
+      {...props}
+      style={{
+        transition: 'all 0.25s ease-in-out',
+        color: 'rgba(0, 0, 0, 0.8)',
+        fontSize: '16px',
+        marginLeft: 6,
+      }}
+      ref={ref}
+      onClick={(e) => {
+        if (self?.disabled) return;
+        e.stopPropagation();
+        if (array.props?.disabled) return;
+        const value = clone(array?.field?.value[index]);
+        const distIndex = index + 1;
+        array.field?.insert?.(distIndex, value);
+        const values = array.field.value;
+        array.field.value = values.filter((v) => v.actions);
+        if (props.onClick) {
+          props.onClick(e);
+        }
+      }}
+    />
+  );
+});
