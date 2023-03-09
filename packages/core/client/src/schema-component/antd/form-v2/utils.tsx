@@ -40,7 +40,6 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
         ...field.linkageProperty,
         display: displayResult,
       };
-      console.log(field.linkageProperty?.display)
       field.display = last(field.linkageProperty?.display);
       break;
     case ActionType.Editable:
