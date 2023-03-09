@@ -319,6 +319,8 @@ export class PluginManager {
         await plugin.install();
         await plugin.afterEnable();
       }
+
+      await this.app.emitAsync('afterEnablePlugin', name);
     } catch (error) {
       throw error;
     }
@@ -335,6 +337,8 @@ export class PluginManager {
         }
         await plugin.afterDisable();
       }
+
+      await this.app.emitAsync('afterDisablePlugin', name);
     } catch (error) {
       throw error;
     }
