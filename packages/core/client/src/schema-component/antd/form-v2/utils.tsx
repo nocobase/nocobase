@@ -4,7 +4,7 @@ import { ActionType } from '../../../schema-settings/LinkageRules/type';
 import evaluators from '@nocobase/evaluators/client';
 export const linkageMergeAction = ({ operator, value }, field, condition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
-  const displayResult = field?.linkageProperty?.display || [field.display || field?.initProperty?.display];
+  const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
   const patternResult = field?.linkageProperty?.pattern || [field?.initProperty?.pattern];
   const valueResult = field?.linkageProperty?.value || [field.value || field?.initProperty?.value];
   const { evaluate } = evaluators.get('formula.js');
@@ -40,6 +40,7 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
         ...field.linkageProperty,
         display: displayResult,
       };
+      console.log(field.linkageProperty?.display)
       field.display = last(field.linkageProperty?.display);
       break;
     case ActionType.Editable:

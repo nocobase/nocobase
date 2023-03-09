@@ -103,7 +103,9 @@ const WithForm = (props) => {
               };
             });
             onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
-              field.linkageProperty = {};
+              field.linkageProperty = {
+                display: field.linkageProperty?.display,
+              };
             });
           }
         });
