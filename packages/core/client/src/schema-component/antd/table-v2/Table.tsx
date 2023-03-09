@@ -7,7 +7,7 @@ import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import {
@@ -424,16 +424,14 @@ export const Table: any = observer((props: any) => {
 
   const calcTableSize = () => {
     if (!containerRef.current || !tableRef.current) return;
-    const clientRect = containerRef.current.getBoundingClientRect();
-    setTableHeight(Math.ceil(clientRect.height || 0));
+    setTableHeight(Math.ceil(containerRef.current.clientHeight || 0));
 
-    const headerHeight = tableRef.current.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-    const paginationHeight =
-      tableRef.current.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-    setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+    const headerHeight = tableRef.current.querySelector('.ant-table-header')?.clientHeight || 0;
+    const paginationHeight = tableRef.current.querySelector('.ant-table-pagination')?.clientHeight || 0;
+    setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 18));
   };
 
-  useEffect(calcTableSize, []);
+  useEffect(calcTableSize, [field.value]);
   useEventListener('resize', calcTableSize);
 
   return (

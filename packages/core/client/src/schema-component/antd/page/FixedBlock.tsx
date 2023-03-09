@@ -104,34 +104,29 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
       {schema ? (
         <div
           className={css`
-            height: 100%;
             overflow: hidden;
+            position: relative;
+            height: calc(100vh - ${height}px);
             .noco-card-item {
-              height: 100%;
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              bottom: 0;
               .ant-card {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
                 .ant-card-body {
+                  height: 1px;
+                  flex: 1;
                   display: flex;
                   flex-direction: column;
-                  height: 100%;
                   overflow: hidden;
-                  // padding-bottom: 0;
                 }
-              }
-              & .ant-spin-nested-loading {
-                height: 100%;
-                overflow: hidden;
-              }
-              & .ant-spin-container {
-                height: 100%;
               }
             }
           `}
-          style={{
-            height: `calc(100vh - ${height}px)`,
-          }}
         >
           <RecursionField onlyRenderProperties={false} name={schema.name} schema={schema} />
         </div>
