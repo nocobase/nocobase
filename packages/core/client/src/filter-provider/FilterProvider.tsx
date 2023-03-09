@@ -89,7 +89,16 @@ export const FilterBlockRecord = ({
  * @returns
  */
 export const useFilterBlock = () => {
-  const { dataBlocks, setDataBlocks } = React.useContext(FilterContext);
+  const ctx = React.useContext(FilterContext);
+  // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
+  if (!ctx) {
+    return {
+      recordDataBlocks: () => {},
+      getDataBlocks: () => [],
+      removeDataBlock: () => {},
+    };
+  }
+  const { dataBlocks, setDataBlocks } = ctx;
   const recordDataBlocks = (block: DataBlock) => {
     const existingBlock = dataBlocks.find((item) => item.name === block.name);
 
