@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import parse from 'json-templates';
 
 import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
-import evaluators, { renderReference, Evaluator } from '@nocobase/evaluators/client';
+import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';

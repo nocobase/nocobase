@@ -21,7 +21,7 @@ function appendArrayColumn(scope, key) {
 
 function replaceNumberIndex(path: string, scope: Scope): string {
   const segments = path.split('.');
-  const paths = [];
+  const paths: string[] = [];
 
   for (let i = 0; i < segments.length; i++) {
     const p = segments[i];
