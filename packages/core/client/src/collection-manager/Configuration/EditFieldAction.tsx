@@ -6,7 +6,7 @@ import set from 'lodash/set';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord, RecordProvider } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -131,7 +131,7 @@ export const EditFieldAction = (props) => {
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,
-              appends: ['uiSchema', 'reverseField'],
+              appends: ['reverseField'],
             });
             setData(data?.data);
             const interfaceConf = getInterface(record.interface);
