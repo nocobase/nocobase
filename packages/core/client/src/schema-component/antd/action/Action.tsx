@@ -97,13 +97,9 @@ export const Action: ComposedAction = observer((props: any) => {
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
   const { designable } = useDesignable();
-  console.log(values);
   useEffect(() => {
-    console.log(values);
-    console.log(linkageRules);
     field.linkageProperty = {};
     linkageRules.map((v) => {
-      console.log(values);
       return v.actions?.map((h) => {
         linkageAction(h.operator, field, v.condition, values);
       });
