@@ -6,7 +6,7 @@ import set from 'lodash/set';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord, RecordProvider } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
@@ -82,7 +82,7 @@ export const ViewFieldAction = (props) => {
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,
-              appends: ['uiSchema', 'reverseField'],
+              appends: ['reverseField'],
             });
             setData(data?.data);
             const interfaceConf = getInterface(record.interface);

@@ -19,8 +19,19 @@ export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type dumpable = 'required' | 'optional' | 'skip';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  namespace?: string;
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
   tableName?: string;
   inherits?: string[] | string;
   filterTargetKey?: string;
@@ -181,6 +192,7 @@ export class Collection<
 
     this.on('field.afterRemove', (field: Field) => {
       field.unbind();
+      this.db.emit('field.afterRemove', field);
     });
   }
 
@@ -308,7 +320,7 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.addSchemaTableName(), options);
+      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
     this.remove();
   }
@@ -539,7 +551,7 @@ export class Collection<
     return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 
-  public addSchemaTableName() {
+  public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
     if (this.collectionSchema()) {
@@ -550,7 +562,7 @@ export class Collection<
   }
 
   public quotedTableName() {
-    return this.db.utils.quoteTable(this.addSchemaTableName());
+    return this.db.utils.quoteTable(this.getTableNameWithSchema());
   }
 
   public collectionSchema() {

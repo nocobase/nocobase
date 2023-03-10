@@ -14,7 +14,8 @@ describe('action test', () => {
   afterEach(async () => {
     await app.destroy();
   });
-  it('should append uiSchema', async () => {
+
+  it('should get uiSchema', async () => {
     await db.getRepository('collections').create({
       values: {
         name: 'posts',
@@ -41,10 +42,14 @@ describe('action test', () => {
       .resource('collections.fields', 'posts')
       .list({
         pageSize: 5,
-        appends: ['uiSchema'],
         sort: ['sort'],
       });
 
     expect(response.statusCode).toEqual(200);
+    const data = response.body.data;
+
+    expect(data[0].uiSchema).toMatchObject({
+      'x-uid': 'test',
+    });
   });
 });

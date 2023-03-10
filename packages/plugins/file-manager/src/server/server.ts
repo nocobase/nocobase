@@ -11,8 +11,18 @@ export default class PluginFileManager extends Plugin {
 
   async install() {
     const defaultStorageConfig = getStorageConfig(this.storageType());
+
     if (defaultStorageConfig) {
       const Storage = this.db.getCollection('storages');
+      if (
+        await Storage.repository.findOne({
+          filter: {
+            name: defaultStorageConfig.defaults().name,
+          },
+        })
+      ) {
+        return;
+      }
       await Storage.repository.create({
         values: {
           ...defaultStorageConfig.defaults(),
