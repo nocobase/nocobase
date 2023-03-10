@@ -2,6 +2,8 @@ import { useCollectionDataSource } from '@nocobase/client';
 
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import CollectionFieldset from '../components/CollectionFieldset';
+
+import { isValidFilter } from '../utils';
 import { NAMESPACE } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 
@@ -15,12 +17,13 @@ export default {
     collection,
     params: {
       type: 'object',
-      title: '',
-      'x-decorator': 'FormItem',
       properties: {
         filter: {
           ...filter,
           title: `{{t("Only update records matching conditions", { ns: "${NAMESPACE}" })}}`,
+          ['x-validator'](value) {
+            return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
+          },
         },
         values
       }
