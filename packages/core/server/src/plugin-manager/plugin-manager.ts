@@ -50,19 +50,6 @@ export class PluginManager {
       actions: ['pm:*', 'applicationPlugins:list'],
     });
 
-    this.server = net.createServer((socket) => {
-      socket.on('data', async (data) => {
-        const { method, plugins } = JSON.parse(data.toString());
-        try {
-          console.log(method, plugins);
-          await this[method](plugins);
-        } catch (error) {
-          console.error(error.message);
-        }
-      });
-      socket.pipe(socket);
-    });
-
     this.app.on('beforeLoad', async (app, options) => {
       if (options?.method && ['install', 'upgrade'].includes(options.method)) {
         await this.collection.sync();
@@ -135,6 +122,19 @@ export class PluginManager {
   }
 
   async listen(): Promise<net.Server> {
+    this.server = net.createServer((socket) => {
+      socket.on('data', async (data) => {
+        const { method, plugins } = JSON.parse(data.toString());
+        try {
+          console.log(method, plugins);
+          await this[method](plugins);
+        } catch (error) {
+          console.error(error.message);
+        }
+      });
+      socket.pipe(socket);
+    });
+
     if (fs.existsSync(this.pmSock)) {
       await fs.promises.unlink(this.pmSock);
     }
@@ -310,6 +310,7 @@ export class PluginManager {
     try {
       const pluginNames = await this.repository.enable(name);
       await this.app.reload();
+
       await this.app.db.sync();
       for (const pluginName of pluginNames) {
         const plugin = this.app.getPlugin(pluginName);

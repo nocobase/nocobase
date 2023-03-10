@@ -229,6 +229,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+
     const logger = createAppLogger(options.logger);
     this._logger = logger.instance;
 
@@ -236,7 +237,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
+
     this.removeAllListeners();
+
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
@@ -367,6 +370,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...options,
       reload: true,
     });
+
+    await this.emitAsync('afterReload', this, options);
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -413,6 +418,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.listen?.port) {
       const pmServer = await this.pm.listen();
+
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -471,6 +477,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
+    console.log(`${this.name} is stopped`);
   }
 
   async destroy(options: any = {}) {

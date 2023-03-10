@@ -15,7 +15,9 @@ export class AppManager extends EventEmitter {
 
     const passEventToSubApps = (eventName, method) => {
       app.on(eventName, async (mainApp, options) => {
+        console.log(`receive event ${eventName} from ${mainApp.name}`);
         for (const application of this.applications.values()) {
+          console.log(`pass ${eventName} to ${application.name} `);
           await application[method](options);
         }
       });
@@ -24,6 +26,7 @@ export class AppManager extends EventEmitter {
     passEventToSubApps('beforeDestroy', 'destroy');
     passEventToSubApps('beforeStop', 'stop');
     passEventToSubApps('afterUpgrade', 'upgrade');
+    passEventToSubApps('afterReload', 'reload');
   }
 
   appSelector: AppSelector = async (req: IncomingMessage) => this.app;
