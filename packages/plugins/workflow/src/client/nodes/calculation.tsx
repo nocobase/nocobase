@@ -1,8 +1,9 @@
 import React from 'react';
+import { useForm } from '@formily/react';
 import { css } from '@emotion/css';
 import parse from 'json-templates';
 
-import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerItemOptions, SchemaComponent } from '@nocobase/client';
 import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
@@ -12,11 +13,39 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 
 
 
+function VariableComponent(props) {
+  const { values } = useForm();
+
+  return (
+    <SchemaComponent
+      schema={{
+        type: 'string',
+        'x-component': values.type ? 'Variable.Input' : 'Variable.TextArea',
+        'x-component-props': {
+          scope: '{{useWorkflowVariableOptions}}'
+        },
+      }}
+    />
+  )
+}
+
+
 export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
   type: 'calculation',
   group: 'control',
   fieldset: {
+    type: {
+      type: 'boolean',
+      title: `{{t("Type", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Radio.Group',
+      enum: [
+        { value: false, label: `{{t("Static", { ns: "${NAMESPACE}"})}}` },
+        { value: true, label: `{{t("Dynamic", { ns: "${NAMESPACE}"})}}` }
+      ],
+      default: false,
+    },
     engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
@@ -26,7 +55,15 @@ export default {
         options: Array.from(evaluators.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
       },
       required: true,
-      default: 'math.js'
+      default: 'math.js',
+      'x-reactions': {
+        dependencies: ['type'],
+        fulfill: {
+          state: {
+            visible: '{{!$deps[0]}}',
+          }
+        }
+      }
     },
     expression: {
       type: 'string',
@@ -47,15 +84,43 @@ export default {
           return lang('Expression syntax error');
         }
       },
-      'x-reactions': {
-        dependencies: ['engine'],
-        fulfill: {
-          schema: {
-            description: '{{renderReference($deps[0])}}',
+      'x-reactions': [
+        {
+          dependencies: ['type', 'engine'],
+          fulfill: {
+            schema: {
+              description: '{{$deps[0] ? renderReference($deps[1]) : null}}',
+            }
+          }
+        },
+        {
+          dependencies: ['type'],
+          fulfill: {
+            schema: {
+              'x-component': '{{$deps[0] ? "Variable.Input" : "Variable.TextArea"}}',
+            }
           }
         }
-      },
+      ],
       required: true
+    },
+    scope: {
+      type: 'string',
+      title: `{{t("Variable scope", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Variable.Input',
+      'x-component-props': {
+        scope: '{{useWorkflowVariableOptions}}'
+      },
+      'x-content': <div>123</div>,
+      'x-reactions': {
+        dependencies: ['type'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0]}}',
+          }
+        }
+      }
     }
   },
   view: {
