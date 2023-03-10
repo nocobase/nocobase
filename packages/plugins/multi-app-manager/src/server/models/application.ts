@@ -19,6 +19,12 @@ export class ApplicationModel extends Model {
 
     if (!(await app.isInstalled())) {
       await app.db.sync();
+
+      await mainApp.emitAsync('beforeSubAppInstall', {
+        subApp: app,
+        mainApp,
+      });
+
       await app.install();
 
       // emit an event on mainApp

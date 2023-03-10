@@ -20,4 +20,4 @@ export * from './repository';
 export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
-
+export * from './collection-group-manager';

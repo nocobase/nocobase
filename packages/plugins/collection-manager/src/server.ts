@@ -11,13 +11,13 @@ import {
   afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
-import { CollectionModel, FieldModel } from './models';
-import * as process from 'process';
 import lodash from 'lodash';
+import * as process from 'process';
+import { CollectionModel, FieldModel } from './models';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -255,7 +255,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.resourcer.use(async (ctx, next) => {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
         ctx.action.mergeParams({
-          updateAssociationValues: ['uiSchema', 'reverseField'],
+          updateAssociationValues: ['reverseField'],
         });
       }
       await next();

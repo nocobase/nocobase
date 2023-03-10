@@ -76,7 +76,7 @@ export const collectionFieldSchema: ISchema = {
           'interface.$not': null,
         },
         sort: ['sort'],
-        appends: ['uiSchema'],
+        // appends: ['uiSchema'],
       },
     },
   },

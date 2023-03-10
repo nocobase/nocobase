@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'file-manager',
+  namespace: 'file-manager.storageSetting',
   duplicator: 'optional',
   name: 'storages',
   title: '存储引擎',
