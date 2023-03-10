@@ -352,11 +352,11 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
         name: field.name,
         required: false,
         'x-designer': 'FormItem.FilterFormDesigner',
-        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+        'x-component': 'AssociationSelect',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
-        'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
+        'x-component-props': field.uiSchema?.['x-component-props'],
+        'x-read-pretty': field.uiSchema?.['x-read-pretty'],
       };
       const resultItem = {
         type: 'item',
