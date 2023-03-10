@@ -118,4 +118,14 @@ describe('list action', () => {
     expect(body.count).toEqual(2);
     expect(body.rows).toEqual([{ id: 1 }, { id: 2 }]);
   });
+
+  it('should return empty error when relation not exists', async () => {
+    const response = await app
+      .agent()
+      .resource('posts.tags', 999)
+      .list({ fields: ['id', 'postsTags.createdAt'], sort: ['id'] });
+
+    expect(response.status).toEqual(200);
+    expect(response.body.count).toEqual(0);
+  });
 });

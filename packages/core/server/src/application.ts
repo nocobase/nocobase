@@ -172,6 +172,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   declare middleware: any;
 
+  stopped: boolean = false;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
@@ -283,12 +285,15 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    return new Database({
+    const db = new Database({
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
     });
+
+    db.setLogger(this._logger);
+    return db;
   }
 
   getVersion() {
@@ -315,6 +320,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     const handleRequest = (req, res) => {
       const ctx = this.createContext(req, res);
+
       // @ts-ignore
       return this.handleRequest(ctx, fn);
     };
@@ -431,6 +437,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStart', this, options);
+    this.stopped = false;
   }
 
   listen(...args): Server {
@@ -438,6 +445,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
+    if (this.stopped) {
+      this.log.warn(`Application ${this.name} already stopped`);
+      return;
+    }
+
     await this.emitAsync('beforeStop', this, options);
 
     try {
@@ -457,6 +469,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStop', this, options);
+    this.stopped = true;
   }
 
   async destroy(options: any = {}) {

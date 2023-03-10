@@ -36,9 +36,10 @@ function getFieldRawName(collection: Collection, name: string) {
 
 // async function, should return promise
 async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
-  const { collection: collectionName, condition, changed } = workflow.config;
+  const { collection: collectionName, condition, changed, mode, appends } = workflow.config;
   const collection = (<typeof Model>data.constructor).database.getCollection(collectionName);
   const { transaction, context } = options;
+  const { repository, model } = collection;
 
   // NOTE: if no configured fields changed, do not trigger
   if (changed
@@ -53,7 +54,6 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   if (condition && condition.$and?.length) {
     // TODO: change to map filter format to calculation format
     // const calculation = toCalculation(condition);
-    const { repository, model } = collection;
     const count = await repository.count({
       filter: {
         $and: [
@@ -68,6 +68,18 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     if (!count) {
       return;
     }
+  }
+
+  if (appends?.length && !(mode & MODE_BITMAP.DESTROY)) {
+    const includeFields = appends.filter(field => !data.get(field) || !data[field]);
+    const included = await model.findByPk(data[model.primaryKeyAttribute], {
+      attributes: [model.primaryKeyAttribute],
+      include: includeFields,
+      transaction
+    });
+    includeFields.forEach(field => {
+      data.set(field, included!.get(field), { raw: true });
+    });
   }
 
   this.plugin.trigger(workflow, { data: data.get() }, {

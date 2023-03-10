@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import parse from 'json-templates';
 
 import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
-import evaluators, { renderReference, Evaluator } from '@nocobase/evaluators/client';
+import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
@@ -17,10 +17,9 @@ export default {
   type: 'calculation',
   group: 'control',
   fieldset: {
-    'config.engine': {
+    engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.engine',
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
@@ -29,10 +28,9 @@ export default {
       required: true,
       default: 'math.js'
     },
-    'config.expression': {
+    expression: {
       type: 'string',
       title: `{{t("Calculation expression", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.expression',
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       'x-component-props': {
@@ -40,7 +38,7 @@ export default {
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = evaluators.get(values.config.engine) as Evaluator;
+        const { evaluate } = evaluators.get(values.engine) as Evaluator;
         const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);
@@ -50,7 +48,7 @@ export default {
         }
       },
       'x-reactions': {
-        dependencies: ['config.engine'],
+        dependencies: ['engine'],
         fulfill: {
           schema: {
             description: '{{renderReference($deps[0])}}',

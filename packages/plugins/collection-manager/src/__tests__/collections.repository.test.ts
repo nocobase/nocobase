@@ -249,7 +249,7 @@ describe('collections repository', () => {
 
     const testCollection = db.getCollection('tests');
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
 
     const tableInfo0 = await getTableInfo();
     expect(tableInfo0['date_a']).toBeDefined();
@@ -286,7 +286,7 @@ describe('collections repository', () => {
 
     const testCollection = db.getCollection('tests');
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
 
     const tableInfo0 = await getTableInfo();
     expect(tableInfo0[createdAt]).toBeDefined();
@@ -339,7 +339,7 @@ describe('collections repository', () => {
       testCollection.model.rawAttributes.test_field.field === testCollection.model.rawAttributes.testField.field,
     ).toBe(true);
     const getTableInfo = async () =>
-      await db.sequelize.getQueryInterface().describeTable(testCollection.model.tableName);
+      await db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
 
     const tableInfo0 = await getTableInfo();
 
@@ -554,5 +554,41 @@ describe('collections repository', () => {
     });
 
     expect(await Field.repository.count()).toBe(2);
+  });
+
+  it('should destroy field when collection set to difference schema', async () => {
+    if (db.sequelize.getDialect() !== 'postgres') {
+      return;
+    }
+
+    const collection = await Collection.repository.create({
+      values: {
+        name: 'test',
+        schema: 'test_schema',
+      },
+      context: {},
+    });
+
+    const field = await Field.repository.create({
+      values: {
+        name: 'test_field',
+        type: 'string',
+        collectionName: collection.get('name'),
+      },
+      context: {},
+    });
+
+    let err;
+    try {
+      await Field.repository.destroy({
+        filter: {
+          name: field.get('name'),
+        },
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeFalsy();
   });
 });
