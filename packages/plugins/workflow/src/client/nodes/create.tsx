@@ -1,11 +1,12 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { collection, values } from '../schemas/collection';
+import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { useCollectionFieldOptions } from '../variable';
+import { FieldsSelect } from '../components/FieldsSelect';
 
 
 
@@ -25,7 +26,13 @@ export default {
     //     disabled: true
     //   }
     // },
-    'params.values': values
+    params: {
+      type: 'object',
+      properties: {
+        values,
+        appends
+      }
+    }
   },
   view: {
 
@@ -34,7 +41,8 @@ export default {
     useCollectionDataSource
   },
   components: {
-    CollectionFieldset
+    CollectionFieldset,
+    FieldsSelect
   },
   getOptions(config, types) {
     return useCollectionFieldOptions({ collection: config.collection, types });

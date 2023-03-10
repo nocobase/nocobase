@@ -1,37 +1,15 @@
-import React from 'react';
-import { Select } from 'antd';
-import { observer, useForm } from '@formily/react';
 
 import {
   SchemaInitializerItemOptions,
   useCollectionDataSource,
-  useCollectionManager,
-  useCompile,
 } from '@nocobase/client';
 
-import { collection, filter } from '../schemas/collection';
+import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
-
-const FieldsSelect = observer((props: any) => {
-  const { filter = () => true, ...others } = props;
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
-  const { values } = useForm();
-  const fields = getCollectionFields(values?.collection);
-
-  return (
-    <Select {...others}>
-      {fields
-        .filter(filter)
-        .map(field => (
-          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
-        ))}
-    </Select>
-  );
-});
+import { FieldsSelect } from '../components/FieldsSelect';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -94,14 +72,6 @@ export default {
             },
           }
         },
-        {
-          target: 'changed',
-          fulfill: {
-            state: {
-              disabled: `{{!($self.value & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
-            },
-          }
-        },
       ]
     },
     changed: {
@@ -123,10 +93,10 @@ export default {
       },
       'x-reactions': [
         {
-          dependencies: ['collection'],
+          dependencies: ['collection', 'mode'],
           fulfill: {
             state: {
-              visible: '{{!!$deps[0]}}',
+              visible: `{{$deps[0] && $deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED}}}`,
             },
           }
         },
@@ -146,27 +116,20 @@ export default {
         },
       ]
     },
-    // appends: {
-    //   type: 'array',
-    //   title: `{{t("Prefetch fields", { ns: "${NAMESPACE}" })}}`,
-    //   description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'FieldsSelect',
-    //   'x-component-props': {
-    //     mode: 'multiple',
-    //     placeholder: '{{t("Select Field")}}'
-    //   },
-    //   'x-reactions': [
-    //     {
-    //       dependencies: ['collection'],
-    //       fulfill: {
-    //         state: {
-    //           visible: '{{!!$deps[0]}}',
-    //         },
-    //       }
-    //     },
-    //   ]
-    // },
+    appends: {
+      ...appends,
+      'x-reactions': [
+        ...appends['x-reactions'],
+        {
+          dependencies: ['mode'],
+          fulfill: {
+            state: {
+              visible: `{{!($deps[0] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
+            },
+          }
+        },
+      ]
+    },
   },
   scope: {
     useCollectionDataSource
