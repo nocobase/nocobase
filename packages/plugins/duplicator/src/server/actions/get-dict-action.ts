@@ -1,9 +1,9 @@
 export default async function getDictAction(ctx, next) {
   ctx.withoutDataWrapping = true;
-  let collectionNames = await this.db.getRepository('collections').find();
+  let collectionNames = await ctx.db.getRepository('collections').find();
   collectionNames = collectionNames.map((item) => item.get('name'));
   const collections: any[] = [];
-  for (const [name, collection] of this.db.collections) {
+  for (const [name, collection] of ctx.db.collections) {
     const columns: any[] = [];
     for (const key in collection.model.rawAttributes) {
       if (Object.prototype.hasOwnProperty.call(collection.model.rawAttributes, key)) {

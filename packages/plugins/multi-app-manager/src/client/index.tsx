@@ -62,7 +62,7 @@ export default (props) => {
   return (
     <PinnedPluginListProvider
       items={{
-        am: { order: 201, component: 'MultiAppManager', pin: true, snippet: 'am' },
+        am: { order: 201, component: 'MultiAppManager', pin: true },
       }}
     >
       <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>
