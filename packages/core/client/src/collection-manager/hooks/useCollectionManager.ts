@@ -19,11 +19,11 @@ export const useCollectionManager = () => {
       },
       [],
     );
-    return inheritedFields;
+    return inheritedFields.filter(Boolean);
   };
 
   const getCollectionFields = (name: string): CollectionFieldOptions[] => {
-    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+    const currentFields = collections?.find((collection) => collection.name === name)?.fields || [];
     const inheritedFields = getInheritedFields(name);
     const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
       return !v.isForeignKey;
@@ -174,8 +174,8 @@ export const useCollectionManager = () => {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {
-      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
-      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
+      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields || [];
+      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields || [];
       const inheritKeys = getInheritCollections(currentCollection);
       const index = inheritKeys.indexOf(parentCollection);
       let filterFields = currentFields;
