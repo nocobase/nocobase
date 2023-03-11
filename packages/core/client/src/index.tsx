@@ -1,5 +1,4 @@
-import 'antd/dist/antd.css';
-import './global.less';
+import './theme';
 
 export * from './acl';
 export * from './antd-config-provider';
@@ -27,3 +26,4 @@ export * from './schema-templates';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
+
