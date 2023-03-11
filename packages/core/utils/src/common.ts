@@ -1,3 +1,11 @@
+export const isString = (value: any): value is string => {
+  return typeof value === 'string';
+};
+
+export const isArray = (value: any): value is Array<any> => {
+  return Array.isArray(value);
+};
+
 export const isEmpty = (value: unknown) => {
   if (isPlainObject(value)) {
     return Object.keys(value).length === 0;
