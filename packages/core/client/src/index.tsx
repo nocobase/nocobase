@@ -1,4 +1,4 @@
-import './theme';
+import './global.less';
 
 export * from './acl';
 export * from './antd-config-provider';
