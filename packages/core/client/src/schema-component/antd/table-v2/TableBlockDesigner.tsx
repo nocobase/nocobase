@@ -8,10 +8,10 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { FilterDynamicComponent } from '../../../schema-settings/LinkageRules/FilterDynamicComponent';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { useFixedBlockDesignerSetting } from '../page';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
@@ -97,7 +97,7 @@ export const TableBlockDesigner = () => {
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props, collectionName: name }),
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
                 },
               },
             },
