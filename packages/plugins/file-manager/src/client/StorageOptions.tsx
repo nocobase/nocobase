@@ -116,6 +116,12 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
+      endpoint: {
+        title: '{{t("Endpoint")}}',
+        type: 'string',
+        'x-decorator': 'FormItem',
+        'x-component': 'Input',
+      },
     },
   },
 };

@@ -84,7 +84,9 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': {
+          mode: 'links',
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -208,7 +210,9 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {},
+        'x-component-props': {
+          mode: 'links',
+        },
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
@@ -1075,6 +1079,7 @@ export const createKanbanBlockSchema = (options) => {
           card: {
             type: 'void',
             'x-read-pretty': true,
+            'x-label-disabled': true,
             'x-decorator': 'BlockItem',
             'x-component': 'Kanban.Card',
             'x-designer': 'Kanban.Card.Designer',
