@@ -2,11 +2,11 @@ import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { DatePicker as AntdDatePicker } from 'antd';
 import type {
   DatePickerProps as AntdDatePickerProps,
-  RangePickerProps as AntdRangePickerProps
+  RangePickerProps as AntdRangePickerProps,
 } from 'antd/lib/date-picker';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { mapDateFormat } from './util';
+import { mapDateFormat, mapDateRange } from './util';
 
 type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
   RangePicker?: React.FC<AntdRangePickerProps>;
@@ -21,6 +21,7 @@ export const DatePicker: ComposedDatePicker = connect(
 DatePicker.RangePicker = connect(
   AntdDatePicker.RangePicker,
   mapProps(mapDateFormat()),
+  mapProps(mapDateRange()),
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
