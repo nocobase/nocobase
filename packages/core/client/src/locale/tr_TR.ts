@@ -222,6 +222,7 @@ export default {
   "is after": "sonra",
   "is on or after": "açık veya sonra",
   "is on or before": "açık veya önce",
+  "is range": "aralık",
   "Upload": "Yükle",
   "Select level": "Seviye seç",
   "Province": "Bölge",

@@ -52,6 +52,7 @@ export const datetime = [
   { label: "{{ t('is after') }}", value: '$dateAfter' },
   { label: "{{ t('is on or after') }}", value: '$dateNotBefore' },
   { label: "{{ t('is on or before') }}", value: '$dateNotAfter' },
+  { label: "{{ t('is range') }}", value: '$dateBetween' },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
