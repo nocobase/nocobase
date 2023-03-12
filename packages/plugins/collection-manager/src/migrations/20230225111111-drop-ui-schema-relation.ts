@@ -1,6 +1,6 @@
+import { Collection } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
 import { FieldModel } from '../models';
-import { Collection } from '@nocobase/database';
 
 export default class extends Migration {
   async up() {
@@ -62,7 +62,6 @@ export default class extends Migration {
         });
       }
 
-      await transaction.commit();
       collection.removeField('uiSchemaUid');
       this.app.log.info('Migrate uiSchema to options field done');
     };
@@ -73,6 +72,8 @@ export default class extends Migration {
       if (this.db.getCollection('fieldsHistory')) {
         await migrateFieldsSchema(this.db.getCollection('fieldsHistory'));
       }
+
+      await transaction.commit();
     } catch (error) {
       await transaction.rollback();
       this.app.log.error(error);
