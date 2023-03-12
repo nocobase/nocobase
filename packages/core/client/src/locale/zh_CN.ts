@@ -341,6 +341,7 @@ export default {
   "is after": "晚于",
   "is on or after": "不早于",
   "is on or before": "不晚于",
+  "is range": "在范围内",
 
   "Upload": "上传",
 

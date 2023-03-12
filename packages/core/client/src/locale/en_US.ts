@@ -323,6 +323,7 @@ export default {
   "is after": "is after",
   "is on or after": "is on or after",
   "is on or before": "is on or before",
+  "is range": "is range",
   "Upload": "Upload",
   "Select level": "Select level",
   "Province": "Province",

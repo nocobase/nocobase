@@ -227,6 +227,7 @@ export default {
   "is after": "находится после",
   "is on or after": "находится на или после",
   "is on or before": "находится на или до",
+  "is range": "находится в диапазоне",
   "Upload": "Закачать",
   "Select level": "Выберите уровень",
   "Province": "Область",
