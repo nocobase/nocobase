@@ -154,6 +154,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
         value={operands[0]}
         onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))}
         scope={options}
+        useTypedConstant
       />
       <Select
         value={calculator}
@@ -172,6 +173,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
         value={operands[1]}
         onChange={(v => onChange({ calculator, operands: [operands[0], v] }))}
         scope={options}
+        useTypedConstant
       />
     </fieldset>
   );

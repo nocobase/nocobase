@@ -6,6 +6,10 @@ export default {
     {
       type: 'string',
       name: 'title',
+    },
+    {
+      type: 'expression',
+      name: 'dexp'
     }
   ],
 } as CollectionOptions;

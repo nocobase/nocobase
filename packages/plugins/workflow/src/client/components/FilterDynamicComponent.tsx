@@ -15,6 +15,7 @@ export function FilterDynamicComponent({ value, onChange, renderSchemaComponent 
       onChange={onChange}
       scope={scope}
     >
+      {renderSchemaComponent()}
     </Variable.Input>
   );
 }

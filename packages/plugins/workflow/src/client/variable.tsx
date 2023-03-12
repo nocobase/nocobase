@@ -98,12 +98,28 @@ export function useWorkflowVariableOptions() {
   return options;
 }
 
-export function useCollectionFieldOptions(props) {
-  const { fields, collection, types } = props;
+type CollectionFieldOption = {
+  label: string;
+  key?: string;
+  value: any;
+  children? : CollectionFieldOption[] | null
+};
+
+export function useCollectionFieldOptions(options) {
+  const { fields, collection, types } = options;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const result = filterTypedFields((fields ?? getCollectionFields(collection)), types)
-    .map(field => ({
+  const result: CollectionFieldOption[] = [];
+  filterTypedFields((fields ?? getCollectionFields(collection)), types)
+    .forEach(field => {
+      if (field.type === 'belongsTo') {
+        result.push({
+          label: `${compile(field.uiSchema?.title || field.name)} ID`,
+          key: field.foreignKey,
+          value: field.foreignKey,
+        });
+      }
+      result.push({
         label: compile(field.uiSchema?.title || field.name),
         key: field.name,
         value: field.name,
@@ -121,7 +137,8 @@ export function useCollectionFieldOptions(props) {
                 value: subField.name,
               })
           : null
-      }));
+      });
+    });
 
   return result;
 }

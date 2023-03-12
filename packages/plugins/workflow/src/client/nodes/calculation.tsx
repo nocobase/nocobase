@@ -1,10 +1,13 @@
 import React from 'react';
-import { useForm } from '@formily/react';
+import { observer } from '@formily/react';
+import { FormLayout, FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
 import parse from 'json-templates';
+import { useTranslation } from 'react-i18next';
+import { Radio } from 'antd';
 
-import { SchemaInitializer, SchemaInitializerItemOptions, SchemaComponent } from '@nocobase/client';
-import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
+import { SchemaInitializer, SchemaInitializerItemOptions, Variable } from '@nocobase/client';
+import { evaluators, renderReference, Evaluator, getOptions } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
@@ -13,21 +16,28 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 
 
 
-function VariableComponent(props) {
-  const { values } = useForm();
+const DynamicConfig = observer<any>(({ value, onChange }) => {
+  const { t } = useTranslation();
+  const scope = useWorkflowVariableOptions();
 
   return (
-    <SchemaComponent
-      schema={{
-        type: 'string',
-        'x-component': values.type ? 'Variable.Input' : 'Variable.TextArea',
-        'x-component-props': {
-          scope: '{{useWorkflowVariableOptions}}'
-        },
-      }}
-    />
+    <FormLayout layout="vertical">
+      <FormItem label={t('Expression type', { ns: NAMESPACE })}>
+        <Radio.Group value={value === false ? false : (value || null)} onChange={(ev) => {
+          onChange(ev.target.value);
+        }}>
+          <Radio value={false}>{t("Static", { ns: NAMESPACE })}</Radio>
+          <Radio value={value || null}>{t("Dynamic", { ns: NAMESPACE })}</Radio>
+        </Radio.Group>
+      </FormItem>
+      {value !== false ? (
+        <FormItem label={t('Select dynamic expression', { ns: NAMESPACE })}>
+          <Variable.Input value={value || null} onChange={(v) => onChange(v)} scope={scope} />
+        </FormItem>
+      ) : null}
+    </FormLayout>
   )
-}
+});
 
 
 export default {
@@ -35,15 +45,9 @@ export default {
   type: 'calculation',
   group: 'control',
   fieldset: {
-    type: {
-      type: 'boolean',
-      title: `{{t("Type", { ns: "${NAMESPACE}" })}}`,
-      'x-decorator': 'FormItem',
-      'x-component': 'Radio.Group',
-      enum: [
-        { value: false, label: `{{t("Static", { ns: "${NAMESPACE}"})}}` },
-        { value: true, label: `{{t("Dynamic", { ns: "${NAMESPACE}"})}}` }
-      ],
+    dynamic: {
+      type: 'string',
+      'x-component': 'DynamicConfig',
       default: false,
     },
     engine: {
@@ -52,15 +56,15 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
-        options: Array.from(evaluators.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
+        options: getOptions()
       },
       required: true,
       default: 'math.js',
       'x-reactions': {
-        dependencies: ['type'],
+        dependencies: ['dynamic'],
         fulfill: {
           state: {
-            visible: '{{!$deps[0]}}',
+            visible: '{{$deps[0] === false}}',
           }
         }
       }
@@ -86,38 +90,37 @@ export default {
       },
       'x-reactions': [
         {
-          dependencies: ['type', 'engine'],
+          dependencies: ['dynamic'],
           fulfill: {
-            schema: {
-              description: '{{$deps[0] ? renderReference($deps[1]) : null}}',
+            state: {
+              visible: '{{$deps[0] === false}}',
             }
           }
         },
         {
-          dependencies: ['type'],
+          dependencies: ['engine'],
           fulfill: {
             schema: {
-              'x-component': '{{$deps[0] ? "Variable.Input" : "Variable.TextArea"}}',
+              description: '{{renderReference($deps[0])}}',
             }
           }
-        }
+        },
       ],
       required: true
     },
     scope: {
       type: 'string',
-      title: `{{t("Variable scope", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Variable datasource", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
         scope: '{{useWorkflowVariableOptions}}'
       },
-      'x-content': <div>123</div>,
       'x-reactions': {
-        dependencies: ['type'],
+        dependencies: ['dynamic'],
         fulfill: {
           state: {
-            visible: '{{$deps[0]}}',
+            visible: '{{$deps[0] !== false}}',
           }
         }
       }
@@ -148,7 +151,8 @@ export default {
         </pre>
       );
     },
-    RadioWithTooltip
+    RadioWithTooltip,
+    DynamicConfig
   },
   getOptions(config, types) {
     if (types && !types.some(type => type in TypeSets || Object.values(TypeSets).some(set => set.has(type)))) {
