@@ -1,5 +1,6 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import moment from 'moment';
+import { useTranslation } from 'react-i18next';
 
 const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!moment.isMoment(value)) return value;
@@ -82,6 +83,7 @@ export const mapDatePicker = function () {
 
 export const mapRangePicker = function () {
   return (props: any) => {
+    const { t } = useTranslation();
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
 
@@ -96,6 +98,21 @@ export const mapRangePicker = function () {
             moment2str(getRangeEnd(value[1], props), props),
           ]);
         }
+      },
+      ranges: {
+        [t('Today')]: [moment(), moment()],
+        [t('This Week')]: [moment().startOf('week'), moment().endOf('week')],
+        [t('This Month')]: [moment().startOf('month'), moment().endOf('month')],
+        [t('This Year')]: [moment().startOf('year'), moment().endOf('year')],
+        [t('Last Week')]: [moment().subtract(1, 'week').startOf('week'), moment().subtract(1, 'week').endOf('week')],
+        [t('Last Month')]: [
+          moment().subtract(1, 'month').startOf('month'),
+          moment().subtract(1, 'month').endOf('month'),
+        ],
+        [t('Last Year')]: [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+        [t('Last 7 Days')]: [moment().subtract(7, 'days'), moment()],
+        [t('Last 30 Days')]: [moment().subtract(30, 'days'), moment()],
+        [t('Last 90 Days')]: [moment().subtract(90, 'days'), moment()],
       },
     };
   };
