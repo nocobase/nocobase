@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Cascader, Tooltip, Button } from 'antd';
+import { Input, Cascader, Button, Popover } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
+import { XButton } from './XButton';
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
@@ -116,6 +117,7 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
   useEffect(() => {
     if (changed) {
@@ -141,8 +143,8 @@ export function TextArea(props) {
     }
   }, [html]);
 
-  function onInsert(keyPath) {
-    const variable: string[] = keyPath.filter((key) => Boolean(key.trim()));
+  function onInsert() {
+    const variable: string[] = selectedVar.filter((key) => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -224,20 +226,24 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={t('Use variable')}>
-        <Cascader value={[]} options={options} onChange={onInsert}>
-          {button ?? (
-            <Button
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
-          )}
-        </Cascader>
-      </Tooltip>
+      <Popover
+        content={(
+          <Input.Group compact>
+            <Cascader
+              placeholder={t('Select a variable')}
+              value={selectedVar}
+              options={options}
+              onChange={(keyPaths) => setSelectedVar(keyPaths as string[])}
+              changeOnSelect
+            />
+            <Button onClick={onInsert}>{t('Insert')}</Button>
+          </Input.Group>
+        )}
+        trigger="click"
+        placement="topRight"
+      >
+        {button ?? <XButton />}
+      </Popover>
     </Input.Group>
   );
 }

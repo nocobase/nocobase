@@ -126,7 +126,6 @@ export default {
   "Filter": "筛选",
   "Action type": "操作类型",
   "Actions": "操作",
-  "Insert": "新增",
   "Update": "更新",
   "View": "查看",
   "View record": "查看数据",
@@ -660,7 +659,8 @@ export default {
   'Column width': '列宽',
   'Sortable': '可排序的',
   'Constant': '常量',
-  'Use variable': '使用变量',
+  'Select a variable': '选择变量',
+  "Insert": "插入",
   'True': '真',
   'False': '假',
   'Prettify': '格式化'
