@@ -3,7 +3,7 @@ import { i18n } from '@nocobase/client';
 import { css } from '@emotion/css';
 
 import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { evaluators, Evaluator } from '@nocobase/evaluators/client';
 
 import { Formula } from './formula';
 import field from './field';

@@ -3,7 +3,9 @@ import EventEmitter from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
 import Application, { ApplicationOptions } from './application';
 
-type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
+type AppSelectorReturn = Application | string | undefined | null;
+
+type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
@@ -11,23 +13,30 @@ export class AppManager extends EventEmitter {
   constructor(public app: Application) {
     super();
 
-    app.on('beforeStop', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.stop(options)),
-      );
-    });
+    const passEventToSubApps = (eventName, method) => {
+      app.on(eventName, async (mainApp, options) => {
+        console.log(`receive event ${eventName} from ${mainApp.name}`);
+        for (const application of this.applications.values()) {
+          console.log(`pass ${eventName} to ${application.name} `);
+          await application[method](options);
+        }
+      });
+    };
 
-    app.on('afterDestroy', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.destroy(options)),
-      );
-    });
+    passEventToSubApps('beforeDestroy', 'destroy');
+    passEventToSubApps('beforeStop', 'stop');
+    passEventToSubApps('afterUpgrade', 'upgrade');
+    passEventToSubApps('afterReload', 'reload');
   }
 
-  appSelector: AppSelector = (req: IncomingMessage) => this.app;
+  appSelector: AppSelector = async (req: IncomingMessage) => this.app;
 
   createApplication(name: string, options: ApplicationOptions): Application {
-    const application = new Application(options);
+    const application = new Application({
+      ...options,
+      name,
+    });
+
     this.applications.set(name, application);
     return application;
   }
@@ -66,7 +75,7 @@ export class AppManager extends EventEmitter {
     return async (req: IncomingMessage, res: ServerResponse) => {
       const appManager = this.app.appManager;
 
-      let handleApp: any = appManager.appSelector(req) || appManager.app;
+      let handleApp: any = (await appManager.appSelector(req)) || appManager.app;
 
       if (typeof handleApp === 'string') {
         handleApp = await appManager.getApplication(handleApp);

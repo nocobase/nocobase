@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'ui-routes-storage',
+  namespace: 'ui-routes-storage.uiRoutes',
   duplicator: 'required',
   name: 'uiRoutes',
   title: '前端路由表',

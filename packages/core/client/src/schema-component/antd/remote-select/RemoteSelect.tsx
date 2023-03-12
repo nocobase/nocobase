@@ -14,12 +14,13 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   onChange?: (v: any) => void;
   target: string;
   wait?: number;
+  manual?: boolean;
   service: ResourceActionOptions<P>;
 };
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, ...others } = props;
+    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, manual = true, ...others } = props;
     const compile = useCompile();
     const firstRun = useRef(false);
 
@@ -36,7 +37,7 @@ const InternalRemoteSelect = connect(
         },
       },
       {
-        manual: true,
+        manual,
         debounceWait: wait,
       },
     );

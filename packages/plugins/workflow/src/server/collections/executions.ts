@@ -1,22 +1,22 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow',
+  namespace: 'workflow.executionLogs',
   duplicator: 'optional',
   name: 'executions',
   fields: [
     {
       type: 'belongsTo',
-      name: 'workflow'
+      name: 'workflow',
     },
     {
       type: 'uid',
-      name: 'key'
+      name: 'key',
     },
     {
       type: 'boolean',
       name: 'useTransaction',
-      defaultValue: false
+      defaultValue: false,
     },
     {
       type: 'hasMany',
@@ -30,6 +30,6 @@ export default {
     {
       type: 'integer',
       name: 'status',
-    }
-  ]
+    },
+  ],
 } as CollectionOptions;

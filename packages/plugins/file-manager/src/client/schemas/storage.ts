@@ -80,7 +80,7 @@ const collection = {
 export const storageSchema: ISchema = {
   type: 'object',
   properties: {
-    block1: {
+    [uid()]: {
       type: 'void',
       'x-decorator': 'ResourceActionProvider',
       'x-decorator-props': {

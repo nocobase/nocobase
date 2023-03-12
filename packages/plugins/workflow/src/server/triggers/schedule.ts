@@ -273,7 +273,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
   },
 
   async trigger(workflow, now: Date) {
-    const { startsOn, repeat, endsOn, collection } = workflow.config;
+    const { startsOn, repeat, endsOn, collection, appends } = workflow.config;
     const timestamp = now.getTime();
 
     const startTimestamp = getOnTimestampWithOffset(startsOn, now);
@@ -333,11 +333,12 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
       });
     }
 
-    const { model } = this.plugin.app.db.getCollection(collection);
-    const instances = await model.findAll({
-      where: {
-        [Op.and]: conditions
-      }
+    const repo = this.plugin.app.db.getRepository(collection);
+    const instances = await repo.find({
+      filter: {
+        $and: conditions
+      },
+      appends
     });
 
     instances.forEach(item => {

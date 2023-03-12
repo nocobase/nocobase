@@ -71,10 +71,6 @@ Also by WeChat：
 
 ![](https://www.nocobase.com/images/wechat.png)  
 
-Also welcome to join our WeChat group：
-
-![](https://www.nocobase.com/images/wechat-group.png)
-
 ## Installation
 
 NocoBase supports three installation methods:

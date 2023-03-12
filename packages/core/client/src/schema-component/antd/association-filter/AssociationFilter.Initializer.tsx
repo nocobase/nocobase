@@ -15,11 +15,11 @@ export const AssociationFilterInitializer = () => {
   const items: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',
     key: field.key,
-    title: field.uiSchema.title,
+    title: field.uiSchema?.title,
     component: 'AssociationFilterDesignerDisplayField',
     schema: {
       name: field.name,
-      title: field.uiSchema.title,
+      title: field.uiSchema?.title,
       type: 'void',
       'x-designer': 'AssociationFilter.Item.Designer',
       'x-component': 'AssociationFilter.Item',

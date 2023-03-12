@@ -191,7 +191,11 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
             key={item.key}
             onClick={(info) => {
               item?.clearKeywords?.();
-              onClick({ ...info, item });
+              if (item.onClick) {
+                item.onClick({ ...info, item });
+              } else {
+                onClick({ ...info, item });
+              }
             }}
           >
             {compile(item.title)}
