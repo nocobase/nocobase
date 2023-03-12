@@ -16,7 +16,7 @@ describe('parse', () => {
   });
 });
 
-describe('walkFilter', () => {
+describe('parseFilter', () => {
   test('$and', () => {
     const ctx = { abc: '123' };
     const filter = {
