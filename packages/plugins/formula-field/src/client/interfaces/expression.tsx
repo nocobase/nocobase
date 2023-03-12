@@ -10,14 +10,14 @@ export default {
   group: 'advanced',
   order: 1,
   title: `{{t("Dynamic expression", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("An expression for calculation in rows", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("An expression for calculation in each rows", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
     type: 'expression',
     uiSchema: {
-      type: 'void',
+      type: 'object',
       // title,
-      'x-component': 'DynamicExpressionConfig',
+      'x-component': 'DynamicExpression',
     },
   },
   properties: {

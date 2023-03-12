@@ -1,2 +1,2 @@
 export { Formula } from './Formula';
-export { DynamicExpressionConfig } from './DynamicExpressionConfig';
+export { DynamicExpression } from './DynamicExpression';

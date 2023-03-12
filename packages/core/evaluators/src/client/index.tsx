@@ -19,7 +19,9 @@ export const evaluators = new Registry<Evaluator>();
 evaluators.register('math.js', mathjs);
 evaluators.register('formula.js', formulajs);
 
-export const options = Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []);
+export function getOptions() {
+  return Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []);
+}
 
 export const renderReference = (key: string) => {
   const engine = evaluators.get(key);

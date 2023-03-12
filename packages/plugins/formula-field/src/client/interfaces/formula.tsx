@@ -125,7 +125,7 @@ export default {
     ...datetimeProperties,
     engine: {
       type: 'string',
-      title: `{{t("Formula engine", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
