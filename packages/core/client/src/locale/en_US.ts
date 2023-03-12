@@ -227,6 +227,7 @@ export default {
   "Many to many description": "Used to create many-to-many relationships. For example, a student will have many teachers and a teacher will have many students. When present as a field, it is a drop-down selection used to select records from the associated collection.",
   "Generated automatically if left blank": "Generated automatically if left blank",
   "Display association fields": "Display association fields",
+  "Display field title": "Display field title",
   "Field component": "Field component",
   "Subtable": "Subtable",
   "Subform": "Subform",
@@ -620,5 +621,8 @@ export default {
   "CreatedBy": "Recording a row's created user",
   "UpdatedBy": "Recording a row's last updated user",
   "CreatedAt": "Recording a row's created time ",
-  "UpdatedAt": "Recording a row's last updated user"
+  "UpdatedAt": "Recording a row's last updated user",
+  "Column width": "Column width",
+  "Sortable": "Sortable",
+  "Enable link": "Enable link"
 };
