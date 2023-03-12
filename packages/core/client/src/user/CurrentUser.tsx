@@ -28,7 +28,7 @@ export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
   return (
-    <div style={{ display: 'inline-block', verticalAlign: 'top' }}>
+    <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
         <Dropdown
           visible={visible}
