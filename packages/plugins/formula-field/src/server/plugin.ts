@@ -1,7 +1,8 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FormulaField } from './formula-field';
-import { ExpressionField } from './expression-field';
+
+
 
 export class FormulaFieldPlugin extends Plugin {
   afterAdd() {}
@@ -9,7 +10,6 @@ export class FormulaFieldPlugin extends Plugin {
   beforeLoad() {
     this.db.registerFieldTypes({
       formula: FormulaField,
-      expression: ExpressionField
     });
 
     this.db.addMigrations({

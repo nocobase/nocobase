@@ -85,7 +85,7 @@ function Config() {
               },
               expression: {
                 type: 'string',
-                title: `{{t("Expression", { ns: "${NAMESPACE}" })}}`,
+                title: `{{t("Expression"}}`,
                 required: true,
                 'x-component': 'InternalDynamicExpression',
                 'x-decorator': 'FormItem',
@@ -109,7 +109,7 @@ function Result({ value }: { value: Value }) {
   const { t } = useTranslation();
   return collection && expression
     ? <Tag color="purple">{t('Expression')}</Tag>
-    : <Tag>{t('Unconfigured')}</Tag>;
+    : <Tag>{t('Unconfigured', { ns: NAMESPACE })}</Tag>;
 }
 
 export const DynamicExpression = connect(Config, mapReadPretty(Result));

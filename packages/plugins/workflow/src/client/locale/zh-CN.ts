@@ -168,4 +168,8 @@ export default {
 
   'Workflow todos': '工作流待办',
   'Task': '任务',
+
+  'Dynamic expression': '动态表达式',
+  'An expression for calculation in each rows': '每行数据计算规则不同时使用',
+  'Unconfigured': '未配置'
 };

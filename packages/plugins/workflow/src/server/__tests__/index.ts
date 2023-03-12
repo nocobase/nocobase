@@ -2,7 +2,6 @@ import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
-import FormulaPlugin from '@nocobase/plugin-formula-field';
 
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
@@ -20,7 +19,6 @@ interface MockAppOptions extends ApplicationOptions {
 export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
   const app = mockServer(options);
 
-  app.plugin(FormulaPlugin);
   app.plugin(Plugin, {
     name: 'workflow',
     instructions: {
