@@ -4,15 +4,20 @@ import { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {
-
     const transaction = await this.db.sequelize.transaction();
 
     const migrateFieldsSchema = async (collection: Collection) => {
       this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
 
-      collection.setField('uiSchemaUid', {
+      const field = collection.setField('uiSchemaUid', {
         type: 'string',
       });
+
+      const exists = await field.existsInDb({ transaction });
+
+      if (!exists) {
+        return;
+      }
 
       const fieldRecords: Array<FieldModel> = await collection.repository.find({
         transaction,
