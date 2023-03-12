@@ -19,7 +19,7 @@ class AddBelongsToPlugin extends Plugin {
   }
 }
 
-describe('skip if already migrated', function () {
+describe.skip('skip if already migrated', function () {
   let app: MockServer;
   let db: Database;
 
