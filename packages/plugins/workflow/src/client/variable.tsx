@@ -6,10 +6,10 @@ import { triggers } from "./triggers";
 import { NAMESPACE } from "./locale";
 
 export type VariableOption = {
-  key: string;
+  key?: string;
   value: string;
   label: string;
-  children?: VariableOption[]
+  children?: VariableOption[] | null
 };
 
 const VariableTypes = [
@@ -98,18 +98,13 @@ export function useWorkflowVariableOptions() {
   return options;
 }
 
-type CollectionFieldOption = {
-  label: string;
-  key?: string;
-  value: any;
-  children? : CollectionFieldOption[] | null
-};
 
-export function useCollectionFieldOptions(options) {
+
+export function useCollectionFieldOptions(options): VariableOption[] {
   const { fields, collection, types } = options;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const result: CollectionFieldOption[] = [];
+  const result: VariableOption[] = [];
   filterTypedFields((fields ?? getCollectionFields(collection)), types)
     .forEach(field => {
       if (field.type === 'belongsTo') {
