@@ -4,15 +4,6 @@ import { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {
-    const migratedFieldsCount = await this.db.getRepository('fields').count({
-      filter: {
-        'options.uiSchema': { $exists: true },
-      },
-    });
-
-    if (migratedFieldsCount > 0) {
-      return;
-    }
 
     const transaction = await this.db.sequelize.transaction();
 
@@ -53,6 +44,10 @@ export default class extends Migration {
           transaction,
         });
 
+        if (!uiSchemaRecord) {
+          continue;
+        }
+
         const uiSchema = uiSchemaRecord.get('schema');
 
         fieldRecord.set('uiSchema', uiSchema);
@@ -68,11 +63,9 @@ export default class extends Migration {
 
     try {
       await migrateFieldsSchema(this.db.getCollection('fields'));
-
       if (this.db.getCollection('fieldsHistory')) {
         await migrateFieldsSchema(this.db.getCollection('fieldsHistory'));
       }
-
       await transaction.commit();
     } catch (error) {
       await transaction.rollback();
