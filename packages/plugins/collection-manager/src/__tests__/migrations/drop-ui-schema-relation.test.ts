@@ -1,8 +1,8 @@
-import { MockServer } from '@nocobase/test';
-import { Plugin } from '@nocobase/server';
 import { Database, MigrationContext } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
+import { MockServer } from '@nocobase/test';
+import Migrator from '../../migrations/20230225111112-drop-ui-schema-relation';
 import { createApp } from '../index';
-import Migrator from '../../migrations/20230225111111-drop-ui-schema-relation';
 
 class AddBelongsToPlugin extends Plugin {
   beforeLoad() {
