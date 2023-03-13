@@ -1,7 +1,7 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, InstallOptions, Plugin } from '@nocobase/server';
 
-const subAppFilteredPlugins = ['mdg', 'multi-app-manager'];
+const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
 class SubAppPlugin extends Plugin {
   beforeLoad() {
@@ -78,12 +78,12 @@ class SubAppPlugin extends Plugin {
   }
 }
 
-export class MdgPlugin extends Plugin {
+export class MultiAppShareCollectionPlugin extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {
     if (!this.db.inDialect('postgres')) {
-      throw new Error('mdg plugin only support postgres');
+      throw new Error('multi-app-share-collection plugin only support postgres');
     }
 
     const traverseSubApps = async (callback: (subApp: Application) => void) => {
@@ -189,7 +189,7 @@ export class MdgPlugin extends Plugin {
     const multiAppManager = this.app.getPlugin<any>('multi-app-manager');
 
     if (!multiAppManager) {
-      this.app.log.warn('mdg plugin need multi-app-manager plugin enabled');
+      this.app.log.warn('multi-app-share-collection plugin need multi-app-manager plugin enabled');
       return;
     }
 
@@ -212,7 +212,7 @@ export class MdgPlugin extends Plugin {
       INSERT INTO ${subAppPluginsCollection.quotedTableName()}
       SELECT *
       FROM ${mainAppPluginsCollection.quotedTableName()}
-      WHERE "name" not in ('multi-app-manager', 'mdg');
+      WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
     `);
 
       const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
@@ -237,7 +237,7 @@ export class MdgPlugin extends Plugin {
       };
 
       const plugins = [...mainApp.pm.getPlugins().keys()].filter(
-        (name) => name !== 'multi-app-manager' && name !== 'mdg',
+        (name) => name !== 'multi-app-manager' && name !== 'multi-app-share-collection',
       );
 
       return {

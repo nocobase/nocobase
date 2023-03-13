@@ -21,9 +21,9 @@ describe('collection sync', () => {
     });
 
     await app.pm.enable('multi-app-manager');
-    app.plugin(Plugin, { name: 'mdg' });
+    app.plugin(Plugin, { name: 'multi-app-share-collection' });
 
-    await app.pm.enable('mdg');
+    await app.pm.enable('multi-app-share-collection');
 
     await app.start();
 

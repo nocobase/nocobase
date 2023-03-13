@@ -16,7 +16,7 @@ export async function createApp(options = {}) {
   app.plugin(PluginCollectionManager, { name: 'collection-manager' });
   await app.loadAndInstall({ clean: true });
   app.plugin(PluginMultiAppManager, { name: 'multi-app-manager' });
-  app.plugin(Plugin, { name: 'mdg' });
+  app.plugin(Plugin, { name: 'multi-app-share-collection' });
 
   await app.reload();
   await app.install();
