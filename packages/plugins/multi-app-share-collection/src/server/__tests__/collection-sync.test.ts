@@ -1,8 +1,9 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 import Plugin from '..';
+const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
