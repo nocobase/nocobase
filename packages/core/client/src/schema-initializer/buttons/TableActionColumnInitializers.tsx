@@ -7,7 +7,7 @@ import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useCollection } from '../../collection-manager';
 
-const Resizable = (props) => {
+export const Resizable = (props) => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();

@@ -19,10 +19,11 @@ export const TableBlockDesigner = () => {
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -234,8 +235,10 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+      {supportTemplate && <SchemaSettings.Divider />}
+      {supportTemplate && (
+        <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

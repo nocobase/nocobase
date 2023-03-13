@@ -5,18 +5,30 @@ export default {
   async run(node: FlowNodeModel, input, processor) {
     const {
       collection,
-      params = {}
+      params: { appends = [], ...params } = {}
     } = node.config;
 
-    const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
+    const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);
     const options = processor.getParsedValue(params);
-    const result = await repo.create({
+    const result = await repository.create({
       ...options,
       context: {
         executionId: processor.execution.id
       },
       transaction: processor.transaction
     });
+
+    if (appends.length) {
+      const includeFields = appends.filter(field => !result.get(field) || !result[field]);
+      const included = await model.findByPk(result[model.primaryKeyAttribute], {
+        attributes: [model.primaryKeyAttribute],
+        include: includeFields,
+        transaction: processor.transaction
+      });
+      includeFields.forEach(field => {
+        result.set(field, included!.get(field), { raw: true });
+      });
+    }
 
     return {
       // NOTE: get() for non-proxied instance (#380)

@@ -17,6 +17,29 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should init sorted value by createdAt when primaryKey not exists', async () => {
+    const Test = db.collection({
+      autoGenId: false,
+      name: 'tests',
+    });
+
+    await db.sync();
+    await Test.repository.create({
+      values: [{}, {}, {}],
+    });
+
+    // add sort field
+    Test.setField('sort', { type: 'sort' });
+
+    let err;
+    try {
+      await db.sync();
+    } catch (e) {
+      err = e;
+    }
+    expect(err).toBeFalsy();
+  });
+
   it('sort', async () => {
     const Test = db.collection({
       name: 'tests',

@@ -102,7 +102,7 @@ export class ApplicationVersion {
     if (!app.db.hasCollection('applicationVersion')) {
       app.db.collection({
         name: 'applicationVersion',
-        namespace: 'core',
+        namespace: 'core.applicationVersion',
         duplicator: 'required',
         timestamps: false,
         fields: [{ name: 'value', type: 'string' }],
@@ -172,6 +172,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   declare middleware: any;
 
+  stopped: boolean = false;
+
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
@@ -227,13 +229,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+
     const logger = createAppLogger(options.logger);
     this._logger = logger.instance;
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
+
     this.removeAllListeners();
+
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
@@ -283,12 +289,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   private createDatabase(options: ApplicationOptions) {
-    return new Database({
+    const db = new Database({
       ...(options.database instanceof Database ? options.database.options : options.database),
       migrator: {
         context: { app: this },
       },
     });
+
+    db.setLogger(this._logger);
+
+    return db;
   }
 
   getVersion() {
@@ -315,6 +325,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     const handleRequest = (req, res) => {
       const ctx = this.createContext(req, res);
+
       // @ts-ignore
       return this.handleRequest(ctx, fn);
     };
@@ -344,7 +355,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
-      console.log(`Reload the application configuration`);
+      console.log(`Reload the ${this.name} application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -360,6 +371,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...options,
       reload: true,
     });
+
+    await this.emitAsync('afterReload', this, options);
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -377,7 +390,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log(chalk.red(error.message));
       process.exit(1);
     }
+
     await this.dbVersionCheck({ exit: true });
+
+    await this.db.prepare();
 
     if (argv?.[2] !== 'upgrade') {
       await this.load({
@@ -403,6 +419,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.listen?.port) {
       const pmServer = await this.pm.listen();
+
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -428,6 +445,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     await this.emitAsync('afterStart', this, options);
+    this.stopped = false;
   }
 
   listen(...args): Server {
@@ -435,7 +453,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async stop(options: any = {}) {
+    if (this.stopped) {
+      this.log.warn(`Application ${this.name} already stopped`);
+      return;
+    }
+
     await this.emitAsync('beforeStop', this, options);
+
+    // close http server
+    if (this.listenServer) {
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
+    }
 
     try {
       // close database connection
@@ -447,13 +476,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log(e);
     }
 
-    // close http server
-    if (this.listenServer) {
-      await promisify(this.listenServer.close).call(this.listenServer);
-      this.listenServer = null;
-    }
-
     await this.emitAsync('afterStop', this, options);
+    this.stopped = true;
+    console.log(`${this.name} is stopped`);
   }
 
   async destroy(options: any = {}) {
@@ -479,8 +504,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (this.db.inDialect('mysql')) {
       const result = await this.db.sequelize.query(`SHOW VARIABLES LIKE 'lower_case_table_names'`, { plain: true });
-      if (result?.Value === '1') {
-        console.log(chalk.red(`mysql variable 'lower_case_table_names' must be set to '0' or '2'`));
+      if (result?.Value === '1' && !this.db.options.underscored) {
+        console.log(
+          `Your database lower_case_table_names=1, please add ${chalk.yellow('DB_UNDERSCORED=true')} to the .env file`,
+        );
         if (options?.exit) {
           process.exit();
         }

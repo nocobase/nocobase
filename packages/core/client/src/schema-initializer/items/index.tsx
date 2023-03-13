@@ -1,3 +1,8 @@
+export * from '../../schema-component/antd/association-filter/ActionBarAssociationFilterAction';
+// association filter
+export * from '../../schema-component/antd/association-filter/AssociationFilter';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDelete';
+export * from '../../schema-component/antd/association-filter/AssociationFilterDesignerDisplayField';
 export * from './ActionInitializer';
 export * from './BlockInitializer';
 export * from './BulkDestroyActionInitializer';

@@ -4,14 +4,14 @@ import { ActionInitializer } from './ActionInitializer';
 export const CreateActionInitializer = (props) => {
   const schema = {
     type: 'void',
-    title: '{{ t("Add new") }}',
     'x-action': 'create',
+    title: "{{t('Add new')}}",
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
+    'x-decorator': 'ACLActionProvider',
     'x-component-props': {
-      icon: 'PlusOutlined',
       openMode: 'drawer',
-      type: 'primary',
+      component: 'CreateRecordAction',
     },
     properties: {
       drawer: {

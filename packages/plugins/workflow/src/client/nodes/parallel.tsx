@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { css, cx } from "@emotion/css";
-import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { Button, Tooltip } from "antd";
 
 import { NodeDefaultView } from ".";
@@ -17,9 +17,8 @@ export default {
   type: 'parallel',
   group: 'control',
   fieldset: {
-    'config.mode': {
+    mode: {
       type: 'string',
-      name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
@@ -50,7 +49,7 @@ export default {
   },
   render(data) {
     const { id, config: { mode } } = data;
-    const { nodes } = useFlowContext();
+    const { workflow, nodes } = useFlowContext();
     const branches = nodes.reduce((result, node) => {
       if (node.upstreamId === id && node.branchIndex != null) {
         return result.concat(node);
@@ -90,6 +89,7 @@ export default {
                           shape="circle"
                           icon={<PlusOutlined />}
                           onClick={() => setBranchCount(branchCount - 1)}
+                          disabled={workflow.executed}
                         />
                       </div>
                     )
@@ -104,7 +104,9 @@ export default {
               height: 2em;
             `}
           >
-            <Tooltip title={lang('Add branch')}>
+            <Tooltip title={lang('Add branch')} className={css`
+              visibility: ${workflow.executed ? 'hidden' : 'visible'}
+            `}>
               <Button
                 icon={<PlusOutlined />}
                 className={css`
@@ -117,6 +119,7 @@ export default {
                   }
                 `}
                 onClick={() => setBranchCount(branchCount + 1)}
+                disabled={workflow.executed}
               />
             </Tooltip>
           </div>

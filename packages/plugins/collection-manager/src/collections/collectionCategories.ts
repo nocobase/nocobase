@@ -1,8 +1,11 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager',
-  duplicator: 'required',
+  namespace: 'collection-manager.collections',
+  duplicator: {
+    dumpable: 'required',
+    with: 'collectionCategory',
+  },
   name: 'collectionCategories',
   autoGenId: true,
   sortable: true,
@@ -11,11 +14,6 @@ export default {
       type: 'string',
       name: 'name',
     },
-    // {
-    //   type: 'integer',
-    //   name: 'sort',
-    //   defaultValue: 0,
-    // },
     {
       type: 'string',
       name: 'color',

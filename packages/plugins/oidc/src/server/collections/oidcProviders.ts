@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'oidc',
+  namespace: 'oidc.oidcProviders',
   duplicator: 'optional',
   name: 'oidcProviders',
   title: '{{t("OIDC Providers")}}',

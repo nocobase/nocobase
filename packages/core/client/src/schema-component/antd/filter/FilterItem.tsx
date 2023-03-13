@@ -35,6 +35,9 @@ export const FilterItem = observer((props: any) => {
           placeholder={t('Select Field')}
         />
         <Select
+          className={css`
+            min-width: 110px;
+          `}
           value={operator?.value}
           options={compile(operators)}
           onChange={(value) => {

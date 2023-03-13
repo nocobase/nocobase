@@ -1,6 +1,6 @@
 import { RemoteSelect } from '@nocobase/client';
 import React from 'react';
-import { VariableInput } from '../../components/VariableInput';
+import { Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '../../variable';
 
 
@@ -9,7 +9,7 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
   const scope = useWorkflowVariableOptions();
 
   return (
-    <VariableInput
+    <Variable.Input
       scope={scope}
       types={[{ type: 'reference', options: { collection: 'users' } }]}
       value={value[0]}
@@ -25,11 +25,12 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
         service={{
           resource: 'users'
         }}
+        manual={false}
         value={value[0]}
         onChange={(v) => {
-          onChange([v]);
+          onChange(v != null ? [v] : []);
         }}
       />
-    </VariableInput>
+    </Variable.Input>
   );
 }

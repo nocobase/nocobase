@@ -1,6 +1,6 @@
-import { get } from "lodash";
+import evaluators, { Evaluator } from '@nocobase/evaluators';
 
-import { Evaluator, Processor } from '..';
+import { Processor } from '..';
 import { JOB_STATUS } from "../constants";
 import FlowNodeModel from "../models/FlowNode";
 import { Instruction } from ".";
@@ -8,14 +8,14 @@ import { Instruction } from ".";
 
 
 interface CalculationConfig {
-  engine: string;
-  expression: string;
+  engine?: string;
+  expression?: string;
 }
 
 export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const { engine, expression = '' } = <CalculationConfig>node.config || {};
-    const evaluator = <Evaluator | undefined>processor.options.plugin.calculators.get(engine);
+    const { engine = 'math.js', expression = '' } = <CalculationConfig>node.config || {};
+    const evaluator = <Evaluator | undefined>evaluators.get(engine);
     const scope = processor.getScope();
 
     try {

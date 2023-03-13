@@ -205,7 +205,7 @@ export default class Processor {
   }
 
   async exit(job: JobModel | null) {
-    const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] : EXECUTION_STATUS.RESOLVED;
+    const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status) : EXECUTION_STATUS.RESOLVED;
     await this.execution.update({ status }, { transaction: this.transaction });
     return null;
   }

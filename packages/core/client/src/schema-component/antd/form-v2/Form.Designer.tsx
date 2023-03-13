@@ -26,6 +26,7 @@ export const FormDesigner = () => {
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.FormItemTemplate componentName={'FormItem'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettings.LinkageRules collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

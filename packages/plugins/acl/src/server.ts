@@ -825,7 +825,7 @@ export class PluginACL extends Plugin {
     await this.importCollections(resolve(__dirname, 'collections'));
     this.db.extendCollection({
       name: 'rolesUischemas',
-      namespace: 'acl',
+      namespace: 'acl.acl',
       duplicator: 'required',
     });
   }

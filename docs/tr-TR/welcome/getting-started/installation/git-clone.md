@@ -4,7 +4,7 @@
 
 Aşağıdaki gereksinimlere sahip olduğunuza emin olun:
 
-- Node.js 14+, Yarn 1.22.x kurulu olmalı
+- Node.js 16+, Yarn 1.22.x kurulu olmalı
 - SQLite 3.x, MySQL 8.x, PostgreSQL 10.x veritabanlarından birisinin kurulup yapılandırıldığı ve çalışır durumda olduğuna emin olun
 
 ## 1. Git ile indirin

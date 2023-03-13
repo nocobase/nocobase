@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow',
+  namespace: 'workflow.workflowConfig',
   duplicator: 'required',
   name: 'flow_nodes',
   fields: [
@@ -17,7 +17,7 @@ export default {
     {
       name: 'upstream',
       type: 'belongsTo',
-      target: 'flow_nodes'
+      target: 'flow_nodes',
     },
     {
       name: 'branches',
@@ -39,7 +39,7 @@ export default {
     {
       name: 'downstream',
       type: 'belongsTo',
-      target: 'flow_nodes'
+      target: 'flow_nodes',
     },
     {
       type: 'string',
@@ -48,7 +48,7 @@ export default {
     {
       type: 'json',
       name: 'config',
-      defaultValue: {}
-    }
-  ]
+      defaultValue: {},
+    },
+  ],
 } as CollectionOptions;
