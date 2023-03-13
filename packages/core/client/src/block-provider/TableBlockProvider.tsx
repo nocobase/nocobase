@@ -84,10 +84,12 @@ export const TableBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   const form = useMemo(() => createForm(), []);
+  const fieldSchema = useFieldSchema();
+  const { treeTable } = fieldSchema['x-decorator-props'];
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (props.treeTable) {
+  if (treeTable) {
     params['tree'] = true;
     params.filter = {
       ...(params.filter ?? {}),

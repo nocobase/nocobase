@@ -165,7 +165,8 @@ export const Table: any = observer((props: any) => {
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
-
+  const schema = useFieldSchema();
+  const { treeTable } = schema?.parent?.['x-decorator-props'];
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
@@ -277,7 +278,7 @@ export const Table: any = observer((props: any) => {
             if (current) {
               index = index + (current - 1) * pageSize + 1;
             }
-            if (record.parentId) {
+            if (record.parentId && treeTable) {
               index = extractIndex(record.__index);
             }
             return (
@@ -287,7 +288,7 @@ export const Table: any = observer((props: any) => {
                   css`
                     position: relative;
                     display: flex;
-                    float:left;
+                    float: left;
                     align-items: center;
                     justify-content: space-evenly;
                     padding-right: 8px;
