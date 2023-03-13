@@ -29,6 +29,7 @@ export class PresetNocoBase extends Plugin {
   localPlugins = [
     'sample-hello',
     'multi-app-manager',
+    'multi-app-share-collection',
     'oidc',
     'saml',
     'map',
