@@ -247,13 +247,10 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const action = fieldSchema?.['x-action'];
 
   return currentFields
-    ?.filter(
-      (field) =>
-        field?.interface && !field?.isForeignKey && !isAssocField(field) && getInterface(field.interface)?.filterable,
-    )
+    ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
-      const schema = {
+      let schema = {
         type: 'string',
         name: field.name,
         required: false,
@@ -264,6 +261,19 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
+      if (isAssocField(field)) {
+        schema = {
+          type: 'string',
+          name: field.name,
+          required: false,
+          'x-designer': 'FormItem.FilterFormDesigner',
+          'x-component': 'AssociationSelect',
+          'x-decorator': 'FormItem',
+          'x-collection-field': `${name}.${field.name}`,
+          'x-component-props': field.uiSchema?.['x-component-props'],
+          'x-read-pretty': field.uiSchema?.['x-read-pretty'],
+        };
+      }
       const resultItem = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
