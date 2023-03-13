@@ -280,4 +280,4 @@ export class MultiAppShareCollectionPlugin extends Plugin {
   async remove() {}
 }
 
-export default MdgPlugin;
+export default MultiAppShareCollectionPlugin;
