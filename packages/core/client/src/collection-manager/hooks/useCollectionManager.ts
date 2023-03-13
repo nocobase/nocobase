@@ -110,6 +110,7 @@ export const useCollectionManager = () => {
         const result: CascaderProps<any>['options'][0] = {
           value: field.name,
           label: compile(field?.uiSchema?.title) || field.name,
+          ...field,
         };
         if (association && field.target) {
           result.children = getCollectionFieldsOptions(field.target, type, opts);

@@ -12,7 +12,8 @@ import {
 } from '@nocobase/client';
 import set from 'lodash/set';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslation} from 'react-i18next'
+import { useMapTranslation } from '../locale';
 import { useMapBlockContext } from './MapBlockProvider';
 
 export const MapBlockDesigner = () => {
@@ -21,6 +22,7 @@ export const MapBlockDesigner = () => {
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useMapBlockContext();
+  const { t: mapT } = useMapTranslation();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const { getCollectionFieldsOptions } = useCollectionManager();
@@ -41,7 +43,7 @@ export const MapBlockDesigner = () => {
       <SchemaSettings.BlockTitleItem />
       {fixedBlockDesignerSetting}
       <SchemaSettings.SelectItem
-        title={t('Map field')}
+        title={mapT('Map field')}
         value={fieldNames.field}
         options={mapFieldOptions}
         onChange={(v) => {
@@ -60,7 +62,7 @@ export const MapBlockDesigner = () => {
         }}
       />
       <SchemaSettings.SelectItem
-        title={t('Marker field')}
+        title={mapT('Marker field')}
         value={fieldNames.marker}
         options={markerFieldOptions}
         onChange={(v) => {
@@ -79,14 +81,14 @@ export const MapBlockDesigner = () => {
         }}
       />
       <SchemaSettings.ModalItem
-        title={t('Default zoom')}
+        title={mapT('The default zoom level of the map')}
         schema={
           {
             type: 'object',
-            title: t('Set the default zoom of map'),
+            title: mapT('Set default zoom level'),
             properties: {
               zoom: {
-                title: t('Zoom'),
+                title: mapT('Zoom'),
                 default: defaultZoom,
                 'x-component': 'InputNumber',
                 'x-decorator': 'FormItem',

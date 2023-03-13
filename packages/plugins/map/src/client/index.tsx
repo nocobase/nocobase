@@ -11,6 +11,7 @@ import Map from './components/Map';
 import { interfaces } from './fields';
 import { MapInitializer } from './initialize';
 import { useMapTranslation } from './locale';
+import './locale';
 
 export default React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);

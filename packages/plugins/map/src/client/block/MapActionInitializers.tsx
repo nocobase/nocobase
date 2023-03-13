@@ -1,5 +1,3 @@
-import { Schema } from '@formily/react';
-
 // 表格操作配置
 export const MapActionInitializers = {
   title: "{{t('Configure actions')}}",

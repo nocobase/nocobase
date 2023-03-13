@@ -58,8 +58,8 @@ const methodMapping = {
 };
 
 export interface AMapForwardedRefProps {
-  setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions) => any;
-  getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions) => any;
+  setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
+  getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
   createMouseTool: (type: MapEditorType) => void;
   createEditor: (type: MapEditorType) => void;
   executeMouseTool: (type: MapEditorType) => void;
