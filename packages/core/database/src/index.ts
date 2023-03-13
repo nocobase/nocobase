@@ -21,3 +21,4 @@ export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
 export * from './collection-group-manager';
+export * from './relation-graph';

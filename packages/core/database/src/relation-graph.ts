@@ -2,7 +2,7 @@ import Database from './database';
 import * as graphlib from 'graphlib';
 
 class RelationGraph {
-  constructor() {}
+  constructor(public db: Database) {}
 
   static graphlib() {
     return graphlib;
@@ -34,6 +34,11 @@ class RelationGraph {
 
   static preOrder(graph, node) {
     return RelationGraph.graphlib().alg.preorder(graph, node);
+  }
+
+  preOrder(node) {
+    const graph = RelationGraph.build(this.db);
+    return RelationGraph.preOrder(graph, node);
   }
 }
 

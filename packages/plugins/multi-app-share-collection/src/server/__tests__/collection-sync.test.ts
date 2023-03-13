@@ -44,7 +44,21 @@ pgOnly()('collection sync', () => {
 
     await mainApp.db.getRepository('collections').create({
       values: {
+        name: 'parent',
+        fields: [
+          {
+            type: 'string',
+            name: 'parent-field',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
         name: 'posts',
+        inherits: ['parent'],
         fields: [
           {
             type: 'string',
@@ -60,6 +74,7 @@ pgOnly()('collection sync', () => {
         name: 'tags',
         fields: [{ type: 'string', name: 'name' }],
       },
+      context: {},
     });
 
     await mainApp.db.getRepository('fields').create({
@@ -68,6 +83,7 @@ pgOnly()('collection sync', () => {
         type: 'belongsToMany',
         collectionName: 'tags',
         target: 'posts',
+        through: 'posts_tags',
       },
       context: {},
     });
@@ -88,7 +104,14 @@ pgOnly()('collection sync', () => {
       },
     });
 
+    const parentCollection = await mainApp.db.getRepository('collections').findOne({
+      filter: {
+        name: 'parent',
+      },
+    });
+
     expect(postsCollection.get('syncToApps')).toContain('sub1');
+    expect(parentCollection.get('syncToApps')).toContain('sub1');
   });
 
   it('should set user role in sub app when user created at main app', async () => {

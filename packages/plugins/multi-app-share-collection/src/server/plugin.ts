@@ -1,5 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, InstallOptions, Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
@@ -93,6 +94,79 @@ export class MultiAppShareCollectionPlugin extends Plugin {
         await callback(subApp);
       }
     };
+
+    const syncRelations = async (model, options) => {
+      const { transaction } = options;
+      const previousVal = model._previousDataValues.options?.syncToApps || [];
+      const newSyncToApps = model.dataValues.options?.syncToApps || [];
+
+      const addedApps = lodash.difference(newSyncToApps, previousVal);
+      const removedApps = lodash.difference(previousVal, newSyncToApps);
+
+      if (!addedApps.length && !removedApps.length) {
+        return;
+      }
+
+      const collection = this.app.db.getCollection(model.name);
+      const relatedCollections = this.app.db.relationGraph.preOrder(collection.name);
+      const parentsCollection = this.app.db.inheritanceMap.getParents(collection.name);
+
+      const queryCollections = lodash.uniq([...relatedCollections, ...parentsCollection]);
+
+      const relatedCollectionRecords = await this.app.db.getRepository('collections').find({
+        filter: {
+          'name.$in': queryCollections,
+        },
+        transaction,
+      });
+
+      for (const addApp of addedApps) {
+        for (const relatedCollectionRecord of relatedCollectionRecords) {
+          const options = relatedCollectionRecord.get('options');
+          const syncToApps = options?.syncToApps || [];
+          if (!syncToApps.includes(addApp)) {
+            syncToApps.push(addApp);
+            await relatedCollectionRecord.update(
+              {
+                options: {
+                  ...options,
+                  syncToApps,
+                },
+              },
+              { transaction },
+            );
+          }
+        }
+      }
+
+      for (const removeApp of removedApps) {
+        for (const relatedCollectionRecord of relatedCollectionRecords) {
+          const options = relatedCollectionRecord.get('options');
+          const syncToApps = options?.syncToApps || [];
+          if (syncToApps.includes(removeApp)) {
+            syncToApps.splice(syncToApps.indexOf(removeApp), 1);
+            await relatedCollectionRecord.update(
+              {
+                options: {
+                  ...options,
+                  syncToApps,
+                },
+              },
+              { transaction },
+            );
+          }
+        }
+      }
+
+      console.log({
+        previousVal,
+        newSyncToApps,
+        relatedCollections,
+      });
+    };
+
+    this.app.db.on('collections.afterUpdate', syncRelations);
+    this.app.db.on('collections.afterCreateWithAssociations', syncRelations);
 
     this.app.on('beforeSubAppLoad', async ({ subApp }: { subApp: Application }) => {
       subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });

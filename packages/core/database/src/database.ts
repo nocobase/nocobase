@@ -176,6 +176,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
+  relationGraph = new RelationGraph(this);
   importedFrom = new Map<string, Array<string>>();
 
   modelHook: ModelHook;
