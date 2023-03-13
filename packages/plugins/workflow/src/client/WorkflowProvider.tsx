@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Card } from 'antd';
-import { CollectionManagerContext, PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
+import { CollectionManagerContext, PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider, registerField } from '@nocobase/client';
+
 import { WorkflowPage } from './WorkflowPage';
 import { ExecutionPage } from './ExecutionPage';
 import { triggers } from './triggers';
@@ -15,6 +16,10 @@ import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { DynamicExpression } from './components/DynamicExpression';
 import expressionField from './interfaces/expression';
+
+
+
+registerField(expressionField.group, 'expression', expressionField);
 
 export const WorkflowContext = React.createContext({});
 
