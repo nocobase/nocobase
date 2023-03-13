@@ -68,6 +68,7 @@ import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
+import RelationGraph from './relation-graph';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -175,7 +176,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
-
   importedFrom = new Map<string, Array<string>>();
 
   modelHook: ModelHook;

@@ -14,6 +14,7 @@
     "excel-date-to-js": "^1.1.5",
     "flat": "^5.0.2",
     "glob": "^7.1.6",
+    "graphlib": "^2.1.8",
     "mathjs": "^10.6.1",
     "moment": "2.x",
     "semver": "^7.3.7",
