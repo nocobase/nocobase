@@ -127,7 +127,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible } = useActionContext();
+  const { visible, setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
@@ -147,11 +147,15 @@ export const useCreateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { addChild } = fieldSchema?.['x-component-props'];
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      if (addChild) {
+        values.parentId = currentRecord.id;
+      }
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {

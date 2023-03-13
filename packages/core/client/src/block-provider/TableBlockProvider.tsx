@@ -87,6 +87,13 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
+  if (props.treeTable) {
+    params['tree'] = true;
+    params.filter = {
+      ...(params.filter ?? {}),
+      parentId: params.filter?.parentId ?? null,
+    };
+  }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -132,6 +139,7 @@ export const useTableBlockProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys) {
+      console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
     },

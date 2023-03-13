@@ -12,7 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { isCollectionFieldComponent, isColumnComponent } from './utils';
+import { isCollectionFieldComponent, isColumnComponent, extractIndex } from './utils';
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
@@ -106,7 +106,7 @@ const TableIndex = (props) => {
   const { index } = props;
   return (
     <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
-      {index + 1}
+      {index}
     </div>
   );
 };
@@ -275,7 +275,10 @@ export const Table: any = observer((props: any) => {
             const current = props?.pagination?.current;
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
-              index = index + (current - 1) * pageSize;
+              index = index + (current - 1) * pageSize + 1;
+            }
+            if (record.parentId) {
+              index = extractIndex(record.__index);
             }
             return (
               <div
@@ -284,6 +287,7 @@ export const Table: any = observer((props: any) => {
                   css`
                     position: relative;
                     display: flex;
+                    float:left;
                     align-items: center;
                     justify-content: space-evenly;
                     padding-right: 8px;
