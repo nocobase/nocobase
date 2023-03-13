@@ -12,7 +12,7 @@ export const FilterTableBlockInitializer = (props) => {
     <DataBlockInitializer
       {...props}
       icon={<TableOutlined />}
-      componentType={'Table'}
+      componentType={'FilterTable'}
       onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name);
         const schema = createTableBlockSchema({

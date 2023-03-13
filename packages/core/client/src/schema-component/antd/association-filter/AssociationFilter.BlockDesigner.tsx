@@ -14,8 +14,8 @@ export const AssociationFilterBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      <SchemaSettings.FormItemTemplate
-        componentName={'FormItem'}
+      <SchemaSettings.Template
+        componentName={'FilterCollapse'}
         collectionName={name}
         resourceName={defaultResource}
       />

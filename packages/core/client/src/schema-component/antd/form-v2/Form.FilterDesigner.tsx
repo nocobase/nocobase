@@ -19,7 +19,7 @@ export const FilterDesigner = () => {
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.FormItemTemplate
-        componentName={'FormItem'}
+        componentName={'FilterFormItem'}
         collectionName={name}
         resourceName={defaultResource}
       />

@@ -10,7 +10,7 @@ export const FilterCollapseBlockInitializer = (props) => {
     <DataBlockInitializer
       {...props}
       icon={<TableOutlined />}
-      componentType={'Collapse'}
+      componentType={'FilterCollapse'}
       onCreateBlockSchema={async ({ item }) => {
         const schema = createCollapseBlockSchema({
           collection: item.name,

@@ -8,7 +8,7 @@ export const FilterFormBlockInitializer = (props) => {
     <FilterBlockInitializer
       {...props}
       icon={<FormOutlined />}
-      componentType={'FormItem'}
+      componentType={'FilterFormItem'}
       templateWrap={(templateSchema, { item }) => {
         const s = createFilterFormBlockSchema({
           template: templateSchema,
