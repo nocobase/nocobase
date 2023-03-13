@@ -463,6 +463,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
   const compile = useCompile();
 
   const Content = dataBlocks.map((block) => {
+    const title = `${compile(block.collection.title)} #${block.name.slice(0, 4)}`;
     const onHover = () => {
       const dom = block.dom;
       const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
@@ -487,7 +488,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
       return (
         <SchemaSettings.SwitchItem
           key={block.name}
-          title={block.title || block.name}
+          title={title}
           checked={targets.some((target) => target.name === block.name)}
           onChange={(checked) => {
             if (checked) {
@@ -516,7 +517,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
     return (
       <SchemaSettings.SelectItem
         key={block.name}
-        title={block.title || block.name}
+        title={title}
         value={target?.field || ''}
         options={[
           ...block.associatedFields

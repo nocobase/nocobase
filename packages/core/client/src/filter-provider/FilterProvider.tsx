@@ -94,7 +94,7 @@ export const useFilterBlock = () => {
   if (!ctx) {
     return {
       recordDataBlocks: () => {},
-      getDataBlocks: () => [],
+      getDataBlocks: () => [] as DataBlock[],
       removeDataBlock: () => {},
     };
   }
