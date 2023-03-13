@@ -108,61 +108,73 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
 
       const collection = this.app.db.getCollection(model.name);
-      const relatedCollections = this.app.db.relationGraph.preOrder(collection.name);
-      const parentsCollection = this.app.db.inheritanceMap.getParents(collection.name);
+      const relatedCollections = this.app.db.relationGraph
+        .preOrder(collection.name)
+        .filter((name) => name !== collection.name);
 
-      const queryCollections = lodash.uniq([...relatedCollections, ...parentsCollection]);
+      if (addedApps.length) {
+        const parentsCollection = this.app.db.inheritanceMap.getParents(collection.name);
 
-      const relatedCollectionRecords = await this.app.db.getRepository('collections').find({
-        filter: {
-          'name.$in': queryCollections,
-        },
-        transaction,
-      });
+        const queryCollections = lodash.uniq([...relatedCollections, ...parentsCollection]);
 
-      for (const addApp of addedApps) {
-        for (const relatedCollectionRecord of relatedCollectionRecords) {
-          const options = relatedCollectionRecord.get('options');
-          const syncToApps = options?.syncToApps || [];
-          if (!syncToApps.includes(addApp)) {
-            syncToApps.push(addApp);
-            await relatedCollectionRecord.update(
-              {
-                options: {
-                  ...options,
-                  syncToApps,
+        if (!queryCollections.length) {
+          return;
+        }
+
+        const relatedCollectionRecords = await this.app.db.getRepository('collections').find({
+          filter: {
+            'name.$in': queryCollections,
+          },
+          transaction,
+        });
+
+        for (const addApp of addedApps) {
+          for (const relatedCollectionRecord of relatedCollectionRecords) {
+            const options = relatedCollectionRecord.get('options');
+            const syncToApps = options?.syncToApps || [];
+            if (!syncToApps.includes(addApp)) {
+              syncToApps.push(addApp);
+              await relatedCollectionRecord.update(
+                {
+                  options: {
+                    ...options,
+                    syncToApps,
+                  },
                 },
-              },
-              { transaction },
-            );
+                { transaction },
+              );
+            }
           }
         }
       }
 
-      for (const removeApp of removedApps) {
-        for (const relatedCollectionRecord of relatedCollectionRecords) {
-          const options = relatedCollectionRecord.get('options');
-          const syncToApps = options?.syncToApps || [];
-          if (syncToApps.includes(removeApp)) {
-            syncToApps.splice(syncToApps.indexOf(removeApp), 1);
-            await relatedCollectionRecord.update(
-              {
-                options: {
-                  ...options,
-                  syncToApps,
-                },
-              },
-              { transaction },
-            );
+      if (removedApps.length) {
+        const childrenCollections = this.app.db.inheritanceMap.getChildren(collection.name);
+        const queryCollections = lodash.uniq([...relatedCollections, ...childrenCollections]);
+
+        if (!queryCollections.length) {
+          return;
+        }
+
+        const relatedCollectionRecords = await this.app.db.getRepository('collections').find({
+          filter: {
+            'name.$in': queryCollections,
+          },
+          transaction,
+        });
+
+        for (const removeApp of removedApps) {
+          for (const relatedCollectionRecord of relatedCollectionRecords) {
+            const options = relatedCollectionRecord.get('options');
+            const syncToApps = options?.syncToApps || [];
+            if (syncToApps.includes(removeApp)) {
+              syncToApps.splice(syncToApps.indexOf(removeApp), 1);
+              relatedCollectionRecord.set('syncToApps', syncToApps);
+              await relatedCollectionRecord.save({ transaction });
+            }
           }
         }
       }
-
-      console.log({
-        previousVal,
-        newSyncToApps,
-        relatedCollections,
-      });
     };
 
     this.app.db.on('collections.afterUpdate', syncRelations);

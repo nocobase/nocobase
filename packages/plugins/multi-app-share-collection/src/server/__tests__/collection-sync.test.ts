@@ -112,6 +112,13 @@ pgOnly()('collection sync', () => {
 
     expect(postsCollection.get('syncToApps')).toContain('sub1');
     expect(parentCollection.get('syncToApps')).toContain('sub1');
+
+    // remove syncToApps
+    await parentCollection.set('syncToApps', []);
+    await parentCollection.save();
+
+    await postsCollection.reload();
+    expect(postsCollection.get('syncToApps')).not.toContain('sub1');
   });
 
   it('should set user role in sub app when user created at main app', async () => {
