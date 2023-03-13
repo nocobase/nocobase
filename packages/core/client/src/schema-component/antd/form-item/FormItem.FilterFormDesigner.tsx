@@ -7,7 +7,6 @@ import {
   EditComponent,
   EditDescription,
   EditOperator,
-  EditPattern,
   EditTitle,
   EditTitleField,
   EditTooltip,
@@ -28,7 +27,6 @@ export const FilterFormDesigner = () => {
       <EditTooltip />
       <EditValidationRules />
       <EditComponent />
-      <EditPattern />
       <EditOperator />
       <EditTitleField />
       {collectionField ? <SchemaSettings.Divider /> : null}

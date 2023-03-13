@@ -242,7 +242,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection();
   const { getInterface } = useCollectionManager();
   const form = useForm();
-  const { readPretty = form.readPretty, block = 'Form' } = options || {};
+  const { readPretty = form.readPretty, block = 'FilterForm' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
   const action = fieldSchema?.['x-action'];
 
@@ -259,19 +259,17 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
-        'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       if (isAssocField(field)) {
         schema = {
           type: 'string',
           name: field.name,
           required: false,
-          'x-designer': 'FormItem.FilterFormDesigner',
+          'x-designer': 'AssociationSelect.FilterDesigner',
           'x-component': 'AssociationSelect',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
-          'x-read-pretty': field.uiSchema?.['x-read-pretty'],
         };
       }
       const resultItem = {
@@ -284,12 +282,6 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         },
         schema,
       } as SchemaInitializerItemOptions;
-      if (block == 'Kanban') {
-        resultItem['find'] = (schema: Schema, key: string, action: string) => {
-          const s = findSchema(schema, 'x-component', block);
-          return findSchema(s, key, action);
-        };
-      }
 
       return resultItem;
     });
