@@ -20,6 +20,7 @@ export const calendar: ICollectionTemplate = {
           type: 'string',
           title: '{{t("Cron")}}',
           'x-component': 'CronSet',
+          'x-component-props': 'allowClear',
           enum: [
             {
               label: '{{t("Daily")}}',

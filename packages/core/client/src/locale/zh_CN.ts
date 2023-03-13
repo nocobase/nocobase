@@ -357,6 +357,10 @@ export default {
   "Allow linking to multiple records": "允许关联多条记录",
   "Allow uploading multiple files": "允许上传多个文件",
 
+  "Daily": "每天",
+  "Weekly": "每周",
+  "Monthly": "每月",
+  "Yearly": "每年",
   "Configure calendar": "配置日历",
   "Title field": "标题字段",
   "Custom title": "自定义标题",

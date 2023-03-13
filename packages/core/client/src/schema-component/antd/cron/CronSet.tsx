@@ -4,6 +4,7 @@ import Cron from './Cron';
 import { connect, mapReadPretty, useFieldSchema } from '@formily/react';
 import { useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
+import { EllipsisWithTooltip } from '../input';
 
 interface CronSetProps extends SelectProps {
   onChange: (v: string) => void;
@@ -62,7 +63,7 @@ const CronSetInternal = (props: CronSetProps) => {
 
   return (
     <fieldset>
-      <Select {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
+      <Select allowClear {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
       {isCustomize ? <Cron value={value} onChange={(v) => onCronChange(v, true)} clearButton={false} /> : null}
     </fieldset>
   );
@@ -83,7 +84,7 @@ const ReadPretty = (props: CronSetProps) => {
     return value && options?.find((o) => o.value === value)?.label;
   }, [options, value]);
 
-  return <>{value && (label ? compile(label) : <Cron.ReadPretty {...props} />)}</>;
+  return <EllipsisWithTooltip ellipsis>{value && (label ? compile(label) : <Cron.ReadPretty {...props} />)}</EllipsisWithTooltip>;
 };
 
 export const CronSet = connect(CronSetInternal, mapReadPretty(ReadPretty));
