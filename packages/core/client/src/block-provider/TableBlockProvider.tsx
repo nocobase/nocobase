@@ -89,7 +89,7 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (treeTable) {
+  if (treeTable!==false) {
     params['tree'] = true;
     params.filter = {
       ...(params.filter ?? {}),
