@@ -788,7 +788,7 @@ export const createDetailsBlockSchema = (options) => {
     properties: {
       [uid()]: {
         type: 'void',
-        'x-component': 'FormV2',
+        'x-component': 'Details',
         'x-read-pretty': true,
         'x-component-props': {
           useProps: '{{ useDetailsBlockProps }}',
