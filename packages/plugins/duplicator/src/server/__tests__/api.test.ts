@@ -52,7 +52,7 @@ describe('duplicator api', () => {
   it('should request restore api', async () => {
     const packageInfoResponse = await app
       .agent()
-      .post('/duplicator:upload')
+      .post('/duplicator:uploadFile')
       .attach('file', path.resolve(__dirname, './fixtures/dump.nbdump.fixture'));
 
     console.log(packageInfoResponse.body);
