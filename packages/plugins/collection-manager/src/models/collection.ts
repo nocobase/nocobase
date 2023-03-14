@@ -25,19 +25,17 @@ export class CollectionModel extends MagicAttributeModel {
       fields: [],
     };
 
-    if (!collectionOptions.namespace) {
-      collectionOptions.namespace = 'collection-manager.addon';
-    }
-
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
-
       if (skipExist) {
         return collection;
       }
-
+      delete collectionOptions.namespace;
       collection.updateOptions(collectionOptions);
     } else {
+      if (!collectionOptions.namespace) {
+        collectionOptions.namespace = 'collection-manager.addon';
+      }
       collection = this.db.collection(collectionOptions);
     }
 
