@@ -1,7 +1,7 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
@@ -12,6 +12,7 @@ const InternalTableBlockProvider = (props) => {
   const { params, showIndex, dragSort, rowKey } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +27,8 @@ const InternalTableBlockProvider = (props) => {
         showIndex,
         dragSort,
         rowKey,
+        expandFlag,
+        setExpandFlag: () => setExpandFlag(!expandFlag),
       }}
     >
       <RenderChildrenWithAssociationFilter {...props} />
@@ -89,12 +92,8 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (treeTable!==false) {
+  if (treeTable !== false) {
     params['tree'] = true;
-    params.filter = {
-      ...(params.filter ?? {}),
-      parentId: params.filter?.parentId ?? null,
-    };
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;

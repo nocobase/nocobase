@@ -10,9 +10,9 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import { RecordIndexProvider, RecordProvider, useSchemaInitializer, useTableBlockContext } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { isCollectionFieldComponent, isColumnComponent, extractIndex } from './utils';
+import { isCollectionFieldComponent, isColumnComponent, extractIndex, getIdsWithChildren } from './utils';
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
@@ -162,11 +162,14 @@ export const Table: any = observer((props: any) => {
     required,
     ...others
   } = { ...others1, ...others2 } as any;
+  const { expandFlag } = useTableBlockContext();
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
   const schema = useFieldSchema();
   const { treeTable } = schema?.parent?.['x-decorator-props'];
+  const [expandedKeys, setExpandesKeys] = useState([]);
+  const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
@@ -175,6 +178,21 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
+
+  useEffect(() => {
+    if (treeTable !== false) {
+      const keys = getIdsWithChildren(field.value?.slice());
+      setAllIncludesChildren(keys);
+    }
+  }, [field.value]);
+  useEffect(() => {
+    if (expandFlag) {
+      setExpandesKeys(allIncludesChildren);
+    } else {
+      setExpandesKeys([]);
+    }
+  }, [expandFlag]);
+
   const components = useMemo(() => {
     return {
       header: {
@@ -278,7 +296,7 @@ export const Table: any = observer((props: any) => {
             if (current) {
               index = index + (current - 1) * pageSize + 1;
             }
-            if (record.parentId && treeTable) {
+            if (record.parentId && treeTable !== false) {
               index = extractIndex(record.__index);
             }
             return (
@@ -424,6 +442,13 @@ export const Table: any = observer((props: any) => {
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}
+          expandable={{
+            onExpand: (flag, record) => {
+              const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+              setExpandesKeys(newKeys);
+            },
+            expandedRowKeys: expandedKeys,
+          }}
           dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
