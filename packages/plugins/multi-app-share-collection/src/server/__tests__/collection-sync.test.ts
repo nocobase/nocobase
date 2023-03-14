@@ -97,12 +97,6 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    await mainApp.db.getRepository('applications').create({
-      values: {
-        name: 'sub2',
-      },
-    });
-
     const sub1 = await mainApp.appManager.getApplication('sub1');
 
     const getSub1MapRecord = async (app) => {
@@ -117,6 +111,12 @@ pgOnly()('collection sync', () => {
     await mainApp.pm.enable('map');
 
     expect((await getSub1MapRecord(sub1)).get('enabled')).toBeTruthy();
+
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub2',
+      },
+    });
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
     expect((await getSub1MapRecord(sub2)).get('enabled')).toBeTruthy();
