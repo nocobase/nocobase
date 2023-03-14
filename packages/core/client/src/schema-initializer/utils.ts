@@ -76,8 +76,15 @@ export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return currentFields
-    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
+    .filter(
+      (field) =>
+        field?.interface &&
+        field?.interface !== 'subTable' &&
+        !field?.isForeignKey &&
+        !(field?.target === field.collectionName && field?.foreignKey === 'parentId'),
+    )
     .map((field) => {
+      console.log(field);
       const interfaceConfig = getInterface(field.interface);
       const schema = {
         name: field.name,
