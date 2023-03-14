@@ -24,6 +24,12 @@ class RelationGraph {
     }
 
     for (const [_, collection] of db.collections) {
+      const parents = db.inheritanceMap.getParents(collection.name, { deep: false });
+
+      for (const parent of parents) {
+        isForward ? graph.setEdge(collection.name, parent) : graph.setEdge(parent, collection.name);
+      }
+
       for (const [_, field] of collection.fields) {
         if (field.type === 'hasMany' || field.type === 'belongsTo' || field.type === 'hasOne') {
           isForward ? graph.setEdge(collection.name, field.target) : graph.setEdge(field.target, collection.name);

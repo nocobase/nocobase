@@ -59,4 +59,22 @@ describe('relation graph', () => {
     const reverseGraph = RelationGraph.build(db, { direction: 'reverse' });
     expect(RelationGraph.preOrder(reverseGraph, 'posts')).toEqual(['posts', 'users']);
   });
+
+  it('should add inherits in graph', async () => {
+    if (!db.inDialect('postgres')) {
+      return;
+    }
+
+    db.collection({
+      name: 'person',
+    });
+
+    db.collection({
+      name: 'students',
+      inherits: ['person'],
+    });
+
+    const graph = RelationGraph.build(db);
+    expect(RelationGraph.preOrder(graph, 'students')).toEqual(['students', 'person']);
+  });
 });

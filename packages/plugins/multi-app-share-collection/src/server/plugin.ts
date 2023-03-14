@@ -106,12 +106,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       const collection = this.app.db.getCollection(model.name);
 
       if (addedApps.length) {
-        const parentsCollection = this.app.db.inheritanceMap.getParents(collection.name);
-        const relatedCollections = this.app.db.relationGraph
-          .preOrder(collection.name)
-          .filter((name) => name !== collection.name);
+        const relatedCollections = this.app.db.relationGraph.preOrder(collection.name);
 
-        const queryCollections = lodash.uniq([...relatedCollections, ...parentsCollection]);
+        const queryCollections = relatedCollections.filter((name) => name != collection.name) as Array<string>;
 
         if (!queryCollections.length) {
           return;
@@ -124,36 +121,26 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           transaction,
         });
 
-        for (const addApp of addedApps) {
-          for (const relatedCollectionRecord of relatedCollectionRecords) {
-            const options = relatedCollectionRecord.get('options');
-            const syncToApps = options?.syncToApps || [];
-            if (!syncToApps.includes(addApp)) {
-              syncToApps.push(addApp);
-              await relatedCollectionRecord.update(
-                {
-                  options: {
-                    ...options,
-                    syncToApps,
-                  },
+        for (const relatedCollectionRecord of relatedCollectionRecords) {
+          const options = relatedCollectionRecord.get('options');
+          const syncToApps = options?.syncToApps || [];
+          if (addedApps.some((name) => !syncToApps.includes(name))) {
+            await relatedCollectionRecord.update(
+              {
+                options: {
+                  ...options,
+                  syncToApps: lodash.uniq([...syncToApps, ...addedApps]),
                 },
-                { transaction },
-              );
-            }
+              },
+              { transaction, hooks: false },
+            );
           }
         }
       }
 
       if (removedApps.length) {
-        const childrenCollections = this.app.db.inheritanceMap.getChildren(collection.name);
-
-        const relatedCollections = this.app.db.relationGraph
-          .preOrder(collection.name, {
-            direction: 'reverse',
-          })
-          .filter((name) => name !== collection.name);
-
-        const queryCollections = lodash.uniq([...relatedCollections, ...childrenCollections]);
+        const relatedCollections = this.app.db.relationGraph.preOrder(collection.name, { direction: 'reverse' });
+        const queryCollections = relatedCollections.filter((name) => name != collection.name);
 
         if (!queryCollections.length) {
           return;
@@ -166,22 +153,19 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           transaction,
         });
 
-        for (const removeApp of removedApps) {
-          for (const relatedCollectionRecord of relatedCollectionRecords) {
-            const options = relatedCollectionRecord.get('options');
-            const syncToApps = options?.syncToApps || [];
-            if (syncToApps.includes(removeApp)) {
-              await relatedCollectionRecord.update(
-                {
-                  options: {
-                    ...options,
-                    syncToApps: syncToApps.filter((name) => name !== removeApp),
-                  },
+        for (const relatedCollectionRecord of relatedCollectionRecords) {
+          const options = relatedCollectionRecord.get('options');
+          const syncToApps = options?.syncToApps || [];
+          if (lodash.intersection(removedApps, syncToApps).length) {
+            await relatedCollectionRecord.update(
+              {
+                options: {
+                  ...options,
+                  syncToApps: syncToApps.filter((name) => !removedApps.includes(name)),
                 },
-                { transaction },
-              );
-              await relatedCollectionRecord.save({ transaction });
-            }
+              },
+              { transaction, hooks: false },
+            );
           }
         }
       }

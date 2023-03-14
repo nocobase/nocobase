@@ -132,20 +132,24 @@ pgOnly()('collection sync', () => {
       },
     });
 
+    // sync tags to sub1
     await tagsCollection.set('syncToApps', ['sub1']);
-
     await tagsCollection.save();
+
     const postsCollection = await mainApp.db.getRepository('collections').findOne({
       filter: {
         name: 'posts',
       },
     });
 
+    // posts collection should be synced
     expect(postsCollection.get('syncToApps')).toContain('sub1');
 
+    // remove tags sync
     await tagsCollection.set('syncToApps', []);
     await tagsCollection.save();
 
+    // posts collection should not be synced
     await postsCollection.reload();
     expect(postsCollection.get('syncToApps')).not.toContain('sub1');
   });
