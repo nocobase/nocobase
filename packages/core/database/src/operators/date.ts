@@ -38,4 +38,10 @@ export default {
   $dateNotAfter(value) {
     return { [Op.lt]: getNextDay(value) };
   },
+
+  $dateBetween(value: string[]) {
+    return {
+      [Op.and]: [{ [Op.gte]: stringToDate(value[0]) }, { [Op.lt]: getNextDay(value[1]) }],
+    };
+  },
 } as Record<string, any>;
