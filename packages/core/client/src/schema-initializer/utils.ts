@@ -207,7 +207,12 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { snapshot } = useActionContext();
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey)
+    ?.filter(
+      (field) =>
+        field?.interface &&
+        !field?.isForeignKey &&
+        !(field?.target === field.collectionName && field?.foreignKey === 'parentId'),
+    )
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
