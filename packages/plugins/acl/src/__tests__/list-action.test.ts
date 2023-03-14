@@ -405,6 +405,6 @@ describe('list association action with acl', () => {
       tree: true,
     });
 
-    expect(res.body.meta.allowedActions.view).toMatchObject([1, 2, 3, 4]);
+    expect(res.body.meta.allowedActions.view.sort()).toMatchObject([1, 2, 3, 4]);
   });
 });
