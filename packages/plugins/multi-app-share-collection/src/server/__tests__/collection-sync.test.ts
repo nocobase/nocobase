@@ -90,10 +90,16 @@ pgOnly()('collection sync', () => {
     expect(userInSub2.get('roles').map((item) => item.name)).toContain(defaultRoleInSub2.name);
   });
 
-  it.skip('should sync plugin status between apps', async () => {
+  it('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
+      },
+    });
+
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub2',
       },
     });
 
@@ -111,12 +117,6 @@ pgOnly()('collection sync', () => {
     await mainApp.pm.enable('map');
 
     expect((await getSub1MapRecord(sub1)).get('enabled')).toBeTruthy();
-
-    await mainApp.db.getRepository('applications').create({
-      values: {
-        name: 'sub2',
-      },
-    });
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
     expect((await getSub1MapRecord(sub2)).get('enabled')).toBeTruthy();
