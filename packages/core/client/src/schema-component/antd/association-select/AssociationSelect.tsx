@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
 import {
@@ -17,6 +17,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useDesignable, useCompile, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
 
@@ -483,7 +484,9 @@ AssociationSelect.Designer = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
