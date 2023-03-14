@@ -114,7 +114,7 @@ export const mapRangePicker = function () {
         [t('Last 30 Days')]: [moment().subtract(30, 'days'), moment()],
         [t('Last 90 Days')]: [moment().subtract(90, 'days'), moment()],
       },
-    };
+    } as any;
   };
 };
 
