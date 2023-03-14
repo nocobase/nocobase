@@ -171,8 +171,15 @@ export class MultiAppShareCollectionPlugin extends Plugin {
             const options = relatedCollectionRecord.get('options');
             const syncToApps = options?.syncToApps || [];
             if (syncToApps.includes(removeApp)) {
-              syncToApps.splice(syncToApps.indexOf(removeApp), 1);
-              relatedCollectionRecord.set('syncToApps', syncToApps);
+              await relatedCollectionRecord.update(
+                {
+                  options: {
+                    ...options,
+                    syncToApps: syncToApps.filter((name) => name !== removeApp),
+                  },
+                },
+                { transaction },
+              );
               await relatedCollectionRecord.save({ transaction });
             }
           }

@@ -35,7 +35,122 @@ pgOnly()('collection sync', () => {
     await mainApp.destroy();
   });
 
-  it('should sync to apps with relations', async () => {
+  it('should remove syncToApps', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
+        ],
+      },
+      context: {},
+    });
+
+    const tagsCollection = await mainApp.db.getRepository('collections').findOne({
+      filter: {
+        name: 'tags',
+      },
+    });
+
+    await tagsCollection.set('syncToApps', ['sub1']);
+
+    await tagsCollection.save();
+    const postsCollection = await mainApp.db.getRepository('collections').findOne({
+      filter: {
+        name: 'posts',
+      },
+    });
+
+    expect(postsCollection.get('syncToApps')).toContain('sub1');
+
+    await postsCollection.set('syncToApps', []);
+    await postsCollection.save();
+
+    await tagsCollection.reload();
+    expect(tagsCollection.get('syncToApps')).not.toContain('sub1');
+  });
+
+  it('should sync to apps between relations', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            through: 'posts_tags',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
+        ],
+      },
+      context: {},
+    });
+
+    const tagsCollection = await mainApp.db.getRepository('collections').findOne({
+      filter: {
+        name: 'tags',
+      },
+    });
+
+    await tagsCollection.set('syncToApps', ['sub1']);
+
+    await tagsCollection.save();
+    const postsCollection = await mainApp.db.getRepository('collections').findOne({
+      filter: {
+        name: 'posts',
+      },
+    });
+
+    expect(postsCollection.get('syncToApps')).toContain('sub1');
+
+    await tagsCollection.set('syncToApps', []);
+    await tagsCollection.save();
+
+    await postsCollection.reload();
+    expect(postsCollection.get('syncToApps')).not.toContain('sub1');
+  });
+
+  it('should sync to apps with relations with inherits', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
@@ -113,12 +228,14 @@ pgOnly()('collection sync', () => {
     expect(postsCollection.get('syncToApps')).toContain('sub1');
     expect(parentCollection.get('syncToApps')).toContain('sub1');
 
-    // remove syncToApps
     await parentCollection.set('syncToApps', []);
     await parentCollection.save();
 
     await postsCollection.reload();
     expect(postsCollection.get('syncToApps')).not.toContain('sub1');
+
+    await tagsCollection.reload();
+    expect(tagsCollection.get('syncToApps')).not.toContain('sub1');
   });
 
   it('should set user role in sub app when user created at main app', async () => {
