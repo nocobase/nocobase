@@ -1,5 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, InstallOptions, Plugin } from '@nocobase/server';
+import lodash from 'lodash';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
@@ -241,7 +242,11 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       );
 
       return {
-        database: databaseOptions,
+        database: lodash.merge(databaseOptions, {
+          dialectOptions: {
+            application_name: `nocobase.${appName}`,
+          },
+        }),
         plugins: plugins.includes('nocobase') ? ['nocobase'] : plugins,
         resourcer: {
           prefix: '/api',

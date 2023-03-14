@@ -9,12 +9,17 @@ type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSele
 
 export class AppManager extends EventEmitter {
   public applications: Map<string, Application> = new Map<string, Application>();
+  public app: Application;
 
-  constructor(public app: Application) {
+  constructor(app: Application) {
     super();
+    this.bindMainApplication(app);
+  }
 
+  bindMainApplication(mainApp: Application) {
+    this.app = mainApp;
     const passEventToSubApps = (eventName, method) => {
-      app.on(eventName, async (mainApp, options) => {
+      mainApp.on(eventName, async (mainApp, options) => {
         console.log(`receive event ${eventName} from ${mainApp.name}`);
         for (const application of this.applications.values()) {
           console.log(`pass ${eventName} to ${application.name} `);

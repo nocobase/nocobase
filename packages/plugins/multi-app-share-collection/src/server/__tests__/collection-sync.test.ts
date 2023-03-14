@@ -90,7 +90,7 @@ pgOnly()('collection sync', () => {
     expect(userInSub2.get('roles').map((item) => item.name)).toContain(defaultRoleInSub2.name);
   });
 
-  it.skip('should sync plugin status between apps', async () => {
+  it('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub1',
