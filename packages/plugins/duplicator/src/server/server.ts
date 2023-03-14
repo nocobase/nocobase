@@ -2,13 +2,13 @@ import { Plugin } from '@nocobase/server';
 import addDumpCommand from './commands/dump-command';
 import addRestoreCommand from './commands/restore-command';
 
-import zhCN from './locale/zh-CN';
-import dumpAction from './actions/dump-action';
-import { getPackageContent, restoreAction } from './actions/restore-action';
-import getDictAction from './actions/get-dict-action';
-import dumpableCollections from './actions/dumpable-collections-action';
 import multer from '@koa/multer';
 import * as os from 'os';
+import dumpAction from './actions/dump-action';
+import dumpableCollections from './actions/dumpable-collections-action';
+import getDictAction from './actions/get-dict-action';
+import { getPackageContent, restoreAction } from './actions/restore-action';
+import zhCN from './locale/zh-CN';
 
 export default class Duplicator extends Plugin {
   beforeLoad() {
@@ -22,7 +22,7 @@ export default class Duplicator extends Plugin {
     this.app.resourcer.define({
       name: 'duplicator',
       middleware: async (ctx, next) => {
-        if (ctx.action.actionName !== 'upload') {
+        if (ctx.action.actionName !== 'uploadFile') {
           return next();
         }
         const storage = multer.diskStorage({
@@ -38,7 +38,7 @@ export default class Duplicator extends Plugin {
       },
       actions: {
         restore: restoreAction,
-        upload: getPackageContent,
+        uploadFile: getPackageContent,
         dump: dumpAction,
         dumpableCollections: dumpableCollections,
         getDict: getDictAction,

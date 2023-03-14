@@ -1,3 +1,4 @@
+import { CollectionGroup } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -9,7 +10,6 @@ import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
-import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -56,7 +56,7 @@ export class Dumper extends AppMigrator {
 
   async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
     const { requiredGroups, optionalGroups } = await this.dumpableCollections();
-    let { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
+    let { selectedOptionalGroupNames = [], selectedUserCollections = [] } = options;
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 

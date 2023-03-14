@@ -1,10 +1,10 @@
-import { Restorer } from '../restorer';
 import * as os from 'os';
 import path from 'path';
+import { Restorer } from '../restorer';
 import { getApp } from './get-app';
 
 export async function restoreAction(ctx, next) {
-  const { restoreKey, selectedOptionalGroups, selectedUserCollections } = ctx.request.body;
+  const { restoreKey, selectedOptionalGroups = [], selectedUserCollections = [] } = ctx.request.body;
   const appName = ctx.request.body.app;
 
   const tmpDir = os.tmpdir();
