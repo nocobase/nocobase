@@ -1,5 +1,5 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { ISchema, useFieldSchema, useField } from '@formily/react';
+import { ISchema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';
@@ -51,7 +51,7 @@ export const TableActionColumnInitializers = (props: any) => {
   const { refresh } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
-  const {treeTable} = fieldSchema?.parent?.parent['x-decorator-props'];
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'];
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -109,16 +109,17 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
-            (collection as any).template === 'tree'&&treeTable!==false && {
-              type: 'item',
-              title: t('Add Child'),
-              component: 'CreateChildInitializer',
-              schema: {
-                'x-component': 'Action.Link',
-                'x-action': 'create',
-                'x-decorator': 'ACLActionProvider',
+            (collection as any).template === 'tree' &&
+              treeTable !== false && {
+                type: 'item',
+                title: t('Add Child'),
+                component: 'CreateChildInitializer',
+                schema: {
+                  'x-component': 'Action.Link',
+                  'x-action': 'create',
+                  'x-decorator': 'ACLActionProvider',
+                },
               },
-            },
           ],
         },
         {

@@ -1,5 +1,6 @@
 import React from 'react';
-
+import { useFieldSchema } from '@formily/react';
+import { SchemaComponentOptions } from '../../schema-component';
 import { ActionInitializer } from './ActionInitializer';
 
 export const CreateChildInitializer = (props) => {
@@ -9,6 +10,7 @@ export const CreateChildInitializer = (props) => {
     'x-action': 'create',
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
+    'x-visible': '{{treeTable}}',
     'x-component-props': {
       icon: 'PlusOutlined',
       openMode: 'drawer',
@@ -52,4 +54,11 @@ export const CreateChildInitializer = (props) => {
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
+};
+
+export const CreateChildProvider = (props) => {
+  const schema = useFieldSchema();
+  const { treeTable } = schema?.parent?.['x-decorator-props'];
+  console.log(props, schema);
+  return <SchemaComponentOptions>{props.children}</SchemaComponentOptions>;
 };
