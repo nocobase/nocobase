@@ -54,5 +54,9 @@ describe('relation graph', () => {
     const graph = RelationGraph.build(db);
     expect(RelationGraph.preOrder(graph, 'users')).toEqual(['users', 'posts', 'posts_tags', 'tags']);
     expect(RelationGraph.preOrder(graph, 'tags')).toEqual(['tags']);
+
+    // reverse order
+    const reverseGraph = RelationGraph.build(db, { direction: 'reverse' });
+    expect(RelationGraph.preOrder(reverseGraph, 'posts')).toEqual(['posts', 'users']);
   });
 });

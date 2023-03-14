@@ -8,7 +8,15 @@ class RelationGraph {
     return graphlib;
   }
 
-  static build(db: Database) {
+  static build(
+    db: Database,
+    options?: {
+      direction?: 'forward' | 'reverse';
+    },
+  ) {
+    const direction = options?.direction || 'forward';
+    const isForward = direction === 'forward';
+
     const graph = new graphlib.Graph();
 
     for (const [_, collection] of db.collections) {
@@ -18,13 +26,18 @@ class RelationGraph {
     for (const [_, collection] of db.collections) {
       for (const [_, field] of collection.fields) {
         if (field.type === 'hasMany' || field.type === 'belongsTo' || field.type === 'hasOne') {
-          graph.setEdge(collection.name, field.target);
+          isForward ? graph.setEdge(collection.name, field.target) : graph.setEdge(field.target, collection.name);
         }
 
         if (field.type === 'belongsToMany') {
           const throughCollection = db.getCollection(field.through);
-          graph.setEdge(collection.name, throughCollection.name);
-          graph.setEdge(throughCollection.name, field.target);
+          if (isForward) {
+            graph.setEdge(collection.name, throughCollection.name);
+            graph.setEdge(throughCollection.name, field.target);
+          } else {
+            graph.setEdge(field.target, throughCollection.name);
+            graph.setEdge(throughCollection.name, collection.name);
+          }
         }
       }
     }
@@ -34,6 +47,10 @@ class RelationGraph {
 
   static preOrder(graph, node) {
     return RelationGraph.graphlib().alg.preorder(graph, node);
+  }
+
+  static postOrder(graph, node) {
+    return RelationGraph.graphlib().alg.postorder(graph, node);
   }
 
   preOrder(node) {
