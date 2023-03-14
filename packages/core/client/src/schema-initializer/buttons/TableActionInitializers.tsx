@@ -1,4 +1,5 @@
-import { Schema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
+import { useCollection } from '../../';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -55,6 +56,12 @@ export const TableActionInitializers = {
           component: 'ExpandActionInitializer',
           schema: {
             'x-align': 'right',
+          },
+          visible: () => {
+            const schema = useFieldSchema();
+            const collection = useCollection();
+            const { treeTable } = schema?.parent?.['x-decorator-props'];
+            return (collection as any).template === 'tree' && treeTable !== false;
           },
         },
       ],
