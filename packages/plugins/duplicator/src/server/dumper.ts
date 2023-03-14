@@ -40,7 +40,6 @@ export class Dumper extends AppMigrator {
           .filter((collection) => !pluginsCollections.includes(collection)) //remove collection that is in plugins
           .map(async (name) => {
             // map user collection to { name, title }
-
             const collectionInstance = await this.app.db.getRepository('collections').findOne({
               filterByTk: name,
             });

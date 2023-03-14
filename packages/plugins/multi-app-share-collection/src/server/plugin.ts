@@ -82,25 +82,15 @@ class SubAppPlugin extends Plugin {
 export class MultiAppShareCollectionPlugin extends Plugin {
   afterAdd() {}
 
-  async beforeLoad() {
-    if (!this.db.inDialect('postgres')) {
-      throw new Error('multi-app-share-collection plugin only support postgres');
+  async traverseSubApps(callback: (subApp: Application) => Promise<void>) {
+    for (const [_, subApp] of this.app.appManager.applications) {
+      await callback(subApp);
     }
+  }
 
-    const traverseSubApps = async (callback: (subApp: Application) => void) => {
-      const subApps = [...this.app.appManager.applications.values()];
-
-      for (const subApp of subApps) {
-        await callback(subApp);
-      }
-    };
-
-    this.app.on('beforeSubAppLoad', async ({ subApp }: { subApp: Application }) => {
-      subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
-    });
-
+  shareCollectionToSubApps() {
     this.app.db.on('users.afterCreateWithAssociations', async (model, options) => {
-      await traverseSubApps(async (subApp) => {
+      await this.traverseSubApps(async (subApp) => {
         const { transaction } = options;
         const repository = subApp.db.getRepository('roles');
         const subAppModel = await subApp.db.getCollection('users').repository.findOne({
@@ -123,7 +113,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.db.on('collection:loaded', async ({ transaction, collection }) => {
-      await traverseSubApps(async (subApp) => {
+      await this.traverseSubApps(async (subApp) => {
         const name = collection.name;
 
         const collectionRecord = await subApp.db.getRepository('collections').findOne({
@@ -138,7 +128,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.db.on('field:loaded', async ({ transaction, fieldKey }) => {
-      await traverseSubApps(async (subApp) => {
+      await this.traverseSubApps(async (subApp) => {
         const fieldRecord = await subApp.db.getRepository('fields').findOne({
           filterByTk: fieldKey,
           transaction,
@@ -150,22 +140,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       });
     });
 
-    this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.enable(pluginName);
-      });
-    });
-
-    this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.disable(pluginName);
-      });
-    });
-
     this.app.db.on('field.afterRemove', (removedField) => {
       const subApps = [...this.app.appManager.applications.values()];
+
       for (const subApp of subApps) {
         const collectionName = removedField.collection.name;
         const collection = subApp.db.getCollection(collectionName);
@@ -186,6 +163,35 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
   }
 
+  async syncPlugins() {
+    this.app.on('afterEnablePlugin', async (pluginName) => {
+      await this.traverseSubApps(async (subApp) => {
+        if (subAppFilteredPlugins.includes(pluginName)) return;
+        await subApp.pm.enable(pluginName);
+      });
+    });
+
+    this.app.on('afterDisablePlugin', async (pluginName) => {
+      await this.traverseSubApps(async (subApp) => {
+        if (subAppFilteredPlugins.includes(pluginName)) return;
+        await subApp.pm.disable(pluginName);
+      });
+    });
+  }
+
+  async beforeLoad() {
+    if (!this.db.inDialect('postgres')) {
+      throw new Error('multi-app-share-collection plugin only support postgres');
+    }
+
+    this.app.on('beforeSubAppLoad', async ({ subApp }: { subApp: Application }) => {
+      subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
+    });
+
+    this.syncPlugins();
+    this.shareCollectionToSubApps();
+  }
+
   async load() {
     const multiAppManager = this.app.getPlugin<any>('multi-app-manager');
 
@@ -202,6 +208,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     });
 
+    // Sync the plugin list of the main application to the sub-application.
     this.app.on('beforeSubAppInstall', async ({ subApp }) => {
       const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
       const mainAppPluginsCollection = this.app.db.getCollection('applicationPlugins');
