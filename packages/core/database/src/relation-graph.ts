@@ -53,8 +53,13 @@ class RelationGraph {
     return RelationGraph.graphlib().alg.postorder(graph, node);
   }
 
-  preOrder(node) {
-    const graph = RelationGraph.build(this.db);
+  preOrder(
+    node,
+    options?: {
+      direction?: 'forward' | 'reverse';
+    },
+  ) {
+    const graph = RelationGraph.build(this.db, options);
     return RelationGraph.preOrder(graph, node);
   }
 }

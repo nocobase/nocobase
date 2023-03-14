@@ -103,17 +103,13 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       const addedApps = lodash.difference(newSyncToApps, previousVal);
       const removedApps = lodash.difference(previousVal, newSyncToApps);
 
-      if (!addedApps.length && !removedApps.length) {
-        return;
-      }
-
       const collection = this.app.db.getCollection(model.name);
-      const relatedCollections = this.app.db.relationGraph
-        .preOrder(collection.name)
-        .filter((name) => name !== collection.name);
 
       if (addedApps.length) {
         const parentsCollection = this.app.db.inheritanceMap.getParents(collection.name);
+        const relatedCollections = this.app.db.relationGraph
+          .preOrder(collection.name)
+          .filter((name) => name !== collection.name);
 
         const queryCollections = lodash.uniq([...relatedCollections, ...parentsCollection]);
 
@@ -150,6 +146,13 @@ export class MultiAppShareCollectionPlugin extends Plugin {
 
       if (removedApps.length) {
         const childrenCollections = this.app.db.inheritanceMap.getChildren(collection.name);
+
+        const relatedCollections = this.app.db.relationGraph
+          .preOrder(collection.name, {
+            direction: 'reverse',
+          })
+          .filter((name) => name !== collection.name);
+
         const queryCollections = lodash.uniq([...relatedCollections, ...childrenCollections]);
 
         if (!queryCollections.length) {
