@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager.collections',
+  namespace: 'collection-manager.core',
   duplicator: 'required',
   name: 'collections',
   title: '数据表配置',

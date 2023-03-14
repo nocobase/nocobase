@@ -1,19 +1,21 @@
+import { sortBy } from 'lodash';
+
 export default async function getDictAction(ctx, next) {
   ctx.withoutDataWrapping = true;
   let collectionNames = await ctx.db.getRepository('collections').find();
   collectionNames = collectionNames.map((item) => item.get('name'));
   const collections: any[] = [];
   for (const [name, collection] of ctx.db.collections) {
-    const columns: any[] = [];
-    for (const key in collection.model.rawAttributes) {
-      if (Object.prototype.hasOwnProperty.call(collection.model.rawAttributes, key)) {
-        const attribute = collection.model.rawAttributes[key];
-        columns.push({
-          realName: attribute.field,
-          name: key,
-        });
-      }
-    }
+    // const columns: any[] = [];
+    // for (const key in collection.model.rawAttributes) {
+    //   if (Object.prototype.hasOwnProperty.call(collection.model.rawAttributes, key)) {
+    //     const attribute = collection.model.rawAttributes[key];
+    //     columns.push({
+    //       realName: attribute.field,
+    //       name: key,
+    //     });
+    //   }
+    // }
     const item = {
       name,
       title: collection.options.title,
@@ -29,6 +31,6 @@ export default async function getDictAction(ctx, next) {
     }
     collections.push(item);
   }
-  ctx.body = collections;
+  ctx.body = sortBy(collections, ['namespace', 'name']);
   await next();
 }

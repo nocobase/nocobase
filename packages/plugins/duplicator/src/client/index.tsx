@@ -1,11 +1,106 @@
-import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
+import { PluginManagerContext, SettingsCenterProvider, useAPIClient, useRequest } from '@nocobase/client';
+import { Button, Card, Collapse, Table } from 'antd';
+import { saveAs } from 'file-saver';
 import React, { useContext } from 'react';
-import { Card } from 'antd';
+const { Panel } = Collapse;
 
-const DuplicatorPanel = () => {
+const DuplicatorDump = () => {
+  const api = useAPIClient();
+  const optionsWithDisabled = [
+    { label: 'migrations', value: 'migrations' },
+    { label: 'applicationPlugins', value: 'applicationPlugins' },
+    { label: 'applicationVersion', value: 'applicationVersion', disabled: false },
+  ];
+  const { data, loading } = useRequest({
+    resource: 'duplicator',
+    action: 'getDict',
+  });
+
+  const groups = {};
+
+  for (const collection of data || []) {
+    const moduleName = (collection.namespace || '').split('.').shift();
+    if (!moduleName) {
+      console.log(collection);
+      continue;
+    }
+    groups[moduleName] = groups[moduleName] || [];
+    groups[moduleName].push(collection);
+  }
+
+  const columns = [
+    {
+      title: '表名',
+      dataIndex: 'title',
+      render: (v, record) => <span>{v || record.name}</span>,
+    },
+    {
+      title: '标识',
+      dataIndex: 'name',
+    },
+    {
+      title: 'namespace',
+      dataIndex: 'namespace',
+    },
+  ];
+
+  const selectedRowKeys = (data || [])
+    .filter((item) => {
+      const required = item.duplicator === 'required' || item?.duplicator?.dumpable === 'required';
+      return required;
+    })
+    .map((item) => item.name);
+
+  console.log('groups', groups, data);
+
   return (
     <Card bordered={false}>
-      <div>hello world</div>
+      <div>
+        <Table
+          loading={loading}
+          size={'middle'}
+          rowKey={'name'}
+          pagination={false}
+          rowSelection={{
+            type: 'checkbox',
+            selectedRowKeys,
+            getCheckboxProps(item) {
+              const required = item.duplicator === 'required' || item?.duplicator?.dumpable === 'required';
+              return {
+                disabled: required,
+              };
+            },
+          }}
+          columns={columns}
+          dataSource={data || []}
+          scroll={{ y: '55vh' }}
+        />
+        <Button
+          style={{ marginTop: 24 }}
+          type={'primary'}
+          onClick={async () => {
+            const response = await api.request({
+              url: 'duplicator:dump',
+              method: 'post',
+              responseType: 'blob',
+            });
+            const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
+            const filename = match ? match[1] : 'duplicator.nbdump';
+            let blob = new Blob([response.data]);
+            saveAs(blob, filename);
+          }}
+        >
+          Dump
+        </Button>
+      </div>
+    </Card>
+  );
+};
+
+const DuplicatorRestore = () => {
+  return (
+    <Card bordered={false}>
+      <div>Upload</div>
     </Card>
   );
 };
@@ -15,20 +110,22 @@ export default function (props) {
 
   return (
     <SettingsCenterProvider
-      settings={
-        {
-          // duplicator: {
-          //   title: '应用导入导出',
-          //   icon: 'CloudDownloadOutlined',
-          //   tabs: {
-          //     tab1: {
-          //       title: '应用导入导出',
-          //       component: DuplicatorPanel,
-          //     },
-          //   },
-          // },
-        }
-      }
+      settings={{
+        duplicator: {
+          title: 'Duplicator',
+          icon: 'CloudDownloadOutlined',
+          tabs: {
+            dump: {
+              title: 'Dump',
+              component: DuplicatorDump,
+            },
+            restore: {
+              title: 'Restore',
+              component: DuplicatorRestore,
+            },
+          },
+        },
+      }}
     >
       {props.children}
     </SettingsCenterProvider>

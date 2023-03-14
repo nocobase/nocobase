@@ -1,7 +1,7 @@
 import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import lodash from 'lodash';
 import { SyncOptions, Transactionable } from 'sequelize';
 import { FieldModel } from './field';
-import lodash from 'lodash';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -24,6 +24,10 @@ export class CollectionModel extends MagicAttributeModel {
       ...this.get(),
       fields: [],
     };
+
+    if (!collectionOptions.namespace) {
+      collectionOptions.namespace = 'collection-manager.addon';
+    }
 
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
