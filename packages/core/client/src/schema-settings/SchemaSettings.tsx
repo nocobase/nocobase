@@ -774,7 +774,7 @@ SchemaSettings.ModalItem = (props) => {
     onSubmit,
     asyncGetInitialValues,
     initialValues,
-    width,
+    width = 'fit-content',
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -791,7 +791,7 @@ SchemaSettings.ModalItem = (props) => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
-                <FormLayout layout={'vertical'}>
+                <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
                   <SchemaComponent components={components} scope={scope} schema={schema} />
                 </FormLayout>
               </SchemaComponentOptions>
