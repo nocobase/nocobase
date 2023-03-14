@@ -46,22 +46,19 @@ export const TableBlockDesigner = () => {
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={field.decoratorProps.treeTable!==false}
+          checked={field.decoratorProps.treeTable !== false}
           onChange={(flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
             const params = {
               ...service.params?.[0],
+              tree: flag ? true : null,
             };
-            params.filter = {
-              ...(params.filter ?? {}),
-              parentId: flag ? null : undefined,
-            };
-            service.run(params);
             dn.emit('patch', {
               schema: fieldSchema,
             });
             dn.refresh();
+            service.run(params);
           }}
         />
       )}
