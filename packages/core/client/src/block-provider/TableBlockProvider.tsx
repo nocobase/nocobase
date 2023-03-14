@@ -2,7 +2,7 @@ import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import { useCollectionManager, useCollection } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 
@@ -88,11 +88,12 @@ export const TableBlockProvider = (props) => {
   const appends = useAssociationNames(props.collection);
   const form = useMemo(() => createForm(), []);
   const fieldSchema = useFieldSchema();
+  const collection = useCollection();
   const { treeTable } = fieldSchema['x-decorator-props'];
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (treeTable !== false) {
+  if ((collection as any).template === 'tree' && treeTable !== false) {
     params['tree'] = true;
   }
   if (!Object.keys(params).includes('appends')) {
