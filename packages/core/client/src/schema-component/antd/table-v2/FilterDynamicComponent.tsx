@@ -1,5 +1,5 @@
-import { useCompile } from '@nocobase/client';
 import React from 'react';
+import { useCompile } from '../..';
 import { Variable } from '../variable';
 
 const useVariableTypes = () => {
