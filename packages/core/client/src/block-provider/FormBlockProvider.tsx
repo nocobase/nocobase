@@ -1,3 +1,4 @@
+import { cornersOfRectangle } from '@dnd-kit/core/dist/utilities/algorithms/helpers';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
 import { Spin } from 'antd';
@@ -52,6 +53,7 @@ const InternalFormBlockProvider = (props) => {
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
+  delete record.__parent;
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
