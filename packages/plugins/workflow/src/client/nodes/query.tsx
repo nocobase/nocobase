@@ -1,11 +1,12 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { collection, filter } from '../schemas/collection';
+import { appends, collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
+import { FieldsSelect } from '../components/FieldsSelect';
 
 
 
@@ -14,7 +15,7 @@ export default {
   type: 'query',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
+    collection,
     // 'config.multiple': {
     //   type: 'boolean',
     //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
@@ -25,13 +26,11 @@ export default {
     //     disabled: true
     //   }
     // },
-    'config.params': {
+    params: {
       type: 'object',
-      name: 'config.params',
-      title: '',
-      'x-decorator': 'FormItem',
       properties: {
-        filter
+        filter,
+        appends
       }
     }
   },
@@ -42,7 +41,8 @@ export default {
     useCollectionDataSource
   },
   components: {
-    FilterDynamicComponent
+    FilterDynamicComponent,
+    FieldsSelect
   },
   getOptions(config, types) {
     return useCollectionFieldOptions({ collection: config.collection, types });

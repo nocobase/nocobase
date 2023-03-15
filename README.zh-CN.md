@@ -46,7 +46,7 @@ NocoBase 采用数据结构与使用界面分离的设计思路，可以为数�
 ![2.collection-block.png](https://docs-cn.nocobase.com/static/2.collection-block.7dcc928f.png)
 
 ### 2. 所见即所得
-NocoBase 可以开发复杂和有特色的业务系统，但这并意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
+NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，这意味着具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
 
 ![2.user-root.gif](https://docs-cn.nocobase.com/static/2.user-root.824f5ef2.gif)
 
@@ -62,9 +62,10 @@ NocoBase 采用插件化架构，所有新功能都可以通过开发和安装�
 
 如果你需要商业版本和商业服务，欢迎通过邮件联系我们：hello@nocobase.com  
 
-或者添加我们的微信：  
+也可以添加我们的微信，沟通商业合作或者加入微信群：  
 
 ![](https://www.nocobase.com/images/wechat.png)  
+
 
 ## 安装
 

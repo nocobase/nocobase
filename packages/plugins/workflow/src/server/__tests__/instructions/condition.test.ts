@@ -44,7 +44,7 @@ describe('workflow > instructions > condition', () => {
         type: 'condition',
         config: {
           engine: 'math.js',
-          calculation: '1 == 1'
+          expression: '1 == 1'
         }
       });
 
@@ -81,7 +81,7 @@ describe('workflow > instructions > condition', () => {
         config: {
           engine: 'math.js',
           // false
-          calculation: '0 == 1'
+          expression: '0 == 1'
         }
       });
 
@@ -117,13 +117,12 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
-          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                '1 == 1',
-                '1 == 1',
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [1, 1] }
               ]
             }
           }
@@ -143,13 +142,12 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
-          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                '1 == 1',
-                '0 == 1',
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -169,13 +167,12 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
-          engine: 'math.js',
           calculation: {
             group: {
               type: 'or',
               calculations: [
-                '1 == 1',
-                '0 == 1',
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -195,13 +192,12 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
-          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                '0 == 1',
-                '0 == 1',
+                { calculator: 'equal', operands: [0, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -221,18 +217,17 @@ describe('workflow > instructions > condition', () => {
       const n1 = await workflow.createNode({
         type: 'condition',
         config: {
-          engine: 'math.js',
           calculation: {
             group: {
               type: 'and',
               calculations: [
-                '1 == 1',
+                { calculator: 'equal', operands: [1, 1] },
                 {
                   group: {
                     type: 'or',
                     calculations: [
-                      '0 == 1',
-                      '0 == 1',
+                      { calculator: 'equal', operands: [0, 1] },
+                      { calculator: 'equal', operands: [0, 1] }
                     ]
                   }
                 }
@@ -306,7 +301,7 @@ describe('workflow > instructions > condition', () => {
         type: 'condition',
         config: {
           engine: 'math.js',
-          calculation: '1 == 1'
+          expression: '1 == 1'
         }
       });
 
@@ -327,7 +322,7 @@ describe('workflow > instructions > condition', () => {
         type: 'condition',
         config: {
           engine: 'formula.js',
-          calculation: '1 == 1'
+          expression: '1 == 1'
         }
       });
 

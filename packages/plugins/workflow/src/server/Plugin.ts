@@ -5,8 +5,6 @@ import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
 import initActions from './actions';
-import initCalculationEngines from './calculators';
-import type { Evaluator } from './calculators';
 import { EXECUTION_STATUS } from './constants';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
@@ -20,7 +18,6 @@ type Pending = [ExecutionModel, JobModel?];
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  calculators: Registry<Evaluator> = new Registry();
   functions: Registry<Function> = new Registry();
   executing: ExecutionModel | null = null;
   pending: Pending[] = [];
@@ -78,7 +75,6 @@ export default class WorkflowPlugin extends Plugin {
     initActions(this);
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);
-    initCalculationEngines(this);
     initFunctions(this, options.functions);
 
 

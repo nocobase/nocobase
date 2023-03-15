@@ -285,4 +285,36 @@ describe('database', () => {
     test.customMethod();
     expect(test.get('abc')).toBe('abc');
   });
+
+  test('getFieldByPath', () => {
+    db.collection({
+      name: 'users',
+      fields: [{ type: 'hasMany', name: 'p', target: 'posts' }],
+    });
+    db.collection({
+      name: 'comments',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+    db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'hasMany', name: 'c', target: 'comments' },
+        { type: 'belongsToMany', name: 't', target: 'tags' },
+      ],
+    });
+    db.collection({
+      name: 'tags',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+    const f1 = db.getFieldByPath('users.p.t');
+    const f2 = db.getFieldByPath('users.p.c');
+    const f3 = db.getFieldByPath('users.p');
+    expect(f1.name).toBe('t');
+    expect(f2.name).toBe('c');
+    expect(f3.name).toBe('p');
+    expect(db.getFieldByPath('users.d')).toBeNull;
+    expect(db.getFieldByPath('users.d.e')).toBeNull;
+    expect(db.getFieldByPath('users.p.f')).toBeNull;
+    expect(db.getFieldByPath('users.p.c.j')).toBeNull;
+  });
 });

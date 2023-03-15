@@ -5,8 +5,7 @@ import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from "react-i18next";
 import { css } from "@emotion/css";
 
-import { CollectionField, CollectionProvider, SchemaComponent, useCollectionManager, useCompile } from "@nocobase/client";
-import { VariableInput } from "./VariableInput";
+import { CollectionField, CollectionProvider, SchemaComponent, Variable, useCollectionManager, useCompile } from "@nocobase/client";
 import { lang } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
 
@@ -14,8 +13,8 @@ function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
-  const { values: data } = useForm();
-  const fields = getCollectionFields(data?.config?.collection);
+  const { values: config } = useForm();
+  const fields = getCollectionFields(config?.collection);
   const { type } = fields.find(item => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
@@ -34,13 +33,14 @@ export default observer(({ value, disabled, onChange }: any) => {
   const compile = useCompile();
   const form = useForm();
   const { getCollection, getCollectionFields } = useCollectionManager();
-  const { values: data } = useForm();
-  const collectionName = data?.config?.collection;
+  const { values: config } = useForm();
+  const collectionName = config?.collection;
   const fields = getCollectionFields(collectionName)
     .filter(field => (
       !field.hidden
       && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false)
-      // && (!['linkTo', 'hasMany', 'hasOne', 'belongsToMany'].includes(field.type))
+      // TODO: should use some field option but not type to control this
+      && (!['formula'].includes(field.type))
     ));
 
   const unassignedFields = fields.filter(field => !(field.name in value));
@@ -77,8 +77,8 @@ export default observer(({ value, disabled, onChange }: any) => {
                       display: flex;
                     }
                   `}>
-                    <VariableInput
-                      scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
+                    <Variable.Input
+                      scope={scope}
                       value={value[field.name]}
                       onChange={(next) => {
                         onChange({ ...value, [field.name]: next });
@@ -89,12 +89,15 @@ export default observer(({ value, disabled, onChange }: any) => {
                           type: 'void',
                           properties: {
                             [field.name]: {
-                              'x-component': ConstantCompoent
+                              'x-component': ConstantCompoent,
+                              ['x-validator']() {
+                                return '';
+                              }
                             }
                           }
                         }}
                       />
-                    </VariableInput>
+                    </Variable.Input>
                     {!mergedDisabled
                       ? (
                         <Button

@@ -40,8 +40,6 @@ describe('multiple apps', () => {
     await app.stop();
 
     expect(subApp1StopFn).toBeCalledTimes(1);
-
-    await app.destroy();
   });
 });
 
@@ -55,6 +53,27 @@ describe('multiple application', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should upgrade sub apps when main app upgraded', async () => {
+    const subApp1 = app.appManager.createApplication('sub1', {
+      database: app.db,
+    });
+    const subApp2 = app.appManager.createApplication('sub2', {
+      database: app.db,
+    });
+    const subApp1UpgradeFn = jest.fn();
+    const subApp2UpgradeFn = jest.fn();
+
+    subApp1.on('afterUpgrade', subApp1UpgradeFn);
+    subApp2.on('afterUpgrade', subApp2UpgradeFn);
+
+    await app.upgrade();
+
+    expect(subApp1UpgradeFn).toBeCalledTimes(1);
+    expect(subApp2UpgradeFn).toBeCalledTimes(1);
+    await subApp2.stop();
+    await subApp1.stop();
   });
 
   it('should create multiple apps', async () => {

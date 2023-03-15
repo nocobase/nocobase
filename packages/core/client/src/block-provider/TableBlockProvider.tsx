@@ -1,8 +1,8 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { useCollectionManager } from '../collection-manager';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useCollectionManager, useCollection } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
 
@@ -12,6 +12,10 @@ const InternalTableBlockProvider = (props) => {
   const { params, showIndex, dragSort, rowKey, ...other } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   useFixedSchema();
   return (
     <TableBlockContext.Provider
@@ -23,7 +27,8 @@ const InternalTableBlockProvider = (props) => {
         showIndex,
         dragSort,
         rowKey,
-        ...other,
+        expandFlag,
+        setExpandFlag: () => setExpandFlag(!expandFlag),
       }}
     >
       <RenderChildrenWithAssociationFilter {...props} />
@@ -82,8 +87,15 @@ export const TableBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   const form = useMemo(() => createForm(), []);
+  const fieldSchema = useFieldSchema();
+  const { getCollection } = useCollectionManager();
+  const collection=getCollection(props.collection)
+  const { treeTable } = fieldSchema['x-decorator-props'];
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  if ((collection as any).template === 'tree' && treeTable !== false) {
+    params['tree'] = true;
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
@@ -130,6 +142,7 @@ export const useTableBlockProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys) {
+      console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
     },

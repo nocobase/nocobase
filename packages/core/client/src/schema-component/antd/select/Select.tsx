@@ -69,17 +69,23 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, ...others } = props;
+    const { objectValue, value, ...others } = props;
     const mode = props.mode || props.multiple ? 'multiple' : undefined;
-
+    const toValue = (v) => {
+      if (['multiple', 'tags'].includes(mode)) {
+        return v || [];
+      }
+      return v;
+    };
     if (objectValue) {
-      return <ObjectSelect {...others} mode={mode} />;
+      return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
     }
     return (
       <AntdSelect
         showSearch
         filterOption={filterOption}
         allowClear
+        value={toValue(value)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
@@ -91,7 +97,6 @@ const InternalSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

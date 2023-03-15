@@ -99,18 +99,20 @@ const useAssociationNames = (collection) => {
 
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
-
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(props.collection);
+  const { treeTable } = fieldSchema['x-decorator-props'];
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-  // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  if ((collection as any).template === 'tree' && treeTable !== false) {
+    params['tree'] = true;
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;

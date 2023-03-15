@@ -10,9 +10,15 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer } from '../../../';
+import {
+  RecordIndexProvider,
+  RecordProvider,
+  useSchemaInitializer,
+  useTableBlockContext,
+  SchemaComponentOptions,
+} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { isCollectionFieldComponent, isColumnComponent } from './utils';
+import { isCollectionFieldComponent, isColumnComponent, extractIndex, getIdsWithChildren } from './utils';
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
@@ -108,7 +114,7 @@ const TableIndex = (props) => {
   const { index } = props;
   return (
     <div className={classNames('nb-table-index')} style={{ padding: '0 8px 0 16px' }}>
-      {index + 1}
+      {index}
     </div>
   );
 };
@@ -164,10 +170,14 @@ export const Table: any = observer((props: any) => {
     required,
     ...others
   } = { ...others1, ...others2 } as any;
+  const { expandFlag } = useTableBlockContext();
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
-
+  const schema = useFieldSchema();
+  const { treeTable } = schema?.parent?.['x-decorator-props'];
+  const [expandedKeys, setExpandesKeys] = useState([]);
+  const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
@@ -176,6 +186,21 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
+
+  useEffect(() => {
+    if (treeTable !== false) {
+      const keys = getIdsWithChildren(field.value?.slice());
+      setAllIncludesChildren(keys);
+    }
+  }, [field.value]);
+  useEffect(() => {
+    if (expandFlag) {
+      setExpandesKeys(allIncludesChildren);
+    } else {
+      setExpandesKeys([]);
+    }
+  }, [expandFlag]);
+
   const components = useMemo(() => {
     return {
       header: {
@@ -277,7 +302,10 @@ export const Table: any = observer((props: any) => {
             const current = props?.pagination?.current;
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
-              index = index + (current - 1) * pageSize;
+              index = index + (current - 1) * pageSize + 1;
+            }
+            if (record.parentId && treeTable !== false) {
+              index = extractIndex(record.__index);
             }
             return (
               <div
@@ -286,6 +314,7 @@ export const Table: any = observer((props: any) => {
                   css`
                     position: relative;
                     display: flex;
+                    float: left;
                     align-items: center;
                     justify-content: space-evenly;
                     padding-right: 8px;
@@ -389,48 +418,57 @@ export const Table: any = observer((props: any) => {
   };
 
   return (
-    <div
-      ref={mountedRef}
-      className={css`
-        height: 100%;
-        overflow: hidden;
-        .ant-table-wrapper {
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <div
+        ref={mountedRef}
+        className={css`
           height: 100%;
-        }
-        .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-      `}
-    >
-      <SortableWrapper>
-        <AntdTable
-          ref={(ref) => {
-            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-          }}
-          rowKey={rowKey ?? defaultRowKey}
-          {...others}
-          {...restProps}
-          pagination={paginationProps}
-          components={components}
-          onChange={(pagination, filters, sorter, extra) => {
-            onTableChange?.(pagination, filters, sorter, extra);
-          }}
-          tableLayout={'auto'}
-          scroll={scroll}
-          columns={columns}
-          dataSource={field?.value?.slice?.()}
-        />
-      </SortableWrapper>
-      {field.errors.length > 0 && (
-        <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
-          {field.errors.map((error) => {
-            return error.messages.map((message) => <div>{message}</div>);
-          })}
-        </div>
-      )}
-    </div>
+          overflow: hidden;
+          .ant-table-wrapper {
+            height: 100%;
+          }
+          .ant-table {
+            overflow-x: auto;
+            overflow-y: hidden;
+          }
+        `}
+      >
+        <SortableWrapper>
+          <AntdTable
+            ref={(ref) => {
+              const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+              const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+              setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+            }}
+            rowKey={rowKey ?? defaultRowKey}
+            {...others}
+            {...restProps}
+            pagination={paginationProps}
+            components={components}
+            onChange={(pagination, filters, sorter, extra) => {
+              onTableChange?.(pagination, filters, sorter, extra);
+            }}
+            tableLayout={'auto'}
+            scroll={scroll}
+            columns={columns}
+            expandable={{
+              onExpand: (flag, record) => {
+                const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+                setExpandesKeys(newKeys);
+              },
+              expandedRowKeys: expandedKeys,
+            }}
+            dataSource={field?.value?.slice?.()}
+          />
+        </SortableWrapper>
+        {field.errors.length > 0 && (
+          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
+            {field.errors.map((error) => {
+              return error.messages.map((message) => <div>{message}</div>);
+            })}
+          </div>
+        )}
+      </div>
+    </SchemaComponentOptions>
   );
 });

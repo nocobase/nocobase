@@ -21,7 +21,7 @@ export const CollectionHistoryProvider: React.FC = (props) => {
     action: 'list',
     params: {
       paginate: false,
-      appends: ['fields', 'fields.uiSchema'],
+      appends: ['fields'],
       filter: {
         // inherit: false,
       },

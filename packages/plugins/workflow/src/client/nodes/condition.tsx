@@ -5,6 +5,8 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { Trans, useTranslation } from "react-i18next";
 
 import { Registry } from "@nocobase/utils/client";
+import { Variable, useCompile } from "@nocobase/client";
+import { evaluators, renderReference } from "@nocobase/evaluators/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
@@ -12,11 +14,7 @@ import { useFlowContext } from '../FlowContext';
 import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { lang, NAMESPACE } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
-import { VariableTextArea } from "../components/VariableTextArea";
-import { VariableInput } from "../components/VariableInput";
 import { RadioWithTooltip, RadioWithTooltipOption } from "../components/RadioWithTooltip";
-import { calculationEngines, renderReference } from "./calculation/engines";
-import { useCompile } from "@nocobase/client";
 
 interface Calculator {
   name: string;
@@ -152,7 +150,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
       align-items: center;
       flex-wrap: wrap;
     `}>
-      <VariableInput
+      <Variable.Input
         value={operands[0]}
         onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))}
         scope={options}
@@ -170,7 +168,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
           </Select.OptGroup>
         ))}
       </Select>
-      <VariableInput
+      <Variable.Input
         value={operands[1]}
         onChange={(v => onChange({ calculator, operands: [operands[0], v] }))}
         scope={options}
@@ -306,9 +304,8 @@ export default {
   type: 'condition',
   group: 'control',
   fieldset: {
-    'config.rejectOnFalse': {
+    rejectOnFalse: {
       type: 'boolean',
-      name: 'config.rejectOnFalse',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -326,29 +323,27 @@ export default {
         }
       ],
     },
-    'config.engine': {
+    engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.engine',
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
         options: [
           ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-          ...Array.from(calculationEngines.getEntities())
+          ...Array.from(evaluators.getEntities())
         ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
       },
       required: true,
       default: 'basic',
     },
-    'config.calculation': {
+    calculation: {
       type: 'string',
-      name: 'config.calculation',
       title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
       'x-reactions': {
-        dependencies: ['config.engine'],
+        dependencies: ['engine'],
         fulfill: {
           state: {
             visible: '{{$deps[0] === "basic"}}'
@@ -357,19 +352,18 @@ export default {
       },
       required: true
     },
-    'config.expression': {
+    expression: {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.expression',
       'x-decorator': 'FormItem',
-      'x-component': 'VariableTextArea',
+      'x-component': 'Variable.TextArea',
       'x-component-props': {
         scope: '{{useWorkflowVariableOptions}}'
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = calculationEngines.get(values.config.engine);
-        const exp = value.trim().replace(/\{\{([^{}]+)\}\}/g, '1');
+        const { evaluate } = evaluators.get(values.engine);
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);
           return '';
@@ -378,7 +372,7 @@ export default {
         }
       },
       'x-reactions': {
-        dependencies: ['config.engine'],
+        dependencies: ['engine'],
         fulfill: {
           state: {
             visible: '{{$deps[0] !== "basic"}}'
@@ -450,7 +444,6 @@ export default {
   },
   components: {
     CalculationConfig,
-    VariableTextArea,
     RadioWithTooltip
   }
 };

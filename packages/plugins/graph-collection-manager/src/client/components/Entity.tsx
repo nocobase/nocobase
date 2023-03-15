@@ -23,10 +23,11 @@ import {
   useCompile,
   useCurrentAppInfo,
   useRecord,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
 import { Badge, Dropdown, Popover, Tag } from 'antd';
 import { groupBy } from 'lodash';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useContext } from 'react';
 import {
   useAsyncDataSource,
   useCancelAction,
@@ -59,6 +60,7 @@ const Entity: React.FC<{
   } = node;
   const database = useCurrentAppInfo();
   const collectionData = useRef();
+  const categoryData = useContext(CollectionCategroriesContext);
   collectionData.current = { ...item, title, inherits: item.inherits && new Proxy(item.inherits, {}) };
   const { category } = item;
   const compile = useCompile();
@@ -66,6 +68,12 @@ const Entity: React.FC<{
     return targetGraph.collections?.map((collection: any) => ({
       label: compile(collection.title),
       value: collection.name,
+    }));
+  };
+  const loadCategories = async () => {
+    return categoryData.data.map((item: any) => ({
+      label: compile(item.name),
+      value: item.id,
     }));
   };
   const portsProps = {
@@ -104,6 +112,7 @@ const Entity: React.FC<{
                     useUpdateCollectionActionAndRefreshCM,
                     useCancelAction,
                     loadCollections,
+                    loadCategories,
                     useAsyncDataSource,
                     Action,
                     DeleteOutlined,

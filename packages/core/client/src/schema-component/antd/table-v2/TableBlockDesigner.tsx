@@ -19,10 +19,11 @@ export const TableBlockDesigner = () => {
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -35,12 +36,32 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
+  const collection = useCollection();
   const { dragSort } = field.decoratorProps;
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
-
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
+      {(collection as any)?.template === 'tree' && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          defaultChecked={true}
+          checked={field.decoratorProps.treeTable !== false}
+          onChange={(flag) => {
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+            service.run(params);
+          }}
+        />
+      )}
       {sortable && (
         <SchemaSettings.SwitchItem
           title={t('Enable drag and drop sorting')}
@@ -211,8 +232,10 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+      {supportTemplate && <SchemaSettings.Divider />}
+      {supportTemplate && (
+        <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
+      )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

@@ -5,8 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
 import { createDesignable, useDesignable } from '../../schema-component';
+import { useCollection } from '../../collection-manager';
 
-const Resizable = (props) => {
+export const Resizable = (props) => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const fieldSchema = useFieldSchema();
@@ -49,6 +50,8 @@ export const TableActionColumnInitializers = (props: any) => {
   const api = useAPIClient();
   const { refresh } = useDesignable();
   const { t } = useTranslation();
+  const collection = useCollection();
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'];
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -106,6 +109,17 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
+            (collection as any).template === 'tree' &&
+              treeTable !== false && {
+                type: 'item',
+                title: t('Add Child'),
+                component: 'CreateChildInitializer',
+                schema: {
+                  'x-component': 'Action.Link',
+                  'x-action': 'create',
+                  'x-decorator': 'ACLActionProvider',
+                },
+              },
           ],
         },
         {
