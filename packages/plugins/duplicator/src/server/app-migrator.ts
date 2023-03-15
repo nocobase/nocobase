@@ -1,4 +1,5 @@
 import { Application } from '@nocobase/server';
+import { Filter } from '@nocobase/database';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import crypto from 'crypto';
 import EventEmitter from 'events';
@@ -19,11 +20,17 @@ abstract class AppMigrator extends EventEmitter {
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
+  public customCollectionsFilter: Filter = {};
+
   constructor(app, options?: AppMigratorOptions) {
     super();
 
     this.app = app;
     this.workDir = options?.workDir || this.tmpDir();
+  }
+
+  setCustomCollectionsFilter(filter: Filter) {
+    this.customCollectionsFilter = lodash.cloneDeep(filter);
   }
 
   tmpDir() {
@@ -53,7 +60,9 @@ abstract class AppMigrator extends EventEmitter {
   }
 
   async getCustomCollections() {
-    const collections = await this.app.db.getCollection('collections').repository.find();
+    const collections = await this.app.db.getCollection('collections').repository.find({
+      filter: this.customCollectionsFilter,
+    });
     return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.get('name'));
   }
 

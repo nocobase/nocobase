@@ -65,6 +65,11 @@ pgOnly()('dump with share collection', () => {
     });
 
     const dumper = new Dumper(sub1);
+
+    dumper.setCustomCollectionsFilter({
+      'options.syncToApps::JSONB.$contains': `["${sub1.name}"]`,
+    });
+
     const dumpableCollections = await dumper.dumpableCollections();
 
     // should dump share collection only
