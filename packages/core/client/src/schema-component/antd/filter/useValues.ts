@@ -23,7 +23,7 @@ const findOption = (dataIndex = [], options) => {
 export const useValues = () => {
   const field = useField<any>();
   const logic = useContext(FilterLogicContext);
-  const { options, collectionFields } = useContext(FilterContext);
+  const { options } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
