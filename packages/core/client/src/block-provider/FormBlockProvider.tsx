@@ -49,20 +49,30 @@ const InternalFormBlockProvider = (props) => {
   );
 };
 
+const useIsEmptyRecord = () => {
+  const record = useRecord();
+  const keys = Object.keys(record);
+  if (keys.includes('__parent')) {
+    return keys.length > 1;
+  }
+  return keys.length > 0;
+};
+
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
   const { __collection } = record;
   const currentCollection = useCollection();
   const { designable } = useDesignable();
+  const isEmptyRecord = useIsEmptyRecord();
   let detailFlag = false;
-  if (Object.keys(record).length > 0) {
+  if (isEmptyRecord) {
     detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
+  const createFlag = (currentCollection.name === collection && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
