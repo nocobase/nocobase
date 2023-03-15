@@ -6,6 +6,7 @@
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@nocobase/plugin-acl": "0.9.1-alpha.2",
+    "@nocobase/plugin-api-doc": "0.9.1-alpha.2",
     "@nocobase/plugin-audit-logs": "0.9.1-alpha.2",
     "@nocobase/plugin-charts": "0.9.1-alpha.2",
     "@nocobase/plugin-china-region": "0.9.1-alpha.2",

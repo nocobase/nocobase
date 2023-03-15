@@ -24,6 +24,7 @@ export class PresetNocoBase extends Plugin {
     'iframe-block',
     'formula-field',
     'charts',
+    'api-doc',
   ];
 
   localPlugins = [
@@ -42,14 +43,14 @@ export class PresetNocoBase extends Plugin {
   }
 
   getBuiltInPlugins() {
-    const { PRESET_NOCOBASE_PLUGINS, APPEND_PRESET_BUILT_IN_PLUGINS } = process.env;
+    const { PRESET_NOCOBASE_PLUGINS = '', APPEND_PRESET_BUILT_IN_PLUGINS = '' } = process.env;
     return _.uniq(
       this.splitNames(APPEND_PRESET_BUILT_IN_PLUGINS || PRESET_NOCOBASE_PLUGINS).concat(this.builtInPlugins),
     );
   }
 
   getLocalPlugins() {
-    const { APPEND_PRESET_LOCAL_PLUGINS } = process.env;
+    const { APPEND_PRESET_LOCAL_PLUGINS = '' } = process.env;
     return _.uniq(this.splitNames(APPEND_PRESET_LOCAL_PLUGINS).concat(this.localPlugins));
   }
 

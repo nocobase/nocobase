@@ -1,0 +1,19 @@
+{
+  "name": "@nocobase/plugin-api-doc",
+  "version": "0.9.1-alpha.2",
+  "description": "",
+  "license": "AGPL-3.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "dependencies": {
+    "@nocobase/client": "0.9.1-alpha.2",
+    "@nocobase/database": "0.9.1-alpha.2",
+    "@nocobase/server": "0.9.1-alpha.2",
+    "swagger-ui-dist": "^4.18.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/plugins/api-doc"
+  }
+}
