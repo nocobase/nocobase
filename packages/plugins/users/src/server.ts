@@ -1,4 +1,3 @@
-import parse from 'json-templates';
 import { resolve } from 'path';
 
 import { Collection, Op } from '@nocobase/database';
@@ -41,17 +40,6 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       $isCurrentUser(_, ctx) {
         return {
           [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
-        };
-      },
-      $isNotCurrentUser(_, ctx) {
-        return {
-          [Op.ne]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
-        };
-      },
-      $isVar(val, ctx) {
-        const obj = parse({ val: `{{${val}}}` })(JSON.parse(JSON.stringify(ctx?.app?.ctx?.state)));
-        return {
-          [Op.eq]: obj.val,
         };
       },
     });
