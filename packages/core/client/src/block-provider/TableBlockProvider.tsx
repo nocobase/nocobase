@@ -90,7 +90,7 @@ export const TableBlockProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema['x-decorator-props'];
+  const { treeTable } = fieldSchema?.['x-decorator-props']||{};
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
