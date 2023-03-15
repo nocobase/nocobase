@@ -1,10 +1,11 @@
 import React from 'react';
 import { Button } from 'antd';
 import { css } from '@emotion/css';
-import { ActionInitializer } from './ActionInitializer';
 import { useTranslation } from 'react-i18next';
+import { ActionInitializer } from './ActionInitializer';
 import { useTableBlockContext } from '../../';
 import { NodeCollapseOutlined, NodeExpandOutlined } from '@ant-design/icons';
+
 export const ExpandActionInitializer = (props) => {
   const schema = {
     'x-action': 'expandAll',
@@ -68,16 +69,18 @@ export const ExpandActionComponent = (props) => {
   const ctx = useTableBlockContext();
   return (
     <div className={actionDesignerCss}>
-      <Button
-        onClick={() => {
-          ctx?.setExpandFlag();
-        }}
-        icon={ctx?.expandFlag ? <NodeCollapseOutlined /> : <NodeExpandOutlined />}
-        type={props.type}
-      >
-        {props.children[1]}
-        <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? t('Collapse all') : t('Expand all')}</span>
-      </Button>
+      {ctx.params['tree'] && (
+        <Button
+          onClick={() => {
+            ctx?.setExpandFlag();
+          }}
+          icon={ctx?.expandFlag ? <NodeCollapseOutlined /> : <NodeExpandOutlined />}
+          type={props.type}
+        >
+          {props.children[1]}
+          <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? t('Collapse all') : t('Expand all')}</span>
+        </Button>
+      )}
     </div>
   );
 };

@@ -1,9 +1,7 @@
 import React from 'react';
-import { useFieldSchema } from '@formily/react';
-import { SchemaComponentOptions } from '../../schema-component';
 import { ActionInitializer } from './ActionInitializer';
-
 export const CreateChildInitializer = (props) => {
+
   const schema = {
     type: 'void',
     title: '{{ t("Add Child") }}',
@@ -54,11 +52,4 @@ export const CreateChildInitializer = (props) => {
     },
   };
   return <ActionInitializer {...props} schema={schema} />;
-};
-
-export const CreateChildProvider = (props) => {
-  const schema = useFieldSchema();
-  const { treeTable } = schema?.parent?.['x-decorator-props'];
-  console.log(props, schema);
-  return <SchemaComponentOptions>{props.children}</SchemaComponentOptions>;
 };

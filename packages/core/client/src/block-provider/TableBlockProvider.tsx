@@ -1,10 +1,11 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import React, { createContext, useMemo, useState, useContext,useEffect } from 'react';
+import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFixedSchema } from '../schema-component';
+import { SchemaComponentOptions } from '../..';
 
 export const TableBlockContext = createContext<any>({});
 
@@ -89,7 +90,7 @@ export const TableBlockProvider = (props) => {
   const form = useMemo(() => createForm(), []);
   const fieldSchema = useFieldSchema();
   const { getCollection } = useCollectionManager();
-  const collection=getCollection(props.collection)
+  const collection = getCollection(props.collection);
   const { treeTable } = fieldSchema['x-decorator-props'];
   if (props.dragSort) {
     params['sort'] = ['sort'];
@@ -101,11 +102,13 @@ export const TableBlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <FormContext.Provider value={form}>
-      <BlockProvider {...props} params={params}>
-        <InternalTableBlockProvider {...props} params={params} />
-      </BlockProvider>
-    </FormContext.Provider>
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <FormContext.Provider value={form}>
+        <BlockProvider {...props} params={params}>
+          <InternalTableBlockProvider {...props} params={params} />
+        </BlockProvider>
+      </FormContext.Provider>
+    </SchemaComponentOptions>
   );
 };
 

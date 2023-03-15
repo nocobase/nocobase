@@ -10,13 +10,7 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
-import {
-  RecordIndexProvider,
-  RecordProvider,
-  useSchemaInitializer,
-  useTableBlockContext,
-  SchemaComponentOptions,
-} from '../../../';
+import { RecordIndexProvider, RecordProvider, useSchemaInitializer, useTableBlockContext } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isCollectionFieldComponent, isColumnComponent, extractIndex, getIdsWithChildren } from './utils';
 
@@ -416,57 +410,55 @@ export const Table: any = observer((props: any) => {
   };
 
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
-      <div
-        ref={mountedRef}
-        className={css`
+    <div
+      ref={mountedRef}
+      className={css`
+        height: 100%;
+        overflow: hidden;
+        .ant-table-wrapper {
           height: 100%;
-          overflow: hidden;
-          .ant-table-wrapper {
-            height: 100%;
-          }
-          .ant-table {
-            overflow-x: auto;
-            overflow-y: hidden;
-          }
-        `}
-      >
-        <SortableWrapper>
-          <AntdTable
-            ref={(ref) => {
-              const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-              const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-              setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-            }}
-            rowKey={rowKey ?? defaultRowKey}
-            {...others}
-            {...restProps}
-            pagination={paginationProps}
-            components={components}
-            onChange={(pagination, filters, sorter, extra) => {
-              onTableChange?.(pagination, filters, sorter, extra);
-            }}
-            tableLayout={'auto'}
-            scroll={scroll}
-            columns={columns}
-            expandable={{
-              onExpand: (flag, record) => {
-                const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
-                setExpandesKeys(newKeys);
-              },
-              expandedRowKeys: expandedKeys,
-            }}
-            dataSource={field?.value?.slice?.()}
-          />
-        </SortableWrapper>
-        {field.errors.length > 0 && (
-          <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
-            {field.errors.map((error) => {
-              return error.messages.map((message) => <div>{message}</div>);
-            })}
-          </div>
-        )}
-      </div>
-    </SchemaComponentOptions>
+        }
+        .ant-table {
+          overflow-x: auto;
+          overflow-y: hidden;
+        }
+      `}
+    >
+      <SortableWrapper>
+        <AntdTable
+          ref={(ref) => {
+            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+          }}
+          rowKey={rowKey ?? defaultRowKey}
+          {...others}
+          {...restProps}
+          pagination={paginationProps}
+          components={components}
+          onChange={(pagination, filters, sorter, extra) => {
+            onTableChange?.(pagination, filters, sorter, extra);
+          }}
+          tableLayout={'auto'}
+          scroll={scroll}
+          columns={columns}
+          expandable={{
+            onExpand: (flag, record) => {
+              const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
+              setExpandesKeys(newKeys);
+            },
+            expandedRowKeys: expandedKeys,
+          }}
+          dataSource={field?.value?.slice?.()}
+        />
+      </SortableWrapper>
+      {field.errors.length > 0 && (
+        <div className="ant-formily-item-error-help ant-formily-item-help ant-formily-item-help-enter ant-formily-item-help-enter-active">
+          {field.errors.map((error) => {
+            return error.messages.map((message) => <div>{message}</div>);
+          })}
+        </div>
+      )}
+    </div>
   );
 });
