@@ -51,7 +51,7 @@ export const TableActionColumnInitializers = (props: any) => {
   const { refresh } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
-  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'];
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props']||{};
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
