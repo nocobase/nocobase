@@ -105,7 +105,7 @@ type Value = {
 };
 
 function Result({ value }: { value: Value }) {
-  const { collection, expression } = value;
+  const { collection, expression } = value ?? {};
   const { t } = useTranslation();
   return collection && expression
     ? <Tag color="purple">{t('Expression')}</Tag>
