@@ -30,7 +30,7 @@ export class AppManager extends EventEmitter {
 
     passEventToSubApps('beforeDestroy', 'destroy');
     passEventToSubApps('beforeStop', 'stop');
-    passEventToSubApps('afterUpgrade', 'upgrade');
+    // passEventToSubApps('afterUpgrade', 'upgrade');
     passEventToSubApps('afterReload', 'reload');
   }
 

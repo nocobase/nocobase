@@ -6,6 +6,7 @@ export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
   dbCreator: AppDbCreator;
   appOptionsFactory: AppOptionsFactory;
+  upgrading?: boolean;
 }
 
 export class ApplicationModel extends Model {
@@ -15,7 +16,9 @@ export class ApplicationModel extends Model {
       subApp: app,
     });
 
-    await app.load();
+    await app.load({
+      method: options?.upgrading ? 'upgrade' : 'start',
+    });
 
     if (!(await app.isInstalled())) {
       await app.db.sync();
@@ -35,7 +38,9 @@ export class ApplicationModel extends Model {
       });
     }
 
-    await app.start();
+    if (!options?.upgrading) {
+      await app.start();
+    }
   }
 
   async registerToMainApp(mainApp: Application, options: registerAppOptions) {

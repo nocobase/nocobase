@@ -97,6 +97,30 @@ export class PluginMultiAppManager extends Plugin {
     this.db.registerModels({
       ApplicationModel,
     });
+
+    this.app.on('afterUpgrade', async (app, options) => {
+      const cliArgs = options?.cliArgs;
+      const repository = this.db.getRepository('applications');
+      const instances = await repository.find();
+      for (const instance of instances) {
+        const subApp = await this.app.appManager.getApplication(instance.name, {
+          upgrading: true,
+        });
+        try {
+          console.log(`${instance.name}: upgrading...`);
+          await subApp.upgrade({
+            cliArgs,
+          });
+          await subApp.stop({
+            cliArgs,
+          });
+        } catch (error) {
+          console.log(`${instance.name}: upgrade failed`);
+          this.app.logger.error(error);
+          console.error(error);
+        }
+      }
+    });
   }
 
   async load() {
@@ -137,7 +161,7 @@ export class PluginMultiAppManager extends Plugin {
 
     this.app.appManager.on(
       'beforeGetApplication',
-      async ({ appManager, name }: { appManager: AppManager; name: string }) => {
+      async ({ appManager, name, options }: { appManager: AppManager; name: string; options?: any }) => {
         if (!appManager.applications.has(name)) {
           const existsApplication = (await this.app.db.getRepository('applications').findOne({
             filter: {
@@ -149,6 +173,7 @@ export class PluginMultiAppManager extends Plugin {
             await existsApplication.registerToMainApp(this.app, {
               dbCreator: this.appDbCreator,
               appOptionsFactory: this.appOptionsFactory,
+              upgrading: options?.upgrading,
             });
           }
         }
