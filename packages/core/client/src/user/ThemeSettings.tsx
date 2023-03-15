@@ -8,7 +8,6 @@ import { useCurrentUserContext } from './CurrentUserProvider';
 export const ThemeSettings = () => {
   const { t } = useTranslation();
   const ctx = useCurrentUserContext();
-  console.log('ctx.data.data.id', ctx.data.data.id);
   const api = useAPIClient();
   return (
     <Menu.Item key="theme" eventKey={'theme'}>
