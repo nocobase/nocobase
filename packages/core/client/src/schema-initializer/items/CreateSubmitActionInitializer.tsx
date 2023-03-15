@@ -16,18 +16,3 @@ export const CreateSubmitActionInitializer = (props) => {
   };
   return <ActionInitializer {...props} schema={schema} />;
 };
-
-export const CreateChildSubmitActionInitializer = (props) => {
-  const schema = {
-    title: '{{ t("Submit") }}',
-    'x-action': 'submit',
-    'x-component': 'Action',
-    'x-designer': 'Action.Designer',
-    'x-component-props': {
-      type: 'primary',
-      htmlType: 'submit',
-      useProps: '{{ useCreateChildActionProps }}',
-    },
-  };
-  return <ActionInitializer {...props} schema={schema} />;
-};
