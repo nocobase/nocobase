@@ -101,18 +101,24 @@ export const mapRangePicker = function () {
       },
       ranges: {
         [t('Today')]: [moment(), moment()],
-        [t('This Week')]: [moment().startOf('week'), moment().endOf('week')],
-        [t('This Month')]: [moment().startOf('month'), moment().endOf('month')],
-        [t('This Year')]: [moment().startOf('year'), moment().endOf('year')],
         [t('Last Week')]: [moment().subtract(1, 'week').startOf('week'), moment().subtract(1, 'week').endOf('week')],
+        [t('This Week')]: [moment().startOf('week'), moment().endOf('week')],
+        [t('Next Week')]: [moment().add(1, 'week').startOf('week'), moment().add(1, 'week').endOf('week')],
         [t('Last Month')]: [
           moment().subtract(1, 'month').startOf('month'),
           moment().subtract(1, 'month').endOf('month'),
         ],
+        [t('This Month')]: [moment().startOf('month'), moment().endOf('month')],
+        [t('Next Month')]: [moment().add(1, 'month').startOf('month'), moment().add(1, 'month').endOf('month')],
         [t('Last Year')]: [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+        [t('This Year')]: [moment().startOf('year'), moment().endOf('year')],
+        [t('Next Year')]: [moment().add(1, 'year').startOf('year'), moment().add(1, 'year').endOf('year')],
         [t('Last 7 Days')]: [moment().subtract(7, 'days'), moment()],
+        [t('Next 7 Days')]: [moment(), moment().add(7, 'days')],
         [t('Last 30 Days')]: [moment().subtract(30, 'days'), moment()],
+        [t('Next 30 Days')]: [moment(), moment().add(30, 'days')],
         [t('Last 90 Days')]: [moment().subtract(90, 'days'), moment()],
+        [t('Next 90 Days')]: [moment(), moment().add(90, 'days')],
       },
     } as any;
   };
