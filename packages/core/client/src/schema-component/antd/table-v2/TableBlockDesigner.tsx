@@ -14,7 +14,7 @@ import { useFixedBlockDesignerSetting } from '../page';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
-  const { name, title, sortable } = useCollection();
+  const { name, title, sortable, fields } = useCollection();
   const { getCollectionField } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -98,6 +98,7 @@ export const TableBlockDesigner = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                  collectionFields: fields,
                 },
               },
             },

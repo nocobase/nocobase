@@ -20,10 +20,22 @@ const findOption = (dataIndex = [], options) => {
   return option;
 };
 
+const findCollectionField = (dataIndex = [], collectionFields) => {
+  let field;
+  dataIndex?.forEach?.((name) => {
+    const item = collectionFields.find((item) => item.name === name);
+    if (item) {
+      field = item;
+    }
+    collectionFields = item?.children || [];
+  });
+  return field;
+};
+
 export const useValues = () => {
   const field = useField<any>();
   const logic = useContext(FilterLogicContext);
-  const { options } = useContext(FilterContext);
+  const { options, collectionFields } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -47,6 +59,7 @@ export const useValues = () => {
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
+    field.data.collectionField = findCollectionField(dataIndex, collectionFields);
   };
   useEffect(value2data, [logic]);
   return {
@@ -63,6 +76,7 @@ export const useValues = () => {
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
       field.data.value = operator.noValue ? operator.default || true : null;
+      field.data.collectionField = findCollectionField(dataIndex, collectionFields);
       data2value();
     },
     setOperator(operatorValue) {

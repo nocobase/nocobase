@@ -92,7 +92,7 @@ export const AssociationSelect = InternalAssociationSelect as unknown as Associa
 
 AssociationSelect.Designer = () => {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getField, fields } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -486,6 +486,7 @@ AssociationSelect.Designer = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                  collectionFields: fields,
                 },
               },
             },

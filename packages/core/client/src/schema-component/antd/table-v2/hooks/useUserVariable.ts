@@ -1,6 +1,8 @@
 import { useFilterOptions } from '../../filter';
 
-export const useUserVariable = () => {
+export const useUserVariable = ({ collectionField, operator }) => {
+  if (!collectionField || !operator) return null;
+
   const options = useFilterOptions('users')
     .filter((field) => {
       if (!field.target) {
@@ -15,17 +17,20 @@ export const useUserVariable = () => {
         });
       }
       return field;
+    })
+    .map((option) => {
+      return {
+        key: option.name,
+        value: option.name,
+        label: option.title,
+        disabled: collectionField.name !== option.name || operator.value === '$dateBetween',
+      };
     });
 
   return {
     title: `{{t("Current user")}}`,
     value: '$user',
-    options: options.map((option) => {
-      return {
-        key: option.name,
-        value: option.name,
-        label: option.title,
-      };
-    }),
+    disabled: options.every((option) => option.disabled),
+    options: options,
   };
 };

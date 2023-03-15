@@ -11,7 +11,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const AuditLogsDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title, fields } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -33,7 +33,9 @@ export const AuditLogsDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-decorator-props': {},
+                'x-decorator-props': {
+                  collectionFields: fields,
+                },
               },
             },
           } as ISchema

@@ -12,7 +12,7 @@ import { useDesignable } from '../../hooks';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableSelectorDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title, fields } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -52,6 +52,7 @@ export const TableSelectorDesigner = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                  collectionFields: fields,
                 },
               },
             },
