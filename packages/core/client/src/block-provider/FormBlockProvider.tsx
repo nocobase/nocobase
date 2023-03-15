@@ -81,7 +81,7 @@ export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const record = useRecord();
   const { fieldSchema } = useActionContext();
-  const { addChild } = fieldSchema['x-component-props'];
+  const { addChild } = fieldSchema?.['x-component-props']||{};
   useEffect(() => {
     if (addChild) {
       ctx.form.query('parent').take((field) => {
