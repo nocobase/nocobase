@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,16 +58,16 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
-import DatabaseUtils from './database-utils';
-import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
-import buildQueryInterface from './query-interface/query-interface-builder';
-import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
+import DatabaseUtils from './database-utils';
+import QueryInterface from './query-interface/query-interface';
+import buildQueryInterface from './query-interface/query-interface-builder';
+import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -277,7 +277,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core.migration',
+      namespace: 'core.server',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
     });

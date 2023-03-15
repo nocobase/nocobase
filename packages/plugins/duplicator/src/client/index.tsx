@@ -44,18 +44,14 @@ const DuplicatorDump = () => {
     },
   ];
 
-  const selectedRowKeys = (data || [])
-    .filter((item) => {
-      const required = item.duplicator === 'required' || item?.duplicator?.dumpable === 'required';
-      return required;
-    })
-    .map((item) => item.name);
-
-  console.log('groups', groups, data);
-
+  const requiredData = (data || []).filter((item) => {
+    const required = item.duplicator === 'required' || item?.duplicator?.dumpable === 'required';
+    return required;
+  });
   return (
     <Card bordered={false}>
       <div>
+        <h3>Required</h3>
         <Table
           loading={loading}
           size={'middle'}
@@ -63,7 +59,7 @@ const DuplicatorDump = () => {
           pagination={false}
           rowSelection={{
             type: 'checkbox',
-            selectedRowKeys,
+            selectedRowKeys: requiredData.map((item) => item.name),
             getCheckboxProps(item) {
               const required = item.duplicator === 'required' || item?.duplicator?.dumpable === 'required';
               return {
@@ -72,8 +68,8 @@ const DuplicatorDump = () => {
             },
           }}
           columns={columns}
-          dataSource={data || []}
-          scroll={{ y: '55vh' }}
+          dataSource={requiredData}
+          // scroll={{ y: '55vh' }}
         />
         <Button
           style={{ marginTop: 24 }}

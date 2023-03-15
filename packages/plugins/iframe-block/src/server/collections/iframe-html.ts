@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'iframe-block.iframe-html-storage',
+  namespace: 'iframe-block.storage',
   duplicator: 'required',
   name: 'iframeHtml',
   createdBy: true,
