@@ -3,6 +3,36 @@ import { MockServer, mockServer } from '@nocobase/test';
 import Plugin from '..';
 const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 
+pgOnly()('enable plugin', () => {
+  let mainDb: Database;
+  let mainApp: MockServer;
+
+  beforeEach(async () => {
+    const app = mockServer({
+      acl: false,
+      plugins: ['nocobase'],
+    });
+
+    await app.load();
+
+    await app.install({
+      clean: true,
+    });
+
+    mainApp = app;
+
+    mainDb = mainApp.db;
+  });
+
+  afterEach(async () => {
+    await mainApp.destroy();
+  });
+
+  it('should throw error when enable plugin, when multi-app plugin is not enabled', async () => {
+    await mainApp.pm.enable('multi-app-share-collection');
+  });
+});
+
 pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
