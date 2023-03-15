@@ -71,8 +71,8 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
     app.use(dataWrapping(), { tag: 'dataWrapping', after: 'i18n' });
   }
 
+  app.resourcer.use(parseVariables, { tag: 'parseVariables', after: 'acl' });
+
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
-
-  app.resourcer.use(parseVariables, { tag: 'parseVariables' });
 }
