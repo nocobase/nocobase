@@ -169,7 +169,7 @@ export const Table: any = observer((props: any) => {
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
   const schema = useFieldSchema();
-  const { treeTable } = schema?.parent?.['x-decorator-props'];
+  const { treeTable } = schema?.parent?.['x-decorator-props']||{};
   const [expandedKeys, setExpandesKeys] = useState([]);
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   useEffect(() => {
