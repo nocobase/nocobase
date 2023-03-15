@@ -5,18 +5,18 @@ import { Variable } from '../variable';
 import { useUserVariable } from './hooks/useUserVariable';
 
 const useVariableTypes = () => {
-  const { operator, collectionField } = useValues();
+  const { operator, schema } = useValues();
+  const operatorValue = operator?.value || '';
+  const userVariable = useUserVariable({ schema, operator });
 
-  if (!operator || !collectionField) return [];
-
-  const operatorValue = operator.value;
+  if (!operator || !schema) return [];
 
   const systemOptions = [
     {
       key: 'now',
       value: 'now',
       label: `{{t("Current time")}}`,
-      disabled: collectionField?.interface !== 'datetime' || operatorValue === '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
   ];
   const dateOptions = [
@@ -24,102 +24,102 @@ const useVariableTypes = () => {
       key: 'today',
       value: 'today',
       label: `{{t("Today")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'lastWeek',
       value: 'lastWeek',
       label: `{{t("Last Week")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'thisWeek',
       value: 'thisWeek',
       label: `{{t("This Week")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'nextWeek',
       value: 'nextWeek',
       label: `{{t("Next Week")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'lastMonth',
       value: 'lastMonth',
       label: `{{t("Last Month")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'thisMonth',
       value: 'thisMonth',
       label: `{{t("This Month")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'nextMonth',
       value: 'nextMonth',
       label: `{{t("Next Month")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'lastYear',
       value: 'lastYear',
       label: `{{t("Last Year")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'thisYear',
       value: 'thisYear',
       label: `{{t("This Year")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'nextYear',
       value: 'nextYear',
       label: `{{t("Next Year")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'last7Days',
       value: 'last7Days',
       label: `{{t("Last 7 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'next7Days',
       value: 'next7Days',
       label: `{{t("Next 7 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'last30Days',
       value: 'last30Days',
       label: `{{t("Last 30 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'next30Days',
       value: 'next30Days',
       label: `{{t("Next 30 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'last90Days',
       value: 'last90Days',
       label: `{{t("Last 90 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
     {
       key: 'next90Days',
       value: 'next90Days',
       label: `{{t("Next 90 Days")}}`,
-      disabled: operatorValue !== '$dateBetween',
+      disabled: schema['x-component'] !== 'DatePicker.RangePicker',
     },
   ];
 
   return [
-    useUserVariable({ collectionField, operator }),
+    userVariable,
     {
       title: `{{t("System variables")}}`,
       value: '$system',

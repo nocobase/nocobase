@@ -12,7 +12,7 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name, title, fields } = useCollection();
+  const { name, title } = useCollection();
   const { getCollectionFieldsOptions } = useCollectionManager();
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useCalendarBlockContext();
@@ -119,7 +119,6 @@ export const CalendarDesigner = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  collectionFields: fields,
                 },
               },
             },

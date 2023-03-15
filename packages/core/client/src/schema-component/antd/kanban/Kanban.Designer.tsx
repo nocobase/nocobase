@@ -11,7 +11,7 @@ import { useFixedBlockDesignerSetting } from '../page';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const KanbanDesigner = () => {
-  const { name, title, fields } = useCollection();
+  const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -39,7 +39,6 @@ export const KanbanDesigner = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  collectionFields: fields,
                 },
               },
             },

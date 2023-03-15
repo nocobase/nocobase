@@ -17,7 +17,7 @@ const useDef = (options) => {
 
 export const Filter: any = observer((props: any) => {
   const { useDataSource = useDef } = props;
-  const { options, dynamicComponent, className, collectionFields } = useProps(props);
+  const { options, dynamicComponent, className } = useProps(props);
   const field = useField<ObjectFieldModel>();
   const fieldSchema = useFieldSchema();
   useDataSource({

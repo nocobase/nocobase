@@ -64,7 +64,7 @@ export const ReadPrettyFormDesigner = () => {
 };
 
 export const DetailsDesigner = () => {
-  const { name, title, fields } = useCollection();
+  const { name, title } = useCollection();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
@@ -104,7 +104,6 @@ export const DetailsDesigner = () => {
                 'x-component': 'Filter',
                 'x-component-props': {
                   dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                  collectionFields: fields,
                 },
               },
             },
