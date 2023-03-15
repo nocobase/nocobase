@@ -665,5 +665,8 @@ export default {
   'Use variable': '使用变量',
   'True': '真',
   'False': '假',
-  'Prettify': '格式化'
+  'Prettify': '格式化',
+  'Theme': '主题',
+  'Default theme': '默认主题',
+  'Compact theme': '紧凑主题',
 }
