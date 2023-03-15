@@ -10,21 +10,38 @@ import { isPlainObject, forEach, isString, isArray } from '@nocobase/utils';
  * // 下面的值将被解析为 123
  * parse('{{abc}}', ctx)
  * ```
- * @param str
- * @param ctx
+ * @param template
+ * @param context
  * @returns
  */
-export const parse = (str: string, ctx: Record<string, any>) => {
-  const regex = /{{(.*?)}}/g;
-  let match;
-  while ((match = regex.exec(str)) !== null) {
-    const [full, key] = match;
-    const value = key.split('.').reduce((prev, next) => {
-      return prev[next];
-    }, ctx);
-    str = str.replace(full, value);
+export const parse = (template: string, context: Record<string, any>): string | any[] => {
+  const regex = /\{\{(.+?)\}\}/g;
+  const matches = [...template.matchAll(regex)];
+  if (matches.length === 0) {
+    return template;
   }
-  return str;
+
+  let result: string | any[] = template;
+
+  for (const match of matches) {
+    const [, variable] = match;
+    const value = getValueFromContext(context, variable);
+    result = value;
+  }
+
+  return result;
+};
+
+export const getValueFromContext = (context: Record<string, any>, variable: string): any => {
+  const parts = variable.split('.');
+  let value = context;
+  for (const part of parts) {
+    value = value[part];
+    if (value === undefined) {
+      throw new Error(`Could not find value for variable ${variable}`);
+    }
+  }
+  return value;
 };
 
 /**

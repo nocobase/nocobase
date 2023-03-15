@@ -14,6 +14,11 @@ describe('parse', () => {
     const ctx = { abc: { def: '456' } };
     expect(parse('{{abc.def}}', ctx)).toBe('456');
   });
+
+  test('variable with array type', () => {
+    const ctx = { abc: ['123', '456'] };
+    expect(parse('{{abc}}', ctx)).toEqual(['123', '456']);
+  });
 });
 
 describe('parseFilter', () => {
