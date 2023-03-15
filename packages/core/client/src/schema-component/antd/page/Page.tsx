@@ -170,7 +170,7 @@ export const Page = (props) => {
                     onTabClick={(activeKey) => {
                       setLoading(true);
                       setActiveKey(activeKey);
-                      window.history.pushState({}, '', location.pathname + `?tab=` + activeKey);
+                      window.history.pushState({}, '', window.location.pathname + `?tab=` + activeKey);
                       setTimeout(() => {
                         setLoading(false);
                       }, 50);
