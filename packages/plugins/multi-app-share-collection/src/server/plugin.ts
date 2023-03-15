@@ -49,6 +49,17 @@ class SubAppPlugin extends Plugin {
       }
     });
 
+    subApp.on('beforeLoadPlugin', async (plugin, options) => {
+      if (plugin.name == 'duplicator') {
+        plugin.options = {
+          ...plugin.options,
+          customCollectionsFilter: {
+            'options.syncToApps::JSONB.$contains': `["${subApp.name}"]`,
+          },
+        };
+      }
+    });
+
     this.app.resourcer.use(async (ctx, next) => {
       const { actionName, resourceName } = ctx.action;
       if (actionName === 'list' && resourceName === 'applicationPlugins') {

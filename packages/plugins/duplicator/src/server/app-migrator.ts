@@ -27,6 +27,11 @@ abstract class AppMigrator extends EventEmitter {
 
     this.app = app;
     this.workDir = options?.workDir || this.tmpDir();
+
+    const duplicator = this.app.pm.plugins.get('duplicator');
+    if (duplicator?.options?.customCollectionsFilter) {
+      this.setCustomCollectionsFilter(duplicator.options.customCollectionsFilter);
+    }
   }
 
   setCustomCollectionsFilter(filter: Filter) {
