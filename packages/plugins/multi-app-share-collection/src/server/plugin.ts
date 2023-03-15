@@ -194,14 +194,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    // 应用加载完之后，需要将子应用全部载入到内存中
-    this.app.on('afterLoad', async () => {
-      const subApplications = await this.db.getRepository('applications').find();
-      for (const subApplication of subApplications) {
-        await this.app.appManager.getApplication(subApplication.name);
-      }
-    });
-
     this.app.on('beforeSubAppInstall', async ({ subApp }) => {
       const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
       const mainAppPluginsCollection = this.app.db.getCollection('applicationPlugins');

@@ -99,7 +99,7 @@ pgOnly()('collection sync', () => {
 
     const sub1 = await mainApp.appManager.getApplication('sub1');
 
-    const getSub1MapRecord = async (app) => {
+    const getSubAppMapRecord = async (app) => {
       return await app.db.getRepository('applicationPlugins').findOne({
         filter: {
           name: 'map',
@@ -107,10 +107,10 @@ pgOnly()('collection sync', () => {
       });
     };
 
-    expect((await getSub1MapRecord(sub1)).get('enabled')).toBeFalsy();
+    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
     await mainApp.pm.enable('map');
 
-    expect((await getSub1MapRecord(sub1)).get('enabled')).toBeTruthy();
+    expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
     await mainApp.db.getRepository('applications').create({
       values: {
@@ -119,7 +119,7 @@ pgOnly()('collection sync', () => {
     });
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
-    expect((await getSub1MapRecord(sub2)).get('enabled')).toBeTruthy();
+    expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
   });
 
   it('should not sync roles in sub app', async () => {
