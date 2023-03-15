@@ -578,6 +578,8 @@ export default {
   "Current user": "Current user",
   "Current record": "Current record",
   "Current time": "Current time",
+  "System variables": "System variables",
+  "Date variables": "Date variables",
   "Popup close method": "Popup close method",
   "Automatic close": "Automatic close",
   "Manually close": "Manually close",

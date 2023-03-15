@@ -10,7 +10,7 @@ export class ParseVariablesPlugin extends Plugin {
   async load() {
     this.app.resourcer.use(async (ctx, next) => {
       const filter = ctx.action.params.filter || {};
-      parseFilter(filter, getContext());
+      parseFilter(filter, getContext(ctx));
       await next();
     });
   }

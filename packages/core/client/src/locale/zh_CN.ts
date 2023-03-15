@@ -700,6 +700,8 @@ export default {
   'Column width': '列宽',
   'Sortable': '可排序的',
   'Constant': '常量',
+  'System variables': '系统变量',
+  'Date variables': '日期变量',
   'Use variable': '使用变量',
   'True': '真',
   'False': '假',

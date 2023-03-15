@@ -1,9 +1,11 @@
 import React from 'react';
 import { useCompile } from '../..';
 import { Variable } from '../variable';
+import { useUserVariable } from './hooks/useUserVariable';
 
 const useVariableTypes = () => {
   return [
+    useUserVariable(),
     {
       title: `{{t("System variables")}}`,
       value: '$system',

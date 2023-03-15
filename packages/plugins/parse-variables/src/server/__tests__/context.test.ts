@@ -135,4 +135,20 @@ describe('context', () => {
     expect(ctx.$date.next90Days[0].slice(0, -3)).toBe(start.slice(0, -3));
     expect(ctx.$date.next90Days[1].slice(0, -3)).toBe(end.slice(0, -3));
   });
+
+  test('$user.id', () => {
+    const ctx = getContext({
+      state: {
+        currentUser: {
+          id: '123',
+        },
+      },
+    });
+    expect(ctx.$user.id).toBe('123');
+  });
+
+  test('current is empty', () => {
+    const ctx = getContext();
+    expect(ctx.$user.id).toBe(undefined);
+  })
 });

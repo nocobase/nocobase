@@ -1,11 +1,14 @@
 import moment from 'moment';
 import { toGmt } from '@nocobase/utils';
+import { ResourcerContext } from '@nocobase/resourcer';
 
 /**
  * 解析变量所需的上下文
  * @returns
  */
-export const getContext = () => {
+export const getContext = (ctx?: ResourcerContext) => {
+  const currentUser = ctx?.state.currentUser;
+
   return {
     $system: {
       now: toGmt(moment()) as string,
@@ -46,5 +49,6 @@ export const getContext = () => {
       last90Days: [toGmt(moment().subtract(90, 'days')), toGmt(moment())] as string[],
       next90Days: [toGmt(moment()), toGmt(moment().add(90, 'days'))] as string[],
     },
+    $user: currentUser || {},
   };
 };
