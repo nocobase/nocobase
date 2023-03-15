@@ -1,11 +1,10 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useMemo, useState, useContext,useEffect } from 'react';
+import React, { createContext, useMemo, useState, useContext, useEffect } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFixedSchema } from '../schema-component';
-import { SchemaComponentOptions } from '../..';
+import { useFixedSchema, SchemaComponentOptions } from '../schema-component';
 
 export const TableBlockContext = createContext<any>({});
 
