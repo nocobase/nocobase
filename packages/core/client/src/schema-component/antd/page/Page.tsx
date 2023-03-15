@@ -253,7 +253,7 @@ export const Page = (props) => {
           />
         )}
       </div>
-      <div style={{ margin: 24 }}>
+      <div className={'m24'} style={{ margin: 24 }}>
         {loading ? (
           <Spin />
         ) : !disablePageHeader && enablePageTabs ? (
