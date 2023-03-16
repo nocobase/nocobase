@@ -49,4 +49,5 @@ interface CollectionOptions {
   inherits?: string | string[];
   /* 字段列表 */
   fields?: FieldOptions[];
+  [key: string]: any;
 }

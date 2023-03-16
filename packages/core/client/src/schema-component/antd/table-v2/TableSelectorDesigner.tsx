@@ -78,7 +78,7 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
-      {(collection as any)?.template === 'tree' && (
+      {collection?.tree && (
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}

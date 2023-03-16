@@ -42,7 +42,7 @@ export const TableBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      {(collection as any)?.template === 'tree' && (
+      {collection?.tree && (
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}

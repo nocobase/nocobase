@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps,
+  SchemaInitializerItemProps
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -49,7 +49,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
   const renderItems = (items: any) => {
     return items
       .filter((v) => {
-        return v?.visible ? v.visible() : true;
+        return v && (v?.visible ? v.visible() : true);
       })
       ?.map((item, indexA) => {
         if (item.type === 'divider') {

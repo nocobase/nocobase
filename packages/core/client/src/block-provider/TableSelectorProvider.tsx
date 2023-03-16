@@ -116,7 +116,7 @@ export const TableSelectorProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if ((collection as any).template === 'tree' && treeTable !== false) {
+  if (collection.tree && treeTable !== false) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
