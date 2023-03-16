@@ -120,7 +120,7 @@ export const TableSelectorProvider = (props) => {
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
         ...(params.filter ?? {}),
-        id: {
+        id: record.id&&{
           $ne: record.id,
         },
       };
