@@ -70,7 +70,10 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, value, ...others } = props;
-    const mode = props.mode || props.multiple ? 'multiple' : undefined;
+    let mode: any = props.multiple ? 'multiple' : props.mode;
+    if (mode === 'links') {
+      mode = undefined;
+    }
     const toValue = (v) => {
       if (['multiple', 'tags'].includes(mode)) {
         return v || [];
