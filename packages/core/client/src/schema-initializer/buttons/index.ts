@@ -18,7 +18,6 @@ export * from './SubTableActionInitializers';
 export * from './TableActionColumnInitializers';
 export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
-export * from './FilterTableColumnInitializers';
 export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
 // association filter

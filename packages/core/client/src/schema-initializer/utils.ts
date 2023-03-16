@@ -1030,10 +1030,6 @@ export const createTableBlockSchema = (options) => {
     collection,
     resource,
     rowKey,
-    rowSelection = {
-      type: 'checkbox',
-    },
-    noAction = false,
     tableActionInitializers,
     tableColumnInitializers,
     tableActionColumnInitializers,
@@ -1083,34 +1079,32 @@ export const createTableBlockSchema = (options) => {
         'x-component': 'TableV2',
         'x-component-props': {
           rowKey: 'id',
-          rowSelection,
+          rowSelection: {
+            type: 'radio',
+          },
           useProps: '{{ useTableBlockProps }}',
         },
         properties: {
-          ...(noAction
-            ? {}
-            : {
-                actions: {
-                  type: 'void',
-                  title: '{{ t("Actions") }}',
-                  'x-action-column': 'actions',
-                  'x-decorator': 'TableV2.Column.ActionBar',
-                  'x-component': 'TableV2.Column',
-                  'x-designer': 'TableV2.ActionColumnDesigner',
-                  'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
-                  properties: {
-                    actions: {
-                      type: 'void',
-                      'x-decorator': 'DndContext',
-                      'x-component': 'Space',
-                      'x-component-props': {
-                        split: '|',
-                      },
-                      properties: {},
-                    },
-                  },
+          actions: {
+            type: 'void',
+            title: '{{ t("Actions") }}',
+            'x-action-column': 'actions',
+            'x-decorator': 'TableV2.Column.ActionBar',
+            'x-component': 'TableV2.Column',
+            'x-designer': 'TableV2.ActionColumnDesigner',
+            'x-initializer': tableActionColumnInitializers ?? 'TableActionColumnInitializers',
+            properties: {
+              actions: {
+                type: 'void',
+                'x-decorator': 'DndContext',
+                'x-component': 'Space',
+                'x-component-props': {
+                  split: '|',
                 },
-              }),
+                properties: {},
+              },
+            },
+          },
         },
       },
     },
