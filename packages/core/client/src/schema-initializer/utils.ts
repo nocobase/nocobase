@@ -338,52 +338,54 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   return groups;
 };
 
+const getItem = (field: FieldOptions, schemaName: string, collectionName: string, getCollectionFields) => {
+  if (field.interface === 'm2o') {
+    const subFields = getCollectionFields(field.target);
+
+    return {
+      type: 'subMenu',
+      title: field.uiSchema?.title,
+      children: subFields
+        .map((subField) => getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields))
+        .filter(Boolean),
+    } as SchemaInitializerItemOptions;
+  }
+
+  if (isAssocField(field)) return null;
+
+  const schema = {
+    type: 'string',
+    name: schemaName,
+    'x-designer': 'FormItem.FilterFormDesigner',
+    'x-designer-props': {
+      // 在 useOperatorList 中使用，用于获取对应的操作符列表
+      interface: field.interface,
+    },
+    'x-component': 'CollectionField',
+    'x-read-pretty': false,
+    'x-decorator': 'FormItem',
+    'x-collection-field': `${collectionName}.${schemaName}`,
+  };
+
+  return {
+    type: 'item',
+    title: field.uiSchema?.title || field.name,
+    component: 'CollectionFieldInitializer',
+    remove: removeGridFormItem,
+    schema,
+  } as SchemaInitializerItemOptions;
+};
+
 // 筛选表单相关
 export const useFilterAssociatedFormItemInitializerFields = () => {
   const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const { getCollectionFields } = useCollectionManager();
   const interfaces = ['m2o'];
   const groups = fields
     ?.filter((field) => {
       return interfaces.includes(field.interface);
     })
-    ?.map((field) => {
-      const subFields = getCollectionFields(field.target);
-      const items = subFields
-        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
-        ?.map((subField) => {
-          const interfaceConfig = getInterface(subField.interface);
-          const schema = {
-            type: 'string',
-            name: `${field.name}.${subField.name}`,
-            'x-designer': 'FormItem.FilterFormDesigner',
-            'x-designer-props': {
-              // 在 useOperatorList 中使用，用于获取对应的操作符列表
-              interface: subField.interface,
-            },
-            'x-component': 'CollectionField',
-            'x-read-pretty': false,
-            'x-decorator': 'FormItem',
-            'x-collection-field': `${name}.${field.name}.${subField.name}`,
-          };
-          return {
-            type: 'item',
-            title: subField?.uiSchema?.title || subField.name,
-            component: 'CollectionFieldInitializer',
-            remove: removeGridFormItem,
-            schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field: subField, block: 'Form', readPretty: false });
-            },
-            schema,
-          } as SchemaInitializerItemOptions;
-        });
-
-      return {
-        type: 'subMenu',
-        title: field.uiSchema?.title,
-        children: items,
-      } as SchemaInitializerItemOptions;
-    });
+    ?.map((field) => getItem(field, field.name, name, getCollectionFields));
   return groups;
 };
 

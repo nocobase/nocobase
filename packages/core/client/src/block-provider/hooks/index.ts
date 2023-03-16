@@ -240,7 +240,6 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
-  const { getField } = useCollection();
 
   actionField.data = actionField.data || {};
 
