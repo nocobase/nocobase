@@ -61,6 +61,7 @@ export default {
   'Add child':'添加子记录',
   'Collapse all':'全部收起',
   'Expand all':'全部展开',
+  'Expand and Collapse':'展开和收起',
   "Roles & Permissions": "角色和权限",
   "Edit profile": "个人资料",
   "Change password": "修改密码",

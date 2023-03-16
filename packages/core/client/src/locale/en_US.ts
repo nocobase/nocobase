@@ -111,6 +111,7 @@ export default {
   'Add child':'Add child',
   'Collapse all':'Collapse all',
   'Expand all':'Expand all',
+  'Expand and Collapse':'Expand and Collapse',
   "Custom field display name": "Custom field display name",
   "Display fields": "Display collection fields",
   "Edit record": "Edit record",

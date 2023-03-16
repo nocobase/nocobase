@@ -45,6 +45,7 @@ export default {
   'Add child':'サブレコードの追加',
   'Collapse all':'すべて閉じる',
   'Expand all':'すべて展開',
+  'Expand and Collapse':'展開と終了',
   "Visible":"表示",
   "Read only":"読み取り専用(編集不可)",
   "Easy reading":"読み取り専用(読取りモード)",
