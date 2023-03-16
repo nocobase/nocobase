@@ -1,10 +1,11 @@
 import { css } from '@emotion/css';
 import { connect, mapReadPretty } from '@formily/react';
 import cronstrue from 'cronstrue';
-import React from 'react';
+import React, {  useMemo } from 'react';
 import { Cron as ReactCron, CronProps } from 'react-js-cron';
 import { useAPIClient } from '../../../api-client';
 import 'react-js-cron/dist/styles.css';
+import { useTranslation } from 'react-i18next';
 
 const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
@@ -38,12 +39,20 @@ const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) 
 const ReadPretty = (props) => {
   const api = useAPIClient();
   const locale = api.auth.getLocale();
-  return props.value ? (
-    <span>
-      {cronstrue.toString(props.value, {
+  const value = useMemo(() => {
+    try {
+      return cronstrue.toString(props.value, {
         locale,
         use24HourTimeFormat: true,
-      })}
+      })
+    } catch {
+      console.error(`The '${props.value}' is not a valid cron expression`)
+      return props.value
+    }
+  }, [props.value])
+  return props.value ? (
+    <span>
+      {value}
     </span>
   ) : null;
 };
