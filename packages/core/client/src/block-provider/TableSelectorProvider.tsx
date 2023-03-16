@@ -103,7 +103,7 @@ export const TableSelectorProvider = (props) => {
   const record = useRecord();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema['x-decorator-props'];
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
   const params = { ...props.params };
@@ -113,6 +113,14 @@ export const TableSelectorProvider = (props) => {
   }
   if ((collection as any).template === 'tree' && treeTable !== false) {
     params['tree'] = true;
+    if (collectionFieldSchema.name === 'parent') {
+      params.filter = {
+        ...(params.filter ?? {}),
+        id: {
+          $ne: record.id,
+        },
+      };
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
