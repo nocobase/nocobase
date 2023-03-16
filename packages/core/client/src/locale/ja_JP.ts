@@ -46,6 +46,7 @@ export default {
   'Collapse all':'すべて閉じる',
   'Expand all':'すべて展開',
   'Expand/Collapse':'展開と終了',
+  "Tree table":"ツリーテーブル",
   "Visible":"表示",
   "Read only":"読み取り専用(編集不可)",
   "Easy reading":"読み取り専用(読取りモード)",
