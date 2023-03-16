@@ -81,7 +81,7 @@ export const useSortFields = (collectionName: string) => {
         return false;
       }
       const fieldInterface = getInterface(field.interface);
-      if (fieldInterface.sortable) {
+      if (fieldInterface?.sortable) {
         return true;
       }
       return false;
@@ -113,7 +113,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;
