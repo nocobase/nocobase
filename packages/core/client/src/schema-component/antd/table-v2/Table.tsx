@@ -186,6 +186,11 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
+  useEffect(() => {
+    const data = field.value;
+    field.value = null;
+    field.value = data;
+  }, [treeTable]);
 
   useEffect(() => {
     if (treeTable !== false) {
