@@ -65,6 +65,14 @@ const schema: ISchema = {
       type: 'void',
       title: '{{t("Edit profile")}}',
       properties: {
+        account: {
+          type: 'string',
+          title: "{{t('Account')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          required: true,
+          "x-disabled": true,
+        },
         nickname: {
           type: 'string',
           title: "{{t('Nickname')}}",

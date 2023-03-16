@@ -174,6 +174,8 @@ export default {
   "Long text": "多行文本",
   "Phone": "手机号码",
   "Email": "电子邮箱",
+  "Account": "账号",
+  "AccountPlaceholder": "账号/手机号码/电子邮箱",
   'Null': '空值',
   "Boolean": "逻辑值",
   "Number": "数字",

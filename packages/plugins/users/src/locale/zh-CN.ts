@@ -1,6 +1,8 @@
 export default {
   'The email is incorrect, please re-enter': '邮箱有误，请重新输入',
   'Please fill in your email address': '请填写邮箱',
+  "Please fill in your account": "请填写账号",
+  'The account is incorrect, please re-enter': '账号有误，请重新输入',
   'The password is incorrect, please re-enter': '密码有误，请重新输入',
   'Not a valid cellphone number, please re-enter': '不是有效的手机号，请重新输入',
   'The phone number has been registered, please login directly': '手机号已注册，请直接登录',

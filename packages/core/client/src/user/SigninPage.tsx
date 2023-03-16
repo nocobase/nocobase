@@ -13,13 +13,12 @@ const passwordForm: ISchema = {
   name: 'passwordForm',
   'x-component': 'FormV2',
   properties: {
-    email: {
+    account: {
       type: 'string',
       required: true,
       'x-component': 'Input',
-      'x-validator': 'email',
       'x-decorator': 'FormItem',
-      'x-component-props': { placeholder: '{{t("Email")}}', style: {} },
+      'x-component-props': { placeholder: '{{t("AccountPlaceholder")}}', style: {} },
     },
     password: {
       type: 'string',

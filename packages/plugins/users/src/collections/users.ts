@@ -34,6 +34,16 @@ export default {
       },
     },
     {
+      interface: 'input',
+      type: 'string',
+      name: 'account',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Account")}}',
+        'x-component': 'Input',
+      },
+    },
+    {
       interface: 'email',
       type: 'string',
       name: 'email',

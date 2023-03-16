@@ -51,7 +51,7 @@ export async function lostpassword(ctx: Context, next: Next) {
     values: { email },
   } = ctx.action.params;
   if (!email) {
-    ctx.throw(400, { code: 'InvalidUserData', message: ctx.t('Please fill in your email address', { ns: namespace }) });
+    ctx.throw(400, { code: 'InvalidUserData', message: ctx.t('Please fill in your account', { ns: namespace }) });
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({
