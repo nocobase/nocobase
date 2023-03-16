@@ -18,8 +18,8 @@ const CronSetInternal = (props: CronSetProps) => {
   const compile = useCompile();
 
   const [customizeOption, setCustomizeOption] = useState({
-    label: "{{t('Customize')}}",
-    value: '* * * * *',
+    label: "{{t('Custom')}}",
+    value: '@daily',
   });
 
   const options = useMemo(() => {
@@ -64,7 +64,7 @@ const CronSetInternal = (props: CronSetProps) => {
   return (
     <fieldset>
       <Select allowClear {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
-      {isCustomize ? <Cron value={value} onChange={(v) => onCronChange(v, true)} clearButton={false} /> : null}
+      {isCustomize ? <Cron value={value} onChange={(v) => onCronChange(v, true)} allowedDropdowns={['period', 'week-days', 'months', 'month-days']} allowedPeriods={['year', 'month', 'week', 'day', ]} /> : null}
     </fieldset>
   );
 };

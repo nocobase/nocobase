@@ -18,7 +18,7 @@ export const calendar: ICollectionTemplate = {
         type: 'string',
         uiSchema: {
           type: 'string',
-          title: '{{t("Cron")}}',
+          title: '{{t("Repeats")}}',
           'x-component': 'CronSet',
           'x-component-props': 'allowClear',
           enum: [

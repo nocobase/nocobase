@@ -6442,14 +6442,7 @@
   resolved "https://registry.npmjs.org/@types/range-parser/-/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
   integrity sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==
 
-"@types/react-dom@^16.9.8":
-  version "16.9.18"
-  resolved "https://registry.npmmirror.com/@types/react-dom/-/react-dom-16.9.18.tgz#1fda8b84370b1339d639a797a84c16d5a195b419"
-  integrity sha512-lmNARUX3+rNF/nmoAFqasG0jAA7q6MeGZK/fdeLwY3kAA4NPgHHrG5bNQe2B5xmD4B+x6Z6h0rEJQ7MEEgQxsw==
-  dependencies:
-    "@types/react" "^16"
-
-"@types/react-dom@^17.0.0":
+"@types/react-dom@^16.9.8", "@types/react-dom@^17.0.0":
   version "17.0.11"
   resolved "https://registry.npmjs.org/@types/react-dom/-/react-dom-17.0.11.tgz#e1eadc3c5e86bdb5f7684e00274ae228e7bcc466"
   integrity sha512-f96K3k+24RaLGVu/Y2Ng3e1EbZ8/cVJvypZWd7cy0ofCBaf2lcM46xNhycMZ2xGwbBjRql7hOlZ+e2WlJ5MH3Q==
@@ -6509,19 +6502,10 @@
     "@types/history" "*"
     "@types/react" "*"
 
-"@types/react@*", "@types/react@>=16.9.11", "@types/react@^17.0.0":
+"@types/react@*", "@types/react@>=16.9.11", "@types/react@^16.9.43", "@types/react@^17.0.0":
   version "17.0.34"
   resolved "https://registry.npmjs.org/@types/react/-/react-17.0.34.tgz#797b66d359b692e3f19991b6b07e4b0c706c0102"
   integrity sha512-46FEGrMjc2+8XhHXILr+3+/sTe3OfzSPU9YGKILLrUYbQ1CLQC9Daqo1KzENGXAWwrFwiY0l4ZbF20gRvgpWTg==
-  dependencies:
-    "@types/prop-types" "*"
-    "@types/scheduler" "*"
-    csstype "^3.0.2"
-
-"@types/react@^16", "@types/react@^16.9.43":
-  version "16.14.35"
-  resolved "https://registry.npmmirror.com/@types/react/-/react-16.14.35.tgz#9d3cf047d85aca8006c4776693124a5be90ee429"
-  integrity sha512-NUEiwmSS1XXtmBcsm1NyRRPYjoZF2YTE89/5QiLt5mlGffYK9FQqOKuOLuXNrjPQV04oQgaZG+Yq02ZfHoFyyg==
   dependencies:
     "@types/prop-types" "*"
     "@types/scheduler" "*"
@@ -20750,10 +20734,10 @@ react-is@^17.0.1, react-is@^17.0.2:
   resolved "https://registry.npmjs.org/react-is/-/react-is-17.0.2.tgz#e691d4a8e9c789365655539ab372762b0efb54f0"
   integrity sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==
 
-react-js-cron@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/react-js-cron/-/react-js-cron-1.4.0.tgz#58341434e3db00da11bc8009abb0ea6cd926cda7"
-  integrity sha512-gbx1NXMDJgiKBnn1ljTS/jIXBw+jAEDMFOW/kWeGXuLwV+HEDIfj2oIsgStGGzCjRgcjgM3UTtHxaWrBdo0lFQ==
+react-js-cron@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/react-js-cron/-/react-js-cron-3.1.0.tgz#cd11a43cdfbededee0aaa14e35c026adda0ee1c7"
+  integrity sha512-UzKDvkr6tt91sbMTYdX7sranHxjjLDHOP+aOZbS9QbjlnoBvVjO5JaDOKC4kQBbaZLha3gdbuEtRXriE+3wSxQ==
 
 react-lifecycles-compat@^3.0.0, react-lifecycles-compat@^3.0.4:
   version "3.0.4"

@@ -4,6 +4,7 @@ import cronstrue from 'cronstrue';
 import React from 'react';
 import { Cron as ReactCron, CronProps } from 'react-js-cron';
 import { useAPIClient } from '../../../api-client';
+import 'react-js-cron/dist/styles.css';
 
 const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
