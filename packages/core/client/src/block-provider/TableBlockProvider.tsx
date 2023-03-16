@@ -84,17 +84,25 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
+  const resourceName = props.resource;
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   const fieldSchema = useFieldSchema();
-  const { getCollection } = useCollectionManager();
+  const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(props.collection);
   const { treeTable } = fieldSchema?.['x-decorator-props']||{};
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
   if (collection.tree && treeTable !== false) {
-    params['tree'] = true;
+    if (resourceName.includes('.')) {
+      const f = getCollectionField(resourceName);
+      if (f?.treeChildren) {
+        params['tree'] = true;
+      }
+    } else {
+      params['tree'] = true;
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
