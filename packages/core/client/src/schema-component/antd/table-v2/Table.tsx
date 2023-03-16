@@ -10,7 +10,13 @@ import { default as classNames, default as cls } from 'classnames';
 import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
-import { RecordIndexProvider, RecordProvider, useSchemaInitializer, useTableBlockContext } from '../../../';
+import {
+  RecordIndexProvider,
+  RecordProvider,
+  useSchemaInitializer,
+  useTableBlockContext,
+  useTableSelectorContext,
+} from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { isCollectionFieldComponent, isColumnComponent, extractIndex, getIdsWithChildren } from './utils';
 
@@ -162,12 +168,14 @@ export const Table: any = observer((props: any) => {
     required,
     ...others
   } = { ...others1, ...others2 } as any;
-  const { expandFlag } = useTableBlockContext();
+  const schema = useFieldSchema();
+  const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
+  const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
+  const { expandFlag } = ctx;
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
   const requiredValidator = field.required || required;
-  const schema = useFieldSchema();
-  const { treeTable } = schema?.parent?.['x-decorator-props']||{};
+  const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
   const [expandedKeys, setExpandesKeys] = useState([]);
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   useEffect(() => {

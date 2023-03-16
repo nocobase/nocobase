@@ -1,11 +1,10 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
 
@@ -13,6 +12,7 @@ const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +26,10 @@ const InternalTableSelectorProvider = (props) => {
           params,
           extraFilter,
           rowKey,
+          expandFlag,
+          setExpandFlag: () => {
+            setExpandFlag(!expandFlag);
+          },
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />
