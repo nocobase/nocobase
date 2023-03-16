@@ -38,7 +38,15 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   }
 };
 
-const walkObject = (result: Record<string, any>, obj: any, key: string, operators: Record<string, any>) => {
+/**
+ * Recursively flatten an object and generate a query object.
+ * @param result - The resulting query object.
+ * @param obj - The object to be flattened and queried.
+ * @param key - The current key in the object tree.
+ * @param operators - The operators to use for each field.
+ * @returns The resulting query object.
+ */
+const flattenAndQueryObject = (result: Record<string, any>, obj: any, key: string, operators: Record<string, any>) => {
   if (!obj) return result;
 
   if (!isPlainObject(obj)) {
@@ -47,7 +55,7 @@ const walkObject = (result: Record<string, any>, obj: any, key: string, operator
     };
   } else {
     Object.keys(obj).forEach((k) => {
-      walkObject(result, obj[k], `${key}.${k}`, operators);
+      flattenAndQueryObject(result, obj[k], `${key}.${k}`, operators);
     });
   }
 
@@ -59,7 +67,7 @@ export const transformToFilter = (values: Record<string, any>, fieldSchema: Sche
 
   return {
     $and: Object.keys(values)
-      .map((key) => walkObject({}, values[key], key, operators))
+      .map((key) => flattenAndQueryObject({}, values[key], key, operators))
       .filter((item) => !isEmpty(item)),
   };
 };
