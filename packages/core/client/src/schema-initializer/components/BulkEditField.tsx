@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge, uid } from '@formily/shared';
@@ -117,8 +118,15 @@ export const BulkEditField = (props: any) => {
   };
 
   return (
-    <Space>
-      <Select defaultValue={type} value={type} style={{ width: 150 }} onChange={typeChangeHandler}>
+    <Space
+      className={css`
+        display: flex;
+        > .ant-space-item {
+          width: 100%;
+        }
+      `}
+    >
+      <Select defaultValue={type} value={type} onChange={typeChangeHandler}>
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>
