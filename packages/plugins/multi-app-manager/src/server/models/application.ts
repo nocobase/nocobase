@@ -20,6 +20,7 @@ export class ApplicationModel extends Model {
 
     mainApp.appManager.addSubApp(subApp);
 
+    console.log(`register application ${appName} to main app`);
     return subApp;
   }
 }

@@ -5623,6 +5623,117 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
+"@nocobase/acl@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/acl/-/acl-0.9.0-alpha.2.tgz#e4f0d167fb8a03fe35b396b95050f8ae5587e6f0"
+  integrity sha512-ng8/U4araXk4vx0vRPuDGk5756I0CtBLih4Gn+tmYGCVkUYTpJ6/75KNpbZ4or5Gotrr4utP+OA25pdcRiPaFQ==
+  dependencies:
+    "@nocobase/resourcer" "0.9.0-alpha.2"
+    "@nocobase/utils" "0.9.0-alpha.2"
+    json-templates "^4.2.0"
+    minimatch "^5.1.1"
+
+"@nocobase/actions@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/actions/-/actions-0.9.0-alpha.2.tgz#168b3b6b72d3f1cde3f897eb42a0f891ac5e7e91"
+  integrity sha512-V6Nwl7cQnriw1d1o7KS2fj+WWa8eAoXjAJEi8T/o5E8WxMUjQrWMSCDk1KUyXfX5rdukl3PRYp8sVBfOIOUv9g==
+  dependencies:
+    "@nocobase/cache" "0.9.0-alpha.2"
+    "@nocobase/database" "0.9.0-alpha.2"
+    "@nocobase/resourcer" "0.9.0-alpha.2"
+
+"@nocobase/cache@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/cache/-/cache-0.9.0-alpha.2.tgz#d27854d88bf41ca3a2e8eefa38bc66ec5c653f2e"
+  integrity sha512-UFdqL2YzLUBT5lvt0Mu2ifE2DaQFa7K5HSiOtQklrNmYMEmVQb/Jo+CVLbVbpUli5CWsWds4jTSvsToOUAGtAw==
+  dependencies:
+    cache-manager "^4.1.0"
+
+"@nocobase/database@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/database/-/database-0.9.0-alpha.2.tgz#d0eb118bc6af521bb64e788b3c4a5cfbb4e5bf45"
+  integrity sha512-nQvsO0JzehYbFK4gwY8G0vM7UrTHodJ8WcDl7EPvXDCNE1jW2OkdNnG6LYUSvrRgTtNTzd7SsC+dYGjXgYMPPw==
+  dependencies:
+    "@nocobase/utils" "0.9.0-alpha.2"
+    async-mutex "^0.3.2"
+    cron-parser "4.4.0"
+    deepmerge "^4.2.2"
+    flat "^5.0.2"
+    glob "^7.1.6"
+    mathjs "^10.6.1"
+    moment "2.x"
+    semver "^7.3.7"
+    sequelize "^6.26.0"
+    umzug "^3.1.1"
+
+"@nocobase/logger@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/logger/-/logger-0.9.0-alpha.2.tgz#3427a5592fab4eb88d4d133ead3cc85954a0842d"
+  integrity sha512-nnak7UwTHqJUcYhSF1VM1yGoNrNTcLt0FVWCY2gxG/O5kIvECIIYjHhaZI1J2J9yDDxN9CcHG+UTf1getas0IQ==
+  dependencies:
+    lodash "^4.17.21"
+    winston "^3.8.2"
+    winston-daily-rotate-file "^4.7.1"
+
+"@nocobase/resourcer@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/resourcer/-/resourcer-0.9.0-alpha.2.tgz#432035459c2232558b9c41df55679734c3e6e21f"
+  integrity sha512-dncegMpCUFh01Z242kVWjRVJHLNLLcQnoquPRy/DF5Bi86cLbpXFmB9oUac33IXwbPQUHej0sKg00+ESoSuTxw==
+  dependencies:
+    "@nocobase/utils" "0.9.0-alpha.2"
+    deepmerge "^4.2.2"
+    koa-compose "^4.1.0"
+    lodash "^4.17.21"
+    path-to-regexp "^6.1.0"
+    qs "^6.9.4"
+
+"@nocobase/server@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/server/-/server-0.9.0-alpha.2.tgz#b3aa6f63d56de3e6567d64b2bf0283a197122f2f"
+  integrity sha512-euYwrv+sUSIMJBprFruM3qtw+qIHfnhPhQZ4SRG8aE2K0RIA/zewjHW9M6pTQsLDp7lCf3drmanfPLiQDEgqEw==
+  dependencies:
+    "@hapi/topo" "^6.0.0"
+    "@koa/cors" "^3.1.0"
+    "@koa/router" "^9.4.0"
+    "@nocobase/acl" "0.9.0-alpha.2"
+    "@nocobase/actions" "0.9.0-alpha.2"
+    "@nocobase/database" "0.9.0-alpha.2"
+    "@nocobase/logger" "0.9.0-alpha.2"
+    "@nocobase/resourcer" "0.9.0-alpha.2"
+    chalk "^4.1.1"
+    commander "^9.2.0"
+    find-package-json "^1.2.0"
+    i18next "^22.4.9"
+    koa "^2.13.4"
+    koa-bodyparser "^4.3.0"
+    koa-static "^5.0.0"
+    lodash "^4.17.21"
+    semver "^7.3.7"
+    xpipe "^1.0.5"
+
+"@nocobase/test@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/test/-/test-0.9.0-alpha.2.tgz#d006978a4f00c419944909b94c37bc287b4a5080"
+  integrity sha512-eTIrxBq7QdBQ4tmvxDg9F/dN+fKca1ZPDHDjuWtgGebUkqz13udxtEjT2K8KVAxMFte6Q7bJd4/0j0s7N8cGWw==
+  dependencies:
+    "@nocobase/server" "0.9.0-alpha.2"
+    "@types/supertest" "^2.0.11"
+    mockjs "^1.1.0"
+    mysql2 "^2.3.3"
+    pg "^8.7.3"
+    pg-hstore "^2.3.4"
+    sqlite3 "^5.0.8"
+    supertest "^6.1.6"
+
+"@nocobase/utils@0.9.0-alpha.2":
+  version "0.9.0-alpha.2"
+  resolved "https://registry.npmjs.org/@nocobase/utils/-/utils-0.9.0-alpha.2.tgz#deee42994de97104dc9ccc190c43be0638abb311"
+  integrity sha512-9lOjO6z2BRMM1SLgJMEw7NgCWrSLJ5ZPdNH/xFUqMcT7wMp9Hk3jgZIT3JpGrLb0yTk2DmiF7puTnonHwQ5g7A==
+  dependencies:
+    "@hapi/topo" "^6.0.0"
+    deepmerge "^4.2.2"
+    flat-to-nested "^1.1.1"
+
 "@node-saml/node-saml@^4.0.2":
   version "4.0.2"
   resolved "https://registry.npmjs.org/@node-saml/node-saml/-/node-saml-4.0.2.tgz#e12020ea635346f33fcef008fe0e6fa2f28713e5"

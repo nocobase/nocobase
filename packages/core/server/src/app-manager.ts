@@ -30,8 +30,6 @@ export class AppManager extends EventEmitter {
 
     passEventToSubApps('beforeDestroy', 'destroy');
     passEventToSubApps('beforeStop', 'stop');
-    passEventToSubApps('afterUpgrade', 'upgrade');
-    passEventToSubApps('afterReload', 'reload');
   }
 
   appSelector: AppSelector = async (req: IncomingMessage) => this.app;
@@ -50,6 +48,7 @@ export class AppManager extends EventEmitter {
 
     await application.destroy();
 
+    console.log(`remove application ${name}`);
     this.applications.delete(name);
   }
 

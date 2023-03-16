@@ -58,6 +58,7 @@ export class PluginManager {
       const exists = await this.app.db.collectionExistsInDb('applicationPlugins');
 
       if (!exists) {
+        this.app.log.warn(`applicationPlugins collection not exists in ${this.app.name}`);
         return;
       }
 
