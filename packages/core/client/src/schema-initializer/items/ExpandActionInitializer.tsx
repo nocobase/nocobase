@@ -2,8 +2,9 @@ import React from 'react';
 import { Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
+import { useFieldSchema } from '@formily/react';
 import { ActionInitializer } from './ActionInitializer';
-import { useTableBlockContext } from '../../';
+import { useTableBlockContext, useTableSelectorContext } from '../../';
 import { NodeCollapseOutlined, NodeExpandOutlined } from '@ant-design/icons';
 
 export const ExpandActionInitializer = (props) => {
@@ -25,7 +26,7 @@ export const ExpandActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const actionDesignerCss = css`
+const actionDesignerCss = css`
   position: relative;
   &:hover {
     .general-schema-designer {
@@ -66,7 +67,9 @@ export const actionDesignerCss = css`
 
 export const ExpandActionComponent = (props) => {
   const { t } = useTranslation();
-  const ctx = useTableBlockContext();
+  const schema = useFieldSchema();
+  const isTableSelector = schema.parent?.parent?.['x-decorator'] === 'TableSelectorProvider';
+  const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
   return (
     <div className={actionDesignerCss}>
       {ctx.params['tree'] && (

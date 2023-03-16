@@ -1,11 +1,10 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
 
@@ -13,6 +12,7 @@ const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +26,10 @@ const InternalTableSelectorProvider = (props) => {
           params,
           extraFilter,
           rowKey,
+          expandFlag,
+          setExpandFlag: () => {
+            setExpandFlag(!expandFlag);
+          },
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />
@@ -103,7 +107,7 @@ export const TableSelectorProvider = (props) => {
   const record = useRecord();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema['x-decorator-props'];
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
   const params = { ...props.params };
@@ -113,6 +117,14 @@ export const TableSelectorProvider = (props) => {
   }
   if ((collection as any).template === 'tree' && treeTable !== false) {
     params['tree'] = true;
+    if (collectionFieldSchema.name === 'parent') {
+      params.filter = {
+        ...(params.filter ?? {}),
+        id: {
+          $ne: record.id,
+        },
+      };
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
