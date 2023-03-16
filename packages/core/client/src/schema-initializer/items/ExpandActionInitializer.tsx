@@ -25,7 +25,7 @@ export const ExpandActionInitializer = (props) => {
   return <ActionInitializer {...props} schema={schema} />;
 };
 
-export const actionDesignerCss = css`
+const actionDesignerCss = css`
   position: relative;
   &:hover {
     .general-schema-designer {
