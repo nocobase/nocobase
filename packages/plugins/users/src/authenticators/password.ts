@@ -4,7 +4,7 @@ import { namespace } from '..';
 
 export default async function (ctx: Context, next: Next) {
   const { values } = ctx.action.params;
-  const account = values?.account
+  const account = values?.account || values?.email || values?.phone
   if (!account) {
     return ctx.throw(400, { code: 'InvalidUserData', message: ctx.t('Please fill in your account', { ns: namespace }) });
   }
