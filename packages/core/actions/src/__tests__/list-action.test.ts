@@ -141,54 +141,54 @@ describe('list-tree', () => {
     await app.destroy();
   });
 
-  const values = [
-    {
-      name: '1',
-      __index: '0',
-      children: [
-        {
-          name: '1-1',
-          __index: '0.children.0',
-          children: [
-            {
-              name: '1-1-1',
-              __index: '0.children.0.children.0',
-              children: [
-                {
-                  name: '1-1-1-1',
-                  __index: '0.children.0.children.0.children.0',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: '2',
-      __index: '1',
-      children: [
-        {
-          name: '2-1',
-          __index: '1.children.0',
-          children: [
-            {
-              name: '2-1-1',
-              __index: '1.children.0.children.0',
-              children: [
-                {
-                  name: '2-1-1-1',
-                  __index: '1.children.0.children.0.children.0',
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-  ];
-
   it('should be tree', async () => {
+    const values = [
+      {
+        name: '1',
+        __index: '0',
+        children: [
+          {
+            name: '1-1',
+            __index: '0.children.0',
+            children: [
+              {
+                name: '1-1-1',
+                __index: '0.children.0.children.0',
+                children: [
+                  {
+                    name: '1-1-1-1',
+                    __index: '0.children.0.children.0.children.0',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: '2',
+        __index: '1',
+        children: [
+          {
+            name: '2-1',
+            __index: '1.children.0',
+            children: [
+              {
+                name: '2-1-1',
+                __index: '1.children.0.children.0',
+                children: [
+                  {
+                    name: '2-1-1-1',
+                    __index: '1.children.0.children.0.children.0',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
     const db = app.db;
     const collection = db.collection({
       name: 'categories',
@@ -233,7 +233,54 @@ describe('list-tree', () => {
     expect(response.body.rows).toMatchObject(values);
   });
 
-  it('should be tree', async () => {
+  it.only('should be tree', async () => {
+    const values = [
+      {
+        name: '1',
+        __index: '0',
+        children2: [
+          {
+            name: '1-1',
+            __index: '0.children2.0',
+            children2: [
+              {
+                name: '1-1-1',
+                __index: '0.children2.0.children2.0',
+                children2: [
+                  {
+                    name: '1-1-1-1',
+                    __index: '0.children2.0.children2.0.children2.0',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: '2',
+        __index: '1',
+        children2: [
+          {
+            name: '2-1',
+            __index: '1.children2.0',
+            children2: [
+              {
+                name: '2-1-1',
+                __index: '1.children2.0.children2.0',
+                children2: [
+                  {
+                    name: '2-1-1-1',
+                    __index: '1.children2.0.children2.0.children2.0',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
     const db = app.db;
     const collection = db.collection({
       name: 'categories',
@@ -255,7 +302,7 @@ describe('list-tree', () => {
         },
         {
           type: 'hasMany',
-          name: 'children',
+          name: 'children2',
           foreignKey: 'cid',
           treeChildren: true,
         },

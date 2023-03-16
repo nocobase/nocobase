@@ -22,12 +22,12 @@ export const afterDefineAdjacencyListCollection = (collection: Collection) => {
   if (!collection.options.tree) {
     return;
   }
-  const foreignKey = collection.treeParentField?.foreignKey ?? 'parentId';
-  const childrenKey = collection.treeChildrenField?.name ?? 'children';
   collection.model.afterFind(async (instances, options: any) => {
     if (!options.tree) {
       return;
     }
+    const foreignKey = collection.treeParentField?.foreignKey ?? 'parentId';
+    const childrenKey = collection.treeChildrenField?.name ?? 'children';
     const arr: Model[] = Array.isArray(instances) ? instances : [instances];
     let index = 0;
     for (const instance of arr) {
@@ -46,7 +46,7 @@ export const afterDefineAdjacencyListCollection = (collection: Collection) => {
         transaction: options.transaction,
         ...opts,
         // @ts-ignore
-        parentIndex: `${__index}.children`,
+        parentIndex: `${__index}.${childrenKey}`,
         context: options.context,
       });
       if (children?.length > 0) {

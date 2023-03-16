@@ -9,7 +9,7 @@ import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestCont
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
@@ -28,6 +28,7 @@ const InternalTableBlockProvider = (props) => {
         dragSort,
         rowKey,
         expandFlag,
+        childrenColumnName,
         setExpandFlag: () => setExpandFlag(!expandFlag),
       }}
     >
@@ -94,13 +95,19 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
+  let childrenColumnName = 'children';
   if (collection.tree && treeTable !== false) {
     if (resourceName.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
+        childrenColumnName = f.name;
         params['tree'] = true;
       }
     } else {
+      const f = collection.fields.find(f => f.treeChildren);
+      if (f) {
+        childrenColumnName = f.name;
+      }
       params['tree'] = true;
     }
   }
@@ -112,7 +119,7 @@ export const TableBlockProvider = (props) => {
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
         <BlockProvider {...props} params={params}>
-          <InternalTableBlockProvider {...props} params={params} />
+          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
         </BlockProvider>
       </FormContext.Provider>
     </SchemaComponentOptions>
@@ -140,6 +147,7 @@ export const useTableBlockProps = () => {
     }
   }, [ctx?.service?.loading]);
   return {
+    childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
