@@ -112,7 +112,7 @@ export const TableActionColumnInitializers = (props: any) => {
             (collection as any).template === 'tree' &&
               treeTable !== false && {
                 type: 'item',
-                title: t('Add Child'),
+                title: t('Add child'),
                 component: 'CreateChildInitializer',
                 schema: {
                   'x-component': 'Action.Link',
