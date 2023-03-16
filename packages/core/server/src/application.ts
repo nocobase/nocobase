@@ -271,7 +271,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       });
     }
 
-    this._appManager = new AppManager(this);
+    if (this._appManager) {
+      this._appManager.bindMainApplication(this);
+    } else {
+      this._appManager = new AppManager(this);
+    }
 
     if (this.options.acl !== false) {
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
