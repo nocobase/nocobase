@@ -4,7 +4,7 @@ export const CreateChildInitializer = (props) => {
 
   const schema = {
     type: 'void',
-    title: '{{ t("Add Child") }}',
+    title: '{{ t("Add child") }}',
     'x-action': 'create',
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
