@@ -179,14 +179,26 @@ export const Table: any = observer((props: any) => {
   const [expandedKeys, setExpandesKeys] = useState([]);
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
+  const [selectedRow, setSelectedRow] = useState([]);
 
-  const onRow = onClickRow
-    ? (record) => {
-        return {
-          onClick: () => onClickRow(record, setSelectedRowKeys, selectedRowKeys),
-        };
+  let onRow = null,
+    highlightRow = '';
+
+  if (onClickRow) {
+    onRow = (record) => {
+      return {
+        onClick: () => onClickRow(record, setSelectedRow, selectedRow),
+      };
+    };
+    highlightRow = css`
+      & > td {
+        background-color: #caedff !important;
       }
-    : null;
+      &:hover > td {
+        background-color: #caedff !important;
+      }
+    `;
+  }
 
   useEffect(() => {
     field.setValidator((value) => {
@@ -461,6 +473,7 @@ export const Table: any = observer((props: any) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
           onRow={onRow}
+          rowClassName={(record, index) => (selectedRow.includes(index + 1) ? highlightRow : '')}
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}

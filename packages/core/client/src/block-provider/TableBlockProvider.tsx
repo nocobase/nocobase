@@ -194,7 +194,7 @@ export const useTableBlockProps = () => {
         : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
-    onClickRow(record, setSelectedRowKeys, selectedRowKeys) {
+    onClickRow(record, setSelectedRow, selectedRow) {
       if (ctx.blockType !== 'filter') return;
 
       const value = [record[ctx.rowKey]];
@@ -208,7 +208,7 @@ export const useTableBlockProps = () => {
         // 保留原有的 filter
         const storedFilter = block.service.params?.[1]?.filters || {};
 
-        if (selectedRowKeys.includes(record[ctx.rowKey])) {
+        if (selectedRow.includes(record[ctx.rowKey])) {
           delete storedFilter[uid];
         } else {
           storedFilter[uid] = {
@@ -237,10 +237,8 @@ export const useTableBlockProps = () => {
         );
       });
 
-      ctx.field.data = ctx?.field?.data || {};
-      ctx.field.data.selectedRowKeys = value;
       // 更新表格的选中状态
-      setSelectedRowKeys((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : value));
+      setSelectedRow([...value]);
     },
   };
 };
