@@ -76,6 +76,32 @@ class SubAppPlugin extends Plugin {
       }
       await next();
     });
+
+    subApp.on('beforeInstall', async () => {
+      const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
+      const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
+
+      // delete old collection
+      await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
+
+      await subApp.db.sequelize.query(`
+      INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+      SELECT *
+      FROM ${mainAppPluginsCollection.quotedTableName()}
+      WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+    `);
+
+      const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
+        subAppPluginsCollection.model.tableName
+      }"', 'id')`;
+
+      const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
+      await subApp.db.sequelize.query(`
+       SELECT setval('${
+         sequenceName[0]['pg_get_serial_sequence']
+       }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+      `);
+    });
   }
 }
 
@@ -95,7 +121,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     };
 
-    this.app.on('beforeSubAppLoad', async ({ subApp }: { subApp: Application }) => {
+    this.app.on('afterSubAppAdded', (subApp) => {
       subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
     });
 
@@ -200,32 +226,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       for (const subApplication of subApplications) {
         await this.app.appManager.getApplication(subApplication.name);
       }
-    });
-
-    this.app.on('beforeSubAppInstall', async ({ subApp }) => {
-      const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
-      const mainAppPluginsCollection = this.app.db.getCollection('applicationPlugins');
-
-      // delete old collection
-      await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
-
-      await subApp.db.sequelize.query(`
-      INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-      SELECT *
-      FROM ${mainAppPluginsCollection.quotedTableName()}
-      WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
-    `);
-
-      const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
-        subAppPluginsCollection.model.tableName
-      }"', 'id')`;
-
-      const sequenceName = await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' });
-      await subApp.db.sequelize.query(`
-       SELECT setval('${
-         sequenceName[0].pg_get_serial_sequence
-       }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
-      `);
     });
 
     // 子应用启动参数

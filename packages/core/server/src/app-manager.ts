@@ -36,13 +36,9 @@ export class AppManager extends EventEmitter {
 
   appSelector: AppSelector = async (req: IncomingMessage) => this.app;
 
-  createApplication(name: string, options: ApplicationOptions): Application {
-    const application = new Application({
-      ...options,
-      name,
-    });
-
-    this.applications.set(name, application);
+  addSubApp(application): Application {
+    this.applications.set(application.name, application);
+    this.app.emit('afterSubAppAdded', application);
     return application;
   }
 
@@ -84,7 +80,6 @@ export class AppManager extends EventEmitter {
 
       if (typeof handleApp === 'string') {
         handleApp = await appManager.getApplication(handleApp);
-
         if (!handleApp) {
           res.statusCode = 404;
           return res.end(
@@ -98,6 +93,8 @@ export class AppManager extends EventEmitter {
             }),
           );
         }
+
+        if (handleApp.stopped) await handleApp.start();
       }
 
       handleApp.callback()(req, res);

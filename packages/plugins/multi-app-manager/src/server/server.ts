@@ -1,11 +1,11 @@
-import Database, { IDatabaseOptions } from '@nocobase/database';
+import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
 import Application, { AppManager, InstallOptions, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 
-export type AppDbCreator = (app: Application) => Promise<void>;
+export type AppDbCreator = (app: Application, transaction: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 
 const defaultDbCreator = async (app: Application) => {
@@ -121,37 +121,49 @@ export class PluginMultiAppManager extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    // after application created
     this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
       const { transaction } = options;
 
-      await model.registerToMainApp(this.app, {
-        transaction,
-        dbCreator: this.appDbCreator,
+      const subApp = model.registerToMainApp(this.app, {
         appOptionsFactory: this.appOptionsFactory,
       });
+
+      // create database
+      await this.appDbCreator(subApp, transaction);
+
+      await subApp.reload();
+      await subApp.db.sync();
+
+      await subApp.install();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await this.app.appManager.removeApplication(model.get('name') as string);
     });
 
+    // lazy load application
+    // if application not in appManager, load it from database
     this.app.appManager.on(
       'beforeGetApplication',
       async ({ appManager, name }: { appManager: AppManager; name: string }) => {
-        if (!appManager.applications.has(name)) {
-          const existsApplication = (await this.app.db.getRepository('applications').findOne({
-            filter: {
-              name,
-            },
-          })) as ApplicationModel | null;
-
-          if (existsApplication) {
-            await existsApplication.registerToMainApp(this.app, {
-              dbCreator: this.appDbCreator,
-              appOptionsFactory: this.appOptionsFactory,
-            });
-          }
+        if (appManager.applications.has(name)) {
+          return;
         }
+
+        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+          filter: {
+            name,
+          },
+        })) as ApplicationModel | null;
+
+        if (!applicationRecord) {
+          return;
+        }
+
+        await applicationRecord.registerToMainApp(this.app, {
+          appOptionsFactory: this.appOptionsFactory,
+        });
       },
     );
 
