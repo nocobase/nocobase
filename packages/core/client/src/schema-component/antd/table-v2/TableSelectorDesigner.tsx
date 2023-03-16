@@ -33,6 +33,7 @@ export const TableSelectorDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
+  const collection = useCollection();
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
@@ -77,6 +78,26 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
+      {(collection as any)?.template === 'tree' && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          defaultChecked={true}
+          checked={field.decoratorProps.treeTable !== false}
+          onChange={(flag) => {
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+            service.run(params);
+          }}
+        />
+      )}
       {!dragSort && (
         <SchemaSettings.ModalItem
           title={t('Set default sorting rules')}
