@@ -1080,7 +1080,7 @@ export const createTableBlockSchema = (options) => {
         'x-component-props': {
           rowKey: 'id',
           rowSelection: {
-            type: 'radio',
+            type: 'checkbox',
           },
           useProps: '{{ useTableBlockProps }}',
         },
