@@ -20,7 +20,6 @@ export const FilterTableBlockInitializer = (props) => {
           rowKey: collection.filterTargetKey || 'id',
           TableBlockDesigner: 'TableV2.FilterDesigner',
           tableColumnInitializers: 'FilterTableColumnInitializers',
-          tableActionInitializers: 'FilterTableActionInitializers',
           rowSelection: {
             type: 'radio',
           },

@@ -17,7 +17,6 @@ export * from './RecordFormBlockInitializers';
 export * from './SubTableActionInitializers';
 export * from './TableActionColumnInitializers';
 export * from './TableActionInitializers';
-export * from './FilterTableActionInitializers';
 export * from './TableColumnInitializers';
 export * from './FilterTableColumnInitializers';
 export * from './TableSelectorInitializers';
