@@ -87,6 +87,7 @@ export const useGanttBlockProps = () => {
   const expandAndCollapseAll = (flag) => {
     const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag);
     setTasks(data);
+    ctx.field.data = data;
   };
   useEffect(() => {
     if (!ctx?.service?.loading) {
