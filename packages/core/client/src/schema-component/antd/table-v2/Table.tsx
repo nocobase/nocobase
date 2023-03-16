@@ -49,14 +49,12 @@ const useTableColumns = () => {
         ...s['x-component-props'],
         render: (v, record) => {
           const index = field.value?.indexOf(record);
-          return index >= 0 ? (
+          return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
                 <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
               </RecordProvider>
             </RecordIndexProvider>
-          ) : (
-            v
           );
         },
       } as TableColumnProps<any>;
@@ -168,6 +166,7 @@ export const Table: any = observer((props: any) => {
     rowSelection,
     rowKey,
     required,
+    onExpand,
     ...others
   } = { ...others1, ...others2 } as any;
   const schema = useFieldSchema();
@@ -456,6 +455,7 @@ export const Table: any = observer((props: any) => {
             onExpand: (flag, record) => {
               const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
               setExpandesKeys(newKeys);
+              onExpand?.(flag, record);
             },
             expandedRowKeys: expandedKeys,
           }}

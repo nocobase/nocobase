@@ -19,7 +19,7 @@ import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import { wrapper } from './style';
 import { ActionContext } from '../../../action';
 import { useDesignable } from '../../../../../schema-component';
-import { useBlockRequestContext } from '../../../../../block-provider';
+import { useBlockRequestContext, useTableBlockContext, useGanttBlockContext } from '../../../../../block-provider';
 import { RecordProvider } from '../../../../../record-provider';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
@@ -56,7 +56,7 @@ export const Gantt: any = (props: any) => {
     headerHeight = designable ? 65 : 55,
     listCellWidth = '155px',
     rowHeight = 55,
-    ganttHeight = 400,
+    ganttHeight = 0,
     preStepsCount = 1,
     locale = 'en-GB',
     barFill = 60,
@@ -87,7 +87,9 @@ export const Gantt: any = (props: any) => {
     onSelect,
     useProps,
   } = props;
-  const { onExpanderClick, tasks } = useProps();
+  const { onExpanderClick, tasks, expandAndCollapseAll } = useProps();
+  const ctx = useGanttBlockContext();
+  const tableCtx = useTableBlockContext();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();
   const { fieldNames } = useProps(props);
@@ -118,7 +120,14 @@ export const Gantt: any = (props: any) => {
   const columnWidth: number = getColumnWidth(dateSetup.dates.length, verticalGanttContainerRef.current?.clientWidth);
   const svgWidth = dateSetup.dates.length * columnWidth;
   const ganttFullHeight = barTasks.length * rowHeight;
+  const { expandFlag } = tableCtx;
 
+  useEffect(() => {
+    tableCtx.field.onExpandClick = handleTableExpanderClick;
+  }, []);
+  useEffect(() => {
+    expandAndCollapseAll?.(!expandFlag);
+  }, [expandFlag]);
   // task change events
   useEffect(() => {
     let filteredTasks: Task[];
@@ -371,7 +380,7 @@ export const Gantt: any = (props: any) => {
     setSelectedTask(newSelectedTask);
   };
   const handleTableExpanderClick = (expanded: boolean, record: any) => {
-    const task = tasks.find((v: any) => v.id === record.id + '');
+    const task = ctx?.field?.data.find((v: any) => v.id === record.id + '');
     if (onExpanderClick && record.children.length) {
       onExpanderClick({ ...task, hideChildren: !expanded });
     }

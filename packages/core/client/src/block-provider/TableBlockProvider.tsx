@@ -94,7 +94,7 @@ export const TableBlockProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if ((collection as any).template === 'tree' && treeTable !== false) {
+  if ((collection as any)?.template === 'tree' && treeTable !== false) {
     params['tree'] = true;
   }
   if (!Object.keys(params).includes('appends')) {
@@ -164,7 +164,7 @@ export const useTableBlockProps = () => {
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
     onExpand(expanded, record) {
-      ctx?.onExpandClick(expanded, record);
+      ctx?.field.onExpandClick?.(expanded, record);
     },
   };
 };
