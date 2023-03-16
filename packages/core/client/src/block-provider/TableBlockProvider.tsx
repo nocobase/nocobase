@@ -238,7 +238,7 @@ export const useTableBlockProps = () => {
       });
 
       // 更新表格的选中状态
-      setSelectedRow([...value]);
+      setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
     },
   };
 };
