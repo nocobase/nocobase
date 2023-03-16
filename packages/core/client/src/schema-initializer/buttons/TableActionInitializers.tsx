@@ -52,7 +52,7 @@ export const TableActionInitializers = {
         },
         {
           type: 'item',
-          title: "{{t('Expand and Collapse')}}",
+          title: "{{t('Expand/Collapse')}}",
           component: 'ExpandActionInitializer',
           schema: {
             'x-align': 'right',
