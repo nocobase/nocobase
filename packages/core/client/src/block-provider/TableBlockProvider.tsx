@@ -1,10 +1,10 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useMemo, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { SchemaComponentOptions, useFixedSchema } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFixedSchema, SchemaComponentOptions } from '../schema-component';
 
 export const TableBlockContext = createContext<any>({});
 
@@ -86,7 +86,6 @@ export const useAssociationNames = (collection) => {
 export const TableBlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
-  const form = useMemo(() => createForm(), []);
   const fieldSchema = useFieldSchema();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(props.collection);
@@ -100,6 +99,7 @@ export const TableBlockProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  const form = useMemo(() => createForm(), [treeTable]);
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
