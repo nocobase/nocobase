@@ -260,7 +260,7 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema, getField));
+            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),

@@ -4,6 +4,7 @@ import { SchemaInitializer } from '../SchemaInitializer';
 import {
   gridRowColWrap,
   useAssociatedFormItemInitializerFields,
+  useFilterAssociatedFormItemInitializerFields,
   useFilterFormItemInitializerFields,
   useFilterInheritsFormItemInitializerFields,
   useFormItemInitializerFields,
@@ -90,6 +91,7 @@ export const FormItemInitializers = (props: any) => {
 export const FilterFormItemInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component } = props;
+  const associationFields = useFilterAssociatedFormItemInitializerFields();
   const inheritFields = useFilterInheritsFormItemInitializerFields();
   const compile = useCompile();
   const fieldItems: any[] = [
@@ -114,6 +116,18 @@ export const FilterFormItemInitializers = (props: any) => {
         );
     });
   }
+
+  associationFields.length > 0 &&
+    fieldItems.push(
+      {
+        type: 'divider',
+      },
+      {
+        type: 'itemGroup',
+        title: t('Display association fields'),
+        children: associationFields,
+      },
+    );
 
   fieldItems.push(
     {

@@ -340,39 +340,51 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
 
 // 筛选表单相关
 export const useFilterAssociatedFormItemInitializerFields = () => {
-  const { name, currentFields } = useCollection();
-  const { getInterface } = useCollectionManager();
-  const { snapshot, fieldSchema } = useActionContext();
-  const action = fieldSchema?.['x-action'];
-
-  return currentFields
-    ?.filter((field) => field.interface === 'm2o' && isAssocField(field) && getInterface(field.interface)?.filterable)
+  const { name, fields } = useCollection();
+  const { getInterface, getCollectionFields } = useCollectionManager();
+  const interfaces = ['m2o'];
+  const groups = fields
+    ?.filter((field) => {
+      return interfaces.includes(field.interface);
+    })
     ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const schema = {
-        type: 'string',
-        name: field.name,
-        required: false,
-        'x-designer': 'FormItem.FilterFormDesigner',
-        'x-component': 'AssociationSelect',
-        'x-decorator': 'FormItem',
-        'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': field.uiSchema?.['x-component-props'],
-        'x-read-pretty': field.uiSchema?.['x-read-pretty'],
-      };
-      const resultItem = {
-        type: 'item',
-        title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
-        remove: removeGridFormItem,
-        schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block: 'Form', readPretty: true, action });
-        },
-        schema,
-      } as SchemaInitializerItemOptions;
+      const subFields = getCollectionFields(field.target);
+      const items = subFields
+        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.map((subField) => {
+          const interfaceConfig = getInterface(subField.interface);
+          const schema = {
+            type: 'string',
+            name: `${field.name}.${subField.name}`,
+            'x-designer': 'FormItem.FilterFormDesigner',
+            'x-designer-props': {
+              // 在 useOperatorList 中使用，用于获取对应的操作符列表
+              interface: subField.interface,
+            },
+            'x-component': 'CollectionField',
+            'x-read-pretty': false,
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}.${subField.name}`,
+          };
+          return {
+            type: 'item',
+            title: subField?.uiSchema?.title || subField.name,
+            component: 'CollectionFieldInitializer',
+            remove: removeGridFormItem,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, { field: subField, block: 'Form', readPretty: false });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        });
 
-      return resultItem;
+      return {
+        type: 'subMenu',
+        title: field.uiSchema?.title,
+        children: items,
+      } as SchemaInitializerItemOptions;
     });
+  return groups;
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {
@@ -916,7 +928,7 @@ export const createFilterFormBlockSchema = (options) => {
     'x-component': 'CardItem',
     // 保存当前筛选区块所能过滤的数据区块
     'x-filter-targets': [],
-    // 用于存储用户设置的每个字段的运算符，目前仅表单区块支持自定义
+    // 用于存储用户设置的每个字段的运算符，目前仅筛选表单区块支持自定义
     'x-filter-operators': {},
     properties: {
       [uid()]: {
