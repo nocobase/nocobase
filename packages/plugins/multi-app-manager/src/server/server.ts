@@ -136,6 +136,7 @@ export class PluginMultiAppManager extends Plugin {
       await subApp.db.sync();
 
       await subApp.install();
+      await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -161,9 +162,11 @@ export class PluginMultiAppManager extends Plugin {
           return;
         }
 
-        await applicationRecord.registerToMainApp(this.app, {
+        const subApp = await applicationRecord.registerToMainApp(this.app, {
           appOptionsFactory: this.appOptionsFactory,
         });
+
+        await subApp.load();
       },
     );
 

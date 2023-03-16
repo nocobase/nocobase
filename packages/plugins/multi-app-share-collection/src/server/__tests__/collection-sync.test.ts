@@ -120,6 +120,29 @@ pgOnly()('collection sync', () => {
     expect(userInSub2.get('roles').map((item) => item.name)).toContain(defaultRoleInSub2.name);
   });
 
+  it('should sync plugin status into lazy load sub app', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.appManager.removeApplication('sub1');
+    await mainApp.pm.enable('map');
+
+    const sub1 = await mainApp.appManager.getApplication('sub1');
+
+    expect(sub1.pm.plugins.get('map').options.enabled).toBeTruthy();
+
+    const sub1MapPlugin = await sub1.db.getRepository('applicationPlugins').findOne({
+      filter: {
+        name: 'map',
+      },
+    });
+
+    expect(sub1MapPlugin.get('enabled')).toBeTruthy();
+  });
+
   it('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
@@ -149,6 +172,7 @@ pgOnly()('collection sync', () => {
     });
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
+    expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
   });
 

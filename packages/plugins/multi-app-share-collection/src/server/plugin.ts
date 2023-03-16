@@ -77,6 +77,7 @@ class SubAppPlugin extends Plugin {
       await next();
     });
 
+    // new subApp sync plugins from mainApp
     subApp.on('beforeInstall', async () => {
       const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
       const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
