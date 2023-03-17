@@ -6,7 +6,6 @@ import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
-import { useCollection } from '../../collection-manager';
 
 export const Resizable = (props) => {
   const { t } = useTranslation();
