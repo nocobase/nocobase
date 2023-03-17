@@ -26,6 +26,7 @@ export const tree: ICollectionTemplate = {
         type: 'belongsTo',
         name: 'parent',
         foreignKey: 'parentId',
+        treeParent: true,
         uiSchema: {
           title: '{{t("Parent")}}',
           'x-component': 'RecordPicker',
@@ -44,6 +45,7 @@ export const tree: ICollectionTemplate = {
         type: 'hasMany',
         name: 'children',
         foreignKey: 'parentId',
+        treeChildren: true,
         uiSchema: {
           title: '{{t("Children")}}',
           'x-component': 'RecordPicker',

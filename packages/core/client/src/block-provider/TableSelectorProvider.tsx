@@ -4,6 +4,7 @@ import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
+import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
@@ -115,12 +116,12 @@ export const TableSelectorProvider = (props) => {
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if ((collection as any).template === 'tree' && treeTable !== false) {
+  if (collection.tree && treeTable !== false) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
         ...(params.filter ?? {}),
-        id: record.id&&{
+        id: record.id && {
           $ne: record.id,
         },
       };
@@ -195,9 +196,11 @@ export const TableSelectorProvider = (props) => {
     }
   }
   return (
-    <BlockProvider {...props} params={params}>
-      <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
-    </BlockProvider>
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <BlockProvider {...props} params={params}>
+        <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
+      </BlockProvider>
+    </SchemaComponentOptions>
   );
 };
 

@@ -77,11 +77,7 @@ export const useTableColumnInitializerFields = () => {
   const { getInterface } = useCollectionManager();
   return currentFields
     .filter(
-      (field) =>
-        field?.interface &&
-        field?.interface !== 'subTable' &&
-        !field?.isForeignKey &&
-        !(field?.target === field.collectionName && field?.foreignKey === 'parentId' && field?.interface === 'o2m'),
+      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
     )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -120,14 +116,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
       const items = subFields
         // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
         ?.filter(
-          (subField) =>
-            subField?.interface &&
-            !['subTable'].includes(subField?.interface) &&
-            !(
-              subField?.target === subField.collectionName &&
-              subField?.foreignKey === 'parentId' &&
-              subField?.interface === 'o2m'
-            ),
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
         )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
@@ -213,12 +202,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { snapshot } = useActionContext();
 
   return currentFields
-    ?.filter(
-      (field) =>
-        field?.interface &&
-        !field?.isForeignKey &&
-        !(field?.target === field.collectionName && field?.foreignKey === 'parentId' && field?.interface === 'o2m'),
-    )
+    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -267,14 +251,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
         ?.filter(
-          (subField) =>
-            subField?.interface &&
-            !['subTable'].includes(subField?.interface) &&
-            !(
-              subField?.target === subField.collectionName &&
-              subField?.foreignKey === 'parentId' &&
-              subField?.interface === 'o2m'
-            ),
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
         )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);

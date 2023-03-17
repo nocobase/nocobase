@@ -7,7 +7,7 @@ export const beforeDefineAdjacencyListCollection = (options: CollectionOptions) 
     return;
   }
   (options.fields || []).forEach((field) => {
-    if (['parent', 'children'].includes(field.name)) {
+    if (field.treeParent || field.treeChildren) {
       if (!field.target) {
         field.target = options.name;
       }
@@ -26,6 +26,8 @@ export const afterDefineAdjacencyListCollection = (collection: Collection) => {
     if (!options.tree) {
       return;
     }
+    const foreignKey = collection.treeParentField?.foreignKey ?? 'parentId';
+    const childrenKey = collection.treeChildrenField?.name ?? 'children';
     const arr: Model[] = Array.isArray(instances) ? instances : [instances];
     let index = 0;
     for (const instance of arr) {
@@ -39,17 +41,17 @@ export const afterDefineAdjacencyListCollection = (collection: Collection) => {
       instance.setDataValue('__index', __index);
       const children = await collection.repository.find({
         filter: {
-          parentId: instance.id,
+          [foreignKey]: instance.id,
         },
         transaction: options.transaction,
         ...opts,
         // @ts-ignore
-        parentIndex: `${__index}.children`,
+        parentIndex: `${__index}.${childrenKey}`,
         context: options.context,
       });
       if (children?.length > 0) {
         instance.setDataValue(
-          'children',
+          childrenKey,
           children.map((r) => r.toJSON()),
         );
       }

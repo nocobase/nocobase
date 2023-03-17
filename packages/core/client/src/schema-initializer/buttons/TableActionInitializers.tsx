@@ -52,7 +52,7 @@ export const TableActionInitializers = {
         },
         {
           type: 'item',
-          title: "{{t('Expand and Collapse')}}",
+          title: "{{t('Expand/Collapse')}}",
           component: 'ExpandActionInitializer',
           schema: {
             'x-align': 'right',
@@ -61,7 +61,7 @@ export const TableActionInitializers = {
             const schema = useFieldSchema();
             const collection = useCollection();
             const { treeTable } = schema?.parent?.['x-decorator-props']||{};
-            return (collection as any).template === 'tree' && treeTable !== false;
+            return collection.tree && treeTable !== false;
           },
         },
       ],

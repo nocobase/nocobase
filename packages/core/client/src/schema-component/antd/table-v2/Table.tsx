@@ -15,10 +15,10 @@ import {
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext,
+  useTableSelectorContext
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
-import { isCollectionFieldComponent, isColumnComponent, extractIndex, getIdsWithChildren } from './utils';
+import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
 
 const useTableColumns = () => {
   const field = useField<ArrayField>();
@@ -187,6 +187,11 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
+  // useEffect(() => {
+  //   const data = field.value;
+  //   field.value = null;
+  //   field.value = data;
+  // }, [treeTable]);
 
   useEffect(() => {
     if (treeTable !== false) {
@@ -304,10 +309,8 @@ export const Table: any = observer((props: any) => {
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
               index = index + (current - 1) * pageSize + 1;
-            } else {
-              index = index + 1;
             }
-            if (record.parentId && treeTable !== false) {
+            if (record.__index) {
               index = extractIndex(record.__index);
             }
             return (

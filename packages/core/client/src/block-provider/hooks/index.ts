@@ -133,7 +133,7 @@ export const useCreateActionProps = () => {
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField } = useCollection();
+  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -155,7 +155,9 @@ export const useCreateActionProps = () => {
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       if (addChild) {
-        values.parentId = currentRecord.id;
+        const treeParentField = getTreeParentField();
+        values[treeParentField?.name ?? 'parent'] = currentRecord;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
       actionField.data = field.data || {};
       actionField.data.loading = true;

@@ -4,6 +4,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
+import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
 import { useCollection } from '../../collection-manager';
 
@@ -109,7 +110,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
-            (collection as any).template === 'tree' &&
+            collection.tree &&
               treeTable !== false && {
                 type: 'item',
                 title: t('Add child'),

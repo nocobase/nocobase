@@ -27,10 +27,11 @@ function findArgs(ctx: Context) {
   const params = ctx.action.params;
   if (params.tree) {
     const [collectionName, associationName] = resourceName.split('.');
-    const collection = ctx.db.getCollection(collectionName);
-    const association = collection.getField(associationName);
-    if (!associationName || !(associationName === 'children' && collectionName === association.options.target)) {
-      assign(params, { filter: { parentId: null } }, { filter: 'andMerge' });
+    const collection = ctx.db.getCollection(resourceName);
+    // tree collection 或者关系表是 tree collection
+    if (collection.options.tree && !(associationName && collectionName === collection.name)) {
+      const foreignKey = collection.treeParentField?.foreignKey || 'parentId';
+      assign(params, { filter: { [foreignKey]: null } }, { filter: 'andMerge' });
     }
   }
   const { tree, fields, filter, appends, except, sort } = params;
