@@ -25,7 +25,7 @@ export default defineConfig({
     resolveNocobasePackagesAlias(memo);
 
     // 在引入 mermaid 之后，运行 yarn dev 的时候会报错，添加下面的代码可以解决。
-    memo.module.rule('js-in-node_modules').include.clear();
+    memo.module.rule('js-in-node_modules').test(/.*mermaid.*\.js$/).include.clear();
     return memo;
   },
 });
