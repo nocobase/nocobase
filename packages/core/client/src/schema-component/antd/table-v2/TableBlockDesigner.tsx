@@ -39,7 +39,7 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const treeChildren = resource.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
+  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
