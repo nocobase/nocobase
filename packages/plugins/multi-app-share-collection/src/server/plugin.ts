@@ -64,7 +64,7 @@ class SubAppPlugin extends Plugin {
         const query = `
           select *
           from "${Collection.collectionSchema()}"."${Collection.model.tableName}"
-          where (options - > 'syncToApps')::jsonb ? '${subApp.name}'
+          where (options -> 'syncToApps')::jsonb ? '${subApp.name}'
         `;
 
         const results = await mainApp.db.sequelize.query(query, { type: 'SELECT' });
