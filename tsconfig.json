@@ -44,5 +44,8 @@
     "compilerOptions": {
       "module": "commonjs"
     }
-  }
+  },
+  "include": [
+    "packages/**/src",
+  ]
 }
