@@ -126,4 +126,6 @@ describe('multiple apps create', () => {
 
     expect(app.appManager.applications.has(name)).toBeTruthy();
   });
+
+  it('should upgrade sub apps when main app upgrade', async () => {});
 });
