@@ -76,7 +76,9 @@ export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return currentFields
-    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
+    .filter(
+      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
+    )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -113,7 +115,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
         // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
-        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.filter(
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
+        )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const schema = {
@@ -198,7 +202,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { snapshot } = useActionContext();
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey)
+    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -246,7 +250,9 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
-        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.filter(
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
+        )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const schema = {

@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators,
+  WhereOperators
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -106,6 +106,7 @@ export interface CommonFindOptions extends Transactionable {
   except?: Except;
   sort?: Sort;
   context?: any;
+  tree?: boolean;
 }
 
 export type FindOneOptions = Omit<FindOptions, 'limit'>;

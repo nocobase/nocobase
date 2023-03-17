@@ -9,8 +9,4 @@ group:
 
 ## TableBlock
 
-<code src="./demos/demo1.tsx" />
-
-## TableField
-
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo3.tsx" />

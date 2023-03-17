@@ -128,12 +128,12 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible } = useActionContext();
+  const { visible, setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField } = useCollection();
+  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -148,11 +148,17 @@ export const useCreateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { addChild } = fieldSchema?.['x-component-props'];
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      if (addChild) {
+        const treeParentField = getTreeParentField();
+        values[treeParentField?.name ?? 'parent'] = currentRecord;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
+      }
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
