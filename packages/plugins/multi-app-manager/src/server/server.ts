@@ -5,7 +5,7 @@ import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 
-export type AppDbCreator = (app: Application, transaction: Transactionable) => Promise<void>;
+export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 
 const defaultDbCreator = async (app: Application) => {
@@ -69,9 +69,6 @@ export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
 
-  // create random id
-  id;
-
   setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory;
   }
@@ -87,11 +84,6 @@ export class PluginMultiAppManager extends Plugin {
         : (app.options.database as IDatabaseOptions);
 
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
-  }
-
-  afterAdd() {
-    this.id = Math.random().toString(36).substr(2, 9);
-    console.log(`afterAdd ${this.name} plugin init ${this.app.name}, id is ${this.id}`);
   }
 
   beforeLoad() {
@@ -165,12 +157,6 @@ export class PluginMultiAppManager extends Plugin {
       if (!applicationRecord) {
         return;
       }
-
-      console.log(
-        `beforeGetApplication ${name}, this id is ${this.id}, application id is ${
-          this.app.getPlugin<any>('multi-app-manager').id
-        }`,
-      );
 
       const subApp = await applicationRecord.registerToMainApp(this.app, {
         appOptionsFactory: this.appOptionsFactory,

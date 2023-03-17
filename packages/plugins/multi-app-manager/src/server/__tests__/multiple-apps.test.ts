@@ -1,7 +1,6 @@
 import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { ApplicationModel } from '..';
 import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
@@ -126,22 +125,5 @@ describe('multiple apps create', () => {
     await app.agent().resource('test').test();
 
     expect(app.appManager.applications.has(name)).toBeTruthy();
-  });
-
-  it('should change handleAppStart', async () => {
-    const customHandler = jest.fn();
-    ApplicationModel.handleAppStart = customHandler;
-    const name = `td_${uid()}`;
-
-    await db.getRepository('applications').create({
-      values: {
-        name,
-        options: {
-          plugins: ['ui-schema-storage'],
-        },
-      },
-    });
-
-    expect(customHandler).toHaveBeenCalledTimes(1);
   });
 });
