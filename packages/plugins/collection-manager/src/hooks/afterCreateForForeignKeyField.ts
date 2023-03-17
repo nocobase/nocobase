@@ -99,7 +99,7 @@ export function afterCreateForForeignKeyField(db: Database) {
     });
   }
 
-  return async (model, { transaction, context }) => {
+  const hook = async (model, { transaction, context }) => {
     // skip if no app context
     if (!context) {
       return;
@@ -172,6 +172,14 @@ export function afterCreateForForeignKeyField(db: Database) {
         },
         transaction,
       });
+    }
+  };
+
+  return async (model, options) => {
+    try {
+      await hook(model, options);
+    } catch (error) {
+      
     }
   };
 }

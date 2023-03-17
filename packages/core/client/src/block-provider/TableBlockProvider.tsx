@@ -1,17 +1,18 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { SchemaComponentOptions, useFixedSchema } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFixedSchema } from '../schema-component';
 
 export const TableBlockContext = createContext<any>({});
 
 const InternalTableBlockProvider = (props) => {
-  const { params, showIndex, dragSort, rowKey } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +27,9 @@ const InternalTableBlockProvider = (props) => {
         showIndex,
         dragSort,
         rowKey,
+        expandFlag,
+        childrenColumnName,
+        setExpandFlag: () => setExpandFlag(!expandFlag),
       }}
     >
       <RenderChildrenWithAssociationFilter {...props} />
@@ -81,21 +85,44 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
+  const resourceName = props.resource;
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
-  const form = useMemo(() => createForm(), []);
+  const fieldSchema = useFieldSchema();
+  const { getCollection, getCollectionField } = useCollectionManager();
+  const collection = getCollection(props.collection);
+  const { treeTable } = fieldSchema?.['x-decorator-props']||{};
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  let childrenColumnName = 'children';
+  if (collection.tree && treeTable !== false) {
+    if (resourceName.includes('.')) {
+      const f = getCollectionField(resourceName);
+      if (f?.treeChildren) {
+        childrenColumnName = f.name;
+        params['tree'] = true;
+      }
+    } else {
+      const f = collection.fields.find(f => f.treeChildren);
+      if (f) {
+        childrenColumnName = f.name;
+      }
+      params['tree'] = true;
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  const form = useMemo(() => createForm(), [treeTable]);
   return (
-    <FormContext.Provider value={form}>
-      <BlockProvider {...props} params={params}>
-        <InternalTableBlockProvider {...props} params={params} />
-      </BlockProvider>
-    </FormContext.Provider>
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <FormContext.Provider value={form}>
+        <BlockProvider {...props} params={params}>
+          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+        </BlockProvider>
+      </FormContext.Provider>
+    </SchemaComponentOptions>
   );
 };
 
@@ -120,6 +147,7 @@ export const useTableBlockProps = () => {
     }
   }, [ctx?.service?.loading]);
   return {
+    childrenColumnName: ctx.childrenColumnName,
     loading: ctx?.service?.loading,
     showIndex: ctx.showIndex,
     dragSort: ctx.dragSort,
@@ -132,6 +160,7 @@ export const useTableBlockProps = () => {
           }
         : false,
     onRowSelectionChange(selectedRowKeys) {
+      console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
     },

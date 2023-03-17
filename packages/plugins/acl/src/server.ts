@@ -673,7 +673,15 @@ export class PluginACL extends Plugin {
         ]);
       }
 
-      const ids = listData.map((item) => item[primaryKeyField]);
+      const ids = (() => {
+        if (collection.options.tree) {
+          if (listData.length == 0) return [];
+          const getAllNodeIds = (data) => [data[primaryKeyField], ...(data.children || []).flatMap(getAllNodeIds)];
+          return listData.map((tree) => getAllNodeIds(tree.toJSON())).flat();
+        }
+
+        return listData.map((item) => item[primaryKeyField]);
+      })();
 
       const conditions = [];
 
