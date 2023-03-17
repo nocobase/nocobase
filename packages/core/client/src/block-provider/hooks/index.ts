@@ -1,9 +1,10 @@
-import { useField, useFieldSchema, useForm } from '@formily/react';
+import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { message, Modal } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -127,12 +128,12 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible } = useActionContext();
+  const { visible, setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
-  const { fields, getField } = useCollection();
+  const { fields, getField, getTreeParentField } = useCollection();
   const compile = useCompile();
   const filterByTk = useFilterByTk();
   const currentRecord = useRecord();
@@ -147,11 +148,17 @@ export const useCreateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
+      const { addChild } = fieldSchema?.['x-component-props'];
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      if (addChild) {
+        const treeParentField = getTreeParentField();
+        values[treeParentField?.name ?? 'parent'] = currentRecord;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
+      }
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
@@ -247,11 +254,13 @@ export const useCustomizeUpdateActionProps = () => {
 
 export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
+  const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
   const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const selectedRecordKeys =
+    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const history = useHistory();
@@ -280,12 +289,12 @@ export const useCustomizeBulkUpdateActionProps = () => {
             forceUpdate: false,
           };
           if (updateMode === 'selected') {
-            if (!selectedRowKeys?.length) {
+            if (!selectedRecordKeys?.length) {
               message.error(t('Please select the records to be updated'));
               actionField.data.loading = false;
               return;
             }
-            updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
+            updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
           }
           if (!updateData.filter) {
             updateData.forceUpdate = true;
@@ -328,17 +337,19 @@ export const useCustomizeBulkUpdateActionProps = () => {
   };
 };
 
-export const useCustomizeBulkEditActionProps = () => {
+export const useCustomizeBulkEditActionProps = (props) => {
   const form = useForm();
   const { t } = useTranslation();
   const { field, resource, __parent } = useBlockRequestContext();
+  const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionContext = useActionContext();
   const history = useHistory();
   const compile = useCompile();
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
-  const { selectedRowKeys } = tableBlockContext.field?.data ?? {};
+  const selectedRecordKeys =
+    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
   const { setVisible, fieldSchema: actionSchema } = actionContext;
   return {
     async onClick() {
@@ -369,11 +380,11 @@ export const useCustomizeBulkEditActionProps = () => {
           forceUpdate: false,
         };
         if (updateMode === 'selected') {
-          if (!selectedRowKeys?.length) {
+          if (!selectedRecordKeys?.length) {
             message.error(t('Please select the records to be updated'));
             return;
           }
-          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRowKeys } }] };
+          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
         }
         if (!updateData.filter) {
           updateData.forceUpdate = true;
