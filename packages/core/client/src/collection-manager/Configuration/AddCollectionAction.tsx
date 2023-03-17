@@ -84,7 +84,7 @@ const getSchema = (schema, category, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(),
+                  useAction: () => useCreateCollection(schema),
                 },
               },
             },
@@ -188,16 +188,19 @@ const useDefaultCollectionFields = (values) => {
   return defaults;
 };
 
-const useCreateCollection = () => {
+const useCreateCollection = (schema?: any) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const { resource, collection } = useResourceContext();
   return {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
+      if (schema?.events?.beforeSubmit) {
+        schema.events.beforeSubmit(values);
+      }
       const fields = useDefaultCollectionFields(values);
       if (values.autoCreateReverseField) {
       } else {

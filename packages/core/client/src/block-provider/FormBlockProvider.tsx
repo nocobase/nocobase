@@ -7,6 +7,7 @@ import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useActionContext } from '../schema-component';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -88,6 +89,18 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
+  const record = useRecord();
+  const { fieldSchema } = useActionContext();
+  const { addChild } = fieldSchema?.['x-component-props']||{};
+  useEffect(() => {
+    if (addChild) {
+      ctx.form.query('parent').take((field) => {
+        field.disabled = true;
+        field.value = new Proxy({ ...record }, {});
+      });
+    }
+  });
+
   useEffect(() => {
     ctx.form.setInitialValues(ctx.service?.data?.data);
   }, []);
