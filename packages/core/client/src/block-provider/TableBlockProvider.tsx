@@ -18,6 +18,7 @@ interface Props {
   rowKey?: string;
   /** 目前可能的值仅为 'filter'，用于区分筛选区块和数据区块 */
   blockType?: 'filter';
+  childrenColumnName: any;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -25,9 +26,6 @@ const InternalTableBlockProvider = (props: Props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
   useFixedSchema();
   return (
     <TableBlockContext.Provider
