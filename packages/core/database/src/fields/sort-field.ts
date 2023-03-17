@@ -78,6 +78,7 @@ export class SortField extends Field {
             sort: start,
           },
           {
+            hooks: false,
             transaction,
             silent: true,
           },
