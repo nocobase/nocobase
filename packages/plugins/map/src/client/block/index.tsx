@@ -18,7 +18,7 @@ export const MapBlockOptions: React.FC = (props) => {
   const schemaInitializer = useContext(SchemaInitializerContext);
 
   useEffect(() => {
-    if (!children.find((item) => item.key === 'mapBlock')) {
+    if (!children.find((item) => item.component === 'MapBlockInitializer')) {
       children.push({
         key: 'mapBlock',
         type: 'item',
