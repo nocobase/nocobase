@@ -1,18 +1,15 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import EventEmitter from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
-import Application, { ApplicationOptions } from './application';
+import Application from './application';
 
 type AppSelectorReturn = Application | string | undefined | null;
 
 type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
-export class AppManager extends EventEmitter {
+export class AppManager {
   public applications: Map<string, Application> = new Map<string, Application>();
   public app: Application;
 
   constructor(app: Application) {
-    super();
     this.bindMainApplication(app);
   }
 
@@ -62,7 +59,7 @@ export class AppManager extends EventEmitter {
   }
 
   async getApplication(appName: string, options = {}): Promise<null | Application> {
-    await this.emitAsync('beforeGetApplication', {
+    await this.app.emitAsync('beforeGetApplication', {
       appManager: this,
       name: appName,
       options,
@@ -99,8 +96,4 @@ export class AppManager extends EventEmitter {
       handleApp.callback()(req, res);
     };
   }
-
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
-
-applyMixins(AppManager, [AsyncEmitter]);

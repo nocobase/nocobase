@@ -62,8 +62,9 @@ class SubAppPlugin extends Plugin {
       if (actionName === 'list' && resourceName === 'collections') {
         const Collection = mainApp.db.getCollection('collections');
         const query = `
-        select * from "${Collection.collectionSchema()}"."${Collection.model.tableName}"
-        where (options->'syncToApps')::jsonb ? '${subApp.name}'
+          select *
+          from "${Collection.collectionSchema()}"."${Collection.model.tableName}"
+          where (options - > 'syncToApps')::jsonb ? '${subApp.name}'
         `;
 
         const results = await mainApp.db.sequelize.query(query, { type: 'SELECT' });
@@ -86,11 +87,11 @@ class SubAppPlugin extends Plugin {
       await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
 
       await subApp.db.sequelize.query(`
-      INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-      SELECT *
-      FROM ${mainAppPluginsCollection.quotedTableName()}
-      WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
-    `);
+        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+        SELECT *
+        FROM ${mainAppPluginsCollection.quotedTableName()}
+        WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+      `);
 
       const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
         subAppPluginsCollection.model.tableName
@@ -98,9 +99,9 @@ class SubAppPlugin extends Plugin {
 
       const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
       await subApp.db.sequelize.query(`
-       SELECT setval('${
-         sequenceName[0]['pg_get_serial_sequence']
-       }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+        SELECT setval('${
+          sequenceName[0]['pg_get_serial_sequence']
+        }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
     });
   }
@@ -220,6 +221,8 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       this.app.log.warn('multi-app-share-collection plugin need multi-app-manager plugin enabled');
       return;
     }
+
+    console.log(`id of multi app manager is ${multiAppManager.id}`);
 
     // 子应用启动参数
     multiAppManager.setAppOptionsFactory((appName, mainApp) => {

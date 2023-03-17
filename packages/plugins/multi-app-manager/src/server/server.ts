@@ -1,5 +1,5 @@
 import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppManager, InstallOptions, Plugin } from '@nocobase/server';
+import Application, { AppManager, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
@@ -69,6 +69,9 @@ export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
 
+  // create random id
+  id;
+
   setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory;
   }
@@ -86,11 +89,9 @@ export class PluginMultiAppManager extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
-  async install(options?: InstallOptions) {
-    // const repo = this.db.getRepository<any>('collections');
-    // if (repo) {
-    //   await repo.db2cm('applications');
-    // }
+  afterAdd() {
+    this.id = Math.random().toString(36).substr(2, 9);
+    console.log(`afterAdd ${this.name} plugin init ${this.app.name}, id is ${this.id}`);
   }
 
   beforeLoad() {
@@ -145,30 +146,33 @@ export class PluginMultiAppManager extends Plugin {
 
     // lazy load application
     // if application not in appManager, load it from database
-    this.app.appManager.on(
-      'beforeGetApplication',
-      async ({ appManager, name }: { appManager: AppManager; name: string }) => {
-        if (appManager.applications.has(name)) {
-          return;
-        }
+    this.app.on('beforeGetApplication', async ({ appManager, name }: { appManager: AppManager; name: string }) => {
+      if (appManager.applications.has(name)) {
+        return;
+      }
 
-        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-          filter: {
-            name,
-          },
-        })) as ApplicationModel | null;
+      const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+        filter: {
+          name,
+        },
+      })) as ApplicationModel | null;
 
-        if (!applicationRecord) {
-          return;
-        }
+      if (!applicationRecord) {
+        return;
+      }
 
-        const subApp = await applicationRecord.registerToMainApp(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
-        });
+      console.log(
+        `beforeGetApplication ${name}, this id is ${this.id}, application id is ${
+          this.app.getPlugin<any>('multi-app-manager').id
+        }`,
+      );
+      const subApp = await applicationRecord.registerToMainApp(this.app, {
+        appOptionsFactory: this.appOptionsFactory,
+      });
 
-        await subApp.load();
-      },
-    );
+      // must skip load on upgrade
+      await subApp.load();
+    });
 
     this.app.resourcer.registerActionHandlers({
       'applications:listPinned': async (ctx, next) => {
@@ -184,7 +188,13 @@ export class PluginMultiAppManager extends Plugin {
     this.app.acl.allow('applications', 'listPinned', 'loggedIn');
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.applications`,
+      name: `
+        pm.$;
+        {
+          this.name;
+        }
+      .
+        applications`,
       actions: ['applications:*'],
     });
   }

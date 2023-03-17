@@ -1,9 +1,7 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
-import Plugin from '..';
-const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 
-pgOnly()('enable plugin', () => {
+describe('enable plugin', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -33,7 +31,7 @@ pgOnly()('enable plugin', () => {
   });
 });
 
-pgOnly()('collection sync', () => {
+describe('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -126,8 +124,6 @@ pgOnly()('collection sync', () => {
         name: 'sub1',
       },
     });
-
-    await mainApp.appManager.removeApplication('sub1');
 
     await mainApp.appManager.removeApplication('sub1');
 

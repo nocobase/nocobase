@@ -1,6 +1,6 @@
 import { Model, Transactionable } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { AppDbCreator, AppOptionsFactory } from '../server';
+import { AppOptionsFactory } from '../server';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;
@@ -12,11 +12,13 @@ export class ApplicationModel extends Model {
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
-    const subApp = new Application({
+    const subAppOptions = {
       ...options.appOptionsFactory(appName, mainApp),
       ...appOptions,
       name: appName,
-    });
+    };
+
+    const subApp = new Application(subAppOptions);
 
     mainApp.appManager.addSubApp(subApp);
 
