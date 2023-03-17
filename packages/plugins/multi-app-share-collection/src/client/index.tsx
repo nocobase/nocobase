@@ -34,6 +34,13 @@ collectionTemplates.general.configurableProperties.syncToApps = {
   'x-component': AppSelect,
 };
 
+collectionTemplates.tree.configurableProperties.syncToApps = {
+  type: 'string',
+  title: '{{ t("Sync to apps") }}',
+  'x-decorator': 'FormItem',
+  'x-component': AppSelect,
+};
+
 export default (props) => {
   return <>{props.children}</>;
 };
