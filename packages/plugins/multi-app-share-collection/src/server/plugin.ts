@@ -1,5 +1,5 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, InstallOptions, Plugin } from '@nocobase/server';
+import { Application, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
@@ -295,15 +295,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
   }
 
-  async install(options?: InstallOptions) {}
-
-  async afterEnable() {}
-
-  async afterDisable() {
-    // test
+  requiredPlugins(): any[] {
+    return ['multi-app-manager'];
   }
-
-  async remove() {}
 }
 
 export default MultiAppShareCollectionPlugin;

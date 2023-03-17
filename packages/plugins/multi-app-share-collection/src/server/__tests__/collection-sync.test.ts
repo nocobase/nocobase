@@ -1,7 +1,7 @@
 import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import { MockServer, mockServer, pgOnly } from '@nocobase/test';
 
-describe('enable plugin', () => {
+pgOnly()('enable plugin', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
@@ -27,11 +27,19 @@ describe('enable plugin', () => {
   });
 
   it('should throw error when enable plugin, when multi-app plugin is not enabled', async () => {
-    await mainApp.pm.enable('multi-app-share-collection');
+    console.log('enable share collection plugin');
+    let error;
+    try {
+      await mainApp.pm.enable('multi-app-share-collection');
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error.message).toBe('multi-app-share-collection plugin need multi-app-manager plugin enabled');
   });
 });
 
-describe('collection sync', () => {
+pgOnly()('collection sync', () => {
   let mainDb: Database;
   let mainApp: MockServer;
 
