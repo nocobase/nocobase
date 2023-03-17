@@ -127,5 +127,27 @@ describe('multiple apps create', () => {
     expect(app.appManager.applications.has(name)).toBeTruthy();
   });
 
-  it('should upgrade sub apps when main app upgrade', async () => {});
+  it('should upgrade sub apps when main app upgrade', async () => {
+    const subAppName = `t_${uid()}`;
+
+    await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {
+          plugins: [],
+        },
+      },
+    });
+
+    const subApp = await app.appManager.getApplication(subAppName);
+    const jestFn = jest.fn();
+
+    subApp.on('afterUpgrade', () => {
+      jestFn();
+    });
+
+    await app.upgrade();
+
+    expect(jestFn).toBeCalled();
+  });
 });

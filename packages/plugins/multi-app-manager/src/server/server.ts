@@ -143,27 +143,59 @@ export class PluginMultiAppManager extends Plugin {
 
     // lazy load application
     // if application not in appManager, load it from database
-    this.app.on('beforeGetApplication', async ({ appManager, name }: { appManager: AppManager; name: string }) => {
-      if (appManager.applications.has(name)) {
-        return;
+    this.app.on(
+      'beforeGetApplication',
+      async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
+        if (appManager.applications.has(name)) {
+          return;
+        }
+
+        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+          filter: {
+            name,
+          },
+        })) as ApplicationModel | null;
+
+        if (!applicationRecord) {
+          return;
+        }
+
+        const subApp = await applicationRecord.registerToMainApp(this.app, {
+          appOptionsFactory: this.appOptionsFactory,
+        });
+
+        // must skip load on upgrade
+        if (!options?.upgrading) {
+          await subApp.load();
+        }
+      },
+    );
+
+    this.app.on('afterUpgrade', async (app, options) => {
+      const cliArgs = options?.cliArgs;
+      const repository = this.db.getRepository('applications');
+      const instances = await repository.find();
+      for (const instance of instances) {
+        const subApp = await this.app.appManager.getApplication(instance.name, {
+          upgrading: true,
+        });
+
+        try {
+          console.log(`${instance.name}: upgrading...`);
+
+          await subApp.upgrade({
+            cliArgs,
+          });
+
+          await subApp.stop({
+            cliArgs,
+          });
+        } catch (error) {
+          console.log(`${instance.name}: upgrade failed`);
+          this.app.logger.error(error);
+          console.error(error);
+        }
       }
-
-      const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-        filter: {
-          name,
-        },
-      })) as ApplicationModel | null;
-
-      if (!applicationRecord) {
-        return;
-      }
-
-      const subApp = await applicationRecord.registerToMainApp(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
-      });
-
-      // must skip load on upgrade
-      await subApp.load();
     });
 
     this.app.resourcer.registerActionHandlers({
