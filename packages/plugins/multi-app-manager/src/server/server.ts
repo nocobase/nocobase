@@ -133,11 +133,14 @@ export class PluginMultiAppManager extends Plugin {
       // create database
       await this.appDbCreator(subApp, transaction);
 
+      // reload subApp plugin
       await subApp.reload();
+
+      // sync subApp collections
       await subApp.db.sync();
 
+      // install subApp
       await subApp.install();
-      await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
@@ -166,6 +169,7 @@ export class PluginMultiAppManager extends Plugin {
           this.app.getPlugin<any>('multi-app-manager').id
         }`,
       );
+
       const subApp = await applicationRecord.registerToMainApp(this.app, {
         appOptionsFactory: this.appOptionsFactory,
       });

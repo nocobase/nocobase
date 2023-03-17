@@ -103,6 +103,8 @@ class SubAppPlugin extends Plugin {
           sequenceName[0]['pg_get_serial_sequence']
         }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
       `);
+
+      console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
     });
   }
 }
@@ -115,7 +117,22 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       throw new Error('multi-app-share-collection plugin only support postgres');
     }
 
-    const traverseSubApps = async (callback: (subApp: Application) => void) => {
+    const traverseSubApps = async (
+      callback: (subApp: Application) => void,
+      options?: {
+        loadFromDatabase: boolean;
+      },
+    ) => {
+      if (lodash.get(options, 'loadFromDatabase')) {
+        for (const application of await this.app.db.getCollection('applications').repository.find()) {
+          const appName = application.get('name');
+          const subApp = await this.app.appManager.getApplication(appName);
+          await callback(subApp);
+        }
+
+        return;
+      }
+
       const subApps = [...this.app.appManager.applications.values()];
 
       for (const subApp of subApps) {
@@ -179,17 +196,27 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.enable(pluginName);
-      });
+      await traverseSubApps(
+        async (subApp) => {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.pm.enable(pluginName);
+        },
+        {
+          loadFromDatabase: true,
+        },
+      );
     });
 
     this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.disable(pluginName);
-      });
+      await traverseSubApps(
+        async (subApp) => {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.pm.disable(pluginName);
+        },
+        {
+          loadFromDatabase: true,
+        },
+      );
     });
 
     this.app.db.on('field.afterRemove', (removedField) => {
@@ -221,8 +248,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       this.app.log.warn('multi-app-share-collection plugin need multi-app-manager plugin enabled');
       return;
     }
-
-    console.log(`id of multi app manager is ${multiAppManager.id}`);
 
     // 子应用启动参数
     multiAppManager.setAppOptionsFactory((appName, mainApp) => {

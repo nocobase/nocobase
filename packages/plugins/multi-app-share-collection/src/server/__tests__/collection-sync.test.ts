@@ -145,8 +145,6 @@ describe('collection sync', () => {
 
     const sub1 = await mainApp.appManager.getApplication('sub1');
 
-    console.log(sub1.options);
-
     await sub1.reload();
 
     console.log(sub1.pm.plugins);
