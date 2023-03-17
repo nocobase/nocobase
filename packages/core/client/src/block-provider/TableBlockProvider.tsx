@@ -96,7 +96,7 @@ export const TableBlockProvider = (props) => {
     params['sort'] = ['sort'];
   }
   let childrenColumnName = 'children';
-  if (collection.tree && treeTable !== false) {
+  if (collection?.tree && treeTable !== false) {
     if (resourceName.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
