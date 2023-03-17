@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Menu, Select } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,34 +24,42 @@ export const LanguageSettings = () => {
         setOpen(true);
       }}
     >
-      {t('Language')}{' '}
-      <Select
-        style={{ minWidth: 100 }}
-        bordered={false}
-        open={open}
-        onDropdownVisibleChange={(open) => {
-          setOpen(open);
-        }}
-        options={Object.keys(locale)
-          .filter((lang) => enabledLanguages.includes(lang))
-          .map((lang) => {
-            return {
-              label: locale[lang].label,
-              value: lang,
-            };
-          })}
-        value={i18n.language}
-        onChange={async (lang) => {
-          await api.resource('users').updateProfile({
-            values: {
-              appLang: lang,
-            },
-          });
-          api.auth.setLocale(lang);
-          await i18n.changeLanguage(lang);
-          window.location.reload();
-        }}
-      />
+      <div
+        className={css`
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        `}
+      >
+        {t('Language')}{' '}
+        <Select
+          style={{ minWidth: 100 }}
+          bordered={false}
+          open={open}
+          onDropdownVisibleChange={(open) => {
+            setOpen(open);
+          }}
+          options={Object.keys(locale)
+            .filter((lang) => enabledLanguages.includes(lang))
+            .map((lang) => {
+              return {
+                label: locale[lang].label,
+                value: lang,
+              };
+            })}
+          value={i18n.language}
+          onChange={async (lang) => {
+            await api.resource('users').updateProfile({
+              values: {
+                appLang: lang,
+              },
+            });
+            api.auth.setLocale(lang);
+            await i18n.changeLanguage(lang);
+            window.location.reload();
+          }}
+        />
+      </div>
     </Menu.Item>
   );
 };
