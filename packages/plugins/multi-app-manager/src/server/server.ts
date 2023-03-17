@@ -141,6 +141,8 @@ export class PluginMultiAppManager extends Plugin {
 
       // install subApp
       await subApp.install();
+
+      await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {

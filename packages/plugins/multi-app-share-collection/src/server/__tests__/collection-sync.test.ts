@@ -178,9 +178,9 @@ describe('collection sync', () => {
 
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
     await mainApp.pm.enable('map');
-
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
+    // create new app sub2
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub2',
@@ -188,8 +188,8 @@ describe('collection sync', () => {
     });
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
-    expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
+    expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
   });
 
   it('should not sync roles in sub app', async () => {
