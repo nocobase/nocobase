@@ -4,7 +4,7 @@ import { Input as AntdInput } from 'antd';
 import React from 'react';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
-import { convertToText, markdown } from './util';
+import { convertToText, useParseMarkdown } from './util';
 
 import './style.less';
 
@@ -21,8 +21,9 @@ export const Markdown: any = connect(
     };
   }),
   mapReadPretty((props) => {
-    let text = convertToText(props.value);
-    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: markdown(props.value) }} />;
+    const html = useParseMarkdown(props.value);
+    const text = convertToText(html);
+    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
     return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
   }),
 );
