@@ -9,12 +9,15 @@ export async function parseMarkdown(text: string) {
 
 export function useParseMarkdown(text: string) {
   const [html, setHtml] = useState<any>('');
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
+    setLoading(true);
     parseMarkdown(text).then((r) => {
       setHtml(r);
+      setLoading(false);
     });
   }, [text]);
-  return html;
+  return { html, loading };
 }
 
 export function convertToText(markdownText: string) {

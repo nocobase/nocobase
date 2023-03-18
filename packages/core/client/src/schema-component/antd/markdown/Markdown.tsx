@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { Input as AntdInput } from 'antd';
+import { Input as AntdInput, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
@@ -21,9 +21,12 @@ export const Markdown: any = connect(
     };
   }),
   mapReadPretty((props) => {
-    const html = useParseMarkdown(props.value);
+    const { html, loading } = useParseMarkdown(props.value);
     const text = convertToText(html);
     let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
+    if (loading) {
+      return <Spin />;
+    }
     return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
   }),
 );

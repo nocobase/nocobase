@@ -1,5 +1,5 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Input as AntdInput, Space } from 'antd';
+import { Button, Input as AntdInput, Space, Spin } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,10 @@ export const MarkdownVoid: any = observer((props: any) => {
   const schema = useFieldSchema();
   const { dn } = useDesignable();
   const { onSave, onCancel } = props;
-  const html = useParseMarkdown(content);
+  const { html, loading } = useParseMarkdown(content);
+  if (loading) {
+    return <Spin />;
+  }
   return field?.editable ? (
     <MarkdownEditor
       {...props}
