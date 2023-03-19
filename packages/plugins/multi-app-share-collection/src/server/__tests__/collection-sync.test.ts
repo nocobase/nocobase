@@ -460,7 +460,7 @@ pgOnly()('collection sync', () => {
       },
     });
 
-    const testCollectionRecord = await mainApp.db.getRepository('collections').create({
+    await mainApp.db.getRepository('collections').create({
       values: {
         name: 'testCollection',
         fields: [
@@ -481,9 +481,9 @@ pgOnly()('collection sync', () => {
 
     expect(blackList.length).toBe(0);
 
-    await BlackListRepository.toggle(testCollectionRecord.get('key'));
+    await BlackListRepository.toggle('testCollection');
     const blackList1 = await BlackListRepository.find();
 
-    console.log(blackList1);
+    expect(blackList1.length).toBe(1);
   });
 });

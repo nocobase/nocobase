@@ -30,6 +30,10 @@ describe('belongs to many with collection that has no id key', () => {
           name: 'bs',
           target: 'b',
           through: 'asbs',
+          sourceKey: 'name',
+          foreignKey: 'aName',
+          otherKey: 'bName',
+          targetKey: 'name',
         },
       ],
     });
@@ -53,6 +57,10 @@ describe('belongs to many with collection that has no id key', () => {
           name: 'as',
           target: 'a',
           through: 'asbs',
+          sourceKey: 'name',
+          foreignKey: 'bName',
+          otherKey: 'aName',
+          targetKey: 'name',
         },
       ],
     });
@@ -65,15 +73,14 @@ describe('belongs to many with collection that has no id key', () => {
     });
     const b = await B.repository.create({
       values: {
+        key: 'b1_key',
         name: 'b1',
       },
     });
 
     const a1bsRepository = await A.repository.relation<BelongsToManyRepository>('bs').of('a1');
     expect(await a1bsRepository.find()).toHaveLength(0);
-
     await a1bsRepository.toggle('b1');
-
     expect(await a1bsRepository.find()).toHaveLength(1);
   });
 });
