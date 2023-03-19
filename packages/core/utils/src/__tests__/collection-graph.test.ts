@@ -21,14 +21,28 @@ describe('collection graph', () => {
       {
         name: 'c',
       },
+
+      {
+        name: 'a1',
+        fields: [
+          {
+            name: 'a1Field',
+            type: 'hasMany',
+            target: 'b1',
+          },
+        ],
+      },
+      {
+        name: 'b1',
+      },
     ];
 
-    const preOrder = CollectionsGraph.preOrder({
+    const connectedNodes = CollectionsGraph.connectedNodes({
       collections,
-      node: 'b',
+      nodes: ['b', 'a1'],
     });
 
-    expect(preOrder).toEqual(['b', 'a', 'c']);
+    expect(connectedNodes).toEqual(['b', 'a', 'c', 'a1', 'b1']);
 
     const preOrderReverse = CollectionsGraph.preOrder({
       collections,

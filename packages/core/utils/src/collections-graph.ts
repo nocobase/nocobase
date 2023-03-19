@@ -1,4 +1,5 @@
 import * as graphlib from 'graphlib';
+import { castArray } from 'lodash';
 
 type BuildGraphOptions = {
   direction?: 'forward' | 'reverse';
@@ -8,6 +9,20 @@ type BuildGraphOptions = {
 export class CollectionsGraph {
   static graphlib() {
     return graphlib;
+  }
+
+  static connectedNodes(options: BuildGraphOptions & { nodes: Array<string> }) {
+    const nodes = castArray(options.nodes);
+    const graph = CollectionsGraph.build(options);
+    const connectedNodes = new Set();
+    for (const node of nodes) {
+      const connected = graphlib.alg.preorder(graph, node);
+      for (const connectedNode of connected) {
+        connectedNodes.add(connectedNode);
+      }
+    }
+
+    return Array.from(connectedNodes);
   }
 
   static preOrder(options: BuildGraphOptions & { node: string }) {
