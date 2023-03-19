@@ -49,6 +49,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   magicAttribute?: string;
 
   tree?: string;
+
   [key: string]: any;
 }
 
@@ -385,8 +386,10 @@ export class Collection<
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
     this.options = newOptions;
 
-    this.setFields(this.options.fields, false);
-    this.setRepository(this.options.repository);
+    this.setFields(options.fields, false);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 
