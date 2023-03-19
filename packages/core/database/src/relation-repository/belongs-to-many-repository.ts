@@ -173,6 +173,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       where: {
         [association['targetKey']]: targetKeys,
       },
+      transaction,
     });
 
     await sourceModel[this.accessors()[call]](targetObjects, {
