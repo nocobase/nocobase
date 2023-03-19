@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
-import { uid } from '@formily/shared';
 
 const FixedBlockContext = React.createContext({
   setFixedSchema: (schema: Schema) => {},
@@ -40,6 +39,7 @@ export const useFixedSchema = () => {
     },
     [],
   );
+  return fieldSchema?.['x-decorator-props']?.fixedBlock
 };
 
 export const useFixedBlock = () => {

@@ -191,7 +191,7 @@ const CalendarRecordViewer = (props) => {
 };
 
 export const Calendar: any = observer((props: any) => {
-  const { dataSource, fieldNames, showLunar } = useProps(props);
+  const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
   const [date, setDate] = useState<Date>(new Date());
   const [view, setView] = useState<typeof Weeks[number]>('month');
   const events = useEvents(dataSource, fieldNames, date, view);
@@ -211,7 +211,7 @@ export const Calendar: any = observer((props: any) => {
   }, [showLunar]);
 
   return (
-    <div style={{ height: 700 }}>
+    <div style={{ height: fixedBlock ? '100%' : 700 }}>
       <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
       <BigCalendar
         popup
