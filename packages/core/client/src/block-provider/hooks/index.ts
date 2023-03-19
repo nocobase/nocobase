@@ -252,7 +252,7 @@ export const useFilterBlockActionProps = () => {
         // 收集 filter 的值
         await Promise.all(
           getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.name === block.name);
+            const target = targets.find((target) => target.name === block.uid);
             if (!target) return;
 
             const param = block.service.params?.[0] || {};
@@ -302,7 +302,7 @@ export const useResetBlockActionProps = () => {
         // 收集 filter 的值
         await Promise.all(
           getDataBlocks().map(async (block) => {
-            const target = targets.find((target) => target.name === block.name);
+            const target = targets.find((target) => target.name === block.uid);
             if (!target) return;
 
             const param = block.service.params?.[0] || {};
@@ -939,7 +939,7 @@ export const useAssociationFilterBlockProps = () => {
     const { targets, uid } = findFilterTargets(fieldSchema);
 
     getDataBlocks().forEach((block) => {
-      const target = targets.find((target) => target.name === block.name);
+      const target = targets.find((target) => target.name === block.uid);
       if (!target) return;
 
       const key = `${uid}${fieldSchema.name}`;

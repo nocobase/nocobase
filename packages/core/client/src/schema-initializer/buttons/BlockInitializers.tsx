@@ -49,12 +49,12 @@ export const BlockInitializers = {
       type: 'itemGroup',
       title: '{{t("Filter blocks")}}',
       children: [
-        {
-          key: 'filterTable',
-          type: 'item',
-          title: '{{t("Table")}}',
-          component: 'FilterTableBlockInitializer',
-        },
+        // {
+        //   key: 'filterTable',
+        //   type: 'item',
+        //   title: '{{t("Table")}}',
+        //   component: 'FilterTableBlockInitializer',
+        // },
         {
           key: 'filterForm',
           type: 'item',

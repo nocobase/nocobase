@@ -1,4 +1,4 @@
-import { Schema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
 import { isPlainObject, isEmpty } from '@nocobase/utils/client';
 import { Collection, FieldOptions, useCollection } from '../collection-manager';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
@@ -18,6 +18,7 @@ export enum FilterBlockType {
  */
 export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   const { getDataBlocks } = useFilterBlock();
+  const fieldSchema = useFieldSchema();
   const collection = useCollection();
 
   // Form 和 Collapse 仅支持同表的数据区块
@@ -31,8 +32,9 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   if (filterBlockType === FilterBlockType.TABLE || filterBlockType === FilterBlockType.TREE) {
     return getDataBlocks().filter((block) => {
       return (
-        isSameCollection(block.collection, collection) ||
-        block.associatedFields.some((field) => field.target === collection.name)
+        fieldSchema['x-uid'] !== block.uid &&
+        (isSameCollection(block.collection, collection) ||
+          block.associatedFields.some((field) => field.target === collection.name))
       );
     });
   }

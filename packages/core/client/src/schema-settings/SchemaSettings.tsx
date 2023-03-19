@@ -463,7 +463,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
   const compile = useCompile();
 
   const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.name.slice(0, 4)}`;
+    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
     const onHover = () => {
       const dom = block.dom;
       const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
@@ -487,14 +487,14 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
     if (isSameCollection(block.collection, collection)) {
       return (
         <SchemaSettings.SwitchItem
-          key={block.name}
+          key={block.uid}
           title={title}
-          checked={targets.some((target) => target.name === block.name)}
+          checked={targets.some((target) => target.name === block.uid)}
           onChange={(checked) => {
             if (checked) {
-              targets.push({ name: block.name });
+              targets.push({ name: block.uid });
             } else {
-              targets = targets.filter((target) => target.name !== block.name);
+              targets = targets.filter((target) => target.name !== block.uid);
             }
 
             updateFilterTargets(fieldSchema, targets);
@@ -512,11 +512,11 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
       );
     }
 
-    const target = targets.find((target) => target.name === block.name);
+    const target = targets.find((target) => target.name === block.uid);
     // 与筛选区块的数据表具有关系的表
     return (
       <SchemaSettings.SelectItem
-        key={block.name}
+        key={block.uid}
         title={title}
         value={target?.field || ''}
         options={[
@@ -535,10 +535,10 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
         ]}
         onChange={(value) => {
           if (value === '') {
-            targets = targets.filter((target) => target.name !== block.name);
+            targets = targets.filter((target) => target.name !== block.uid);
           } else {
-            targets = targets.filter((target) => target.name !== block.name);
-            targets.push({ name: block.name, field: value });
+            targets = targets.filter((target) => target.name !== block.uid);
+            targets.push({ name: block.uid, field: value });
           }
           updateFilterTargets(fieldSchema, targets);
           dn.emit('patch', {

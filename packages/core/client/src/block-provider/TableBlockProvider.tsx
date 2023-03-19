@@ -199,7 +199,7 @@ export const useTableBlockProps = () => {
       const { targets, uid } = findFilterTargets(fieldSchema);
 
       getDataBlocks().forEach((block) => {
-        const target = targets.find((target) => target.name === block.name);
+        const target = targets.find((target) => target.name === block.uid);
         if (!target) return;
 
         const param = block.service.params?.[0] || {};

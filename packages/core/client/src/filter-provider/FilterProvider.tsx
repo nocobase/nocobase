@@ -1,4 +1,4 @@
-import { useField } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider';
 import { SharedFilter } from '../block-provider/SharedFilterProvider';
@@ -9,7 +9,7 @@ type Collection = ReturnType<typeof useCollection>;
 
 export interface DataBlock {
   /** 唯一标识符，schema 中的 name 值 */
-  name: string;
+  uid: string;
   /** 用户自行设置的区块名称 */
   title?: string;
   /** 与当前区块相关的数据表信息 */
@@ -53,6 +53,7 @@ export const FilterBlockRecord = ({
   const { recordDataBlocks, removeDataBlock } = useFilterBlock();
   const { service } = useBlockRequestContext();
   const field = useField();
+  const fieldSchema = useFieldSchema();
   const associatedFields = useAssociatedFields();
   const container = useRef(null);
 
@@ -60,7 +61,7 @@ export const FilterBlockRecord = ({
 
   const addBlockToDataBlocks = () => {
     recordDataBlocks({
-      name: field.props.name as string,
+      uid: fieldSchema['x-uid'],
       title: field.componentProps.title,
       doFilter: service.runAsync,
       collection,
@@ -100,7 +101,7 @@ export const useFilterBlock = () => {
   }
   const { dataBlocks, setDataBlocks } = ctx;
   const recordDataBlocks = (block: DataBlock) => {
-    const existingBlock = dataBlocks.find((item) => item.name === block.name);
+    const existingBlock = dataBlocks.find((item) => item.uid === block.uid);
 
     if (existingBlock) {
       // 这里的值有可能会变化，所以需要更新
@@ -113,7 +114,7 @@ export const useFilterBlock = () => {
   };
   const getDataBlocks = () => dataBlocks;
   const removeDataBlock = (name: string) => {
-    setDataBlocks((prev) => prev.filter((item) => item.name !== name));
+    setDataBlocks((prev) => prev.filter((item) => item.uid !== name));
   };
 
   return { recordDataBlocks, getDataBlocks, removeDataBlock };
