@@ -249,7 +249,7 @@ export default {
   "Edit block title": "Edit block title",
   "Block title": "Block title",
   "Pattern": "Pattern",
-  "operator": "operator",
+  "Operator": "Operator",
   "Editable": "Editable",
   "Readonly": "Readonly",
   "Easy-reading": "Easy-reading",
