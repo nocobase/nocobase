@@ -48,6 +48,7 @@ export class ClientPlugin extends Plugin {
             },
             version: await ctx.app.version.get(),
             lang,
+            theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
           await next();
         },

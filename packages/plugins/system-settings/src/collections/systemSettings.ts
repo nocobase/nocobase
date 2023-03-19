@@ -37,5 +37,10 @@ export default defineCollection({
       type: 'string',
       name: 'appLang',
     },
+    {
+      type: 'json',
+      name: 'options',
+      defaultValue: {},
+    },
   ],
 });

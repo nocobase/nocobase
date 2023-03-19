@@ -9,6 +9,7 @@ import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
+import { ThemeSettings } from './ThemeSettings';
 
 const ApplicationVersion = () => {
   const data = useCurrentAppInfo();
@@ -43,6 +44,7 @@ export const CurrentUser = () => {
               <ChangePassword />
               <SwitchRole />
               <LanguageSettings />
+              <ThemeSettings />
               <Menu.Divider />
               <Menu.Item
                 key="signout"
