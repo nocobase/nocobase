@@ -1,6 +1,7 @@
 import { useForm } from '@formily/react';
 import { collectionTemplates, Select, useActionContext, useAPIClient, useRecord, useRequest } from '@nocobase/client';
-import { applicationsTableActionColumnProperties } from '@nocobase/plugin-multi-app-manager/client';
+import { tableActionColumnSchema } from '@nocobase/plugin-multi-app-manager/client';
+import { message } from 'antd';
 import React from 'react';
 import { TableTransfer } from './TableTransfer';
 
@@ -49,7 +50,6 @@ const useShareCollectionAction = () => {
   const ctx = useActionContext();
   const api = useAPIClient();
   const record = useRecord();
-  console.log(record);
   return {
     async run() {
       console.log(form.values.names);
@@ -58,13 +58,20 @@ const useShareCollectionAction = () => {
         data: form.values.names,
         method: 'post',
       });
-      // ctx.setVisible(false);
-      // form.reset();
+      ctx.setVisible(false);
+      form.reset();
+      message.success('Saved successfully');
     },
   };
 };
 
-applicationsTableActionColumnProperties['collection'] = {
+const updateSchema = tableActionColumnSchema.properties.update;
+const deleteSchema = tableActionColumnSchema.properties.delete;
+
+delete tableActionColumnSchema.properties.update;
+delete tableActionColumnSchema.properties.delete;
+
+tableActionColumnSchema.properties['collection'] = {
   type: 'void',
   title: '{{t("Share collections")}}',
   'x-component': 'Action.Link',
@@ -109,6 +116,9 @@ applicationsTableActionColumnProperties['collection'] = {
     },
   },
 };
+
+tableActionColumnSchema.properties.update = updateSchema;
+tableActionColumnSchema.properties.delete = deleteSchema;
 
 export default (props) => {
   return <>{props.children}</>;

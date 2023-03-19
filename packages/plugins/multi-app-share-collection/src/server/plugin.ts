@@ -255,22 +255,6 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.db.extendCollection({
-      name: 'collections',
-      fields: [
-        {
-          type: 'belongsToMany',
-          name: 'collectionBlacklist',
-          through: 'appCollectionBlacklist',
-          target: 'applications',
-          targetKey: 'name',
-          otherKey: 'applicationName',
-          sourceKey: 'name',
-          foreignKey: 'collectionName',
-        },
-      ],
-    });
-
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {
         const { filterByTk, values } = ctx.action.params;

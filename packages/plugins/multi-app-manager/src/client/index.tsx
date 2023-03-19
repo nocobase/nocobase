@@ -58,7 +58,7 @@ const MultiAppManager = () => {
   );
 };
 
-export { applicationsTableActionColumnProperties } from './settings/schemas/applications';
+export { tableActionColumnSchema } from './settings/schemas/applications';
 
 export default (props) => {
   return (

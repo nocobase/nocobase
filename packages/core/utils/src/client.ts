@@ -1,3 +1,4 @@
+export * from './collections-graph';
 export * from './date';
 export * from './merge';
 export * from './number';
