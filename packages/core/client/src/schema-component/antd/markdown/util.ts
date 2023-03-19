@@ -3,6 +3,9 @@ import './highlight-theme/default.less';
 import './highlight-theme/table.less';
 
 export async function parseMarkdown(text: string) {
+  if (!text) {
+    return text;
+  }
   const m = await import('./md');
   return m.default.render(text);
 }
