@@ -49,12 +49,14 @@ const useShareCollectionAction = () => {
   const ctx = useActionContext();
   const api = useAPIClient();
   const record = useRecord();
+  console.log(record);
   return {
     async run() {
       console.log(form.values.names);
-      await api.resource('applications.collectionBlacklist').set({
-        filterByTk: record.name,
-        values: form.values.names,
+      await api.request({
+        url: `applications/${record.name}/collectionBlacklist`,
+        data: form.values.names,
+        method: 'post',
       });
       // ctx.setVisible(false);
       // form.reset();
