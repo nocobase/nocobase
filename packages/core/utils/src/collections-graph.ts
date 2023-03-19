@@ -11,13 +11,16 @@ export class CollectionsGraph {
     return graphlib;
   }
 
-  static connectedNodes(options: BuildGraphOptions & { nodes: Array<string> }) {
+  static connectedNodes(options: BuildGraphOptions & { nodes: Array<string>; excludes?: Array<string> }) {
     const nodes = castArray(options.nodes);
+    const excludes = castArray(options.excludes || []);
+
     const graph = CollectionsGraph.build(options);
     const connectedNodes = new Set();
     for (const node of nodes) {
       const connected = graphlib.alg.preorder(graph, node);
       for (const connectedNode of connected) {
+        if (excludes.includes(connectedNode)) continue;
         connectedNodes.add(connectedNode);
       }
     }
