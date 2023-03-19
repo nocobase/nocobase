@@ -7,6 +7,7 @@ import {
   useResourceActionContext,
   useResourceContext
 } from '@nocobase/client';
+import { i18nText } from '../../utils';
 
 const collection = {
   name: 'applications',
@@ -20,7 +21,7 @@ const collection = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("App ID")}}',
+        title: i18nText('App ID'),
         required: true,
         'x-component': 'Input',
         'x-validator': 'uid',
@@ -32,7 +33,7 @@ const collection = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("App display name")}}',
+        title: i18nText('App display name'),
         required: true,
         'x-component': 'Input',
       },
@@ -43,7 +44,7 @@ const collection = {
       interface: 'checkbox',
       uiSchema: {
         type: 'boolean',
-        'x-content': '{{t("Pin to menu")}}',
+        'x-content': i18nText('Pin to menu'),
         'x-component': 'Checkbox',
       },
     },
@@ -54,7 +55,7 @@ const collection = {
       defaultValue: 'pending',
       uiSchema: {
         type: 'string',
-        title: '{{t("App status")}}',
+        title: i18nText('App status'),
         enum: [
           { label: 'Pending', value: 'pending' },
           { label: 'Running', value: 'running' },
@@ -89,6 +90,81 @@ export const useDestroyAll = () => {
       refresh();
     },
   };
+};
+
+export const tableActionColumnSchema = {
+  properties: {
+    view: {
+      type: 'void',
+      'x-component': 'AppVisitor',
+      'x-component-props': {},
+    },
+    update: {
+      type: 'void',
+      title: '{{t("Edit")}}',
+      'x-component': 'Action.Link',
+      'x-component-props': {},
+      properties: {
+        drawer: {
+          type: 'void',
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            useValues: '{{ cm.useValuesFromRecord }}',
+          },
+          title: '{{t("Edit")}}',
+          properties: {
+            displayName: {
+              'x-component': 'CollectionField',
+              'x-decorator': 'FormItem',
+            },
+            pinned: {
+              'x-component': 'CollectionField',
+              'x-decorator': 'FormItem',
+            },
+            cname: {
+              title: i18nText('Custom domain'),
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+            },
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
+              properties: {
+                cancel: {
+                  title: '{{t("Cancel")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ cm.useCancelAction }}',
+                  },
+                },
+                submit: {
+                  title: '{{t("Submit")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{ cm.useUpdateAction }}',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    delete: {
+      type: 'void',
+      title: '{{ t("Delete") }}',
+      'x-component': 'Action.Link',
+      'x-component-props': {
+        confirm: {
+          title: "{{t('Delete')}}",
+          content: "{{t('Are you sure you want to delete it?')}}",
+        },
+        useAction: '{{cm.useDestroyAction}}',
+      },
+    },
+  },
 };
 
 export const schema: ISchema = {
@@ -177,7 +253,7 @@ export const schema: ISchema = {
                       'x-decorator': 'FormItem',
                     },
                     cname: {
-                      title: '{{t("Custom domain")}}',
+                      title: i18nText('Custom domain'),
                       'x-component': 'Input',
                       'x-decorator': 'FormItem',
                     },
@@ -246,7 +322,7 @@ export const schema: ISchema = {
             },
             pinned: {
               type: 'void',
-              title: '{{t("Pin to menu")}}',
+              title: i18nText('Pin to menu'),
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
@@ -268,78 +344,7 @@ export const schema: ISchema = {
                   'x-component-props': {
                     split: '|',
                   },
-                  properties: {
-                    view: {
-                      type: 'void',
-                      'x-component': 'AppVisitor',
-                      'x-component-props': {},
-                    },
-                    update: {
-                      type: 'void',
-                      title: '{{t("Edit")}}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {},
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{t("Edit")}}',
-                          properties: {
-                            displayName: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            pinned: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            cname: {
-                              title: '{{t("Custom domain")}}',
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                            },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                    delete: {
-                      type: 'void',
-                      title: '{{ t("Delete") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        confirm: {
-                          title: "{{t('Delete')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
-                        },
-                        useAction: '{{cm.useDestroyAction}}',
-                      },
-                    },
-                  },
+                  ...tableActionColumnSchema,
                 },
               },
             },
