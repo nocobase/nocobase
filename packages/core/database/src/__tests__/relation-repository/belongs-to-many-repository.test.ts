@@ -3,6 +3,81 @@ import Database from '../../database';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import { mockDatabase } from '../index';
 
+describe('belongs to many with collection that has no id key', () => {
+  let db: Database;
+  beforeEach(async () => {
+    db = mockDatabase();
+
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should set relation', async () => {
+    const A = db.collection({
+      name: 'a',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+          primaryKey: true,
+        },
+        {
+          type: 'belongsToMany',
+          name: 'bs',
+          target: 'b',
+          through: 'asbs',
+        },
+      ],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      autoGenId: false,
+      fields: [
+        {
+          type: 'string',
+          name: 'key',
+          primaryKey: true,
+        },
+        {
+          type: 'string',
+          name: 'name',
+          unique: true,
+        },
+        {
+          type: 'belongsToMany',
+          name: 'as',
+          target: 'a',
+          through: 'asbs',
+        },
+      ],
+    });
+
+    await db.sync();
+    const a = await A.repository.create({
+      values: {
+        name: 'a1',
+      },
+    });
+    const b = await B.repository.create({
+      values: {
+        name: 'b1',
+      },
+    });
+
+    const a1bsRepository = await A.repository.relation<BelongsToManyRepository>('bs').of('a1');
+    expect(await a1bsRepository.find()).toHaveLength(0);
+
+    await a1bsRepository.toggle('b1');
+
+    expect(await a1bsRepository.find()).toHaveLength(1);
+  });
+});
+
 describe('belongs to many with target key', function () {
   let db: Database;
   let Tag: Collection;

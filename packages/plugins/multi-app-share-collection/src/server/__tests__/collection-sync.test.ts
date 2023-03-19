@@ -1,4 +1,4 @@
-import { Database } from '@nocobase/database';
+import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { MockServer, mockServer, pgOnly } from '@nocobase/test';
 
 pgOnly()('enable plugin', () => {
@@ -451,5 +451,39 @@ pgOnly()('collection sync', () => {
     const mainTestCollection = await mainDb.getCollection('testCollection');
     const sub1TestCollection = await sub1.db.getCollection('testCollection');
     expect(sub1TestCollection.collectionSchema()).toEqual(mainTestCollection.collectionSchema());
+  });
+
+  it('should set collection black list', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    const testCollectionRecord = await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'testCollection',
+        fields: [
+          {
+            name: 'testField',
+            type: 'string',
+          },
+        ],
+      },
+    });
+
+    const BlackListRepository = await mainApp.db
+      .getCollection('applications')
+      .repository.relation<BelongsToManyRepository>('collectionBlacklist')
+      .of('sub1');
+
+    const blackList = await BlackListRepository.find();
+
+    expect(blackList.length).toBe(0);
+
+    await BlackListRepository.toggle(testCollectionRecord.get('key'));
+    const blackList1 = await BlackListRepository.find();
+
+    console.log(blackList1);
   });
 });
