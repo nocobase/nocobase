@@ -255,6 +255,11 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    this.db.addMigrations({
+      namespace: 'multi-app-share-collection',
+      directory: resolve(__dirname, './migrations'),
+    });
+
     this.app.resourcer.registerActionHandlers({
       'applications:shareCollections': async (ctx, next) => {
         const { filterByTk, values } = ctx.action.params;
