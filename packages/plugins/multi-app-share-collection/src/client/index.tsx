@@ -1,49 +1,10 @@
 import { useForm } from '@formily/react';
-import { collectionTemplates, Select, useActionContext, useAPIClient, useRecord, useRequest } from '@nocobase/client';
+import { useActionContext, useAPIClient, useRecord } from '@nocobase/client';
 import { tableActionColumnSchema } from '@nocobase/plugin-multi-app-manager/client';
 import { message } from 'antd';
 import React from 'react';
 import { TableTransfer } from './TableTransfer';
-
-const AppSelect = (props) => {
-  const { data, loading } = useRequest({
-    resource: 'applications',
-    action: 'list',
-    params: {
-      paginate: false,
-    },
-  });
-  return (
-    <Select
-      {...props}
-      mode={'multiple'}
-      fieldNames={{ value: 'name', label: 'displayName' }}
-      options={data?.data || []}
-      loading={loading}
-    />
-  );
-};
-
-collectionTemplates.calendar.configurableProperties.syncToApps = {
-  type: 'string',
-  title: '{{ t("Sync to apps") }}',
-  'x-decorator': 'FormItem',
-  'x-component': AppSelect,
-};
-
-collectionTemplates.general.configurableProperties.syncToApps = {
-  type: 'string',
-  title: '{{ t("Sync to apps") }}',
-  'x-decorator': 'FormItem',
-  'x-component': AppSelect,
-};
-
-collectionTemplates.tree.configurableProperties.syncToApps = {
-  type: 'string',
-  title: '{{ t("Sync to apps") }}',
-  'x-decorator': 'FormItem',
-  'x-component': AppSelect,
-};
+import { i18nText } from './utils';
 
 const useShareCollectionAction = () => {
   const form = useForm();
@@ -73,7 +34,7 @@ delete tableActionColumnSchema.properties.delete;
 
 tableActionColumnSchema.properties['collection'] = {
   type: 'void',
-  title: '{{t("Share collections")}}',
+  title: i18nText('Share collections'),
   'x-component': 'Action.Link',
   'x-component-props': {},
   properties: {
@@ -84,7 +45,7 @@ tableActionColumnSchema.properties['collection'] = {
         width: '95vw',
       },
       'x-decorator': 'Form',
-      title: '{{t("Share collections")}}',
+      title: i18nText('Share collections'),
       properties: {
         names: {
           type: 'array',

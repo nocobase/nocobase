@@ -3,8 +3,10 @@ import { connect } from '@formily/react';
 import { useCollectionManager, useRecord, useRequest } from '@nocobase/client';
 import { CollectionsGraph } from '@nocobase/utils/client';
 import { Col, Input, Modal, Row, Select, Spin, Table, Tag } from 'antd';
+import debounce from 'lodash/debounce';
 import uniq from 'lodash/uniq';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const excludeCollections = ['users', 'roles', 'applications'];
 
@@ -40,22 +42,6 @@ const useCollectionsGraph = ({ removed = [] }) => {
   };
 };
 
-const columns = [
-  {
-    title: '标题',
-    dataIndex: 'title',
-  },
-  {
-    title: '标识',
-    dataIndex: 'name',
-  },
-  {
-    title: '分类',
-    dataIndex: 'category',
-    render: (categories) => categories.map((category) => <Tag color={category.color}>{category.name}</Tag>),
-  },
-];
-
 const useCollections = () => {
   const record = useRecord();
   const [selected, setSelected] = useState<any>([]);
@@ -86,20 +72,132 @@ const useCollections = () => {
     },
   });
 
+  const res3 = useRequest({
+    url: `collectionCategories`,
+    params: {
+      sort: 'sort',
+      paginate: false,
+    },
+  });
+
   return {
-    loading: res1.loading || res2.loading,
+    loading: res1.loading || res2.loading || res3.loading,
     collections: (res2.data?.data || []).filter((item) => !item.hidden && !excludeCollections.includes(item.name)),
     removed: selected,
     setSelected,
+    categories: (res3.data?.data || []).map((cat) => ({ label: cat.name, value: cat.name })),
+  };
+};
+
+const includes = (text: string, s: string | string[]) => {
+  const values = Array.isArray(s) ? s : [s];
+  for (const val of values) {
+    if (text.toLowerCase().includes(val)) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const useRemovedDataSource = ({ collections, removed }) => {
+  const [filter, setFilter] = useState({ name: '', category: [] });
+  const dataSource = useMemo(() => {
+    return collections.filter((collection) => {
+      const { name, title, category = [] } = collection;
+      const results = [removed.includes(collection.name)];
+      if (filter.name) {
+        results.push(includes(name, filter.name) || includes(title, filter.name));
+      }
+      if (filter.category.length > 0) {
+        results.push(category.some((item) => includes(item.name, filter.category)));
+      }
+      return !results.includes(false);
+    });
+  }, [collections, removed, filter]);
+  const setNameFilter = useMemo(
+    () =>
+      debounce((name) => {
+        setFilter({
+          ...filter,
+          name,
+        });
+      }, 300),
+    [],
+  );
+  return {
+    dataSource,
+    setNameFilter,
+    setCategoryFilter: (category) => {
+      setFilter({
+        ...filter,
+        category,
+      });
+    },
+  };
+};
+
+const useAddedDataSource = ({ collections, removed }) => {
+  const [filter, setFilter] = useState({ name: '', category: [] });
+  const dataSource = collections.filter((collection) => {
+    const { name, title, category = [] } = collection;
+    const results = [!removed.includes(collection.name)];
+    if (filter.name) {
+      results.push(includes(name, filter.name) || includes(title, filter.name));
+    }
+    if (filter.category.length > 0) {
+      results.push(category.some((item) => includes(item.name, filter.category)));
+    }
+    return !results.includes(false);
+  });
+  const setNameFilter = useMemo(
+    () =>
+      debounce((name) => {
+        setFilter({
+          ...filter,
+          name,
+        });
+      }, 300),
+    [],
+  );
+  return {
+    dataSource,
+    setNameFilter,
+    setCategoryFilter: (category) => {
+      setFilter({
+        ...filter,
+        category,
+      });
+    },
   };
 };
 
 export const TableTransfer = connect((props) => {
   const { onChange } = props;
-  const { loading, collections, removed, setSelected } = useCollections();
+  const { loading, collections, categories, removed, setSelected } = useCollections();
   const [selectedRowKeys1, setSelectedRowKeys1] = useState([]);
   const [selectedRowKeys2, setSelectedRowKeys2] = useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph({ removed });
+  const addedDataSource = useAddedDataSource({ collections, removed });
+  const removedDataSource = useRemovedDataSource({ collections, removed });
+  const { t } = useTranslation('multi-app-share-collection');
+  const columns = useMemo(
+    () => [
+      {
+        title: t('Collection display name'),
+        dataIndex: 'title',
+      },
+      {
+        title: t('Collection name'),
+        dataIndex: 'name',
+      },
+      {
+        title: t('Collection category'),
+        dataIndex: 'category',
+        render: (categories) => categories.map((category) => <Tag color={category.color}>{category.name}</Tag>),
+      },
+    ],
+    [],
+  );
   if (loading) {
     return <Spin />;
   }
@@ -124,15 +222,25 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>未共享数据表</strong>
+            <strong style={{ fontSize: 16 }}>{t('Unshared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
+                onChange={(value) => {
+                  removedDataSource.setCategoryFilter(value);
+                }}
+                mode={'multiple'}
                 style={{ width: '35%' }}
                 size={'middle'}
-                defaultValue={'*'}
-                options={[{ label: '全部分类', value: '*' }]}
+                placeholder={t('All categories')}
+                options={categories}
+                allowClear
               />
-              <Input.Search style={{ width: '65%' }} placeholder="input search text" onSearch={() => {}} />
+              <Input
+                onChange={(e) => removedDataSource.setNameFilter(e.target.value)}
+                style={{ width: '65%' }}
+                placeholder={t('Enter name or title...')}
+                allowClear
+              />
             </Input.Group>
           </div>
           <Table
@@ -151,7 +259,8 @@ export const TableTransfer = connect((props) => {
             pagination={false}
             size={'small'}
             columns={columns}
-            dataSource={collections.filter((collection) => removed.includes(collection.name))}
+            // dataSource={collections.filter((collection) => removed.includes(collection.name))}
+            dataSource={removedDataSource.dataSource}
             scroll={{ y: 'calc(100vh - 260px)' }}
             onRow={({ name, disabled }) => ({
               onClick: () => {
@@ -166,7 +275,7 @@ export const TableTransfer = connect((props) => {
                   return change();
                 }
                 Modal.confirm({
-                  title: '请确定需要添加以下数据表',
+                  title: t('Are you sure to add the following collections?'),
                   width: '60%',
                   content: (
                     <div>
@@ -197,15 +306,25 @@ export const TableTransfer = connect((props) => {
               margin-bottom: 8px;
             `}
           >
-            <strong style={{ fontSize: 16 }}>已共享数据表</strong>
+            <strong style={{ fontSize: 16 }}>{t('Shared collections')}</strong>
             <Input.Group compact style={{ width: 360 }}>
               <Select
+                onChange={(value) => {
+                  addedDataSource.setCategoryFilter(value);
+                }}
+                mode={'multiple'}
                 style={{ width: '35%' }}
                 size={'middle'}
-                defaultValue={'*'}
-                options={[{ label: '全部分类', value: '*' }]}
+                placeholder={t('All categories')}
+                options={categories}
+                allowClear
               />
-              <Input.Search style={{ width: '65%' }} placeholder="input search text" onSearch={() => {}} />
+              <Input
+                onChange={(e) => addedDataSource.setNameFilter(e.target.value)}
+                style={{ width: '65%' }}
+                placeholder={t('Enter name or title...')}
+                allowClear
+              />
             </Input.Group>
           </div>
           <Table
@@ -224,24 +343,7 @@ export const TableTransfer = connect((props) => {
             pagination={false}
             size={'small'}
             columns={columns}
-            dataSource={collections.filter((collection) => {
-              const includes = (text: string, s: string) => {
-                return text.toLowerCase().includes(s);
-              };
-              const { name, title, category = [] } = collection;
-              const results = [!removed.includes(collection.name)];
-              const filter1 = {
-                name: '',
-                category: '',
-              };
-              if (filter1.name) {
-                results.push(includes(name, filter1.name) || includes(title, filter1.name));
-              }
-              if (filter1.category) {
-                results.push(category.some((item) => includes(item.name, filter1.category)));
-              }
-              return !results.includes(false);
-            })}
+            dataSource={addedDataSource.dataSource}
             // dataSource={collections.filter((collection) => !selected.includes(collection.name))}
             scroll={{ y: 'calc(100vh - 260px)' }}
             onRow={({ name }) => ({
@@ -257,7 +359,7 @@ export const TableTransfer = connect((props) => {
                   return change();
                 }
                 Modal.confirm({
-                  title: '请确定需要移除以下数据表',
+                  title: t('Are you sure to remove the following collections?'),
                   width: '60%',
                   content: (
                     <div>

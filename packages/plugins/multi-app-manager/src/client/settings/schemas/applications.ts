@@ -7,6 +7,7 @@ import {
   useResourceActionContext,
   useResourceContext
 } from '@nocobase/client';
+import { i18nText } from '../../utils';
 
 const collection = {
   name: 'applications',
@@ -20,7 +21,7 @@ const collection = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("App ID")}}',
+        title: i18nText('App ID'),
         required: true,
         'x-component': 'Input',
         'x-validator': 'uid',
@@ -32,7 +33,7 @@ const collection = {
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: '{{t("App display name")}}',
+        title: i18nText('App display name'),
         required: true,
         'x-component': 'Input',
       },
@@ -43,7 +44,7 @@ const collection = {
       interface: 'checkbox',
       uiSchema: {
         type: 'boolean',
-        'x-content': '{{t("Pin to menu")}}',
+        'x-content': i18nText('Pin to menu'),
         'x-component': 'Checkbox',
       },
     },
@@ -54,7 +55,7 @@ const collection = {
       defaultValue: 'pending',
       uiSchema: {
         type: 'string',
-        title: '{{t("App status")}}',
+        title: i18nText('App status'),
         enum: [
           { label: 'Pending', value: 'pending' },
           { label: 'Running', value: 'running' },
@@ -122,7 +123,7 @@ export const tableActionColumnSchema = {
               'x-decorator': 'FormItem',
             },
             cname: {
-              title: '{{t("Custom domain")}}',
+              title: i18nText('Custom domain'),
               'x-component': 'Input',
               'x-decorator': 'FormItem',
             },
@@ -252,7 +253,7 @@ export const schema: ISchema = {
                       'x-decorator': 'FormItem',
                     },
                     cname: {
-                      title: '{{t("Custom domain")}}',
+                      title: i18nText('Custom domain'),
                       'x-component': 'Input',
                       'x-decorator': 'FormItem',
                     },
@@ -321,7 +322,7 @@ export const schema: ISchema = {
             },
             pinned: {
               type: 'void',
-              title: '{{t("Pin to menu")}}',
+              title: i18nText('Pin to menu'),
               'x-decorator': 'Table.Column.Decorator',
               'x-component': 'Table.Column',
               properties: {
