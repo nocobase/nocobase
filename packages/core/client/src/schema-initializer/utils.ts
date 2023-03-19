@@ -1008,6 +1008,9 @@ export const createCalendarBlockSchema = (options) => {
                     'x-component': 'Tabs',
                     'x-component-props': {},
                     'x-initializer': 'TabPaneInitializers',
+                    'x-initializer-props': {
+                      gridInitializer: 'RecordBlockInitializers',
+                    },
                     properties: {
                       tab1: {
                         type: 'void',
