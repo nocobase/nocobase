@@ -12,5 +12,5 @@ export const getCronLocale = (lang: string) => {
       locale = require(file).cron?.[lang];
     } catch (error) {}
   }
-  return locale || require('react-js-cron/dist/cjs/locale').DEFAULT_LOCALE_EN;
+  return locale;
 };
