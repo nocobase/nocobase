@@ -1117,7 +1117,7 @@ export const createCollapseBlockSchema = (options) => {
   const { collection, blockType } = options;
   const schema: ISchema = {
     type: 'void',
-    'x-decorator': 'TableBlockProvider',
+    'x-decorator': 'AssociationFilter.Provider',
     'x-decorator-props': {
       collection,
       blockType,
@@ -1132,7 +1132,7 @@ export const createCollapseBlockSchema = (options) => {
       [uid()]: {
         type: 'void',
         'x-action': 'associateFilter',
-        'x-initializer': 'AssociationFilter.Initializer',
+        'x-initializer': 'AssociationFilter.FilterBlockInitializer',
         'x-component': 'AssociationFilter',
         properties: {},
       },

@@ -7,9 +7,11 @@ import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
+import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
 import { AssociationFilterItem } from './AssociationFilter.Item';
 import { AssociationFilterItemDesigner } from './AssociationFilter.Item.Designer';
+import { AssociationFilterProvider } from './AssociationFilterProvider';
 
 export const AssociationFilter = (props) => {
   const Designer = useDesigner();
@@ -76,7 +78,9 @@ export const AssociationFilter = (props) => {
   );
 };
 
+AssociationFilter.Provider = AssociationFilterProvider;
 AssociationFilter.Initializer = AssociationFilterInitializer;
+AssociationFilter.FilterBlockInitializer = AssociationFilterFilterBlockInitializer;
 AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem & {
   Designer: typeof AssociationFilterItemDesigner;
 };

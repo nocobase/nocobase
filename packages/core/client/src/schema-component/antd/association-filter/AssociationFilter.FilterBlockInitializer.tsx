@@ -5,11 +5,11 @@ import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 
-export const AssociationFilterInitializer = () => {
+export const AssociationFilterFilterBlockInitializer = () => {
   const { t } = useTranslation();
   const associatedFields = useAssociatedFields();
   const optionalList = useOptionalFieldList();
-  const useProps = '{{useAssociationFilterProps}}';
+  const useProps = '{{useAssociationFilterBlockProps}}';
   const children: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',
     key: field.key,
@@ -58,6 +58,13 @@ export const AssociationFilterInitializer = () => {
     children,
   };
 
+  // 可选项字段
+  const optionalFieldGroup: SchemaInitializerItemOptions = {
+    type: 'itemGroup',
+    title: t('Optional fields'),
+    children: optionalChildren,
+  };
+
   const dividerItem: SchemaInitializerItemOptions = {
     type: 'divider',
   };
@@ -68,7 +75,7 @@ export const AssociationFilterInitializer = () => {
     component: 'AssociationFilterDesignerDelete',
   };
 
-  const items = [associatedFieldGroup, dividerItem, deleteItem];
+  const items = [associatedFieldGroup, optionalFieldGroup];
 
   return (
     <SchemaInitializer.Button
