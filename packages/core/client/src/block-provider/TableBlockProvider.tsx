@@ -16,13 +16,11 @@ interface Props {
   showIndex?: boolean;
   dragSort?: boolean;
   rowKey?: string;
-  /** 目前可能的值仅为 'filter'，用于区分筛选区块和数据区块 */
-  blockType?: 'filter';
   childrenColumnName: any;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
-  const { params, showIndex, dragSort, rowKey, childrenColumnName, blockType } = props;
+  const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
@@ -40,7 +38,6 @@ const InternalTableBlockProvider = (props: Props) => {
         expandFlag,
         childrenColumnName,
         setExpandFlag: () => setExpandFlag(!expandFlag),
-        blockType,
       }}
     >
       <RenderChildrenWithAssociationFilter {...props} />
@@ -193,10 +190,11 @@ export const useTableBlockProps = () => {
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
     },
     onClickRow(record, setSelectedRow, selectedRow) {
-      if (ctx.blockType !== 'filter') return;
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      if (!targets.length) return;
 
       const value = [record[ctx.rowKey]];
-      const { targets, uid } = findFilterTargets(fieldSchema);
 
       getDataBlocks().forEach((block) => {
         const target = targets.find((target) => target.name === block.uid);
