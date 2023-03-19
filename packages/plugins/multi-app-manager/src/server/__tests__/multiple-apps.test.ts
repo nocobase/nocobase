@@ -1,7 +1,6 @@
 import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { ApplicationModel } from '..';
 import { PluginMultiAppManager } from '../server';
 
 describe('multiple apps create', () => {
@@ -128,20 +127,27 @@ describe('multiple apps create', () => {
     expect(app.appManager.applications.has(name)).toBeTruthy();
   });
 
-  it('should change handleAppStart', async () => {
-    const customHandler = jest.fn();
-    ApplicationModel.handleAppStart = customHandler;
-    const name = `td_${uid()}`;
+  it('should upgrade sub apps when main app upgrade', async () => {
+    const subAppName = `t_${uid()}`;
 
-    await db.getRepository('applications').create({
+    await app.db.getRepository('applications').create({
       values: {
-        name,
+        name: subAppName,
         options: {
-          plugins: ['ui-schema-storage'],
+          plugins: [],
         },
       },
     });
 
-    expect(customHandler).toHaveBeenCalledTimes(1);
+    const subApp = await app.appManager.getApplication(subAppName);
+    const jestFn = jest.fn();
+
+    subApp.on('afterUpgrade', () => {
+      jestFn();
+    });
+
+    await app.upgrade();
+
+    expect(jestFn).toBeCalled();
   });
 });

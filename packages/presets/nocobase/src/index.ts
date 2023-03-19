@@ -78,10 +78,12 @@ export class PresetNocoBase extends Plugin {
 
     this.app.on('beforeUpgrade', async (options) => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
+
       if (result) {
         console.log(`Initialize all built-in plugins beforeUpgrade`);
         await this.addBuiltInPlugins({ method: 'upgrade' });
       }
+
       const builtInPlugins = this.getBuiltInPlugins();
       const plugins = await this.app.db.getRepository('applicationPlugins').find();
       const pluginNames = plugins.map((p) => p.name);

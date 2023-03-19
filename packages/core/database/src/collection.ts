@@ -7,7 +7,7 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
@@ -49,6 +49,7 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
   magicAttribute?: string;
 
   tree?: string;
+
   [key: string]: any;
 }
 
@@ -386,7 +387,9 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
-    this.setRepository(options.repository);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 

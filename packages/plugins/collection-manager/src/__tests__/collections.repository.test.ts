@@ -1,7 +1,7 @@
 import Database, { Collection as DBCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
-import CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
+import CollectionManagerPlugin, { CollectionRepository } from '@nocobase/plugin-collection-manager';
 
 describe('collections repository', () => {
   let db: Database;
@@ -18,6 +18,20 @@ describe('collections repository', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should extend collections collection', async () => {
+    expect(db.getRepository<CollectionRepository>('collections')).toBeTruthy();
+
+    db.extendCollection({
+      name: 'collections',
+      fields: [{ type: 'string', name: 'tests' }],
+    });
+
+    expect(Collection.getField('tests')).toBeTruthy();
+    const afterRepository = db.getRepository<CollectionRepository>('collections');
+
+    expect(afterRepository.load).toBeTruthy();
   });
 
   it('should set collection schema from env', async () => {
