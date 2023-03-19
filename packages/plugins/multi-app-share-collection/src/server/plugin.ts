@@ -61,20 +61,21 @@ class SubAppPlugin extends Plugin {
       }
 
       if (actionName === 'list' && resourceName === 'collections') {
-        const Collection = mainApp.db.getCollection('collections');
-        const query = `
-          select *
-          from "${Collection.collectionSchema()}"."${Collection.model.tableName}"
-          where (options -> 'syncToApps')::jsonb ? '${subApp.name}'
-        `;
+        const appCollectionBlacklistCollection = mainApp.db.getCollection('appCollectionBlacklist');
 
-        const results = await mainApp.db.sequelize.query(query, { type: 'SELECT' });
-
-        ctx.action.mergeParams({
-          filter: {
-            'name.$in': [...results.map((item) => item['name']), 'users', 'roles'],
+        const blackList = await appCollectionBlacklistCollection.model.findAll({
+          where: {
+            applicationName: subApp.name,
           },
         });
+
+        if (blackList.length > 0) {
+          ctx.action.mergeParams({
+            filter: {
+              'name.$notIn': blackList.map((item) => item.get('collectionName')),
+            },
+          });
+        }
       }
       await next();
     });
