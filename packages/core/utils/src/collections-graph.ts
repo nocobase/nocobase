@@ -5,13 +5,13 @@ type BuildGraphOptions = {
   collections: any[];
 };
 
-export class CollectionGraph {
+export class CollectionsGraph {
   static graphlib() {
     return graphlib;
   }
 
   static preOrder(options: BuildGraphOptions & { node: string }) {
-    return CollectionGraph.graphlib().alg.preorder(CollectionGraph.build(options), options.node);
+    return CollectionsGraph.graphlib().alg.preorder(CollectionsGraph.build(options), options.node);
   }
 
   static build(options: BuildGraphOptions) {

@@ -1,4 +1,4 @@
-import { CollectionGraph } from '../collections-graph';
+import { CollectionsGraph } from '../collections-graph';
 
 describe('collection graph', () => {
   it('should build collection graph', async () => {
@@ -23,14 +23,14 @@ describe('collection graph', () => {
       },
     ];
 
-    const preOrder = CollectionGraph.preOrder({
+    const preOrder = CollectionsGraph.preOrder({
       collections,
       node: 'b',
     });
 
     expect(preOrder).toEqual(['b', 'a', 'c']);
 
-    const preOrderReverse = CollectionGraph.preOrder({
+    const preOrderReverse = CollectionsGraph.preOrder({
       collections,
       node: 'a',
       direction: 'reverse',
