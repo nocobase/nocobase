@@ -1,6 +1,7 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import { Application, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
+import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
@@ -248,6 +249,37 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       this.app.log.warn('multi-app-share-collection plugin need multi-app-manager plugin enabled');
       return;
     }
+
+    await this.db.import({
+      directory: resolve(__dirname, 'collections'),
+    });
+
+    // this.db.extendCollection({
+    //   name: 'collections',
+    //   fields: [
+    //     {
+    //       type: 'belongsToMany',
+    //       name: 'collectionBlacklist',
+    //       through: 'appCollectionBlacklist',
+    //       target: 'applications',
+    //       targetKey: 'name',
+    //       otherKey: 'applicationName',
+    //       sourceKey: 'name',
+    //       foreignKey: 'collectionName',
+    //     },
+    //   ],
+    // });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:shareCollections': async (ctx, next) => {
+        const { filterByTk, values } = ctx.action.params;
+        ctx.body = {
+          filterByTk,
+          values,
+        };
+        await next();
+      },
+    });
 
     // 子应用启动参数
     multiAppManager.setAppOptionsFactory((appName, mainApp) => {

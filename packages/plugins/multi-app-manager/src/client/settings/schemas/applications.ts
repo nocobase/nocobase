@@ -91,6 +91,79 @@ export const useDestroyAll = () => {
   };
 };
 
+export const applicationsTableActionColumnProperties = {
+  view: {
+    type: 'void',
+    'x-component': 'AppVisitor',
+    'x-component-props': {},
+  },
+  update: {
+    type: 'void',
+    title: '{{t("Edit")}}',
+    'x-component': 'Action.Link',
+    'x-component-props': {},
+    properties: {
+      drawer: {
+        type: 'void',
+        'x-component': 'Action.Drawer',
+        'x-decorator': 'Form',
+        'x-decorator-props': {
+          useValues: '{{ cm.useValuesFromRecord }}',
+        },
+        title: '{{t("Edit")}}',
+        properties: {
+          displayName: {
+            'x-component': 'CollectionField',
+            'x-decorator': 'FormItem',
+          },
+          pinned: {
+            'x-component': 'CollectionField',
+            'x-decorator': 'FormItem',
+          },
+          cname: {
+            title: '{{t("Custom domain")}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+          footer: {
+            type: 'void',
+            'x-component': 'Action.Drawer.Footer',
+            properties: {
+              cancel: {
+                title: '{{t("Cancel")}}',
+                'x-component': 'Action',
+                'x-component-props': {
+                  useAction: '{{ cm.useCancelAction }}',
+                },
+              },
+              submit: {
+                title: '{{t("Submit")}}',
+                'x-component': 'Action',
+                'x-component-props': {
+                  type: 'primary',
+                  useAction: '{{ cm.useUpdateAction }}',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  delete: {
+    type: 'void',
+    title: '{{ t("Delete") }}',
+    'x-component': 'Action.Link',
+    'x-component-props': {
+      confirm: {
+        title: "{{t('Delete')}}",
+        content: "{{t('Are you sure you want to delete it?')}}",
+      },
+      useAction: '{{cm.useDestroyAction}}',
+    },
+  },
+};
+
 export const schema: ISchema = {
   type: 'object',
   properties: {
@@ -268,78 +341,7 @@ export const schema: ISchema = {
                   'x-component-props': {
                     split: '|',
                   },
-                  properties: {
-                    view: {
-                      type: 'void',
-                      'x-component': 'AppVisitor',
-                      'x-component-props': {},
-                    },
-                    update: {
-                      type: 'void',
-                      title: '{{t("Edit")}}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {},
-                      properties: {
-                        drawer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer',
-                          'x-decorator': 'Form',
-                          'x-decorator-props': {
-                            useValues: '{{ cm.useValuesFromRecord }}',
-                          },
-                          title: '{{t("Edit")}}',
-                          properties: {
-                            displayName: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            pinned: {
-                              'x-component': 'CollectionField',
-                              'x-decorator': 'FormItem',
-                            },
-                            cname: {
-                              title: '{{t("Custom domain")}}',
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                            },
-                            footer: {
-                              type: 'void',
-                              'x-component': 'Action.Drawer.Footer',
-                              properties: {
-                                cancel: {
-                                  title: '{{t("Cancel")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    useAction: '{{ cm.useCancelAction }}',
-                                  },
-                                },
-                                submit: {
-                                  title: '{{t("Submit")}}',
-                                  'x-component': 'Action',
-                                  'x-component-props': {
-                                    type: 'primary',
-                                    useAction: '{{ cm.useUpdateAction }}',
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                    delete: {
-                      type: 'void',
-                      title: '{{ t("Delete") }}',
-                      'x-component': 'Action.Link',
-                      'x-component-props': {
-                        confirm: {
-                          title: "{{t('Delete')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
-                        },
-                        useAction: '{{cm.useDestroyAction}}',
-                      },
-                    },
-                  },
+                  properties: applicationsTableActionColumnProperties,
                 },
               },
             },
