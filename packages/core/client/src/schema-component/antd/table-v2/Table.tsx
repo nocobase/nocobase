@@ -473,7 +473,7 @@ export const Table: any = observer((props: any) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
           onRow={onRow}
-          rowClassName={(record, index) => (selectedRow.includes(index + 1) ? highlightRow : '')}
+          rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}
