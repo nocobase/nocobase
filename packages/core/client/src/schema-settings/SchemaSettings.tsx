@@ -10,6 +10,7 @@ import {
   Cascader,
   CascaderProps,
   Dropdown,
+  Empty,
   Menu,
   MenuItemProps,
   Modal,
@@ -19,7 +20,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import { cloneDeep } from 'lodash';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -43,7 +44,10 @@ import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { EnableChildCollections } from './EnableChildCollections';
+import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -448,8 +452,142 @@ SchemaSettings.Remove = (props: any) => {
   );
 };
 
+SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescription?: string }) => {
+  const { type, emptyDescription } = props;
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const collection = useCollection();
+  const dataBlocks = useSupportedBlocks(type);
+  let { targets = [], uid } = findFilterTargets(fieldSchema);
+  const compile = useCompile();
+
+  const Content = dataBlocks.map((block) => {
+    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+    const onHover = () => {
+      const dom = block.dom;
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = 'block';
+      }
+      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
+      dom.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    };
+    const onLeave = () => {
+      const dom = block.dom;
+      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
+      if (designer) {
+        designer.style.display = null;
+      }
+      dom.style.boxShadow = 'none';
+    };
+    if (isSameCollection(block.collection, collection)) {
+      return (
+        <SchemaSettings.SwitchItem
+          key={block.uid}
+          title={title}
+          checked={targets.some((target) => target.uid === block.uid)}
+          onChange={(checked) => {
+            if (checked) {
+              targets.push({ uid: block.uid });
+            } else {
+              targets = targets.filter((target) => target.uid !== block.uid);
+            }
+
+            updateFilterTargets(fieldSchema, targets);
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: uid,
+                'x-filter-targets': targets,
+              },
+            });
+            dn.refresh();
+          }}
+          onMouseEnter={onHover}
+          onMouseLeave={onLeave}
+        />
+      );
+    }
+
+    const target = targets.find((target) => target.uid === block.uid);
+    // 与筛选区块的数据表具有关系的表
+    return (
+      <SchemaSettings.SelectItem
+        key={block.uid}
+        title={title}
+        value={target?.field || ''}
+        options={[
+          ...block.associatedFields
+            .filter((field) => field.target === collection.name)
+            .map((field) => {
+              return {
+                label: compile(field.uiSchema.title) || field.name,
+                value: `${field.name}.${getTargetKey(field)}`,
+              };
+            }),
+          {
+            label: t('Unconnected'),
+            value: '',
+          },
+        ]}
+        onChange={(value) => {
+          if (value === '') {
+            targets = targets.filter((target) => target.uid !== block.uid);
+          } else {
+            targets = targets.filter((target) => target.uid !== block.uid);
+            targets.push({ uid: block.uid, field: value });
+          }
+          updateFilterTargets(fieldSchema, targets);
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: uid,
+              'x-filter-targets': targets,
+            },
+          });
+          dn.refresh();
+        }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseEnter={onHover}
+        onMouseLeave={onLeave}
+      />
+    );
+  });
+
+  return (
+    <SchemaSettings.SubMenu title={t('Connect data blocks')}>
+      {Content.length ? (
+        Content
+      ) : (
+        <Empty
+          style={{ width: 160, padding: '0 1em' }}
+          description={emptyDescription}
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      )}
+    </SchemaSettings.SubMenu>
+  );
+};
+
 SchemaSettings.SelectItem = (props) => {
-  const { title, options, value, onChange, ...others } = props;
+  const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
+  const [open, setOpen] = useState(false);
+
+  const onClick = (...args) => {
+    setOpen(false);
+    _onClick?.(...args);
+  };
+
+  // 鼠标 hover 时，打开下拉框
+  const moreProps = openOnHover
+    ? {
+        onMouseEnter: useCallback(() => setOpen(true), []),
+        open,
+      }
+    : {};
+
   return (
     <SchemaSettings.Item {...others}>
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
@@ -457,9 +595,11 @@ SchemaSettings.SelectItem = (props) => {
         <Select
           bordered={false}
           defaultValue={value}
-          onChange={onChange}
+          onChange={(...arg) => (setOpen(false), onChange(...arg))}
           options={options}
           style={{ textAlign: 'right', minWidth: 100 }}
+          onClick={onClick}
+          {...moreProps}
         />
       </div>
     </SchemaSettings.Item>
@@ -513,7 +653,6 @@ SchemaSettings.PopupItem = (props) => {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
-  const actx = useActionContext();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
       <SchemaSettings.Item

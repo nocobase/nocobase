@@ -6,6 +6,7 @@ import { useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -234,6 +235,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettings.Divider />}
       {supportTemplate && (
         <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />

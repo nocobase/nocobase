@@ -4,9 +4,7 @@ import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useState } from 'react';
-import { useRequest } from '../../../api-client';
-import { useBlockRequestContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { useAssociationFilterProps } from '../../../block-provider/hooks';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -16,48 +14,39 @@ const { Panel } = Collapse;
 export const AssociationFilterItem = (props) => {
   const collectionField = AssociationFilter.useAssociationField();
 
-  if (!collectionField) {
-    return null;
-  }
-
+  // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
+  const { useProps = useAssociationFilterProps } = props;
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-  const { service, props: blockProps } = useBlockRequestContext();
+
+  const {
+    list,
+    onSelected,
+    handleSearchInput: _handleSearchInput,
+    params,
+    run,
+    valueKey: _valueKey,
+    labelKey: _labelKey,
+  } = useProps();
 
   const [searchVisible, setSearchVisible] = useState(false);
 
-  const collectionFieldName = collectionField.name;
-
-  const valueKey = collectionField?.targetKey || 'id';
-  const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+  const valueKey = _valueKey || collectionField?.targetKey || 'id';
+  const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
   const fieldNames = {
     title: labelKey || valueKey,
     key: valueKey,
   };
 
-  const { data, params, loading, run } = useRequest(
-    {
-      resource: collectionField.target,
-      action: 'list',
-      params: {
-        fields: [labelKey, valueKey],
-        pageSize: 200,
-        page: 1,
-      },
-    },
-    {
-      refreshDeps: [labelKey, valueKey],
-      debounceWait: 300,
-    },
-  );
-
-  const treeData = data?.data || [];
-
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+
+  if (!collectionField) {
+    return null;
+  }
 
   const onExpand = (expandedKeysValue: React.Key[]) => {
     setExpandedKeys(expandedKeysValue);
@@ -66,26 +55,7 @@ export const AssociationFilterItem = (props) => {
 
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
-
-    const filters = service.params?.[1]?.filters || {};
-
-    if (selectedKeysValue.length) {
-      filters[`af.${collectionFieldName}`] = {
-        [`${collectionFieldName}.${valueKey}.$in`]: selectedKeysValue,
-      };
-    } else {
-      delete filters[`af.${collectionFieldName}`];
-    }
-
-    service.run(
-      {
-        ...service.params?.[0],
-        pageSize: 200,
-        page: 1,
-        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
-      },
-      { filters },
-    );
+    onSelected(selectedKeysValue);
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
@@ -105,12 +75,7 @@ export const AssociationFilterItem = (props) => {
   };
 
   const handleSearchInput = (e: ChangeEvent<any>) => {
-    run({
-      ...params?.[0],
-      filter: {
-        [`${labelKey}.$includes`]: e.target.value,
-      },
-    });
+    _handleSearchInput(e);
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
@@ -258,7 +223,7 @@ export const AssociationFilterItem = (props) => {
             onExpand={onExpand}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
-            treeData={treeData}
+            treeData={list}
             onSelect={onSelect}
             fieldNames={fieldNames}
             titleRender={(node) => compile(node[labelKey])}
