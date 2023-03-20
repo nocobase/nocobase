@@ -235,7 +235,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={'支持同表和关系表数据区块'} />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettings.Divider />}
       {supportTemplate && (
         <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />

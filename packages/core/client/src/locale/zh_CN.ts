@@ -452,6 +452,7 @@ export default {
   "Convert reference to duplicate": "模板引用转为复制",
   "Template name": "模板名称",
   "Block type": "区块类型",
+  "No blocks to connect": "没有可连接的区块",
   "Action column": "操作列",
   "Records per page": "每页显示数量",
   "(Fields only)": "（仅字段）",

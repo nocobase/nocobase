@@ -1,5 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollection } from '../../../collection-manager';
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -13,6 +14,7 @@ export const FilterDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 
   return (
@@ -24,7 +26,7 @@ export const FilterDesigner = () => {
         resourceName={defaultResource}
       />
       <SchemaSettings.LinkageRules collectionName={name} />
-      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} emptyDescription={'仅支持同表数据区块'} />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.FORM} emptyDescription={t('No blocks to connect')} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

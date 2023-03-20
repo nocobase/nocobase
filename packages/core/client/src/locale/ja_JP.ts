@@ -350,6 +350,7 @@ export default {
   "Convert reference to duplicate": "参照を複製に変換",
   "Template name": "テンプレート名",
   "Block type": "ブロックタイプ",
+  "No blocks to connect": "接続するブロックがありません",
   "Action column": "操作カラム",
   "Records per page": "ページごとのレコード数",
   "(Fields only)": "(フィールドのみ)",

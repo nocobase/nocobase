@@ -310,6 +310,7 @@ export default {
   "Convert reference to duplicate": "Referansı kopyaya dönüştür",
   "Template name": "Şablon adı",
   "Block type": "Blok türü",
+  "No blocks to connect": "Bağlanacak blok yok",
   "Action column": "İşlem sütunu",
   "Records per page": "Sayfa başına kayıt",
   "(Fields only)": "(Sadece alanlar)",

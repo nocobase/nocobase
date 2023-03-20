@@ -420,6 +420,7 @@ export default {
   "Convert reference to duplicate": "Convert reference to duplicate",
   "Template name": "Template name",
   "Block type": "Block type",
+  "No blocks to connect": "No blocks to connect",
   "Action column": "Action column",
   "Records per page": "Records per page",
   "(Fields only)": "(Fields only)",

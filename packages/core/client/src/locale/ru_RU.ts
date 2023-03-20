@@ -311,6 +311,7 @@ export default {
   "Convert reference to duplicate": "Преобразовать ссылку в дубликат",
   "Template name": "Имя Шаблона",
   "Block type": "Тип Блока",
+  "No blocks to connect": "Нет Блоков для подключения",
   "Action column": "Колонка действий",
   "Records per page": "Записей на страницу",
   "(Fields only)": "(Только поля)",
