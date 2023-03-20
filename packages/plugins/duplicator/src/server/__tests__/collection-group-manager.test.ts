@@ -22,7 +22,7 @@ describe('collection group manager', () => {
 
     expect(collectionGroups.map((i) => i.function)).toMatchObject(['server', 'core']);
 
-    expect(collectionGroups.find((i) => i.function === 'collections')).toMatchObject({
+    expect(collectionGroups.find((i) => i.function === 'core')).toMatchObject({
       namespace: 'collection-manager',
       function: 'core',
       collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'],
