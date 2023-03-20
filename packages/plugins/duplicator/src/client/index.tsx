@@ -1,7 +1,7 @@
-import { PluginManagerContext, SettingsCenterProvider, useAPIClient, useRequest } from '@nocobase/client';
+import { SettingsCenterProvider, useAPIClient, useRequest } from '@nocobase/client';
 import { Button, Card, Collapse, Table } from 'antd';
 import { saveAs } from 'file-saver';
-import React, { useContext } from 'react';
+import React from 'react';
 const { Panel } = Collapse;
 
 const DuplicatorDump = () => {
@@ -102,8 +102,7 @@ const DuplicatorRestore = () => {
 };
 
 export default function (props) {
-  const ctx = useContext(PluginManagerContext);
-
+  return <div>{props.children}</div>;
   return (
     <SettingsCenterProvider
       settings={{
