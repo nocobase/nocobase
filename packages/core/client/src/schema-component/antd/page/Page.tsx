@@ -170,7 +170,7 @@ export const Page = (props) => {
                     onTabClick={(activeKey) => {
                       setLoading(true);
                       setActiveKey(activeKey);
-                      window.history.pushState({}, '', location.pathname + `?tab=` + activeKey);
+                      window.history.pushState({}, '', window.location.pathname + `?tab=` + activeKey);
                       setTimeout(() => {
                         setLoading(false);
                       }, 50);
@@ -253,7 +253,7 @@ export const Page = (props) => {
           />
         )}
       </div>
-      <div style={{ margin: 24 }}>
+      <div className={'m24'} style={{ margin: 24 }}>
         {loading ? (
           <Spin />
         ) : !disablePageHeader && enablePageTabs ? (

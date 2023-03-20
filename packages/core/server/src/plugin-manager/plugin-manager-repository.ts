@@ -18,6 +18,18 @@ export class PluginManagerRepository extends Repository {
 
   async enable(name: string | string[]) {
     const pluginNames = typeof name === 'string' ? [name] : name;
+    const plugins = pluginNames.map((name) => this.pm.plugins.get(name));
+
+    for (const plugin of plugins) {
+      const requiredPlugins = plugin.requiredPlugins();
+      for (const requiredPluginName of requiredPlugins) {
+        const requiredPlugin = this.pm.plugins.get(requiredPluginName);
+        if (!requiredPlugin.enabled) {
+          throw new Error(`${plugin.name} plugin need ${requiredPluginName} plugin enabled`);
+        }
+      }
+    }
+
     await this.update({
       filter: {
         name,

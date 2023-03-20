@@ -10,7 +10,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Database } from './database';
-import { Field, FieldOptions } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
@@ -48,6 +48,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    */
   magicAttribute?: string;
 
+  tree?: string;
+
   [key: string]: any;
 }
 
@@ -80,6 +82,22 @@ export class Collection<
 
   get db() {
     return this.context.database;
+  }
+
+  get treeParentField(): BelongsToField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeParent) {
+        return field;
+      }
+    }
+  }
+
+  get treeChildrenField(): HasManyField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeChildren) {
+        return field;
+      }
+    }
   }
 
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -243,6 +261,7 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+    this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
       { name, ...options },
@@ -368,7 +387,9 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
-    this.setRepository(options.repository);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 

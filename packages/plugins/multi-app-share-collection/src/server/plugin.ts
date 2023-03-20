@@ -1,6 +1,7 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, InstallOptions, Plugin } from '@nocobase/server';
+import { Application, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
+import { resolve } from 'path';
 
 const subAppFilteredPlugins = ['multi-app-share-collection', 'multi-app-manager'];
 
@@ -60,21 +61,52 @@ class SubAppPlugin extends Plugin {
       }
 
       if (actionName === 'list' && resourceName === 'collections') {
-        const Collection = mainApp.db.getCollection('collections');
-        const query = `
-        select * from "${Collection.collectionSchema()}"."${Collection.model.tableName}"
-        where (options->'syncToApps')::jsonb ? '${subApp.name}'
-        `;
+        const appCollectionBlacklistCollection = mainApp.db.getCollection('appCollectionBlacklist');
 
-        const results = await mainApp.db.sequelize.query(query, { type: 'SELECT' });
-
-        ctx.action.mergeParams({
-          filter: {
-            'name.$in': [...results.map((item) => item['name']), 'users', 'roles'],
+        const blackList = await appCollectionBlacklistCollection.model.findAll({
+          where: {
+            applicationName: subApp.name,
           },
         });
+
+        if (blackList.length > 0) {
+          ctx.action.mergeParams({
+            filter: {
+              'name.$notIn': blackList.map((item) => item.get('collectionName')),
+            },
+          });
+        }
       }
       await next();
+    });
+
+    // new subApp sync plugins from mainApp
+    subApp.on('beforeInstall', async () => {
+      const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
+      const mainAppPluginsCollection = mainApp.db.getCollection('applicationPlugins');
+
+      // delete old collection
+      await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
+
+      await subApp.db.sequelize.query(`
+        INSERT INTO ${subAppPluginsCollection.quotedTableName()}
+        SELECT *
+        FROM ${mainAppPluginsCollection.quotedTableName()}
+        WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
+      `);
+
+      const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
+        subAppPluginsCollection.model.tableName
+      }"', 'id')`;
+
+      const sequenceName = (await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' })) as any;
+      await subApp.db.sequelize.query(`
+        SELECT setval('${
+          sequenceName[0]['pg_get_serial_sequence']
+        }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
+      `);
+
+      console.log(`sync plugins from ${mainApp.name} app to sub app ${subApp.name}`);
     });
   }
 }
@@ -87,7 +119,22 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       throw new Error('multi-app-share-collection plugin only support postgres');
     }
 
-    const traverseSubApps = async (callback: (subApp: Application) => void) => {
+    const traverseSubApps = async (
+      callback: (subApp: Application) => void,
+      options?: {
+        loadFromDatabase: boolean;
+      },
+    ) => {
+      if (lodash.get(options, 'loadFromDatabase')) {
+        for (const application of await this.app.db.getCollection('applications').repository.find()) {
+          const appName = application.get('name');
+          const subApp = await this.app.appManager.getApplication(appName);
+          await callback(subApp);
+        }
+
+        return;
+      }
+
       const subApps = [...this.app.appManager.applications.values()];
 
       for (const subApp of subApps) {
@@ -95,7 +142,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       }
     };
 
-    this.app.on('beforeSubAppLoad', async ({ subApp }: { subApp: Application }) => {
+    this.app.on('afterSubAppAdded', (subApp) => {
       subApp.plugin(SubAppPlugin, { name: 'sub-app', mainApp: this.app });
     });
 
@@ -151,17 +198,27 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
 
     this.app.on('afterEnablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.enable(pluginName);
-      });
+      await traverseSubApps(
+        async (subApp) => {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.pm.enable(pluginName);
+        },
+        {
+          loadFromDatabase: true,
+        },
+      );
     });
 
     this.app.on('afterDisablePlugin', async (pluginName) => {
-      await traverseSubApps(async (subApp) => {
-        if (subAppFilteredPlugins.includes(pluginName)) return;
-        await subApp.pm.disable(pluginName);
-      });
+      await traverseSubApps(
+        async (subApp) => {
+          if (subAppFilteredPlugins.includes(pluginName)) return;
+          await subApp.pm.disable(pluginName);
+        },
+        {
+          loadFromDatabase: true,
+        },
+      );
     });
 
     this.app.db.on('field.afterRemove', (removedField) => {
@@ -194,38 +251,24 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       return;
     }
 
-    // 应用加载完之后，需要将子应用全部载入到内存中
-    this.app.on('afterLoad', async () => {
-      const subApplications = await this.db.getRepository('applications').find();
-      for (const subApplication of subApplications) {
-        await this.app.appManager.getApplication(subApplication.name);
-      }
+    await this.db.import({
+      directory: resolve(__dirname, 'collections'),
     });
 
-    this.app.on('beforeSubAppInstall', async ({ subApp }) => {
-      const subAppPluginsCollection = subApp.db.getCollection('applicationPlugins');
-      const mainAppPluginsCollection = this.app.db.getCollection('applicationPlugins');
+    // this.db.addMigrations({
+    //   namespace: 'multi-app-share-collection',
+    //   directory: resolve(__dirname, './migrations'),
+    // });
 
-      // delete old collection
-      await subApp.db.sequelize.query(`TRUNCATE ${subAppPluginsCollection.quotedTableName()}`);
-
-      await subApp.db.sequelize.query(`
-      INSERT INTO ${subAppPluginsCollection.quotedTableName()}
-      SELECT *
-      FROM ${mainAppPluginsCollection.quotedTableName()}
-      WHERE "name" not in ('multi-app-manager', 'multi-app-share-collection');
-    `);
-
-      const sequenceNameSql = `SELECT pg_get_serial_sequence('"${subAppPluginsCollection.collectionSchema()}"."${
-        subAppPluginsCollection.model.tableName
-      }"', 'id')`;
-
-      const sequenceName = await subApp.db.sequelize.query(sequenceNameSql, { type: 'SELECT' });
-      await subApp.db.sequelize.query(`
-       SELECT setval('${
-         sequenceName[0].pg_get_serial_sequence
-       }', (SELECT max("id") FROM ${subAppPluginsCollection.quotedTableName()}));
-      `);
+    this.app.resourcer.registerActionHandlers({
+      'applications:shareCollections': async (ctx, next) => {
+        const { filterByTk, values } = ctx.action.params;
+        ctx.body = {
+          filterByTk,
+          values,
+        };
+        await next();
+      },
     });
 
     // 子应用启动参数
@@ -274,15 +317,9 @@ export class MultiAppShareCollectionPlugin extends Plugin {
     });
   }
 
-  async install(options?: InstallOptions) {}
-
-  async afterEnable() {}
-
-  async afterDisable() {
-    // test
+  requiredPlugins(): any[] {
+    return ['multi-app-manager'];
   }
-
-  async remove() {}
 }
 
 export default MultiAppShareCollectionPlugin;

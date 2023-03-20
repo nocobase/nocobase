@@ -24,8 +24,7 @@ const useGroupField = (props) => {
 
 const InternalKanbanBlockProvider = (props) => {
   const field = useField<any>();
-  const fieldSchema = useFieldSchema();
-  useFixedSchema();
+  const fixedBlock = useFixedSchema();
   const { resource, service } = useBlockRequestContext();
   const groupField = useGroupField(props);
   if (!groupField) {
@@ -45,7 +44,7 @@ const InternalKanbanBlockProvider = (props) => {
         service,
         resource,
         groupField,
-        fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
+        fixedBlock,
       }}
     >
       {props.children}

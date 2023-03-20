@@ -76,7 +76,9 @@ export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface } = useCollectionManager();
   return currentFields
-    .filter((field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey)
+    .filter(
+      (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
+    )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -84,9 +86,7 @@ export const useTableColumnInitializerFields = () => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {
-          mode: 'links',
-        },
+        'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -115,7 +115,9 @@ export const useAssociatedTableColumnInitializerFields = () => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
         // ?.filter((subField) => subField?.interface && !['o2o', 'oho', 'obo', 'o2m', 'm2o', 'subTable', 'linkTo'].includes(subField?.interface))
-        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.filter(
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField?.treeChildren,
+        )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const schema = {
@@ -200,7 +202,7 @@ export const useFormItemInitializerFields = (options?: any) => {
   const { snapshot } = useActionContext();
 
   return currentFields
-    ?.filter((field) => field?.interface && !field?.isForeignKey)
+    ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
@@ -210,9 +212,7 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
-        'x-component-props': {
-          mode: 'links',
-        },
+        'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
@@ -250,7 +250,9 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
-        ?.filter((subField) => subField?.interface && !['subTable'].includes(subField?.interface))
+        ?.filter(
+          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
+        )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
           const schema = {
@@ -1006,6 +1008,9 @@ export const createCalendarBlockSchema = (options) => {
                     'x-component': 'Tabs',
                     'x-component-props': {},
                     'x-initializer': 'TabPaneInitializers',
+                    'x-initializer-props': {
+                      gridInitializer: 'RecordBlockInitializers',
+                    },
                     properties: {
                       tab1: {
                         type: 'void',

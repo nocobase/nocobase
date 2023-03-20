@@ -28,8 +28,12 @@ export const useCollection = () => {
     ...collection,
     resource,
     getField(name: SchemaKey): CollectionFieldOptions {
-      const fields = totalFields;
+      const fields = totalFields as any[];
       return fields?.find((field) => field.name === name);
+    },
+    getTreeParentField() {
+      const fields = totalFields;
+      return fields?.find((field) => field.treeParent);
     },
     fields: totalFields,
     getPrimaryKey: () => {

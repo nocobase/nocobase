@@ -65,6 +65,7 @@ import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import DatabaseUtils from './database-utils';
+import { registerBuiltInListeners } from './listeners';
 import QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
@@ -363,6 +364,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         options.schema = this.options.schema;
       }
     });
+
+    registerBuiltInListeners(this);
   }
 
   addMigration(item: MigrationItem) {

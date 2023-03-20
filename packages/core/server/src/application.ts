@@ -409,7 +409,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
-    // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
     }

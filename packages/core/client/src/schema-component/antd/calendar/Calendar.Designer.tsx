@@ -1,7 +1,7 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
+import { useCompile, useDesignable, useFixedBlockDesignerSetting } from '../..';
 import { useCalendarBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
@@ -21,6 +21,8 @@ export const CalendarDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -60,6 +62,7 @@ export const CalendarDesigner = () => {
           dn.refresh();
         }}
       />
+      {fixedBlockDesignerSetting}
       <SchemaSettings.CascaderItem
         title={t('Start date field')}
         value={fieldNames.start}
