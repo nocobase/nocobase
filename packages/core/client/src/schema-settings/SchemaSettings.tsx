@@ -489,12 +489,12 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
         <SchemaSettings.SwitchItem
           key={block.uid}
           title={title}
-          checked={targets.some((target) => target.name === block.uid)}
+          checked={targets.some((target) => target.uid === block.uid)}
           onChange={(checked) => {
             if (checked) {
-              targets.push({ name: block.uid });
+              targets.push({ uid: block.uid });
             } else {
-              targets = targets.filter((target) => target.name !== block.uid);
+              targets = targets.filter((target) => target.uid !== block.uid);
             }
 
             updateFilterTargets(fieldSchema, targets);
@@ -512,7 +512,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
       );
     }
 
-    const target = targets.find((target) => target.name === block.uid);
+    const target = targets.find((target) => target.uid === block.uid);
     // 与筛选区块的数据表具有关系的表
     return (
       <SchemaSettings.SelectItem
@@ -535,10 +535,10 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
         ]}
         onChange={(value) => {
           if (value === '') {
-            targets = targets.filter((target) => target.name !== block.uid);
+            targets = targets.filter((target) => target.uid !== block.uid);
           } else {
-            targets = targets.filter((target) => target.name !== block.uid);
-            targets.push({ name: block.uid, field: value });
+            targets = targets.filter((target) => target.uid !== block.uid);
+            targets.push({ uid: block.uid, field: value });
           }
           updateFilterTargets(fieldSchema, targets);
           dn.emit('patch', {

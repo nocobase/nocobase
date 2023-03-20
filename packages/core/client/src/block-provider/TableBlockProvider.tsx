@@ -198,7 +198,7 @@ export const useTableBlockProps = () => {
       const value = [record[ctx.rowKey]];
 
       getDataBlocks().forEach((block) => {
-        const target = targets.find((target) => target.name === block.uid);
+        const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
         const param = block.service.params?.[0] || {};
