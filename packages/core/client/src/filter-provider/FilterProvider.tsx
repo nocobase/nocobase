@@ -78,7 +78,7 @@ export const FilterBlockRecord = ({
 
   useEffect(() => {
     return () => {
-      removeDataBlock(field.props.name as string);
+      removeDataBlock(fieldSchema['x-uid']);
     };
   }, []);
 
@@ -113,8 +113,8 @@ export const useFilterBlock = () => {
     setDataBlocks((prev) => [...prev, block]);
   };
   const getDataBlocks = () => dataBlocks;
-  const removeDataBlock = (name: string) => {
-    setDataBlocks((prev) => prev.filter((item) => item.uid !== name));
+  const removeDataBlock = (uid: string) => {
+    setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
   };
 
   return { recordDataBlocks, getDataBlocks, removeDataBlock };
