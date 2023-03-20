@@ -561,7 +561,11 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
       {Content.length ? (
         Content
       ) : (
-        <Empty style={{ width: 160 }} description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+        <Empty
+          style={{ width: 160, padding: '0 1em' }}
+          description={emptyDescription}
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
       )}
     </SchemaSettings.SubMenu>
   );
