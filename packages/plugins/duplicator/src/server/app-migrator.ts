@@ -11,6 +11,7 @@ import { CollectionGroupManager } from './collection-group-manager';
 export type AppMigratorOptions = {
   workDir?: string;
 };
+
 abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
   public app: Application;
@@ -53,8 +54,11 @@ abstract class AppMigrator extends EventEmitter {
   }
 
   async getCustomCollections() {
-    const collections = await this.app.db.getCollection('collections').repository.find();
-    return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.get('name'));
+    const collections = await this.app.db.getCollection('collections').repository.find({
+      appends: ['fields', 'category'],
+    });
+
+    return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.toJSON());
   }
 
   async rmDir(dir: string) {

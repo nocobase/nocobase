@@ -23,17 +23,6 @@ export default async function dumpableCollections(ctx, next) {
     }
   }
 
-  dumpableCollections.userCollections = dumpableCollections.userCollections.map((userCollection) => {
-    const collection = app.db.getCollection(userCollection.name);
-
-    return {
-      name: userCollection.name,
-      title: userCollection.title,
-      inherits: collection.options.inherits,
-      fields: [...collection.fields.values()].map((f) => f.options),
-    };
-  });
-
   ctx.body = dumpableCollections;
 
   await next();
