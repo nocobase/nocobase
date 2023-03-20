@@ -192,7 +192,8 @@ export const useTableBlockProps = () => {
     onClickRow(record, setSelectedRow, selectedRow) {
       const { targets, uid } = findFilterTargets(fieldSchema);
 
-      if (!targets.length) return;
+      // 如果是之前创建的区块是没有 x-filter-targets 属性的，所以这里需要判断一下避免报错
+      if (!targets || !targets.length) return;
 
       const value = [record[ctx.rowKey]];
 
