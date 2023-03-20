@@ -83,8 +83,10 @@ export class Dumper extends AppMigrator {
 
     await this.dumpMeta({
       requiredGroups: mapGroupToMetaJson(requiredGroups),
-      selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
-      selectedUserCollections: selectedUserCollections,
+      optionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
+      userCollections: (
+        await this.getCustomCollections()
+      ).filter((collection) => selectedUserCollections.includes(collection.name)),
     });
 
     await this.dumpDb();
@@ -132,19 +134,19 @@ export class Dumper extends AppMigrator {
       }
 
       // get user defined views in postgres
-      const views = await db.sequelize.query(
-        `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
-         FROM information_schema.views
-         WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-         ORDER BY table_schema, table_name`,
-        {
-          type: 'SELECT',
-        },
-      );
-
-      for (const v of views) {
-        sqlContent.push(`CREATE OR REPLACE VIEW ${v['table_name']} AS ${v['def']}`);
-      }
+      // const views = await db.sequelize.query(
+      //   `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
+      //    FROM information_schema.views
+      //    WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+      //    ORDER BY table_schema, table_name`,
+      //   {
+      //     type: 'SELECT',
+      //   },
+      // );
+      //
+      // for (const v of views) {
+      //   sqlContent.push(`CREATE OR REPLACE VIEW ${v['table_name']} AS ${v['def']}`);
+      // }
     }
 
     if (sqlContent.length > 0) {
@@ -159,7 +161,7 @@ export class Dumper extends AppMigrator {
     await fsPromises.writeFile(
       metaPath,
       JSON.stringify({
-        version: await this.app.version.get(),
+        version: this.app.getVersion(),
         dialect: this.app.db.sequelize.getDialect(),
         ...additionalMeta,
       }),

@@ -142,9 +142,9 @@ export class Restorer extends AppMigrator {
     // reload app
     await this.app.reload();
 
-    const { requiredGroups, selectedOptionalGroups } = await this.parseBackupFile();
+    const { requiredGroups, optionalGroups } = await this.parseBackupFile();
 
-    const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
+    const delayGroups = [...requiredGroups, ...optionalGroups].filter((group) => group.delay);
     const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
 
     // import required plugins collections
@@ -166,11 +166,12 @@ export class Restorer extends AppMigrator {
     });
 
     const userCollections = options.selectedUserCollections || [];
+
     const throughCollections = this.findThroughCollections(userCollections);
 
     const customCollections = [
       ...CollectionGroupManager.getGroupsCollections(
-        selectedOptionalGroups.filter((group) => {
+        optionalGroups.filter((group) => {
           return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
             const [namespace, functionKey] = selectedOptionalGroupName.split('.');
             return group.function === functionKey && group.namespace === namespace;

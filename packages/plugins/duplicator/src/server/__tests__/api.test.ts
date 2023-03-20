@@ -58,6 +58,7 @@ describe('duplicator api', () => {
 
     expect(data['optionalGroups']).toBeTruthy();
     expect(data['userCollections']).toBeTruthy();
+    console.log(JSON.stringify(data['userCollections'], null, 2));
   });
 
   it('should request dump api', async () => {
@@ -75,7 +76,7 @@ describe('duplicator api', () => {
       .post('/duplicator:uploadFile')
       .attach('file', path.resolve(__dirname, './fixtures/dump.nbdump.fixture'));
 
-    console.log(packageInfoResponse.body);
+    console.log(JSON.stringify(packageInfoResponse.body, null, 2));
     expect(packageInfoResponse.status).toBe(200);
     const data = packageInfoResponse.body.data;
 

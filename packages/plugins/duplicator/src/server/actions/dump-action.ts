@@ -5,8 +5,8 @@ import { getApp } from './get-app';
 export default async function dumpAction(ctx, next) {
   const data = <
     {
-      selectedOptionalGroupNames: string[];
-      selectedUserCollections: string[];
+      groups: string[];
+      collections: string[];
       app?: string;
     }
   >ctx.request.body;
@@ -15,7 +15,10 @@ export default async function dumpAction(ctx, next) {
 
   const dumper = new Dumper(app);
 
-  const { filePath, dirname } = await dumper.dump(data);
+  const { filePath, dirname } = await dumper.dump({
+    selectedOptionalGroupNames: data.groups,
+    selectedUserCollections: data.collections,
+  });
 
   ctx.attachment(filePath);
 

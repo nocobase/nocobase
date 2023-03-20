@@ -4,7 +4,7 @@ import { Restorer } from '../restorer';
 import { getApp } from './get-app';
 
 export async function restoreAction(ctx, next) {
-  const { restoreKey, selectedOptionalGroups = [], selectedUserCollections = [] } = ctx.request.body;
+  const { restoreKey, groups = [], collections = [] } = ctx.request.body;
   const appName = ctx.request.body.app;
 
   const tmpDir = os.tmpdir();
@@ -17,8 +17,8 @@ export async function restoreAction(ctx, next) {
   });
 
   await restorer.restore({
-    selectedOptionalGroupNames: selectedOptionalGroups,
-    selectedUserCollections,
+    selectedOptionalGroupNames: groups,
+    selectedUserCollections: collections,
   });
 
   await next();

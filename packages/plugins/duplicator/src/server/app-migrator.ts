@@ -58,7 +58,32 @@ abstract class AppMigrator extends EventEmitter {
       appends: ['fields', 'category'],
     });
 
-    return collections.filter((collection) => !collection.get('isThrough')).map((collection) => collection.toJSON());
+    return collections
+      .filter((collection) => !collection.get('isThrough'))
+      .map((collection) => {
+        return {
+          name: collection.get('name'),
+          title: collection.get('title'),
+          inherits: collection.get('inherits'),
+          category: collection.get('category').map((category) => {
+            return {
+              name: category.get('name'),
+              color: category.get('color'),
+              order: category.get('order'),
+            };
+          }),
+          fields: collection.get('fields').map((field) => {
+            return {
+              name: field.get('name'),
+              hidden: field.get('hidden'),
+              title: field.get('title'),
+              type: field.get('type'),
+              interface: field.get('interface'),
+              through: field.get('through'),
+            };
+          }),
+        };
+      });
   }
 
   async rmDir(dir: string) {
