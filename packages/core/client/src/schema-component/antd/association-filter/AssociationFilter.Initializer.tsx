@@ -1,14 +1,12 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 
 export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();
   const associatedFields = useAssociatedFields();
-  const optionalList = useOptionalFieldList();
   const useProps = '{{useAssociationFilterProps}}';
   const children: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',
@@ -24,27 +22,6 @@ export const AssociationFilterInitializer = () => {
       'x-component-props': {
         fieldNames: {
           label: field.targetKey || 'id',
-        },
-        useProps,
-      },
-      properties: {},
-    },
-  }));
-  const optionalChildren: SchemaInitializerItemOptions[] = optionalList.map((field) => ({
-    type: 'item',
-    key: field.key,
-    title: field.uiSchema.title,
-    component: 'AssociationFilterDesignerDisplayField',
-    schema: {
-      name: field.name,
-      title: field.uiSchema.title,
-      interface: field.interface,
-      type: 'void',
-      'x-designer': 'AssociationFilter.Item.Designer',
-      'x-component': 'AssociationFilter.Item',
-      'x-component-props': {
-        fieldNames: {
-          label: field.name,
         },
         useProps,
       },

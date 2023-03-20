@@ -17,7 +17,7 @@ export const AssociationFilter = (props) => {
   const Designer = useDesigner();
   const filedSchema = useFieldSchema();
 
-  const { exists, render } = useSchemaInitializer(filedSchema['x-initializer']);
+  const { render } = useSchemaInitializer(filedSchema['x-initializer']);
 
   return (
     <DndContext>

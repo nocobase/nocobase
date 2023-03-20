@@ -4,6 +4,7 @@ import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useState } from 'react';
+import { useAssociationFilterProps } from '../../../block-provider/hooks';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -13,11 +14,8 @@ const { Panel } = Collapse;
 export const AssociationFilterItem = (props) => {
   const collectionField = AssociationFilter.useAssociationField();
 
-  if (!collectionField) {
-    return null;
-  }
-
-  const { useProps } = props;
+  // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
+  const { useProps = useAssociationFilterProps } = props;
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
@@ -45,6 +43,10 @@ export const AssociationFilterItem = (props) => {
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+
+  if (!collectionField) {
+    return null;
+  }
 
   const onExpand = (expandedKeysValue: React.Key[]) => {
     setExpandedKeys(expandedKeysValue);
