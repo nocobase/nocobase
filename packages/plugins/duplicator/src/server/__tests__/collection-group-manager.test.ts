@@ -20,14 +20,11 @@ describe('collection group manager', () => {
   it('should list collection groups from db collections', async () => {
     const collectionGroups = CollectionGroupManager.getGroups(app);
 
-    expect(collectionGroups.map((i) => i.function)).toMatchObject([
-      'server',
-      'core',
-    ]);
+    expect(collectionGroups.map((i) => i.function)).toMatchObject(['server', 'core']);
 
     expect(collectionGroups.find((i) => i.function === 'collections')).toMatchObject({
       namespace: 'collection-manager',
-      function: 'collections',
+      function: 'core',
       collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'],
       dumpable: 'required',
     });

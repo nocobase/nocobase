@@ -255,6 +255,12 @@ export class MultiAppShareCollectionPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    this.db.extendCollection({
+      name: 'appCollectionBlacklist',
+      namespace: 'multi-app-share-collection.blacklist',
+      duplicator: 'required',
+    });
+
     // this.db.addMigrations({
     //   namespace: 'multi-app-share-collection',
     //   directory: resolve(__dirname, './migrations'),

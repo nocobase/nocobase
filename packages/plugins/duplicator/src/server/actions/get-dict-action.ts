@@ -1,3 +1,4 @@
+import { Collection } from '@nocobase/database';
 import { sortBy } from 'lodash';
 
 export default async function getDictAction(ctx, next) {
@@ -5,7 +6,7 @@ export default async function getDictAction(ctx, next) {
   let collectionNames = await ctx.db.getRepository('collections').find();
   collectionNames = collectionNames.map((item) => item.get('name'));
   const collections: any[] = [];
-  for (const [name, collection] of ctx.db.collections) {
+  for (const [name, collection] of ctx.db.collections as Map<string, Collection>) {
     // const columns: any[] = [];
     // for (const key in collection.model.rawAttributes) {
     //   if (Object.prototype.hasOwnProperty.call(collection.model.rawAttributes, key)) {
@@ -18,13 +19,15 @@ export default async function getDictAction(ctx, next) {
     // }
     const item = {
       name,
+      tableName: collection.model.tableName,
       title: collection.options.title,
       namespace: collection.options.namespace,
       duplicator: collection.options.duplicator,
+      schema: collection.options.schema,
       // columns,
     };
     if (!item.namespace && collectionNames.includes(name)) {
-      item.namespace = 'collection-manager';
+      item.namespace = 'collection-manager.addon';
       if (!item.duplicator) {
         item.duplicator = 'optional';
       }

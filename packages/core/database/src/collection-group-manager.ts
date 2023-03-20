@@ -1,5 +1,5 @@
+import { castArray, isString, uniq } from 'lodash';
 import Database from './database';
-import { isString, castArray } from 'lodash';
 
 export interface CollectionGroup {
   namespace: string;
@@ -76,6 +76,7 @@ export class CollectionGroupManager {
 
       const group = groups.get(groupKey);
       group.collections.push(collection.name);
+      group.collections = uniq(group.collections);
     }
 
     const results = [...groups.values()];
