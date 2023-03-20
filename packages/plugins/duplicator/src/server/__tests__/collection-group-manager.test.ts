@@ -21,10 +21,8 @@ describe('collection group manager', () => {
     const collectionGroups = CollectionGroupManager.getGroups(app);
 
     expect(collectionGroups.map((i) => i.function)).toMatchObject([
-      'migration',
-      'applicationPlugins',
-      'applicationVersion',
-      'collections',
+      'server',
+      'core',
     ]);
 
     expect(collectionGroups.find((i) => i.function === 'collections')).toMatchObject({
