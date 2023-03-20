@@ -30,12 +30,32 @@ describe('duplicator api', () => {
       context: {},
     });
 
+    await app.db.getRepository('collections').create({
+      values: {
+        name: 'child_collection',
+        title: 'child collection',
+        inherits: 'test_collection',
+        fields: [
+          {
+            name: 'child_field',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
     const collectionGroupsResponse = await app.agent().resource('duplicator').dumpableCollections();
     expect(collectionGroupsResponse.status).toBe(200);
 
     const data = collectionGroupsResponse.body;
 
     expect(data['requiredGroups']).toBeTruthy();
+    const requiredGroup = data['requiredGroups'][0];
+    const collections = requiredGroup['collections'];
+    const firstCollection = collections[0];
+    expect(typeof firstCollection).toBe('object');
+
     expect(data['optionalGroups']).toBeTruthy();
     expect(data['userCollections']).toBeTruthy();
   });
