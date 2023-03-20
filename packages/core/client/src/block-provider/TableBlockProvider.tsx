@@ -191,13 +191,19 @@ export const useTableBlockProps = () => {
     },
     onClickRow(record, setSelectedRow, selectedRow) {
       const { targets, uid } = findFilterTargets(fieldSchema);
+      const dataBlocks = getDataBlocks();
 
       // 如果是之前创建的区块是没有 x-filter-targets 属性的，所以这里需要判断一下避免报错
-      if (!targets || !targets.length) return;
+      if (!targets || !targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid))) {
+        // 当用户已经点击过某一行，如果此时再把相连接的区块给删除的话，行的高亮状态就会一直保留。
+        // 这里暂时没有什么比较好的方法，只是在用户再次点击的时候，把高亮状态给清除掉。
+        setSelectedRow((prev) => (prev.length ? [] : prev));
+        return;
+      }
 
       const value = [record[ctx.rowKey]];
 
-      getDataBlocks().forEach((block) => {
+      dataBlocks.forEach((block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
 
