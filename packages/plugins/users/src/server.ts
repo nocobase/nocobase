@@ -1,9 +1,9 @@
-import { resolve } from 'path';
-
 import { Collection, Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
+import parse from 'json-templates';
+import { resolve } from 'path';
 
 import { namespace } from './';
 import * as actions from './actions/users';
@@ -42,16 +42,16 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
         };
       },
-      $isNotCurrentUser(_, ctx) {	
-        return {	
-          [Op.ne]: ctx?.app?.ctx?.state?.currentUser?.id || -1,	
-        };	
-      },	
-      $isVar(val, ctx) {	
-        const obj = parse({ val: `{{${val}}}` })(JSON.parse(JSON.stringify(ctx?.app?.ctx?.state)));	
-        return {	
-          [Op.eq]: obj.val,	
-        };	
+      $isNotCurrentUser(_, ctx) {
+        return {
+          [Op.ne]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
+        };
+      },
+      $isVar(val, ctx) {
+        const obj = parse({ val: `{{${val}}}` })(JSON.parse(JSON.stringify(ctx?.app?.ctx?.state)));
+        return {
+          [Op.eq]: obj.val,
+        };
       },
     });
 
