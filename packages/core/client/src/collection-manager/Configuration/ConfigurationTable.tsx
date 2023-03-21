@@ -14,6 +14,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import { useAPIClient } from '../../api-client';
 
 const useAsyncDataSource = (service: any) => {
   return (field: any, options?: any) => {
@@ -78,6 +79,8 @@ export const ConfigurationTable = () => {
     data: { database },
   } = useCurrentAppInfo();
   const data = useContext(CollectionCategroriesContext);
+  const api = useAPIClient();
+  const resource = api.resource('views');
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
@@ -101,31 +104,44 @@ export const ConfigurationTable = () => {
       value: item.id,
     }));
   };
+
+  const loadDBViews = async () => {
+    return resource.list().then(({ data }) => {
+      return data?.data?.map((item: any) => {
+        return {
+          label: compile(item.viewname),
+          value: item.definition,
+        };
+      });
+    });
+  };
+
   const ctx = useContext(SchemaComponentContext);
   return (
-      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-        <SchemaComponent
-          schema={collectionSchema}
-          components={{
-            AddSubFieldAction,
-            EditSubFieldAction,
-            FieldSummary,
-            CollectionFieldsTable,
-          }}
-          scope={{
-            useDestroySubField,
-            useBulkDestroySubField,
-            useSelectedRowKeys,
-            useAsyncDataSource,
-            loadCollections,
-            loadCategories,
-            useCurrentFields,
-            useNewId,
-            useCancelAction,
-            interfaces,
-            enableInherits: database?.dialect === 'postgres',
-          }}
-        />
-      </SchemaComponentContext.Provider>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+      <SchemaComponent
+        schema={collectionSchema}
+        components={{
+          AddSubFieldAction,
+          EditSubFieldAction,
+          FieldSummary,
+          CollectionFieldsTable,
+        }}
+        scope={{
+          useDestroySubField,
+          useBulkDestroySubField,
+          useSelectedRowKeys,
+          useAsyncDataSource,
+          loadCollections,
+          loadCategories,
+          loadDBViews,
+          useCurrentFields,
+          useNewId,
+          useCancelAction,
+          interfaces,
+          enableInherits: database?.dialect === 'postgres',
+        }}
+      />
+    </SchemaComponentContext.Provider>
   );
 };
