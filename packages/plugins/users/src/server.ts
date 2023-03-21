@@ -42,6 +42,17 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
           [Op.eq]: ctx?.app?.ctx?.state?.currentUser?.id || -1,
         };
       },
+      $isNotCurrentUser(_, ctx) {	
+        return {	
+          [Op.ne]: ctx?.app?.ctx?.state?.currentUser?.id || -1,	
+        };	
+      },	
+      $isVar(val, ctx) {	
+        const obj = parse({ val: `{{${val}}}` })(JSON.parse(JSON.stringify(ctx?.app?.ctx?.state)));	
+        return {	
+          [Op.eq]: obj.val,	
+        };	
+      },
     });
 
     this.db.on('afterDefineCollection', (collection: Collection) => {
