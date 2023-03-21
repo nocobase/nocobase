@@ -113,14 +113,6 @@ export const defaultConfigurableProperties = {
     },
     'x-reactions': ['{{useAsyncDataSource(loadCategories)}}'],
   },
-  dbView: {
-    title: '{{t("DB view")}}',
-    type: 'single',
-    name: 'dbView',
-    'x-decorator': 'FormItem',
-    'x-component': 'Select',
-    'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
-  },
   ...moreOptions,
   moreOptions: {
     title: '{{t("More options")}}',
@@ -144,7 +136,6 @@ export type DefaultConfigurableKeys =
   | 'title'
   | 'inherits'
   | 'category'
-  | 'dbView'
   | 'autoGenId'
   | 'createdBy'
   | 'updatedBy'

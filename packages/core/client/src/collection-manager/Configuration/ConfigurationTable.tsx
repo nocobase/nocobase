@@ -110,7 +110,7 @@ export const ConfigurationTable = () => {
       return data?.data?.map((item: any) => {
         return {
           label: compile(item.viewname),
-          value: item.definition,
+          value: item.viewname,
         };
       });
     });

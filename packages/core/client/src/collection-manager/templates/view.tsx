@@ -9,5 +9,15 @@ export const view: ICollectionTemplate = {
   default: {
     fields: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category','dbView'),
+  configurableProperties: {
+    name: {
+      title: '{{t("Collection name")}}',
+      type: 'single',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
+    },
+    ...getConfigurableProperties('title', 'category'),
+  },
 };
