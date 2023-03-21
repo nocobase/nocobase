@@ -63,6 +63,7 @@ export const DuplicatorDump = () => {
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
         rightColumns: columns1,
+        showSearch: false,
       },
       {
         title: '选择自定义数据表',
@@ -71,6 +72,7 @@ export const DuplicatorDump = () => {
         data: userCollections,
         leftColumns: columns2,
         rightColumns: columns2,
+        showSearch: true,
         handler: async () => {
           const response = await api.request({
             url: 'duplicator:dump',
@@ -113,6 +115,7 @@ export const DuplicatorDump = () => {
         dataSource={steps[currentStep].data}
         leftColumns={steps[currentStep].leftColumns}
         rightColumns={steps[currentStep].rightColumns}
+        showSearch={steps[currentStep].showSearch}
         targetKeys={targetKeys}
         onChange={handleTransferChange}
       />

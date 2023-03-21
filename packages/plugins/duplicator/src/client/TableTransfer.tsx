@@ -16,6 +16,7 @@ interface TableTransferProps<T> extends TransferProps<TransferItem> {
   scroll?: { scrollToFirstRowOnChange?: boolean; x?: string | number | true; y?: string | number };
   pagination?: any;
   filterOptionByCategory?: (category: string[], option: any) => boolean;
+  showSearch?: boolean;
 }
 
 const hideHeader = css`
@@ -37,6 +38,7 @@ export function TableTransfer<T>({
   rightColumns,
   scroll,
   pagination,
+  showSearch,
   filterOptionByCategory = defaultFilterOptionByCategory,
   ...restProps
 }: TableTransferProps<T>) {
@@ -83,6 +85,7 @@ export function TableTransfer<T>({
             rowSelection={rowSelection}
             filterOption={filterOption}
             filterOptionByCategory={filterOptionByCategory}
+            showSearch={showSearch}
           />
         );
       }}
@@ -102,6 +105,7 @@ function Content({
   rowSelection,
   filterOption,
   filterOptionByCategory,
+  showSearch,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -139,25 +143,27 @@ function Content({
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
         <strong style={{ flexShrink: 0, marginRight: 8 }}>{title}</strong>
-        <Input.Group compact style={{ width: 'fit-content', minWidth: 360 }}>
-          <Select
-            value={selectedCategories}
-            onChange={handleSelectChange}
-            mode={'multiple'}
-            style={{ minWidth: 126 }}
-            size={'middle'}
-            placeholder={t('All categories')}
-            options={categories.map((category) => ({ label: category, value: category }))}
-            allowClear
-          />
-          <Input
-            value={inputValue}
-            onChange={handleInputChange}
-            style={{ width: 234 }}
-            placeholder={t('Enter name or title...')}
-            allowClear
-          />
-        </Input.Group>
+        {showSearch ? (
+          <Input.Group compact style={{ width: 'fit-content', minWidth: 360 }}>
+            <Select
+              value={selectedCategories}
+              onChange={handleSelectChange}
+              mode={'multiple'}
+              style={{ minWidth: 126 }}
+              size={'middle'}
+              placeholder={t('All categories')}
+              options={categories.map((category) => ({ label: category, value: category }))}
+              allowClear
+            />
+            <Input
+              value={inputValue}
+              onChange={handleInputChange}
+              style={{ width: 234 }}
+              placeholder={t('Enter name or title...')}
+              allowClear
+            />
+          </Input.Group>
+        ) : null}
       </div>
       <Table
         bordered
