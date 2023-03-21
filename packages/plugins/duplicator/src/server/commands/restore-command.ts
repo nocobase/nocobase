@@ -70,16 +70,12 @@ async function restoreActionCommand(app: Application, restoreFilePath: string) {
   });
   const restoreMeta = await restorer.parseBackupFile();
 
-  const { requiredGroups, selectedOptionalGroups, selectedUserCollections } = restoreMeta;
+  const { requiredGroups, optionalGroups, userCollections } = restoreMeta;
 
   const questions = InquireQuestionBuilder.buildInquirerQuestions({
     requiredGroups,
-    optionalGroups: selectedOptionalGroups,
-    optionalCollections: await Promise.all(
-      selectedUserCollections.map(async (name) => {
-        return { name, title: await restorer.getImportCollectionTitle(name) };
-      }),
-    ),
+    optionalGroups: optionalGroups,
+    optionalCollections: userCollections,
     direction: 'restore',
   });
 
