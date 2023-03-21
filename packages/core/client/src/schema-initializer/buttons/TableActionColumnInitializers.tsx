@@ -51,7 +51,8 @@ export const TableActionColumnInitializers = (props: any) => {
   const { refresh } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
-  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props']||{};
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -99,7 +100,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
-            {
+            modifyFlag && {
               type: 'item',
               title: t('Delete'),
               component: 'DestroyActionInitializer',

@@ -168,6 +168,7 @@ export const RecordBlockInitializers = (props: any) => {
   const { getChildrenCollections } = useCollectionManager();
   const childrenCollections = getChildrenCollections(collection.name);
   const hasChildCollection = childrenCollections?.length > 0;
+  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -202,7 +203,7 @@ export const RecordBlockInitializers = (props: any) => {
                   component: 'RecordReadPrettyFormBlockInitializer',
                   actionInitializers,
                 },
-                {
+                modifyFlag && {
                   key: 'form',
                   type: 'item',
                   title: '{{t("Form")}}',
