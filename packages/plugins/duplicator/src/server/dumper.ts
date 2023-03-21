@@ -1,4 +1,4 @@
-import { CollectionGroup } from '@nocobase/database';
+import { CollectionGroup, CollectionGroupWithCollectionTitle } from '@nocobase/database';
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
@@ -19,8 +19,8 @@ export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
   async dumpableCollections(): Promise<{
-    requiredGroups: CollectionGroup[];
-    optionalGroups: CollectionGroup[];
+    requiredGroups: CollectionGroupWithCollectionTitle[];
+    optionalGroups: CollectionGroupWithCollectionTitle[];
     userCollections: Array<{
       name: string;
       title: string;

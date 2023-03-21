@@ -29,4 +29,36 @@ describe('collection group manager', () => {
       dumpable: 'required',
     });
   });
+
+  it('should handle dumpable with attribute', async () => {
+    app.db.collection({
+      namespace: 'test.test',
+      name: 'test',
+      duplicator: {
+        dumpable: 'required',
+        with: 'test1',
+      },
+    });
+
+    app.db.collection({
+      namespace: 'test.test',
+      name: 'test1',
+      duplicator: {
+        dumpable: 'required',
+        with: 'test2',
+      },
+    });
+
+    app.db.collection({
+      name: 'test2',
+      title: 'test2Title',
+    });
+
+    const collectionGroups = CollectionGroupManager.getGroups(app);
+    const testGroup = collectionGroups.find((i) => i.function === 'test');
+
+    const test2Collection = testGroup.collections.find((i) => i.name === 'test2');
+
+    expect(test2Collection).toBeTruthy();
+  });
 });

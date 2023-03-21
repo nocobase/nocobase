@@ -1,8 +1,7 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import { Database, Model } from '@nocobase/database';
+import { Database } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
-import lodash from 'lodash';
 import fsPromises from 'fs/promises';
 import { Dumper } from '../dumper';
 import { readLines } from '../utils';
@@ -98,6 +97,7 @@ describe('dump', () => {
 
     const collectionMeta = JSON.parse(collectionMetaFile);
     expect(collectionMeta.count).toEqual(2);
+
     expect(collectionMeta.columns).toEqual(
       Object.keys(db.getCollection('users').model.rawAttributes).map(
         (fieldName) => db.getCollection('users').model.rawAttributes[fieldName].field,

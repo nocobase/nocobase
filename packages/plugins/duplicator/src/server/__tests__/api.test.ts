@@ -55,16 +55,18 @@ describe('duplicator api', () => {
     const collections = requiredGroup['collections'];
     const firstCollection = collections[0];
     expect(typeof firstCollection).toBe('object');
+    expect(firstCollection['name']).toBeTruthy();
+    expect(firstCollection['title']).toBeTruthy();
 
     expect(data['optionalGroups']).toBeTruthy();
     expect(data['userCollections']).toBeTruthy();
-    console.log(JSON.stringify(data['userCollections'], null, 2));
+    console.log(JSON.stringify(data, null, 2));
   });
 
   it('should request dump api', async () => {
     const dumpResponse = await app.agent().post('/duplicator:dump').send({
-      selectedCollectionGroups: [],
-      selectedUserCollections: [],
+      groups: [],
+      collections: [],
     });
 
     expect(dumpResponse.status).toBe(200);

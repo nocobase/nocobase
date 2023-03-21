@@ -10,16 +10,22 @@ export interface CollectionGroup {
   delayRestore?: any;
 }
 
+export interface CollectionGroupWithCollectionTitle extends Omit<CollectionGroup, 'collections'> {
+  collections: Array<{
+    name: string;
+    title: string;
+  }>;
+}
+
 export class CollectionGroupManager {
   constructor(public db: Database) {}
 
-  getGroups() {
-    const collections = [...this.db.collections.values()];
+  getGroups(): Array<CollectionGroupWithCollectionTitle> {
     const groups = new Map<string, CollectionGroup>();
 
     const skipped = [];
 
-    for (const collection of collections) {
+    for (const [_, collection] of this.db.collections) {
       const groupKey = collection.options.namespace;
 
       if (!groupKey) {
@@ -37,21 +43,22 @@ export class CollectionGroupManager {
         continue;
       }
 
+      const dumpable = (() => {
+        if (!collection.options.duplicator) {
+          return undefined;
+        }
+
+        if (isString(collection.options.duplicator)) {
+          return {
+            dumpable: collection.options.duplicator,
+          };
+        }
+
+        return collection.options.duplicator;
+      })();
+
+      // if group not exists, create it
       if (!groups.has(groupKey)) {
-        const dumpable = (() => {
-          if (!collection.options.duplicator) {
-            return undefined;
-          }
-
-          if (isString(collection.options.duplicator)) {
-            return {
-              dumpable: collection.options.duplicator,
-            };
-          }
-
-          return collection.options.duplicator;
-        })();
-
         if (!dumpable) {
           skipped.push({
             name: collection.name,
@@ -61,7 +68,7 @@ export class CollectionGroupManager {
         }
 
         const group: CollectionGroup = {
-          namespace,
+          namespace: groupKey,
           function: groupFunc,
           collections: dumpable.with ? castArray(dumpable.with) : [],
           dumpable: dumpable.dumpable,
@@ -76,6 +83,11 @@ export class CollectionGroupManager {
 
       const group = groups.get(groupKey);
       group.collections.push(collection.name);
+
+      if (dumpable.with) {
+        group.collections.push(...castArray(dumpable.with));
+      }
+
       group.collections = uniq(group.collections);
     }
 
@@ -90,6 +102,17 @@ export class CollectionGroupManager {
       this.db.logger.warn(`collection ${skipItem.name} is not in any collection group, reason: ${skipItem.reason}.`);
     }
 
-    return results;
+    return results.map((group) => {
+      return {
+        ...group,
+        collections: group.collections.map((name) => {
+          const collection = this.db.getCollection(name);
+          return {
+            name,
+            title: collection.options.title || name,
+          };
+        }),
+      };
+    });
   }
 }
