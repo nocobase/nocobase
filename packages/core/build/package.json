@@ -41,6 +41,7 @@
     "chalk": "2.4.2",
     "chokidar": "^3.0.2",
     "es5-imcompatible-versions": "^0.1.37",
+    "execa": "^5.1.1",
     "glob": "^7.1.4",
     "gulp-if": "2.0.2",
     "gulp-less": "^4.0.1",
