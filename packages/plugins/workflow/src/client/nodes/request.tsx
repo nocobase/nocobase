@@ -1,5 +1,5 @@
 import { ArrayItems } from '@formily/antd';
-import { css } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
@@ -36,18 +36,11 @@ export default {
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
-        className: css`
-          .ant-formily-item-control-content-component{
-            .ant-input-affix-wrapper,
-            .ant-input{
-              width: 100%;
-            }
-          }
-        `
       },
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
+        className: 'full-width'
       },
     },
     headers: {
@@ -153,10 +146,10 @@ export default {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: css`
+        className: cx('full-width', css`
           font-size: 90%;
           font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-        `
+        `)
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
