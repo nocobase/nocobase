@@ -50,6 +50,7 @@ export const ActionDesigner = (props) => {
   const actionType = fieldSchema['x-action'] ?? '';
   const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
+  const isSupportEditButton = fieldSchema['x-action'] !== 'expandAll';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -85,6 +86,7 @@ export const ActionDesigner = (props) => {
                   title: t('Button title'),
                   default: fieldSchema.title,
                   'x-component-props': {},
+                  'x-visible': isSupportEditButton,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 icon: {
@@ -93,6 +95,7 @@ export const ActionDesigner = (props) => {
                   title: t('Button icon'),
                   default: fieldSchema?.['x-component-props']?.icon,
                   'x-component-props': {},
+                  'x-visible': isSupportEditButton,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 type: {
@@ -114,27 +117,25 @@ export const ActionDesigner = (props) => {
             } as ISchema
           }
           onSubmit={({ title, icon, type }) => {
-            if (title) {
-              fieldSchema.title = title;
-              field.title = title;
-              field.componentProps.icon = icon;
-              field.componentProps.danger = type === 'danger';
-              field.componentProps.type = type;
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props'].icon = icon;
-              fieldSchema['x-component-props'].danger = type === 'danger';
-              fieldSchema['x-component-props'].type = type;
-              dn.emit('patch', {
-                schema: {
-                  ['x-uid']: fieldSchema['x-uid'],
-                  title,
-                  'x-component-props': {
-                    ...fieldSchema['x-component-props'],
-                  },
+            fieldSchema.title = title;
+            field.title = title;
+            field.componentProps.icon = icon;
+            field.componentProps.danger = type === 'danger';
+            field.componentProps.type = type;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].icon = icon;
+            fieldSchema['x-component-props'].danger = type === 'danger';
+            fieldSchema['x-component-props'].type = type;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                title,
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
                 },
-              });
-              dn.refresh();
-            }
+              },
+            });
+            dn.refresh();
           }}
         />
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}

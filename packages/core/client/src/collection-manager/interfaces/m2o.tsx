@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties,
+  reverseFieldProperties
 } from './properties';
 import { IField } from './types';
 

@@ -42,7 +42,7 @@ export class APIClient extends APIClientSDK {
         if (redirectTo) {
           return (window.location.href = redirectTo);
         }
-        if (error.response.data.type === 'application/json') {
+        if (error?.response?.data?.type === 'application/json') {
           handleErrorMessage(error);
         } else {
           notification.error({

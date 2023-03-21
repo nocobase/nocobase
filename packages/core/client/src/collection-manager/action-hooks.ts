@@ -1,5 +1,6 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
+import omit from 'lodash/omit';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
@@ -21,7 +22,7 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
     ...options,
     manual: true,
   });
@@ -81,7 +82,7 @@ export const useSortFields = (collectionName: string) => {
         return false;
       }
       const fieldInterface = getInterface(field.interface);
-      if (fieldInterface.sortable) {
+      if (fieldInterface?.sortable) {
         return true;
       }
       return false;
@@ -113,7 +114,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;

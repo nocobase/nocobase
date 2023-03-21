@@ -185,7 +185,7 @@ const RuleTypes = {
                 ? (
                   <Cron
                     value={value}
-                    setValue={onChange}
+                    onChange={onChange}
                     clearButton={false}
                   />
                 )

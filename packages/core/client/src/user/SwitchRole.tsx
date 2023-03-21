@@ -1,3 +1,4 @@
+import { css } from '@emotion/css';
 import { Menu, Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -36,23 +37,31 @@ export const SwitchRole = () => {
   }
   return (
     <Menu.Item key="role" eventKey={'SwitchRole'}>
-      {t('Switch role')}{' '}
-      <Select
-        style={{ minWidth: 100 }}
-        bordered={false}
-        fieldNames={{
-          label: 'title',
-          value: 'name',
-        }}
-        options={roles}
-        value={api.auth.role}
-        onChange={async (roleName) => {
-          api.auth.setRole(roleName);
-          await api.resource('users').setDefaultRole({ values: { roleName } });
-          history.push('/');
-          window.location.reload();
-        }}
-      />
+      <div
+        className={css`
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        `}
+      >
+        {t('Switch role')}{' '}
+        <Select
+          style={{ minWidth: 100 }}
+          bordered={false}
+          fieldNames={{
+            label: 'title',
+            value: 'name',
+          }}
+          options={roles}
+          value={api.auth.role}
+          onChange={async (roleName) => {
+            api.auth.setRole(roleName);
+            await api.resource('users').setDefaultRole({ values: { roleName } });
+            history.push('/');
+            window.location.reload();
+          }}
+        />
+      </div>
     </Menu.Item>
   );
 };

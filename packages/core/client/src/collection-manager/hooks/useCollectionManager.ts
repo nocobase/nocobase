@@ -1,5 +1,6 @@
 import { clone } from '@formily/shared';
 import { CascaderProps } from 'antd';
+import _ from 'lodash';
 import { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
@@ -81,6 +82,9 @@ export const useCollectionManager = () => {
     return collection?.fields || [];
   };
 
+  // 缓存下面已经获取的 options，防止无限循环
+  const cachedOptions = {};
+
   const getCollectionFieldsOptions = (
     collectionName: string,
     type: string | string[] = 'string',
@@ -92,6 +96,11 @@ export const useCollectionManager = () => {
       association?: boolean | string[];
     },
   ) => {
+    // 防止无限循环
+    if (cachedOptions[collectionName]) {
+      return _.cloneDeep(cachedOptions[collectionName]);
+    }
+
     const { association = false } = opts || {};
     if (typeof type === 'string') {
       type = [type];
@@ -110,6 +119,7 @@ export const useCollectionManager = () => {
         const result: CascaderProps<any>['options'][0] = {
           value: field.name,
           label: compile(field?.uiSchema?.title) || field.name,
+          ...field,
         };
         if (association && field.target) {
           result.children = getCollectionFieldsOptions(field.target, type, opts);
@@ -122,6 +132,7 @@ export const useCollectionManager = () => {
       // 过滤 map 产生为 null 的数据
       .filter(Boolean);
 
+    cachedOptions[collectionName] = options;
     return options;
   };
 

@@ -4,8 +4,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -13,6 +14,7 @@ import { useFixedBlockDesignerSetting } from '../page';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
+  const { getCollectionField } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -36,12 +38,33 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const { dragSort } = field.decoratorProps;
+  const collection = useCollection();
+  const { dragSort, resource } = field.decoratorProps;
+  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
-
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
+      {collection?.tree && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          defaultChecked={true}
+          checked={treeChildren ? field.decoratorProps.treeTable !== false : false}
+          onChange={(flag) => {
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+            service.run(params);
+          }}
+        />
+      )}
       {sortable && (
         <SchemaSettings.SwitchItem
           title={t('Enable drag and drop sorting')}
@@ -212,6 +235,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettings.Divider />}
       {supportTemplate && (
         <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />
