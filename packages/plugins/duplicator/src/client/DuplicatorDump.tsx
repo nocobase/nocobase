@@ -64,6 +64,7 @@ export const DuplicatorDump = () => {
         leftColumns: columns1,
         rightColumns: columns1,
         showSearch: false,
+        targetKeys: [],
       },
       {
         title: '选择自定义数据表',
@@ -73,6 +74,7 @@ export const DuplicatorDump = () => {
         leftColumns: columns2,
         rightColumns: columns2,
         showSearch: true,
+        targetKeys: [],
         handler: async () => {
           const response = await api.request({
             url: 'duplicator:dump',
@@ -94,7 +96,9 @@ export const DuplicatorDump = () => {
     [data],
   );
   const handleStepsChange = (current) => {
+    steps[currentStep].targetKeys = targetKeys;
     setCurrentStep(current);
+    setTargetKeys(steps[current].targetKeys);
   };
   const handleTransferChange = (nextTargetKeys) => {
     setTargetKeys(nextTargetKeys);
@@ -102,7 +106,9 @@ export const DuplicatorDump = () => {
 
   useEffect(() => {
     if (requiredGroups.length) {
-      setTargetKeys(requiredGroups.map((group) => group.key));
+      const keys = requiredGroups.map((group) => group.key);
+      setTargetKeys(keys);
+      steps[currentStep].targetKeys = keys;
     }
   }, [requiredGroups]);
 
