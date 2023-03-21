@@ -27,7 +27,7 @@ describe('view collection', function () {
     await app.destroy();
   });
 
-  it('should create view collection by sql', async () => {
+  it('should create view collection by view name', async () => {
     const viewSQL = `CREATE OR REPLACE VIEW test_view AS select 1+1 as result`;
     await db.sequelize.query(viewSQL);
 
@@ -35,6 +35,23 @@ describe('view collection', function () {
       values: {
         name: 'view_collection',
         viewName: 'test_view',
+        fields: [{ type: 'string', name: 'result' }],
+      },
+      context: {},
+    });
+
+    const viewCollection = db.getCollection('view_collection');
+    expect(viewCollection).toBeInstanceOf(ViewCollection);
+
+    const results = await viewCollection.repository.find();
+    expect(results.length).toBe(1);
+  });
+
+  it('should create view collection by user sql', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'view_collection',
+        viewSQL: `select 1+1 as result`,
         fields: [{ type: 'string', name: 'result' }],
       },
       context: {},

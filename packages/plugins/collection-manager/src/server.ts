@@ -19,6 +19,7 @@ import lodash from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
 import viewResourcer from './resourcers/views';
+import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -59,6 +60,8 @@ export class CollectionManagerPlugin extends Plugin {
         model.set('schema', this.schema);
       }
     });
+
+    this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on(
       'collections.afterCreateWithAssociations',
