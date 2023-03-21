@@ -5,9 +5,8 @@ import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { useDesignable } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useActionContext } from '../schema-component';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -91,7 +90,7 @@ export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const record = useRecord();
   const { fieldSchema } = useActionContext();
-  const { addChild } = fieldSchema?.['x-component-props']||{};
+  const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
       ctx.form.query('parent').take((field) => {
