@@ -56,7 +56,7 @@ describe('create view', () => {
       },
     });
     const schema = UserCollection.collectionSchema();
-    const viewName = 'users_with_profiles';
+    const viewName = 'users_with_profile';
 
     const appendSchema = db.inDialect('postgres') ? `"${schema}".` : '';
 
@@ -65,7 +65,8 @@ describe('create view', () => {
     await db.sequelize.query(viewSql);
 
     const UserWithProfileView = db.collection({
-      name: 'users_with_profiles',
+      name: 'view_collection',
+      viewName,
       fields: [
         {
           type: 'string',
@@ -89,5 +90,28 @@ describe('create view', () => {
 
     expect(fooData.get('name')).toBe('foo');
     expect(fooData.get('age')).toBe(18);
+  });
+
+  it('should not sync view collection', async () => {
+    const viewSql = `CREATE OR REPLACE VIEW test_view AS SELECT 1+1 as result`;
+
+    await db.sequelize.query(viewSql);
+    const viewCollection = db.collection({
+      name: 'view_collection',
+      viewName: 'test_view',
+      fields: [
+        {
+          type: 'string',
+          name: 'result',
+        },
+      ],
+    });
+
+    const jestFn = jest.fn();
+
+    db.on('beforeSync', jestFn);
+
+    await viewCollection.sync();
+    expect(jestFn).not.toBeCalled();
   });
 });

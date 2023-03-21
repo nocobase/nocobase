@@ -7,4 +7,14 @@ export class ViewCollection extends Collection {
 
     super(options, context);
   }
+
+  protected sequelizeModelOptions(): any {
+    const modelOptions = super.sequelizeModelOptions();
+    modelOptions.tableName = this.options.viewName;
+    return modelOptions;
+  }
+
+  isView() {
+    return true;
+  }
 }

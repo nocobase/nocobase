@@ -34,6 +34,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
 
   tableName?: string;
   inherits?: string[] | string;
+  viewName?: string;
+
   filterTargetKey?: string;
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
@@ -141,7 +143,7 @@ export class Collection<
     return this.db.options.underscored ? snakeCase(tName) : tName;
   }
 
-  private sequelizeModelOptions() {
+  protected sequelizeModelOptions() {
     const { name } = this.options;
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
@@ -600,5 +602,9 @@ export class Collection<
     }
 
     return undefined;
+  }
+
+  public isView() {
+    return false;
   }
 }
