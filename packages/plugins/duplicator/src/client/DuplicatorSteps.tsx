@@ -4,8 +4,6 @@ import { css } from '@emotion/css';
 
 const content = css`
   margin-top: 16px;
-  border: 1px dashed #e9e9e9;
-  border-radius: 2px;
 `;
 const action = css`
   margin-top: 24px;
