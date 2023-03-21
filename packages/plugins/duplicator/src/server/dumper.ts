@@ -46,12 +46,9 @@ export class Dumper extends AppMigrator {
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 
-    const selectedOptionalGroups = optionalGroups.filter((group) => {
-      return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-        const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-        return group.function === functionKey && group.namespace === namespace;
-      });
-    });
+    const selectedOptionalGroups = optionalGroups.filter((group) =>
+      selectedOptionalGroupNames.some((selectedOptionalGroupName) => selectedOptionalGroupName === group.namespace),
+    );
 
     const dumpedCollections = lodash.uniq(
       [
