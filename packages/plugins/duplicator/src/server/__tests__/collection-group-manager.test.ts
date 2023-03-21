@@ -23,9 +23,15 @@ describe('collection group manager', () => {
     expect(collectionGroups.map((i) => i.function)).toMatchObject(['server', 'core']);
 
     expect(collectionGroups.find((i) => i.function === 'core')).toMatchObject({
-      namespace: 'collection-manager',
+      namespace: 'collection-manager.core',
       function: 'core',
-      collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'],
+      collections: ['collectionCategory', 'collectionCategories', 'collections', 'fields'].map((name) => {
+        const collection = app.db.getCollection(name);
+        return {
+          name: collection.name,
+          title: collection.options.title || collection.name,
+        };
+      }),
       dumpable: 'required',
     });
   });

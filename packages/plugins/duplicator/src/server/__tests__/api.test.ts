@@ -16,6 +16,7 @@ describe('duplicator api', () => {
   });
 
   it('should get collection groups', async () => {
+    if (!app.db.inDialect('postgres')) return;
     await app.db.getRepository('collections').create({
       values: {
         name: 'test_collection',
@@ -97,8 +98,8 @@ describe('duplicator api', () => {
 
     const restoreResponse = await app.agent().post('/duplicator:restore').send({
       restoreKey: data['key'],
-      selectedOptionalGroups: [],
-      selectedUserCollections: [],
+      groups: [],
+      collections: [],
     });
 
     expect(restoreResponse.status).toBe(200);
