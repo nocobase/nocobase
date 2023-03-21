@@ -93,7 +93,7 @@ export const useGanttBlockProps = () => {
     if (!ctx?.service?.loading) {
       const data = formatData(ctx.service.data?.data, ctx.fieldNames);
       const mergeTasks = data.map((v) => {
-        const task = tasks.find((k) => k.id === v.id) || { hideChildren: true };
+        const task = ctx.field.data.find((k) => k.id === v.id) || { hideChildren: true };
         return {
           ...v,
           hideChildren: task?.hideChildren,
