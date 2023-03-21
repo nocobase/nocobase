@@ -294,6 +294,7 @@ export default async function (opts: IOpts) {
       },
       cwd: opts.cwd,
     });
+    console.log(`${chalk.yellow(`Watch plugins directory`)}`);
     watchPluginAndBuild(opts);
   }
   return () => dispose.forEach((e) => e());
