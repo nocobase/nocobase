@@ -31,4 +31,6 @@ export const calendarHeader = css`
   fill: #fafafa;
   // stroke: #e0e0e0;
   stroke-width: 1.4;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
 `;

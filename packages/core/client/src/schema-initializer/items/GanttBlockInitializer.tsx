@@ -80,7 +80,7 @@ export const GanttBlockInitializer = (props) => {
                         'x-decorator': 'FormItem',
                       },
                       range: {
-                        title: t('Time range'),
+                        title: t('Time scale'),
                         enum: [
                           { label: '{{t("Hour")}}', value: 'hour', color: 'orange' },
                           { label: '{{t("Quarter of day")}}', value: 'quarterDay', color: 'default' },

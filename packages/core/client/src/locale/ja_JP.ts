@@ -85,7 +85,7 @@ export default {
   "Gantt":"ガント図",
   "Create gantt block":"ガントチャートブロックの作成",
   "Progress field":"進捗フィールド",
-  "Time range":"時間スケールレベル",
+  "Time scale":"時間スケールレベル",
   "Hour":"時間",
   "Quarter of day":"四分の一日",
   "Half of day":"半日",

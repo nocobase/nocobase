@@ -97,7 +97,7 @@ export default {
   "Gantt":"甘特图",
   "Create gantt block":"创建甘特图区块",
   "Progress field":"进度字段",
-  "Time range":"时间缩放等级",
+  "Time scale":"时间缩放等级",
   "Hour":"小时",
   "Quarter of day":"四分之一天",
   "Half of day":"半天",

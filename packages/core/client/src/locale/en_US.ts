@@ -87,7 +87,7 @@ export default {
   "Gantt":"Gantt",
   "Create gantt block":"Create gantt block",
   "Progress field":"Progress field",
-  "Time range":"Time range",
+  "Time scale":"Time scale",
   "Hour":"Hour",
   "Quarter of day":"Quarter of day",
   "Half of day":"Half of day",

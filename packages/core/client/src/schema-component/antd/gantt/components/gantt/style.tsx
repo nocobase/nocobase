@@ -6,7 +6,8 @@ export const ganttVerticalContainer=css `
   font-size: 0;
   margin: 0;
   padding: 0;
-  width:100%
+  width:100%;
+  border-left:2px solid #c5c4c4
 `
 
 export const horizontalContainer=css `

@@ -53,9 +53,9 @@ const GanttRecordViewer = (props) => {
 export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
   const {
-    headerHeight = designable ? 65 : 55,
+    headerHeight = designable ? 64 : 55,
     listCellWidth = '155px',
-    rowHeight = 55,
+    rowHeight = 55.56,
     ganttHeight = 0,
     preStepsCount = 1,
     locale = 'en-GB',
