@@ -14,6 +14,7 @@ module.exports = (cli) => {
     .allowUnknownOption()
     .argument('[packages...]')
     .option('-c, --compile', 'compile the @nocobase/build package')
+    .option('-b, --buildPlugin', 'compile the plugin packages when change')
     .action(async (pkgs, options) => {
       promptForTs();
       nodeCheck();

@@ -10,6 +10,7 @@ const signale = require('signale');
 const args = yParser(process.argv.slice(2), {
   alias: {
     package: 'p',
+    buildPlugin: 'b',
   },
 });
 
@@ -48,9 +49,7 @@ function build() {
   });
 
   if (buildArgs.file && buildArgs.entry && buildArgs.entry.length > 1) {
-    signale.error(
-      new Error(`Cannot specify file when have multiple entries (${buildArgs.entry.join(', ')})`)
-    );
+    signale.error(new Error(`Cannot specify file when have multiple entries (${buildArgs.entry.join(', ')})`));
     process.exit(1);
   }
 
@@ -61,6 +60,7 @@ function build() {
       clean: args.clean,
       buildArgs,
       packages: args._ || [],
+      buildPlugin: args.b,
     })
     .catch((e) => {
       signale.error(e);
