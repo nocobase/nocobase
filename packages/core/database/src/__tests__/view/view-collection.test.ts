@@ -1,4 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
+import { uid } from '@nocobase/utils';
 import { ViewCollection } from '../../view-collection';
 
 describe('create view', () => {
@@ -13,6 +14,34 @@ describe('create view', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should create view collection in difference schema', async () => {
+    if (!db.inDialect('postgres')) return;
+    const schemaName = `t_${uid(6)}`;
+    const testSchemaSql = `CREATE SCHEMA IF NOT EXISTS ${schemaName};`;
+    await db.sequelize.query(testSchemaSql);
+
+    const viewName = 'test_view';
+
+    const viewSQL = `CREATE OR REPLACE VIEW ${schemaName}.test_view AS SELECT 1+1 as result`;
+    await db.sequelize.query(viewSQL);
+
+    const viewCollection = db.collection({
+      name: 'view_collection',
+      viewName,
+      schema: schemaName,
+      fields: [
+        {
+          type: 'string',
+          name: 'result',
+        },
+      ],
+    });
+
+    const results = await viewCollection.repository.find();
+
+    expect(results.length).toBe(1);
   });
 
   it('should create view collection', async () => {
