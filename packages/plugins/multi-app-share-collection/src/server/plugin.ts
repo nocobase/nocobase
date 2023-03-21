@@ -28,8 +28,10 @@ class SubAppPlugin extends Plugin {
     const sharedCollectionGroupsCollections = [];
 
     for (const group of collectionGroups) {
-      if (sharedCollectionGroups.includes(group.namespace)) {
-        sharedCollectionGroupsCollections.push(...group.collections);
+      const groupTopLevelNameSpace = group.namespace.split('.')[0];
+
+      if (sharedCollectionGroups.includes(groupTopLevelNameSpace)) {
+        sharedCollectionGroupsCollections.push(...group.collections.map((collection) => collection.name));
       }
     }
 

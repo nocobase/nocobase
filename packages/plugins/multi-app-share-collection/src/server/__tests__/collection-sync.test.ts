@@ -186,6 +186,7 @@ pgOnly()('collection sync', () => {
 
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
     await mainApp.pm.enable('map');
+
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
     // create new app sub2
@@ -296,6 +297,7 @@ pgOnly()('collection sync', () => {
   });
 
   it('should sync collections in sub apps', async () => {
+    // create sub1 app
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {
         name: 'sub1',
@@ -304,6 +306,7 @@ pgOnly()('collection sync', () => {
 
     const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
 
+    // create main collection in main app
     const mainCollection = await mainDb.getRepository('collections').create({
       values: {
         name: 'mainCollection',
@@ -317,6 +320,7 @@ pgOnly()('collection sync', () => {
       context: {},
     });
 
+    // get main collection record in sub app
     const subAppMainCollectionRecord = await subApp1.db.getRepository('collections').findOne({
       filter: {
         name: 'mainCollection',
@@ -325,9 +329,12 @@ pgOnly()('collection sync', () => {
 
     expect(subAppMainCollectionRecord).toBeTruthy();
 
+    // get main collection in sub app
     const subAppMainCollection = subApp1.db.getCollection('mainCollection');
 
     expect(subAppMainCollection).toBeTruthy();
+
+    // expect sub app collection schema is same as main app, that the collection is shared
     expect(subAppMainCollection.options.schema).toBe(mainCollection.options.schema || 'public');
 
     await mainApp.db.getRepository('fields').create({
