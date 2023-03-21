@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
@@ -69,6 +69,7 @@ import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
+import { ViewCollection } from './view-collection';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -416,14 +417,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return options.inherits && lodash.castArray(options.inherits).length > 0;
     })();
 
-    const collection = hasValidInheritsOptions
-      ? new InheritedCollection(options, {
-          database: this,
-        })
-      : new Collection(options, {
-          database: this,
-        });
+    const hasViewOptions = options.view;
 
+    const collectionKlass = (() => {
+      if (hasValidInheritsOptions) {
+        return InheritedCollection;
+      }
+
+      if (hasViewOptions) {
+        return ViewCollection;
+      }
+
+      return Collection;
+    })();
+
+    const collection = new collectionKlass(options, { database: this });
     this.collections.set(collection.name, collection);
 
     this.emit('afterDefineCollection', collection);

@@ -1,4 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
+import { ViewCollection } from '../../view-collection';
 
 describe('create view', () => {
   let db: Database;
@@ -67,7 +68,6 @@ describe('create view', () => {
       name: 'users_with_profiles',
       autoGenId: false,
       timestamps: false,
-
       fields: [
         {
           type: 'string',
@@ -78,10 +78,10 @@ describe('create view', () => {
           name: 'age',
         },
       ],
-      viewName,
+      view: true,
     });
 
-    expect(UserWithProfileView).toBeDefined();
+    expect(UserWithProfileView).toBeInstanceOf(ViewCollection);
 
     const fooData = await UserWithProfileView.repository.findOne({
       filter: {
