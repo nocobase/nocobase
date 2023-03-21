@@ -80,6 +80,7 @@ abstract class AppMigrator extends EventEmitter {
               type: field.get('type'),
               interface: field.get('interface'),
               through: field.get('through'),
+              target: field.get('target'),
             };
           }),
         };
