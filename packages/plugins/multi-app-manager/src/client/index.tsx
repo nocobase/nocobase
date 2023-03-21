@@ -10,6 +10,7 @@ import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
+import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
   const history = useHistory();
@@ -22,6 +23,7 @@ const MultiAppManager = () => {
       manual: true,
     },
   );
+  const { t } = usePluginUtils();
   const menu = (
     <Menu>
       {(data?.data || []).map((app) => {
@@ -42,7 +44,7 @@ const MultiAppManager = () => {
           history.push('/admin/settings/multi-app-manager/applications');
         }}
       >
-        Manage applications
+        {t('Manage applications')}
       </Menu.Item>
     </Menu>
   );
@@ -58,7 +60,10 @@ const MultiAppManager = () => {
   );
 };
 
+export { tableActionColumnSchema } from './settings/schemas/applications';
+
 export default (props) => {
+  const { t } = usePluginUtils();
   return (
     <PinnedPluginListProvider
       items={{
@@ -69,11 +74,11 @@ export default (props) => {
         <SettingsCenterProvider
           settings={{
             'multi-app-manager': {
-              title: 'Multi-app manager',
+              title: t('Multi-app manager'),
               icon: 'AppstoreOutlined',
               tabs: {
                 applications: {
-                  title: 'Applications',
+                  title: t('Applications'),
                   component: () => <AppManager />,
                 },
                 // settings: {

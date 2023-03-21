@@ -51,6 +51,25 @@ export const BlockInitializers = {
       ],
     },
     {
+      key: 'filterBlocks',
+      type: 'itemGroup',
+      title: '{{t("Filter blocks")}}',
+      children: [
+        {
+          key: 'filterForm',
+          type: 'item',
+          title: '{{t("Form")}}',
+          component: 'FilterFormBlockInitializer',
+        },
+        {
+          key: 'filterCollapse',
+          type: 'item',
+          title: '{{t("Collapse")}}',
+          component: 'FilterCollapseBlockInitializer',
+        },
+      ],
+    },
+    {
       key: 'media',
       type: 'itemGroup',
       title: '{{t("Other blocks")}}',

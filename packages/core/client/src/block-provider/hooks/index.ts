@@ -4,19 +4,22 @@ import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { useContext } from 'react';
+import { ChangeEvent, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
-import { useFormBlockContext, useTableBlockContext } from '../..';
-import { useAPIClient } from '../../api-client';
+import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
+import { useAPIClient, useRequest } from '../../api-client';
 import { useCollection } from '../../collection-manager';
+import { useFilterBlock } from '../../filter-provider/FilterProvider';
+import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
-import { useActionContext, useCompile } from '../../schema-component';
+import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
+import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
 export const usePickActionProps = () => {
@@ -192,6 +195,134 @@ export const useCreateActionProps = () => {
         } else {
           message.success(compile(onSuccess?.successMessage));
         }
+      } catch (error) {
+        actionField.data.loading = false;
+      }
+    },
+  };
+};
+
+interface FilterTarget {
+  targets?: {
+    /** field uid */
+    uid: string;
+    /** associated fields */
+    field?: string;
+  }[];
+  uid?: string;
+}
+
+export const findFilterTargets = (fieldSchema): FilterTarget => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      return {
+        targets: fieldSchema['x-filter-targets'],
+        uid: fieldSchema['x-uid'],
+      };
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+  return {};
+};
+
+export const updateFilterTargets = (fieldSchema, targets: FilterTarget['targets']) => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      fieldSchema['x-filter-targets'] = targets;
+      return;
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+};
+
+export const useFilterBlockActionProps = () => {
+  const form = useForm();
+  const actionField = useField();
+  const fieldSchema = useFieldSchema();
+  const { getDataBlocks } = useFilterBlock();
+
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      const { targets = [], uid } = findFilterTargets(fieldSchema);
+
+      actionField.data.loading = true;
+      try {
+        // 收集 filter 的值
+        await Promise.all(
+          getDataBlocks().map(async (block) => {
+            const target = targets.find((target) => target.uid === block.uid);
+            if (!target) return;
+
+            const param = block.service.params?.[0] || {};
+            // 保留原有的 filter
+            const storedFilter = block.service.params?.[1]?.filters || {};
+
+            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
+
+            const mergedFilter = mergeFilter([
+              ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+              block.defaultFilter,
+            ]);
+
+            return block.doFilter(
+              {
+                ...param,
+                page: 1,
+                filter: mergedFilter,
+              },
+              { filters: storedFilter },
+            );
+          }),
+        );
+        actionField.data.loading = false;
+      } catch (error) {
+        actionField.data.loading = false;
+      }
+    },
+  };
+};
+
+export const useResetBlockActionProps = () => {
+  const form = useForm();
+  const actionField = useField();
+  const fieldSchema = useFieldSchema();
+  const { getDataBlocks } = useFilterBlock();
+
+  actionField.data = actionField.data || {};
+
+  return {
+    async onClick() {
+      const { targets, uid } = findFilterTargets(fieldSchema);
+
+      form.reset();
+      actionField.data.loading = true;
+      try {
+        // 收集 filter 的值
+        await Promise.all(
+          getDataBlocks().map(async (block) => {
+            const target = targets.find((target) => target.uid === block.uid);
+            if (!target) return;
+
+            const param = block.service.params?.[0] || {};
+            // 保留原有的 filter
+            const storedFilter = block.service.params?.[1]?.filters || {};
+
+            delete storedFilter[uid];
+            const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+            return block.doFilter(
+              {
+                ...param,
+                page: 1,
+                filter: mergedFilter,
+              },
+              { filters: storedFilter },
+            );
+          }),
+        );
+        actionField.data.loading = false;
       } catch (error) {
         actionField.data.loading = false;
       }
@@ -663,5 +794,190 @@ export const useDetailsPaginationProps = () => {
       marginTop: 24,
       textAlign: 'center',
     },
+  };
+};
+
+export const useAssociationFilterProps = () => {
+  const collectionField = AssociationFilter.useAssociationField();
+  const { service, props: blockProps } = useBlockRequestContext();
+  const fieldSchema = useFieldSchema();
+  const valueKey = collectionField?.targetKey || 'id';
+  const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+  const collectionFieldName = collectionField.name;
+  const { data, params, run } = useRequest(
+    {
+      resource: collectionField.target,
+      action: 'list',
+      params: {
+        fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
+      },
+    },
+    {
+      refreshDeps: [labelKey, valueKey],
+      debounceWait: 300,
+    },
+  );
+
+  const list = data?.data || [];
+  const onSelected = (value) => {
+    const filters = service.params?.[1]?.filters || {};
+
+    if (value.length) {
+      filters[`af.${collectionFieldName}`] = {
+        [`${collectionFieldName}.${valueKey}.$in`]: value,
+      };
+    } else {
+      delete filters[`af.${collectionFieldName}`];
+    }
+
+    service.run(
+      {
+        ...service.params?.[0],
+        pageSize: 200,
+        page: 1,
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+      },
+      { filters },
+    );
+  };
+  const handleSearchInput = (e: ChangeEvent<any>) => {
+    run({
+      ...params?.[0],
+      filter: {
+        [`${labelKey}.$includes`]: e.target.value,
+      },
+    });
+  };
+
+  return {
+    /** 渲染 Collapse 的列表数据 */
+    list,
+    onSelected,
+    handleSearchInput,
+    params,
+    run,
+  };
+};
+
+export const useOptionalFieldList = () => {
+  const { currentFields = [] } = useCollection();
+
+  return currentFields.filter((field) => isOptionalField(field) && field.uiSchema.enum);
+};
+
+const isOptionalField = (field) => {
+  const optionalInterfaces = ['select', 'multipleSelect', 'checkbox', 'checkboxGroup', 'chinaRegion'];
+  return optionalInterfaces.includes(field.interface);
+};
+
+export const useAssociationFilterBlockProps = () => {
+  const collectionField = AssociationFilter.useAssociationField();
+  const fieldSchema = useFieldSchema();
+  const optionalFieldList = useOptionalFieldList();
+  const { getDataBlocks } = useFilterBlock();
+  const collectionFieldName = collectionField.name;
+
+  let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+
+  if (isOptionalField(fieldSchema)) {
+    const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
+    const operatorMap = {
+      select: '$in',
+      multipleSelect: '$anyOf',
+      checkbox: '$in',
+      checkboxGroup: '$anyOf',
+    };
+    const _list = field?.uiSchema?.enum || [];
+    valueKey = 'value';
+    labelKey = 'label';
+    list = _list;
+    params = {};
+    run = () => {};
+    filterKey = `${field.name}.${operatorMap[field.interface]}`;
+    handleSearchInput = (e) => {
+      // TODO: 列表没有刷新，在这个 hook 中使用 useState 会产生 re-render 次数过多的错误
+      const value = e.target.value;
+      if (!value) {
+        list = _list;
+        return;
+      }
+      list = (_list as any[]).filter((item) => item.label.includes(value));
+    };
+  } else {
+    valueKey = collectionField?.targetKey || 'id';
+    labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+    ({ data, params, run } = useRequest(
+      {
+        resource: collectionField.target,
+        action: 'list',
+        params: {
+          fields: [labelKey, valueKey],
+          pageSize: 200,
+          page: 1,
+        },
+      },
+      {
+        refreshDeps: [labelKey, valueKey],
+        debounceWait: 300,
+      },
+    ));
+    filterKey = `${collectionFieldName}.${valueKey}.$in`;
+
+    list = data?.data || [];
+
+    handleSearchInput = (e: ChangeEvent<any>) => {
+      run({
+        ...params?.[0],
+        filter: {
+          [`${labelKey}.$includes`]: e.target.value,
+        },
+      });
+    };
+  }
+
+  onSelected = (value) => {
+    const { targets, uid } = findFilterTargets(fieldSchema);
+
+    getDataBlocks().forEach((block) => {
+      const target = targets.find((target) => target.uid === block.uid);
+      if (!target) return;
+
+      const key = `${uid}${fieldSchema.name}`;
+      const param = block.service.params?.[0] || {};
+      // 保留原有的 filter
+      const storedFilter = block.service.params?.[1]?.filters || {};
+
+      if (value.length) {
+        storedFilter[key] = {
+          [filterKey]: value,
+        };
+      } else {
+        delete storedFilter[key];
+      }
+
+      const mergedFilter = mergeFilter([...Object.values(storedFilter), block.defaultFilter]);
+
+      return block.doFilter(
+        {
+          ...param,
+          page: 1,
+          filter: mergedFilter,
+        },
+        { filters: storedFilter },
+      );
+    });
+  };
+
+  return {
+    /** 渲染 Collapse 的列表数据 */
+    list,
+    onSelected,
+    handleSearchInput,
+    params,
+    run,
+    valueKey,
+    labelKey,
   };
 };

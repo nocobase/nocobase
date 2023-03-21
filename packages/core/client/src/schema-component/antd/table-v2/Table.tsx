@@ -7,7 +7,7 @@ import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { RefCallback, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import {
@@ -15,7 +15,7 @@ import {
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext
+  useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -96,7 +96,7 @@ const SortableRow = (props) => {
     <tr
       ref={active?.id !== id ? setNodeRef : null}
       {...props}
-      className={classNames({ [className]: active && isOver })}
+      className={classNames(props.className, { [className]: active && isOver })}
     />
   );
 };
@@ -157,7 +157,7 @@ export const Table: any = observer((props: any) => {
   const field = useField<ArrayField>();
   const columns = useTableColumns();
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
-  const { pagination: pagination2, ...others2 } = useProps?.() || {};
+  const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
   const {
     dragSort = false,
     showIndex = true,
@@ -179,6 +179,28 @@ export const Table: any = observer((props: any) => {
   const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
   const [expandedKeys, setExpandesKeys] = useState([]);
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
+  const [selectedRow, setSelectedRow] = useState([]);
+
+  let onRow = null,
+    highlightRow = '';
+
+  if (onClickRow) {
+    onRow = (record) => {
+      return {
+        onClick: () => onClickRow(record, setSelectedRow, selectedRow),
+      };
+    };
+    highlightRow = css`
+      & > td {
+        background-color: #caedff !important;
+      }
+      &:hover > td {
+        background-color: #caedff !important;
+      }
+    `;
+  }
+
   useEffect(() => {
     field.setValidator((value) => {
       if (requiredValidator) {
@@ -295,10 +317,11 @@ export const Table: any = observer((props: any) => {
     rowSelection: rowSelection
       ? {
           type: 'checkbox',
-          selectedRowKeys: field?.data?.selectedRowKeys || [],
+          selectedRowKeys: selectedRowKeys,
           onChange(selectedRowKeys: any[], selectedRows: any[]) {
             field.data = field.data || {};
             field.data.selectedRowKeys = selectedRowKeys;
+            setSelectedRowKeys(selectedRowKeys);
             onRowSelectionChange?.(selectedRowKeys, selectedRows);
           },
           renderCell: (checked, record, index, originNode) => {
@@ -397,8 +420,10 @@ export const Table: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
-
   const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
+  const tableRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
@@ -410,22 +435,21 @@ export const Table: any = observer((props: any) => {
         };
   }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
-  const elementRef = useRef<HTMLDivElement>();
   const calcTableSize = () => {
-    if (!elementRef.current) return;
-    const clientRect = elementRef.current?.getBoundingClientRect();
-    setTableHeight(Math.ceil(clientRect?.height || 0));
-  };
-  useEventListener('resize', calcTableSize);
+    if (!containerRef.current || !tableRef.current) return;
+    setTableHeight(Math.ceil(containerRef.current.clientHeight || 0));
 
-  const mountedRef: RefCallback<HTMLDivElement> = (ref) => {
-    elementRef.current = ref;
-    calcTableSize();
+    const headerHeight = tableRef.current.querySelector('.ant-table-header')?.clientHeight || 0;
+    const paginationHeight = tableRef.current.querySelector('.ant-table-pagination')?.clientHeight || 0;
+    setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 18));
   };
+
+  useEffect(calcTableSize, [field.value]);
+  useEventListener('resize', calcTableSize);
 
   return (
     <div
-      ref={mountedRef}
+      ref={containerRef}
       className={css`
         height: 100%;
         overflow: hidden;
@@ -440,11 +464,7 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
-          ref={(ref) => {
-            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-          }}
+          ref={tableRef}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
@@ -453,6 +473,8 @@ export const Table: any = observer((props: any) => {
           onChange={(pagination, filters, sorter, extra) => {
             onTableChange?.(pagination, filters, sorter, extra);
           }}
+          onRow={onRow}
+          rowClassName={(record) => (selectedRow.includes(record[rowKey]) ? highlightRow : '')}
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}

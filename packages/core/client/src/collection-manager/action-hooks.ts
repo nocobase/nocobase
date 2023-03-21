@@ -1,5 +1,6 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
+import omit from 'lodash/omit';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
@@ -21,7 +22,7 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
     ...options,
     manual: true,
   });

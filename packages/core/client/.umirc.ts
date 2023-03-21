@@ -18,7 +18,7 @@ export default defineConfig({
       path: 'https://github.com/nocobase/nocobase',
     },
   ],
-  chainWebpack(config) {
-    resolveNocobasePackagesAlias(config);
+  chainWebpack(memo) {
+    resolveNocobasePackagesAlias(memo);
   },
 });

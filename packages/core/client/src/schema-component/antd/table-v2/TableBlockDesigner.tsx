@@ -6,6 +6,7 @@ import { useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -39,7 +40,7 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const treeChildren = resource.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
+  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
   const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -234,6 +235,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettings.Divider />}
       {supportTemplate && (
         <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />

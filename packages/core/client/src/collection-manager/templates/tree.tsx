@@ -27,6 +27,7 @@ export const tree: ICollectionTemplate = {
         name: 'parent',
         foreignKey: 'parentId',
         treeParent: true,
+        onDelete: 'CASCADE',
         uiSchema: {
           title: '{{t("Parent")}}',
           'x-component': 'RecordPicker',
@@ -46,6 +47,7 @@ export const tree: ICollectionTemplate = {
         name: 'children',
         foreignKey: 'parentId',
         treeChildren: true,
+        onDelete: 'CASCADE',
         uiSchema: {
           title: '{{t("Children")}}',
           'x-component': 'RecordPicker',
