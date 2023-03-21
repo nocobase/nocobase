@@ -171,12 +171,11 @@ export class Restorer extends AppMigrator {
 
     const customCollections = [
       ...CollectionGroupManager.getGroupsCollections(
-        optionalGroups.filter((group) => {
-          return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
-            const [namespace, functionKey] = selectedOptionalGroupName.split('.');
-            return group.function === functionKey && group.namespace === namespace;
-          });
-        }),
+        optionalGroups.filter((group) =>
+          options.selectedOptionalGroupNames.some(
+            (selectedOptionalGroupName) => group.namespace == selectedOptionalGroupName,
+          ),
+        ),
       ),
       ...userCollections,
       ...throughCollections,

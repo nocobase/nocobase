@@ -1,10 +1,10 @@
 import inquirer from 'inquirer';
-import { CollectionGroup } from '@nocobase/database';
+import { CollectionGroupWithCollectionTitle } from '@nocobase/database';
 
 export default class InquireQuestionBuilder {
   static buildInquirerQuestions(options: {
-    requiredGroups: CollectionGroup[];
-    optionalGroups: CollectionGroup[];
+    requiredGroups: CollectionGroupWithCollectionTitle[];
+    optionalGroups: CollectionGroupWithCollectionTitle[];
     optionalCollections: {
       name: string;
       title: string;
@@ -31,16 +31,16 @@ export default class InquireQuestionBuilder {
       choices: [
         new inquirer.Separator('== Required =='),
         ...requiredGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
-          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
+          name: `${collectionGroup.namespace}`,
+          value: `${collectionGroup.namespace}`,
           checked: true,
           disabled: true,
         })),
 
         new inquirer.Separator('== Optional =='),
         ...optionalGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.namespace})`,
-          value: `${collectionGroup.namespace}.${collectionGroup.function}`,
+          name: `${collectionGroup.namespace}`,
+          value: `${collectionGroup.namespace}`,
           checked: direction === 'dump',
         })),
       ],
