@@ -12,11 +12,23 @@ export default class PostgresQueryInterface extends QueryInterface {
     const tableName = collection.model.tableName;
     const schema = collection.collectionSchema() || 'public';
 
-    const sql = `SELECT EXISTS(SELECT 1 FROM information_schema.tables
-                 WHERE  table_schema = '${schema}'
-                 AND    table_name   = '${tableName}')`;
+    const sql = `SELECT EXISTS(SELECT 1
+                               FROM information_schema.tables
+                               WHERE table_schema = '${schema}'
+                                 AND table_name = '${tableName}')`;
 
     const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
     return results[0]['exists'];
+  }
+
+  async listViews() {
+    const sql = `
+      SELECT viewname, definition, schemaname
+      FROM pg_views
+      WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+      ORDER BY viewname;
+    `;
+
+    return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 }

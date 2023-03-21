@@ -11,8 +11,24 @@ export default class SqliteQueryInterface extends QueryInterface {
 
     const tableName = collection.model.tableName;
 
-    const sql = `SELECT name FROM sqlite_master WHERE type='table' AND name='${tableName}';`;
+    const sql = `SELECT name
+                 FROM sqlite_master
+                 WHERE type = 'table'
+                   AND name = '${tableName}';`;
     const results = await this.db.sequelize.query(sql, { type: 'SELECT', transaction });
     return results.length > 0;
+  }
+
+  async listViews() {
+    const sql = `
+      SELECT name as viewname, sql as definition
+      FROM sqlite_master
+      WHERE type = 'view'
+      ORDER BY name;
+    `;
+
+    return await this.db.sequelize.query(sql, {
+      type: 'SELECT',
+    });
   }
 }

@@ -66,8 +66,6 @@ describe('create view', () => {
 
     const UserWithProfileView = db.collection({
       name: 'users_with_profiles',
-      autoGenId: false,
-      timestamps: false,
       fields: [
         {
           type: 'string',

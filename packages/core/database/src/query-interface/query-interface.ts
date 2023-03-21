@@ -4,9 +4,12 @@ import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequ
 
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
+
   protected constructor(public db: Database) {
     this.sequelizeQueryInterface = db.sequelize.getQueryInterface();
   }
 
   abstract collectionTableExists(collection: Collection, options?: Transactionable): Promise<boolean>;
+
+  abstract listViews();
 }

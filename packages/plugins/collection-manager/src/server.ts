@@ -11,13 +11,14 @@ import {
   afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
 import lodash from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
+import viewResourcer from './resourcers/views';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -260,6 +261,8 @@ export class CollectionManagerPlugin extends Plugin {
       }
       await next();
     });
+
+    this.app.resource(viewResourcer);
 
     this.app.db.extendCollection({
       name: 'collectionCategory',
