@@ -40,6 +40,11 @@ describe('duplicator api', () => {
             name: 'child_field',
             type: 'string',
           },
+          {
+            name: 'childRelation',
+            type: 'belongsTo',
+            target: 'test_collection',
+          },
         ],
       },
       context: {},
@@ -60,6 +65,11 @@ describe('duplicator api', () => {
 
     expect(data['optionalGroups']).toBeTruthy();
     expect(data['userCollections']).toBeTruthy();
+    const childCollection = data['userCollections'].find((collection) => collection['name'] === 'child_collection');
+
+    const belongsToField = childCollection['fields'].find((field) => field['name'] === 'childRelation');
+    expect(belongsToField['target']).toBe('test_collection');
+
     console.log(JSON.stringify(data, null, 2));
   });
 
