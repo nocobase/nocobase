@@ -6,6 +6,8 @@ import { CollectionContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 import { useCollectionManager } from './useCollectionManager';
 
+export type Collection = ReturnType<typeof useCollection>;
+
 export const useCollection = () => {
   const collection = useContext(CollectionContext);
   const api = useAPIClient();

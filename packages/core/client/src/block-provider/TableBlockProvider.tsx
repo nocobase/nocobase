@@ -3,19 +3,27 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { SchemaComponentOptions, useFixedSchema } from '../schema-component';
+import { SchemaComponentOptions, useFixedSchema, removeNullCondition } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { useFilterBlock } from '../filter-provider/FilterProvider';
+import { findFilterTargets } from './hooks';
+import { mergeFilter } from './SharedFilterProvider';
 
 export const TableBlockContext = createContext<any>({});
 
-const InternalTableBlockProvider = (props) => {
+interface Props {
+  params?: any;
+  showIndex?: boolean;
+  dragSort?: boolean;
+  rowKey?: string;
+  childrenColumnName: any;
+}
+
+const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
   useFixedSchema();
   return (
     <TableBlockContext.Provider
@@ -91,7 +99,7 @@ export const TableBlockProvider = (props) => {
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(props.collection);
-  const { treeTable } = fieldSchema?.['x-decorator-props']||{};
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
@@ -104,7 +112,7 @@ export const TableBlockProvider = (props) => {
         params['tree'] = true;
       }
     } else {
-      const f = collection.fields.find(f => f.treeChildren);
+      const f = collection.fields.find((f) => f.treeChildren);
       if (f) {
         childrenColumnName = f.name;
       }
@@ -135,6 +143,8 @@ export const useTableBlockProps = () => {
   const fieldSchema = useFieldSchema();
   const ctx = useTableBlockContext();
   const globalSort = fieldSchema.parent?.['x-decorator-props']?.['params']?.['sort'];
+  const { getDataBlocks } = useFilterBlock();
+
   useEffect(() => {
     if (!ctx?.service?.loading) {
       field.value = ctx?.service?.data?.data;
@@ -178,6 +188,60 @@ export const useTableBlockProps = () => {
           : [`-${sorter.field}`]
         : globalSort || ctx.service.params?.[0]?.sort;
       ctx.service.run({ ...ctx.service.params?.[0], page: current, pageSize, sort });
+    },
+    onClickRow(record, setSelectedRow, selectedRow) {
+      const { targets, uid } = findFilterTargets(fieldSchema);
+      const dataBlocks = getDataBlocks();
+
+      // 如果是之前创建的区块是没有 x-filter-targets 属性的，所以这里需要判断一下避免报错
+      if (!targets || !targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid))) {
+        // 当用户已经点击过某一行，如果此时再把相连接的区块给删除的话，行的高亮状态就会一直保留。
+        // 这里暂时没有什么比较好的方法，只是在用户再次点击的时候，把高亮状态给清除掉。
+        setSelectedRow((prev) => (prev.length ? [] : prev));
+        return;
+      }
+
+      const value = [record[ctx.rowKey]];
+
+      dataBlocks.forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        if (selectedRow.includes(record[ctx.rowKey])) {
+          delete storedFilter[uid];
+        } else {
+          storedFilter[uid] = {
+            $and: [
+              {
+                [target.field || ctx.rowKey]: {
+                  [target.field ? '$in' : '$eq']: value,
+                },
+              },
+            ],
+          };
+        }
+
+        const mergedFilter = mergeFilter([
+          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+          block.defaultFilter,
+        ]);
+
+        return block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+
+      // 更新表格的选中状态
+      setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
     },
   };
 };

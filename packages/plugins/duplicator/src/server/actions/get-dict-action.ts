@@ -23,7 +23,7 @@ export default async function getDictAction(ctx, next) {
       title: collection.options.title,
       namespace: collection.options.namespace,
       duplicator: collection.options.duplicator,
-      schema: collection.options.schema,
+      schema: collection.options.schema || process.env.DB_SCHEMA,
       // columns,
     };
     if (!item.namespace && collectionNames.includes(name)) {
