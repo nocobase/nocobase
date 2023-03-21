@@ -20,12 +20,16 @@ export default defineConfig({
     type: 'none',
   },
   routes: [{ path: '/', exact: false, component: '@/pages/index' }],
+  webpack5: {},
   // fastRefresh: {},
   chainWebpack(memo) {
     resolveNocobasePackagesAlias(memo);
 
     // 在引入 mermaid 之后，运行 yarn dev 的时候会报错，添加下面的代码可以解决。
-    memo.module.rule('js-in-node_modules').test(/.*mermaid.*\.js$/).include.clear();
+    memo.module
+      .rule('js-in-node_modules')
+      .test(/.*mermaid.*\.js$/)
+      .include.clear();
     return memo;
   },
 });
