@@ -1,0 +1,218 @@
+import { PlusOutlined } from '@ant-design/icons';
+import { ArrayTable } from '@formily/antd';
+import { useForm } from '@formily/react';
+import { uid } from '@formily/shared';
+import { Button, Dropdown, Menu } from 'antd';
+import { cloneDeep } from 'lodash';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useRequest } from '../../api-client';
+import { RecordProvider, useRecord } from '../../record-provider';
+import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useCancelAction } from '../action-hooks';
+import { useCollectionManager } from '../hooks';
+import { useOptions } from '../hooks/useOptions';
+import { IField } from '../interfaces/types';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
+import * as components from './components';
+import { getOptions } from './interfaces';
+
+const getSchema = (schema: IField, record: any, compile) => {
+  if (!schema) {
+    return;
+  }
+
+  const properties = cloneDeep(schema.properties) as any;
+
+  if (schema.hasDefaultValue === true) {
+    properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
+    properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
+    properties['defaultValue']['x-decorator'] = 'FormItem';
+  }
+  const initialValue: any = {
+    name: `f_${uid()}`,
+    ...cloneDeep(schema.default),
+    interface: schema.name,
+  };
+  if (initialValue.reverseField) {
+    initialValue.reverseField.name = `f_${uid()}`;
+  }
+  // initialValue.uiSchema.title = schema.title;
+  return {
+    type: 'object',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Action.Drawer',
+        'x-component-props': {
+          getContainer: '{{ getContainer }}',
+        },
+        'x-decorator': 'Form',
+        'x-decorator-props': {
+          useValues(options) {
+            return useRequest(
+              () =>
+                Promise.resolve({
+                  data: initialValue,
+                }),
+              options,
+            );
+          },
+        },
+        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
+        properties: {
+          summary: {
+            type: 'void',
+            'x-component': 'FieldSummary',
+            'x-component-props': {
+              schemaKey: schema.name,
+            },
+          },
+          // @ts-ignore
+          ...properties,
+          footer: {
+            type: 'void',
+            'x-component': 'Action.Drawer.Footer',
+            properties: {
+              action1: {
+                title: '{{ t("Cancel") }}',
+                'x-component': 'Action',
+                'x-component-props': {
+                  useAction: '{{ useCancelAction }}',
+                },
+              },
+              action2: {
+                title: '{{ t("Submit") }}',
+                'x-component': 'Action',
+                'x-component-props': {
+                  type: 'primary',
+                  useAction: '{{ useCreateCollectionField }}',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+};
+
+
+const useCreateCollectionField = () => {
+  const form = useForm();
+  const { refreshCM } = useCollectionManager();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      await form.submit();
+      const values = cloneDeep(form.values);
+      if (values.autoCreateReverseField) {
+      } else {
+        delete values.reverseField;
+      }
+      delete values.autoCreateReverseField;
+      await resource.create({ values });
+      ctx.setVisible(false);
+      await form.reset();
+      refresh();
+      await refreshCM();
+    },
+  };
+};
+
+export const SyncFieldsAction = (props) => {
+  const record = useRecord();
+  return <SyncFieldsActionCom item={record} {...props} />;
+};
+
+export const SyncFieldsActionCom = (props) => {
+  const { scope, getContainer, item: record, children, trigger, align } = props;
+  const { getInterface, getTemplate } = useCollectionManager();
+  const [visible, setVisible] = useState(false);
+  const [targetScope, setTargetScope] = useState();
+  const [schema, setSchema] = useState({});
+  const compile = useCompile();
+  const { t } = useTranslation();
+  const options = useOptions();
+  const getFieldOptions = () => {
+    const { availableFieldInterfaces } = getTemplate(record.template) || {};
+    const { exclude, include } = availableFieldInterfaces || {};
+    const optionArr = [];
+    getOptions().forEach((v) => {
+      if (v.key === 'systemInfo') {
+        optionArr.push({
+          ...v,
+          children: v.children.filter((v) => {
+            if (v.value === 'id') {
+              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
+            } else {
+              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
+            }
+          }),
+        });
+      } else {
+        let children = [];
+        if (include?.length) {
+          include.forEach((k) => {
+            const field = v.children.find((h) => [k, k.interface].includes(h.value));
+            field &&
+              children.push({
+                ...field,
+                targetScope: k?.targetScope,
+              });
+          });
+        } else if (exclude?.length) {
+          children = v.children.filter((v) => {
+            return !exclude.includes(v.value);
+          });
+        } else {
+          children = v.children;
+        }
+        children.length &&
+          optionArr.push({
+            ...v,
+            children,
+          });
+      }
+    });
+    return optionArr;
+  };
+  return (
+    <RecordProvider record={record}>
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        {children || (
+          <Button
+            icon={<PlusOutlined />}
+            onClick={(e) => {
+              const schema = getSchema({}, record, compile);
+              if (schema) {
+                setSchema(schema);
+                setVisible(true);
+              }
+            }}
+          >
+            {t('Sync from database')}
+          </Button>
+        )}
+        <SchemaComponent
+          schema={schema}
+          components={{ ...components, ArrayTable }}
+          scope={{
+            getContainer,
+            useCancelAction,
+            createOnly: true,
+            isOverride: false,
+            override: false,
+            useCreateCollectionField,
+            record,
+            showReverseFieldConfig: true,
+            targetScope,
+            ...scope,
+          }}
+        />
+      </ActionContext.Provider>
+    </RecordProvider>
+  );
+};

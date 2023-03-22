@@ -235,8 +235,15 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const items = templateOptions().map((option) => {
-    return { label: compile(option.title), key: option.name };
+  const collectionTemplates = templateOptions();
+  const items = [];
+  collectionTemplates.forEach((item) => {
+    if (item.divider) {
+      items.push({
+        type: 'divider',
+      });
+    }
+    items.push({ label: compile(item.title), key: item.name });
   });
   const {
     state: { category },

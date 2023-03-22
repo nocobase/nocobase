@@ -106,6 +106,14 @@ export const collectionFieldSchema: ISchema = {
             },
           },
         },
+        syncfromDatabase: {
+          type: 'void',
+          title: '{{ t("Sync from database") }}',
+          'x-component': 'SyncFieldsAction',
+          'x-component-props': {
+            type: 'primary',
+          },
+        },
         create: {
           type: 'void',
           title: '{{ t("Add new") }}',

@@ -26,6 +26,8 @@ import {
   ConfigurationTabs,
   EditCategory,
   EditCategoryAction,
+  SyncFieldsAction,
+  SyncFieldsActionCom
 } from './Configuration';
 
 import { CollectionCategroriesProvider } from './CollectionManagerProvider';
@@ -81,6 +83,8 @@ export const CollectionManagerPane = () => {
           ViewFieldAction,
           EditCategory,
           EditCategoryAction,
+          SyncFieldsAction,
+          SyncFieldsActionCom
         }}
       />
     // </Card>

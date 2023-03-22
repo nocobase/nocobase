@@ -14,6 +14,8 @@ export interface ICollectionTemplate {
   configurableProperties?: Record<string, ISchema>;
   /** 当前模板可用的字段类型 */
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
+  /** 是否分割线 */
+  divider?: boolean;
 }
 
 interface AvailableFieldInterfacesInclude {
@@ -23,7 +25,6 @@ interface AvailableFieldInterfacesInclude {
 interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
-
 
 interface CollectionOptions {
   /**
