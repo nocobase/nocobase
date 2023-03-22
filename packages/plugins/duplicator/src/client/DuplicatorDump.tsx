@@ -120,7 +120,7 @@ export const DuplicatorDump = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认添加以下数据表？',
+                title: '确认选中以下数据表？',
                 width: '60%',
                 content: (
                   <div>
@@ -150,7 +150,7 @@ export const DuplicatorDump = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认移除以下数据表？',
+                title: '确认取消选中以下数据表？',
                 width: '60%',
                 content: (
                   <div>
