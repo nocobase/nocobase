@@ -54,7 +54,7 @@ const columns2: ColumnsType<CollectionData> = [
 export const DuplicatorDump = () => {
   const api = useAPIClient();
   const { t } = useTranslation();
-  const data = useDumpableCollections();
+  const { data, loading } = useDumpableCollections();
   const [currentStep, setCurrentStep] = React.useState(0);
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
@@ -243,6 +243,7 @@ export const DuplicatorDump = () => {
     <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
+          loading={loading}
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}
           pagination={false}

@@ -18,6 +18,7 @@ interface TableTransferProps<T> extends TransferProps<TransferItem> {
   filterOptionByCategory?: (category: string[], option: any) => boolean;
   onSelectRow?: (item: any, selected: boolean, direction: 'left' | 'right') => void;
   showSearch?: boolean;
+  loading?: boolean;
 }
 
 const hideHeader = css`
@@ -40,6 +41,7 @@ export function TableTransfer<T>({
   scroll,
   pagination,
   showSearch,
+  loading,
   filterOptionByCategory = defaultFilterOptionByCategory,
   onSelectRow,
   ...restProps
@@ -90,6 +92,7 @@ export function TableTransfer<T>({
             showSearch={showSearch}
             direction={direction}
             onSelectRow={onSelectRow}
+            loading={loading}
           />
         );
       }}
@@ -112,6 +115,7 @@ function Content({
   showSearch,
   direction,
   onSelectRow,
+  loading,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -173,6 +177,7 @@ function Content({
       </div>
       <Table
         bordered
+        loading={loading}
         rowSelection={rowSelection}
         columns={columns}
         dataSource={items}

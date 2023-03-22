@@ -36,6 +36,7 @@ interface Data {
 export const useDumpableCollections = () => {
   const api = useAPIClient();
   const [data, setData] = useState<Data>({} as Data);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     api
@@ -58,8 +59,9 @@ export const useDumpableCollections = () => {
           item.key = item.name;
         });
         setData(data);
+        setLoading(false);
       });
   }, []);
 
-  return data;
+  return { data, loading };
 };
