@@ -26,7 +26,7 @@ export const DuplicatorSteps = ({ children, steps, loading, onChange }) => {
 
   return (
     <Card>
-      <Steps current={current}>
+      <Steps current={current} size='small'>
         {steps.map((item) => (
           <Step title={item.title} />
         ))}
