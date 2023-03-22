@@ -1,3 +1,5 @@
+import { useCollection } from '../../';
+
 export const KanbanActionInitializers = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
@@ -27,6 +29,10 @@ export const KanbanActionInitializers = {
             'x-acl-action-props': {
               skipScopeCheck: true,
             },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
       ],
