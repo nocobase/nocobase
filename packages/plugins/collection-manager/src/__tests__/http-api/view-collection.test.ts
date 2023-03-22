@@ -45,5 +45,7 @@ SELECT * FROM numbers;
   it('should list views fields', async () => {
     const response = await agent.resource('dbViews.fields', testViewName).list({});
     expect(response.status).toBe(200);
+    const data = response.body.data;
+    expect(data.length).toBe(1);
   });
 });
