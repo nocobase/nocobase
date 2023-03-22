@@ -37,7 +37,7 @@ const highlight = css`
 `;
 const disabledClass = css`
   opacity: 0.5;
-  pointer-events: none;
+  cursor: not-allowed;
 `;
 
 const defaultFilterOption = (inputValue: string, option: any) => {
@@ -61,10 +61,10 @@ export function TableTransfer<T>({
   onSelectRow,
   ...restProps
 }: TableTransferProps<T>) {
-  const { titles = [], filterOption = defaultFilterOption } = restProps;
+  const { titles = [], filterOption = defaultFilterOption, disabled } = restProps;
 
   return (
-    <Transfer {...restProps} className={hideHeader}>
+    <Transfer {...restProps} className={`${hideHeader} ${disabled ? disabledClass : ''}`}>
       {({
         direction,
         filteredItems,
@@ -110,9 +110,7 @@ export function TableTransfer<T>({
             direction={direction}
             onSelectRow={onSelectRow}
             loading={loading}
-            noCheckbox={noCheckbox}
             onDoubleClickRow={onDoubleClickRow}
-            disabled={listDisabled}
           />
         );
       }}
@@ -136,9 +134,7 @@ function Content({
   direction,
   onSelectRow,
   loading,
-  noCheckbox,
   onDoubleClickRow,
-  disabled,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -200,7 +196,6 @@ function Content({
       </div>
       <Table
         bordered
-        className={disabled ? disabledClass : ''}
         rowClassName={(record) =>
           `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabledClass : ''}`
         }
