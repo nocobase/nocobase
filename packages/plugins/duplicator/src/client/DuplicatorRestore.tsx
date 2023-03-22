@@ -13,44 +13,6 @@ import { useTranslation } from 'react-i18next';
 import { DraggerUpload } from './DraggerUpload';
 import { useTableHeight } from './hooks/useTableHeight';
 
-const columns1: ColumnsType<GroupData> = [
-  {
-    dataIndex: 'namespace',
-    title: 'Namespace',
-    render: (namespace: string) => namespace?.split('.')[0],
-  },
-  {
-    dataIndex: 'function',
-    title: 'Function',
-  },
-  {
-    dataIndex: 'collections',
-    title: 'Collections',
-    render: (collections: CollectionData[]) =>
-      collections?.map((collection) => <Tag key={collection.title}>{collection.title}</Tag>),
-  },
-];
-const columns2: ColumnsType<CollectionData> = [
-  {
-    dataIndex: 'title',
-    title: 'Title',
-  },
-  {
-    dataIndex: 'name',
-    title: 'Name',
-  },
-  {
-    dataIndex: 'category',
-    title: 'Category',
-    render: (categories: Category[]) =>
-      categories?.map((category) => (
-        <Tag key={category.name} color={category.color}>
-          {category.name}
-        </Tag>
-      )),
-  },
-];
-
 export const DuplicatorRestore = () => {
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -75,16 +37,49 @@ export const DuplicatorRestore = () => {
     },
   } = api;
 
+  const columns1: ColumnsType<GroupData> = [
+    {
+      dataIndex: 'namespace',
+      title: t('Namespace'),
+      render: (namespace: string) => namespace?.split('.')[0],
+    },
+    {
+      dataIndex: 'collections',
+      title: t('Collections'),
+      render: (collections: CollectionData[]) =>
+        collections?.map((collection) => <Tag key={collection.title}>{collection.title}</Tag>),
+    },
+  ];
+  const columns2: ColumnsType<CollectionData> = [
+    {
+      dataIndex: 'title',
+      title: t('Title'),
+    },
+    {
+      dataIndex: 'name',
+      title: t('Name'),
+    },
+    {
+      dataIndex: 'category',
+      title: t('Category'),
+      render: (categories: Category[]) =>
+        categories?.map((category) => (
+          <Tag key={category.name} color={category.color}>
+            {category.name}
+          </Tag>
+        )),
+    },
+  ];
   const steps = useMemo(
     () => [
       {
-        title: '上传备份文件',
-        buttonText: '下一步',
+        title: t('Upload backup file'),
+        buttonText: t('Next'),
         showButton: !!requiredGroups.length,
       },
       {
-        title: '选择功能模块',
-        buttonText: '下一步',
+        title: t('Select modules'),
+        buttonText: t('Next'),
         showButton: true,
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
@@ -98,8 +93,8 @@ export const DuplicatorRestore = () => {
         },
       },
       {
-        title: '选择自定义数据表',
-        buttonText: '确认导入',
+        title: t('Select custom collections'),
+        buttonText: t('Confirm import'),
         showButton: true,
         data: userCollections,
         leftColumns: columns2,
@@ -137,7 +132,7 @@ export const DuplicatorRestore = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认添加以下数据表？',
+                title: t('Confirm to move the following collections?'),
                 width: '60%',
                 content: (
                   <div>
@@ -167,7 +162,7 @@ export const DuplicatorRestore = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认移除以下数据表？',
+                title: t('Confirm to move the following collections?'),
                 width: '60%',
                 content: (
                   <div>
@@ -294,7 +289,7 @@ export const DuplicatorRestore = () => {
           <TableTransfer<GroupData | CollectionData>
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true }}
-            titles={['未选', '已选']}
+            titles={[t('No need to import'), t('Need to import')]}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}
             rightColumns={steps[currentStep].rightColumns}
@@ -311,7 +306,7 @@ export const DuplicatorRestore = () => {
           <TableTransfer<GroupData | CollectionData>
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
-            titles={['未选择', '已选择']}
+            titles={[t('No need to import'), t('Need to import')]}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}
             rightColumns={steps[currentStep].rightColumns}
@@ -324,7 +319,7 @@ export const DuplicatorRestore = () => {
           />
         );
       case 3:
-        return <Result status="success" title="导入成功" />;
+        return <Result status="success" title={t('Import succeeded')} />;
       default:
         return null;
     }

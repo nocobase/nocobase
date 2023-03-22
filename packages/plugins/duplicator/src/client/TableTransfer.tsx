@@ -1,6 +1,5 @@
 import { css } from '@emotion/css';
-import { Space } from '@nocobase/client';
-import { Table, Transfer, Input, Select, Row } from 'antd';
+import { Table, Transfer, Input, Select } from 'antd';
 import type { ColumnsType, TableRowSelection } from 'antd/es/table/interface';
 import type { TransferItem, TransferProps } from 'antd/es/transfer';
 import difference from 'lodash/difference';

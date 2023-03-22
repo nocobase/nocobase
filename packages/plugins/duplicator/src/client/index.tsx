@@ -2,22 +2,24 @@ import { SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
 import { DuplicatorDump } from './DuplicatorDump';
 import { DuplicatorRestore } from './DuplicatorRestore';
+import { useTranslation } from 'react-i18next';
 
 export default function (props) {
-  // return <div>{props.children}</div>;
+  const { t } = useTranslation();
+
   return (
     <SettingsCenterProvider
       settings={{
         duplicator: {
-          title: 'Duplicator',
+          title: t('Duplicator'),
           icon: 'CloudDownloadOutlined',
           tabs: {
             dump: {
-              title: 'Dump',
+              title: t('Dump'),
               component: DuplicatorDump,
             },
             restore: {
-              title: 'Restore',
+              title: t('Restore'),
               component: DuplicatorRestore,
             },
           },

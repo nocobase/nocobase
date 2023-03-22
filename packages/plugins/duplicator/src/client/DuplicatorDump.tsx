@@ -1,6 +1,6 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
-import { useAPIClient, useCurrentAppInfo, useRequest } from '@nocobase/client';
+import { useAPIClient } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
@@ -68,8 +68,8 @@ export const DuplicatorDump = () => {
   const steps = useMemo(
     () => [
       {
-        title: '选择功能模块',
-        buttonText: '下一步',
+        title: t('Select modules'),
+        buttonText: t('Next'),
         showButton: true,
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
@@ -83,8 +83,8 @@ export const DuplicatorDump = () => {
         },
       },
       {
-        title: '选择自定义数据表',
-        buttonText: '确认导出',
+        title: t('Select custom collections'),
+        buttonText: t('Confirm export'),
         showButton: true,
         data: userCollections,
         leftColumns: columns2,
@@ -122,7 +122,7 @@ export const DuplicatorDump = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认选中以下数据表？',
+                title: t('Confirm to move the following collections?'),
                 width: '60%',
                 content: (
                   <div>
@@ -152,7 +152,7 @@ export const DuplicatorDump = () => {
 
             if (list.length) {
               Modal.confirm({
-                title: '确认取消选中以下数据表？',
+                title: t('Confirm to move the following collections?'),
                 width: '60%',
                 content: (
                   <div>
@@ -199,7 +199,7 @@ export const DuplicatorDump = () => {
         },
       },
       {
-        title: '导出成功',
+        title: t('Export succeeded'),
         buttonText: '',
         showButton: false,
       },
@@ -247,7 +247,7 @@ export const DuplicatorDump = () => {
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}
           pagination={false}
-          titles={['未选择', '已选择']}
+          titles={[t('No need to export'), t('Need to export')]}
           dataSource={steps[currentStep].data}
           leftColumns={steps[currentStep].leftColumns}
           rightColumns={steps[currentStep].rightColumns}
@@ -259,7 +259,11 @@ export const DuplicatorDump = () => {
           onSelectRow={handleSelectRow}
         />
       ) : (
-        <Result status="success" title="导出成功" subTitle={`文件名已导出为：${fileName}`} />
+        <Result
+          status="success"
+          title={t('Export succeeded')}
+          subTitle={`${t('File name has been exported as: ')}${fileName}`}
+        />
       )}
     </DuplicatorSteps>
   );
