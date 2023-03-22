@@ -16,6 +16,7 @@ import { css } from '@emotion/css';
 
 const columnClass = css`
   word-break: break-all;
+  cursor: pointer;
 `;
 
 export const DuplicatorDump = () => {
