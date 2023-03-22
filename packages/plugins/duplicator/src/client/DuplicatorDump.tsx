@@ -102,7 +102,7 @@ export const DuplicatorDump = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, true, direction);
+          this.handleSelectRow(record, false, direction);
 
           const map = {
             left: {
@@ -145,7 +145,7 @@ export const DuplicatorDump = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, true, direction);
+          this.handleSelectRow(record, false, direction);
 
           const { leftDataSource, rightDataSource } = splitDataSource({
             dataSource: this.data,

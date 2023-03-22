@@ -116,7 +116,7 @@ export const DuplicatorRestore = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, true, direction);
+          this.handleSelectRow(record, false, direction);
           const map = {
             left: {
               setKeys: () => setTargetKeys((prev) => [record.key, ...prev]),
@@ -158,7 +158,7 @@ export const DuplicatorRestore = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, true, direction);
+          this.handleSelectRow(record, false, direction);
 
           const { leftDataSource, rightDataSource } = splitDataSource({
             dataSource: this.data,
