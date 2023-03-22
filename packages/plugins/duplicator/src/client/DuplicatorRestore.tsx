@@ -309,7 +309,7 @@ export const DuplicatorRestore = () => {
           <TableTransfer<GroupData | CollectionData>
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true }}
-            titles={['未选', '已选']}
+            titles={['未选择', '已选择']}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}
             rightColumns={steps[currentStep].rightColumns}
