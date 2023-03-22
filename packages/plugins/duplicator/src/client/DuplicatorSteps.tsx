@@ -9,24 +9,20 @@ const action = css`
   margin-top: 24px;
 `;
 
-export const DuplicatorSteps = ({ children, steps, loading, onChange }) => {
-  const [current, setCurrent] = useState(0);
-
+export const DuplicatorSteps = ({ children, steps, loading, current, onChange }) => {
   const next = async () => {
     steps[current].handler && (await steps[current].handler());
-    setCurrent(current + 1);
     onChange && onChange(current + 1);
   };
 
   const prev = () => {
-    setCurrent(current - 1);
     onChange && onChange(current - 1);
   };
   const { Step } = Steps;
 
   return (
     <Card>
-      <Steps current={current} size='small'>
+      <Steps current={current} size="small">
         {steps.map((item) => (
           <Step title={item.title} />
         ))}

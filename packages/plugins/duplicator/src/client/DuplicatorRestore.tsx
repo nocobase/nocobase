@@ -1,11 +1,10 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
-import { useAPIClient, useRequest } from '@nocobase/client';
-import { saveAs } from 'file-saver';
+import { useAPIClient } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
 import { TableTransfer } from './TableTransfer';
-import { Category, CollectionData, GroupData, useDumpableCollections } from './hooks/useDumpableCollections';
+import { Category, CollectionData, GroupData } from './hooks/useDumpableCollections';
 import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
@@ -54,15 +53,25 @@ const columns2: ColumnsType<CollectionData> = [
 export const DuplicatorRestore = () => {
   const api = useAPIClient();
   const { t } = useTranslation();
-  const data = useDumpableCollections();
+  const [data, setData] = React.useState<{ requiredGroups: any[]; optionalGroups: any[]; userCollections: any[] }>({
+    requiredGroups: [],
+    optionalGroups: [],
+    userCollections: [],
+  });
   const [currentStep, setCurrentStep] = React.useState(0);
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph();
   const [buttonLoading, setButtonLoading] = React.useState(false);
-  const [fileName, setFileName] = React.useState('');
+  const [restoreKey, setRestoreKey] = React.useState('');
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
+  const {
+    auth: { token },
+    axios: {
+      defaults: { baseURL },
+    },
+  } = api;
 
   const steps = useMemo(
     () => [
@@ -182,24 +191,19 @@ export const DuplicatorRestore = () => {
           }
         },
         async handler() {
-          const groups = getTargetListByKeys(steps[0].data, steps[0].targetKeys).map((item) => item.namespace);
-          const collections = getTargetListByKeys(steps[1].data, steps[1].targetKeys).map((item) => item.name);
+          const groups = getTargetListByKeys(steps[1].data, steps[1].targetKeys).map((item) => item.namespace);
+          const collections = getTargetListByKeys(steps[2].data, steps[2].targetKeys).map((item) => item.name);
           setButtonLoading(true);
-          const response = await api.request({
-            url: 'duplicator:dump',
+          await api.request({
+            url: 'duplicator:restore',
             method: 'post',
             data: {
               groups,
               collections,
+              restoreKey,
             },
-            responseType: 'blob',
           });
           setButtonLoading(false);
-          const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
-          const filename = match ? match[1] : 'duplicator.nbdump';
-          let blob = new Blob([response.data]);
-          setFileName(filename);
-          saveAs(blob, filename);
         },
       },
       {
@@ -217,8 +221,8 @@ export const DuplicatorRestore = () => {
 
     setCurrentStep(current);
     setTargetKeys(steps[current].targetKeys);
-    setSourceSelectedKeys(steps[current].sourceSelectedKeys);
-    setTargetSelectedKeys(steps[current].targetSelectedKeys);
+    setSourceSelectedKeys(steps[current].sourceSelectedKeys || []);
+    setTargetSelectedKeys(steps[current].targetSelectedKeys || []);
   };
   const handleTransferChange = (nextTargetKeys) => {
     steps[currentStep].targetKeys = nextTargetKeys;
@@ -235,7 +239,29 @@ export const DuplicatorRestore = () => {
     steps[currentStep].handlSelectRow(record, selected, direction);
   };
   const handleUploadChange = ({ file }) => {
-    console.log('file', file);
+    if (file.status !== 'done') return;
+
+    const { requiredGroups, optionalGroups, userCollections } = file.response.data.meta;
+    requiredGroups.forEach((item) => {
+      item.key = item.namespace;
+      item.title = item.namespace;
+      item.disabled = true;
+    });
+    optionalGroups.forEach((item) => {
+      item.key = item.namespace;
+      item.title = item.namespace;
+    });
+    userCollections.forEach((item) => {
+      item.key = item.name;
+    });
+
+    setRestoreKey(file.response.data.key);
+    setData({
+      requiredGroups,
+      optionalGroups,
+      userCollections,
+    });
+    setCurrentStep(currentStep + 1);
   };
 
   useEffect(() => {
@@ -248,9 +274,19 @@ export const DuplicatorRestore = () => {
 
   const getResult = (currentStep: number) => {
     switch (currentStep) {
-      case 0:
-        // TODO: '/api/' 前缀应该动态获取
-        return <DraggerUpload name="file" action={`/api/duplicator:uploadFile`} onChange={handleUploadChange} />;
+      case 0: {
+        const headers = {
+          authorization: `Bearer ${token}`,
+        };
+        return (
+          <DraggerUpload
+            name="file"
+            action={`${baseURL}duplicator:uploadFile`}
+            headers={headers}
+            onChange={handleUploadChange}
+          />
+        );
+      }
       case 1:
         return (
           <TableTransfer<GroupData | CollectionData>
@@ -286,14 +322,14 @@ export const DuplicatorRestore = () => {
           />
         );
       case 3:
-        return <Result status="success" title="导出成功" subTitle={`文件名已导出为：${fileName}`} />;
+        return <Result status="success" title="导入成功" />;
       default:
         return null;
     }
   };
 
   return (
-    <DuplicatorSteps loading={buttonLoading} steps={steps} onChange={handleStepsChange}>
+    <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
       {getResult(currentStep)}
     </DuplicatorSteps>
   );

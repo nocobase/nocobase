@@ -238,7 +238,7 @@ export const DuplicatorDump = () => {
   }, [requiredGroups]);
 
   return (
-    <DuplicatorSteps loading={buttonLoading} steps={steps} onChange={handleStepsChange}>
+    <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
           listStyle={{ minWidth: 0, border: 'none' }}
