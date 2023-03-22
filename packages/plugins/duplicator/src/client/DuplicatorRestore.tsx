@@ -12,6 +12,11 @@ import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
 import { DraggerUpload } from './DraggerUpload';
 import { useTableHeight } from './hooks/useTableHeight';
+import { css } from '@emotion/css';
+
+const columnClass = css`
+  word-break: break-all;
+`;
 
 export const DuplicatorRestore = () => {
   const api = useAPIClient();
@@ -42,10 +47,12 @@ export const DuplicatorRestore = () => {
     {
       dataIndex: 'namespace',
       title: t('Namespace'),
+      className: columnClass,
     },
     {
       dataIndex: 'collections',
       title: t('Collections'),
+      className: columnClass,
       render: (collections: CollectionData[]) =>
         collections?.map((collection) => <Tag key={collection.title}>{compile(collection.title)}</Tag>),
     },
@@ -54,14 +61,17 @@ export const DuplicatorRestore = () => {
     {
       dataIndex: 'title',
       title: t('Title'),
+      className: columnClass,
     },
     {
       dataIndex: 'name',
       title: t('Name'),
+      className: columnClass,
     },
     {
       dataIndex: 'category',
       title: t('Category'),
+      className: columnClass,
       render: (categories: Category[]) =>
         categories?.map((category) => (
           <Tag key={category.name} color={category.color}>

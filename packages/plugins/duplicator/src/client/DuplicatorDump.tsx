@@ -12,6 +12,11 @@ import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
 import { useTableHeight } from './hooks/useTableHeight';
+import { css } from '@emotion/css';
+
+const columnClass = css`
+  word-break: break-all;
+`;
 
 export const DuplicatorDump = () => {
   const api = useAPIClient();
@@ -32,10 +37,12 @@ export const DuplicatorDump = () => {
     {
       dataIndex: 'namespace',
       title: 'Namespace',
+      className: columnClass,
     },
     {
       dataIndex: 'collections',
       title: 'Collections',
+      className: columnClass,
       render: (collections: CollectionData[]) =>
         collections?.map((collection) => <Tag key={collection.title}>{compile(collection.title)}</Tag>),
     },
@@ -44,14 +51,17 @@ export const DuplicatorDump = () => {
     {
       dataIndex: 'title',
       title: 'Title',
+      className: columnClass,
     },
     {
       dataIndex: 'name',
       title: 'Name',
+      className: columnClass,
     },
     {
       dataIndex: 'category',
       title: 'Category',
+      className: columnClass,
       render: (categories: Category[]) =>
         categories?.map((category) => (
           <Tag key={category.name} color={category.color}>
