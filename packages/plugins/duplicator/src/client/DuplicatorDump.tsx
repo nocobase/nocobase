@@ -261,6 +261,7 @@ export const DuplicatorDump = () => {
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
           noCheckbox
+          disabled={buttonLoading}
           loading={loading}
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}

@@ -317,6 +317,7 @@ export const DuplicatorRestore = () => {
         return (
           <TableTransfer<GroupData | CollectionData>
             noCheckbox
+            disabled={buttonLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true }}
             titles={[t('No need to import'), t('Need to import')]}
@@ -337,6 +338,7 @@ export const DuplicatorRestore = () => {
         return (
           <TableTransfer<GroupData | CollectionData>
             noCheckbox
+            disabled={buttonLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
             titles={[t('No need to import'), t('Need to import')]}

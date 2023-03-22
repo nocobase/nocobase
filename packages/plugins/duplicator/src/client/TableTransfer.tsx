@@ -35,7 +35,7 @@ const highlight = css`
     background-color: #dcf4ff !important;
   }
 `;
-const disabled = css`
+const disabledClass = css`
   opacity: 0.5;
   pointer-events: none;
 `;
@@ -112,6 +112,7 @@ export function TableTransfer<T>({
             loading={loading}
             noCheckbox={noCheckbox}
             onDoubleClickRow={onDoubleClickRow}
+            disabled={listDisabled}
           />
         );
       }}
@@ -137,6 +138,7 @@ function Content({
   loading,
   noCheckbox,
   onDoubleClickRow,
+  disabled,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -198,8 +200,9 @@ function Content({
       </div>
       <Table
         bordered
+        className={disabled ? disabledClass : ''}
         rowClassName={(record) =>
-          `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabled : ''}`
+          `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabledClass : ''}`
         }
         loading={loading}
         rowSelection={rowSelection}
