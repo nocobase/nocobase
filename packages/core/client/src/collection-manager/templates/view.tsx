@@ -30,7 +30,6 @@ export const view: ICollectionTemplate = {
     source: {
       type: 'string',
       title: '{{ t("Source collections") }}',
-      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -42,6 +41,15 @@ export const view: ICollectionTemplate = {
     previewFields: {
       type: 'void',
       'x-component': PreviewFields,
+      'x-reactions':{
+        "dependencies": ["name"],
+        "fulfill": {
+            "schema": {
+              "x-component-props": "{{$form.values}}" //任意层次属性都支持表达式
+            }
+          }
+
+      }
     },
     ...getConfigurableProperties('category'),
   },

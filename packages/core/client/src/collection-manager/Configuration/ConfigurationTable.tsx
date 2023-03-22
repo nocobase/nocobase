@@ -81,7 +81,7 @@ export const ConfigurationTable = () => {
    
   const data = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
-  const resource = api.resource('views');
+  const resource = api.resource('dbViews');
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
@@ -110,8 +110,8 @@ export const ConfigurationTable = () => {
     return resource.list().then(({ data }) => {
       return data?.data?.map((item: any) => {
         return {
-          label: compile(item.viewname),
-          value: item.viewname,
+          label: compile(item.name),
+          value: item.name,
         };
       });
     });
