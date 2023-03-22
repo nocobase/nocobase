@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag } from 'antd';
+import { Tag, Modal } from 'antd';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
@@ -9,6 +9,7 @@ import { Category, CollectionData, GroupData, useDumpableCollections } from './h
 import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
+import { getTargetListByKeys } from './utils/getTargetListByKeys';
 
 const columns1: ColumnsType<GroupData> = [
   {
@@ -56,6 +57,7 @@ export const DuplicatorDump = () => {
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph();
+  const [buttonLoading, setButtonLoading] = React.useState(false);
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
 
   const steps = useMemo(
@@ -87,7 +89,6 @@ export const DuplicatorDump = () => {
         sourceSelectedKeys: [],
         targetSelectedKeys: [],
         handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
-          // console.log(record, selected, direction);
           const { leftDataSource, rightDataSource } = splitDataSource({
             dataSource: this.data,
             targetKeys: this.targetKeys,
@@ -122,11 +123,19 @@ export const DuplicatorDump = () => {
           }
         },
         async handler() {
+          const groups = getTargetListByKeys(steps[0].data, steps[0].targetKeys).map((item) => item.namespace);
+          const collections = getTargetListByKeys(steps[1].data, steps[1].targetKeys).map((item) => item.name);
+          setButtonLoading(true);
           const response = await api.request({
             url: 'duplicator:dump',
             method: 'post',
+            data: {
+              groups,
+              collections,
+            },
             responseType: 'blob',
           });
+          setButtonLoading(false);
           const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
           const filename = match ? match[1] : 'duplicator.nbdump';
           let blob = new Blob([response.data]);
@@ -134,7 +143,7 @@ export const DuplicatorDump = () => {
         },
       },
       {
-        title: '确认导出',
+        title: '导出成功',
         buttonText: '',
         showButton: false,
       },
@@ -155,7 +164,7 @@ export const DuplicatorDump = () => {
     steps[currentStep].targetKeys = nextTargetKeys;
     setTargetKeys(nextTargetKeys);
   };
-  const handleSelectChange = (sourceSelectedKeys, targetSelectedKeys) => {
+  const handleSelectChange = (sourceSelectedKeys = [], targetSelectedKeys = []) => {
     steps[currentStep].sourceSelectedKeys = sourceSelectedKeys;
     steps[currentStep].targetSelectedKeys = targetSelectedKeys;
 
@@ -175,21 +184,23 @@ export const DuplicatorDump = () => {
   }, [requiredGroups]);
 
   return (
-    <DuplicatorSteps steps={steps} onChange={handleStepsChange}>
-      <TableTransfer<GroupData | CollectionData>
-        listStyle={{ minWidth: 0, border: 'none' }}
-        scroll={{ x: true }}
-        titles={['未选', '已选']}
-        dataSource={steps[currentStep].data}
-        leftColumns={steps[currentStep].leftColumns}
-        rightColumns={steps[currentStep].rightColumns}
-        showSearch={steps[currentStep].showSearch}
-        targetKeys={targetKeys}
-        selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
-        onChange={handleTransferChange}
-        onSelectChange={handleSelectChange}
-        onSelectRow={handleSelectRow}
-      />
+    <DuplicatorSteps loading={buttonLoading} steps={steps} onChange={handleStepsChange}>
+      {currentStep < steps.length - 1 ? (
+        <TableTransfer<GroupData | CollectionData>
+          listStyle={{ minWidth: 0, border: 'none' }}
+          scroll={{ x: true }}
+          titles={['未选', '已选']}
+          dataSource={steps[currentStep].data}
+          leftColumns={steps[currentStep].leftColumns}
+          rightColumns={steps[currentStep].rightColumns}
+          showSearch={steps[currentStep].showSearch}
+          targetKeys={targetKeys}
+          selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
+          onChange={handleTransferChange}
+          onSelectChange={handleSelectChange}
+          onSelectRow={handleSelectRow}
+        />
+      ) : null}
     </DuplicatorSteps>
   );
 };

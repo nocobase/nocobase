@@ -9,11 +9,11 @@ const action = css`
   margin-top: 24px;
 `;
 
-export const DuplicatorSteps = ({ children, steps, onChange }) => {
+export const DuplicatorSteps = ({ children, steps, loading, onChange }) => {
   const [current, setCurrent] = useState(0);
 
-  const next = () => {
-    steps[current].handler && steps[current].handler();
+  const next = async () => {
+    steps[current].handler && (await steps[current].handler());
     setCurrent(current + 1);
     onChange && onChange(current + 1);
   };
@@ -34,7 +34,7 @@ export const DuplicatorSteps = ({ children, steps, onChange }) => {
       <div className={content}>{children}</div>
       <div className={action}>
         {current < steps.length - 1 && steps[current].showButton && (
-          <Button type="primary" onClick={() => next()}>
+          <Button type="primary" loading={loading} onClick={next}>
             {steps[current].buttonText}
           </Button>
         )}
