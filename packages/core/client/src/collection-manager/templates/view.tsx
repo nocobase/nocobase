@@ -1,5 +1,6 @@
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
+import { PreviewFields } from './components/PreviewFields';
 
 export const view: ICollectionTemplate = {
   name: 'view',
@@ -37,6 +38,10 @@ export const view: ICollectionTemplate = {
       },
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-disabled': true,
+    },
+    previewFields: {
+      type: 'void',
+      'x-component': PreviewFields,
     },
     ...getConfigurableProperties('category'),
   },

@@ -78,6 +78,7 @@ export const ConfigurationTable = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+   
   const data = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
   const resource = api.resource('views');
@@ -115,7 +116,6 @@ export const ConfigurationTable = () => {
       });
     });
   };
-
   const ctx = useContext(SchemaComponentContext);
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>

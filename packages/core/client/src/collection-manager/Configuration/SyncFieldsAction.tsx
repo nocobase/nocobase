@@ -16,6 +16,7 @@ import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
+import { PreviewFields } from '../templates/components/PreviewFields';
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -59,17 +60,12 @@ const getSchema = (schema: IField, record: any, compile) => {
             );
           },
         },
-        title: `${compile(record.title)} - ${compile('{{ t("Add field") }}')}`,
+        title: `${compile('{{ t("Sync from database") }}')}`,
         properties: {
-          summary: {
-            type: 'void',
-            'x-component': 'FieldSummary',
-            'x-component-props': {
-              schemaKey: schema.name,
-            },
+          previewFields: {
+            type: 'object',
+            'x-component': PreviewFields,
           },
-          // @ts-ignore
-          ...properties,
           footer: {
             type: 'void',
             'x-component': 'Action.Drawer.Footer',
@@ -96,7 +92,6 @@ const getSchema = (schema: IField, record: any, compile) => {
     },
   };
 };
-
 
 const useCreateCollectionField = () => {
   const form = useForm();
@@ -180,39 +175,41 @@ export const SyncFieldsActionCom = (props) => {
     return optionArr;
   };
   return (
-    <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        {children || (
-          <Button
-            icon={<PlusOutlined />}
-            onClick={(e) => {
-              const schema = getSchema({}, record, compile);
-              if (schema) {
-                setSchema(schema);
-                setVisible(true);
-              }
+    record.template === 'view' && (
+      <RecordProvider record={record}>
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          {children || (
+            <Button
+              icon={<PlusOutlined />}
+              onClick={(e) => {
+                const schema = getSchema({}, record, compile);
+                if (schema) {
+                  setSchema(schema);
+                  setVisible(true);
+                }
+              }}
+            >
+              {t('Sync from database')}
+            </Button>
+          )}
+          <SchemaComponent
+            schema={schema}
+            components={{ ...components, ArrayTable }}
+            scope={{
+              getContainer,
+              useCancelAction,
+              createOnly: true,
+              isOverride: false,
+              override: false,
+              useCreateCollectionField,
+              record,
+              showReverseFieldConfig: true,
+              targetScope,
+              ...scope,
             }}
-          >
-            {t('Sync from database')}
-          </Button>
-        )}
-        <SchemaComponent
-          schema={schema}
-          components={{ ...components, ArrayTable }}
-          scope={{
-            getContainer,
-            useCancelAction,
-            createOnly: true,
-            isOverride: false,
-            override: false,
-            useCreateCollectionField,
-            record,
-            showReverseFieldConfig: true,
-            targetScope,
-            ...scope,
-          }}
-        />
-      </ActionContext.Provider>
-    </RecordProvider>
+          />
+        </ActionContext.Provider>
+      </RecordProvider>
+    )
   );
 };
