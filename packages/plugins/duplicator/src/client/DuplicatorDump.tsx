@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag, Result } from 'antd';
+import { Tag, Result, Modal, Table } from 'antd';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
@@ -10,6 +10,7 @@ import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
+import { useTranslation } from 'react-i18next';
 
 const columns1: ColumnsType<GroupData> = [
   {
@@ -51,6 +52,7 @@ const columns2: ColumnsType<CollectionData> = [
 
 export const DuplicatorDump = () => {
   const api = useAPIClient();
+  const { t } = useTranslation();
   const data = useDumpableCollections();
   const [currentStep, setCurrentStep] = React.useState(0);
   const [targetKeys, setTargetKeys] = React.useState([]);
@@ -112,15 +114,65 @@ export const DuplicatorDump = () => {
           if (selected) {
             const list = dataMap[direction]
               .addable(record.name)
-              .filter((name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name));
+              .filter(
+                (name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name),
+              ) as CollectionData[];
 
-            dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, ...list]));
+            if (list.length) {
+              Modal.confirm({
+                title: '确认添加以下数据表？',
+                width: '60%',
+                content: (
+                  <div>
+                    <Table
+                      size={'small'}
+                      columns={columns2}
+                      dataSource={dataMap[direction].data.filter((collection) => list.includes(collection.name))}
+                      pagination={false}
+                      scroll={{ y: '60vh' }}
+                    />
+                  </div>
+                ),
+                onOk() {
+                  dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, ...list]));
+                },
+                onCancel() {
+                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
+                },
+              });
+            } else {
+              dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, record.key]));
+            }
           } else {
             const list = dataMap[direction]
               .removable(record.name)
               .filter((name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name));
 
-            dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => !list.includes(key)));
+            if (list.length) {
+              Modal.confirm({
+                title: '确认移除以下数据表？',
+                width: '60%',
+                content: (
+                  <div>
+                    <Table
+                      size={'small'}
+                      columns={columns2}
+                      dataSource={dataMap[direction].data.filter((collection) => list.includes(collection.name))}
+                      pagination={false}
+                      scroll={{ y: '60vh' }}
+                    />
+                  </div>
+                ),
+                onOk() {
+                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => !list.includes(key)));
+                },
+                onCancel() {
+                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
+                },
+              });
+            } else {
+              dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
+            }
           }
         },
         async handler() {
