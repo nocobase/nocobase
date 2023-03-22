@@ -80,7 +80,7 @@ export const DuplicatorRestore = () => {
       {
         title: '上传备份文件',
         buttonText: '下一步',
-        showButton: true,
+        showButton: !!requiredGroups.length,
       },
       {
         title: '选择功能模块',
