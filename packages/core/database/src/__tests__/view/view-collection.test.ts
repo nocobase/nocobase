@@ -28,9 +28,9 @@ describe('create view', () => {
     await db.sequelize.query(viewSQL);
 
     const viewCollection = db.collection({
-      name: 'view_collection',
-      viewName,
+      name: viewName,
       schema: schemaName,
+      view: true,
       fields: [
         {
           type: 'string',
@@ -93,9 +93,9 @@ describe('create view', () => {
 
     await db.sequelize.query(viewSql);
 
-    const UserWithProfileView = db.collection({
-      name: 'view_collection',
-      viewName,
+    db.collection({
+      name: viewName,
+      view: true,
       fields: [
         {
           type: 'string',
@@ -106,9 +106,8 @@ describe('create view', () => {
           name: 'age',
         },
       ],
-      view: true,
     });
-
+    const UserWithProfileView = db.getCollection(viewName);
     expect(UserWithProfileView).toBeInstanceOf(ViewCollection);
 
     const fooData = await UserWithProfileView.repository.findOne({

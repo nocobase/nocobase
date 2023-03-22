@@ -10,7 +10,7 @@ export class ViewCollection extends Collection {
 
   protected sequelizeModelOptions(): any {
     const modelOptions = super.sequelizeModelOptions();
-    modelOptions.tableName = this.options.viewName;
+    modelOptions.tableName = this.options.viewName || this.options.name;
     return modelOptions;
   }
 
