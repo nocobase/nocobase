@@ -11,6 +11,7 @@ import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
 import { DraggerUpload } from './DraggerUpload';
+import { useTableHeight } from './hooks/useTableHeight';
 
 const columns1: ColumnsType<GroupData> = [
   {
@@ -65,6 +66,7 @@ export const DuplicatorRestore = () => {
   const { findAddable, findRemovable } = useCollectionsGraph();
   const [buttonLoading, setButtonLoading] = React.useState(false);
   const [restoreKey, setRestoreKey] = React.useState('');
+  const tableHeight = useTableHeight();
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
   const {
     auth: { token },
@@ -308,7 +310,7 @@ export const DuplicatorRestore = () => {
         return (
           <TableTransfer<GroupData | CollectionData>
             listStyle={{ minWidth: 0, border: 'none' }}
-            scroll={{ x: true }}
+            scroll={{ x: true, y: tableHeight }}
             titles={['未选择', '已选择']}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}

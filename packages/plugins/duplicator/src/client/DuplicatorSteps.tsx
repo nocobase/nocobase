@@ -1,15 +1,28 @@
 import { Button, Steps, Card } from 'antd';
-import React, { useState } from 'react';
+import React from 'react';
 import { css } from '@emotion/css';
-
-const content = css`
-  margin-top: 16px;
-`;
-const action = css`
-  margin-top: 24px;
-`;
+import { useTheme } from './hooks/useTheme';
 
 export const DuplicatorSteps = ({ children, steps, loading, current, onChange }) => {
+  const theme = useTheme();
+
+  const styleMap = {
+    default: {
+      contentMarginTop: '16px',
+      actionMarginTop: '24px',
+    },
+    compact: {
+      contentMarginTop: '12px',
+      actionMarginTop: '12px',
+    },
+  };
+  const content = css`
+    margin-top: ${styleMap[theme].contentMarginTop};
+  `;
+  const action = css`
+    margin-top: ${styleMap[theme].actionMarginTop};
+  `;
+
   const next = async () => {
     steps[current].handler && (await steps[current].handler());
     onChange && onChange(current + 1);

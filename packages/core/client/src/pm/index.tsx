@@ -399,7 +399,8 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          {/* nb-content-area 用于标记内容区域容器，用于查找 DOM */}
+          <div className={'m24 nb-content-area'} style={{ margin: 24 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

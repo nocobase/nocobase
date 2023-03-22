@@ -1,6 +1,6 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
-import { useAPIClient, useRequest } from '@nocobase/client';
+import { useAPIClient, useCurrentAppInfo, useRequest } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
@@ -11,6 +11,7 @@ import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
+import { useTableHeight } from './hooks/useTableHeight';
 
 const columns1: ColumnsType<GroupData> = [
   {
@@ -61,6 +62,7 @@ export const DuplicatorDump = () => {
   const { findAddable, findRemovable } = useCollectionsGraph();
   const [buttonLoading, setButtonLoading] = React.useState(false);
   const [fileName, setFileName] = React.useState('');
+  const tableHeight = useTableHeight();
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
 
   const steps = useMemo(
@@ -242,7 +244,8 @@ export const DuplicatorDump = () => {
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
           listStyle={{ minWidth: 0, border: 'none' }}
-          scroll={{ x: true }}
+          scroll={{ x: true, y: tableHeight }}
+          pagination={false}
           titles={['未选择', '已选择']}
           dataSource={steps[currentStep].data}
           leftColumns={steps[currentStep].leftColumns}
