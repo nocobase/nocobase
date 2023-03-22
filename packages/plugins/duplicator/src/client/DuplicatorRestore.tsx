@@ -70,6 +70,11 @@ export const DuplicatorRestore = () => {
         title: '上传备份文件',
         buttonText: '下一步',
         showButton: true,
+      },
+      {
+        title: '选择功能模块',
+        buttonText: '下一步',
+        showButton: true,
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
         rightColumns: columns1,
@@ -83,7 +88,7 @@ export const DuplicatorRestore = () => {
       },
       {
         title: '选择自定义数据表',
-        buttonText: '确认导出',
+        buttonText: '确认导入',
         showButton: true,
         data: userCollections,
         leftColumns: columns2,
@@ -198,7 +203,7 @@ export const DuplicatorRestore = () => {
         },
       },
       {
-        title: '导出成功',
+        title: '导入成功',
         buttonText: '',
         showButton: false,
       },
@@ -244,6 +249,7 @@ export const DuplicatorRestore = () => {
   const getResult = (currentStep: number) => {
     switch (currentStep) {
       case 0:
+        // TODO: '/api/' 前缀应该动态获取
         return <DraggerUpload name="file" action={`/api/duplicator:uploadFile`} onChange={handleUploadChange} />;
       case 1:
         return (
@@ -263,6 +269,23 @@ export const DuplicatorRestore = () => {
           />
         );
       case 2:
+        return (
+          <TableTransfer<GroupData | CollectionData>
+            listStyle={{ minWidth: 0, border: 'none' }}
+            scroll={{ x: true }}
+            titles={['未选', '已选']}
+            dataSource={steps[currentStep].data}
+            leftColumns={steps[currentStep].leftColumns}
+            rightColumns={steps[currentStep].rightColumns}
+            showSearch={steps[currentStep].showSearch}
+            targetKeys={targetKeys}
+            selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
+            onChange={handleTransferChange}
+            onSelectChange={handleSelectChange}
+            onSelectRow={handleSelectRow}
+          />
+        );
+      case 3:
         return <Result status="success" title="导出成功" subTitle={`文件名已导出为：${fileName}`} />;
       default:
         return null;
