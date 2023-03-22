@@ -6,6 +6,9 @@ import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
 import { TableTransfer } from './TableTransfer';
 import { Category, CollectionData, GroupData, useDumpableCollections } from './hooks/useDumpableCollections';
+import { useCollectionsGraph } from './hooks/useCollectionsGraph';
+import { splitDataSource } from './utils/splitDataSource';
+import _ from 'lodash';
 
 const columns1: ColumnsType<GroupData> = [
   {
@@ -50,9 +53,10 @@ export const DuplicatorDump = () => {
   const data = useDumpableCollections();
   const [currentStep, setCurrentStep] = React.useState(0);
   const [targetKeys, setTargetKeys] = React.useState([]);
+  const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
+  const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
+  const { findAddable, findRemovable } = useCollectionsGraph();
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
-
-  console.log('userCollections', userCollections);
 
   const steps = useMemo(
     () => [
@@ -65,6 +69,11 @@ export const DuplicatorDump = () => {
         rightColumns: columns1,
         showSearch: false,
         targetKeys: [],
+        sourceSelectedKeys: [],
+        targetSelectedKeys: [],
+        handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
+          console.log(record, selected, direction);
+        },
       },
       {
         title: '选择自定义数据表',
@@ -75,7 +84,44 @@ export const DuplicatorDump = () => {
         rightColumns: columns2,
         showSearch: true,
         targetKeys: [],
-        handler: async () => {
+        sourceSelectedKeys: [],
+        targetSelectedKeys: [],
+        handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
+          // console.log(record, selected, direction);
+          const { leftDataSource, rightDataSource } = splitDataSource({
+            dataSource: this.data,
+            targetKeys: this.targetKeys,
+          });
+          const dataMap = {
+            left: {
+              addable: findAddable,
+              removable: findRemovable,
+              data: leftDataSource,
+              setSelectedKeys: setSourceSelectedKeys,
+            },
+            right: {
+              addable: findRemovable,
+              removable: findAddable,
+              data: rightDataSource,
+              setSelectedKeys: setTargetSelectedKeys,
+            },
+          };
+
+          if (selected) {
+            const list = dataMap[direction]
+              .addable(record.name)
+              .filter((name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name));
+
+            dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, ...list]));
+          } else {
+            const list = dataMap[direction]
+              .removable(record.name)
+              .filter((name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name));
+
+            dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => !list.includes(key)));
+          }
+        },
+        async handler() {
           const response = await api.request({
             url: 'duplicator:dump',
             method: 'post',
@@ -97,11 +143,27 @@ export const DuplicatorDump = () => {
   );
   const handleStepsChange = (current) => {
     steps[currentStep].targetKeys = targetKeys;
+    steps[currentStep].sourceSelectedKeys = sourceSelectedKeys;
+    steps[currentStep].targetSelectedKeys = targetSelectedKeys;
+
     setCurrentStep(current);
     setTargetKeys(steps[current].targetKeys);
+    setSourceSelectedKeys(steps[current].sourceSelectedKeys);
+    setTargetSelectedKeys(steps[current].targetSelectedKeys);
   };
   const handleTransferChange = (nextTargetKeys) => {
+    steps[currentStep].targetKeys = nextTargetKeys;
     setTargetKeys(nextTargetKeys);
+  };
+  const handleSelectChange = (sourceSelectedKeys, targetSelectedKeys) => {
+    steps[currentStep].sourceSelectedKeys = sourceSelectedKeys;
+    steps[currentStep].targetSelectedKeys = targetSelectedKeys;
+
+    setSourceSelectedKeys(sourceSelectedKeys);
+    setTargetSelectedKeys(targetSelectedKeys);
+  };
+  const handleSelectRow = (record: any, selected: boolean, direction: 'left' | 'right') => {
+    steps[currentStep].handlSelectRow(record, selected, direction);
   };
 
   useEffect(() => {
@@ -123,7 +185,10 @@ export const DuplicatorDump = () => {
         rightColumns={steps[currentStep].rightColumns}
         showSearch={steps[currentStep].showSearch}
         targetKeys={targetKeys}
+        selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
         onChange={handleTransferChange}
+        onSelectChange={handleSelectChange}
+        onSelectRow={handleSelectRow}
       />
     </DuplicatorSteps>
   );

@@ -16,6 +16,7 @@ interface TableTransferProps<T> extends TransferProps<TransferItem> {
   scroll?: { scrollToFirstRowOnChange?: boolean; x?: string | number | true; y?: string | number };
   pagination?: any;
   filterOptionByCategory?: (category: string[], option: any) => boolean;
+  onSelectRow?: (item: any, selected: boolean, direction: 'left' | 'right') => void;
   showSearch?: boolean;
 }
 
@@ -40,6 +41,7 @@ export function TableTransfer<T>({
   pagination,
   showSearch,
   filterOptionByCategory = defaultFilterOptionByCategory,
+  onSelectRow,
   ...restProps
 }: TableTransferProps<T>) {
   const { titles = [], filterOption = defaultFilterOption } = restProps;
@@ -86,6 +88,8 @@ export function TableTransfer<T>({
             filterOption={filterOption}
             filterOptionByCategory={filterOptionByCategory}
             showSearch={showSearch}
+            direction={direction}
+            onSelectRow={onSelectRow}
           />
         );
       }}
@@ -106,6 +110,8 @@ function Content({
   filterOption,
   filterOptionByCategory,
   showSearch,
+  direction,
+  onSelectRow,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -174,10 +180,12 @@ function Content({
         style={{ pointerEvents: listDisabled ? 'none' : undefined, minWidth: 0 }}
         scroll={scroll}
         pagination={pagination}
-        onRow={({ key, disabled: itemDisabled }) => ({
+        onRow={(item) => ({
           onClick: () => {
+            const { key, disabled: itemDisabled } = item;
             if (itemDisabled || listDisabled) return;
             onItemSelect(key as string, !listSelectedKeys.includes(key as string));
+            onSelectRow(item, !listSelectedKeys.includes(key as string), direction);
           },
         })}
       />
