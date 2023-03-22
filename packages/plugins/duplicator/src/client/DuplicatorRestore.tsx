@@ -87,7 +87,7 @@ export const DuplicatorRestore = () => {
         targetKeys: [],
         sourceSelectedKeys: [],
         targetSelectedKeys: [],
-        handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
+        handleSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
           const map = {
             left: {
               setSelectedKeys: () => {
@@ -105,7 +105,7 @@ export const DuplicatorRestore = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handlSelectRow(record, true, direction);
+          this.handleSelectRow(record, true, direction);
           const map = {
             left: {
               setKeys: () => setTargetKeys((prev) => [record.key, ...prev]),
@@ -129,7 +129,26 @@ export const DuplicatorRestore = () => {
         targetKeys: [],
         sourceSelectedKeys: [],
         targetSelectedKeys: [],
-        handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
+        handleSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
+          const map = {
+            left: {
+              setSelectedKeys: () => {
+                setSourceSelectedKeys(selected ? [record.key] : []);
+                setTargetSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+            right: {
+              setSelectedKeys: () => {
+                setTargetSelectedKeys(selected ? [record.key] : []);
+                setSourceSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+          };
+          map[direction].setSelectedKeys();
+        },
+        handleDoubleClickRow(record: any, direction: 'left' | 'right') {
+          this.handleSelectRow(record, true, direction);
+
           const { leftDataSource, rightDataSource } = splitDataSource({
             dataSource: this.data,
             targetKeys: this.targetKeys,
@@ -139,76 +158,53 @@ export const DuplicatorRestore = () => {
               addable: findAddable,
               removable: findRemovable,
               data: leftDataSource,
-              setSelectedKeys: setSourceSelectedKeys,
+              setKeys: (list: string[]) =>
+                setTargetKeys((prev) => {
+                  const result = [...list, ...prev];
+                  this.targetKeys = result;
+                  return result;
+                }),
             },
             right: {
               addable: findRemovable,
               removable: findAddable,
               data: rightDataSource,
-              setSelectedKeys: setTargetSelectedKeys,
+              setKeys: (list: string[]) =>
+                setTargetKeys((prev) => {
+                  const result = prev.filter((key) => !list.includes(key));
+                  this.targetKeys = result;
+                  return result;
+                }),
             },
           };
 
-          if (selected) {
-            const list = dataMap[direction]
-              .addable(record.name)
-              .filter((name) => dataMap[direction].data.some((item) => item.name === name)) as CollectionData[];
+          const list = dataMap[direction]
+            .addable(record.name)
+            .filter((name) => dataMap[direction].data.some((item: CollectionData) => item.name === name)) as string[];
 
-            if (list.length) {
-              Modal.confirm({
-                title: t('Confirm to move the following collections?'),
-                width: '60%',
-                content: (
-                  <div>
-                    <Table
-                      size={'small'}
-                      columns={columns2}
-                      dataSource={dataMap[direction].data.filter((collection) => list.includes(collection.name))}
-                      pagination={false}
-                      scroll={{ y: '60vh' }}
-                    />
-                  </div>
-                ),
-                onOk() {
-                  dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, ...list]));
-                },
-                onCancel() {
-                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
-                },
-              });
-            } else {
-              dataMap[direction].setSelectedKeys((prev) => _.uniq([...prev, record.key]));
-            }
+          console.log(list);
+
+          if (list.length > 1) {
+            Modal.confirm({
+              title: t('Confirm to move the following collections?'),
+              width: '60%',
+              content: (
+                <div>
+                  <Table
+                    size={'small'}
+                    columns={columns2}
+                    dataSource={dataMap[direction].data.filter((collection) => list.includes(collection.name))}
+                    pagination={false}
+                    scroll={{ y: '60vh' }}
+                  />
+                </div>
+              ),
+              onOk() {
+                dataMap[direction].setKeys(list);
+              },
+            });
           } else {
-            const list = dataMap[direction]
-              .removable(record.name)
-              .filter((name) => dataMap[direction].data.some((item) => item.name === name));
-
-            if (list.length) {
-              Modal.confirm({
-                title: t('Confirm to move the following collections?'),
-                width: '60%',
-                content: (
-                  <div>
-                    <Table
-                      size={'small'}
-                      columns={columns2}
-                      dataSource={dataMap[direction].data.filter((collection) => list.includes(collection.name))}
-                      pagination={false}
-                      scroll={{ y: '60vh' }}
-                    />
-                  </div>
-                ),
-                onOk() {
-                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => !list.includes(key)));
-                },
-                onCancel() {
-                  dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
-                },
-              });
-            } else {
-              dataMap[direction].setSelectedKeys((prev) => prev.filter((key) => key !== record.key));
-            }
+            dataMap[direction].setKeys(list);
           }
         },
         async handler() {
@@ -245,9 +241,15 @@ export const DuplicatorRestore = () => {
     setSourceSelectedKeys(steps[current].sourceSelectedKeys || []);
     setTargetSelectedKeys(steps[current].targetSelectedKeys || []);
   };
-  const handleTransferChange = (nextTargetKeys) => {
-    steps[currentStep].targetKeys = nextTargetKeys;
-    setTargetKeys(nextTargetKeys);
+  const handleTransferChange = (nextTargetKeys: string[], direction: string, moveKeys: string[]) => {
+    console.log('nextTargetKeys', nextTargetKeys, direction, moveKeys);
+
+    const reverse = {
+      left: 'right',
+      right: 'left',
+    };
+
+    steps[currentStep].handleDoubleClickRow?.({ key: moveKeys[0], name: moveKeys[0] }, reverse[direction]);
   };
   const handleSelectChange = (sourceSelectedKeys = [], targetSelectedKeys = []) => {
     steps[currentStep].sourceSelectedKeys = sourceSelectedKeys;
@@ -257,7 +259,7 @@ export const DuplicatorRestore = () => {
     setTargetSelectedKeys(targetSelectedKeys);
   };
   const handleSelectRow = (record: any, selected: boolean, direction: 'left' | 'right') => {
-    steps[currentStep].handlSelectRow(record, selected, direction);
+    steps[currentStep].handleSelectRow(record, selected, direction);
   };
   const handleUploadChange = ({ file }) => {
     if (file.status !== 'done') return;
@@ -324,6 +326,7 @@ export const DuplicatorRestore = () => {
             showSearch={steps[currentStep].showSearch}
             targetKeys={targetKeys}
             selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
+            pagination={false}
             onChange={handleTransferChange}
             onSelectChange={handleSelectChange}
             onSelectRow={handleSelectRow}
@@ -343,6 +346,7 @@ export const DuplicatorRestore = () => {
             showSearch={steps[currentStep].showSearch}
             targetKeys={targetKeys}
             selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
+            pagination={false}
             onChange={handleTransferChange}
             onSelectChange={handleSelectChange}
             onSelectRow={handleSelectRow}
