@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag, Modal } from 'antd';
+import { Tag, Result } from 'antd';
 import { useAPIClient, useRequest } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
@@ -58,6 +58,7 @@ export const DuplicatorDump = () => {
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph();
   const [buttonLoading, setButtonLoading] = React.useState(false);
+  const [fileName, setFileName] = React.useState('');
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
 
   const steps = useMemo(
@@ -139,6 +140,7 @@ export const DuplicatorDump = () => {
           const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
           const filename = match ? match[1] : 'duplicator.nbdump';
           let blob = new Blob([response.data]);
+          setFileName(filename);
           saveAs(blob, filename);
         },
       },
@@ -200,7 +202,9 @@ export const DuplicatorDump = () => {
           onSelectChange={handleSelectChange}
           onSelectRow={handleSelectRow}
         />
-      ) : null}
+      ) : (
+        <Result status="success" title="导出成功" subTitle={`文件名已导出为：${fileName}`} />
+      )}
     </DuplicatorSteps>
   );
 };
