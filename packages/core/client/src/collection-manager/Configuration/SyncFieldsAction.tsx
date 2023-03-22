@@ -65,6 +65,9 @@ const getSchema = (schema: IField, record: any, compile) => {
           previewFields: {
             type: 'object',
             'x-component': PreviewFields,
+            'x-component-props': {
+              ...record,
+            },
           },
           footer: {
             type: 'void',
