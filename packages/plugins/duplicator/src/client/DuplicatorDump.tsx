@@ -1,6 +1,6 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useCompile } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
@@ -12,39 +12,6 @@ import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
 import { useTableHeight } from './hooks/useTableHeight';
-
-const columns1: ColumnsType<GroupData> = [
-  {
-    dataIndex: 'namespace',
-    title: 'Namespace',
-  },
-  {
-    dataIndex: 'collections',
-    title: 'Collections',
-    render: (collections: CollectionData[]) =>
-      collections?.map((collection) => <Tag key={collection.title}>{collection.title}</Tag>),
-  },
-];
-const columns2: ColumnsType<CollectionData> = [
-  {
-    dataIndex: 'title',
-    title: 'Title',
-  },
-  {
-    dataIndex: 'name',
-    title: 'Name',
-  },
-  {
-    dataIndex: 'category',
-    title: 'Category',
-    render: (categories: Category[]) =>
-      categories?.map((category) => (
-        <Tag key={category.name} color={category.color}>
-          {category.name}
-        </Tag>
-      )),
-  },
-];
 
 export const DuplicatorDump = () => {
   const api = useAPIClient();
@@ -58,7 +25,41 @@ export const DuplicatorDump = () => {
   const [buttonLoading, setButtonLoading] = React.useState(false);
   const [fileName, setFileName] = React.useState('');
   const tableHeight = useTableHeight();
+  const compile = useCompile();
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
+
+  const columns1: ColumnsType<GroupData> = [
+    {
+      dataIndex: 'namespace',
+      title: 'Namespace',
+    },
+    {
+      dataIndex: 'collections',
+      title: 'Collections',
+      render: (collections: CollectionData[]) =>
+        collections?.map((collection) => <Tag key={collection.title}>{compile(collection.title)}</Tag>),
+    },
+  ];
+  const columns2: ColumnsType<CollectionData> = [
+    {
+      dataIndex: 'title',
+      title: 'Title',
+    },
+    {
+      dataIndex: 'name',
+      title: 'Name',
+    },
+    {
+      dataIndex: 'category',
+      title: 'Category',
+      render: (categories: Category[]) =>
+        categories?.map((category) => (
+          <Tag key={category.name} color={category.color}>
+            {category.name}
+          </Tag>
+        )),
+    },
+  ];
 
   const steps = useMemo(
     () => [

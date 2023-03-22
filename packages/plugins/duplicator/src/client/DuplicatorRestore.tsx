@@ -1,6 +1,6 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useCompile } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
 import { TableTransfer } from './TableTransfer';
@@ -29,6 +29,7 @@ export const DuplicatorRestore = () => {
   const [buttonLoading, setButtonLoading] = React.useState(false);
   const [restoreKey, setRestoreKey] = React.useState('');
   const tableHeight = useTableHeight();
+  const compile = useCompile();
   const { requiredGroups = [], optionalGroups = [], userCollections = [] } = data;
   const {
     auth: { token },
@@ -46,7 +47,7 @@ export const DuplicatorRestore = () => {
       dataIndex: 'collections',
       title: t('Collections'),
       render: (collections: CollectionData[]) =>
-        collections?.map((collection) => <Tag key={collection.title}>{collection.title}</Tag>),
+        collections?.map((collection) => <Tag key={collection.title}>{compile(collection.title)}</Tag>),
     },
   ];
   const columns2: ColumnsType<CollectionData> = [
