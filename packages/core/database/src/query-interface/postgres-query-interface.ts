@@ -23,7 +23,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
   async listViews() {
     const sql = `
-      SELECT viewname, definition, schemaname
+      SELECT viewname as name, definition, schemaname as schema
       FROM pg_views
       WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
       ORDER BY viewname;

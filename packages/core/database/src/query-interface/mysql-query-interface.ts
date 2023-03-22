@@ -22,7 +22,7 @@ export default class MysqlQueryInterface extends QueryInterface {
   }
 
   async listViews() {
-    const sql = `SELECT TABLE_NAME as viewname, VIEW_DEFINITION as definition
+    const sql = `SELECT TABLE_NAME as name, VIEW_DEFINITION as definition
                  FROM information_schema.views
                  WHERE TABLE_SCHEMA = DATABASE()
                  ORDER BY TABLE_NAME;`;
