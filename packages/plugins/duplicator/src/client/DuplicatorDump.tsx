@@ -117,7 +117,7 @@ export const DuplicatorDump = () => {
             const list = dataMap[direction]
               .addable(record.name)
               .filter(
-                (name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name),
+                (name) => dataMap[direction].data.some((item) => item.name === name),
               ) as CollectionData[];
 
             if (list.length) {
@@ -148,7 +148,7 @@ export const DuplicatorDump = () => {
           } else {
             const list = dataMap[direction]
               .removable(record.name)
-              .filter((name) => record.name !== name && dataMap[direction].data.some((item) => item.name === name));
+              .filter((name) => dataMap[direction].data.some((item) => item.name === name));
 
             if (list.length) {
               Modal.confirm({
