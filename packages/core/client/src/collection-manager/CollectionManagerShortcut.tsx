@@ -50,7 +50,7 @@ const schema2: ISchema = {
   type: 'object',
   properties: {
     [uid()]: {
-      'x-decorator': 'CollectionCategroriesProvider',
+      // 'x-decorator': 'CollectionCategroriesProvider',
       'x-component': 'ConfigurationTable',
     },
   },
