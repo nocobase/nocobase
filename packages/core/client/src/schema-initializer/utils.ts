@@ -692,6 +692,8 @@ export const useCollectionDataSourceItems = (componentName) => {
             return false;
           } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
             return false;
+          } else if (componentName === 'FormItem' && item.template === 'view') {
+            return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
           }
