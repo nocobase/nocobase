@@ -17,11 +17,6 @@ const columns1: ColumnsType<GroupData> = [
   {
     dataIndex: 'namespace',
     title: 'Namespace',
-    render: (namespace: string) => namespace?.split('.')[0],
-  },
-  {
-    dataIndex: 'function',
-    title: 'Function',
   },
   {
     dataIndex: 'collections',
@@ -79,7 +74,34 @@ export const DuplicatorDump = () => {
         sourceSelectedKeys: [],
         targetSelectedKeys: [],
         handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
-          console.log(record, selected, direction);
+          const map = {
+            left: {
+              setSelectedKeys: () => {
+                setSourceSelectedKeys(selected ? [record.key] : []);
+                setTargetSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+            right: {
+              setSelectedKeys: () => {
+                setTargetSelectedKeys(selected ? [record.key] : []);
+                setSourceSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+          };
+          map[direction].setSelectedKeys();
+        },
+        handleDoubleClickRow(record: any, direction: 'left' | 'right') {
+          this.handlSelectRow(record, true, direction);
+          const map = {
+            left: {
+              setKeys: () => setTargetKeys((prev) => [record.key, ...prev]),
+            },
+            right: {
+              setKeys: () => setTargetKeys((prev) => prev.filter((key) => key !== record.key)),
+            },
+          };
+
+          map[direction].setKeys();
         },
       },
       {
@@ -116,9 +138,7 @@ export const DuplicatorDump = () => {
           if (selected) {
             const list = dataMap[direction]
               .addable(record.name)
-              .filter(
-                (name) => dataMap[direction].data.some((item) => item.name === name),
-              ) as CollectionData[];
+              .filter((name) => dataMap[direction].data.some((item) => item.name === name)) as CollectionData[];
 
             if (list.length) {
               Modal.confirm({
@@ -220,15 +240,11 @@ export const DuplicatorDump = () => {
     steps[currentStep].targetKeys = nextTargetKeys;
     setTargetKeys(nextTargetKeys);
   };
-  const handleSelectChange = (sourceSelectedKeys = [], targetSelectedKeys = []) => {
-    steps[currentStep].sourceSelectedKeys = sourceSelectedKeys;
-    steps[currentStep].targetSelectedKeys = targetSelectedKeys;
-
-    setSourceSelectedKeys(sourceSelectedKeys);
-    setTargetSelectedKeys(targetSelectedKeys);
-  };
   const handleSelectRow = (record: any, selected: boolean, direction: 'left' | 'right') => {
     steps[currentStep].handlSelectRow(record, selected, direction);
+  };
+  const handleDoubleClickRow = (record: any, direction: 'left' | 'right') => {
+    steps[currentStep].handleDoubleClickRow?.(record, direction);
   };
 
   useEffect(() => {
@@ -243,6 +259,7 @@ export const DuplicatorDump = () => {
     <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
+          noCheckbox
           loading={loading}
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}
@@ -255,8 +272,8 @@ export const DuplicatorDump = () => {
           targetKeys={targetKeys}
           selectedKeys={[...sourceSelectedKeys, ...targetSelectedKeys]}
           onChange={handleTransferChange}
-          onSelectChange={handleSelectChange}
           onSelectRow={handleSelectRow}
+          onDoubleClickRow={handleDoubleClickRow}
         />
       ) : (
         <Result

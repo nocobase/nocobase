@@ -16,14 +16,28 @@ interface TableTransferProps<T> extends TransferProps<TransferItem> {
   pagination?: any;
   filterOptionByCategory?: (category: string[], option: any) => boolean;
   onSelectRow?: (item: any, selected: boolean, direction: 'left' | 'right') => void;
+  onDoubleClickRow?: (item: any, direction: 'left' | 'right') => void;
   showSearch?: boolean;
   loading?: boolean;
+  noCheckbox?: boolean;
 }
 
 const hideHeader = css`
   & .ant-transfer-list-header {
     display: none;
   }
+`;
+const highlight = css`
+  & > td {
+    background-color: #e6f7ff !important;
+  }
+  &:hover > td {
+    background-color: #dcf4ff !important;
+  }
+`;
+const disabled = css`
+  opacity: 0.5;
+  pointer-events: none;
 `;
 
 const defaultFilterOption = (inputValue: string, option: any) => {
@@ -41,6 +55,8 @@ export function TableTransfer<T>({
   pagination,
   showSearch,
   loading,
+  noCheckbox,
+  onDoubleClickRow,
   filterOptionByCategory = defaultFilterOptionByCategory,
   onSelectRow,
   ...restProps
@@ -60,20 +76,22 @@ export function TableTransfer<T>({
         const columns = direction === 'left' ? leftColumns : rightColumns;
         const title = direction === 'left' ? titles[0] : titles[1];
 
-        const rowSelection: TableRowSelection<TransferItem> = {
-          getCheckboxProps: (item) => ({ disabled: listDisabled || item.disabled }),
-          onSelectAll(selected, selectedRows) {
-            const treeSelectedKeys = selectedRows.filter((item) => !item.disabled).map(({ key }) => key);
-            const diffKeys = selected
-              ? difference(treeSelectedKeys, listSelectedKeys)
-              : difference(listSelectedKeys, treeSelectedKeys);
-            onItemSelectAll(diffKeys as string[], selected);
-          },
-          onSelect({ key }, selected) {
-            onItemSelect(key as string, selected);
-          },
-          selectedRowKeys: listSelectedKeys,
-        };
+        const rowSelection: TableRowSelection<TransferItem> = noCheckbox
+          ? null
+          : {
+              getCheckboxProps: (item) => ({ disabled: listDisabled || item.disabled }),
+              onSelectAll(selected, selectedRows) {
+                const treeSelectedKeys = selectedRows.filter((item) => !item.disabled).map(({ key }) => key);
+                const diffKeys = selected
+                  ? difference(treeSelectedKeys, listSelectedKeys)
+                  : difference(listSelectedKeys, treeSelectedKeys);
+                onItemSelectAll(diffKeys as string[], selected);
+              },
+              onSelect({ key }, selected) {
+                onItemSelect(key as string, selected);
+              },
+              selectedRowKeys: listSelectedKeys,
+            };
 
         return (
           <Content
@@ -92,6 +110,8 @@ export function TableTransfer<T>({
             direction={direction}
             onSelectRow={onSelectRow}
             loading={loading}
+            noCheckbox={noCheckbox}
+            onDoubleClickRow={onDoubleClickRow}
           />
         );
       }}
@@ -115,6 +135,8 @@ function Content({
   direction,
   onSelectRow,
   loading,
+  noCheckbox,
+  onDoubleClickRow,
 }) {
   const { t } = useTranslation();
   const [items, setItems] = React.useState(filteredItems || []);
@@ -176,6 +198,9 @@ function Content({
       </div>
       <Table
         bordered
+        rowClassName={(record) =>
+          `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabled : ''}`
+        }
         loading={loading}
         rowSelection={rowSelection}
         columns={columns}
@@ -189,7 +214,11 @@ function Content({
             const { key, disabled: itemDisabled } = item;
             if (itemDisabled || listDisabled) return;
             onItemSelect(key as string, !listSelectedKeys.includes(key as string));
-            onSelectRow(item, !listSelectedKeys.includes(key as string), direction);
+            onSelectRow?.(item, !listSelectedKeys.includes(key as string), direction);
+          },
+          onDoubleClick: () => {
+            const { key } = item;
+            onDoubleClickRow?.(item, direction);
           },
         })}
       />

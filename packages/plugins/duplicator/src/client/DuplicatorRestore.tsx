@@ -41,7 +41,6 @@ export const DuplicatorRestore = () => {
     {
       dataIndex: 'namespace',
       title: t('Namespace'),
-      render: (namespace: string) => namespace?.split('.')[0],
     },
     {
       dataIndex: 'collections',
@@ -89,7 +88,34 @@ export const DuplicatorRestore = () => {
         sourceSelectedKeys: [],
         targetSelectedKeys: [],
         handlSelectRow(record: any, selected: boolean, direction: 'left' | 'right') {
-          console.log(record, selected, direction);
+          const map = {
+            left: {
+              setSelectedKeys: () => {
+                setSourceSelectedKeys(selected ? [record.key] : []);
+                setTargetSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+            right: {
+              setSelectedKeys: () => {
+                setTargetSelectedKeys(selected ? [record.key] : []);
+                setSourceSelectedKeys((prev) => (prev.length ? [] : prev));
+              },
+            },
+          };
+          map[direction].setSelectedKeys();
+        },
+        handleDoubleClickRow(record: any, direction: 'left' | 'right') {
+          this.handlSelectRow(record, true, direction);
+          const map = {
+            left: {
+              setKeys: () => setTargetKeys((prev) => [record.key, ...prev]),
+            },
+            right: {
+              setKeys: () => setTargetKeys((prev) => prev.filter((key) => key !== record.key)),
+            },
+          };
+
+          map[direction].setKeys();
         },
       },
       {
@@ -126,9 +152,7 @@ export const DuplicatorRestore = () => {
           if (selected) {
             const list = dataMap[direction]
               .addable(record.name)
-              .filter(
-                (name) => dataMap[direction].data.some((item) => item.name === name),
-              ) as CollectionData[];
+              .filter((name) => dataMap[direction].data.some((item) => item.name === name)) as CollectionData[];
 
             if (list.length) {
               Modal.confirm({
@@ -260,6 +284,9 @@ export const DuplicatorRestore = () => {
     });
     setCurrentStep(currentStep + 1);
   };
+  const handleDoubleClickRow = (record: any, direction: 'left' | 'right') => {
+    steps[currentStep].handleDoubleClickRow?.(record, direction);
+  };
 
   useEffect(() => {
     if (requiredGroups.length) {
@@ -287,6 +314,7 @@ export const DuplicatorRestore = () => {
       case 1:
         return (
           <TableTransfer<GroupData | CollectionData>
+            noCheckbox
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true }}
             titles={[t('No need to import'), t('Need to import')]}
@@ -299,11 +327,13 @@ export const DuplicatorRestore = () => {
             onChange={handleTransferChange}
             onSelectChange={handleSelectChange}
             onSelectRow={handleSelectRow}
+            onDoubleClickRow={handleDoubleClickRow}
           />
         );
       case 2:
         return (
           <TableTransfer<GroupData | CollectionData>
+            noCheckbox
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
             titles={[t('No need to import'), t('Need to import')]}
@@ -316,6 +346,7 @@ export const DuplicatorRestore = () => {
             onChange={handleTransferChange}
             onSelectChange={handleSelectChange}
             onSelectRow={handleSelectRow}
+            onDoubleClickRow={handleDoubleClickRow}
           />
         );
       case 3:
