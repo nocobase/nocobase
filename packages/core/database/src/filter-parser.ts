@@ -135,6 +135,7 @@ export default class FilterParser {
                 path: skipPrefix,
                 fullName,
                 fieldName,
+                fieldPath: `${this.collection.name}.${fullName}`,
                 model: this.model,
               });
               break;
