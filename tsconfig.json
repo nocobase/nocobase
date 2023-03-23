@@ -44,5 +44,13 @@
     "compilerOptions": {
       "module": "commonjs"
     }
-  }
+  },
+  "include": [
+    "packages/**/*"
+  ],
+  "exclude": [
+    "packages/**/node_modules",
+    "packages/**/dist",
+    "packages/**/lib"
+  ]
 }
