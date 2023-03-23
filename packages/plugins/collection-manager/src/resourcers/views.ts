@@ -11,7 +11,6 @@ export default {
         viewName: filterByTk,
       });
 
-      console.log(fields);
       ctx.body = {
         fields,
         sources: Object.values(fields)
@@ -28,7 +27,6 @@ export default {
       ctx.body = dbViews.map((dbView) => {
         return {
           ...dbView,
-          from: [],
         };
       });
 
