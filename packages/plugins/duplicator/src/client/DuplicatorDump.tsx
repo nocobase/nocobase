@@ -13,6 +13,7 @@ import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTranslation } from 'react-i18next';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
+import { usePluginUtils } from './hooks/i18';
 
 const columnClass = css`
   word-break: break-all;
@@ -20,7 +21,7 @@ const columnClass = css`
 
 export const DuplicatorDump = () => {
   const api = useAPIClient();
-  const { t } = useTranslation();
+  const { t } = usePluginUtils();
   const { data, loading } = useDumpableCollections();
   const [currentStep, setCurrentStep] = React.useState(0);
   const [targetKeys, setTargetKeys] = React.useState([]);
@@ -36,12 +37,12 @@ export const DuplicatorDump = () => {
   const columns1: ColumnsType<GroupData> = [
     {
       dataIndex: 'namespace',
-      title: 'Namespace',
+      title: t('Namespace'),
       className: columnClass,
     },
     {
       dataIndex: 'collections',
-      title: 'Collections',
+      title: t('Collections'),
       className: columnClass,
       render: (collections: CollectionData[]) =>
         collections?.map((collection) => <Tag key={collection.title}>{compile(collection.title)}</Tag>),
@@ -50,17 +51,17 @@ export const DuplicatorDump = () => {
   const columns2: ColumnsType<CollectionData> = [
     {
       dataIndex: 'title',
-      title: 'Title',
+      title: t('Title'),
       className: columnClass,
     },
     {
       dataIndex: 'name',
-      title: 'Name',
+      title: t('Name'),
       className: columnClass,
     },
     {
       dataIndex: 'category',
-      title: 'Category',
+      title: t('Category'),
       className: columnClass,
       render: (categories: Category[]) =>
         categories?.map((category) => (

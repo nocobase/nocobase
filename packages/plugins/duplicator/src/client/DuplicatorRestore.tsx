@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { DraggerUpload } from './DraggerUpload';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
+import { usePluginUtils } from './hooks/i18';
 
 const columnClass = css`
   word-break: break-all;
@@ -20,7 +21,7 @@ const columnClass = css`
 
 export const DuplicatorRestore = () => {
   const api = useAPIClient();
-  const { t } = useTranslation();
+  const { t } = usePluginUtils();
   const [data, setData] = React.useState<{ requiredGroups: any[]; optionalGroups: any[]; userCollections: any[] }>({
     requiredGroups: [],
     optionalGroups: [],

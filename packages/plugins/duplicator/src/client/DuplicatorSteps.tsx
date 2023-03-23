@@ -2,9 +2,11 @@ import { Button, Steps, Card } from 'antd';
 import React from 'react';
 import { css } from '@emotion/css';
 import { useTheme } from './hooks/useTheme';
+import { usePluginUtils } from './hooks/i18';
 
 export const DuplicatorSteps = ({ children, steps, loading, current, onChange }) => {
   const theme = useTheme();
+  const { t } = usePluginUtils();
 
   const styleMap = {
     default: {
@@ -49,7 +51,7 @@ export const DuplicatorSteps = ({ children, steps, loading, current, onChange })
         )}
         {current > 0 && (
           <Button style={{ margin: '0 8px' }} onClick={() => prev()}>
-            Previous
+            {t('Previous')}
           </Button>
         )}
       </div>

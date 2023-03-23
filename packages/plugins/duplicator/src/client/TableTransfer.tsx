@@ -231,7 +231,6 @@ function Content({
             onSelectRow?.(item, !listSelectedKeys.includes(key as string), direction);
           },
           onDoubleClick: () => {
-            const { key } = item;
             onDoubleClickRow?.(item, direction);
           },
         })}

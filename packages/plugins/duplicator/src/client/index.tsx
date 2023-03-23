@@ -2,10 +2,10 @@ import { SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
 import { DuplicatorDump } from './DuplicatorDump';
 import { DuplicatorRestore } from './DuplicatorRestore';
-import { useTranslation } from 'react-i18next';
+import { usePluginUtils } from './hooks/i18';
 
 export default function (props) {
-  const { t } = useTranslation();
+  const { t } = usePluginUtils();
 
   return (
     <SettingsCenterProvider
