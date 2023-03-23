@@ -22,7 +22,6 @@ SELECT * FROM numbers;
   });
 
   afterEach(async () => {
-    await app.db.sequelize.query(`DROP VIEW IF EXISTS ${testViewName}`);
     await app.destroy();
   });
 
@@ -49,6 +48,6 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
     const data = response.body.data;
-    expect(data.fields.n.type).toBeTruthy();
+    expect(data.fields.n.type).toBe('integer');
   });
 });

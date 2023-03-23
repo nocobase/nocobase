@@ -15,7 +15,7 @@ describe('view inference', function () {
     await db.close();
   });
 
-  it('should infer fields', async () => {
+  it('should infer collection fields', async () => {
     const UserCollection = db.collection({
       name: 'users',
       fields: [
@@ -78,4 +78,6 @@ describe('view inference', function () {
       type: 'integer',
     });
   });
+
+  it('should infer fields', async () => {});
 });

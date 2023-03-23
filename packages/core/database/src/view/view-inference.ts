@@ -1,4 +1,5 @@
 import Database from '../database';
+import FieldTypeMap from './field-type-map';
 
 type InferredField = {
   name: string;
@@ -64,10 +65,18 @@ export class ViewFieldInference {
           name,
           {
             name,
-            type: column.type,
+            type: this.inferToFieldType({ db, name, type: column.type }),
           },
         ];
       }),
     );
+  }
+  static inferToFieldType(options: { db: Database; name: string; type: string }) {
+    const { db } = options;
+    const dialect = db.sequelize.getDialect();
+    const fieldTypeMap = FieldTypeMap[dialect];
+    const type = fieldTypeMap[options.type.toLowerCase()];
+
+    return type;
   }
 }
