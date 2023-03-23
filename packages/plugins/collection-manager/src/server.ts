@@ -20,7 +20,6 @@ import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
 import viewResourcer from './resourcers/views';
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
-import viewsFieldsResourcer from './resourcers/views-fields';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -267,7 +266,6 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.resource(viewResourcer);
-    this.app.resource(viewsFieldsResourcer);
 
     this.app.db.extendCollection({
       name: 'collectionCategory',

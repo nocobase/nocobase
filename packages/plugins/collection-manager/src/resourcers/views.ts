@@ -11,6 +11,7 @@ export default {
         viewName: filterByTk,
       });
 
+      console.log(fields);
       ctx.body = {
         fields,
         sources: Object.values(fields)

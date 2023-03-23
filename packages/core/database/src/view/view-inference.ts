@@ -75,8 +75,7 @@ export class ViewFieldInference {
     const { db } = options;
     const dialect = db.sequelize.getDialect();
     const fieldTypeMap = FieldTypeMap[dialect];
-    const type = fieldTypeMap[options.type.toLowerCase()];
-
-    return type;
+    console.log({ type: options.type.toLowerCase() });
+    return fieldTypeMap[options.type.toLowerCase()];
   }
 }

@@ -3,6 +3,13 @@ const postgres = {
   varchar: 'string',
   text: 'string',
   char: 'string',
+
+  smallint: 'integer',
+  integer: 'integer',
+  bigint: 'bigInt',
+  decimal: 'float',
+  numeric: 'float',
+  'double precision': 'float',
 };
 
 const mysql = {};
