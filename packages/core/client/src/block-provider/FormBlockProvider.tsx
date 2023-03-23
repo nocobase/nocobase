@@ -72,7 +72,8 @@ export const FormBlockProvider = (props) => {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (currentCollection.name === collection && !isEmptyRecord) || !currentCollection.name;
+  const createFlag =
+    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
