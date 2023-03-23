@@ -10,7 +10,6 @@ import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
-import { useTranslation } from 'react-i18next';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
 import { usePluginUtils } from './hooks/i18';
@@ -76,7 +75,7 @@ export const DuplicatorDump = () => {
     () => [
       {
         title: t('Select modules'),
-        buttonText: t('Next'),
+        buttonText: t('Continue'),
         showButton: true,
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
@@ -120,7 +119,7 @@ export const DuplicatorDump = () => {
       },
       {
         title: t('Select custom collections'),
-        buttonText: t('Confirm export'),
+        buttonText: t('Start backup'),
         showButton: true,
         data: userCollections,
         leftColumns: columns2,
@@ -228,7 +227,7 @@ export const DuplicatorDump = () => {
         },
       },
       {
-        title: t('Export succeeded'),
+        title: t('Backup'),
         buttonText: '',
         showButton: false,
       },
@@ -328,7 +327,7 @@ export const DuplicatorDump = () => {
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}
           pagination={false}
-          titles={[t('No need to export'), t('Need to export')]}
+          titles={[t('Not selected'), t('Selected')]}
           dataSource={steps[currentStep].data}
           leftColumns={steps[currentStep].leftColumns}
           rightColumns={steps[currentStep].rightColumns}
@@ -344,7 +343,7 @@ export const DuplicatorDump = () => {
       ) : (
         <Result
           status="success"
-          title={t('Export succeeded')}
+          title={t('Backup successful')}
           subTitle={`${t('File name has been exported as: ')}${fileName}`}
         />
       )}

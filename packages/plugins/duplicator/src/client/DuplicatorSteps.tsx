@@ -51,7 +51,7 @@ export const DuplicatorSteps = ({ children, steps, loading, current, onChange })
         )}
         {current > 0 && (
           <Button style={{ margin: '0 8px' }} onClick={() => prev()}>
-            {t('Previous')}
+            {t('Go back')}
           </Button>
         )}
       </div>

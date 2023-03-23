@@ -15,7 +15,7 @@ export default function (props) {
           icon: 'CloudDownloadOutlined',
           tabs: {
             dump: {
-              title: t('Dump'),
+              title: t('Backup'),
               component: DuplicatorDump,
             },
             restore: {

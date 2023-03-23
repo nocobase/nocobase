@@ -4,7 +4,7 @@ import type { ColumnsType, TableRowSelection } from 'antd/es/table/interface';
 import type { TransferItem, TransferProps } from 'antd/es/transfer';
 import difference from 'lodash/difference';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { usePluginUtils } from './hooks/i18';
 import { Category } from './hooks/useDumpableCollections';
 import { useTransferAllButton } from './hooks/useTransferAllButton';
 import { getCategories } from './utils/getCategories';
@@ -152,7 +152,7 @@ function Content({
   loading,
   onDoubleClickRow,
 }) {
-  const { t } = useTranslation();
+  const { t } = usePluginUtils();
   const [items, setItems] = React.useState(filteredItems || []);
   const [inputValue, setInputValue] = React.useState('');
   const [selectedCategories, setSelectedCategories] = React.useState<string[]>([]);

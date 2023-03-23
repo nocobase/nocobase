@@ -1,12 +1,12 @@
 import { InboxOutlined } from '@ant-design/icons';
 import { Upload } from 'antd';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
+import { usePluginUtils } from './hooks/i18';
 
 const { Dragger } = Upload;
 
 export const DraggerUpload = (props) => {
-  const { t } = useTranslation();
+  const { t } = usePluginUtils();
 
   return (
     <Dragger {...props}>

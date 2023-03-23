@@ -85,12 +85,12 @@ export const DuplicatorRestore = () => {
     () => [
       {
         title: t('Upload backup file'),
-        buttonText: t('Next'),
+        buttonText: t('Continue'),
         showButton: !!requiredGroups.length,
       },
       {
         title: t('Select modules'),
-        buttonText: t('Next'),
+        buttonText: t('Continue'),
         showButton: true,
         data: [...requiredGroups, ...optionalGroups],
         leftColumns: columns1,
@@ -134,7 +134,7 @@ export const DuplicatorRestore = () => {
       },
       {
         title: t('Select custom collections'),
-        buttonText: t('Confirm import'),
+        buttonText: t('Start restore'),
         showButton: true,
         data: userCollections,
         leftColumns: columns2,
@@ -239,7 +239,7 @@ export const DuplicatorRestore = () => {
         },
       },
       {
-        title: t('Import succeeded'),
+        title: t('Restore'),
         buttonText: '',
         showButton: false,
       },
@@ -383,7 +383,7 @@ export const DuplicatorRestore = () => {
             disabled={buttonLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
-            titles={[t('No need to import'), t('Need to import')]}
+            titles={[t('Not selected'), t('Selected')]}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}
             rightColumns={steps[currentStep].rightColumns}
@@ -406,7 +406,7 @@ export const DuplicatorRestore = () => {
             disabled={buttonLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
-            titles={[t('No need to import'), t('Need to import')]}
+            titles={[t('Not selected'), t('Selected')]}
             dataSource={steps[currentStep].data}
             leftColumns={steps[currentStep].leftColumns}
             rightColumns={steps[currentStep].rightColumns}
@@ -423,7 +423,7 @@ export const DuplicatorRestore = () => {
           />
         );
       case 3:
-        return <Result status="success" title={t('Import succeeded')} />;
+        return <Result status="success" title={t('Restore successful')} />;
       default:
         return null;
     }
