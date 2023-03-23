@@ -4,7 +4,16 @@ import { css } from '@emotion/css';
 import { useTheme } from './hooks/useTheme';
 import { usePluginUtils } from './hooks/i18';
 
-export const DuplicatorSteps = ({ children, steps, loading, current, onChange }) => {
+interface Props {
+  steps: any;
+  current: number;
+  onChange: any;
+  loading?: boolean;
+  disabled?: boolean;
+  children?: any;
+}
+
+export const DuplicatorSteps = ({ children, steps, loading, current, onChange, disabled }: Props) => {
   const theme = useTheme();
   const { t } = usePluginUtils();
 
@@ -45,12 +54,12 @@ export const DuplicatorSteps = ({ children, steps, loading, current, onChange })
       <div className={content}>{children}</div>
       <div className={action}>
         {current < steps.length - 1 && steps[current].showButton && (
-          <Button type="primary" loading={loading} onClick={next}>
+          <Button type="primary" loading={loading} disabled={disabled} onClick={next}>
             {steps[current].buttonText}
           </Button>
         )}
         {current > 0 && (
-          <Button style={{ margin: '0 8px' }} onClick={() => prev()}>
+          <Button style={{ margin: '0 8px' }} disabled={disabled} onClick={prev}>
             {t('Go back')}
           </Button>
         )}

@@ -1,5 +1,6 @@
 import type { ColumnsType } from 'antd/es/table/interface';
 import { Tag, Result, Modal, Table } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
@@ -13,6 +14,7 @@ import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
 import { usePluginUtils } from './hooks/i18';
+import { ResultWithLoading } from './ResultWithLoading';
 
 const columnClass = css`
   word-break: break-all;
@@ -27,7 +29,7 @@ export const DuplicatorDump = () => {
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph();
-  const [buttonLoading, setButtonLoading] = React.useState(false);
+  const [pageLoading, setPageLoading] = React.useState(false);
   const [fileName, setFileName] = React.useState('');
   const tableHeight = useTableHeight();
   const compile = useCompile();
@@ -205,25 +207,28 @@ export const DuplicatorDump = () => {
             dataMap[direction].setKeys(list);
           }
         },
-        async handler() {
+        handler() {
           const groups = getTargetListByKeys(steps[0].data, steps[0].targetKeys).map((item) => item.namespace);
           const collections = getTargetListByKeys(steps[1].data, steps[1].targetKeys).map((item) => item.name);
-          setButtonLoading(true);
-          const response = await api.request({
-            url: 'duplicator:dump',
-            method: 'post',
-            data: {
-              groups,
-              collections,
-            },
-            responseType: 'blob',
-          });
-          setButtonLoading(false);
-          const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
-          const filename = match ? match[1] : 'duplicator.nbdump';
-          let blob = new Blob([response.data]);
-          setFileName(filename);
-          saveAs(blob, filename);
+          setPageLoading(true);
+          api
+            .request({
+              url: 'duplicator:dump',
+              method: 'post',
+              data: {
+                groups,
+                collections,
+              },
+              responseType: 'blob',
+            })
+            .then((response) => {
+              setPageLoading(false);
+              const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
+              const filename = match ? match[1] : 'duplicator.nbdump';
+              let blob = new Blob([response.data]);
+              setFileName(filename);
+              saveAs(blob, filename);
+            });
         },
       },
       {
@@ -318,11 +323,17 @@ export const DuplicatorDump = () => {
   }, [requiredGroups]);
 
   return (
-    <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
+    <DuplicatorSteps
+      loading={pageLoading}
+      disabled={pageLoading}
+      steps={steps}
+      current={currentStep}
+      onChange={handleStepsChange}
+    >
       {currentStep < steps.length - 1 ? (
         <TableTransfer<GroupData | CollectionData>
           noCheckbox
-          disabled={buttonLoading}
+          disabled={pageLoading}
           loading={loading}
           listStyle={{ minWidth: 0, border: 'none' }}
           scroll={{ x: true, y: tableHeight }}
@@ -341,11 +352,7 @@ export const DuplicatorDump = () => {
           onNotTransferAll={handleNotTransferAll}
         />
       ) : (
-        <Result
-          status="success"
-          title={t('Backup successful')}
-          subTitle={`${t('File name has been exported as: ')}${fileName}`}
-        />
+        <ResultWithLoading type="backup" fileName={fileName} loading={pageLoading} />
       )}
     </DuplicatorSteps>
   );

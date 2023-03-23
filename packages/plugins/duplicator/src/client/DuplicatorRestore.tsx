@@ -14,6 +14,7 @@ import { DraggerUpload } from './DraggerUpload';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
 import { usePluginUtils } from './hooks/i18';
+import { ResultWithLoading } from './ResultWithLoading';
 
 const columnClass = css`
   word-break: break-all;
@@ -32,7 +33,7 @@ export const DuplicatorRestore = () => {
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph();
-  const [buttonLoading, setButtonLoading] = React.useState(false);
+  const [pageLoading, setPageLoading] = React.useState(false);
   const [restoreKey, setRestoreKey] = React.useState('');
   const tableHeight = useTableHeight();
   const compile = useCompile();
@@ -222,20 +223,23 @@ export const DuplicatorRestore = () => {
             dataMap[direction].setKeys(list);
           }
         },
-        async handler() {
+        handler() {
           const groups = getTargetListByKeys(steps[1].data, steps[1].targetKeys).map((item) => item.namespace);
           const collections = getTargetListByKeys(steps[2].data, steps[2].targetKeys).map((item) => item.name);
-          setButtonLoading(true);
-          await api.request({
-            url: 'duplicator:restore',
-            method: 'post',
-            data: {
-              groups,
-              collections,
-              restoreKey,
-            },
-          });
-          setButtonLoading(false);
+          setPageLoading(true);
+          api
+            .request({
+              url: 'duplicator:restore',
+              method: 'post',
+              data: {
+                groups,
+                collections,
+                restoreKey,
+              },
+            })
+            .then(() => {
+              setPageLoading(false);
+            });
         },
       },
       {
@@ -380,7 +384,7 @@ export const DuplicatorRestore = () => {
         return (
           <TableTransfer<GroupData | CollectionData>
             noCheckbox
-            disabled={buttonLoading}
+            disabled={pageLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
             titles={[t('Not selected'), t('Selected')]}
@@ -403,7 +407,7 @@ export const DuplicatorRestore = () => {
         return (
           <TableTransfer<GroupData | CollectionData>
             noCheckbox
-            disabled={buttonLoading}
+            disabled={pageLoading}
             listStyle={{ minWidth: 0, border: 'none' }}
             scroll={{ x: true, y: tableHeight }}
             titles={[t('Not selected'), t('Selected')]}
@@ -423,14 +427,20 @@ export const DuplicatorRestore = () => {
           />
         );
       case 3:
-        return <Result status="success" title={t('Restore successful')} />;
+        return <ResultWithLoading type="restore" loading={pageLoading} />;
       default:
         return null;
     }
   };
 
   return (
-    <DuplicatorSteps loading={buttonLoading} steps={steps} current={currentStep} onChange={handleStepsChange}>
+    <DuplicatorSteps
+      loading={pageLoading}
+      disabled={pageLoading}
+      steps={steps}
+      current={currentStep}
+      onChange={handleStepsChange}
+    >
       {getResult(currentStep)}
     </DuplicatorSteps>
   );
