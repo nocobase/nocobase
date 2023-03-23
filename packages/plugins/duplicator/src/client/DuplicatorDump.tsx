@@ -250,8 +250,6 @@ export const DuplicatorDump = () => {
     setTargetSelectedKeys(steps[current].targetSelectedKeys);
   };
   const handleTransferChange = (nextTargetKeys: string[], direction: string, moveKeys: string[]) => {
-    console.log('nextTargetKeys', nextTargetKeys, direction, moveKeys);
-
     const reverse = {
       left: 'right',
       right: 'left',
