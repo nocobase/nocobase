@@ -28,4 +28,6 @@ export default {
   Collections: '数据表',
   'Confirm to move the following collections?': '需要同时移动以下数据表，是否确认？',
   Duplicator: '数据导入导出',
+  'Confirm to move all collections to right?': '需要同时移动所有数据表到右侧吗？',
+  'Confirm to move all collections to left?': '需要同时移动所有数据表到左侧吗？',
 };

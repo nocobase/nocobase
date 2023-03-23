@@ -22,7 +22,7 @@ export const useTransferAllButton = ({
         <>
           <Button
             onClick={() => state.onTransferAll()}
-            style={{ margin: '8px 0', width: 24, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            style={{ margin: '12px 0', width: 24, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             type="primary"
             size="small"
           >
@@ -30,7 +30,7 @@ export const useTransferAllButton = ({
           </Button>
           <Button
             onClick={() => state.onNotTransferAll()}
-            style={{ margin: '8px 0', width: 24, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+            style={{ margin: '12px 0', width: 24, display: 'flex', justifyContent: 'center', alignItems: 'center' }}
             type="primary"
             size="small"
           >

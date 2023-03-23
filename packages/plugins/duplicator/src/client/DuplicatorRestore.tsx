@@ -305,39 +305,51 @@ export const DuplicatorRestore = () => {
     steps[currentStep].handleDoubleClickRow?.(record, direction);
   };
   const handleTransferAll = () => {
-    const targetKeys = steps[currentStep].data.map((item: any) => (item.disabled ? false : item.key)).filter(Boolean);
-    setTargetKeys((prev) => {
-      const result = [...targetKeys, ...prev];
-      steps[currentStep].targetKeys = result;
-      return result;
-    });
-    setSourceSelectedKeys((prev) => {
-      const result = prev.length ? [] : prev;
-      steps[currentStep].sourceSelectedKeys = result;
-      return result;
-    });
-    setTargetSelectedKeys((prev) => {
-      const result = prev.length ? [] : prev;
-      steps[currentStep].targetSelectedKeys = result;
-      return result;
+    Modal.confirm({
+      title: t('Confirm to move all collections to right?'),
+      onOk() {
+        const targetKeys = steps[currentStep].data
+          .map((item: any) => (item.disabled ? false : item.key))
+          .filter(Boolean);
+        setTargetKeys((prev) => {
+          const result = [...targetKeys, ...prev];
+          steps[currentStep].targetKeys = result;
+          return result;
+        });
+        setSourceSelectedKeys((prev) => {
+          const result = prev.length ? [] : prev;
+          steps[currentStep].sourceSelectedKeys = result;
+          return result;
+        });
+        setTargetSelectedKeys((prev) => {
+          const result = prev.length ? [] : prev;
+          steps[currentStep].targetSelectedKeys = result;
+          return result;
+        });
+      },
     });
   };
   const handleNotTransferAll = () => {
-    const targetKeys = (steps[currentStep].data as any)
-      .filter((item: any) => item.disabled)
-      .map((item: any) => item.key);
+    Modal.confirm({
+      title: t('Confirm to move all collections to left?'),
+      onOk() {
+        const targetKeys = (steps[currentStep].data as any)
+          .filter((item: any) => item.disabled)
+          .map((item: any) => item.key);
 
-    setTargetKeys(targetKeys);
-    steps[currentStep].targetKeys = targetKeys;
-    setSourceSelectedKeys((prev) => {
-      const result = prev.length ? [] : prev;
-      steps[currentStep].sourceSelectedKeys = result;
-      return result;
-    });
-    setTargetSelectedKeys((prev) => {
-      const result = prev.length ? [] : prev;
-      steps[currentStep].targetSelectedKeys = result;
-      return result;
+        setTargetKeys(targetKeys);
+        steps[currentStep].targetKeys = targetKeys;
+        setSourceSelectedKeys((prev) => {
+          const result = prev.length ? [] : prev;
+          steps[currentStep].sourceSelectedKeys = result;
+          return result;
+        });
+        setTargetSelectedKeys((prev) => {
+          const result = prev.length ? [] : prev;
+          steps[currentStep].targetSelectedKeys = result;
+          return result;
+        });
+      },
     });
   };
 
