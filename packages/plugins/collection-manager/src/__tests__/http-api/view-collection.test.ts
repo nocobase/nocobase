@@ -50,4 +50,64 @@ SELECT * FROM numbers;
     const data = response.body.data;
     expect(data.fields.n.type).toBe('integer');
   });
+
+  it('should list collections fields with source interface', async () => {
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            interface: 'text',
+          },
+          {
+            name: 'age',
+            type: 'integer',
+            interface: 'number',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.sync();
+    const UserCollection = app.db.getCollection('users');
+
+    const viewName = `t_${uid(6)}`;
+    const viewSQL = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(viewSQL);
+
+    const viewCollection = await app.db.getCollection('collections').repository.create({
+      values: {
+        name: viewName,
+        view: true,
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            source: 'users.name',
+          },
+          {
+            name: 'age',
+            type: 'integer',
+            source: 'users.age',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const response = await agent.resource('collections').list({
+      appends: ['fields'],
+      paginate: false,
+    });
+
+    const listResult = response.body.data.find((item) => item.name === viewName);
+
+    const fields = listResult.fields;
+
+    const nameField = fields.find((item) => item.name === 'name');
+    expect(nameField.interface).toBe('text');
+  });
 });
