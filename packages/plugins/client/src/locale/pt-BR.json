@@ -957,7 +957,7 @@
     "excel-formula-field": {}
   },
   "antd": {
-    "locale": "en",
+    "locale": "pt",
     "Pagination": {
       "items_per_page": "/ página",
       "jump_to": "Ir para",
