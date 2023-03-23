@@ -1,6 +1,8 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'ui-schema-storage.uiSchemas',
+  duplicator: 'required',
   name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,

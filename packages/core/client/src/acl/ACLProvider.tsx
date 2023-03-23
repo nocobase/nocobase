@@ -213,7 +213,7 @@ export const ACLActionProvider = (props) => {
   if (!actionPath && resource && schema['x-action']) {
     actionPath = `${resource}:${schema['x-action']}`;
   }
-  if (!actionPath.includes(':')) {
+  if (!actionPath?.includes(':')) {
     actionPath = `${resource}:${actionPath}`;
   }
   if (!actionPath) {
@@ -244,8 +244,8 @@ export const useACLFieldWhitelist = () => {
       if (!fieldSchema['x-collection-field']) {
         return true;
       }
-      const [, ...keys] = fieldSchema['x-collection-field'].split('.');
-      return whitelist?.includes(keys.join('.'));
+      const [key1, key2] = fieldSchema['x-collection-field'].split('.');
+      return whitelist?.includes(key2 || key1);
     },
   };
 };

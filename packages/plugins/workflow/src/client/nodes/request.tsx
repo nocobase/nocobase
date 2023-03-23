@@ -1,35 +1,23 @@
-import React from 'react';
 import { ArrayItems } from '@formily/antd';
-import { css } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
-import { Operand, VariableTypes, VariableTypesContext } from '../calculators';
-import { VariableJSONInput } from '../components/VariableJSONInput';
+import { useWorkflowVariableOptions } from '../variable';
 
 
-
-function VariableTypesContextProvider(props) {
-  return (
-    <VariableTypesContext.Provider value={VariableTypes}>
-      {props.children}
-    </VariableTypesContext.Provider>
-  )
-}
 
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
   fieldset: {
-    'config.method': {
+    method: {
       type: 'string',
-      name: 'config.method',
       required: true,
       title: `{{t("HTTP method", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
-        defaultValue: 'POST',
         showSearch: false,
         allowClear: false,
       },
@@ -40,38 +28,29 @@ export default {
         { label: 'PATCH', value: 'PATCH' },
         { label: 'DELETE', value: 'DELETE' },
       ],
+      default: 'POST'
     },
-    'config.url': {
+    url: {
       type: 'string',
-      name: 'config.url',
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
-        className: css`
-          .ant-formily-item-control-content-component{
-            .ant-input-affix-wrapper,
-            .ant-input{
-              width: 100%;
-            }
-          }
-        `
       },
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
+        className: 'full-width'
       },
     },
-    'config.headers': {
+    headers: {
       type: 'array',
-      name: 'config.headers',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Headers", { ns: "${NAMESPACE}" })}}`,
       description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -88,7 +67,10 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Operand',
+                'x-component': 'Variable.Input',
+                'x-component-props': {
+                  scope: useWorkflowVariableOptions
+                }
               },
               remove: {
                 type: 'void',
@@ -107,15 +89,13 @@ export default {
         },
       },
     },
-    'config.params': {
+    params: {
       type: 'array',
-      name: 'config.params',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
       items: {
         type: 'object',
-        'x-decorator': 'VariableTypesContextProvider',
         properties: {
           space: {
             type: 'void',
@@ -132,7 +112,10 @@ export default {
               value: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'Operand',
+                'x-component': 'Variable.Input',
+                'x-component-props': {
+                  scope: useWorkflowVariableOptions
+                }
               },
               remove: {
                 type: 'void',
@@ -151,28 +134,27 @@ export default {
         },
       },
     },
-    'config.data': {
+    data: {
       type: 'string',
-      name: 'config.data',
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
-      'x-component': 'VariableJSONInput',
+      'x-component': 'Variable.JSON',
       'x-component-props': {
+        scope: useWorkflowVariableOptions,
         autoSize: {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: css`
-          font-size: 85%;
+        className: cx('full-width', css`
+          font-size: 90%;
           font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-        `
+        `)
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
-    'config.timeout': {
+    timeout: {
       type: 'number',
-      name: 'config.timeout',
       title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
@@ -184,9 +166,8 @@ export default {
         defaultValue: 5000,
       },
     },
-    'config.ignoreFail': {
+    ignoreFail: {
       type: 'boolean',
-      name: 'config.ignoreFail',
       title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
@@ -196,8 +177,5 @@ export default {
   scope: {},
   components: {
     ArrayItems,
-    Operand,
-    VariableTypesContextProvider,
-    VariableJSONInput
   },
 };

@@ -1,21 +1,25 @@
 import { useCollectionDataSource } from '@nocobase/client';
 
-import { VariableComponent } from '../calculators';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { collection, filter } from '../schemas/collection';
+import { isValidFilter } from '../utils';
+import { NAMESPACE } from '../locale';
 
 export default {
   title: '{{t("Delete record")}}',
   type: 'destroy',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
-    'config.params': {
+    collection,
+    params: {
       type: 'object',
-      name: 'config.params',
-      title: '',
-      'x-decorator': 'FormItem',
       properties: {
-        filter
+        filter: {
+          ...filter,
+          ['x-validator'](value) {
+            return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
+          },
+        }
       }
     }
   },
@@ -26,6 +30,6 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent
+    FilterDynamicComponent
   }
 };

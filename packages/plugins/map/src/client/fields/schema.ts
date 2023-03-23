@@ -5,8 +5,8 @@ import { generateNTemplate } from '../locale';
 
 const { defaultProps } = interfacesProperties;
 
-if (Array.isArray(defaultProps.type.enum)) {
-  defaultProps.type.enum.push(
+if (Array.isArray(interfacesProperties.type.enum)) {
+  interfacesProperties.type.enum.push(
     {
       label: 'Point',
       value: 'point',
@@ -41,17 +41,14 @@ export const commonSchema = {
       },
       'x-disabled': '{{ isOverride || !createOnly }}',
       default: 'amap',
-      enum: MapTypes
-    }
+      enum: MapTypes,
+    },
   },
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
+  schemaInitialize(schema: ISchema, { block }) {
     if (block === 'Form') {
       Object.assign(schema, {
-        'x-component-props': {
-          readOnly: readPretty ? true : false
-        },
         'x-designer': 'Map.Designer',
       });
     }
   },
-}
+};

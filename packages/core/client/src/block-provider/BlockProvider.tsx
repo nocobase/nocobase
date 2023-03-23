@@ -13,15 +13,16 @@ import {
   useAPIClient,
   useDesignable,
   useRecord,
-  WithoutTableFieldResource
+  WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
-export const BlockRequestContext = createContext<any>(null);
+export const BlockRequestContext = createContext<any>({});
 
 export const useBlockResource = () => {
   return useContext(BlockResourceContext);
@@ -34,7 +35,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-const useAssociation = (props) => {
+export const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager();
   if (typeof association === 'string') {
@@ -92,7 +93,7 @@ export const useResourceAction = (props, opts = {}) => {
    */
   const { resource, action, fieldName: tableFieldName } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target && field.interface !== 'snapshot').map((field) => field.name);
+  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
@@ -179,12 +180,19 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
   if (associationFilterSchema) {
     return (
       <Component {...field.componentProps}>
-        <Row gutter={16} wrap={false}>
+        <Row
+          className={css`
+            height: 100%;
+          `}
+          gutter={16}
+          wrap={false}
+        >
           <Col
             className={css`
               width: 200px;
               flex: 0 0 auto;
             `}
+            style={props.associationFilterStyle}
           >
             <RecursionField
               schema={fieldSchema}
@@ -198,11 +206,19 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
               min-width: 0;
             `}
           >
-            <RecursionField
-              schema={fieldSchema}
-              onlyRenderProperties
-              filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
-            />
+            <div
+              className={css`
+                display: flex;
+                flex-direction: column;
+                height: 100%;
+              `}
+            >
+              <RecursionField
+                schema={fieldSchema}
+                onlyRenderProperties
+                filterProperties={(s) => s['x-component'] !== 'AssociationFilter'}
+              />
+            </div>
           </Col>
         </Row>
       </Component>
@@ -219,7 +235,9 @@ export const BlockProvider = (props) => {
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props} />
+            <SharedFilterProvider {...props}>
+              <FilterBlockRecord {...props}>{props.children}</FilterBlockRecord>
+            </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>

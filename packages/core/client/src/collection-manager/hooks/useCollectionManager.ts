@@ -1,11 +1,15 @@
 import { clone } from '@formily/shared';
-import { reduce, unionBy, uniq } from 'lodash';
+import { CascaderProps } from 'antd';
+import _ from 'lodash';
+import { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
+import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
 export const useCollectionManager = () => {
   const { refreshCM, service, interfaces, collections, templates } = useContext(CollectionManagerContext);
+  const compile = useCompile();
   const getInheritedFields = (name) => {
     const inheritKeys = getInheritCollections(name);
     const inheritedFields = reduce(
@@ -16,11 +20,11 @@ export const useCollectionManager = () => {
       },
       [],
     );
-    return inheritedFields;
+    return inheritedFields.filter(Boolean);
   };
 
   const getCollectionFields = (name: string): CollectionFieldOptions[] => {
-    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+    const currentFields = collections?.find((collection) => collection.name === name)?.fields || [];
     const inheritedFields = getInheritedFields(name);
     const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
       return !v.isForeignKey;
@@ -59,23 +63,77 @@ export const useCollectionManager = () => {
   };
 
   const getChildrenCollections = (name) => {
-    const childrens = [];
-    const getChildrens = (name) => {
+    const children = [];
+    const getChildren = (name) => {
       const inheritCollections = collections.filter((v) => {
         return v.inherits?.includes(name);
       });
       inheritCollections.forEach((v) => {
         const collectionKey = v.name;
-        childrens.push(v);
-        return getChildrens(collectionKey);
+        children.push(v);
+        return getChildren(collectionKey);
       });
-      return childrens;
+      return uniqBy(children, 'key');
     };
-    return getChildrens(name);
+    return getChildren(name);
   };
   const getCurrentCollectionFields = (name: string) => {
     const collection = collections?.find((collection) => collection.name === name);
     return collection?.fields || [];
+  };
+
+  // 缓存下面已经获取的 options，防止无限循环
+  const cachedOptions = {};
+
+  const getCollectionFieldsOptions = (
+    collectionName: string,
+    type: string | string[] = 'string',
+    opts?: {
+      /**
+       * 为 true 时允许查询所有关联字段
+       * 为 Array<string> 时仅允许查询指定的关联字段
+       */
+      association?: boolean | string[];
+    },
+  ) => {
+    // 防止无限循环
+    if (cachedOptions[collectionName]) {
+      return _.cloneDeep(cachedOptions[collectionName]);
+    }
+
+    const { association = false } = opts || {};
+    if (typeof type === 'string') {
+      type = [type];
+    }
+    const fields = getCollectionFields(collectionName);
+    const options = fields
+      ?.filter(
+        (field) =>
+          field.interface &&
+          (type.includes(field.type) ||
+            (association && field.target && field.target !== collectionName && Array.isArray(association)
+              ? association.includes(field.interface)
+              : false)),
+      )
+      ?.map((field) => {
+        const result: CascaderProps<any>['options'][0] = {
+          value: field.name,
+          label: compile(field?.uiSchema?.title) || field.name,
+          ...field,
+        };
+        if (association && field.target) {
+          result.children = getCollectionFieldsOptions(field.target, type, opts);
+          if (!result.children?.length) {
+            return null;
+          }
+        }
+        return result;
+      })
+      // 过滤 map 产生为 null 的数据
+      .filter(Boolean);
+
+    cachedOptions[collectionName] = options;
+    return options;
   };
 
   return {
@@ -91,6 +149,7 @@ export const useCollectionManager = () => {
     getInheritedFields,
     getCollectionField,
     getCollectionFields,
+    getCollectionFieldsOptions,
     getCurrentCollectionFields,
     getCollection(name: any) {
       if (typeof name !== 'string') {
@@ -126,8 +185,8 @@ export const useCollectionManager = () => {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {
-      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
-      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
+      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields || [];
+      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields || [];
       const inheritKeys = getInheritCollections(currentCollection);
       const index = inheritKeys.indexOf(parentCollection);
       let filterFields = currentFields;

@@ -13,6 +13,8 @@ export function createI18n(options: ApplicationOptions) {
   instance.init({
     lng: 'en-US',
     resources: {},
+    keySeparator: false,
+    nsSeparator: false,
     ...options.i18n,
   });
   return instance;

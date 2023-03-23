@@ -11,20 +11,29 @@ type CreateBelongsToManyOptions = CreateOptions;
 
 interface IBelongsToManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M[]>;
+
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
+
   findOne(options?: FindOneOptions): Promise<M>;
+
   // 新增并关联，存在中间表数据
   create(options?: CreateOptions): Promise<M>;
+
   // 更新，存在中间表数据
   update(options?: UpdateOptions): Promise<M>;
+
   // 删除
   destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 附加关联，存在中间表数据
   add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 移除关联
   remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   toggle(options: TargetKey | { pk?: TargetKey; transaction?: Transaction }): Promise<void>;
 }
 
@@ -62,6 +71,8 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 
+    const throughModel = this.throughModel();
+
     const instancesToIds = (instances) => {
       return instances.map((instance) => instance.get(this.targetKey()));
     };
@@ -69,7 +80,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     // Through Table
     const throughTableWhere: Array<any> = [
       {
-        [association.foreignKey]: this.sourceKeyValue,
+        [throughModel.rawAttributes[association.foreignKey].field]: this.sourceKeyValue,
       },
     ];
 
@@ -100,7 +111,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
     }
 
     throughTableWhere.push({
-      [association.otherKey]: {
+      [throughModel.rawAttributes[association.otherKey].field]: {
         [Op.in]: ids,
       },
     });
@@ -155,7 +166,17 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       return carry;
     }, {});
 
-    await sourceModel[this.accessors()[call]](Object.keys(setObj), {
+    const targetKeys = Object.keys(setObj);
+    const association = this.association;
+
+    const targetObjects = await this.targetModel.findAll({
+      where: {
+        [association['targetKey']]: targetKeys,
+      },
+      transaction,
+    });
+
+    await sourceModel[this.accessors()[call]](targetObjects, {
       transaction,
     });
 

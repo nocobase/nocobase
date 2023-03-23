@@ -13,12 +13,6 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
-      path: {
-        title: '{{t("Path")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
-      },
       serve: {
         type: 'string',
         'x-decorator': 'FormItem',
@@ -57,12 +51,6 @@ const schema = {
         'x-decorator': 'FormItem',
         'x-component': 'Input',
         required: true,
-      },
-      path: {
-        title: '{{t("Path")}}',
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Input',
       },
     },
   },
@@ -128,8 +116,8 @@ const schema = {
         'x-component': 'Input',
         required: true,
       },
-      path: {
-        title: '{{t("Path")}}',
+      endpoint: {
+        title: '{{t("Endpoint")}}',
         type: 'string',
         'x-decorator': 'FormItem',
         'x-component': 'Input',

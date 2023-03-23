@@ -7,20 +7,31 @@ import {
   QueryInterfaceDropTableOptions,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Database } from './database';
-import { Field, FieldOptions } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5 } from './utils';
+import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type dumpable = 'required' | 'optional' | 'skip';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  namespace?: string;
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
   tableName?: string;
   inherits?: string[] | string;
   filterTargetKey?: string;
@@ -36,6 +47,9 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
+
+  tree?: string;
+
   [key: string]: any;
 }
 
@@ -70,12 +84,28 @@ export class Collection<
     return this.context.database;
   }
 
+  get treeParentField(): BelongsToField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeParent) {
+        return field;
+      }
+    }
+  }
+
+  get treeChildrenField(): HasManyField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeChildren) {
+        return field;
+      }
+    }
+  }
+
   constructor(options: CollectionOptions, context: CollectionContext) {
     super();
-    this.checkOptions(options);
-
     this.context = context;
     this.options = options;
+
+    this.checkOptions(options);
 
     this.bindFieldEventListener();
     this.modelInit();
@@ -93,15 +123,31 @@ export class Collection<
 
   private checkOptions(options: CollectionOptions) {
     checkIdentifier(options.name);
+    this.checkTableName();
+  }
+
+  private checkTableName() {
+    const tableName = this.tableName();
+    for (const [k, collection] of this.db.collections) {
+      if (collection.name != this.options.name && tableName === collection.tableName()) {
+        throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
+      }
+    }
+  }
+
+  tableName() {
+    const { name, tableName } = this.options;
+    const tName = tableName || name;
+    return this.db.options.underscored ? snakeCase(tName) : tName;
   }
 
   private sequelizeModelOptions() {
-    const { name, tableName } = this.options;
+    const { name } = this.options;
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
       modelName: name,
       sequelize: this.context.database.sequelize,
-      tableName: tableName || name,
+      tableName: this.tableName(),
     };
   }
 
@@ -112,8 +158,10 @@ export class Collection<
     if (this.model) {
       return;
     }
+
     const { name, model, autoGenId = true } = this.options;
     let M: ModelStatic<Model> = Model;
+
     if (this.context.database.sequelize.isDefined(name)) {
       const m = this.context.database.sequelize.model(name);
       if ((m as any).isThrough) {
@@ -126,11 +174,13 @@ export class Collection<
         return;
       }
     }
+
     if (typeof model === 'string') {
       M = this.context.database.models.get(model) || Model;
     } else if (model) {
       M = model;
     }
+
     // @ts-ignore
     this.model = class extends M {};
     this.model.init(null, this.sequelizeModelOptions());
@@ -160,6 +210,7 @@ export class Collection<
 
     this.on('field.afterRemove', (field: Field) => {
       field.unbind();
+      this.db.emit('field.afterRemove', field);
     });
   }
 
@@ -183,10 +234,34 @@ export class Collection<
     return this.setField(name, options);
   }
 
+  checkFieldType(name: string, options: FieldOptions) {
+    if (!this.db.options.underscored) {
+      return;
+    }
+    const fieldName = options.field || snakeCase(name);
+    const field = this.findField((f) => {
+      if (f.name === name) {
+        return false;
+      }
+      if (f.field) {
+        return f.field === fieldName;
+      }
+      return snakeCase(f.name) === fieldName;
+    });
+    if (!field) {
+      return;
+    }
+    if (options.type !== field.type) {
+      throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
+    }
+  }
+
   setField(name: string, options: FieldOptions): Field {
     checkIdentifier(name);
+    this.checkFieldType(name, options);
 
     const { database } = this.context;
+    this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
       { name, ...options },
@@ -264,13 +339,13 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.model.tableName, options);
+      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
     this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
-    return this.db.collectionExistsInDb(this.name, options);
+    return this.db.queryInterface.collectionTableExists(this, options);
   }
 
   removeField(name: string): void | Field {
@@ -309,9 +384,12 @@ export class Collection<
     newOptions = merge(this.options, newOptions, mergeOptions);
 
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
+    this.options = newOptions;
 
     this.setFields(options.fields, false);
-    this.setRepository(options.repository);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 
@@ -361,9 +439,13 @@ export class Collection<
     if (!index) {
       return;
     }
+
+    // collection defined indexes
     let indexes: any = this.model.options.indexes || [];
+
     let indexName = [];
     let indexItem;
+
     if (typeof index === 'string') {
       indexItem = {
         fields: [index],
@@ -378,13 +460,17 @@ export class Collection<
       indexItem = index;
       indexName = index.fields;
     }
+
     if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
       return;
     }
+
     const name: string = this.model.primaryKeyAttributes.join(',');
+
     if (name.startsWith(`${indexName.join(',')},`)) {
       return;
     }
+
     for (const item of indexes) {
       if (lodash.isEqual(item.fields, indexName)) {
         return;
@@ -394,11 +480,13 @@ export class Collection<
         return;
       }
     }
+
     if (!indexItem) {
       return;
     }
+
     indexes.push(indexItem);
-    this.model.options.indexes = indexes;
+
     const tableName = this.model.getTableName();
     // @ts-ignore
     this.model._indexes = this.model.options.indexes
@@ -410,6 +498,7 @@ export class Collection<
         }
         return item;
       });
+
     this.refreshIndexes();
   }
 
@@ -429,15 +518,23 @@ export class Collection<
   refreshIndexes() {
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
+
     // @ts-ignore
-    this.model._indexes = indexes.filter((item) => {
-      for (const field of item.fields) {
-        if (!this.model.rawAttributes[field]) {
-          return false;
-        }
-      }
-      return true;
-    });
+    this.model._indexes = lodash.uniqBy(
+      indexes
+        .filter((item) => {
+          return item.fields.every((field) =>
+            Object.values(this.model.rawAttributes).find((fieldVal) => fieldVal.field === field),
+          );
+        })
+        .map((item) => {
+          if (this.options.underscored) {
+            item.fields = item.fields.map((field) => snakeCase(field));
+          }
+          return item;
+        }),
+      'name',
+    );
   }
 
   async sync(syncOptions?: SyncOptions) {
@@ -473,5 +570,35 @@ export class Collection<
 
   public isParent() {
     return this.context.database.inheritanceMap.isParentNode(this.name);
+  }
+
+  public getTableNameWithSchema() {
+    const tableName = this.model.tableName;
+
+    if (this.collectionSchema()) {
+      return this.db.utils.addSchema(tableName, this.collectionSchema());
+    }
+
+    return tableName;
+  }
+
+  public quotedTableName() {
+    return this.db.utils.quoteTable(this.getTableNameWithSchema());
+  }
+
+  public collectionSchema() {
+    if (this.options.schema) {
+      return this.options.schema;
+    }
+
+    if (this.db.options.schema) {
+      return this.db.options.schema;
+    }
+
+    if (this.db.inDialect('postgres')) {
+      return 'public';
+    }
+
+    return undefined;
   }
 }

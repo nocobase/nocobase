@@ -10,6 +10,7 @@ describe('workflow > instructions > query', () => {
   let PostCollection;
   let PostRepo;
   let TagModel;
+  let CommentRepo;
   let WorkflowModel;
   let workflow;
 
@@ -20,6 +21,7 @@ describe('workflow > instructions > query', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostCollection = db.getCollection('posts');
     PostRepo = PostCollection.repository;
+    CommentRepo = db.getCollection('comments').repository;
     TagModel = db.getCollection('tags').model;
 
     workflow = await WorkflowModel.create({
@@ -160,7 +162,7 @@ describe('workflow > instructions > query', () => {
       });
 
       const tag = await TagModel.create({ name: 'tag1' });
-      const post = await PostCollection.repository.create({
+      const post = await PostRepo.create({
         values: { title: 't1', tags: [tag.id] }
       });
 
@@ -171,7 +173,31 @@ describe('workflow > instructions > query', () => {
       expect(job.result.id).toBe(tag.id);
     });
 
-    it('params.appends: with associations', async () => {
+    it('params.appends: hasMany', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            appends: ['comments']
+          }
+        }
+      });
+
+      const comment = await CommentRepo.create({});
+      const post = await PostRepo.create({
+        values: { title: 't1', comments: [comment.id] }
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.comments.length).toBe(1);
+      expect(job.result.comments[0].id).toBe(comment.id);
+    });
+
+    it('params.appends: belongsToMany', async () => {
       const n1 = await workflow.createNode({
         type: 'query',
         config: {
@@ -183,7 +209,7 @@ describe('workflow > instructions > query', () => {
       });
 
       const tag = await TagModel.create({ name: 'tag1' });
-      const post = await PostCollection.repository.create({
+      const post = await PostRepo.create({
         values: { title: 't1', tags: [tag.id] }
       });
 

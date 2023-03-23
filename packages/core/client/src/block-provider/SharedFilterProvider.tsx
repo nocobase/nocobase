@@ -18,7 +18,11 @@ export type SharedFilterContextValue = {
 };
 
 export const mergeFilter = (filters: any[], op = '$and') => {
-  const items = filters.filter(Boolean);
+  const items = filters.filter((f) => {
+    if (f && typeof f === 'object' && !Array.isArray(f)) {
+      return Object.values(f).filter((v) => v !== undefined).length;
+    }
+  });
   if (items.length === 0) {
     return {};
   }

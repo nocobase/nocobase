@@ -3,6 +3,9 @@ import { LOG_TYPE_CREATE } from '../constants';
 
 export function afterCreate(app: Application) {
   return async (model, options) => {
+    if (options.logging === false) {
+      return;
+    }
     const db = app.db;
     const collection = db.getCollection(model.constructor.name);
     if (!collection || !collection.options.logging) {

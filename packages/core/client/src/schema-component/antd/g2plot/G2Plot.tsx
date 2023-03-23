@@ -33,7 +33,7 @@ import {
   Venn,
   Violin,
   Waterfall,
-  WordCloud
+  WordCloud,
 } from '@antv/g2plot';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
@@ -90,7 +90,6 @@ const plots = {
 
 export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotProps<O>, ref: any) {
   const { className, plot, config } = props;
-
   const containerRef = useRef(undefined);
   const plotRef = useRef(undefined);
 
@@ -107,7 +106,7 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
       plotRef.current.update(config);
     } else {
       plotRef.current = new plot(containerRef.current, config);
-      plotRef.current.render();
+      plotRef?.current?.render();
     }
 
     syncRef(plotRef, ref);
@@ -122,7 +121,6 @@ export const G2PlotRenderer = forwardRef(function <O = any>(props: ReactG2PlotPr
 
   useEffect(() => {
     renderPlot();
-
     return () => destoryPlot();
   }, [config, plot]);
 
@@ -154,6 +152,7 @@ export const G2Plot: any = observer((props: any) => {
       field.data.loading = false;
     }
   }, []);
+
   if (!plot || !config) {
     return <div style={{ opacity: 0.3 }}>{t('In configuration')}...</div>;
   }

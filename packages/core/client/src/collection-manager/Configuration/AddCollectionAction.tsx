@@ -15,7 +15,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import * as components from './components';
 import { templateOptions } from './templates';
 
-const getSchema = (schema, record: any, compile): ISchema => {
+const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
     return;
   }
@@ -30,6 +30,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
   const initialValue: any = {
     name: `t_${uid()}`,
     template: schema.name,
+    category,
     ...cloneDeep(schema.default),
   };
   if (initialValue.reverseField) {
@@ -83,7 +84,7 @@ const getSchema = (schema, record: any, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(),
+                  useAction: () => useCreateCollection(schema),
                 },
               },
             },
@@ -187,16 +188,19 @@ const useDefaultCollectionFields = (values) => {
   return defaults;
 };
 
-const useCreateCollection = () => {
+const useCreateCollection = (schema?: any) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const { resource, collection } = useResourceContext();
   return {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
+      if (schema?.events?.beforeSubmit) {
+        schema.events.beforeSubmit(values);
+      }
       const fields = useDefaultCollectionFields(values);
       if (values.autoCreateReverseField) {
       } else {
@@ -234,6 +238,9 @@ export const AddCollectionAction = (props) => {
   const items = templateOptions().map((option) => {
     return { label: compile(option.title), key: option.name };
   });
+  const {
+    state: { category },
+  } = useResourceActionContext();
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>
@@ -248,7 +255,7 @@ export const AddCollectionAction = (props) => {
                 overflow: 'auto',
               }}
               onClick={(info) => {
-                const schema = getSchema(getTemplate(info.key), record, compile);
+                const schema = getSchema(getTemplate(info.key), category, compile);
                 setSchema(schema);
                 setVisible(true);
               }}

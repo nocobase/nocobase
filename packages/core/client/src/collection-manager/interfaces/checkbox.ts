@@ -17,7 +17,7 @@ export const checkbox: IField = {
   },
   hasDefaultValue: true,
   properties: {
-    ...defaultProps
+    ...defaultProps,
   },
   filterable: {
     operators: operators.boolean,

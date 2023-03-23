@@ -1,47 +1,35 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
+import { useCompile, useDesignable, useFixedBlockDesignerSetting } from '../..';
 import { useCalendarBlockContext } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
-const useOptions = (type = 'string') => {
-  const compile = useCompile();
-  const { fields } = useCollection();
-  const options = fields
-    ?.filter((field) => field.type === type)
-    ?.map((field) => {
-      return {
-        value: field.name,
-        label: compile(field?.uiSchema?.title),
-      };
-    });
-  return options;
-};
-
 export const CalendarDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name, title, fields } = useCollection();
+  const { name, title } = useCollection();
+  const { getCollectionFieldsOptions } = useCollectionManager();
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useCalendarBlockContext();
   const { dn } = useDesignable();
-  const compile = useCompile();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.SelectItem
         title={t('Title field')}
         value={fieldNames.title}
-        options={useOptions('string')}
+        options={getCollectionFieldsOptions(name, 'string')}
         onChange={(title) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['title'] = title;
@@ -74,10 +62,13 @@ export const CalendarDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SelectItem
+      {fixedBlockDesignerSetting}
+      <SchemaSettings.CascaderItem
         title={t('Start date field')}
         value={fieldNames.start}
-        options={useOptions('date')}
+        options={getCollectionFieldsOptions(name, 'date', {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        })}
         onChange={(start) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['start'] = start;
@@ -93,10 +84,12 @@ export const CalendarDesigner = () => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SelectItem
+      <SchemaSettings.CascaderItem
         title={t('End date field')}
         value={fieldNames.end}
-        options={useOptions('date')}
+        options={getCollectionFieldsOptions(name, 'date', {
+          association: ['o2o', 'obo', 'oho', 'm2o'],
+        })}
         onChange={(end) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
           fieldNames['end'] = end;

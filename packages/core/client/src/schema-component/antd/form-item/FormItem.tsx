@@ -1,18 +1,20 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
+import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
+import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -24,8 +26,20 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const FormItem: any = (props) => {
+export const FormItem: any = observer((props: any) => {
+  useEnsureOperatorsValid();
+
   const field = useField();
+  const ctx = useContext(BlockRequestContext);
+  const schema = useFieldSchema();
+
+  useEffect(() => {
+    if (ctx?.block === 'form') {
+      ctx.field.data = ctx.field.data || {};
+      ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+      ctx.field.data.activeFields.add(schema.name);
+    }
+  }, []);
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>
@@ -51,10 +65,10 @@ export const FormItem: any = (props) => {
       </BlockItem>
     </ACLCollectionFieldProvider>
   );
-};
+});
 
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+FormItem.Designer = () => {
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
@@ -67,7 +81,9 @@ FormItem.Designer = (props) => {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target
+    ? getCollectionFields(collectionField.target)
+    : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const initialValue = {
@@ -411,6 +427,27 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable link')}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          onChange={(flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              mode: flag ? 'links' : 'tags',
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {form &&
         !form?.readPretty &&
         collectionField?.interface !== 'o2m' &&
@@ -466,7 +503,7 @@ FormItem.Designer = (props) => {
             }}
           />
         )}
-      {collectionField?.target && fieldSchema['x-component'] === 'CollectionField' && (
+      {options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
@@ -505,3 +542,5 @@ FormItem.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+FormItem.FilterFormDesigner = FilterFormDesigner;

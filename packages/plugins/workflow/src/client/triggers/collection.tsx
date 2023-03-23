@@ -1,48 +1,15 @@
-import React from 'react';
-import { Select } from 'antd';
-import { observer, useForm, useFormEffects } from '@formily/react';
 
-import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
+import {
+  SchemaInitializerItemOptions,
+  useCollectionDataSource,
+} from '@nocobase/client';
 
-import { useFlowContext } from '../FlowContext';
-import { collection, filter } from '../schemas/collection';
-import { css } from '@emotion/css';
-import { onFieldValueChange } from '@formily/core';
-import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { appends, collection, filter } from '../schemas/collection';
+import { useCollectionFieldOptions } from '../variable';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
-import { useOperandContext } from '../calculators';
-
-const FieldsSelect = observer((props) => {
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
-  const { values, clearFormGraph, setValuesIn } = useForm();
-  const fields = getCollectionFields(values?.config?.collection);
-  useFormEffects(() => {
-    onFieldValueChange('config.collection', (field) => {
-      clearFormGraph('config.changed');
-      setValuesIn('config.condition', null);
-    });
-  });
-
-  return (
-    <Select
-      {...props}
-      className={css`
-        min-width: 6em;
-      `}
-    >
-      {fields
-        .filter(field => (
-          !field.hidden
-          && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
-          && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-        ))
-        .map(field => (
-          <Select.Option key={field.name} value={field.name}>{compile(field.uiSchema?.title)}</Select.Option>
-        ))}
-    </Select>
-  );
-});
+import { FieldsSelect } from '../components/FieldsSelect';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -58,46 +25,37 @@ const collectionModeOptions = [
   { label: `{{t("After record deleted", { ns: "${NAMESPACE}" })}}`, value: COLLECTION_TRIGGER_MODE.DELETED },
 ];
 
-
-
 export default {
   title: `{{t("Collection event", { ns: "${NAMESPACE}" })}}`,
   type: 'collection',
   fieldset: {
-    'config.collection': {
+    collection: {
       ...collection,
       ['x-reactions']: [
         ...collection['x-reactions'],
         {
-          target: 'config.mode',
+          target: 'changed',
+          effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              visible: '{{!!$self.value}}',
-            },
+              value: []
+            }
           }
         },
         {
-          target: 'config.changed',
+          target: 'condition',
+          effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              visible: '{{!!$self.value}}',
-            },
-          }
-        },
-        {
-          target: 'config.condition',
-          fulfill: {
-            state: {
-              visible: '{{!!$self.value}}',
-            },
+              value: null
+            }
           }
         }
       ]
     },
-    'config.mode': {
+    mode: {
       type: 'number',
       title: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.mode',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
@@ -107,32 +65,71 @@ export default {
       required: true,
       'x-reactions': [
         {
-          target: 'config.changed',
+          dependencies: ['collection'],
           fulfill: {
             state: {
-              disabled: `{{!($self.value & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
+              visible: '{{!!$deps[0]}}',
             },
           }
         },
       ]
     },
-    'config.changed': {
+    changed: {
       type: 'array',
-      name: 'changed',
       title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
-        placeholder: '{{t("Select Field")}}'
-      }
+        placeholder: '{{t("Select Field")}}',
+        filter(field) {
+          return (
+            !field.hidden
+            && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
+            && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+          );
+        }
+      },
+      'x-reactions': [
+        {
+          dependencies: ['collection', 'mode'],
+          fulfill: {
+            state: {
+              visible: `{{$deps[0] && $deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED}}}`,
+            },
+          }
+        },
+      ]
     },
-    'config.condition': {
+    condition: {
       ...filter,
-      name: 'config.condition',
-      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`
-    }
+      title: `{{t("Only triggers when match conditions", { ns: "${NAMESPACE}" })}}`,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{!!$deps[0]}}',
+            },
+          }
+        },
+      ]
+    },
+    appends: {
+      ...appends,
+      'x-reactions': [
+        ...appends['x-reactions'],
+        {
+          dependencies: ['mode'],
+          fulfill: {
+            state: {
+              visible: `{{!($deps[0] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
+            },
+          }
+        },
+      ]
+    },
   },
   scope: {
     useCollectionDataSource
@@ -140,26 +137,28 @@ export default {
   components: {
     FieldsSelect
   },
-  getOptions(config) {
+  getOptions(config, types) {
     const { t } = useWorkflowTranslation();
+    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types });
     const options: any[] = [
-      { value: 'data', label: t('Trigger data') },
+      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
     ];
     return options;
   },
-  getter(props) {
-    const { onChange } = props;
-    const { workflow } = useFlowContext();
-    const { options } = useOperandContext();
+  useInitializers(config): SchemaInitializerItemOptions | null {
+    if (!config.collection) {
+      return null;
+    }
 
-    return (
-      <CollectionFieldSelect
-        collection={workflow.config.collection}
-        value={options?.path}
-        onChange={(path) => {
-          onChange(`{{$context.data.${path}}}`);
-        }}
-      />
-    );
+    return {
+      type: 'item',
+      title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      component: CollectionBlockInitializer,
+      collection: config.collection,
+      dataSource: '{{$context.data}}'
+    };
+  },
+  initializers: {
+    CollectionFieldInitializers
   }
 };

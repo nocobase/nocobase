@@ -1,13 +1,16 @@
 import { Application } from '@nocobase/server';
+import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import crypto from 'crypto';
+import EventEmitter from 'events';
+import fsPromises from 'fs/promises';
+import lodash from 'lodash';
 import * as os from 'os';
 import path from 'path';
-import lodash from 'lodash';
-import fsPromises from 'fs/promises';
-import crypto from 'crypto';
-import inquirer from 'inquirer';
-import EventEmitter from 'events';
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
+import { CollectionGroupManager } from './collection-group-manager';
 
+export type AppMigratorOptions = {
+  workDir?: string;
+};
 abstract class AppMigrator extends EventEmitter {
   protected workDir: string;
   public app: Application;
@@ -16,12 +19,7 @@ abstract class AppMigrator extends EventEmitter {
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
-  constructor(
-    app,
-    options?: {
-      workDir?: string;
-    },
-  ) {
+  constructor(app, options?: AppMigratorOptions) {
     super();
 
     this.app = app;
@@ -44,7 +42,14 @@ abstract class AppMigrator extends EventEmitter {
   async getAppPlugins() {
     const plugins = await this.app.db.getCollection('applicationPlugins').repository.find();
 
-    return ['core', ...plugins.map((plugin) => plugin.get('name'))];
+    return lodash.uniq(['core', ...this.app.pm.plugins.keys(), ...plugins.map((plugin) => plugin.get('name'))]);
+  }
+
+  async getAppPluginCollectionGroups() {
+    const plugins = await this.getAppPlugins();
+    return CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
+      plugins.includes(collectionGroup.namespace),
+    );
   }
 
   async getCustomCollections() {
@@ -58,64 +63,6 @@ abstract class AppMigrator extends EventEmitter {
 
   async clearWorkDir() {
     await this.rmDir(this.workDir);
-  }
-
-  buildInquirerPluginQuestion(requiredGroups, optionalGroups) {
-    return {
-      type: 'checkbox',
-      name: 'collectionGroups',
-      message: `选择需要${this.direction}的插件数据`,
-      loop: false,
-      pageSize: 20,
-      choices: [
-        new inquirer.Separator('== 必选数据 =='),
-        ...requiredGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
-          checked: true,
-          disabled: true,
-        })),
-
-        new inquirer.Separator('== 可选数据 =='),
-        ...optionalGroups.map((collectionGroup) => ({
-          name: `${collectionGroup.function} (${collectionGroup.pluginName})`,
-          value: `${collectionGroup.pluginName}.${collectionGroup.function}`,
-          checked: this.direction === 'dump',
-        })),
-      ],
-    };
-  }
-
-  buildInquirerCollectionQuestion(
-    collections: {
-      name: string;
-      title: string;
-    }[],
-  ) {
-    return {
-      type: 'checkbox',
-      name: 'userCollections',
-      message: `选择需要${this.direction}的Collection数据`,
-      loop: false,
-      pageSize: 30,
-      choices: collections.map((collection) => {
-        return {
-          name: collection.title,
-          value: collection.name,
-          checked: this.direction === 'dump',
-        };
-      }),
-    };
-  }
-
-  buildInquirerQuestions(requiredGroups, optionalGroups, optionalCollections) {
-    const questions = [this.buildInquirerPluginQuestion(requiredGroups, optionalGroups)];
-
-    if (optionalCollections.length > 0) {
-      questions.push(this.buildInquirerCollectionQuestion(optionalCollections));
-    }
-
-    return questions;
   }
 
   findThroughCollections(collections: string[]) {

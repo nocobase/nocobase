@@ -6,7 +6,6 @@ import { NAMESPACE } from "../locale";
 export const collection = {
   type: 'string',
   title: '{{t("Collection")}}',
-  name: 'config.collection',
   required: true,
   'x-reactions': ['{{useCollectionDataSource()}}'],
   'x-decorator': 'FormItem',
@@ -19,7 +18,6 @@ export const collection = {
 export const values = {
   type: 'object',
   title: '{{t("Fields values")}}',
-  name: 'config.params.values',
   'x-decorator': 'FormItem',
   'x-decorator-props': {
     labelAlign: 'left',
@@ -34,19 +32,12 @@ export const values = {
 export const filter = {
   type: 'object',
   title: '{{t("Filter")}}',
-  name: 'config.params.filter',
   'x-decorator': 'FormItem',
-  'x-decorator-props': {
-    labelAlign: 'left',
-    className: css`
-      flex-direction: column;
-    `
-  },
   'x-component': 'Filter',
   'x-component-props': {
     useProps() {
       const { values } = useForm();
-      const options = useCollectionFilterOptions(values.config?.collection);
+      const options = useCollectionFilterOptions(values?.collection);
       return {
         options,
         className: css`
@@ -55,6 +46,31 @@ export const filter = {
         `
       };
     },
-    dynamicComponent: 'VariableComponent'
+    dynamicComponent: 'FilterDynamicComponent'
   }
+};
+
+export const appends = {
+  type: 'array',
+  title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Only configured association field could be accessed in following nodes", { ns: "${NAMESPACE}" })}}`,
+  'x-decorator': 'FormItem',
+  'x-component': 'FieldsSelect',
+  'x-component-props': {
+    mode: 'multiple',
+    placeholder: '{{t("Select Field")}}',
+    filter(field) {
+      return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
+    }
+  },
+  'x-reactions': [
+    {
+      dependencies: ['collection'],
+      fulfill: {
+        state: {
+          visible: '{{!!$deps[0]}}',
+        },
+      }
+    },
+  ]
 };

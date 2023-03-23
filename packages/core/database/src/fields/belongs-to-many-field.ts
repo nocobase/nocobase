@@ -55,10 +55,15 @@ export class BelongsToManyField extends RelationField {
     if (database.hasCollection(through)) {
       Through = database.getCollection(through);
     } else {
-      Through = database.collection({
+      const throughCollectionOptions = {
         name: through,
-        // timestamps: false,
-      });
+      };
+
+      if (this.collection.collectionSchema()) {
+        throughCollectionOptions['schema'] = this.collection.collectionSchema();
+      }
+
+      Through = database.collection(throughCollectionOptions);
 
       Object.defineProperty(Through.model, 'isThrough', { value: true });
     }

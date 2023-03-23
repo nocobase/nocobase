@@ -1,12 +1,12 @@
-import React from 'react';
+import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { useCollectionDataSource, useCollectionManager, useCompile } from '@nocobase/client';
-
-import { useFlowContext } from '../FlowContext';
-import { useOperandContext, VariableComponent } from '../calculators';
-import { collection, filter } from '../schemas/collection';
-import CollectionFieldSelect from '../components/CollectionFieldSelect';
+import { appends, collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
+import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
+import { useCollectionFieldOptions } from '../variable';
+import { FieldsSelect } from '../components/FieldsSelect';
 
 
 
@@ -15,24 +15,22 @@ export default {
   type: 'query',
   group: 'collection',
   fieldset: {
-    'config.collection': collection,
-    'config.multiple': {
-      type: 'boolean',
-      title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.multiple',
-      'x-decorator': 'FormItem',
-      'x-component': 'Checkbox',
-      'x-component-props': {
-        disabled: true
-      }
-    },
-    'config.params': {
+    collection,
+    // 'config.multiple': {
+    //   type: 'boolean',
+    //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
+    //   name: 'config.multiple',
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'Checkbox',
+    //   'x-component-props': {
+    //     disabled: true
+    //   }
+    // },
+    params: {
       type: 'object',
-      name: 'config.params',
-      title: '',
-      'x-decorator': 'FormItem',
       properties: {
-        filter
+        filter,
+        appends
       }
     }
   },
@@ -43,23 +41,26 @@ export default {
     useCollectionDataSource
   },
   components: {
-    VariableComponent
+    FilterDynamicComponent,
+    FieldsSelect
   },
-  getter(props) {
-    const { onChange } = props;
-    const { nodes } = useFlowContext();
-    const { options } = useOperandContext();
-    const { config } = nodes.find(n => n.id == options.nodeId);
-    const value = options?.path;
+  getOptions(config, types) {
+    return useCollectionFieldOptions({ collection: config.collection, types });
+  },
+  useInitializers(node): SchemaInitializerItemOptions | null {
+    if (!node.config.collection) {
+      return null;
+    }
 
-    return (
-      <CollectionFieldSelect
-        collection={config.collection}
-        value={value}
-        onChange={(path) => {
-          onChange(`{{$jobsMapByNodeId.${options.nodeId}.${path}}}`);
-        }}
-      />
-    );
+    return {
+      type: 'item',
+      title: node.title ?? `#${node.id}`,
+      component: CollectionBlockInitializer,
+      collection: node.config.collection,
+      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+    };
+  },
+  initializers: {
+    CollectionFieldInitializers
   }
 };

@@ -92,7 +92,7 @@ export const useFilterActionProps = () => {
   const { name } = useCollection();
   const options = useFilterOptions(name);
   const { service, props } = useBlockRequestContext();
-  return useFilterFieldProps({ options, service, params: props.params });
+  return useFilterFieldProps({ options, service, params: props?.params });
 };
 
 export const useFilterFieldProps = ({ options, service, params }) => {

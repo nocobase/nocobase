@@ -16,7 +16,6 @@ const ModeFieldsets = {
   [SCHEDULE_MODE.STATIC]: {
     startsOn: {
       type: 'datetime',
-      name: 'startsOn',
       title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
@@ -27,13 +26,12 @@ const ModeFieldsets = {
     },
     repeat: {
       type: 'string',
-      name: 'repeat',
       title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
       'x-reactions': [
         {
-          target: 'config.endsOn',
+          target: 'endsOn',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -41,7 +39,7 @@ const ModeFieldsets = {
           }
         },
         {
-          target: 'config.limit',
+          target: 'limit',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -52,7 +50,6 @@ const ModeFieldsets = {
     },
     endsOn: {
       type: 'datetime',
-      name: 'endsOn',
       title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
@@ -62,7 +59,6 @@ const ModeFieldsets = {
     },
     limit: {
       type: 'number',
-      name: 'limit',
       title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
@@ -79,7 +75,7 @@ const ModeFieldsets = {
         ...collection['x-reactions'],
         {
           // only full path works
-          target: 'config.startsOn',
+          target: 'startsOn',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -95,7 +91,7 @@ const ModeFieldsets = {
       'x-component': 'OnField',
       'x-reactions': [
         {
-          target: 'config.repeat',
+          target: 'repeat',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -107,13 +103,12 @@ const ModeFieldsets = {
     },
     repeat: {
       type: 'string',
-      name: 'repeat',
       title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
       'x-reactions': [
         {
-          target: 'config.endsOn',
+          target: 'endsOn',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -121,7 +116,7 @@ const ModeFieldsets = {
           }
         },
         {
-          target: 'config.limit',
+          target: 'limit',
           fulfill: {
             state: {
               visible: '{{!!$self.value}}',
@@ -138,7 +133,6 @@ const ModeFieldsets = {
     },
     limit: {
       type: 'number',
-      name: 'limit',
       title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
@@ -157,16 +151,15 @@ const scheduleModeOptions = [
 
 export const ScheduleConfig = () => {
   const { values = {}, clearFormGraph } = useForm();
-  const { config = {} } = values;
-  const [mode, setMode] = useState(config.mode);
+  const [mode, setMode] = useState(values.mode);
   useFormEffects(() => {
-    onFieldValueChange('config.mode', (field) => {
+    onFieldValueChange('mode', (field) => {
       setMode(field.value);
-      clearFormGraph('config.collection');
-      clearFormGraph('config.startsOn');
-      clearFormGraph('config.repeat');
-      clearFormGraph('config.endsOn');
-      clearFormGraph('config.limit');
+      clearFormGraph('collection');
+      clearFormGraph('startsOn');
+      clearFormGraph('repeat');
+      clearFormGraph('endsOn');
+      clearFormGraph('limit');
     });
   });
 
@@ -182,7 +175,8 @@ export const ScheduleConfig = () => {
           'x-component-props': {
             options: scheduleModeOptions
           },
-          required: true
+          required: true,
+          default: SCHEDULE_MODE.STATIC
         }}
       />
       <SchemaComponent

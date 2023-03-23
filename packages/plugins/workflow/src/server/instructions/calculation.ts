@@ -1,48 +1,36 @@
+import evaluators, { Evaluator } from '@nocobase/evaluators';
+
+import { Processor } from '..';
 import { JOB_STATUS } from "../constants";
 import FlowNodeModel from "../models/FlowNode";
-import { calculate } from "../calculators";
+import { Instruction } from ".";
 
-// @calculation: {
-//   calculator: 'concat',
-//   operands: [
-//     {
-//       type: 'calculation',
-//       options: {
-//         calculator: 'add',
-//         operands: [{ value: 1 }, { value: 2 }]
-//       }
-//     },
-//     {
-//       type: 'constant',
-//       value: '{{$context.data.title}}'
-//     },
-//     {
-//       type: 'context',
-//       options: {
-//         path: 'data.title'
-//       }
-//     },
-//     {
-//       type: 'constant',
-//       value: 1
-//     }
-//   ]
-// }
+
+
+interface CalculationConfig {
+  engine?: string;
+  expression?: string;
+}
 
 export default {
-  async run(node: FlowNodeModel, prevJob, processor) {
-    const { calculation } = node.config || {};
+  async run(node: FlowNodeModel, prevJob, processor: Processor) {
+    const { engine = 'math.js', expression = '' } = <CalculationConfig>node.config || {};
+    const evaluator = <Evaluator | undefined>evaluators.get(engine);
+    const scope = processor.getScope();
 
-    const result = calculation
-      ? calculate({
-        type: '$calculation',
-        options: processor.getParsedValue(calculation)
-      }, prevJob, processor)
-      : null;
-
-    return {
-      result,
-      status: JOB_STATUS.RESOLVED
-    };
+    try {
+      const result = evaluator && expression
+        ? evaluator(expression, scope)
+        : null;
+      return {
+        result,
+        status: JOB_STATUS.RESOLVED
+      };
+    } catch (e) {
+      return {
+        result: e.toString(),
+        status: JOB_STATUS.ERROR
+      }
+    }
   }
-}
+} as Instruction;

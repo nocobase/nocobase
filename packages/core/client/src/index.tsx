@@ -1,4 +1,3 @@
-import 'antd/dist/antd.css';
 import './global.less';
 
 export * from './acl';

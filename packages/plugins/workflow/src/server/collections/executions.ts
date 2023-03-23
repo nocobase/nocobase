@@ -1,38 +1,35 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
+  namespace: 'workflow.executionLogs',
+  duplicator: 'optional',
   name: 'executions',
   fields: [
     {
       type: 'belongsTo',
-      name: 'workflow'
+      name: 'workflow',
     },
     {
       type: 'uid',
-      name: 'key'
+      name: 'key',
     },
     {
       type: 'boolean',
       name: 'useTransaction',
-      defaultValue: false
-    },
-    // @deprecated
-    {
-      type: 'uuid',
-      name: 'transaction',
-      defaultValue: null
+      defaultValue: false,
     },
     {
       type: 'hasMany',
       name: 'jobs',
+      onDelete: 'CASCADE',
     },
     {
-      type: 'jsonb',
+      type: 'json',
       name: 'context',
     },
     {
       type: 'integer',
       name: 'status',
-    }
-  ]
+    },
+  ],
 } as CollectionOptions;

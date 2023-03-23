@@ -38,6 +38,7 @@ describe('reverseField options', () => {
         reverseField: {},
       },
     });
+
     const json = JSON.parse(JSON.stringify(field.toJSON()));
     expect(json).toMatchObject({
       type: 'hasMany',
@@ -167,11 +168,10 @@ describe('reverseField options', () => {
       filter: {
         key: reverseField.get('key'),
       },
-      appends: ['uiSchema'],
     });
 
     const uiSchema = reverseField.get('uiSchema');
-    expect(uiSchema['schema']).toEqual({ title: '123' });
+    expect(uiSchema).toEqual({ title: '123' });
   });
 
   it('should update uiSchema', async () => {
@@ -210,13 +210,9 @@ describe('reverseField options', () => {
         },
       });
 
-    const f2 = await app
-      .agent()
-      .resource('collections.fields', 'a')
-      .get({
-        filterByTk: 'f_i02fjvduwmv',
-        appends: ['uiSchema'],
-      });
+    const f2 = await app.agent().resource('collections.fields', 'a').get({
+      filterByTk: 'f_i02fjvduwmv',
+    });
 
     expect(f2.body.data.uiSchema.title).toBe('A2');
   });
@@ -269,13 +265,9 @@ describe('reverseField options', () => {
         },
       });
 
-    const f1 = await app
-      .agent()
-      .resource('collections.fields', 'b')
-      .get({
-        filterByTk: 'f_dctw6v5gsio',
-        appends: ['uiSchema'],
-      });
+    const f1 = await app.agent().resource('collections.fields', 'b').get({
+      filterByTk: 'f_dctw6v5gsio',
+    });
 
     expect(f1.body.data.uiSchema.title).toBe('A');
   });

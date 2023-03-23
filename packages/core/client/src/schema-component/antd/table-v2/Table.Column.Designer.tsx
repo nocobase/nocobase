@@ -31,7 +31,7 @@ export const TableColumnDesigner = (props) => {
   const { dn } = useDesignable();
   const fieldNames =
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
-  const options = useLabelFields(collectionField?.target);
+  const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
 
   return (
@@ -115,6 +115,29 @@ export const TableColumnDesigner = (props) => {
             field.componentProps.sorter = v;
             dn.emit('patch', {
               schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot', 'createdBy', 'updatedBy'].includes(
+        collectionField?.interface,
+      ) && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable link')}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          onChange={(flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              mode: flag ? 'links' : 'tags',
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema['x-component-props'],
+                },
+              },
             });
             dn.refresh();
           }}

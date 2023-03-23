@@ -1,36 +1,53 @@
 import decompress from 'decompress';
+import fs from 'fs';
 import fsPromises from 'fs/promises';
-import inquirer from 'inquirer';
 import path from 'path';
-import { AppMigrator } from './app-migrator';
+import { AppMigrator, AppMigratorOptions } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
+import { Application } from '@nocobase/server';
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;
-
+  backUpFilePath: string;
+  decompressed: boolean = false;
   importedCollections: string[] = [];
 
-  async restore(backupFilePath: string) {
-    const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
-    const filePath = path.isAbsolute(backupFilePath) ? backupFilePath : path.resolve(dirname, backupFilePath);
+  constructor(
+    app: Application,
+    options: AppMigratorOptions & {
+      backUpFilePath?: string;
+    },
+  ) {
+    super(app, options);
+    const { backUpFilePath } = options;
 
-    const results = await inquirer.prompt([
-      {
-        type: 'confirm',
-        name: 'confirm',
-        message: 'Danger !!! This action will overwrite your current data, please make sure you have a backup❗️❗️',
-        default: false,
-      },
-    ]);
-
-    if (results.confirm !== true) {
-      return;
+    if (backUpFilePath) {
+      this.setBackUpFilePath(backUpFilePath);
     }
+  }
 
-    await this.decompressBackup(filePath);
-    await this.importCollections();
+  setBackUpFilePath(backUpFilePath) {
+    if (path.isAbsolute(backUpFilePath)) {
+      this.backUpFilePath = backUpFilePath;
+    } else if (path.basename(backUpFilePath) === backUpFilePath) {
+      const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
+      this.backUpFilePath = path.resolve(dirname, backUpFilePath);
+    } else {
+      this.backUpFilePath = path.resolve(process.cwd(), backUpFilePath);
+    }
+  }
+
+  async parseBackupFile() {
+    await this.decompressBackup(this.backUpFilePath);
+    return await this.getImportMeta();
+  }
+
+  async restore(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
+    await this.decompressBackup(this.backUpFilePath);
+    await this.importCollections(options);
+    await this.importDb();
     await this.clearWorkDir();
   }
 
@@ -58,6 +75,7 @@ export class Restorer extends AppMigrator {
 
     const index = meta.columns.indexOf('name');
     const row = data.find((row) => JSON.parse(row)[index] === collectionName);
+
     if (!row) {
       throw new Error(`Collection ${collectionName} not found`);
     }
@@ -69,8 +87,7 @@ export class Restorer extends AppMigrator {
 
   async getImportCollections() {
     const collectionsDir = path.resolve(this.workDir, 'collections');
-    const collections = await fsPromises.readdir(collectionsDir);
-    return collections;
+    return await fsPromises.readdir(collectionsDir);
   }
 
   async getImportCollectionData(collectionName) {
@@ -80,49 +97,32 @@ export class Restorer extends AppMigrator {
 
   async getImportCollectionMeta(collectionName) {
     const metaData = path.resolve(this.workDir, 'collections', collectionName, 'meta');
-    const meta = JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
-    return meta;
+    return JSON.parse(await fsPromises.readFile(metaData, 'utf8'));
   }
 
-  async importCollections(options?: { ignore?: string | string[] }) {
-    const coreCollections = ['applicationPlugins'];
-    const collections = await this.getImportCollections();
+  async getImportMeta() {
+    const metaFile = path.resolve(this.workDir, 'meta');
+    return JSON.parse(await fsPromises.readFile(metaFile, 'utf8')) as any;
+  }
 
-    const importCustomCollections = await this.getImportCustomCollections();
-
-    const importPlugins = await this.getImportPlugins();
-
-    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) => {
-      return (
-        importPlugins.includes(collectionGroup.pluginName) &&
-        collectionGroup.collections.every((collectionName) => collections.includes(collectionName))
-      );
-    });
-
-    const delayGroups = CollectionGroupManager.getDelayRestoreCollectionGroups();
-    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
-
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
-
-    const optionalCollections = importCustomCollections.filter(
-      (collection) => !pluginsCollections.includes(collection) && !coreCollections.includes(collection),
-    );
-
-    const questions = this.buildInquirerQuestions(
-      requiredGroups,
-      optionalGroups,
-      await Promise.all(
-        optionalCollections.map(async (name) => {
-          return { name, title: await this.getImportCollectionTitle(name) };
-        }),
-      ),
-    );
-
-    const results = await inquirer.prompt(questions);
-
+  async importCollections(options: {
+    ignore?: string | string[];
+    selectedOptionalGroupNames: string[];
+    selectedUserCollections: string[];
+  }) {
     const importCollection = async (collectionName: string) => {
+      const collectionMetaPath = path.resolve(this.workDir, 'collections', collectionName, 'meta');
+
+      const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
+      const meta = JSON.parse(metaContent);
+      const tableName = this.app.db.utils.quoteTable(meta.tableName);
+
       try {
+        // disable trigger
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} DISABLE TRIGGER ALL`);
+        }
+
         await this.importCollection({
           name: collectionName,
         });
@@ -130,19 +130,27 @@ export class Restorer extends AppMigrator {
         this.app.log.warn(`import collection ${collectionName} failed`, {
           err,
         });
+      } finally {
+        if (this.app.db.inDialect('postgres')) {
+          await this.app.db.sequelize.query(`ALTER TABLE IF EXISTS ${tableName} ENABLE TRIGGER ALL`);
+        }
       }
     };
 
+    // import applicationPlugins first
     await importCollection('applicationPlugins');
-
+    // reload app
     await this.app.reload();
 
-    const requiredCollections = CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
-      (collection) => !delayCollections.includes(collection),
-    );
+    const { requiredGroups, selectedOptionalGroups } = await this.parseBackupFile();
+
+    const delayGroups = [...requiredGroups, ...selectedOptionalGroups].filter((group) => group.delay);
+    const delayCollections = CollectionGroupManager.getGroupsCollections(delayGroups);
 
     // import required plugins collections
-    for (const collectionName of requiredCollections) {
+    for (const collectionName of CollectionGroupManager.getGroupsCollections(requiredGroups).filter(
+      (i) => !delayCollections.includes(i) && i != 'applicationPlugins',
+    )) {
       await importCollection(collectionName);
     }
 
@@ -157,11 +165,18 @@ export class Restorer extends AppMigrator {
       },
     });
 
-    const userCollections = results.userCollections || [];
+    const userCollections = options.selectedUserCollections || [];
     const throughCollections = this.findThroughCollections(userCollections);
 
     const customCollections = [
-      ...CollectionGroupManager.getGroupsCollections(results.collectionGroups),
+      ...CollectionGroupManager.getGroupsCollections(
+        selectedOptionalGroups.filter((group) => {
+          return options.selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+            const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+            return group.function === functionKey && group.namespace === namespace;
+          });
+        }),
+      ),
       ...userCollections,
       ...throughCollections,
     ];
@@ -172,15 +187,20 @@ export class Restorer extends AppMigrator {
     }
 
     // import delay groups
+    const appGroups = CollectionGroupManager.getGroups(this.app);
+
     for (const collectionGroup of delayGroups) {
-      await collectionGroup.delayRestore(this);
+      const appCollectionGroup = appGroups.find(
+        (group) => group.namespace === collectionGroup.name && group.function === collectionGroup.function,
+      );
+      await appCollectionGroup.delayRestore(this);
     }
 
     await this.emitAsync('restoreCollectionsFinished');
   }
 
   async decompressBackup(backupFilePath: string) {
-    await decompress(backupFilePath, this.workDir);
+    if (!this.decompressed) await decompress(backupFilePath, this.workDir);
   }
 
   async importCollection(options: {
@@ -190,6 +210,8 @@ export class Restorer extends AppMigrator {
     rowCondition?: (row: any) => boolean;
   }) {
     const app = this.app;
+    const db = app.db;
+
     const collectionName = options.name;
     const dir = this.workDir;
     const collection = app.db.getCollection(collectionName);
@@ -199,15 +221,17 @@ export class Restorer extends AppMigrator {
     const metaContent = await fsPromises.readFile(collectionMetaPath, 'utf8');
     const meta = JSON.parse(metaContent);
     app.log.info(`collection meta ${metaContent}`);
-    const tableName = meta.tableName;
+
+    const addSchemaTableName = db.utils.addSchema(meta.tableName);
+    const tableName = db.utils.quoteTable(meta.tableName);
 
     if (options.clear !== false) {
       // truncate old data
-      let sql = `TRUNCATE TABLE "${tableName}"`;
+      let sql = `TRUNCATE TABLE ${tableName}`;
 
       if (app.db.inDialect('sqlite')) {
         sql = `DELETE
-               FROM "${tableName}"`;
+               FROM ${tableName}`;
       }
 
       await app.db.sequelize.query(sqlAdapter(app.db, sql));
@@ -265,7 +289,7 @@ export class Restorer extends AppMigrator {
 
     //@ts-ignore
     const sql = collection.model.queryInterface.queryGenerator.bulkInsertQuery(
-      tableName,
+      addSchemaTableName,
       rowsWithMeta,
       {},
       fieldMappedAttributes,
@@ -285,19 +309,23 @@ export class Restorer extends AppMigrator {
       this.on('restoreCollectionsFinished', async () => {
         if (this.app.db.inDialect('postgres')) {
           const sequenceNameResult = await app.db.sequelize.query(
-            `SELECT column_default FROM information_schema.columns WHERE
-          table_name='${collection.model.tableName}' and "column_name" = 'id';`,
+            `SELECT column_default
+             FROM information_schema.columns
+             WHERE table_name = '${collection.model.tableName}'
+               and "column_name" = 'id'
+               and table_schema = '${app.db.options.schema || 'public'}';`,
           );
 
           if (sequenceNameResult[0].length) {
             const columnDefault = sequenceNameResult[0][0]['column_default'];
             if (columnDefault.includes(`${collection.model.tableName}_id_seq`)) {
-              const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
+              const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
               const match = regex.exec(columnDefault);
               const sequenceName = match[1];
 
               const maxVal = await app.db.sequelize.query(
-                `SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}"`,
+                `SELECT MAX("${primaryKeyAttribute.field}")
+                 FROM ${tableName}`,
                 {
                   type: 'SELECT',
                 },
@@ -311,7 +339,9 @@ export class Restorer extends AppMigrator {
 
         if (this.app.db.inDialect('sqlite')) {
           await app.db.sequelize.query(
-            `UPDATE sqlite_sequence set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}") WHERE name = "${collection.model.tableName}"`,
+            `UPDATE sqlite_sequence
+             set seq = (SELECT MAX("${primaryKeyAttribute.field}") FROM "${collection.model.tableName}")
+             WHERE name = "${collection.model.tableName}"`,
           );
         }
       });
@@ -320,5 +350,31 @@ export class Restorer extends AppMigrator {
     app.logger.info(`${collectionName} imported with ${rowsWithMeta.length} rows`);
 
     this.importedCollections.push(collection.name);
+  }
+
+  async importDb() {
+    const sqlFilePath = path.resolve(this.workDir, 'db.sql');
+    // if db.sql file not exists, skip import
+    if (!fs.existsSync(sqlFilePath)) {
+      return;
+    }
+
+    // read file content from db.sql
+    const queriesContent = await fsPromises.readFile(sqlFilePath, 'utf8');
+
+    const queries = JSON.parse(queriesContent);
+
+    for (const sql of queries) {
+      try {
+        this.app.log.info(`import sql: ${sql}`);
+        await this.app.db.sequelize.query(sql);
+      } catch (e) {
+        if (e.name === 'SequelizeDatabaseError') {
+          this.app.logger.error(e.message);
+        } else {
+          throw e;
+        }
+      }
+    }
   }
 }

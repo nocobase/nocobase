@@ -1,5 +1,5 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions } from '@nocobase/server';
+import Application, { ApplicationOptions, PluginManager } from '@nocobase/server';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 
@@ -27,6 +27,7 @@ interface ActionParams {
    * @deprecated
    */
   associatedIndex?: string;
+
   [key: string]: any;
 }
 
@@ -41,6 +42,7 @@ interface SortActionParams {
   method?: string;
   target?: any;
   sticky?: boolean;
+
   [key: string]: any;
 }
 
@@ -51,12 +53,18 @@ interface Resource {
   update: (params?: ActionParams) => Promise<supertest.Response>;
   destroy: (params?: ActionParams) => Promise<supertest.Response>;
   sort: (params?: SortActionParams) => Promise<supertest.Response>;
+
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
+
+    if (options.afterLoad) {
+      await options.afterLoad(this);
+    }
+
     await this.install({
       ...options,
       sync: {
@@ -69,7 +77,7 @@ export class MockServer extends Application {
   }
 
   async cleanDb() {
-    await this.db.sequelize.getQueryInterface().dropAllTables();
+    await this.db.clean({ drop: true });
   }
 
   agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {
@@ -129,6 +137,26 @@ export class MockServer extends Application {
 }
 
 export function mockServer(options: ApplicationOptions = {}) {
+  if (typeof TextEncoder === 'undefined') {
+    global.TextEncoder = require('util').TextEncoder;
+  }
+
+  if (typeof TextDecoder === 'undefined') {
+    global.TextDecoder = require('util').TextDecoder;
+  }
+
+  // @ts-ignore
+  if (!PluginManager.findPackagePatched) {
+    PluginManager.getPackageJson = () => {
+      return {
+        version: '0.0.0',
+      };
+    };
+
+    // @ts-ignore
+    PluginManager.findPackagePatched = true;
+  }
+
   let database;
   if (options?.database instanceof Database) {
     database = options.database;
@@ -136,11 +164,15 @@ export function mockServer(options: ApplicationOptions = {}) {
     database = mockDatabase(<any>options?.database || {});
   }
 
-  return new MockServer({
+  const app = new MockServer({
     acl: false,
     ...options,
     database,
   });
+
+  app.pm.generateClientFile = async () => {};
+
+  return app;
 }
 
 export function createMockServer() {}

@@ -43,11 +43,8 @@ describe('workflow > instructions > condition', () => {
         title: 'condition',
         type: 'condition',
         config: {
-          // (1 === 1): true
-          calculation: {
-            calculator: 'equal',
-            operands: [{ value: 1 }, { value: 1 }]
-          }
+          engine: 'math.js',
+          expression: '1 == 1'
         }
       });
 
@@ -82,11 +79,9 @@ describe('workflow > instructions > condition', () => {
         title: 'condition',
         type: 'condition',
         config: {
-          // (0 === 1): false
-          calculation: {
-            calculator: 'equal',
-            operands: [{ value: 0 }, { value: 1 }]
-          }
+          engine: 'math.js',
+          // false
+          expression: '0 == 1'
         }
       });
 
@@ -115,10 +110,6 @@ describe('workflow > instructions > condition', () => {
       expect(jobs.length).toEqual(2);
       expect(jobs[1].result).toEqual(false);
     });
-
-    it('not', async () => {
-
-    });
   });
 
   describe('group calculation', () => {
@@ -130,14 +121,8 @@ describe('workflow > instructions > condition', () => {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                }
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [1, 1] }
               ]
             }
           }
@@ -161,14 +146,8 @@ describe('workflow > instructions > condition', () => {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -192,14 +171,8 @@ describe('workflow > instructions > condition', () => {
             group: {
               type: 'or',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                { calculator: 'equal', operands: [1, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -223,14 +196,8 @@ describe('workflow > instructions > condition', () => {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                },
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 0 }, { value: 1 }]
-                }
+                { calculator: 'equal', operands: [0, 1] },
+                { calculator: 'equal', operands: [0, 1] }
               ]
             }
           }
@@ -254,16 +221,13 @@ describe('workflow > instructions > condition', () => {
             group: {
               type: 'and',
               calculations: [
-                {
-                  calculator: 'equal',
-                  operands: [{ value: 1 }, { value: 1 }]
-                },
+                { calculator: 'equal', operands: [1, 1] },
                 {
                   group: {
                     type: 'or',
                     calculations: [
-                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] },
-                      { calculator: 'equal', operands: [{ value: 0 }, { value: 1 }] }
+                      { calculator: 'equal', operands: [0, 1] },
+                      { calculator: 'equal', operands: [0, 1] }
                     ]
                   }
                 }
@@ -280,6 +244,97 @@ describe('workflow > instructions > condition', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(false);
+    });
+  });
+
+  describe('engines', () => {
+    it('default as basic', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          calculation: {
+            calculator: 'equal',
+            operands: [1, '{{$context.data.read}}']
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { read: 1 } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('basic engine', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'basic',
+          calculation: {
+            calculator: 'equal',
+            operands: [1, '{{$context.data.read}}']
+          }
+        }
+      });
+
+      const post = await PostRepo.create({ values: { read: 1 } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('math.js', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'math.js',
+          expression: '1 == 1'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
+    });
+
+    it('formula.js', async () => {
+      const n1 = await workflow.createNode({
+        title: 'condition',
+        type: 'condition',
+        config: {
+          engine: 'formula.js',
+          expression: '1 == 1'
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      const [job] = await execution.getJobs();
+      expect(job.result).toEqual(true);
     });
   });
 });

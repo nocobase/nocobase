@@ -1,14 +1,12 @@
 import { Schema, useFieldSchema, useForm } from '@formily/react';
-import { isEmpty } from '@formily/shared';
 import {
   useActionContext,
   useAPIClient,
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile,
+  useCompile
 } from '@nocobase/client';
-import { message } from 'antd';
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -24,50 +22,55 @@ const useImportSchema = (s: Schema) => {
   return { schema };
 };
 
+const toArr = (v: any) => {
+  if (!v || !Array.isArray(v)) {
+    return [];
+  }
+  return v;
+};
+
 export const useDownloadXlsxTemplateAction = () => {
   const { service, resource } = useBlockRequestContext();
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
   const { name, title, getField } = useCollection();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      try {
-        importColumns.forEach((es) => {
-          const { uiSchema, interface: fieldInterface } =
-            getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
-          if (isEmpty(uiSchema) && isEmpty(fieldInterface)) {
-            throw new Error(t('Field {{fieldName}} does not exist', { fieldName: es.dataIndex.join('.') }));
+      const columns = toArr(importColumns)
+        .map((column) => {
+          const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
+          if (!field) {
+            return;
           }
-          es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
-          if (!es.enum && uiSchema.type === 'boolean') {
-            es.enum = [
-              { value: true, label: t('Yes') },
-              { value: false, label: t('No') },
-            ];
+          column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
+          if (column.dataIndex.length > 1) {
+            const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
+            if (!subField) {
+              return;
+            }
+            column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
           }
-          es.defaultTitle = compile(uiSchema?.title);
-          if (fieldInterface === 'chinaRegion') {
-            es.dataIndex.push('name');
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
           }
-        });
-      } catch (error) {
-        message.error(error.message);
-        return;
-      }
-
+          return column;
+        })
+        .filter(Boolean);
       const { data } = await resource.downloadXlsxTemplate(
         {
-          title: compile(title),
-          explain,
-          columns: JSON.stringify(compile(importColumns)),
+          values: {
+            title: compile(title),
+            explain,
+            columns: compile(columns),
+          },
         },
         {
-          method: 'get',
+          method: 'post',
           responseType: 'blob',
         },
       );
@@ -82,7 +85,7 @@ export const useImportStartAction = () => {
   const apiClient = useAPIClient();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollectionField } = useCollectionManager();
   const { name, title, getField } = useCollection();
   const { t } = useTranslation(NAMESPACE);
   const { schema: importSchema } = useImportSchema(actionSchema);
@@ -92,47 +95,46 @@ export const useImportStartAction = () => {
   return {
     async run() {
       const { importColumns, explain } = cloneDeep(importSchema?.['x-action-settings']?.['importSettings'] ?? {});
-      try {
-        importColumns.forEach((es) => {
-          const { uiSchema, interface: fieldInterface } =
-            getCollectionJoinField(`${name}.${es.dataIndex.join('.')}`) ?? {};
-          if (isEmpty(uiSchema) && isEmpty(fieldInterface)) {
-            throw new Error(t('Field {{fieldName}} does not exist', { fieldName: es.dataIndex.join('.') }));
+      const columns = toArr(importColumns)
+        .map((column) => {
+          const field = getCollectionField(`${name}.${column.dataIndex[0]}`);
+          if (!field) {
+            return;
           }
-          es.enum = uiSchema?.enum?.map((e) => ({ value: e.value, label: e.label }));
-          if (!es.enum && uiSchema.type === 'boolean') {
-            es.enum = [
-              { value: true, label: t('Yes') },
-              { value: false, label: t('No') },
-            ];
+          column.defaultTitle = compile(field?.uiSchema?.title) || field.name;
+          if (column.dataIndex.length > 1) {
+            const subField = getCollectionJoinField(`${name}.${column.dataIndex.join('.')}`);
+            if (!subField) {
+              return;
+            }
+            column.defaultTitle = column.defaultTitle + '/' + compile(subField?.uiSchema?.title) || subField.name;
           }
-          es.defaultTitle = compile(uiSchema?.title);
-          if (fieldInterface === 'chinaRegion') {
-            es.dataIndex.push('name');
+          if (field.interface === 'chinaRegion') {
+            column.dataIndex.push('name');
           }
-        });
-      } catch (error) {
-        message.error(error.message);
-        return;
-      }
+          return column;
+        })
+        .filter(Boolean);
       let formData = new FormData();
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
-      console.log(form, uploadFiles);
       formData.append('file', uploadFiles[0]);
-      formData.append('columns', JSON.stringify(importColumns));
+      formData.append('columns', JSON.stringify(columns));
       formData.append('explain', explain);
       setVisible(false);
       setImportModalVisible(true);
       setImportStatus(ImportStatus.IMPORTING);
-      const { data }: any = await apiClient.axios
-        .post(`${name}:importXlsx`, formData, {
+      try {
+        const { data }: any = await apiClient.axios.post(`${name}:importXlsx`, formData, {
           timeout: 10 * 60 * 1000,
-        })
-        .catch((err) => {});
-      setImportResult(data);
-      form.reset();
-      await service?.refresh?.();
-      setImportStatus(ImportStatus.IMPORTED);
+        });
+        setImportResult(data);
+        form.reset();
+        await service?.refresh?.();
+        setImportStatus(ImportStatus.IMPORTED);
+      } catch (error) {
+        setImportModalVisible(false);
+        setVisible(true);
+      }
     },
   };
 };

@@ -7,6 +7,7 @@ export class SyncRunner {
 
     const inheritedCollection = model.collection as InheritedCollection;
     const db = inheritedCollection.context.database;
+
     const dialect = db.sequelize.getDialect();
 
     const queryInterface = db.sequelize.getQueryInterface();
@@ -25,9 +26,7 @@ export class SyncRunner {
       );
     }
 
-    const parentTables = parents.map((parent) => parent.model.tableName);
-
-    const tableName = model.getTableName();
+    const tableName = inheritedCollection.getTableNameWithSchema();
 
     const attributes = model.tableAttributes;
 
@@ -38,12 +37,14 @@ export class SyncRunner {
     let maxSequenceVal = 0;
     let maxSequenceName;
 
+    // find max sequence
     if (childAttributes.id && childAttributes.id.autoIncrement) {
-      for (const parent of parentTables) {
+      for (const parent of parents) {
         const sequenceNameResult = await queryInterface.sequelize.query(
           `SELECT column_default
            FROM information_schema.columns
-           WHERE table_name = '${parent}'
+           WHERE table_name = '${parent.model.tableName}'
+             and table_schema = '${parent.collectionSchema()}'
              and "column_name" = 'id';`,
           {
             transaction,
@@ -60,7 +61,7 @@ export class SyncRunner {
           throw new Error(`Can't find sequence name of ${parent}`);
         }
 
-        const regex = new RegExp(/nextval\('("?\w+"?)\'.*\)/);
+        const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
@@ -82,25 +83,28 @@ export class SyncRunner {
       }
     }
 
-    await this.createTable(tableName, childAttributes, options, model, parentTables);
+    await this.createTable(tableName, childAttributes, options, model, parents);
 
+    // if we have max sequence, set it to child table
     if (maxSequenceName) {
-      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map(
-        (parent) => db.getCollection(parent).model.tableName,
+      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
+        db.getCollection(parent).getTableNameWithSchema(),
       );
 
       const sequenceTables = [...parentsDeep, tableName];
 
       for (const sequenceTable of sequenceTables) {
-        const queryName = Boolean(sequenceTable.match(/[A-Z]/)) ? `"${sequenceTable}"` : sequenceTable;
+        const tableName = sequenceTable.tableName;
+        const schemaName = sequenceTable.schema;
+
+        const queryName = Boolean(tableName.match(/[A-Z]/)) && !tableName.includes(`"`) ? `"${tableName}"` : tableName;
 
         const idColumnQuery = await queryInterface.sequelize.query(
-          `
-            SELECT true
-            FROM pg_attribute
-            WHERE attrelid = '${queryName}'::regclass  -- cast to a registered class (table)
-AND    attname = 'id'
-AND    NOT attisdropped
+          `SELECT column_name
+           FROM information_schema.columns
+           WHERE table_name = '${queryName}'
+             and column_name = 'id'
+             and table_schema = '${schemaName}';
           `,
           {
             transaction,
@@ -112,7 +116,7 @@ AND    NOT attisdropped
         }
 
         await queryInterface.sequelize.query(
-          `alter table "${sequenceTable}"
+          `alter table ${db.utils.quoteTable(sequenceTable)}
             alter column id set default nextval('${maxSequenceName}')`,
           {
             transaction,
@@ -124,7 +128,9 @@ AND    NOT attisdropped
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
 
-      for (const columnName in childAttributes) {
+      for (const attribute in childAttributes) {
+        const columnName = childAttributes[attribute].field;
+
         if (!columns[columnName]) {
           await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
         }
@@ -132,7 +138,7 @@ AND    NOT attisdropped
     }
   }
 
-  static async createTable(tableName, attributes, options, model, parentTables) {
+  static async createTable(tableName, attributes, options, model, parents) {
     let sql = '';
 
     options = { ...options };
@@ -157,7 +163,11 @@ AND    NOT attisdropped
 
     sql = `${queryGenerator.createTableQuery(tableName, attributes, options)}`.replace(
       ';',
-      ` INHERITS (${parentTables.map((t) => `"${t}"`).join(', ')});`,
+      ` INHERITS (${parents
+        .map((t) => {
+          return t.getTableNameWithSchema();
+        })
+        .join(', ')});`,
     );
 
     return await model.sequelize.query(sql, options);

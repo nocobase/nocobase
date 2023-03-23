@@ -5,7 +5,7 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils,
+  Utils
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
