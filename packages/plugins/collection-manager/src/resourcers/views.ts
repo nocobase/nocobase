@@ -14,7 +14,7 @@ export default {
       ctx.body = {
         fields,
         sources: [
-          ...newSet(
+          ...new Set(
             Object.values(fields)
               .map((field) => field.source)
               .filter(Boolean)
