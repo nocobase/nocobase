@@ -34,6 +34,5 @@ export default {
   Collections: '数据表',
   Duplicator: '数据备份与还原',
   'Confirm to move the following collections?': '需要同时移动以下数据表，是否确认？',
-  'Confirm to move all collections to right?': '需要同时移动所有数据表到右侧吗？',
-  'Confirm to move all collections to left?': '需要同时移动所有数据表到左侧吗？',
+  'Are you sure you want to move all?': '确定要把所有东西都移过去吗？',
 };

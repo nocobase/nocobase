@@ -267,7 +267,7 @@ export const DuplicatorDump = () => {
   };
   const handleTransferAll = () => {
     Modal.confirm({
-      title: t('Confirm to move all collections to right?'),
+      title: t('Are you sure you want to move all?'),
       onOk() {
         const targetKeys = steps[currentStep].data
           .map((item: any) => (item.disabled ? false : item.key))
@@ -292,7 +292,7 @@ export const DuplicatorDump = () => {
   };
   const handleNotTransferAll = () => {
     Modal.confirm({
-      title: t('Confirm to move all collections to left?'),
+      title: t('Are you sure you want to move all?'),
       onOk() {
         const targetKeys = (steps[currentStep].data as any)
           .filter((item: any) => item.disabled)
