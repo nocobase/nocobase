@@ -1,5 +1,5 @@
 import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag, Result, Modal, Table } from 'antd';
+import { Tag, Modal, Table } from 'antd';
 import { useAPIClient, useCompile } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { DuplicatorSteps } from './DuplicatorSteps';
@@ -9,7 +9,6 @@ import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { splitDataSource } from './utils/splitDataSource';
 import _ from 'lodash';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
-import { useTranslation } from 'react-i18next';
 import { DraggerUpload } from './DraggerUpload';
 import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
@@ -64,6 +63,7 @@ export const DuplicatorRestore = () => {
       dataIndex: 'title',
       title: t('Title'),
       className: columnClass,
+      render: (title) => compile(title),
     },
     {
       dataIndex: 'name',

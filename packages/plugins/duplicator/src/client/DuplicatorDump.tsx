@@ -1,6 +1,5 @@
 import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag, Result, Modal, Table } from 'antd';
-import { LoadingOutlined } from '@ant-design/icons';
+import { Tag, Modal, Table } from 'antd';
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useMemo } from 'react';
@@ -54,6 +53,7 @@ export const DuplicatorDump = () => {
       dataIndex: 'title',
       title: t('Title'),
       className: columnClass,
+      render: (title) => compile(title),
     },
     {
       dataIndex: 'name',
