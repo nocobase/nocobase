@@ -28,7 +28,7 @@ export const view: ICollectionTemplate = {
       'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
     },
     source: {
-      type: 'string',
+      type: 'array',
       title: '{{ t("Source collections") }}',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -38,8 +38,8 @@ export const view: ICollectionTemplate = {
       'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
       'x-disabled': true,
     },
-    previewFields: {
-      type: 'void',
+    fields: {
+      type: 'object',
       'x-component': PreviewFields,
       'x-reactions':{
         "dependencies": ["name"],

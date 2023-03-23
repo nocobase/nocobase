@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Tag, Select, Input } from 'antd';
-import { useForm } from '@formily/react';
+import { useField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 
 export const PreviewFields = (props) => {
   const { name } = props;
   const api = useAPIClient();
-  const resource = api.resource('dbViews');
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
   const [previewColumns, setPreviewColumns] = useState([]);
   const [previewData, setPreviewData] = useState([]);
-
+   const field:any=useField();
   const columns = [
     {
       title: t('Field name'),
@@ -61,10 +60,10 @@ export const PreviewFields = (props) => {
         })
         .then(({ data }) => {
           if (data?.data) {
+            field.value=data.data
             setDataSource(data?.data);
             const pColumns = data?.data?.map((item) => {
               const target = item.source || item.title || item.name;
-              console.log(target);
               return {
                 title: target,
                 dataIndex: target,
@@ -76,23 +75,13 @@ export const PreviewFields = (props) => {
         });
     }
   }, [name]);
-  useEffect(() => {
-    if (name) {
-      api
-        .resource(`dbViews/${name}`)
-        .query({ page: 1, pageSize: 20 })
-        .then(({ data }) => {
-          console.log(data);
-        });
-    }
-  }, [name]);
   return (
     dataSource.length > 0 && (
       <>
         <h4>Fields:</h4>
-        <Table columns={columns} dataSource={dataSource} scroll={{ y: 300 }} pagination={false} />
+        <Table bordered columns={columns} dataSource={dataSource} scroll={{ y: 300 }} pagination={false} rowClassName="editable-row" />
         <h4>Preview:</h4>
-        <Table columns={previewColumns} />
+        <Table bordered columns={previewColumns} />
       </>
     )
   );

@@ -201,7 +201,7 @@ const useCreateCollection = (schema?: any) => {
       if (schema?.events?.beforeSubmit) {
         schema.events.beforeSubmit(values);
       }
-      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : [];
+      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
