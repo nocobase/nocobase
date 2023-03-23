@@ -144,7 +144,7 @@ export const PreviewFields = (props) => {
   return (
     dataSource.length > 0 && (
       <>
-        <h4>Fields:</h4>
+        <h4>{t('Fields')}:</h4>
         <Table
           bordered
           columns={columns}
@@ -154,7 +154,7 @@ export const PreviewFields = (props) => {
           rowClassName="editable-row"
           key={name}
         />
-        <h4>Preview:</h4>
+        <h4>{t('Preview')}:</h4>
         <Table bordered columns={previewColumns} scroll={{ x: 300 }} />
       </>
     )
