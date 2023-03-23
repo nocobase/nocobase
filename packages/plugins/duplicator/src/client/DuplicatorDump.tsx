@@ -16,7 +16,6 @@ import { css } from '@emotion/css';
 
 const columnClass = css`
   word-break: break-all;
-  cursor: pointer;
 `;
 
 export const DuplicatorDump = () => {
@@ -103,8 +102,9 @@ export const DuplicatorDump = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, false, direction);
+          if (record.disabled) return;
 
+          this.handleSelectRow(record, false, direction);
           const map = {
             left: {
               setKeys: () => setTargetKeys((prev) => [record.key, ...prev]),
@@ -146,8 +146,9 @@ export const DuplicatorDump = () => {
           map[direction].setSelectedKeys();
         },
         handleDoubleClickRow(record: any, direction: 'left' | 'right') {
-          this.handleSelectRow(record, false, direction);
+          if (record.disabled) return;
 
+          this.handleSelectRow(record, false, direction);
           const { leftDataSource, rightDataSource } = splitDataSource({
             dataSource: this.data,
             targetKeys: this.targetKeys,
@@ -259,6 +260,42 @@ export const DuplicatorDump = () => {
   const handleDoubleClickRow = (record: any, direction: 'left' | 'right') => {
     steps[currentStep].handleDoubleClickRow?.(record, direction);
   };
+  const handleTransferAll = () => {
+    const targetKeys = steps[currentStep].data.map((item: any) => (item.disabled ? false : item.key)).filter(Boolean);
+    setTargetKeys((prev) => {
+      const result = [...targetKeys, ...prev];
+      steps[currentStep].targetKeys = result;
+      return result;
+    });
+    setSourceSelectedKeys((prev) => {
+      const result = prev.length ? [] : prev;
+      steps[currentStep].sourceSelectedKeys = result;
+      return result;
+    });
+    setTargetSelectedKeys((prev) => {
+      const result = prev.length ? [] : prev;
+      steps[currentStep].targetSelectedKeys = result;
+      return result;
+    });
+  };
+  const handleNotTransferAll = () => {
+    const targetKeys = (steps[currentStep].data as any)
+      .filter((item: any) => item.disabled)
+      .map((item: any) => item.key);
+
+    setTargetKeys(targetKeys);
+    steps[currentStep].targetKeys = targetKeys;
+    setSourceSelectedKeys((prev) => {
+      const result = prev.length ? [] : prev;
+      steps[currentStep].sourceSelectedKeys = result;
+      return result;
+    });
+    setTargetSelectedKeys((prev) => {
+      const result = prev.length ? [] : prev;
+      steps[currentStep].targetSelectedKeys = result;
+      return result;
+    });
+  };
 
   useEffect(() => {
     if (requiredGroups.length) {
@@ -288,6 +325,8 @@ export const DuplicatorDump = () => {
           onChange={handleTransferChange}
           onSelectRow={handleSelectRow}
           onDoubleClickRow={handleDoubleClickRow}
+          onTransferAll={handleTransferAll}
+          onNotTransferAll={handleNotTransferAll}
         />
       ) : (
         <Result

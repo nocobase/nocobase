@@ -6,21 +6,8 @@ import difference from 'lodash/difference';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Category } from './hooks/useDumpableCollections';
+import { useTransferAllButton } from './hooks/useTransferAllButton';
 import { getCategories } from './utils/getCategories';
-
-interface TableTransferProps<T> extends TransferProps<TransferItem> {
-  dataSource: T[];
-  leftColumns: ColumnsType<T>;
-  rightColumns: ColumnsType<T>;
-  scroll?: { scrollToFirstRowOnChange?: boolean; x?: string | number | true; y?: string | number };
-  pagination?: any;
-  filterOptionByCategory?: (category: string[], option: any) => boolean;
-  onSelectRow?: (item: any, selected: boolean, direction: 'left' | 'right') => void;
-  onDoubleClickRow?: (item: any, direction: 'left' | 'right') => void;
-  showSearch?: boolean;
-  loading?: boolean;
-  noCheckbox?: boolean;
-}
 
 const hideHeader = css`
   & .ant-transfer-list-header {
@@ -39,6 +26,25 @@ const disabledClass = css`
   opacity: 0.5;
   cursor: not-allowed;
 `;
+const pointer = css`
+  cursor: pointer;
+`;
+
+interface TableTransferProps<T> extends TransferProps<TransferItem> {
+  dataSource: T[];
+  leftColumns: ColumnsType<T>;
+  rightColumns: ColumnsType<T>;
+  scroll?: { scrollToFirstRowOnChange?: boolean; x?: string | number | true; y?: string | number };
+  pagination?: any;
+  filterOptionByCategory?: (category: string[], option: any) => boolean;
+  onSelectRow?: (item: any, selected: boolean, direction: 'left' | 'right') => void;
+  onDoubleClickRow?: (item: any, direction: 'left' | 'right') => void;
+  showSearch?: boolean;
+  loading?: boolean;
+  noCheckbox?: boolean;
+  onTransferAll?: () => void;
+  onNotTransferAll?: () => void;
+}
 
 const defaultFilterOption = (inputValue: string, option: any) => {
   return option.title?.indexOf(inputValue) > -1 || option.name?.indexOf(inputValue) > -1;
@@ -59,12 +65,22 @@ export function TableTransfer<T>({
   onDoubleClickRow,
   filterOptionByCategory = defaultFilterOptionByCategory,
   onSelectRow,
+  onTransferAll,
+  onNotTransferAll,
   ...restProps
 }: TableTransferProps<T>) {
-  const { titles = [], filterOption = defaultFilterOption, disabled } = restProps;
+  const { titles = [], filterOption = defaultFilterOption, disabled, targetKeys, dataSource } = restProps;
+  useTransferAllButton({
+    onTransferAll,
+    onNotTransferAll,
+    isLeftDisabled: !targetKeys
+      .map((key) => dataSource.find((item: any) => item.key === key))
+      .some((item: any) => !item.disabled),
+    isRightDisabled: dataSource.length === targetKeys.length,
+  });
 
   return (
-    <Transfer {...restProps} className={`${hideHeader} ${disabled ? disabledClass : ''}`}>
+    <Transfer {...restProps} className={`nb-transfer ${hideHeader} ${disabled ? disabledClass : ''}`}>
       {({
         direction,
         filteredItems,
@@ -197,7 +213,7 @@ function Content({
       <Table
         bordered
         rowClassName={(record) =>
-          `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabledClass : ''}`
+          `${listSelectedKeys.includes(record.key) ? highlight : ''} ${record.disabled ? disabledClass : pointer}`
         }
         loading={loading}
         rowSelection={rowSelection}
