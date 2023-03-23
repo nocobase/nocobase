@@ -36,7 +36,7 @@ const InternalDynamicExpression = observer<any>((props) => {
     options.push({
       label: compile(field.uiSchema?.title),
       value: field.name,
-      children: interfaces[field.interface].usePathOptions?.(field)
+      children: interfaces[field.interface]?.usePathOptions?.(field)
     });
   });
 
@@ -76,16 +76,27 @@ function Config() {
                 type: 'string',
                 title: '{{t("Collection")}}',
                 required: true,
-                'x-reactions': ['{{useCollectionDataSource()}}'],
                 'x-decorator': 'FormItem',
                 'x-component': 'Select',
                 'x-component-props': {
                   placeholder: '{{t("Select collection")}}'
-                }
+                },
+                'x-reactions': [
+                  '{{useCollectionDataSource()}}',
+                  {
+                    target: 'expression',
+                    effects: ['onFieldValueChange'],
+                    fulfill: {
+                      state: {
+                        value: null,
+                      }
+                    }
+                  }
+                ],
               },
               expression: {
                 type: 'string',
-                title: `{{t("Expression"}}`,
+                title: '{{t("Expression")}}',
                 required: true,
                 'x-component': 'InternalDynamicExpression',
                 'x-decorator': 'FormItem',
