@@ -29,4 +29,8 @@ export default class MysqlQueryInterface extends QueryInterface {
 
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
+
+  viewColumnUsage(options: { viewName: string; schema?: string }) {
+    throw new Error('Method not implemented.');
+  }
 }

@@ -31,4 +31,8 @@ export default class SqliteQueryInterface extends QueryInterface {
       type: 'SELECT',
     });
   }
+
+  viewColumnUsage(options: { viewName: string; schema?: string }) {
+    throw new Error('Method not implemented.');
+  }
 }
