@@ -1,19 +1,18 @@
-import type { ColumnsType } from 'antd/es/table/interface';
-import { Tag, Modal, Table } from 'antd';
-import { useAPIClient, useCompile } from '@nocobase/client';
-import React, { useEffect, useMemo } from 'react';
-import { DuplicatorSteps } from './DuplicatorSteps';
-import { TableTransfer } from './TableTransfer';
-import { Category, CollectionData, GroupData } from './hooks/useDumpableCollections';
-import { useCollectionsGraph } from './hooks/useCollectionsGraph';
-import { splitDataSource } from './utils/splitDataSource';
-import _ from 'lodash';
-import { getTargetListByKeys } from './utils/getTargetListByKeys';
-import { DraggerUpload } from './DraggerUpload';
-import { useTableHeight } from './hooks/useTableHeight';
 import { css } from '@emotion/css';
+import { useAPIClient, useCompile } from '@nocobase/client';
+import { Modal, Table, Tag } from 'antd';
+import type { ColumnsType } from 'antd/es/table/interface';
+import React, { useEffect, useMemo } from 'react';
+import { DraggerUpload } from './DraggerUpload';
+import { DuplicatorSteps } from './DuplicatorSteps';
 import { usePluginUtils } from './hooks/i18';
+import { useCollectionsGraph } from './hooks/useCollectionsGraph';
+import { Category, CollectionData, GroupData } from './hooks/useDumpableCollections';
+import { useTableHeight } from './hooks/useTableHeight';
 import { ResultWithLoading } from './ResultWithLoading';
+import { TableTransfer } from './TableTransfer';
+import { getTargetListByKeys } from './utils/getTargetListByKeys';
+import { splitDataSource } from './utils/splitDataSource';
 
 const columnClass = css`
   word-break: break-all;
@@ -31,7 +30,7 @@ export const DuplicatorRestore = () => {
   const [targetKeys, setTargetKeys] = React.useState([]);
   const [sourceSelectedKeys, setSourceSelectedKeys] = React.useState([]);
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
-  const { findAddable, findRemovable } = useCollectionsGraph();
+  const { findAddable, findRemovable } = useCollectionsGraph({ collections: data.userCollections });
   const [pageLoading, setPageLoading] = React.useState(false);
   const [restoreKey, setRestoreKey] = React.useState('');
   const tableHeight = useTableHeight();
