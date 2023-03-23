@@ -31,4 +31,16 @@ export default class PostgresQueryInterface extends QueryInterface {
 
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
+
+  async viewColumnUsage(options) {
+    const { viewName, schema = 'public' } = options;
+    const sql = `
+      SELECT *
+      FROM information_schema.view_column_usage
+      WHERE view_schema = '${schema}'
+        AND view_name = '${viewName}';
+    `;
+
+    return await this.db.sequelize.query(sql, { type: 'SELECT' });
+  }
 }

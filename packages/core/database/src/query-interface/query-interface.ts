@@ -12,4 +12,6 @@ export default abstract class QueryInterface {
   abstract collectionTableExists(collection: Collection, options?: Transactionable): Promise<boolean>;
 
   abstract listViews();
+
+  abstract viewColumnUsage(options: { viewName: string; schema?: string });
 }

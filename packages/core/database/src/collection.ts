@@ -113,7 +113,7 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
-    this.db.tableNameCollectionMap.set(this.model.tableName, this);
+    this.db.tableNameCollectionMap.set(this.getTableNameWithSchemaAsString(), this);
 
     if (!options.inherits) {
       this.setFields(options.fields);
@@ -579,6 +579,16 @@ export class Collection<
 
     if (this.collectionSchema()) {
       return this.db.utils.addSchema(tableName, this.collectionSchema());
+    }
+
+    return tableName;
+  }
+
+  public getTableNameWithSchemaAsString() {
+    const tableName = this.model.tableName;
+
+    if (this.collectionSchema()) {
+      return `${this.collectionSchema()}.${tableName}`;
     }
 
     return tableName;
