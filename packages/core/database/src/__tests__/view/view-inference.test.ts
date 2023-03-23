@@ -67,11 +67,15 @@ describe('view inference', function () {
       viewName,
     });
 
-    console.log(inferredFields);
     expect(inferredFields['name']).toMatchObject({
       name: 'name',
       type: 'string',
       source: 'users.name',
+    });
+
+    expect(inferredFields['const_field']).toMatchObject({
+      name: 'const_field',
+      type: 'integer',
     });
   });
 });

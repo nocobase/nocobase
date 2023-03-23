@@ -60,7 +60,13 @@ export class ViewFieldInference {
           }
         }
 
-        return [name, {}];
+        return [
+          name,
+          {
+            name,
+            type: column.type,
+          },
+        ];
       }),
     );
   }

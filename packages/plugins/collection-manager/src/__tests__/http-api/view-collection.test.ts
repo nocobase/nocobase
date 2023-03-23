@@ -43,9 +43,12 @@ SELECT * FROM numbers;
   });
 
   it('should list views fields', async () => {
-    const response = await agent.resource('dbViews.fields', testViewName).list({});
+    const response = await agent.resource('dbViews').get({
+      filterByTk: testViewName,
+    });
+
     expect(response.status).toBe(200);
     const data = response.body.data;
-    expect(data.length).toBe(1);
+    expect(data.fields.n.type).toBeTruthy();
   });
 });
