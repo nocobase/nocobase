@@ -13,10 +13,14 @@ export default {
 
       ctx.body = {
         fields,
-        sources: Object.values(fields)
-          .map((field) => field.source)
-          .filter(Boolean)
-          .map((source) => source.split('.')[0]),
+        sources: [
+          ...newSet(
+            Object.values(fields)
+              .map((field) => field.source)
+              .filter(Boolean)
+              .map((source) => source.split('.')[0]),
+          ),
+        ],
       };
 
       await next();
