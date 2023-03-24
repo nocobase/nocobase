@@ -267,9 +267,21 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.resource(viewResourcer);
 
+    const handleFieldSource = (fields) => {
+      for (const field of fields) {
+        if (field.get('source')) {
+          const [collectionSource, fieldSource] = field.get('source').split('.');
+          const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
+          field.set('interface', collectionField.options.interface);
+          field.set('uiSchema', collectionField.options.uiSchema);
+        }
+      }
+    };
+
     this.app.resourcer.use(async (ctx, next) => {
       await next();
 
+      // handle collections:list
       if (
         ctx.action.resourceName === 'collections' &&
         ctx.action.actionName == 'list' &&
@@ -278,15 +290,15 @@ export class CollectionManagerPlugin extends Plugin {
         for (const collection of ctx.body) {
           if (collection.get('view')) {
             const fields = collection.fields;
-            for (const field of fields) {
-              if (field.get('source')) {
-                const [collectionSource, fieldSource] = field.get('source').split('.');
-                const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
-                field.set('interface', collectionField.options.interface);
-              }
-            }
+            handleFieldSource(fields);
           }
         }
+      }
+
+      //handle collections:fields:list
+      if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
+        const fields = ctx.body.rows;
+        handleFieldSource(fields);
       }
     });
 
