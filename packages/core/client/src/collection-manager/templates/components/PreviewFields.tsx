@@ -106,7 +106,7 @@ export const PreviewFields = (props) => {
       render: (text, record, index) => {
         return (
           <Cascader
-            defaultValue={text?.split('.')}
+            defaultValue={typeof text === 'string' ? text?.split('.') : text}
             allowClear
             style={{ width: '100%' }}
             options={compile(sourceFields)}
@@ -142,6 +142,7 @@ export const PreviewFields = (props) => {
       render: (text, _, index) => {
         const item = dataSource[index];
         const data = getInterfaceOptions(initOptions, item.type);
+        console.log(item.source);
         return item.source ? (
           text
         ) : (
