@@ -1,6 +1,6 @@
 import React from "react";
-import { Field } from '@formily/core';
-import { connect, useForm, useField, observer, Schema, RecursionField, mapReadPretty } from '@formily/react';
+import { Field, onFieldValueChange } from '@formily/core';
+import { connect, useForm, useField, useFormEffects, observer, Schema, RecursionField, mapReadPretty } from '@formily/react';
 import { FormLayout } from '@formily/antd';
 import { Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -51,6 +51,14 @@ const InternalDynamicExpression = observer<any>((props) => {
 
 function Config() {
   const field = useField<Field>();
+  const { setValuesIn, getValuesIn } = useForm();
+  const form = useForm();
+
+  useFormEffects(() => {
+    onFieldValueChange(field.address.concat('collection'), (f) => {
+      setValuesIn(field.address.concat('expression').segments, null);
+    });
+  });
 
   return (
     <FormLayout layout="horizontal" className={css`
@@ -60,7 +68,6 @@ function Config() {
     `}>
       <SchemaComponentOptions scope={{ useCollectionDataSource }} components={{ InternalDynamicExpression }}>
         <RecursionField
-          basePath={field.address}
           onlyRenderProperties
           schema={new Schema({
             properties: {
@@ -83,15 +90,15 @@ function Config() {
                 },
                 'x-reactions': [
                   '{{useCollectionDataSource()}}',
-                  {
-                    target: 'expression',
-                    effects: ['onFieldValueChange'],
-                    fulfill: {
-                      state: {
-                        value: null,
-                      }
-                    }
-                  }
+                  // {
+                  //   target: 'expression',
+                  //   effects: ['onFieldValueChange'],
+                  //   fulfill: {
+                  //     state: {
+                  //       value: null,
+                  //     }
+                  //   }
+                  // }
                 ],
               },
               expression: {
