@@ -144,6 +144,13 @@ SELECT * FROM numbers;
 
     expect(viewFieldsData.find((item) => item.name === 'name').interface).toEqual('text');
 
+    const fieldDetailResponse = await agent.resource('collections.fields', viewName).get({
+      filterByTk: 'name',
+    });
+
+    const fieldDetailData = fieldDetailResponse.body.data;
+    expect(fieldDetailData.interface).toEqual('text');
+
     UserCollection.addField('email', { type: 'string' });
 
     await app.db.sync();

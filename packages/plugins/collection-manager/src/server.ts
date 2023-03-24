@@ -15,7 +15,7 @@ import {
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
-import lodash from 'lodash';
+import lodash, { castArray } from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
 import viewResourcer from './resourcers/views';
@@ -267,7 +267,7 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {
-      for (const field of fields) {
+      for (const field of castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
           const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
@@ -297,6 +297,10 @@ export class CollectionManagerPlugin extends Plugin {
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
         handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
+      }
+
+      if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
+        handleFieldSource(ctx.body);
       }
     });
 
