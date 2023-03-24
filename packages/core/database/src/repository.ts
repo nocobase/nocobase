@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators
+  WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';

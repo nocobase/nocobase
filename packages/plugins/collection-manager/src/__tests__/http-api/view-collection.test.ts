@@ -1,6 +1,7 @@
 import { MockServer } from '@nocobase/test';
 import { createApp } from '../index';
 import { uid } from '@nocobase/utils';
+import { HasManyRepository } from '@nocobase/database';
 
 describe('view collection', () => {
   let app: MockServer;
@@ -109,5 +110,26 @@ SELECT * FROM numbers;
 
     const nameField = fields.find((item) => item.name === 'name');
     expect(nameField.interface).toBe('text');
+
+    const filterObj = {
+      $or: [{ interface: { $not: null } }, { 'options.source': { $notEmpty: true } }],
+    };
+
+    const fieldsRepository = app.db.getRepository<HasManyRepository>('collections.fields', viewName);
+
+    const repositoryResults = await fieldsRepository.find({
+      filter: filterObj,
+    });
+
+    expect(repositoryResults.length).toEqual(2);
+
+    const viewFieldsResponse = await agent.resource('collections.fields', viewName).list({
+      filter: filterObj,
+      paginate: false,
+    });
+
+    expect(viewFieldsResponse.status).toEqual(200);
+    const viewFieldsData = viewFieldsResponse.body.data;
+    expect(viewFieldsData.length).toEqual(2);
   });
 });
