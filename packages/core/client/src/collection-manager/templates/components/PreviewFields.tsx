@@ -9,7 +9,6 @@ import { useCompile } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
-  console.log(data)
   const interfaceOptions = [];
   data.forEach((item) => {
     const options = item.children.filter((h) => h?.availableTypes?.includes(type));
@@ -76,7 +75,7 @@ export const PreviewFields = (props) => {
     field.value = dataSource.map((v) => {
       return {
         ...v,
-        source: v.source?.join('.'),
+        source: typeof v.source === 'string' ? v.source : v.source?.join('.'),
       };
     });
   };
@@ -163,7 +162,7 @@ export const PreviewFields = (props) => {
   ];
   const formatPreviewColumns = (data) => {
     return data?.map((item) => {
-      const fieldSource = item?.source?.split('.');
+      const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
       const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
         ?.title;
       const target = sourceField || item.title || item.name;

@@ -2,8 +2,8 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button, Dropdown, Menu } from 'antd';
-import { cloneDeep } from 'lodash';
+import { Button} from 'antd';
+import { cloneDeep, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
@@ -11,11 +11,9 @@ import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
-import { getOptions } from './interfaces';
 import { PreviewFields } from '../templates/components/PreviewFields';
 
 const getSchema = (schema: IField, record: any, compile) => {
@@ -62,7 +60,7 @@ const getSchema = (schema: IField, record: any, compile) => {
         },
         title: `${compile('{{ t("Sync from database") }}')}`,
         properties: {
-          previewFields: {
+          fields: {
             type: 'object',
             'x-component': PreviewFields,
             'x-component-props': {
@@ -85,7 +83,7 @@ const getSchema = (schema: IField, record: any, compile) => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: '{{ useCreateCollectionField }}',
+                  useAction: '{{ useSyncFromDatabase }}',
                 },
               },
             },
@@ -96,12 +94,13 @@ const getSchema = (schema: IField, record: any, compile) => {
   };
 };
 
-const useCreateCollectionField = () => {
+const useSyncFromDatabase = () => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
   return {
     async run() {
       await form.submit();
@@ -111,7 +110,7 @@ const useCreateCollectionField = () => {
         delete values.reverseField;
       }
       delete values.autoCreateReverseField;
-      await resource.create({ values });
+      await resource.update({ filterByTk, values: form.values });
       ctx.setVisible(false);
       await form.reset();
       refresh();
@@ -133,50 +132,7 @@ export const SyncFieldsActionCom = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const options = useOptions();
-  const getFieldOptions = () => {
-    const { availableFieldInterfaces } = getTemplate(record.template) || {};
-    const { exclude, include } = availableFieldInterfaces || {};
-    const optionArr = [];
-    getOptions().forEach((v) => {
-      if (v.key === 'systemInfo') {
-        optionArr.push({
-          ...v,
-          children: v.children.filter((v) => {
-            if (v.value === 'id') {
-              return typeof record['autoGenId'] === 'boolean' ? record['autoGenId'] : true;
-            } else {
-              return typeof record[v.value] === 'boolean' ? record[v.value] : true;
-            }
-          }),
-        });
-      } else {
-        let children = [];
-        if (include?.length) {
-          include.forEach((k) => {
-            const field = v.children.find((h) => [k, k.interface].includes(h.value));
-            field &&
-              children.push({
-                ...field,
-                targetScope: k?.targetScope,
-              });
-          });
-        } else if (exclude?.length) {
-          children = v.children.filter((v) => {
-            return !exclude.includes(v.value);
-          });
-        } else {
-          children = v.children;
-        }
-        children.length &&
-          optionArr.push({
-            ...v,
-            children,
-          });
-      }
-    });
-    return optionArr;
-  };
+
   return (
     record.template === 'view' && (
       <RecordProvider record={record}>
@@ -204,7 +160,7 @@ export const SyncFieldsActionCom = (props) => {
               createOnly: true,
               isOverride: false,
               override: false,
-              useCreateCollectionField,
+              useSyncFromDatabase,
               record,
               showReverseFieldConfig: true,
               targetScope,

@@ -73,7 +73,7 @@ export const collectionFieldSchema: ISchema = {
       params: {
         paginate: false,
         filter: {
-          'interface.$not': null,
+          $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
         },
         sort: ['sort'],
         // appends: ['uiSchema'],
