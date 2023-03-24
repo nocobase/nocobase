@@ -38,11 +38,12 @@ export default {
     },
 
     async query(ctx, next) {
-      const { resourceIndex } = ctx.action.params;
+      const { filterByTk } = ctx.action.params;
+
       const sql = `SELECT *
-                   FROM ${resourceIndex}`;
-      const results = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
-      ctx.body = results;
+                   FROM ${filterByTk}`;
+
+      ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
       await next();
     },
   },
