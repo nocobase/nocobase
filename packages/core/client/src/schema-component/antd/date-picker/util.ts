@@ -101,9 +101,12 @@ export const mapRangePicker = function () {
       },
       ranges: {
         [t('Today')]: [moment(), moment()],
-        [t('Last Week')]: [moment().subtract(1, 'week').startOf('week'), moment().subtract(1, 'week').endOf('week')],
-        [t('This Week')]: [moment().startOf('week'), moment().endOf('week')],
-        [t('Next Week')]: [moment().add(1, 'week').startOf('week'), moment().add(1, 'week').endOf('week')],
+        [t('Last Week')]: [
+          moment().subtract(1, 'week').startOf('isoWeek'),
+          moment().subtract(1, 'week').endOf('isoWeek'),
+        ],
+        [t('This Week')]: [moment().startOf('isoWeek'), moment().endOf('isoWeek')],
+        [t('Next Week')]: [moment().add(1, 'week').startOf('isoWeek'), moment().add(1, 'week').endOf('isoWeek')],
         [t('Last Month')]: [
           moment().subtract(1, 'month').startOf('month'),
           moment().subtract(1, 'month').endOf('month'),

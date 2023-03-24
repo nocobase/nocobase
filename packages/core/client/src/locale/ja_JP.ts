@@ -280,7 +280,7 @@ export default {
   "is after": "より後",
   "is on or after": "以降",
   "is on or before": "以前",
-  "is range": "範囲",
+  "is between": "範囲",
   "Upload": "アップロード",
   "Select level": "レベルを選択",
   "Province": "州",
