@@ -9,17 +9,17 @@ import { useCompile } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
+  console.log(data)
   const interfaceOptions = [];
   data.forEach((item) => {
-    const options = item.children.filter((h) => h.default?.type === type);
+    const options = item.children.filter((h) => h?.availableTypes?.includes(type));
     interfaceOptions.push({
       label: item.label,
       key: item.key,
       children: options,
     });
   });
-  console.log(data, type,interfaceOptions)
-  return interfaceOptions.filter((v) => v.children.length>0);
+  return interfaceOptions.filter((v) => v.children.length > 0);
 };
 export const PreviewFields = (props) => {
   const { name, sources } = props;
