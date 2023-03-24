@@ -63,4 +63,24 @@ describe('view collection', function () {
     const results = await viewCollection.repository.find();
     expect(results.length).toBe(1);
   });
+
+  it('should destroy collection view', async () => {
+    const viewSQL = `CREATE OR REPLACE VIEW test_view AS select 1+1 as result`;
+    await db.sequelize.query(viewSQL);
+
+    await collectionRepository.create({
+      values: {
+        name: 'view_collection',
+        viewName: 'test_view',
+        fields: [{ type: 'string', name: 'result' }],
+      },
+      context: {},
+    });
+
+    await collectionRepository.destroy({
+      filterByTk: 'view_collection',
+    });
+
+    expect(db.getCollection('view_collection')).toBeUndefined();
+  });
 });

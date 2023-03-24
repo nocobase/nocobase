@@ -336,9 +336,10 @@ export class Collection<
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
     if (
-      await this.existsInDb({
+      !this.isView() &&
+      (await this.existsInDb({
         transaction: options?.transaction,
-      })
+      }))
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
       await queryInterface.dropTable(this.getTableNameWithSchema(), options);
