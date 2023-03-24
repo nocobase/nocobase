@@ -51,6 +51,21 @@ SELECT * FROM numbers;
     expect(data.fields.n.type).toBe('integer');
   });
 
+  it('should return possible types for json fields', async () => {
+    const jsonViewName = 'json_view';
+    const jsonViewSQL = `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+    await app.db.sequelize.query(jsonViewSQL);
+
+    const response = await agent.resource('dbViews').get({
+      filterByTk: jsonViewName,
+    });
+
+    expect(response.status).toBe(200);
+    const data = response.body.data;
+    expect(data.fields.json_field.type).toBe('json');
+    expect(data.fields.json_field.possibleTypes).toBeTruthy();
+  });
+
   it('should list collections fields with source interface', async () => {
     await app.db.getCollection('collections').repository.create({
       values: {
@@ -154,7 +169,6 @@ SELECT * FROM numbers;
     expect(updateFieldsResponse.status).toEqual(200);
 
     const viewCollectionWithEmail = app.db.getCollection(viewName);
-    console.log(viewCollectionWithEmail.fields);
     expect(viewCollectionWithEmail.getField('email')).toBeTruthy();
   });
 });

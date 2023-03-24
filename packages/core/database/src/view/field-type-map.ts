@@ -14,6 +14,9 @@ const postgres = {
   'timestamp without time zone': 'date',
   'timestamp with time zone': 'date',
   date: 'date',
+
+  json: ['json', 'array'],
+  jsonb: ['jsonb', 'array'],
 };
 
 const mysql = {};
