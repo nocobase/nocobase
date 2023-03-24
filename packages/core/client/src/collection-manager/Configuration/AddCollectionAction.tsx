@@ -30,6 +30,7 @@ const getSchema = (schema, category, compile): ISchema => {
   const initialValue: any = {
     name: schema.name !== 'view' ? `t_${uid()}` : null,
     template: schema.name,
+    view: schema.name === 'view',
     category,
     ...cloneDeep(schema.default),
   };

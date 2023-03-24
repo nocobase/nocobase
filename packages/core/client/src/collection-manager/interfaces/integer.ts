@@ -29,6 +29,7 @@ export const integer: IField = {
       'x-validator': 'integer',
     },
   },
+  availableTypes:['bigInt','interger'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

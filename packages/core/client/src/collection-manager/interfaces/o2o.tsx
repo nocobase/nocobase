@@ -117,6 +117,7 @@ export const o2o: IField = {
       },
     },
   },
+  availableTypes:['hasOne'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {

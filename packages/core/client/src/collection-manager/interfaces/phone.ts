@@ -21,6 +21,7 @@ export const phone: IField = {
       // 'x-validator': 'phone',
     },
   },
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

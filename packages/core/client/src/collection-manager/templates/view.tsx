@@ -27,7 +27,7 @@ export const view: ICollectionTemplate = {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
     },
-    source: {
+    sources: {
       type: 'array',
       title: '{{ t("Source collections") }}',
       'x-decorator': 'FormItem',

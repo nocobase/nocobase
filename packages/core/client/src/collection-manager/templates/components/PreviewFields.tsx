@@ -1,14 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Select, Input } from 'antd';
+import { Table, Input, Select } from 'antd';
 import { Cascader } from '@formily/antd';
-import { useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
 import { useCompile } from '../../../';
+import { getOptions } from '../../Configuration/interfaces';
 
+const getInterfaceOptions = (data, type) => {
+  const interfaceOptions = [];
+  data.forEach((item) => {
+    const options = item.children.filter((h) => h.default?.type === type);
+    interfaceOptions.push({
+      label: item.label,
+      key: item.key,
+      children: options,
+    });
+  });
+  console.log(data, type,interfaceOptions)
+  return interfaceOptions.filter((v) => v.children.length>0);
+};
 export const PreviewFields = (props) => {
-  const { name, source } = props;
+  const { name, sources } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
@@ -16,15 +30,16 @@ export const PreviewFields = (props) => {
   const [previewData, setPreviewData] = useState([]);
   const [sourceFields, setSourceFields] = useState([]);
   const field: any = useField();
+  const form = useForm();
   const { getCollection } = useCollectionManager();
   const compile = useCompile();
-
+  const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
     const data = [];
-    source.forEach((item) => {
+    sources.forEach((item) => {
       const collection = getCollection(item);
       const children = collection.fields?.map((v) => {
-        return { value: v.name, label: v.uiSchema.title };
+        return { value: v.name, label: v.uiSchema?.title };
       });
       data.push({
         value: item,
@@ -33,21 +48,21 @@ export const PreviewFields = (props) => {
       });
     });
     setSourceFields(data);
-  }, [source]);
+  }, [sources]);
 
   useEffect(() => {
     if (name) {
       api
-        .resource(`dbViews/${name}/fields`)
-        .list({
-          paginate: false,
-        })
+        .resource(`dbViews`)
+        .get({ filterByTk: name })
         .then(({ data }) => {
-          if (data?.data) {
-            field.value = data.data;
-            setDataSource(data?.data);
-            const pColumns = formatPreviewColumns(data?.data);
+          if (data) {
+            const fieldsData = Object.values(data?.data?.fields);
+            field.value = fieldsData;
+            setDataSource(fieldsData);
+            const pColumns = formatPreviewColumns(fieldsData);
             setPreviewColumns(pColumns);
+            form.setValuesIn('sources', data.data?.sources);
           }
         });
     }
@@ -72,17 +87,10 @@ export const PreviewFields = (props) => {
       key: 'name',
     },
     {
-      title: t('Field type'),
-      dataIndex: 'type',
-      key: 'type',
-      render: (text) => {
-        return <Tag>{text}</Tag>;
-      },
-    },
-    {
       title: t('Field source'),
       dataIndex: 'source',
       key: 'source',
+      width: 200,
       render: (text, record, index) => {
         return (
           <Cascader
@@ -99,19 +107,43 @@ export const PreviewFields = (props) => {
       },
     },
     {
-      title: t('Field interface'),
-      dataIndex: 'interface',
-      key: 'interface',
+      title: t('Field type'),
+      dataIndex: 'type',
+      width: 150,
+      key: 'type',
       render: (text, _, index) => {
         const item = dataSource[index];
-        return item.source ? (
-          text
-        ) : (
+        return (
           <Select
             defaultValue={text}
             style={{ width: '100%' }}
-            onChange={(value) => handleFieldChange({ ...item, interface: value }, index)}
+            onChange={(value) => handleFieldChange({ ...item, type: value }, index)}
           />
+        );
+      },
+    },
+    {
+      title: t('Field interface'),
+      dataIndex: 'interface',
+      key: 'interface',
+      width: 150,
+      render: (text, _, index) => {
+        const item = dataSource[index];
+        const data = getInterfaceOptions(initOptions, item.type);
+        return item.source ? (
+          text
+        ) : (
+          <Select style={{ width: '100%' }}>
+            {data.map((group) => (
+              <Select.OptGroup key={group.key} label={compile(group.label)}>
+                {group.children.map((item) => (
+                  <Select.Option key={item.value} value={item.value}>
+                    {compile(item.label)}
+                  </Select.Option>
+                ))}
+              </Select.OptGroup>
+            ))}
+          </Select>
         );
       },
     },
@@ -131,8 +163,9 @@ export const PreviewFields = (props) => {
   ];
   const formatPreviewColumns = (data) => {
     return data?.map((item) => {
-      const sourceField = getCollection(item?.source?.[0])?.fields.find((v) => v.name === item?.source?.[1])?.uiSchema
-        .title;
+      const fieldSource = item?.source?.split('.');
+      const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
+        ?.title;
       const target = sourceField || item.title || item.name;
       return {
         title: compile(target),
