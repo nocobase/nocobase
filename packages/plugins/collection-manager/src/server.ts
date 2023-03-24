@@ -19,6 +19,8 @@ import lodash from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
 import viewResourcer from './resourcers/views';
+import collectionActions from './resourcers/collections';
+
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
 export class CollectionManagerPlugin extends Plugin {
@@ -262,6 +264,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.resource(viewResourcer);
+    this.app.actions(collectionActions);
 
     const handleFieldSource = (fields) => {
       for (const field of fields) {

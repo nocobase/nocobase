@@ -80,6 +80,7 @@ SELECT * FROM numbers;
     const viewSQL = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL);
 
+    // create view collection
     const viewCollection = await app.db.getCollection('collections').repository.create({
       values: {
         name: viewName,
@@ -127,5 +128,33 @@ SELECT * FROM numbers;
     expect(viewFieldsData.length).toEqual(2);
 
     expect(viewFieldsData.find((item) => item.name === 'name').interface).toEqual('text');
+
+    UserCollection.addField('email', { type: 'string' });
+
+    await app.db.sync();
+
+    // update view in database
+    const viewSQL2 = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(viewSQL2);
+
+    const viewDetailResponse = await agent.resource('dbViews').get({
+      filterByTk: viewName,
+    });
+
+    const viewDetail = viewDetailResponse.body.data;
+    const viewFields = viewDetail.fields;
+
+    const updateFieldsResponse = await agent.resource('collections').setFields({
+      filterByTk: viewName,
+      values: {
+        fields: Object.values(viewFields),
+      },
+    });
+
+    expect(updateFieldsResponse.status).toEqual(200);
+
+    const viewCollectionWithEmail = app.db.getCollection(viewName);
+    console.log(viewCollectionWithEmail.fields);
+    expect(viewCollectionWithEmail.getField('email')).toBeTruthy();
   });
 });
