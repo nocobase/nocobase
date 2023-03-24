@@ -19,7 +19,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     return;
   }
   const properties = cloneDeep(schema.properties) as any;
-  console.log(schema,properties)
   if (properties?.name) {
     properties.name['x-disabled'] = true;
   }
