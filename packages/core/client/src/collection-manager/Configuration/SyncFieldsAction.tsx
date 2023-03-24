@@ -2,7 +2,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Button} from 'antd';
+import { Button } from 'antd';
 import { cloneDeep, omit } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,6 +14,7 @@ import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
+import { useAPIClient } from '../../api-client';
 import { PreviewFields } from '../templates/components/PreviewFields';
 
 const getSchema = (schema: IField, record: any, compile) => {
@@ -99,18 +100,16 @@ const useSyncFromDatabase = () => {
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
+  const api = useAPIClient();
   return {
     async run() {
       await form.submit();
-      const values = cloneDeep(form.values);
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.autoCreateReverseField;
-      await resource.update({ filterByTk, values: form.values });
+      await api.resource(`collections`).setFields({
+        filterByTk,
+        values: form.values,
+      });
       ctx.setVisible(false);
       await form.reset();
       refresh();
