@@ -142,11 +142,13 @@ export const PreviewFields = (props) => {
       render: (text, _, index) => {
         const item = dataSource[index];
         const data = getInterfaceOptions(initOptions, item.type);
-        console.log(item.source);
         return item.source ? (
           text
         ) : (
-          <Select style={{ width: '100%' }}>
+          <Select
+            style={{ width: '100%' }}
+            onChange={(value) => handleFieldChange({ ...item, interface: value }, index)}
+          >
             {data.map((group) => (
               <Select.OptGroup key={group.key} label={compile(group.label)}>
                 {group.children.map((item) => (
@@ -169,7 +171,10 @@ export const PreviewFields = (props) => {
         return item.source ? (
           text
         ) : (
-          <Input defaultValue={text} onChange={(e) => handleFieldChange({ ...item, title: e.target.value }, index)} />
+          <Input
+            defaultValue={text}
+            onChange={(e) => handleFieldChange({ ...item, uiSchema: { title: e.target.value } }, index)}
+          />
         );
       },
     },
