@@ -78,11 +78,12 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
       transaction
     });
     includeFields.forEach(field => {
-      data.set(field, included!.get(field), { raw: true });
+      const value = included!.get(field);
+      data.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : value.toJSON(), { raw: true });
     });
   }
 
-  this.plugin.trigger(workflow, { data: data.get() }, {
+  this.plugin.trigger(workflow, { data: data.toJSON() }, {
     context
   });
 }
