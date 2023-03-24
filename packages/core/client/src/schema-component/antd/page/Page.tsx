@@ -289,13 +289,16 @@ export const Page = (props) => {
               }
             >
               <div
-                className={css`
-                  > .nb-grid:not(:last-child) {
-                    > .nb-schema-initializer-button {
-                      display: none;
+                className={classNames([
+                  'nb-page',
+                  css`
+                    > .nb-grid:not(:last-child) {
+                      > .nb-schema-initializer-button {
+                        display: none;
+                      }
                     }
-                  }
-                `}
+                  `,
+                ])}
               >
                 {props.children}
               </div>

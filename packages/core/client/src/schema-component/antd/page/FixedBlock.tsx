@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { css } from '@emotion/css';
 import { SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
@@ -8,38 +8,20 @@ import { useRecord } from '../../../record-provider';
 import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 
 const FixedBlockContext = React.createContext({
-  setFixedSchema: (schema: Schema) => {},
+  setFixedBlock: (value: boolean) => {},
   height: 0,
-  fixedSchemaRef: {} as unknown as React.MutableRefObject<Schema>,
+  isFixedBlock: false,
 });
 
 export const useFixedSchema = () => {
   const field = useField();
-  const fieldSchema = useFieldSchema();
-  const { setFixedSchema, fixedSchemaRef } = useFixedBlock();
-  const { fieldSchema: templateFieldSchema } = useBlockTemplateContext();
-  const hasSet = useRef(false);
+  const { setFixedBlock } = useFixedBlock();
 
   useEffect(() => {
-    if (fieldSchema?.['x-decorator-props']?.fixedBlock) {
-      const nextSchema = templateFieldSchema || fieldSchema;
-      setFixedSchema(nextSchema);
-      hasSet.current = true;
-    } else if (hasSet.current) {
-      setFixedSchema(null);
-    }
-  }, [field?.decoratorProps?.fixedBlock, fieldSchema?.['x-decorator-props']?.fixedBlock]);
+    setFixedBlock(field?.decoratorProps?.fixedBlock);
+  }, [field?.decoratorProps?.fixedBlock]);
 
-  useEffect(
-    () => () => {
-      if (hasSet.current && fixedSchemaRef.current) {
-        setFixedSchema(null);
-        fixedSchemaRef.current = null;
-      }
-    },
-    [],
-  );
-  return fieldSchema?.['x-decorator-props']?.fixedBlock
+  return field?.decoratorProps?.fixedBlock;
 };
 
 export const useFixedBlock = () => {
@@ -85,54 +67,58 @@ interface FixedBlockProps {
 
 const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
-  const [fixedSchema, _setFixedSchema] = useState<Schema>();
-  const fixedSchemaRef = useRef(fixedSchema);
-
-  const setFixedSchema = (next) => {
-    if (fixedSchema && next) {
-      fixedSchemaRef.current = next;
-    }
-    _setFixedSchema(next);
-  };
-
-  const schema = useMemo<Schema>(() => {
-    return fixedSchema?.parent;
-  }, [fixedSchema]);
+  const [isFixedBlock, setFixedBlock] = useState<boolean>(false);
 
   return (
-    <FixedBlockContext.Provider value={{ height, setFixedSchema, fixedSchemaRef }}>
-      {schema ? (
-        <div
-          className={css`
-            overflow: hidden;
-            position: relative;
-            height: calc(100vh - ${height}px);
-            .noco-card-item {
-              position: absolute;
-              top: 0;
-              left: 0;
-              right: 0;
-              bottom: 0;
-              .ant-card {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                .ant-card-body {
-                  height: 1px;
-                  flex: 1;
-                  display: flex;
-                  flex-direction: column;
-                  overflow: hidden;
+    <FixedBlockContext.Provider value={{ height, setFixedBlock, isFixedBlock }}>
+      <div
+        className={
+          isFixedBlock
+            ? css`
+                overflow: hidden;
+                position: relative;
+                height: calc(100vh - ${height}px);
+                .ant-spin-nested-loading,
+                .ant-spin-container {
+                  height: 100%;
                 }
-              }
-            }
-          `}
-        >
-          <RecursionField onlyRenderProperties={false} name={schema.name} schema={schema} />
-        </div>
-      ) : (
-        props.children
-      )}
+                .nb-page {
+                  height: 100%;
+                  > .nb-grid {
+                    height: 100%;
+                    > .nb-grid-row {
+                      height: 100%;
+                      > .nb-grid-col {
+                        height: 100%;
+                        > div,
+                        .nb-block-wrap {
+                          height: 100%;
+                          .noco-card-item {
+                            height: 100%;
+                            .ant-card {
+                              display: flex;
+                              flex-direction: column;
+                              height: 100%;
+                              .ant-card-body {
+                                height: 1px;
+                                flex: 1;
+                                display: flex;
+                                flex-direction: column;
+                                overflow: hidden;
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `
+            : undefined
+        }
+      >
+        {props.children}
+      </div>
     </FixedBlockContext.Provider>
   );
 };
