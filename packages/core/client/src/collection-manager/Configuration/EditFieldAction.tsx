@@ -25,7 +25,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   }
 
   if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
+    properties['defaultValue'] = cloneDeep(schema.default.uiSchema)||{};
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
