@@ -67,6 +67,19 @@ export const PreviewFields = (props) => {
     }
   }, [name]);
 
+  useEffect(() => {
+    if (name) {
+      api
+        .resource(`dbViews`)
+        .query({ filterByTk: name, pageSize: 20 })
+        .then(({ data }) => {
+          if (data) {
+            setPreviewData(data?.data || []);
+          }
+        });
+    }
+  }, [name]);
+
   const handleFieldChange = (record, index) => {
     dataSource.splice(index, 1, record);
     const pColumns = formatPreviewColumns(dataSource);
@@ -168,8 +181,8 @@ export const PreviewFields = (props) => {
       const target = sourceField || item.title || item.name;
       return {
         title: compile(target),
-        dataIndex: target,
-        key: target,
+        dataIndex: item.name,
+        key: item.name,
       };
     });
   };
@@ -187,7 +200,7 @@ export const PreviewFields = (props) => {
           key={name}
         />
         <h4>{t('Preview')}:</h4>
-        <Table bordered columns={previewColumns} scroll={{ x: 300 }} />
+        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 300 }} />
       </>
     )
   );
