@@ -34,30 +34,15 @@ export default {
       },
     },
     {
-      interface: 'sequence',
-      type: 'sequence',
+      interface: 'input',
+      type: 'string',
       name: 'account',
+      unique: true,
       uiSchema: {
         type: 'string',
         title: '{{t("Account")}}',
         'x-component': 'Input',
       },
-      inputable:true,
-      patterns: [
-        {
-          type: "date",
-          options: {}
-        },
-        {
-          type: "integer",
-          options: {
-            digits: 4,
-            start: 0,
-            cycle: "0 0 1 * *",
-            key: 52
-          }
-        }
-      ]
     },
     {
       interface: 'email',
