@@ -39,7 +39,7 @@ export const json: IField = {
       default: null
     },
   },
-  availableTypes:['json'],
+  availableTypes:['json','array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

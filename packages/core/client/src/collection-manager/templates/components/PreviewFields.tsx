@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Select } from 'antd';
+import { Table, Input, Select,Tag } from 'antd';
 import { Cascader } from '@formily/antd';
 import { useField, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -125,10 +125,17 @@ export const PreviewFields = (props) => {
       key: 'type',
       render: (text, _, index) => {
         const item = dataSource[index];
-        return (
+        return item.source || !item.possibleTypes ? (
+          <Tag>{text}</Tag> 
+        ) : (
           <Select
             defaultValue={text}
             style={{ width: '100%' }}
+            options={
+              item?.possibleTypes.map((v) => {
+                return { label: v, value: v };
+              }) || []
+            }
             onChange={(value) => handleFieldChange({ ...item, type: value }, index)}
           />
         );
