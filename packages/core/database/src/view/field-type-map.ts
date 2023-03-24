@@ -10,6 +10,10 @@ const postgres = {
   decimal: 'float',
   numeric: 'float',
   'double precision': 'float',
+
+  'timestamp without time zone': 'date',
+  'timestamp with time zone': 'date',
+  date: 'date',
 };
 
 const mysql = {};

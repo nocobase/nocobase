@@ -67,6 +67,9 @@ describe('view inference', function () {
       viewName,
     });
 
+    const createdAt = UserCollection.model.rawAttributes['createdAt'].field;
+    expect(inferredFields[createdAt]['type']).toBe('date');
+
     expect(inferredFields['name']).toMatchObject({
       name: 'name',
       type: 'string',
@@ -78,6 +81,4 @@ describe('view inference', function () {
       type: 'integer',
     });
   });
-
-  it('should infer fields', async () => {});
 });
