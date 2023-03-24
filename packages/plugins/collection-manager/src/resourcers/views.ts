@@ -46,5 +46,7 @@ export default {
       ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
       await next();
     },
+
+    async updateViewFields(ctx, next) {},
   },
 };

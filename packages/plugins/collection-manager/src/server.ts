@@ -293,8 +293,7 @@ export class CollectionManagerPlugin extends Plugin {
 
       //handle collections:fields:list
       if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
-        const fields = ctx.body.rows;
-        handleFieldSource(fields);
+        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
       }
     });
 
