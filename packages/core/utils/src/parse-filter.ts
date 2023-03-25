@@ -80,7 +80,15 @@ const parsePath = (path: string) => {
 };
 
 const isDateOperator = (op) => {
-  return ['$dateOn', '$dateBefore'].includes(op);
+  return [
+    '$dateOn',
+    '$dateNotOn',
+    '$dateBefore',
+    '$dateAfter',
+    '$dateNotBefore',
+    '$dateNotAfter',
+    '$dateBetween',
+  ].includes(op);
 };
 
 const dateValueWrapper = (value: string, timezone?: string) => {
@@ -108,21 +116,17 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
     breakOn({ key }) {
       return key.startsWith('$') && key !== '$and' && key !== '$or';
     },
-    transformValue(value, path) {
-      const { operator } = parsePath(path);
+    transformValue(value) {
+      if (typeof value !== 'string') {
+        return value;
+      }
+      // parse user fields parameter
       const match = re.exec(value);
       if (match) {
         const key = match[1].trim();
         if (key.startsWith('$user')) {
           userFieldsSet.add(key.substring(6));
-        } else if (key.startsWith('$date')) {
-          const val = get(vars, key);
-          const result = typeof val === 'function' ? val?.({ operator, timezone }) : val;
-          return dateValueWrapper(result, timezone);
         }
-      }
-      if (isDateOperator(operator)) {
-        return dateValueWrapper(value, timezone);
       }
       return value;
     },
@@ -134,12 +138,21 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   }
 
   return unflatten(flat, {
-    transformValue(value) {
-      const match = re.exec(value);
-      if (!match) {
-        return value;
+    transformValue(value, path) {
+      const { operator } = parsePath(path);
+      // parse string variables
+      if (typeof value === 'string') {
+        const match = re.exec(value);
+        if (match) {
+          const key = match[1].trim();
+          const val = get(vars, key, null);
+          value = typeof val === 'function' ? val?.({ operator, timezone }) : val;
+        }
       }
-      return get(vars, match[1].trim());
+      if (isDateOperator(operator)) {
+        return dateValueWrapper(value, timezone);
+      }
+      return value;
     },
   });
 };
@@ -155,7 +168,10 @@ export function getDateOperatorVariables(m: moment.Moment, unitOfTime) {
 }
 
 export function getDateVariable({ timezone, unitOfTime, offset = 0, operator }) {
-  let m = moment().utcOffset(timezone);
+  let m = moment();
+  if (timezone) {
+    m = m.utcOffset(timezone);
+  }
   if (offset > 0) {
     m = m.add(offset, unitOfTime);
   } else if (offset < 0) {
