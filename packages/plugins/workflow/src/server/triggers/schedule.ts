@@ -344,7 +344,7 @@ ScheduleModes.set(SCHEDULE_MODE.COLLECTION_FIELD, {
     instances.forEach(item => {
       this.plugin.trigger(workflow, {
         date: now,
-        data: item.get()
+        data: item.toJSON()
       });
     });
   }

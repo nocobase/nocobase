@@ -1,6 +1,4 @@
 import { useEffect, useState } from 'react';
-import './highlight-theme/default.less';
-import './highlight-theme/table.less';
 
 export async function parseMarkdown(text: string) {
   if (!text) {

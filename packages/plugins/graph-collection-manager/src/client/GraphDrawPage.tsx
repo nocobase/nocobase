@@ -24,6 +24,7 @@ import {
   useCompile,
   useCurrentAppInfo,
   CollectionCategroriesProvider,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
@@ -374,6 +375,7 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+  const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const useSaveGraphPositionAction = async (data) => {
@@ -504,7 +506,7 @@ export const GraphDrawPage = React.memo(() => {
           <CurrentAppInfoContext.Provider value={database}>
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
-                <CollectionCategroriesProvider>
+                <CollectionCategroriesProvider {...categoryCtx}>
                   <CollectionManagerProvider
                     collections={targetGraph?.collections}
                     refreshCM={refreshGM}
