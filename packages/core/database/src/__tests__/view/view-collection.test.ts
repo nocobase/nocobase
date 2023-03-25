@@ -55,6 +55,7 @@ describe('create view', () => {
         {
           type: 'hasOne',
           name: 'profile',
+          foreignKey: 'user_id',
         },
       ],
     });
@@ -116,6 +117,7 @@ describe('create view', () => {
       },
     });
 
+    console.log(fooData);
     expect(fooData.get('name')).toBe('foo');
     expect(fooData.get('age')).toBe(18);
   });
