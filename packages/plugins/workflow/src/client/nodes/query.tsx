@@ -16,10 +16,9 @@ export default {
   group: 'collection',
   fieldset: {
     collection,
-    // 'config.multiple': {
+    // multiple: {
     //   type: 'boolean',
     //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-    //   name: 'config.multiple',
     //   'x-decorator': 'FormItem',
     //   'x-component': 'Checkbox',
     //   'x-component-props': {
@@ -32,6 +31,12 @@ export default {
         filter,
         appends
       }
+    },
+    failOnEmpty: {
+      type: 'boolean',
+      title: `{{t("Fail on no data", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
     }
   },
   view: {
