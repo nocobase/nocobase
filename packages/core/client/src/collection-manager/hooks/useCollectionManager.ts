@@ -73,6 +73,15 @@ export const useCollectionManager = () => {
         children.push(v);
         return getChildren(collectionKey);
       });
+      const sourceCollections = collections.filter((v) => {
+        return v.sources?.length === 1 && v?.sources[0] === name;
+      });
+      sourceCollections.forEach((v) => {
+        const collectionKey = v.name;
+        children.push(v);
+        return getChildren(collectionKey);
+      });
+
       return uniqBy(children, 'key');
     };
     return getChildren(name);
