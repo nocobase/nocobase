@@ -134,6 +134,7 @@ export default {
   'Update record': '更新数据',
   'Query record': '查询数据',
   'Multiple records': '多条数据',
+  'Fail on no data': '无数据时报错',
   'Please select collection first': '请先选择数据表',
   'Only update records matching conditions': '只更新满足条件的数据',
   'Please add at least one condition': '请添加至少一个条件',
