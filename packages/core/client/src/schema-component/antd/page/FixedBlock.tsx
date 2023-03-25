@@ -5,7 +5,6 @@ import { SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
-import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
 
 const FixedBlockContext = React.createContext({
   setFixedBlock: (value: boolean) => {},
@@ -68,57 +67,52 @@ interface FixedBlockProps {
 const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
   const [isFixedBlock, setFixedBlock] = useState<boolean>(false);
-
-  return (
-    <FixedBlockContext.Provider value={{ height, setFixedBlock, isFixedBlock }}>
-      <div
-        className={
-          isFixedBlock
-            ? css`
-                overflow: hidden;
-                position: relative;
-                height: calc(100vh - ${height}px);
-                .ant-spin-nested-loading,
-                .ant-spin-container {
+  const fixedBlockCss = useMemo(
+    () => css`
+      overflow: hidden;
+      position: relative;
+      height: calc(100vh - ${height}px);
+      .ant-spin-nested-loading,
+      .ant-spin-container {
+        height: 100%;
+      }
+      .nb-page {
+        height: 100%;
+        > .nb-grid {
+          height: 100%;
+          > .nb-grid-row {
+            height: 100%;
+            > .nb-grid-col {
+              height: 100%;
+              > div,
+              .nb-block-wrap {
+                height: 100%;
+                .noco-card-item {
                   height: 100%;
-                }
-                .nb-page {
-                  height: 100%;
-                  > .nb-grid {
+                  .ant-card {
+                    display: flex;
+                    flex-direction: column;
                     height: 100%;
-                    > .nb-grid-row {
-                      height: 100%;
-                      > .nb-grid-col {
-                        height: 100%;
-                        > div,
-                        .nb-block-wrap {
-                          height: 100%;
-                          .noco-card-item {
-                            height: 100%;
-                            .ant-card {
-                              display: flex;
-                              flex-direction: column;
-                              height: 100%;
-                              .ant-card-body {
-                                height: 1px;
-                                flex: 1;
-                                display: flex;
-                                flex-direction: column;
-                                overflow: hidden;
-                              }
-                            }
-                          }
-                        }
-                      }
+                    .ant-card-body {
+                      height: 1px;
+                      flex: 1;
+                      display: flex;
+                      flex-direction: column;
+                      overflow: hidden;
                     }
                   }
                 }
-              `
-            : undefined
+              }
+            }
+          }
         }
-      >
-        {props.children}
-      </div>
+      }
+    `,
+    [height],
+  );
+  return (
+    <FixedBlockContext.Provider value={{ height, setFixedBlock, isFixedBlock }}>
+      <div className={isFixedBlock ? fixedBlockCss : ''}>{props.children}</div>
     </FixedBlockContext.Provider>
   );
 };
