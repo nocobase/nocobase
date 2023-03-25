@@ -44,34 +44,101 @@ describe('str2moment', () => {
 
 describe('moment2str', () => {
   test('gmt date', () => {
-    const m = moment('2022-06-21 10:10:00');
+    const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { showTime: true, gmt: true });
-    expect(str).toBe('2022-06-21T10:10:00.000Z');
+    expect(str).toBe('2023-06-21T10:10:00.000Z');
+  });
+
+  test('showTime is true, gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { showTime: true, gmt: false });
+    expect(str).toBe('2023-06-21T02:10:00.000Z');
+  });
+
+  test('gmt is true', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { gmt: true });
+    expect(str).toBe('2023-06-21T00:00:00.000Z');
+  });
+
+  // 北京时区
+  test('gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { gmt: false });
+    expect(str).toBe('2023-06-20T16:00:00.000Z');
   });
 
   test('gmt date only', () => {
-    const m = moment('2022-06-21 10:10:00');
+    const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m);
-    expect(str).toBe('2022-06-21T00:00:00.000Z');
+    expect(str).toBe('2023-06-21T00:00:00.000Z');
   });
 
   test('with time', () => {
-    const m = moment('2022-06-21 10:10:00');
+    const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { showTime: true });
     expect(str).toBe(m.toISOString());
   });
 
+  test('picker is year, gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'year', gmt: false });
+    expect(str).toBe('2022-12-31T16:00:00.000Z');
+  });
+
+  test('picker is year, gmt is true', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'year', gmt: true });
+    expect(str).toBe('2023-01-01T00:00:00.000Z');
+  });
+
   test('picker is year', () => {
-    const m = moment('2022-06-21 10:10:00');
+    const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { picker: 'year' });
-    expect(str).toBe('2022-01-01T00:00:00.000Z');
+    expect(str).toBe('2023-01-01T00:00:00.000Z');
+  });
+
+  test('picker is quarter, gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'quarter', gmt: false });
+    expect(str).toBe('2023-03-31T16:00:00.000Z');
+  })
+
+  test('picker is quarter, gmt is true', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'quarter', gmt: true });
+    expect(str).toBe('2023-04-01T00:00:00.000Z');
+  })
+
+  test('picker is month, gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'month', gmt: false });
+    expect(str).toBe('2023-05-31T16:00:00.000Z');
+  });
+
+  test('picker is month, gmt is true', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'month', gmt: true });
+    expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
 
   test('picker is month', () => {
-    const m = moment('2022-06-21 10:10:00');
+    const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { picker: 'month' });
-    expect(str).toBe('2022-06-01T00:00:00.000Z');
+    expect(str).toBe('2023-06-01T00:00:00.000Z');
   });
+
+  test('picker is week, gmt is false', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'week', gmt: false });
+    expect(str).toBe('2023-06-18T16:00:00.000Z');
+  })
+
+  test('picker is week, gmt is true', () => {
+    const m = moment('2023-06-21 10:10:00');
+    const str = moment2str(m, { picker: 'week', gmt: true });
+    expect(str).toBe('2023-06-19T00:00:00.000Z');
+  })
 
   test('value is null', async () => {
     const m = moment2str(null);
