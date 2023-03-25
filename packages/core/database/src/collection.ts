@@ -113,6 +113,10 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
+
+    // set tableName to collection map
+    // the form of key is `${schema}.${tableName}` if schema exists
+    // otherwise is `${tableName}`
     this.db.tableNameCollectionMap.set(this.getTableNameWithSchemaAsString(), this);
 
     if (!options.inherits) {
