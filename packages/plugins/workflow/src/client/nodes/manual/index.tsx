@@ -7,6 +7,7 @@ import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
+import { JOB_STATUS } from '../../constants';
 
 
 const MULTIPLE_ASSIGNED_MODE = {
@@ -72,6 +73,10 @@ export default {
         },
       }
     },
+    actions: {
+      type: 'array',
+      default: [JOB_STATUS.RESOLVED]
+    }
   },
   view: {
 
