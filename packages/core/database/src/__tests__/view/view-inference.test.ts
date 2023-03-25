@@ -65,6 +65,7 @@ describe('view inference', function () {
     const inferredFields = await ViewFieldInference.inferFields({
       db,
       viewName,
+      viewSchema: 'public',
     });
 
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;

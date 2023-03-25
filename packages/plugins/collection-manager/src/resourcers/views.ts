@@ -4,11 +4,13 @@ export default {
   name: 'dbViews',
   actions: {
     async get(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, schema } = ctx.action.params;
       const db = ctx.app.db as Database;
+
       const fields = await ViewFieldInference.inferFields({
         db,
         viewName: filterByTk,
+        viewSchema: schema,
       });
 
       ctx.body = {

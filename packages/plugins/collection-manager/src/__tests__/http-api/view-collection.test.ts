@@ -100,6 +100,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
+        schema: 'public',
         fields: [
           {
             name: 'name',
@@ -161,6 +162,7 @@ SELECT * FROM numbers;
 
     const viewDetailResponse = await agent.resource('dbViews').get({
       filterByTk: viewName,
+      schema: 'public',
     });
 
     const viewDetail = viewDetailResponse.body.data;

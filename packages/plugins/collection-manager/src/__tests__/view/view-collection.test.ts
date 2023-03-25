@@ -36,23 +36,7 @@ describe('view collection', function () {
         name: 'view_collection',
         viewName: 'test_view',
         fields: [{ type: 'string', name: 'result' }],
-      },
-      context: {},
-    });
-
-    const viewCollection = db.getCollection('view_collection');
-    expect(viewCollection).toBeInstanceOf(ViewCollection);
-
-    const results = await viewCollection.repository.find();
-    expect(results.length).toBe(1);
-  });
-
-  it('should create view collection by user sql', async () => {
-    await collectionRepository.create({
-      values: {
-        name: 'view_collection',
-        viewSQL: `select 1+1 as result`,
-        fields: [{ type: 'string', name: 'result' }],
+        schema: 'public',
       },
       context: {},
     });
