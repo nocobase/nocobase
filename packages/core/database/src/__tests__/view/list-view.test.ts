@@ -22,7 +22,7 @@ describe('list view', () => {
     await db.sequelize.query(sql2);
 
     const results = await db.queryInterface.listViews();
-    expect(results.find((item) => item.viewname === 'test1')).toBeTruthy();
-    expect(results.find((item) => item.viewname === 'test2')).toBeTruthy();
+    expect(results.find((item) => item.name === 'test1')).toBeTruthy();
+    expect(results.find((item) => item.name === 'test2')).toBeTruthy();
   });
 });
