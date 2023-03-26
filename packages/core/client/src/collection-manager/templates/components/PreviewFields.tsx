@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Select,Tag } from 'antd';
+import { Table, Input, Select, Tag } from 'antd';
 import { Cascader } from '@formily/antd';
 import { useField, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -47,7 +47,7 @@ export const PreviewFields = (props) => {
       });
     });
     setSourceFields(data);
-  }, [sources]);
+  }, [sources, name]);
 
   useEffect(() => {
     if (name) {
@@ -56,6 +56,7 @@ export const PreviewFields = (props) => {
         .get({ filterByTk: name })
         .then(({ data }) => {
           if (data) {
+            setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields);
             field.value = fieldsData;
             setDataSource(fieldsData);
@@ -104,12 +105,13 @@ export const PreviewFields = (props) => {
       key: 'source',
       width: 200,
       render: (text, record, index) => {
+        const options = sourceFields.filter((v) => sources.includes(v.value));
         return (
           <Cascader
             defaultValue={typeof text === 'string' ? text?.split('.') : text}
             allowClear
             style={{ width: '100%' }}
-            options={compile(sourceFields)}
+            options={compile(options)}
             onChange={(value, selectedOptions) => {
               handleFieldChange({ ...record, source: value }, index);
             }}
@@ -126,7 +128,7 @@ export const PreviewFields = (props) => {
       render: (text, _, index) => {
         const item = dataSource[index];
         return item.source || !item.possibleTypes ? (
-          <Tag>{text}</Tag> 
+          <Tag>{text}</Tag>
         ) : (
           <Select
             defaultValue={text}
