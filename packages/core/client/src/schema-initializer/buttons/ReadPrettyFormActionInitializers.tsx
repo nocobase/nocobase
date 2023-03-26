@@ -1,3 +1,5 @@
+import { useCollection } from '../..';
+
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -21,6 +23,10 @@ export const ReadPrettyFormActionInitializers = {
               type: 'primary',
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -29,6 +35,10 @@ export const ReadPrettyFormActionInitializers = {
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
