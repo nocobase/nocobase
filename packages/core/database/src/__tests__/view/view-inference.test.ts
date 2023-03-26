@@ -57,7 +57,7 @@ describe('view inference', function () {
     const viewName = 'user_posts';
 
     const viewSQL = `
-       CREATE OR REPLACE VIEW ${viewName} as SELECT 1 as const_field, * FROM ${UserCollection.quotedTableName()} as users
+       CREATE OR REPLACE VIEW public.${viewName} as SELECT 1 as const_field, * FROM ${UserCollection.quotedTableName()} as users
     `;
 
     await db.sequelize.query(viewSQL);
