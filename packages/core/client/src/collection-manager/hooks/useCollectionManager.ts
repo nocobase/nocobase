@@ -83,12 +83,11 @@ export const useCollectionManager = () => {
   };
 
   // 缓存下面已经获取的 options，防止无限循环
-  const cachedOptions = {};
-
   const getCollectionFieldsOptions = (
     collectionName: string,
     type: string | string[] = 'string',
     opts?: {
+      cached?: Record<string, any>;
       /**
        * 为 true 时允许查询所有关联字段
        * 为 Array<string> 时仅允许查询指定的关联字段
@@ -96,12 +95,13 @@ export const useCollectionManager = () => {
       association?: boolean | string[];
     },
   ) => {
+    const { association = false, cached = {} } = opts || {};
+
     // 防止无限循环
-    if (cachedOptions[collectionName]) {
-      return _.cloneDeep(cachedOptions[collectionName]);
+    if (cached[collectionName]) {
+      return _.cloneDeep(cached[collectionName]);
     }
 
-    const { association = false } = opts || {};
     if (typeof type === 'string') {
       type = [type];
     }
@@ -122,7 +122,7 @@ export const useCollectionManager = () => {
           ...field,
         };
         if (association && field.target) {
-          result.children = getCollectionFieldsOptions(field.target, type, opts);
+          result.children = getCollectionFieldsOptions(field.target, type, { ...opts, cached });
           if (!result.children?.length) {
             return null;
           }
@@ -132,7 +132,7 @@ export const useCollectionManager = () => {
       // 过滤 map 产生为 null 的数据
       .filter(Boolean);
 
-    cachedOptions[collectionName] = options;
+    cached[collectionName] = options;
     return options;
   };
 

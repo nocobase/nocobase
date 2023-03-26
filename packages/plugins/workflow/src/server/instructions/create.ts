@@ -18,7 +18,7 @@ export default {
       transaction: processor.transaction
     });
 
-    if (appends.length) {
+    if (result && appends.length) {
       const includeFields = appends.filter(field => !result.get(field) || !result[field]);
       const included = await model.findByPk(result[model.primaryKeyAttribute], {
         attributes: [model.primaryKeyAttribute],
@@ -26,13 +26,14 @@ export default {
         transaction: processor.transaction
       });
       includeFields.forEach(field => {
-        result.set(field, included!.get(field), { raw: true });
+        const value = included!.get(field);
+        result.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : value.toJSON(), { raw: true });
       });
     }
 
     return {
       // NOTE: get() for non-proxied instance (#380)
-      result: result.get(),
+      result: result?.toJSON(),
       status: JOB_STATUS.RESOLVED
     };
   }

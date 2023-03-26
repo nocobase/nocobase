@@ -1,10 +1,12 @@
 import path from 'path';
+import { get } from 'lodash';
 
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
 
 import Plugin from '..';
 import { JOB_STATUS } from '../constants';
+import FlowNodeModel from '../models/FlowNode';
 
 export function sleep(ms: number) {
   return new Promise(resolve => {
@@ -23,10 +25,10 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
     name: 'workflow',
     instructions: {
       echo: {
-        run(node, { result }, processor) {
+        run({ config = {} }: FlowNodeModel, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result
+            result: config.path == null ? result : get(result, config.path)
           };
         }
       },

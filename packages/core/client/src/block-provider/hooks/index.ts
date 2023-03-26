@@ -84,6 +84,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
+  console.log('form.values',  form.values);
   return form.values;
   let values = {};
   for (const key in form.values) {
@@ -151,7 +152,7 @@ export const useCreateActionProps = () => {
         overwriteValues,
         skipValidator,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { addChild } = fieldSchema?.['x-component-props'];
+      const addChild = fieldSchema?.['x-component-props']?.addChild;
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
         await form.submit();
