@@ -1,7 +1,7 @@
 const postgres = {
   'character varying': 'string',
   varchar: 'string',
-  text: 'string',
+  text: 'text',
   char: 'string',
 
   smallint: 'integer',
@@ -19,7 +19,21 @@ const postgres = {
   jsonb: ['jsonb', 'array'],
 };
 
-const mysql = {};
+const mysql = {
+  varchar: 'string',
+  text: 'text',
+  int: 'integer',
+  integer: 'integer',
+  bigint: 'bigInt',
+  float: 'float',
+  double: 'float',
+  boolean: 'boolean',
+
+  tinyint: 'integer',
+  datetime: 'date',
+  timestamp: 'date',
+  json: 'json',
+};
 
 const sqlite = {};
 

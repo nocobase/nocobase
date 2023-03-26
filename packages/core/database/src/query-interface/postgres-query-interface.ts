@@ -41,6 +41,6 @@ export default class PostgresQueryInterface extends QueryInterface {
         AND view_name = '${viewName}';
     `;
 
-    return await this.db.sequelize.query(sql, { type: 'SELECT' });
+    return (await this.db.sequelize.query(sql, { type: 'SELECT' })) as any;
   }
 }

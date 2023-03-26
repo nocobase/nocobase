@@ -16,6 +16,7 @@
     "glob": "^7.1.6",
     "mathjs": "^10.6.1",
     "moment": "2.x",
+    "node-sql-parser": "^4.6.6",
     "semver": "^7.3.7",
     "sequelize": "^6.26.0",
     "umzug": "^3.1.1"

@@ -30,7 +30,34 @@ export default class MysqlQueryInterface extends QueryInterface {
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 
-  viewColumnUsage(options: { viewName: string; schema?: string }) {
-    throw new Error('Method not implemented.');
+  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<
+    Array<{
+      column_name: string;
+      table_name: string;
+    }>
+  > {
+    const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${options.viewName}`, { type: 'SELECT' });
+    const createView = viewDefinition[0]['Create View'];
+    const regex = /(?<=AS\s)([\s\S]*)/i;
+    const match = createView.match(regex);
+    const sql = match[0];
+
+    const { Parser } = require('node-sql-parser');
+    const parser = new Parser();
+    const ast = parser.astify(sql);
+
+    const columns = ast.columns;
+
+    const results = [];
+    for (const column of columns) {
+      if (column.expr.type === 'column_ref') {
+        results.push({
+          column_name: column.expr.column,
+          table_name: column.expr.table,
+        });
+      }
+    }
+
+    return results;
   }
 }
