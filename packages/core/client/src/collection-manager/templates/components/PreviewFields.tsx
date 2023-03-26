@@ -191,7 +191,7 @@ export const PreviewFields = (props) => {
       const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
       const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
         ?.title;
-      const target = sourceField || item.title || item.name;
+      const target = sourceField || item?.uiSchema?.title || item.name;
       return {
         title: compile(target),
         dataIndex: item.name,
