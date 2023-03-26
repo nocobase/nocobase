@@ -157,7 +157,7 @@ SELECT * FROM numbers;
     await app.db.sync();
 
     // update view in database
-    const viewSQL2 = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL2 = `CREATE OR REPLACE VIEW public.${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL2);
 
     const viewDetailResponse = await agent.resource('dbViews').get({
