@@ -34,6 +34,7 @@ export default class MysqlQueryInterface extends QueryInterface {
     Array<{
       column_name: string;
       table_name: string;
+      table_schema?: string;
     }>
   > {
     const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${options.viewName}`, { type: 'SELECT' });

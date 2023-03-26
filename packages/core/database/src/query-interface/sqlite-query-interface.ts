@@ -36,6 +36,7 @@ export default class SqliteQueryInterface extends QueryInterface {
     Array<{
       column_name: string;
       table_name: string;
+      table_schema?: string;
     }>
   > {
     throw new Error('Method not implemented.');
