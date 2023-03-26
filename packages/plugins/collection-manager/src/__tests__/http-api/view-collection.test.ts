@@ -49,7 +49,11 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
     const data = response.body.data;
-    expect(data.fields.n.type).toBe('integer');
+    if (app.db.options.dialect === 'mysql') {
+      expect(data.fields.n.type).toBe('bigInt');
+    } else {
+      expect(data.fields.n.type).toBe('integer');
+    }
   });
 
   it('should return possible types for json fields', async () => {

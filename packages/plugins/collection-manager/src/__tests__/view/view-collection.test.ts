@@ -28,7 +28,7 @@ describe('view collection', function () {
   });
 
   it('should create view collection by view name', async () => {
-    const viewSQL = `CREATE OR REPLACE VIEW public.test_view AS select 1+1 as result`;
+    const viewSQL = `CREATE OR REPLACE VIEW test_view AS select 1+1 as result`;
     await db.sequelize.query(viewSQL);
 
     await collectionRepository.create({

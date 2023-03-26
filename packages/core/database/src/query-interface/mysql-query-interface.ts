@@ -37,28 +37,34 @@ export default class MysqlQueryInterface extends QueryInterface {
       table_schema?: string;
     }>
   > {
-    const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${options.viewName}`, { type: 'SELECT' });
-    const createView = viewDefinition[0]['Create View'];
-    const regex = /(?<=AS\s)([\s\S]*)/i;
-    const match = createView.match(regex);
-    const sql = match[0];
+    try {
+      const viewDefinition = await this.db.sequelize.query(`SHOW CREATE VIEW ${options.viewName}`, { type: 'SELECT' });
+      const createView = viewDefinition[0]['Create View'];
+      const regex = /(?<=AS\s)([\s\S]*)/i;
+      const match = createView.match(regex);
+      const sql = match[0];
 
-    const { Parser } = require('node-sql-parser');
-    const parser = new Parser();
-    const ast = parser.astify(sql);
+      const { Parser } = require('node-sql-parser');
+      const parser = new Parser();
+      const ast = parser.astify(sql);
 
-    const columns = ast.columns;
+      const columns = ast.columns;
 
-    const results = [];
-    for (const column of columns) {
-      if (column.expr.type === 'column_ref') {
-        results.push({
-          column_name: column.expr.column,
-          table_name: column.expr.table,
-        });
+      const results = [];
+      for (const column of columns) {
+        if (column.expr.type === 'column_ref') {
+          results.push({
+            column_name: column.expr.column,
+            table_name: column.expr.table,
+          });
+        }
       }
-    }
 
-    return results;
+      return results;
+    } catch (e) {
+      this.db.logger.warn(e);
+
+      return [];
+    }
   }
 }
