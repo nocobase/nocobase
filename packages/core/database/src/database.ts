@@ -222,7 +222,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.options = opts;
 
-    this.sequelize = new Sequelize(opts);
+    this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -296,6 +296,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   setLogger(logger: Logger) {
     this.logger = logger;
+  }
+
+  sequelizeOptions(options) {
+    if (options.dialect === 'postgres') {
+      options.hooks = {
+        afterConnect: async (connection) => {
+          await connection.query('SET search_path TO public;');
+        },
+      };
+    }
+    return options;
   }
 
   initListener() {

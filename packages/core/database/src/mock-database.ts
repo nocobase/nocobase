@@ -14,7 +14,7 @@ export class MockDatabase extends Database {
 }
 
 export function getConfigByEnv() {
-  return {
+  const options = {
     username: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
@@ -33,10 +33,14 @@ export function getConfigByEnv() {
     timezone: process.env.DB_TIMEZONE,
     underscored: process.env.DB_UNDERSCORED === 'true',
     schema: process.env.DB_SCHEMA !== 'public' ? process.env.DB_SCHEMA : undefined,
-    dialectOptions: {
-      application_name: process.env.DB_DIALECT == 'postgres' ? 'nocobase.main' : undefined,
-    },
+    dialectOptions: {},
   };
+
+  if (process.env.DB_DIALECT == 'postgres') {
+    options.dialectOptions['application_name'] = 'nocobase.main';
+  }
+
+  return options;
 }
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
