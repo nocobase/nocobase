@@ -32,7 +32,12 @@ export default class SqliteQueryInterface extends QueryInterface {
     });
   }
 
-  viewColumnUsage(options: { viewName: string; schema?: string }) {
+  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<
+    Array<{
+      column_name: string;
+      table_name: string;
+    }>
+  > {
     throw new Error('Method not implemented.');
   }
 }
