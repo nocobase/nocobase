@@ -19,6 +19,9 @@ export class ViewFieldInference {
     viewSchema?: string;
   }): Promise<InferredFieldResult> {
     const { db } = options;
+    if (!db.inDialect('postgres')) {
+      options.viewSchema = undefined;
+    }
     const columns = await db.sequelize.getQueryInterface().describeTable(options.viewName, options.viewSchema);
 
     const columnUsage = await db.queryInterface.viewColumnUsage({
@@ -72,6 +75,7 @@ export class ViewFieldInference {
       }),
     );
   }
+
   static inferToFieldType(options: { db: Database; name: string; type: string }) {
     const { db } = options;
     const dialect = db.sequelize.getDialect();
