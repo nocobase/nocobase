@@ -13,5 +13,11 @@ export default abstract class QueryInterface {
 
   abstract listViews();
 
-  abstract viewColumnUsage(options: { viewName: string; schema?: string });
+  abstract viewColumnUsage(options: { viewName: string; schema?: string }): Promise<
+    Array<{
+      column_name: string;
+      table_name: string;
+      table_schema?: string;
+    }>
+  >;
 }

@@ -37,7 +37,9 @@ export class ViewFieldInference {
 
         if (usage) {
           const collectionField = (() => {
-            const collection = db.tableNameCollectionMap.get(`${usage.table_schema}.${usage.table_name}`);
+            const collection = db.tableNameCollectionMap.get(
+              `${usage.table_schema ? `${usage.table_name}.` : ''}${usage.table_name}`,
+            );
             if (!collection) return false;
 
             const fieldValue = Object.values(collection.model.rawAttributes).find(
