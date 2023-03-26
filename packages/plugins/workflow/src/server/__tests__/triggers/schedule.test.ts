@@ -8,6 +8,7 @@ describe.skip('workflow > triggers > schedule', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
+  let CategoryRepo;
   let WorkflowModel;
   let WorkflowRepo;
 
@@ -19,6 +20,7 @@ describe.skip('workflow > triggers > schedule', () => {
     WorkflowModel = workflow.model;
     WorkflowRepo = workflow.repository;
     PostRepo = db.getCollection('posts').repository;
+    CategoryRepo = db.getCollection('categories').repository;
   });
 
   afterEach(() => app.destroy());
@@ -231,7 +233,6 @@ describe.skip('workflow > triggers > schedule', () => {
       await sleep((2.5 - now.getSeconds() % 2) * 1000 - now.getMilliseconds());
       const startTime = new Date();
       startTime.setMilliseconds(500);
-      console.log(startTime);
 
       const post = await PostRepo.create({ values: { title: 't1' }});
 
@@ -339,6 +340,32 @@ describe.skip('workflow > triggers > schedule', () => {
       expect(executions.length).toBe(1);
       const d1 = Date.parse(executions[0].context.date);
       expect(d1 - 1500).toBe(startTime.getTime());
+    });
+
+    it('appends', async () => {
+      const category = await CategoryRepo.create({ values: { name: 'c1' } });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+            offset: 2
+          },
+          appends: ['category']
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1', categoryId: category.id } });
+
+      await sleep(5000);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.category.id).toBe(category.id);
     });
   });
 });

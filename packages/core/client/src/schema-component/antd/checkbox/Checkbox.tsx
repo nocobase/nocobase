@@ -25,9 +25,6 @@ export const Checkbox: ComposedCheckbox = connect(
     },
   ),
   mapReadPretty((props) => {
-    if (!isValid(props.value)) {
-      return null;
-    }
     if (props.value) {
       return <CheckOutlined style={{ color: '#52c41a' }} />;
     }

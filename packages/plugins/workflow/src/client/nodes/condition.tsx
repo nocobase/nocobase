@@ -6,7 +6,7 @@ import { Trans, useTranslation } from "react-i18next";
 
 import { Registry } from "@nocobase/utils/client";
 import { Variable, useCompile } from "@nocobase/client";
-import evaluators, { renderReference } from "@nocobase/evaluators/client";
+import { evaluators, renderReference } from "@nocobase/evaluators/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
@@ -304,9 +304,8 @@ export default {
   type: 'condition',
   group: 'control',
   fieldset: {
-    'config.rejectOnFalse': {
+    rejectOnFalse: {
       type: 'boolean',
-      name: 'config.rejectOnFalse',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -324,10 +323,9 @@ export default {
         }
       ],
     },
-    'config.engine': {
+    engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.engine',
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
@@ -339,14 +337,13 @@ export default {
       required: true,
       default: 'basic',
     },
-    'config.calculation': {
+    calculation: {
       type: 'string',
-      name: 'config.calculation',
       title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'CalculationConfig',
       'x-reactions': {
-        dependencies: ['config.engine'],
+        dependencies: ['engine'],
         fulfill: {
           state: {
             visible: '{{$deps[0] === "basic"}}'
@@ -355,10 +352,9 @@ export default {
       },
       required: true
     },
-    'config.expression': {
+    expression: {
       type: 'string',
       title: `{{t("Condition expression", { ns: "${NAMESPACE}" })}}`,
-      name: 'config.expression',
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       'x-component-props': {
@@ -366,7 +362,7 @@ export default {
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
-        const { evaluate } = evaluators.get(values.config.engine);
+        const { evaluate } = evaluators.get(values.engine);
         const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
         try {
           evaluate(exp);
@@ -376,7 +372,7 @@ export default {
         }
       },
       'x-reactions': {
-        dependencies: ['config.engine'],
+        dependencies: ['engine'],
         fulfill: {
           state: {
             visible: '{{$deps[0] !== "basic"}}'

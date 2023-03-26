@@ -6,7 +6,7 @@ import {
   ModelIndexesOptions,
   QueryInterfaceOptions,
   SyncOptions,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Database } from '../database';
@@ -169,7 +169,7 @@ export abstract class Field {
       columnReferencesCount == 1
     ) {
       const queryInterface = this.database.sequelize.getQueryInterface();
-      await queryInterface.removeColumn(this.collection.model.tableName, this.columnName(), options);
+      await queryInterface.removeColumn(this.collection.getTableNameWithSchema(), this.columnName(), options);
     }
 
     this.remove();
@@ -181,20 +181,24 @@ export abstract class Field {
     };
     let sql;
     if (this.database.sequelize.getDialect() === 'sqlite') {
-      sql = `SELECT * from pragma_table_info('${this.collection.model.tableName}') WHERE name = '${this.columnName()}'`;
+      sql = `SELECT *
+             from pragma_table_info('${this.collection.model.tableName}')
+             WHERE name = '${this.columnName()}'`;
     } else if (this.database.inDialect('mysql')) {
       sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS
-        where TABLE_SCHEMA='${this.database.options.database}' AND TABLE_NAME='${
-        this.collection.model.tableName
-      }' AND column_name='${this.columnName()}'
+        where TABLE_SCHEMA = '${this.database.options.database}'
+          AND TABLE_NAME = '${this.collection.model.tableName}'
+          AND column_name = '${this.columnName()}'
       `;
     } else {
       sql = `
         select column_name
         from INFORMATION_SCHEMA.COLUMNS
-        where TABLE_NAME='${this.collection.model.tableName}' AND column_name='${this.columnName()}'
+        where TABLE_NAME = '${this.collection.model.tableName}'
+          AND column_name = '${this.columnName()}'
+          AND table_schema = '${this.collection.collectionSchema() || 'public'}'
       `;
     }
     const [rows] = await this.database.sequelize.query(sql, opts);

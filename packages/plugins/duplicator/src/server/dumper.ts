@@ -2,7 +2,6 @@ import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
-import inquirer from 'inquirer';
 import lodash from 'lodash';
 import mkdirp from 'mkdirp';
 import path from 'path';
@@ -10,6 +9,7 @@ import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
+import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -18,52 +18,63 @@ const finished = util.promisify(stream.finished);
 export class Dumper extends AppMigrator {
   direction = 'dump' as const;
 
-  async dump() {
-    const appPlugins = await this.getAppPlugins();
+  async dumpableCollections(): Promise<{
+    requiredGroups: CollectionGroup[];
+    optionalGroups: CollectionGroup[];
+    userCollections: Array<{
+      name: string;
+      title: string;
+    }>;
+  }> {
+    const appCollectionGroups = CollectionGroupManager.getGroups(this.app);
 
-    // get system available collection groups
-    const collectionGroups = CollectionGroupManager.collectionGroups.filter((collectionGroup) =>
-      appPlugins.includes(collectionGroup.pluginName),
-    );
+    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(appCollectionGroups);
+    const pluginsCollections = CollectionGroupManager.getGroupsCollections(appCollectionGroups);
 
-    const coreCollections = ['applicationPlugins'];
-    const customCollections = await this.getCustomCollections();
-
-    const { requiredGroups, optionalGroups } = CollectionGroupManager.classifyCollectionGroups(collectionGroups);
-    const pluginsCollections = CollectionGroupManager.getGroupsCollections(collectionGroups);
-
-    const optionalCollections = [...customCollections.filter((collection) => !pluginsCollections.includes(collection))];
-
-    const questions = this.buildInquirerQuestions(
+    const userCollections = await this.getCustomCollections();
+    return lodash.cloneDeep({
       requiredGroups,
       optionalGroups,
-      await Promise.all(
-        optionalCollections.map(async (name) => {
-          const collectionInstance = await this.app.db.getRepository('collections').findOne({
-            filterByTk: name,
-          });
+      userCollections: await Promise.all(
+        userCollections
+          .filter((collection) => !pluginsCollections.includes(collection)) //remove collection that is in plugins
+          .map(async (name) => {
+            // map user collection to { name, title }
 
-          return {
-            name,
-            title: collectionInstance.get('title'),
-          };
-        }),
+            const collectionInstance = await this.app.db.getRepository('collections').findOne({
+              filterByTk: name,
+            });
+
+            return {
+              name,
+              title: collectionInstance.get('title'),
+            };
+          }),
       ),
+    });
+  }
+
+  async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
+    const { requiredGroups, optionalGroups } = await this.dumpableCollections();
+    let { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
+
+    const throughCollections = this.findThroughCollections(selectedUserCollections);
+
+    const selectedOptionalGroups = optionalGroups.filter((group) => {
+      return selectedOptionalGroupNames.some((selectedOptionalGroupName) => {
+        const [namespace, functionKey] = selectedOptionalGroupName.split('.');
+        return group.function === functionKey && group.namespace === namespace;
+      });
+    });
+
+    const dumpedCollections = lodash.uniq(
+      [
+        CollectionGroupManager.getGroupsCollections(requiredGroups),
+        CollectionGroupManager.getGroupsCollections(selectedOptionalGroups),
+        selectedUserCollections,
+        throughCollections,
+      ].flat(),
     );
-
-    const results = await inquirer.prompt(questions);
-
-    const userCollections = results.userCollections || [];
-
-    const throughCollections = this.findThroughCollections(userCollections);
-
-    const dumpedCollections = [
-      coreCollections,
-      CollectionGroupManager.getGroupsCollections(requiredGroups),
-      CollectionGroupManager.getGroupsCollections(results.collectionGroups),
-      userCollections,
-      throughCollections,
-    ].flat();
 
     for (const collection of dumpedCollections) {
       await this.dumpCollection({
@@ -71,10 +82,30 @@ export class Dumper extends AppMigrator {
       });
     }
 
-    await this.dumpMeta();
+    const mapGroupToMetaJson = (groups) =>
+      groups.map((group: CollectionGroup) => {
+        const data = {
+          ...group,
+        };
+
+        if (group.delayRestore) {
+          data['delayRestore'] = true;
+        }
+
+        return data;
+      });
+
+    await this.dumpMeta({
+      requiredGroups: mapGroupToMetaJson(requiredGroups),
+      selectedOptionalGroups: mapGroupToMetaJson(selectedOptionalGroups),
+      selectedUserCollections: selectedUserCollections,
+    });
+
     await this.dumpDb();
-    await this.packDumpedDir();
+
+    const filePath = await this.packDumpedDir();
     await this.clearWorkDir();
+    return filePath;
   }
 
   async dumpDb() {
@@ -84,18 +115,14 @@ export class Dumper extends AppMigrator {
     if (dialect === 'postgres') {
       // get user defined functions in postgres
       const functions = await db.sequelize.query(
-        `SELECT
-n.nspname AS function_schema,
-p.proname AS function_name,
-pg_get_functiondef(p.oid) AS def
-FROM
-pg_proc p
-LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
-WHERE
-n.nspname NOT IN ('pg_catalog', 'information_schema')
-ORDER BY
-function_schema,
-function_name;`,
+        `SELECT n.nspname                 AS function_schema,
+                p.proname                 AS function_name,
+                pg_get_functiondef(p.oid) AS def
+         FROM pg_proc p
+                LEFT JOIN pg_namespace n ON p.pronamespace = n.oid
+         WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+         ORDER BY function_schema,
+                  function_name;`,
         {
           type: 'SELECT',
         },
@@ -106,9 +133,13 @@ function_name;`,
       }
 
       // get user defined triggers in postgres
-      const triggers = await db.sequelize.query(`select pg_get_triggerdef(oid) from pg_trigger`, {
-        type: 'SELECT',
-      });
+      const triggers = await db.sequelize.query(
+        `select pg_get_triggerdef(oid)
+         from pg_trigger`,
+        {
+          type: 'SELECT',
+        },
+      );
 
       for (const t of triggers) {
         sqlContent.push(t['pg_get_triggerdef']);
@@ -116,10 +147,10 @@ function_name;`,
 
       // get user defined views in postgres
       const views = await db.sequelize.query(
-        `SELECT table_schema, table_name,  pg_get_viewdef("table_name", true) as def
-FROM information_schema.views
-WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-ORDER BY table_schema, table_name`,
+        `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
+         FROM information_schema.views
+         WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
+         ORDER BY table_schema, table_name`,
         {
           type: 'SELECT',
         },
@@ -136,12 +167,16 @@ ORDER BY table_schema, table_name`,
     }
   }
 
-  async dumpMeta() {
+  async dumpMeta(additionalMeta: Object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(
       metaPath,
-      JSON.stringify({ version: this.app.version.get(), dialect: this.app.db.sequelize.getDialect() }),
+      JSON.stringify({
+        version: await this.app.version.get(),
+        dialect: this.app.db.sequelize.getDialect(),
+        ...additionalMeta,
+      }),
       'utf8',
     );
   }
@@ -177,7 +212,11 @@ ORDER BY table_schema, table_name`,
     const dataStream = fs.createWriteStream(dataFilePath);
 
     const rows = await app.db.sequelize.query(
-      sqlAdapter(app.db, `SELECT * FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`),
+      sqlAdapter(
+        app.db,
+        `SELECT *
+         FROM ${collection.isParent() ? 'ONLY' : ''} ${collection.quotedTableName()}`,
+      ),
       {
         type: 'SELECT',
       },
@@ -248,5 +287,9 @@ ORDER BY table_schema, table_name`,
 
     await archive.finalize();
     console.log('dumped to', filePath);
+    return {
+      filePath,
+      dirname,
+    };
   }
 }

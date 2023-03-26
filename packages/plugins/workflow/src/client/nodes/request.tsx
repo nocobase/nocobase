@@ -1,5 +1,5 @@
 import { ArrayItems } from '@formily/antd';
-import { css } from '@emotion/css';
+import { cx, css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
@@ -11,9 +11,8 @@ export default {
   type: 'request',
   group: 'extended',
   fieldset: {
-    'config.method': {
+    method: {
       type: 'string',
-      name: 'config.method',
       required: true,
       title: `{{t("HTTP method", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
@@ -31,30 +30,21 @@ export default {
       ],
       default: 'POST'
     },
-    'config.url': {
+    url: {
       type: 'string',
-      name: 'config.url',
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {
-        className: css`
-          .ant-formily-item-control-content-component{
-            .ant-input-affix-wrapper,
-            .ant-input{
-              width: 100%;
-            }
-          }
-        `
       },
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
+        className: 'full-width'
       },
     },
-    'config.headers': {
+    headers: {
       type: 'array',
-      name: 'config.headers',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Headers", { ns: "${NAMESPACE}" })}}`,
@@ -99,9 +89,8 @@ export default {
         },
       },
     },
-    'config.params': {
+    params: {
       type: 'array',
-      name: 'config.params',
       'x-component': 'ArrayItems',
       'x-decorator': 'FormItem',
       title: `{{t("Parameters", { ns: "${NAMESPACE}" })}}`,
@@ -145,9 +134,8 @@ export default {
         },
       },
     },
-    'config.data': {
+    data: {
       type: 'string',
-      name: 'config.data',
       title: `{{t("Body", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
@@ -158,16 +146,15 @@ export default {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: css`
-          font-size: 85%;
+        className: cx('full-width', css`
+          font-size: 90%;
           font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-        `
+        `)
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
-    'config.timeout': {
+    timeout: {
       type: 'number',
-      name: 'config.timeout',
       title: `{{t("Timeout config", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-decorator-props': {},
@@ -179,9 +166,8 @@ export default {
         defaultValue: 5000,
       },
     },
-    'config.ignoreFail': {
+    ignoreFail: {
       type: 'boolean',
-      name: 'config.ignoreFail',
       title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',

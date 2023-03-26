@@ -54,6 +54,8 @@ export abstract class SingleRelationRepository extends RelationRepository {
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
 
+    if (!sourceModel) return null;
+
     if (findOptions?.include?.length > 0) {
       const templateModel = await sourceModel[getAccessor]({
         ...findOptions,

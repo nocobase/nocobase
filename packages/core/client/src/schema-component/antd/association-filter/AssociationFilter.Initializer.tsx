@@ -1,25 +1,21 @@
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCollection } from '../../../collection-manager';
+import { useAssociatedFields } from '../../../filter-provider/utils';
 import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
 
 export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();
-  const { fields } = useCollection();
-
-  const associatedFields = fields.filter((field) =>
-    ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field.interface),
-  );
-
-  const items: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
+  const associatedFields = useAssociatedFields();
+  const useProps = '{{useAssociationFilterProps}}';
+  const children: SchemaInitializerItemOptions[] = associatedFields.map((field) => ({
     type: 'item',
     key: field.key,
-    title: field.uiSchema.title,
+    title: field.uiSchema?.title,
     component: 'AssociationFilterDesignerDisplayField',
     schema: {
       name: field.name,
-      title: field.uiSchema.title,
+      title: field.uiSchema?.title,
       type: 'void',
       'x-target': field.target,
       'x-designer': 'AssociationFilter.Item.Designer',
@@ -30,6 +26,7 @@ export const AssociationFilterInitializer = () => {
         fieldNames: {
           label: field.targetKey || 'id',
         },
+        useProps,
       },
       properties: {},
     },
@@ -38,7 +35,7 @@ export const AssociationFilterInitializer = () => {
   const associatedFieldGroup: SchemaInitializerItemOptions = {
     type: 'itemGroup',
     title: t('Association fields'),
-    children: items,
+    children,
   };
 
   const dividerItem: SchemaInitializerItemOptions = {
@@ -51,6 +48,8 @@ export const AssociationFilterInitializer = () => {
     component: 'AssociationFilterDesignerDelete',
   };
 
+  const items = [associatedFieldGroup, dividerItem, deleteItem];
+
   return (
     <SchemaInitializer.Button
       className={css`
@@ -58,7 +57,7 @@ export const AssociationFilterInitializer = () => {
       `}
       icon={'SettingOutlined'}
       title={t('Configure fields')}
-      items={[associatedFieldGroup, dividerItem, deleteItem]}
+      items={items}
     />
   );
 };

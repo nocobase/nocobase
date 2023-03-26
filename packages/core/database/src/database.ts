@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,12 +58,17 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
+import { registerBuiltInListeners } from './listeners';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
+import buildQueryInterface from './query-interface/query-interface-builder';
+import QueryInterface from './query-interface/query-interface';
+import { Logger } from '@nocobase/logger';
+import { CollectionGroupManager } from './collection-group-manager';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -166,6 +171,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   modelCollection = new Map<ModelStatic<any>, Collection>();
   tableNameCollectionMap = new Map<string, Collection>();
 
+  queryInterface: QueryInterface;
+
   utils = new DatabaseUtils(this);
   referenceMap = new ReferencesMap();
   inheritanceMap = new InheritanceMap();
@@ -176,6 +183,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
   version: DatabaseVersion;
 
   delayCollectionExtend = new Map<string, { collectionOptions: CollectionOptions; mergeOptions?: any }[]>();
+
+  logger: Logger;
+
+  collectionGroupManager = new CollectionGroupManager(this);
 
   constructor(options: DatabaseOptions) {
     super();
@@ -211,6 +222,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.options = opts;
 
     this.sequelize = new Sequelize(opts);
+
+    this.queryInterface = buildQueryInterface(this);
 
     this.collections = new Map();
     this.modelHook = new ModelHook(this);
@@ -265,7 +278,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core',
+      namespace: 'core.migration',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
     });
@@ -278,6 +291,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+  }
+
+  setLogger(logger: Logger) {
+    this.logger = logger;
   }
 
   initListener() {
@@ -347,6 +364,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         options.schema = this.options.schema;
       }
     });
+
+    registerBuiltInListeners(this);
   }
 
   addMigration(item: MigrationItem) {
@@ -374,6 +393,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return dialect.includes(this.sequelize.getDialect());
   }
 
+  escapeId(identifier: string) {
+    return this.inDialect('mysql') ? `\`${identifier}\`` : `"${identifier}"`;
+  }
+
   /**
    * Add collection to database
    * @param options
@@ -381,6 +404,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    options = lodash.cloneDeep(options);
+
     if (this.options.underscored) {
       options.underscored = true;
     }
@@ -627,15 +652,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
     const collection = this.getCollection(name);
+
     if (!collection) {
       return false;
     }
 
-    const tables = await this.sequelize.getQueryInterface().showAllTables({
-      transaction: options?.transaction,
-    });
-
-    return tables.includes(this.getCollection(name).model.tableName);
+    return await this.queryInterface.collectionTableExists(collection, options);
   }
 
   public isSqliteMemory() {

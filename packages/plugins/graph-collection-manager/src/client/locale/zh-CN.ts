@@ -6,6 +6,7 @@ export default {
   'Create Collection':'创建数据表',
   'All Fields': '全部',
   'Association Fields': '关系字段',
+  'Optional fields': '可选字段',
   'All relationships': '所有关系',
   'Entity relationship only': '实体关系',
   'Inheritance relationship only': '继承关系',

@@ -1,5 +1,5 @@
-import { Op } from 'sequelize';
 import moment, { MomentInput } from 'moment';
+import { Op } from 'sequelize';
 function stringToDate(value: string): Date {
   return moment(value).toDate();
 }
@@ -9,7 +9,9 @@ function getNextDay(value: MomentInput): Date {
 }
 
 export default {
-  $dateOn(value) {
+  $dateOn(value, ctx) {
+    // const field = ctx.db.getFieldByPath(ctx.fieldPath);
+    // console.log(field.isDateOnly());
     return {
       [Op.and]: [{ [Op.gte]: stringToDate(value) }, { [Op.lt]: getNextDay(value) }],
     };

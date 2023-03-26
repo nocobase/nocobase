@@ -1,5 +1,6 @@
-import { useForm } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
+import omit from 'lodash/omit';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
@@ -21,7 +22,7 @@ export const useCancelAction = () => {
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: record }), {
+  const result = useRequest(() => Promise.resolve({ data: omit(record, ['__parent']) }), {
     ...options,
     manual: true,
   });
@@ -81,7 +82,7 @@ export const useSortFields = (collectionName: string) => {
         return false;
       }
       const fieldInterface = getInterface(field.interface);
-      if (fieldInterface.sortable) {
+      if (fieldInterface?.sortable) {
         return true;
       }
       return false;
@@ -94,6 +95,17 @@ export const useSortFields = (collectionName: string) => {
     });
 };
 
+export const useChildrenCollections = (collectionName: string) => {
+  const { getChildrenCollections } = useCollectionManager();
+  const childrenCollections = getChildrenCollections(collectionName);
+  return childrenCollections.map((collection: any) => {
+    return {
+      value: collection.name,
+      label: collection?.title || collection.name,
+    };
+  });
+};
+
 export const useCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
@@ -102,7 +114,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       return;
     }
     const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface.filterable) {
+    if (!fieldInterface?.filterable) {
       return;
     }
     const { nested, children, operators } = fieldInterface.filterable;
@@ -174,15 +186,19 @@ export const useFilterAction = () => {
 
 export const useCreateAction = () => {
   const form = useForm();
+  const field = useField();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
       await resource.create({ values: form.values });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
     },
   };
@@ -231,6 +247,7 @@ export const useMoveAction = () => {
 };
 
 export const useUpdateAction = () => {
+  const field = useField();
   const form = useForm();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
@@ -239,9 +256,12 @@ export const useUpdateAction = () => {
   return {
     async run() {
       await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
       await resource.update({ filterByTk, values: form.values });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
     },
   };

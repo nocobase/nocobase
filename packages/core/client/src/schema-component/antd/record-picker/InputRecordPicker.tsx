@@ -12,6 +12,17 @@ import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 const RecordPickerContext = createContext(null);
+function flatData(data) {
+  let newArr = [];
+  for (let i = 0; i < data.length; i++) {
+    const children = data[i]['children'];
+    if (Array.isArray(children)) {
+      newArr.push(...flatData(children));
+    }
+    newArr.push({ ...data[i] });
+  }
+  return newArr;
+}
 
 const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
@@ -28,11 +39,12 @@ const useTableSelectorProps = () => {
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
-        const scopeRows = field.value || [];
+        const scopeRows = flatData(field.value) || [];
         const allSelectedRows = rcSelectRows || [];
         const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey || 'id');
         const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey || 'id');
         const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey || 'id']);
+        console.log(unionSelectedRows, unionSelectedRowKeys);
         setSelectedRows?.(unionSelectedRows);
         onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
       } else {
@@ -92,7 +104,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
       setOptions(opts);
       setSelectedRows(opts);
     }
-  }, [value,fieldNames?.label]);
+  }, [value, fieldNames?.label]);
 
   const getValue = () => {
     if (multiple == null) return null;

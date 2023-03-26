@@ -1,0 +1,15 @@
+export default {
+  'Graph Collection': 'Coleção de Gráficos',
+  'Collection List': 'Lista de Coleções',
+  'Full Screen': 'Tela Cheia',
+  'Collection Search': 'Busca de Coleção',
+  'Create Collection': 'Criar Coleção',
+  'All Fields': 'Todos os Campos',
+  'Association Fields': 'Campos de Associação',
+  'Optional fields': 'Campos Opcionais',
+  'All relationships': 'Todos os relacionamentos',
+  'Entity relationship only': 'Somente relação de Entidade',
+  'Inheritance relationship only': 'Somente relação de Herança',
+  'Graphical interface': 'Interface Gráfica',
+  'Selection': 'Seleção',
+};

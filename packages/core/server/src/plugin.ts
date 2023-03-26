@@ -80,6 +80,10 @@ export abstract class Plugin<O = any> implements PluginInterface {
       from: this.getName(),
     });
   }
+
+  requiredPlugins() {
+    return [];
+  }
 }
 
 export default Plugin;

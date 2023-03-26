@@ -3,11 +3,11 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useContext, useEffect, useLayoutEffect, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useEffect, useLayoutEffect, useState } from 'react';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
-import { useCompile, useDesigner } from '../../hooks';
+import { useCompile, useDesigner, useProps } from '../../hooks';
 import { AssociationItemContext } from './Association.Item.Decorator';
 import { AssociationFilter } from './AssociationFilter';
 
@@ -16,37 +16,39 @@ const { Panel } = Collapse;
 export const AssociationFilterItem = (props) => {
   const collectionField = AssociationFilter.useAssociationField();
 
-  if (!collectionField) {
-    return null;
-  }
-
+  // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
   const { service, props: blockProps } = useBlockRequestContext();
-  const { service: associationItemService } = useContext(AssociationItemContext);
-
-  if (!associationItemService) return null;
-
-  const { data, params, run } = associationItemService;
+  const {
+    list,
+    onSelected,
+    handleSearchInput: _handleSearchInput,
+    params,
+    run,
+    valueKey: _valueKey,
+    labelKey: _labelKey,
+  } = useProps();
 
   const [searchVisible, setSearchVisible] = useState(false);
 
   const collectionFieldName = collectionField.name;
-
-  const valueKey = collectionField?.targetKey || 'id';
-  const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+  const valueKey = _valueKey || collectionField?.targetKey || 'id';
+  const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
   const fieldNames = {
     title: labelKey || valueKey,
     key: valueKey,
   };
 
-  const treeData = data?.data || [];
-
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState<boolean>(true);
+
+  if (!collectionField) {
+    return null;
+  }
 
   const onExpand = (expandedKeysValue: React.Key[]) => {
     setExpandedKeys(expandedKeysValue);
@@ -57,6 +59,7 @@ export const AssociationFilterItem = (props) => {
 
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
+    onSelected(selectedKeysValue);
 
     const filter = service.params?.[0]?.filter ?? {};
 
@@ -89,12 +92,7 @@ export const AssociationFilterItem = (props) => {
   };
 
   const handleSearchInput = (e: ChangeEvent<any>) => {
-    run({
-      ...params?.[0],
-      filter: {
-        [`${labelKey}.$includes`]: e.target.value,
-      },
-    });
+    _handleSearchInput(e);
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
@@ -253,7 +251,7 @@ export const AssociationFilterItem = (props) => {
             onExpand={onExpand}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
-            treeData={treeData}
+            treeData={list}
             onSelect={onSelect}
             fieldNames={fieldNames}
             titleRender={(node) => compile(node[labelKey])}
