@@ -44,6 +44,7 @@ SELECT * FROM numbers;
   it('should list views fields', async () => {
     const response = await agent.resource('dbViews').get({
       filterByTk: testViewName,
+      schema: 'public',
     });
 
     expect(response.status).toBe(200);
@@ -58,6 +59,7 @@ SELECT * FROM numbers;
 
     const response = await agent.resource('dbViews').get({
       filterByTk: jsonViewName,
+      schema: 'public',
     });
 
     expect(response.status).toBe(200);
@@ -157,7 +159,7 @@ SELECT * FROM numbers;
     await app.db.sync();
 
     // update view in database
-    const viewSQL2 = `CREATE OR REPLACE VIEW public.${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const viewSQL2 = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL2);
 
     const viewDetailResponse = await agent.resource('dbViews').get({

@@ -22,6 +22,7 @@ export class ViewFieldInference {
     if (!db.inDialect('postgres')) {
       options.viewSchema = undefined;
     }
+
     const columns = await db.sequelize.getQueryInterface().describeTable(options.viewName, options.viewSchema);
 
     const columnUsage = await db.queryInterface.viewColumnUsage({
