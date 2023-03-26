@@ -29,7 +29,7 @@ export const AssociationFilterItem = (props) => {
     run,
     valueKey: _valueKey,
     labelKey: _labelKey,
-  } = useProps();
+  } = useProps(props);
 
   const [searchVisible, setSearchVisible] = useState(false);
 
