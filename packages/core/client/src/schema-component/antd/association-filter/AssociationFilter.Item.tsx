@@ -211,7 +211,7 @@ export const AssociationFilterItem = (props) => {
               </Col>
             </Row>
           }
-          key={defaultActiveKeyCollapse}
+          key={defaultActiveKeyCollapse[0]}
         >
           <Tree
             style={{ padding: '16px 0' }}
