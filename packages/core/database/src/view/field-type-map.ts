@@ -35,6 +35,21 @@ const mysql = {
   json: ['json', 'array'],
 };
 
-const sqlite = {};
+const sqlite = {
+  text: 'text',
+  varchar: 'string',
+
+  integer: 'integer',
+  real: 'real',
+
+  datetime: 'date',
+  date: 'date',
+  time: 'time',
+
+  boolean: 'boolean',
+
+  numeric: 'decimal',
+  json: ['json', 'array'],
+};
 
 export default { postgres, mysql, sqlite };

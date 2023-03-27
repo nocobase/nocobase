@@ -82,7 +82,16 @@ export class ViewFieldInference {
     const { db } = options;
     const dialect = db.sequelize.getDialect();
     const fieldTypeMap = FieldTypeMap[dialect];
-    const mappedType = fieldTypeMap[options.type.toLowerCase()];
+
+    if (!options.type) {
+      return {
+        possibleTypes: Object.keys(fieldTypeMap),
+      };
+    }
+
+    const queryType = options.type.toLowerCase().replace(/\(\d+\)/, '');
+    const mappedType = fieldTypeMap[queryType];
+
     if (isArray(mappedType)) {
       return {
         type: mappedType[0],

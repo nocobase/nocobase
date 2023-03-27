@@ -11,13 +11,27 @@ describe('view collection', () => {
     app = await createApp();
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
-    const viewSQL = `CREATE OR REPLACE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
+    const dropSQL = `DROP VIEW IF EXISTS ${testViewName}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL = (() => {
+      if (app.db.inDialect('sqlite')) {
+        return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
+  SELECT CAST(1 AS INTEGER)
+  UNION ALL
+  SELECT CAST(1 + n AS INTEGER) FROM numbers WHERE n < 20
+)
+SELECT * FROM numbers;
+`;
+      }
+
+      return `CREATE VIEW ${testViewName} AS WITH RECURSIVE numbers(n) AS (
   SELECT 1
   UNION ALL
   SELECT n + 1 FROM numbers WHERE n < 20
 )
 SELECT * FROM numbers;
 `;
+    })();
     await app.db.sequelize.query(viewSQL);
   });
 
@@ -51,20 +65,28 @@ SELECT * FROM numbers;
     const data = response.body.data;
     if (app.db.options.dialect === 'mysql') {
       expect(data.fields.n.type).toBe('bigInt');
-    } else {
+    } else if (app.db.options.dialect == 'postgres') {
       expect(data.fields.n.type).toBe('integer');
+    }
+
+    // cannot get field type in sqlite
+    if (app.db.options.dialect === 'sqlite') {
+      expect(data.fields.n.possibleTypes).toBeTruthy();
     }
   });
 
   it('should return possible types for json fields', async () => {
     const jsonViewName = 'json_view';
-    const jsonViewSQL = (() => {
-      if (app.db.inDialect('mysql')) {
-        return `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
-      }
+    const dropSql = `DROP VIEW IF EXISTS ${jsonViewName}`;
+    await app.db.sequelize.query(dropSql);
 
-      return `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+    const jsonViewSQL = (() => {
+      if (app.db.inDialect('postgres')) {
+        return `CREATE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+      }
+      return `CREATE VIEW ${jsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
     })();
+
     await app.db.sequelize.query(jsonViewSQL);
 
     const response = await agent.resource('dbViews').get({
@@ -74,7 +96,9 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
     const data = response.body.data;
-    expect(data.fields.json_field.type).toBe('json');
+    if (!app.db.inDialect('sqlite')) {
+      expect(data.fields.json_field.type).toBe('json');
+    }
     expect(data.fields.json_field.possibleTypes).toBeTruthy();
   });
 
@@ -104,7 +128,9 @@ SELECT * FROM numbers;
     const UserCollection = app.db.getCollection('users');
 
     const viewName = `t_${uid(6)}`;
-    const viewSQL = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL);
 
     // create view collection
@@ -169,7 +195,8 @@ SELECT * FROM numbers;
     await app.db.sync();
 
     // update view in database
-    const viewSQL2 = `CREATE OR REPLACE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL2 = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
     await app.db.sequelize.query(viewSQL2);
 
     const viewDetailResponse = await agent.resource('dbViews').get({
