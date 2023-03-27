@@ -88,14 +88,20 @@ export const CreateRecordAction = observer((props) => {
   const totalChildCollections = getChildrenCollections(collection.name);
   const inheritsCollections = enableChildren
     .map((k) => {
+      if (!k) {
+        return;
+      }
       const childCollection = totalChildCollections.find((j) => j.name === k.collection);
+      if (!childCollection) {
+        return;
+      }
       return {
         ...childCollection,
         title: k.title||childCollection.title,
       };
     })
     .filter((v) => {
-      return actionAclCheck(`${v.name}:create`);
+      return v && actionAclCheck(`${v.name}:create`);
     });
   const [currentCollection, setCurrentCollection] = useState(collection.name);
   const ctx = useActionContext();
