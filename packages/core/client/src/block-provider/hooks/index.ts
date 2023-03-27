@@ -804,7 +804,7 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField()
   const collectionFieldName = collectionField.name;
-  const { data, params, run } = useRequest(
+  const { data, params, run, loading } = useRequest(
     {
       resource: collectionField.target,
       action: 'list',
@@ -816,21 +816,20 @@ export const useAssociationFilterProps = () => {
       },
     },
     {
-      refreshDeps: [labelKey, valueKey, field.componentProps?.params],
+      refreshDeps: [labelKey, valueKey, JSON.stringify(field.componentProps?.params || {})],
       debounceWait: 300,
     },
   );
 
+
   const list = data?.data || [];
   const onSelected = (value) => {
-    const filters = service.params?.[1]?.filters || {};
+    let filters = service.params?.[1]?.filters || {};
 
     if (value.length) {
-      filters[`af.${collectionFieldName}`] = {
+      filters = mergeFilter([{
         [`${collectionFieldName}.${valueKey}.$in`]: value,
-      };
-    } else {
-      delete filters[`af.${collectionFieldName}`];
+      }])
     }
 
     service.run(
@@ -838,9 +837,8 @@ export const useAssociationFilterProps = () => {
         ...service.params?.[0],
         pageSize: 200,
         page: 1,
-        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
+        filter: mergeFilter([filters, blockProps?.params?.filter]),
       },
-      { filters },
     );
   };
   const handleSearchInput = (e: ChangeEvent<any>) => {

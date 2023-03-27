@@ -3,10 +3,9 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useEffect, useLayoutEffect, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
-import { AssociationItemContext } from './Association.Item.Decorator';
 import { AssociationFilter } from './AssociationFilter';
 
 const { Panel } = Collapse;
@@ -26,9 +25,7 @@ export const AssociationFilterItem = (props) => {
     run,
     valueKey: _valueKey,
     labelKey: _labelKey,
-    loading,
   } = useProps(props);
-  console.log(useProps(props), props);
 
   const [searchVisible, setSearchVisible] = useState(false);
 
@@ -54,24 +51,9 @@ export const AssociationFilterItem = (props) => {
     setAutoExpandParent(false);
   };
 
-  const filterKey = `${collectionFieldName}.${valueKey}.$in`;
-
   const onSelect = (selectedKeysValue: React.Key[]) => {
     setSelectedKeys(selectedKeysValue);
     onSelected(selectedKeysValue);
-
-    const filter = params?.[0]?.filter ?? {};
-
-    if (selectedKeysValue.length) {
-      filter[filterKey] = selectedKeysValue;
-    } else {
-      delete filter[filterKey];
-    }
-
-    run({
-      ...params?.[0],
-      filter,
-    });
   };
 
   const handleSearchToggle = (e: MouseEvent) => {
