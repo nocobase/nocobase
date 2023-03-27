@@ -21,6 +21,7 @@ import { ActionContext } from '../../../action';
 import { useDesignable } from '../../../../../schema-component';
 import { useBlockRequestContext, useTableBlockContext, useGanttBlockContext } from '../../../../../block-provider';
 import { RecordProvider } from '../../../../../record-provider';
+import { useCurrentAppInfo } from '../../../../../appInfo';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
@@ -58,7 +59,6 @@ export const Gantt: any = (props: any) => {
     rowHeight = 55.56,
     ganttHeight = 0,
     preStepsCount = 1,
-    locale = 'en-GB',
     barFill = 60,
     barCornerRadius = 3,
     barProgressColor = '#a3a3ff',
@@ -89,6 +89,8 @@ export const Gantt: any = (props: any) => {
   } = props;
   const { onExpanderClick, tasks, expandAndCollapseAll } = useProps();
   const ctx = useGanttBlockContext();
+  const appInfo = useCurrentAppInfo();
+  const locale = appInfo.data?.lang;
   const tableCtx = useTableBlockContext();
   const { resource, service } = useBlockRequestContext();
   const fieldSchema = useFieldSchema();

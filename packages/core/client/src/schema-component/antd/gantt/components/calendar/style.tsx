@@ -9,6 +9,7 @@ export const calendarBottomText = css`
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
+  font-size: 11px;
 `;
 
 export const calendarTopTick = css`
