@@ -90,7 +90,9 @@ describe('create view', () => {
 
     const appendSchema = db.inDialect('postgres') ? `"${schema}".` : '';
 
-    const viewSql = `CREATE OR REPLACE VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
+    const dropViewSQL = `DROP VIEW IF EXISTS ${appendSchema}${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSql = `CREATE  VIEW ${appendSchema}${viewName} AS SELECT users.name, profiles.age FROM ${appendSchema}${UserCollection.model.tableName} as users LEFT JOIN ${appendSchema}${ProfileCollection.model.tableName} as profiles ON users.id = profiles.user_id;`;
 
     await db.sequelize.query(viewSql);
 
@@ -123,7 +125,10 @@ describe('create view', () => {
   });
 
   it('should not sync view collection', async () => {
-    const viewSql = `CREATE OR REPLACE VIEW test_view AS SELECT 1+1 as result`;
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSql = `CREATE VIEW test_view AS SELECT 1+1 as result`;
 
     await db.sequelize.query(viewSql);
     const viewCollection = db.collection({

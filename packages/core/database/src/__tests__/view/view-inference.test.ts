@@ -85,11 +85,11 @@ describe('view inference', function () {
         type: 'string',
         source: 'users.name',
       });
-    }
 
-    expect(inferredFields['const_field']).toMatchObject({
-      name: 'const_field',
-      type: 'integer',
-    });
+      expect(inferredFields['const_field']).toMatchObject({
+        name: 'const_field',
+        type: 'integer',
+      });
+    }
   });
 });
