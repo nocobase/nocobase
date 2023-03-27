@@ -1,6 +1,5 @@
-import { ArrayField } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, SchemaComponentOptions, useBlockRequestContext, useFixedSchema } from '@nocobase/client';
+import { BlockProvider, FixedBlockWrapper, SchemaComponentOptions, useBlockRequestContext } from '@nocobase/client';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export const MapBlockContext = createContext<any>({});
@@ -12,23 +11,24 @@ const InternalMapBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const [selectedRecordKeys, setSelectedRecordKeys] = useState([]);
 
-  useFixedSchema();
   return (
-    <SchemaComponentOptions scope={{ selectedRecordKeys }}>
-      <MapBlockContext.Provider
-        value={{
-          field,
-          service,
-          resource,
-          fieldNames,
-          fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
-          selectedRecordKeys,
-          setSelectedRecordKeys,
-        }}
-      >
-        {props.children}
-      </MapBlockContext.Provider>
-    </SchemaComponentOptions>
+    <FixedBlockWrapper>
+      <SchemaComponentOptions scope={{ selectedRecordKeys }}>
+        <MapBlockContext.Provider
+          value={{
+            field,
+            service,
+            resource,
+            fieldNames,
+            fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
+            selectedRecordKeys,
+            setSelectedRecordKeys,
+          }}
+        >
+          {props.children}
+        </MapBlockContext.Provider>
+      </SchemaComponentOptions>
+    </FixedBlockWrapper>
   );
 };
 

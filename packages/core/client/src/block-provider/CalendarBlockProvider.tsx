@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { useFixedSchema } from '../schema-component';
+import { FixedBlockWrapper, useFixedSchema } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const CalendarBlockContext = createContext<any>({});
@@ -10,23 +10,24 @@ const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
-  const fixedBlock = useFixedSchema()
   // if (service.loading) {
   //   return <Spin />;
   // }
   return (
-    <CalendarBlockContext.Provider
-      value={{
-        field,
-        service,
-        resource,
-        fieldNames,
-        showLunar,
-        fixedBlock,
-      }}
-    >
-      {props.children}
-    </CalendarBlockContext.Provider>
+    <FixedBlockWrapper>
+      <CalendarBlockContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          fieldNames,
+          showLunar,
+          fixedBlock: field?.decoratorProps?.fixedBlock,
+        }}
+      >
+        {props.children}
+      </CalendarBlockContext.Provider>
+    </FixedBlockWrapper>
   );
 };
 
@@ -53,6 +54,6 @@ export const useCalendarBlockProps = () => {
   return {
     fieldNames: ctx.fieldNames,
     showLunar: ctx.showLunar,
-    fixedBlock: ctx.fixedBlock
+    fixedBlock: ctx.fixedBlock,
   };
 };
