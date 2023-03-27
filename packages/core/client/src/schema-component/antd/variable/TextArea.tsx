@@ -104,6 +104,19 @@ function createVariableTagHTML(variable, keyLabelMap) {
   )}</span>`;
 }
 
+function getLatestRange(element: HTMLElement): [number, number, number, number] {
+  const sel = window.getSelection?.();
+  const range = sel?.getRangeAt(0);
+  if (!range) {
+    return [-1, 0, -1, 0];
+  }
+  const nodes = Array.from(element.childNodes);
+  const startElementIndex = nodes.indexOf(range.startContainer as HTMLElement);
+  const endElementIndex = nodes.indexOf(range.endContainer as HTMLElement);
+
+  return [startElementIndex, range.startOffset, endElementIndex, range.endOffset];
+}
+
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true, button } = props;
   const compile = useCompile();
@@ -114,30 +127,51 @@ export function TextArea(props) {
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
-  // [startElementIndex, startOffset, endElementIndex, endOffset]
+  // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
 
   useEffect(() => {
-    if (changed) {
-      return;
-    }
     setHtml(renderHTML(value ?? '', keyLabelMap));
   }, [value]);
 
   useEffect(() => {
     const { current } = inputRef;
-    if (!current || changed) {
+    if (!current) {
       return;
     }
     const nextRange = new Range();
-    const { lastChild } = current;
-    if (lastChild) {
-      nextRange.setStartAfter(lastChild);
-      nextRange.setEndAfter(lastChild);
-      const nodes = Array.from(current.childNodes);
-      const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+    if (changed) {
+      const sel = window.getSelection?.();
+      if (sel) {
+        const children = Array.from(current.childNodes) as HTMLElement[];
+        if (range[0] === -1) {
+          if (range[1]) {
+            nextRange.setStartAfter(children[range[1] - 1]);
+          }
+        } else {
+          nextRange.setStart(children[range[0]], range[1]);
+        }
+        if (range[2] === -1) {
+          if (range[3]) {
+            nextRange.setEndAfter(children[range[3] - 1]);
+          }
+        } else {
+          nextRange.setEnd(children[range[2]], range[3]);
+        }
+        nextRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(nextRange);
+      }
+    } else {
+      const { lastChild } = current;
+      if (lastChild) {
+        nextRange.setStartAfter(lastChild);
+        nextRange.setEndAfter(lastChild);
+        const nodes = Array.from(current.childNodes);
+        const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+      }
     }
   }, [html]);
 
@@ -155,24 +189,20 @@ export function TextArea(props) {
     });
 
     setChanged(true);
+    setRange(getLatestRange(current));
     onChange(getValue(current));
   }
 
   function onInput({ currentTarget }) {
     setChanged(true);
+    setRange(getLatestRange(currentTarget));
     onChange(getValue(currentTarget));
   }
 
   function onBlur({ currentTarget }) {
     const sel = window.getSelection?.();
-    if (!sel?.getRangeAt || !sel.rangeCount) {
-      return;
-    }
-    const r = sel.getRangeAt(0);
-    const nodes = Array.from(currentTarget.childNodes);
-    const startElementIndex = nodes.indexOf(r.startContainer);
-    const endElementIndex = nodes.indexOf(r.endContainer);
-    setRange([startElementIndex, r.startOffset, endElementIndex, r.endOffset]);
+    const range = sel?.getRangeAt(0);
+    setRange(getLatestRange(currentTarget));
   }
 
   const disabled = props.disabled || form.disabled;
