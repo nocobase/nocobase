@@ -124,9 +124,11 @@ export const Gantt: any = (props: any) => {
   const svgWidth = dateSetup.dates.length * columnWidth;
   const ganttFullHeight = barTasks.length * rowHeight;
   const { expandFlag } = tableCtx;
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   useEffect(() => {
     tableCtx.field.onExpandClick = handleTableExpanderClick;
+    tableCtx.field.onRowSelect = handleRowSelect;
   }, []);
   useEffect(() => {
     expandAndCollapseAll?.(!expandFlag);
@@ -388,6 +390,10 @@ export const Gantt: any = (props: any) => {
       onExpanderClick({ ...task, hideChildren: !expanded });
     }
   };
+
+  const handleRowSelect = (keys) => {
+    setSelectedRowKeys(keys);
+  };
   const handleProgressChange = async (task: Task) => {
     await resource.update({
       filterByTk: task.id,
@@ -425,6 +431,7 @@ export const Gantt: any = (props: any) => {
     dates: dateSetup.dates,
     todayColor,
     rtl,
+    selectedRowKeys,
   };
   const calendarProps: CalendarProps = {
     dateSetup,

@@ -2,7 +2,7 @@ import React, { ReactChild } from 'react';
 import { cx } from '@emotion/css';
 import { Task } from '../../types/public-types';
 import { addToDate } from '../../helpers/date-helper';
-import { gridRowLine, gridRow, gridTick } from './style';
+import { gridRowLine, gridRow, gridTick, gridHeightRow } from './style';
 import { uid } from '@nocobase/utils/client';
 
 export type GridBodyProps = {
@@ -13,6 +13,7 @@ export type GridBodyProps = {
   columnWidth: number;
   todayColor: string;
   rtl: boolean;
+  selectedRowKeys: any[];
 };
 const empty = [{ id: uid() }, { id: uid() }, { id: uid() }];
 export const GridBody: React.FC<GridBodyProps> = ({
@@ -23,6 +24,7 @@ export const GridBody: React.FC<GridBodyProps> = ({
   columnWidth,
   todayColor,
   rtl,
+  selectedRowKeys,
 }) => {
   const data = tasks.length ? tasks : empty;
   let y = 0;
@@ -32,7 +34,14 @@ export const GridBody: React.FC<GridBodyProps> = ({
   ];
   for (const task of data) {
     gridRows.push(
-      <rect key={'Row' + task.id} x="0" y={y} width={svgWidth} height={rowHeight} className={cx(gridRow)} />,
+      <rect
+        key={'Row' + task.id}
+        x="0"
+        y={y}
+        width={svgWidth}
+        height={rowHeight}
+        className={selectedRowKeys?.includes(+task.id) ? cx(gridHeightRow) : cx(gridRow)}
+      />,
     );
     rowLines.push(
       <line

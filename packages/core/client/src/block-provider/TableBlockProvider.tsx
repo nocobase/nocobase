@@ -173,6 +173,8 @@ export const useTableBlockProps = () => {
       console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx?.field?.onRowSelect?.(selectedRowKeys);
+
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
