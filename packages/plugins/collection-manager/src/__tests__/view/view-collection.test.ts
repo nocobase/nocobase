@@ -28,7 +28,9 @@ describe('view collection', function () {
   });
 
   it('should create view collection by view name', async () => {
-    const viewSQL = `CREATE OR REPLACE VIEW test_view AS select 1+1 as result`;
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSQL = `CREATE VIEW test_view AS select 1+1 as result`;
     await db.sequelize.query(viewSQL);
 
     await collectionRepository.create({
@@ -49,7 +51,9 @@ describe('view collection', function () {
   });
 
   it('should destroy collection view', async () => {
-    const viewSQL = `CREATE OR REPLACE VIEW test_view AS select 1+1 as result`;
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSQL = `CREATE VIEW test_view AS select 1+1 as result`;
     await db.sequelize.query(viewSQL);
 
     await collectionRepository.create({

@@ -56,8 +56,11 @@ describe('view inference', function () {
 
     const viewName = 'user_posts';
 
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
     const viewSQL = `
-       CREATE OR REPLACE VIEW ${viewName} as SELECT 1 as const_field, users.* FROM ${UserCollection.quotedTableName()} as users
+       CREATE VIEW ${viewName} as SELECT 1 as const_field, users.* FROM ${UserCollection.quotedTableName()} as users
     `;
 
     await db.sequelize.query(viewSQL);
@@ -71,11 +74,18 @@ describe('view inference', function () {
     const createdAt = UserCollection.model.rawAttributes['createdAt'].field;
     expect(inferredFields[createdAt]['type']).toBe('date');
 
-    expect(inferredFields['name']).toMatchObject({
-      name: 'name',
-      type: 'string',
-      source: 'users.name',
-    });
+    if (db.options.dialect == 'sqlite') {
+      expect(inferredFields['name']).toMatchObject({
+        name: 'name',
+        type: 'string',
+      });
+    } else {
+      expect(inferredFields['name']).toMatchObject({
+        name: 'name',
+        type: 'string',
+        source: 'users.name',
+      });
+    }
 
     expect(inferredFields['const_field']).toMatchObject({
       name: 'const_field',
