@@ -45,10 +45,10 @@ export const toLocal = (value: moment.Moment | moment.Moment[]) => {
     return value;
   }
   if (Array.isArray(value)) {
-    return value.map((val) => val.toISOString());
+    return value.map((val) => val.startOf('second').toISOString());
   }
   if (moment.isMoment(value)) {
-    return value.toISOString();
+    return value.startOf('second').toISOString();
   }
 };
 
