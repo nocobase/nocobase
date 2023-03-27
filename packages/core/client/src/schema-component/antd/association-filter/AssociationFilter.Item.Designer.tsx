@@ -3,28 +3,35 @@ import { ArrayItems } from '@formily/antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollectionFilterOptions, useCollectionManager, useSortFields } from '../../../collection-manager';
+import {
+  useCollection,
+  useCollectionFilterOptions,
+  useCollectionManager,
+  useSortFields,
+} from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { AssociationItemContext } from './Association.Item.Decorator';
 import { AssociationFilter } from './AssociationFilter';
+import _ from 'lodash';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
+
   const field = useField();
   const { t } = useTranslation();
-  const { service: associationItemService } = useContext(AssociationItemContext);
-  const targetCollection = fieldSchema?.['x-target'];
-  const dataSource = useCollectionFilterOptions(targetCollection);
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const { getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
 
-  const collectionField = AssociationFilter.useAssociationField();
+  const collectionField = getField(fieldSchema['name']!) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const filterEnum = collectionField?.target ? useCollectionFilterOptions(collectionField?.target) : [];
+  const defaultFilter = fieldSchema?.['x-component-props']?.params?.filter || {};
 
   const { getCollectionFields } = useCollectionManager();
   const compile = useCompile();
   const { dn } = useDesignable();
 
-  const targetFields = getCollectionFields(collectionField.target) ?? [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
 
   const options = targetFields
     .filter(
@@ -51,7 +58,8 @@ export const AssociationFilterItemDesigner = (props) => {
     dn.refresh();
   };
 
-  const sortFields = useSortFields(targetCollection);
+  // const sortFields = useSortFields(targetCollection);
+  const sortFields = [];
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const sort = defaultSort?.map((item: string) => {
@@ -108,7 +116,7 @@ export const AssociationFilterItemDesigner = (props) => {
             properties: {
               filter: {
                 default: defaultFilter,
-                enum: dataSource,
+                enum: filterEnum,
                 'x-component': 'Filter',
                 'x-component-props': {},
               },
@@ -116,25 +124,20 @@ export const AssociationFilterItemDesigner = (props) => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          const serviceFilter = associationItemService.params?.[0]?.filter ?? {};
-
-          Object.assign(serviceFilter, filter);
-
-          fieldSchema['x-decorator-props']['params'] = {
-            filter: serviceFilter,
-          };
-
-          associationItemService.run({
-            ...associationItemService.params?.[0],
-            filter: serviceFilter,
+          _.set(field.componentProps, 'params', {
+            ...field.componentProps?.params,
+            filter,
           });
-
+          fieldSchema['x-component-props']['params'] = field.componentProps.params;
           dn.emit('patch', {
-            schema: fieldSchema,
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': fieldSchema['x-component-props'],
+            },
           });
         }}
       />
-      <SchemaSettings.DefaultSortingRules
+      {/* <SchemaSettings.DefaultSortingRules
         sort={sort}
         sortFields={sortFields}
         onSubmit={({ sort }) => {
@@ -150,7 +153,7 @@ export const AssociationFilterItemDesigner = (props) => {
           });
           associationItemService.run({ ...associationItemService.params?.[0], sort: sortArr });
         }}
-      />
+      /> */}
       <SchemaSettings.SelectItem
         key="title-field"
         title={t('Title field')}

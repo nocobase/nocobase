@@ -88,7 +88,6 @@ AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem &
 };
 AssociationFilter.Item.Designer = AssociationFilterItemDesigner;
 AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
-AssociationFilter.Item.Decorator = AssociationItemDecorator;
 
 AssociationFilter.useAssociationField = () => {
   const fieldSchema = useFieldSchema();

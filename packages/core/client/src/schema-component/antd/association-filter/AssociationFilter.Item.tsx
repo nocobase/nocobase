@@ -4,8 +4,6 @@ import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useEffect, useLayoutEffect, useState } from 'react';
-import { useBlockRequestContext } from '../../../block-provider';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
 import { AssociationItemContext } from './Association.Item.Decorator';
@@ -20,7 +18,6 @@ export const AssociationFilterItem = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-  const { service, props: blockProps } = useBlockRequestContext();
   const {
     list,
     onSelected,
@@ -29,7 +26,9 @@ export const AssociationFilterItem = (props) => {
     run,
     valueKey: _valueKey,
     labelKey: _labelKey,
+    loading,
   } = useProps(props);
+  console.log(useProps(props), props);
 
   const [searchVisible, setSearchVisible] = useState(false);
 
@@ -61,7 +60,7 @@ export const AssociationFilterItem = (props) => {
     setSelectedKeys(selectedKeysValue);
     onSelected(selectedKeysValue);
 
-    const filter = service.params?.[0]?.filter ?? {};
+    const filter = params?.[0]?.filter ?? {};
 
     if (selectedKeysValue.length) {
       filter[filterKey] = selectedKeysValue;
@@ -69,8 +68,8 @@ export const AssociationFilterItem = (props) => {
       delete filter[filterKey];
     }
 
-    service.run({
-      ...service.params?.[0],
+    run({
+      ...params?.[0],
       filter,
     });
   };
@@ -96,21 +95,6 @@ export const AssociationFilterItem = (props) => {
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
-
-  useEffect(() => {
-    if (!service.loading)
-      return run({
-        ...params?.[0],
-      });
-  }, [service.loading]);
-
-  useLayoutEffect(
-    () => () => {
-      const filter = service.params?.[0]?.filter ?? {};
-      delete filter[filterKey];
-    },
-    [],
-  );
 
   return (
     <SortableItem

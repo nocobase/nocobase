@@ -17,10 +17,7 @@ export const AssociationFilterInitializer = () => {
       name: field.name,
       title: field.uiSchema?.title,
       type: 'void',
-      'x-target': field.target,
       'x-designer': 'AssociationFilter.Item.Designer',
-      'x-decorator': 'AssociationFilter.Item.Decorator',
-      'x-decorator-props': {},
       'x-component': 'AssociationFilter.Item',
       'x-component-props': {
         fieldNames: {

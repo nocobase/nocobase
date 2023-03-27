@@ -802,6 +802,7 @@ export const useAssociationFilterProps = () => {
   const fieldSchema = useFieldSchema();
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+  const field = useField()
   const collectionFieldName = collectionField.name;
   const { data, params, run } = useRequest(
     {
@@ -811,10 +812,11 @@ export const useAssociationFilterProps = () => {
         fields: [labelKey, valueKey],
         pageSize: 200,
         page: 1,
+        ...field.componentProps?.params
       },
     },
     {
-      refreshDeps: [labelKey, valueKey],
+      refreshDeps: [labelKey, valueKey, field.componentProps?.params],
       debounceWait: 300,
     },
   );
@@ -968,6 +970,7 @@ export const useAssociationFilterBlockProps = () => {
       );
     });
   };
+
 
   return {
     /** 渲染 Collapse 的列表数据 */
