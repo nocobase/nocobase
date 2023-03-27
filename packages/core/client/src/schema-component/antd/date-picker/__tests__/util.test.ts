@@ -58,19 +58,13 @@ describe('moment2str', () => {
   test('gmt is true', () => {
     const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { gmt: true });
-    expect(str).toBe('2023-06-21T00:00:00.000Z');
+    expect(str).toBe('2023-06-21T10:10:00.000Z');
   });
 
   test('gmt is false', () => {
     const m = moment('2023-06-21 10:10:00');
     const str = moment2str(m, { gmt: false });
-    expect(str).toBe(moment('2023-06-21 00:00:00').toISOString());
-  });
-
-  test('gmt date only', () => {
-    const m = moment('2023-06-21 10:10:00');
-    const str = moment2str(m);
-    expect(str).toBe('2023-06-21T00:00:00.000Z');
+    expect(str).toBe(moment('2023-06-21 10:10:00').toISOString());
   });
 
   test('with time', () => {
