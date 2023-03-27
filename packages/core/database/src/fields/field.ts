@@ -157,6 +157,11 @@ export abstract class Field {
     //   return;
     // }
 
+    if (this.collection.isView()) {
+      this.remove();
+      return;
+    }
+
     const columnReferencesCount = _.filter(
       this.collection.model.rawAttributes,
       (attr) => attr.field == this.columnName(),

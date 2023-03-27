@@ -65,6 +65,32 @@ describe('view collection', function () {
       context: {},
     });
 
+    expect(
+      await fieldsRepository.findOne({
+        filter: {
+          collectionName: 'view_collection',
+          name: 'result',
+        },
+      }),
+    ).toBeTruthy();
+
+    await fieldsRepository.destroy({
+      filter: {
+        collectionName: 'view_collection',
+        name: 'result',
+      },
+      context: {},
+    });
+
+    expect(
+      await fieldsRepository.findOne({
+        filter: {
+          collectionName: 'view_collection',
+          name: 'result',
+        },
+      }),
+    ).toBeFalsy();
+
     await collectionRepository.destroy({
       filterByTk: 'view_collection',
     });
