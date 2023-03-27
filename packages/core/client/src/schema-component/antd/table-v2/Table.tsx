@@ -332,6 +332,8 @@ export const Table: any = observer((props: any) => {
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
               index = index + (current - 1) * pageSize + 1;
+            } else {
+              index = index + 1;
             }
             if (record.__index) {
               index = extractIndex(record.__index);
