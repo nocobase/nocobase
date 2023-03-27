@@ -19,11 +19,6 @@ group:
 
 ### DatePicker (non-UTC)
 
-<code src="./demos/demo4.tsx" />
-
-
-### DatePicker (non-UTC)
-
 <code src="./demos/demo5.tsx" />
 
 ### RangePicker (GMT)

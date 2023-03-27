@@ -50,13 +50,18 @@ const toLocalByPicker = (value: moment.Moment | moment.Moment[], picker?: any) =
 export interface Moment2strOptions {
   showTime?: boolean;
   gmt?: boolean;
+  utc?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
 
 export const moment2str = (value?: moment.Moment | moment.Moment[], options: Moment2strOptions = {}) => {
-  const { showTime, gmt, picker } = options;
+  const { showTime, gmt, picker, utc = true } = options;
   if (!value) {
     return value;
+  }
+  if (!utc) {
+    const format = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
+    return Array.isArray(value) ? value.map((val) => val.format(format)) : value.format(format);
   }
   if (showTime) {
     return gmt ? toGmt(value) : toLocal(value);
