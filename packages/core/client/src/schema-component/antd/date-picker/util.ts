@@ -72,7 +72,7 @@ export const moment2str = (value?: moment.Moment | moment.Moment[], options: Mom
   return toGmtByPicker(value, picker);
 };
 
-export const mapDateFormat = function () {
+export const mapDatePicker = function () {
   return (props: any) => {
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;

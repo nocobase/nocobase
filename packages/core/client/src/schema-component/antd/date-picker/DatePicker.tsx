@@ -6,7 +6,7 @@ import type {
 } from 'antd/lib/date-picker';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { mapDateFormat } from './util';
+import { mapDatePicker } from './util';
 
 type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
   RangePicker?: React.FC<AntdRangePickerProps>;
@@ -14,13 +14,13 @@ type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
 
 export const DatePicker: ComposedDatePicker = connect(
   AntdDatePicker,
-  mapProps(mapDateFormat()),
+  mapProps(mapDatePicker()),
   mapReadPretty(ReadPretty.DatePicker),
 );
 
 DatePicker.RangePicker = connect(
   AntdDatePicker.RangePicker,
-  mapProps(mapDateFormat()),
+  mapProps(mapDatePicker()),
   mapReadPretty(ReadPretty.DateRangePicker),
 );
 
