@@ -91,5 +91,7 @@ describe('view inference', function () {
         type: 'integer',
       });
     }
+
+    await db.sequelize.query(dropViewSQL);
   });
 });
