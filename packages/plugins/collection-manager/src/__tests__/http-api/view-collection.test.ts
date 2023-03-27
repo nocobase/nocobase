@@ -58,12 +58,18 @@ SELECT * FROM numbers;
 
   it('should return possible types for json fields', async () => {
     const jsonViewName = 'json_view';
-    const jsonViewSQL = `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+    const jsonViewSQL = (() => {
+      if (app.db.inDialect('mysql')) {
+        return `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT JSON_OBJECT('key1', 1, 'key2', 'abc') as json_field`;
+      }
+
+      return `CREATE OR REPLACE VIEW ${jsonViewName} AS SELECT '{"a": 1}'::json as json_field`;
+    })();
     await app.db.sequelize.query(jsonViewSQL);
 
     const response = await agent.resource('dbViews').get({
       filterByTk: jsonViewName,
-      schema: 'public',
+      schema: app.db.inDialect('postgres') ? 'public' : undefined,
     });
 
     expect(response.status).toBe(200);

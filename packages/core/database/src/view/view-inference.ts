@@ -30,7 +30,6 @@ export class ViewFieldInference {
       schema: options.viewSchema,
     });
 
-    console.log('columnUsage', columnUsage);
     // @ts-ignore
     return Object.fromEntries(
       Object.entries(columns).map(([name, column]) => {

@@ -36,7 +36,7 @@ describe('view collection', function () {
         name: 'view_collection',
         viewName: 'test_view',
         fields: [{ type: 'string', name: 'result' }],
-        schema: 'public',
+        schema: db.inDialect('postgres') ? 'public' : undefined,
       },
       context: {},
     });

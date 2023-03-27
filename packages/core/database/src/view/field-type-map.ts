@@ -32,7 +32,7 @@ const mysql = {
   tinyint: 'integer',
   datetime: 'date',
   timestamp: 'date',
-  json: 'json',
+  json: ['json', 'array'],
 };
 
 const sqlite = {};
