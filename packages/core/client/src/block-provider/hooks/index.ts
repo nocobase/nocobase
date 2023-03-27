@@ -804,7 +804,7 @@ export const useAssociationFilterProps = () => {
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
   const field = useField()
   const collectionFieldName = collectionField.name;
-  const { data, params, run, loading } = useRequest(
+  const { data, params, run } = useRequest(
     {
       resource: collectionField.target,
       action: 'list',
@@ -824,21 +824,22 @@ export const useAssociationFilterProps = () => {
 
   const list = data?.data || [];
   const onSelected = (value) => {
-    let filters = service.params?.[1]?.filters || {};
-
+    const filters = service.params?.[1]?.filters || {};
     if (value.length) {
-      filters = mergeFilter([{
+      filters[`af.${collectionFieldName}`] = {
         [`${collectionFieldName}.${valueKey}.$in`]: value,
-      }])
+      };
+    } else {
+      delete filters[`af.${collectionFieldName}`];
     }
-
     service.run(
       {
         ...service.params?.[0],
         pageSize: 200,
         page: 1,
-        filter: mergeFilter([filters, blockProps?.params?.filter]),
+        filter: mergeFilter([...Object.values(filters), blockProps?.params?.filter]),
       },
+      { filters },
     );
   };
   const handleSearchInput = (e: ChangeEvent<any>) => {
