@@ -88,17 +88,26 @@ export const useCollectionManager = () => {
     type: string | string[] = 'string',
     opts?: {
       cached?: Record<string, any>;
+      collectionNames: string[];
       /**
        * 为 true 时允许查询所有关联字段
        * 为 Array<string> 时仅允许查询指定的关联字段
        */
       association?: boolean | string[];
+      /**
+       * Max depth of recursion
+       */
+      maxDepth: number;
     },
   ) => {
-    const { association = false, cached = {} } = opts || {};
+    const { association = false, cached = {}, collectionNames = [collectionName], maxDepth = 1 } = opts || {};
 
-    // 防止无限循环
+    if (collectionNames.length - 1 > maxDepth) {
+      return;
+    }
+
     if (cached[collectionName]) {
+      // avoid infinite recursion
       return _.cloneDeep(cached[collectionName]);
     }
 
@@ -122,7 +131,13 @@ export const useCollectionManager = () => {
           ...field,
         };
         if (association && field.target) {
-          result.children = getCollectionFieldsOptions(field.target, type, { ...opts, cached });
+          result.children = collectionNames.includes(field.target)
+            ? []
+            : getCollectionFieldsOptions(field.target, type, {
+                ...opts,
+                cached,
+                collectionNames: [...collectionNames, field.target],
+              });
           if (!result.children?.length) {
             return null;
           }
