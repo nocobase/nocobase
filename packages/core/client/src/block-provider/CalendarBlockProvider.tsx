@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { FixedBlockWrapper, useFixedSchema } from '../schema-component';
+import { FixedBlockWrapper } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const CalendarBlockContext = createContext<any>({});

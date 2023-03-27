@@ -111,13 +111,22 @@ const pageDesignerCss = css`
   }
 `;
 
+const pageWithFixedBlockCss = classNames([
+  'nb-page',
+  css`
+    > .nb-grid:not(:last-child) {
+      > .nb-schema-initializer-button {
+        display: none;
+      }
+    }
+  `,
+]);
+
 export const Page = (props) => {
   const { children, ...others } = props;
-  const field = useField();
   const compile = useCompile();
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
-  const history = useHistory();
   const dn = useDesignable();
   useEffect(() => {
     if (!title) {
@@ -288,20 +297,7 @@ export const Page = (props) => {
                 height + 46 + 48
               }
             >
-              <div
-                className={classNames([
-                  'nb-page',
-                  css`
-                    > .nb-grid:not(:last-child) {
-                      > .nb-schema-initializer-button {
-                        display: none;
-                      }
-                    }
-                  `,
-                ])}
-              >
-                {props.children}
-              </div>
+              <div className={pageWithFixedBlockCss}>{props.children}</div>
             </FixedBlock>
           )}
         </div>
