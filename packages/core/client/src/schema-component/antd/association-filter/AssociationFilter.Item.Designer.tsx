@@ -1,8 +1,6 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import { ArrayItems } from '@formily/antd';
-import React, { useContext } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import {
   useCollection,
   useCollectionFilterOptions,
@@ -11,8 +9,6 @@ import {
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
-import { AssociationItemContext } from './Association.Item.Decorator';
-import { AssociationFilter } from './AssociationFilter';
 import _ from 'lodash';
 
 export const AssociationFilterItemDesigner = (props) => {
@@ -58,10 +54,8 @@ export const AssociationFilterItemDesigner = (props) => {
     dn.refresh();
   };
 
-  // const sortFields = useSortFields(targetCollection);
-  const sortFields = [];
-  const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
-  const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const sortFields = useSortFields(collectionField?.target);
+  const defaultSort = fieldSchema?.['x-component-props']?.params?.sort || [];
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -137,23 +131,22 @@ export const AssociationFilterItemDesigner = (props) => {
           });
         }}
       />
-      {/* <SchemaSettings.DefaultSortingRules
+      <SchemaSettings.DefaultSortingRules
         sort={sort}
         sortFields={sortFields}
         onSubmit={({ sort }) => {
-          const sortArr = sort.map((item) => {
-            return item.direction === 'desc' ? `-${item.field}` : item.field;
+          _.set(field.componentProps, 'params', {
+            ...field.componentProps?.params,
+            sort: sort.map((item) => {
+              return item.direction === 'desc' ? `-${item.field}` : item.field;
+            }),
           });
-          const params = field.decoratorProps.params || {};
-          params.sort = sortArr;
-          field.decoratorProps.params = params;
-          fieldSchema['x-decorator-props']['params'] = params;
+          fieldSchema['x-component-props']['params'] = field.componentProps.params;
           dn.emit('patch', {
             schema: fieldSchema,
           });
-          associationItemService.run({ ...associationItemService.params?.[0], sort: sortArr });
         }}
-      /> */}
+      />
       <SchemaSettings.SelectItem
         key="title-field"
         title={t('Title field')}
