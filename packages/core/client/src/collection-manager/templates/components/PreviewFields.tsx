@@ -105,13 +105,12 @@ export const PreviewFields = (props) => {
       key: 'source',
       width: 200,
       render: (text, record, index) => {
-        const options = sourceFields.filter((v) => sources.includes(v.value));
         return (
           <Cascader
             defaultValue={typeof text === 'string' ? text?.split('.') : text}
             allowClear
             style={{ width: '100%' }}
-            options={compile(options)}
+            options={compile(sourceFields)}
             onChange={(value, selectedOptions) => {
               handleFieldChange({ ...record, source: value }, index);
             }}
@@ -215,7 +214,7 @@ export const PreviewFields = (props) => {
           key={name}
         />
         <h4>{t('Preview')}:</h4>
-        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 300 }} />
+        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 300,y:300 }} />
       </>
     )
   );
