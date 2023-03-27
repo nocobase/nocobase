@@ -197,6 +197,7 @@ export const PreviewFields = (props) => {
         title: compile(target),
         dataIndex: item.name,
         key: item.name,
+        width:150,
       };
     });
   };
@@ -214,7 +215,7 @@ export const PreviewFields = (props) => {
           key={name}
         />
         <h4>{t('Preview')}:</h4>
-        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 300,y:300 }} />
+        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000,y:300 }} />
       </>
     )
   );
