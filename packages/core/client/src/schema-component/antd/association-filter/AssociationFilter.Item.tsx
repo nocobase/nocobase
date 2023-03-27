@@ -30,7 +30,7 @@ export const AssociationFilterItem = (props) => {
 
   const [searchVisible, setSearchVisible] = useState(false);
 
-  const defaultActiveKeyCollapse = useMemo(() => (defaultCollapse ? [collectionField.name] : []), []);
+  const defaultActiveKeyCollapse = useMemo<React.Key[]>(() => (defaultCollapse ? [collectionField.name] : []), []);
   const valueKey = _valueKey || collectionField?.targetKey || 'id';
   const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 

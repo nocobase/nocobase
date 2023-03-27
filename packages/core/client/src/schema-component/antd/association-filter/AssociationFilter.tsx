@@ -6,7 +6,6 @@ import { useCollection } from '../../../collection-manager';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks';
-import { AssociationItemDecorator } from './Association.Item.Decorator';
 import { AssociationFilterBlockDesigner } from './AssociationFilter.BlockDesigner';
 import { AssociationFilterFilterBlockInitializer } from './AssociationFilter.FilterBlockInitializer';
 import { AssociationFilterInitializer } from './AssociationFilter.Initializer';
@@ -84,7 +83,6 @@ AssociationFilter.Initializer = AssociationFilterInitializer;
 AssociationFilter.FilterBlockInitializer = AssociationFilterFilterBlockInitializer;
 AssociationFilter.Item = AssociationFilterItem as typeof AssociationFilterItem & {
   Designer: typeof AssociationFilterItemDesigner;
-  Decorator: typeof AssociationItemDecorator;
 };
 AssociationFilter.Item.Designer = AssociationFilterItemDesigner;
 AssociationFilter.BlockDesigner = AssociationFilterBlockDesigner;
