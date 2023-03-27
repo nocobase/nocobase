@@ -338,15 +338,28 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   return groups;
 };
 
-const getItem = (field: FieldOptions, schemaName: string, collectionName: string, getCollectionFields) => {
+const getItem = (
+  field: FieldOptions,
+  schemaName: string,
+  collectionName: string,
+  getCollectionFields,
+  processedCollections: string[],
+) => {
   if (field.interface === 'm2o') {
+    if (processedCollections.includes(field.target)) return null;
+
     const subFields = getCollectionFields(field.target);
 
     return {
       type: 'subMenu',
       title: field.uiSchema?.title,
       children: subFields
-        .map((subField) => getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields))
+        .map((subField) =>
+          getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
+            ...processedCollections,
+            field.target,
+          ]),
+        )
         .filter(Boolean),
     } as SchemaInitializerItemOptions;
   }
@@ -385,7 +398,7 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
     ?.filter((field) => {
       return interfaces.includes(field.interface);
     })
-    ?.map((field) => getItem(field, field.name, name, getCollectionFields));
+    ?.map((field) => getItem(field, field.name, name, getCollectionFields, []));
   return groups;
 };
 
