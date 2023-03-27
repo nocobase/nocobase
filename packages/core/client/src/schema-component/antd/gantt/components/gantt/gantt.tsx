@@ -2,6 +2,7 @@ import React, { useState, SyntheticEvent, useRef, useEffect, useMemo, useCallbac
 import { useFieldSchema, Schema, RecursionField } from '@formily/react';
 import { cx } from '@emotion/css';
 import { createForm } from '@formily/core';
+import { css } from '@emotion/css';
 import { Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -461,7 +462,13 @@ export const Gantt: any = (props: any) => {
   };
   return (
     <div>
-      <div>
+      <div
+        className={css`
+          .ant-table-container::after {
+            box-shadow: none !important;
+          }
+        `}
+      >
         <GanttRecordViewer visible={visible} setVisible={setVisible} record={record} />
         <RecursionField name={'anctionBar'} schema={fieldSchema.properties.toolBar} />
         <RecursionField name={'table'} schema={fieldSchema.properties.table} />

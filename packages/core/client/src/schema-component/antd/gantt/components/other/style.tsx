@@ -4,7 +4,7 @@ import { css } from '@emotion/css';
 export const scrollWrapper =css`
   overflow: auto;
   position: relative;
-  top: -10px;
+  top: -14px;
   max-width: 100%;
   /*firefox*/
   scrollbar-width: thin;
