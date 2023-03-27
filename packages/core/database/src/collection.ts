@@ -71,7 +71,12 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    return lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    if (!targetKey && this.model.rawAttributes['id']) {
+      return 'id';
+    }
+
+    return targetKey;
   }
 
   get name() {

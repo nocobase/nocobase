@@ -8,7 +8,11 @@ describe('view collection', () => {
   let testViewName;
 
   beforeEach(async () => {
-    app = await createApp();
+    app = await createApp({
+      database: {
+        tablePrefix: '',
+      },
+    });
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
     const dropSQL = `DROP VIEW IF EXISTS ${testViewName}`;
@@ -218,5 +222,67 @@ SELECT * FROM numbers;
 
     const viewCollectionWithEmail = app.db.getCollection(viewName);
     expect(viewCollectionWithEmail.getField('email')).toBeTruthy();
+  });
+
+  it('should access view collection resource', async () => {
+    const UserCollection = app.db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await UserCollection.repository.create({
+      values: {
+        name: 'John',
+      },
+    });
+
+    // create view
+    const viewName = `t_${uid(6)}`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(viewSQL);
+
+    // create view collection
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: viewName,
+        view: true,
+        schema: 'public',
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+          },
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const viewCollection = app.db.getCollection(viewName);
+
+    // access view collection list
+    const listResponse = await agent.resource(viewCollection.name).list({});
+    expect(listResponse.status).toEqual(200);
+
+    const item = listResponse.body.data[0];
+
+    // access detail
+    const detailResponse = await agent.resource(viewCollection.name).get({
+      filterByTk: item['id'],
+    });
+
+    expect(detailResponse.status).toEqual(200);
   });
 });
