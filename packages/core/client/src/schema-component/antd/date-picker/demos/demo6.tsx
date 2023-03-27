@@ -13,6 +13,9 @@ const schema = {
       title: `Editable`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker.RangePicker',
+      'x-component-props': {
+        gmt: false,
+      },
       'x-reactions': [
         {
           target: 'read1',

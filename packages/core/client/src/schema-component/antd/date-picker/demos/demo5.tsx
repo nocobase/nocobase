@@ -1,5 +1,5 @@
 /**
- * title: DatePicker.RangePicker
+ * title: DatePicker
  */
 import { FormItem } from '@formily/antd';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
@@ -12,32 +12,31 @@ const schema = {
       type: 'boolean',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'DatePicker.RangePicker',
-      'x-reactions': [
-        {
-          target: 'read1',
-          fulfill: {
-            state: {
-              value: '{{$self.value}}',
-            },
+      'x-component': 'DatePicker',
+      'x-component-props': {
+        dateFormat: 'YYYY/MM/DD',
+        showTime: false,
+        utc: false,
+      },
+      'x-reactions': {
+        target: '*(read1,read2)',
+        fulfill: {
+          state: {
+            value: '{{$self.value}}',
           },
         },
-        {
-          target: 'read2',
-          fulfill: {
-            state: {
-              value: '{{$self.value && $self.value.join(" ~ ")}}',
-            },
-          },
-        },
-      ],
+      },
     },
     read1: {
       type: 'boolean',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'DatePicker.RangePicker',
+      'x-component': 'DatePicker',
+      'x-component-props': {
+        dateFormat: 'YYYY/MM/DD',
+        showTime: true,
+      },
     },
     read2: {
       type: 'string',
