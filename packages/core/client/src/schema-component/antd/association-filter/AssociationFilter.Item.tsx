@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useState } from 'react';
+import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
@@ -25,11 +25,12 @@ export const AssociationFilterItem = (props) => {
     run,
     valueKey: _valueKey,
     labelKey: _labelKey,
+    defaultCollapse,
   } = useProps(props);
 
   const [searchVisible, setSearchVisible] = useState(false);
 
-  const collectionFieldName = collectionField.name;
+  const defaultActiveKeyCollapse = useMemo(() => (defaultCollapse ? [collectionField.name] : []), []);
   const valueKey = _valueKey || collectionField?.targetKey || 'id';
   const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
@@ -129,7 +130,7 @@ export const AssociationFilterItem = (props) => {
       )}
     >
       <Designer />
-      <Collapse defaultActiveKey={[collectionFieldName]} ghost expandIcon={searchVisible ? () => null : undefined}>
+      <Collapse defaultActiveKey={defaultActiveKeyCollapse} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
           className={css`
             & .ant-collapse-content-box {
@@ -210,7 +211,7 @@ export const AssociationFilterItem = (props) => {
               </Col>
             </Row>
           }
-          key={collectionFieldName}
+          key={defaultActiveKeyCollapse}
         >
           <Tree
             style={{ padding: '16px 0' }}

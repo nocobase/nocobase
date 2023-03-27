@@ -101,6 +101,21 @@ export const AssociationFilterItemDesigner = (props) => {
           dn.refresh();
         }}
       />
+      <SchemaSettings.SwitchItem
+        title={t('Default collapse')}
+        checked={field.componentProps.defaultCollapse}
+        onChange={(v) => {
+          field.componentProps.defaultCollapse = v;
+          fieldSchema['x-component-props']['defaultCollapse'] = v;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-component-props': fieldSchema['x-component-props'],
+            },
+          });
+          dn.refresh();
+        }}
+      />
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={

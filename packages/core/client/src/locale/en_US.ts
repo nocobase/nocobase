@@ -115,6 +115,7 @@ export default {
   'Collapse all':'Collapse all',
   'Expand all':'Expand all',
   'Expand/Collapse':'Expand/Collapse',
+  'Default collapse':'Default collapse',
   "Tree table":"Tree table",
   "Custom field display name": "Custom field display name",
   "Display fields": "Display collection fields",
