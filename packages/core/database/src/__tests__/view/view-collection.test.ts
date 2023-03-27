@@ -149,4 +149,51 @@ describe('create view', () => {
     await viewCollection.sync();
     expect(jestFn).not.toBeCalled();
   });
+
+  it('should create view collection with source field options', async () => {
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          patterns: [
+            {
+              type: 'integer',
+              options: { key: 1 },
+            },
+          ],
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = 'users_view';
+
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `
+       CREATE VIEW ${viewName} as SELECT users.* FROM ${UserCollection.quotedTableName()} as users
+    `;
+
+    await db.sequelize.query(viewSQL);
+
+    // create view collection
+    const ViewCollection = db.collection({
+      name: viewName,
+      view: true,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          source: 'users.name',
+        },
+      ],
+    });
+
+    const viewNameField = ViewCollection.getField('name');
+    expect(viewNameField.options.patterns).toEqual(UserCollection.getField('name').options.patterns);
+  });
 });

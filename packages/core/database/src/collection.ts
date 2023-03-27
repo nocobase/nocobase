@@ -272,6 +272,17 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+
+    if (options.source) {
+      const [sourceCollectionName, sourceFieldName] = options.source.split('.');
+      const sourceCollection = this.db.collections.get(sourceCollectionName);
+      if (!sourceCollection) {
+        throw new Error(`source collection "${sourceCollectionName}" not found`);
+      }
+      const sourceField = sourceCollection.fields.get(sourceFieldName);
+      options = { ...sourceField.options, ...options };
+    }
+
     this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
