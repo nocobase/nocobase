@@ -1,6 +1,10 @@
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
+const toDate = (date) => {
+  return new Date(date);
+};
+
 export default {
   $dateOn(value, ctx) {
     const r = parseDate(value, {
@@ -8,12 +12,12 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.eq]: r,
+        [Op.eq]: toDate(r),
       };
     }
     if (Array.isArray(r)) {
       return {
-        [Op.and]: [{ [Op.gte]: r[0] }, { [Op.lt]: r[1] }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -25,12 +29,12 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.ne]: r,
+        [Op.ne]: toDate(r),
       };
     }
     if (Array.isArray(r)) {
       return {
-        [Op.or]: [{ [Op.lt]: r[0] }, { [Op.gte]: r[1] }],
+        [Op.or]: [{ [Op.lt]: toDate(r[0]) }, { [Op.gte]: toDate(r[1]) }],
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -42,11 +46,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.lt]: r,
+        [Op.lt]: toDate(r),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: r[0],
+        [Op.lt]: toDate(r[0]),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -58,11 +62,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.gte]: r,
+        [Op.gte]: toDate(r),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: r[0],
+        [Op.gte]: toDate(r[0]),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -74,11 +78,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.gt]: r,
+        [Op.gt]: toDate(r),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.gte]: r[1],
+        [Op.gte]: toDate(r[1]),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -90,11 +94,11 @@ export default {
     });
     if (typeof r === 'string') {
       return {
-        [Op.lte]: r,
+        [Op.lte]: toDate(r),
       };
     } else if (Array.isArray(r)) {
       return {
-        [Op.lt]: r[1],
+        [Op.lt]: toDate(r[1]),
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
@@ -106,7 +110,7 @@ export default {
     });
     if (r) {
       return {
-        [Op.and]: [{ [Op.gte]: r[0] }, { [Op.lt]: r[1] }],
+        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
       };
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
