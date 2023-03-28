@@ -1,4 +1,4 @@
-import { getDateVars, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
+import { getDateVars, getDayRange, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
 
 describe('utc to unit', () => {
   const expectUtc2unit = (options: Utc2unitOptions) => {
@@ -114,7 +114,39 @@ describe('utc to unit', () => {
   });
 });
 
-describe.only('parseFilter', () => {
+describe.only('getDayRange', () => {
+  const expectDayRange = (options) => {
+    const r = getDayRange(options);
+    console.log(r, options);
+    return expect(r);
+  };
+  test('next7days', () => {
+    expectDayRange({
+      now: '2023-03-28T16:00:00.000Z',
+      offset: 7,
+      timezone: '+00:00',
+    }).toEqual(['2023-03-29', '2023-04-05', '[)', '+00:00']);
+    expectDayRange({
+      now: '2023-03-28T16:00:00.000Z',
+      offset: 7,
+      timezone: '+08:00',
+    }).toEqual(['2023-03-30', '2023-04-06', '[)', '+08:00']);
+  });
+  test('last7days', () => {
+    expectDayRange({
+      now: '2023-03-28T16:00:00.000Z',
+      offset: -7,
+      timezone: '+00:00',
+    }).toEqual(['2023-03-21', '2023-03-28', '[)', '+00:00']);
+    expectDayRange({
+      now: '2023-03-28T16:00:00.000Z',
+      offset: -7,
+      timezone: '+08:00',
+    }).toEqual(['2023-03-22', '2023-03-29', '[)', '+08:00']);
+  });
+});
+
+describe('parseFilter', () => {
   const expectParseFilter = (filter, options) => {
     return {
       async toEqual(expected) {

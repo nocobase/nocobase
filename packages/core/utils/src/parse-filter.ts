@@ -166,25 +166,40 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   });
 };
 
-export function getLastDays(options) {
-  const { now, timezone, amount } = options;
-  let m = moment(now);
-  if (timezone) {
-    m = m.utcOffset(timezone);
+export type GetDayRangeOptions = {
+  now?: any;
+  timezone?: string;
+  offset: number;
+};
+
+export function getDayRange(options: GetDayRangeOptions) {
+  const { now, timezone = '+00:00', offset } = options;
+  let m = toMoment(now).utcOffset(timezone);
+  if (offset > 0) {
+    return [
+      // 第二天开始计算
+      m.add(1, 'day').startOf('day').format('YYYY-MM-DD'),
+      // 第九天开始前结束
+      m
+        .clone()
+        .add(offset, 'day')
+        .startOf('day')
+        .format('YYYY-MM-DD'),
+      '[)',
+      timezone,
+    ];
   }
   return [
-    m.subtract(amount, 'days').startOf('day').toISOString(),
-    m.clone().subtract(1, 'day').endOf('day').toISOString(),
+    // 今天开始前
+    m.clone()
+      .subtract(-1 * offset, 'day')
+      .startOf('day')
+      .format('YYYY-MM-DD'),
+    // 今天开始前
+    m.startOf('day').format('YYYY-MM-DD'),
+    '[)',
+    timezone,
   ];
-}
-
-export function getNextDays(options) {
-  const { now, timezone, amount } = options;
-  let m = moment(now);
-  if (timezone) {
-    m = m.utcOffset(timezone);
-  }
-  return [m.add(1, 'day').startOf('day').toISOString(), m.clone().add(amount, 'days').endOf('day').toISOString()];
 }
 
 function toMoment(value) {
@@ -232,9 +247,8 @@ const toUnit = (unit, offset?: number) => {
   };
 };
 
-const toDays = (amount: number) => {
-  return ({ now, timezone }) =>
-    amount > 0 ? getNextDays({ now, timezone, amount }) : getLastDays({ now, timezone, amount: -1 * amount });
+const toDays = (offset: number) => {
+  return ({ now, timezone }) => getDayRange({ now, timezone, offset });
 };
 
 export function getDateVars() {
