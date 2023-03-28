@@ -285,4 +285,25 @@ SELECT * FROM numbers;
 
     expect(detailResponse.status).toEqual(200);
   });
+
+  it('should get view in difference schema', async () => {
+    if (!app.db.inDialect('postgres')) return;
+
+    const schemaName = `t_${uid(6)}`;
+    const testSchemaSql = `CREATE SCHEMA IF NOT EXISTS ${schemaName};`;
+    await app.db.sequelize.query(testSchemaSql);
+
+    const viewName = `v_${uid(6)}`;
+
+    const viewSQL = `CREATE OR REPLACE VIEW ${schemaName}.${viewName} AS SELECT 1+1 as result`;
+    await app.db.sequelize.query(viewSQL);
+
+    const response = await agent.resource('dbViews').query({
+      filterByTk: viewName,
+      schema: schemaName,
+      pageSize: 20,
+    });
+
+    expect(response.status).toEqual(200);
+  });
 });

@@ -40,10 +40,10 @@ export default {
     },
 
     async query(ctx, next) {
-      const { filterByTk } = ctx.action.params;
+      const { filterByTk, schema } = ctx.action.params;
 
       const sql = `SELECT *
-                   FROM ${filterByTk}`;
+                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))}`;
 
       ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
       await next();
