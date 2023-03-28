@@ -202,4 +202,43 @@ describe('parseFilter', () => {
       },
     ).toEqual({ a: { $dateOn: '2023-01-01+08:00' } });
   });
+
+  test('$user', async () => {
+    await expectParseFilter(
+      {
+        'user.id.$eq': '{{$user.id}}',
+        'team.id.$eq': '{{$user.team.id}}',
+        'team.name.$eq': '{{$user.team.name}}',
+      },
+      {
+        vars: {
+          $user: async (fields) => {
+            return {
+              id: 1,
+              team: {
+                id: 2,
+              },
+            };
+          },
+        },
+      },
+    ).toEqual({ user: { id: { $eq: 1 } }, team: { id: { $eq: 2 }, name: { $eq: null } } });
+  });
+
+  test('$user', async () => {
+    await expectParseFilter(
+      {
+        'user.id.$eq': '{{$user.id}}',
+        'team.id.$eq': '{{$user.team.id}}',
+        'team.name.$eq': '{{$user.team.name}}',
+      },
+      {
+        vars: {
+          $user: async (fields) => {
+            return;
+          },
+        },
+      },
+    ).toEqual({ user: { id: { $eq: null } }, team: { id: { $eq: null }, name: { $eq: null } } });
+  });
 });
