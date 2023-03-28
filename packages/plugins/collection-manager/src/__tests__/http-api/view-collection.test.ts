@@ -306,4 +306,76 @@ SELECT * FROM numbers;
 
     expect(response.status).toEqual(200);
   });
+
+  it('should edit uiSchema in view collection field', async () => {
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            uiSchema: {
+              title: 'hello',
+            },
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.sync();
+
+    const UserCollection = app.db.getCollection('users');
+
+    // create view
+    const viewName = `t_${uid(6)}`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(viewSQL);
+
+    // create view collection
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: viewName,
+        view: true,
+        schema: 'public',
+        fields: [
+          {
+            name: 'id',
+            type: 'integer',
+          },
+          {
+            name: 'name',
+            type: 'string',
+            source: 'users.name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.getCollection('fields').repository.update({
+      filter: {
+        name: 'name',
+        collectionName: viewName,
+      },
+
+      values: {
+        uiSchema: {
+          title: 'bars',
+        },
+      },
+      context: {},
+    });
+
+    const viewCollection = app.db.getCollection(viewName);
+
+    expect(viewCollection.getField('name').options.uiSchema.title).toEqual('bars');
+
+    const viewFieldsResponse = await agent.resource('collections.fields', viewName).list({});
+    const nameField = viewFieldsResponse.body.data.find((item) => item.name === 'name');
+    expect(nameField.uiSchema.title).toEqual('bars');
+  });
 });
