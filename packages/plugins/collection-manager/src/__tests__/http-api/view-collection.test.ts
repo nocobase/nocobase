@@ -142,7 +142,7 @@ SELECT * FROM numbers;
       values: {
         name: viewName,
         view: true,
-        schema: 'public',
+        schema: app.db.inDialect('postgres') ? 'public' : undefined,
         fields: [
           {
             name: 'name',

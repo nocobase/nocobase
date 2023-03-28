@@ -666,7 +666,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    await this.sequelize.getQueryInterface().dropAllTables(others);
+    await this.queryInterface.dropAll(options);
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
