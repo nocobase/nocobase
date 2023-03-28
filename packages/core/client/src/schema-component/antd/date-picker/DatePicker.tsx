@@ -4,11 +4,10 @@ import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps
 } from 'antd/lib/date-picker';
-import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
-import { mapDatePicker, mapRangePicker } from './util';
+import { getDateRages, mapDatePicker, mapRangePicker } from './util';
 
 interface IDatePickerProps {
   utc?: boolean;
@@ -44,23 +43,24 @@ export const DatePicker = (props) => {
 DatePicker.RangePicker = (props) => {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
+  const rangesValue = getDateRages();
   const ranges = {
-    [t('Today')]: [moment(), moment()],
-    [t('Last week')]: [moment().subtract(1, 'week').startOf('isoWeek'), moment().subtract(1, 'week').endOf('isoWeek')],
-    [t('This week')]: [moment().startOf('isoWeek'), moment().endOf('isoWeek')],
-    [t('Next week')]: [moment().add(1, 'week').startOf('isoWeek'), moment().add(1, 'week').endOf('isoWeek')],
-    [t('Last month')]: [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-    [t('This month')]: [moment().startOf('month'), moment().endOf('month')],
-    [t('Next month')]: [moment().add(1, 'month').startOf('month'), moment().add(1, 'month').endOf('month')],
-    [t('Last year')]: [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
-    [t('This year')]: [moment().startOf('year'), moment().endOf('year')],
-    [t('Next year')]: [moment().add(1, 'year').startOf('year'), moment().add(1, 'year').endOf('year')],
-    [t('Last 7 days')]: [moment().subtract(7, 'days'), moment()],
-    [t('Next 7 days')]: [moment(), moment().add(7, 'days')],
-    [t('Last 30 days')]: [moment().subtract(30, 'days'), moment()],
-    [t('Next 30 days')]: [moment(), moment().add(30, 'days')],
-    [t('Last 90 days')]: [moment().subtract(90, 'days'), moment()],
-    [t('Next 90 days')]: [moment(), moment().add(90, 'days')],
+    [t('Today')]: rangesValue.today,
+    [t('Last week')]: rangesValue.lastWeek,
+    [t('This week')]: rangesValue.thisWeek,
+    [t('Next week')]: rangesValue.nextWeek,
+    [t('Last month')]: rangesValue.lastMonth,
+    [t('This month')]: rangesValue.thisMonth,
+    [t('Next month')]: rangesValue.nextMonth,
+    [t('Last year')]: rangesValue.lastYear,
+    [t('This year')]: rangesValue.thisYear,
+    [t('Next year')]: rangesValue.nextYear,
+    [t('Last 7 days')]: rangesValue.last7Days,
+    [t('Next 7 days')]: rangesValue.next7Days,
+    [t('Last 30 days')]: rangesValue.last30Days,
+    [t('Next 30 days')]: rangesValue.next30Days,
+    [t('Last 90 days')]: rangesValue.last90Days,
+    [t('Next 90 days')]: rangesValue.next90Days,
   };
   props = { utc, ranges, ...props };
   return <_RangePicker {...props} />;

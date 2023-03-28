@@ -116,3 +116,32 @@ function getRangeEnd(value: moment.Moment, options: Moment2strOptions) {
   }
   return value.endOf('day');
 }
+
+const getStart = (offset: any, unit: moment.unitOfTime.StartOf) => {
+  return moment().add(offset, unit).startOf(unit);
+};
+
+const getEnd = (offset: any, unit: moment.unitOfTime.StartOf) => {
+  return moment().add(offset, unit).endOf(unit);
+};
+
+export const getDateRages = () => {
+  return {
+    today: () => [getStart(0, 'day'), getEnd(0, 'day')],
+    lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
+    thisWeek: () => [getStart(0, 'isoWeek'), getEnd(0, 'isoWeek')],
+    nextWeek: () => [getStart(1, 'isoWeek'), getEnd(1, 'isoWeek')],
+    lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
+    thisMonth: () => [getStart(0, 'month'), getEnd(0, 'month')],
+    nextMonth: () => [getStart(1, 'month'), getEnd(1, 'month')],
+    lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
+    thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
+    nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],
+    last7Days: () => [getStart(-7, 'days'), getEnd(-1, 'days')],
+    next7Days: () => [getStart(1, 'day'), getEnd(7, 'days')],
+    last30Days: () => [getStart(-30, 'days'), getEnd(-1, 'days')],
+    next30Days: () => [getStart(1, 'day'), getEnd(30, 'days')],
+    last90Days: () => [getStart(-90, 'days'), getEnd(-1, 'days')],
+    next90Days: () => [getStart(1, 'day'), getEnd(90, 'days')],
+  };
+};
