@@ -92,9 +92,16 @@ const isDateOperator = (op) => {
 };
 
 const dateValueWrapper = (value: string, timezone?: string) => {
-  return value;
   if (!value) {
     return null;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 2) {
+      value.push('[]', timezone);
+    } else if (value.length === 3) {
+      value.push(timezone);
+    }
+    return value;
   }
   if (!timezone || /(\+|\-)\d\d\:\d\d$/.test(value)) {
     return value;
@@ -104,6 +111,7 @@ const dateValueWrapper = (value: string, timezone?: string) => {
 
 export type ParseFilterOptions = {
   vars?: Record<string, any>;
+  now?: any;
   timezone?: string;
 };
 
@@ -111,6 +119,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   const userFieldsSet = new Set();
   const vars = opts.vars || {};
   const timezone = opts.timezone;
+  const now = opts.now;
 
   const flat = flatten(filter, {
     breakOn({ key }) {
@@ -146,7 +155,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         if (match) {
           const key = match[1].trim();
           const val = get(vars, key, null);
-          value = typeof val === 'function' ? val?.({ operator, timezone }) : val;
+          value = typeof val === 'function' ? val?.({ operator, timezone, now }) : val;
         }
       }
       if (isDateOperator(operator)) {
@@ -157,70 +166,102 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   });
 };
 
-export function getDateOperatorVariables(m: moment.Moment, unitOfTime) {
-  return {
-    $dateBetween: () => [m.startOf(unitOfTime).toISOString(), m.endOf(unitOfTime).toISOString()],
-    $dateBefore: () => m.startOf(unitOfTime).toISOString(),
-    $dateAfter: () => m.endOf(unitOfTime).toISOString(),
-    $dateNotBefore: () => m.startOf(unitOfTime).toISOString(),
-    $dateNotAfter: () => m.endOf(unitOfTime).toISOString(),
-  };
-}
-
-export function getDateVariable({ timezone, unitOfTime, offset = 0, operator }) {
-  let m = moment();
+export function getLastDays(options) {
+  const { now, timezone, amount } = options;
+  let m = moment(now);
   if (timezone) {
     m = m.utcOffset(timezone);
   }
-  if (offset > 0) {
-    m = m.add(offset, unitOfTime);
-  } else if (offset < 0) {
-    m = m.subtract(-1 * offset, unitOfTime);
+  return [
+    m.subtract(amount, 'days').startOf('day').toISOString(),
+    m.clone().subtract(1, 'day').endOf('day').toISOString(),
+  ];
+}
+
+export function getNextDays(options) {
+  const { now, timezone, amount } = options;
+  let m = moment(now);
+  if (timezone) {
+    m = m.utcOffset(timezone);
   }
-  const fn = getDateOperatorVariables(m, unitOfTime)[operator];
-  return fn?.();
+  return [m.add(1, 'day').startOf('day').toISOString(), m.clone().add(amount, 'days').endOf('day').toISOString()];
 }
 
-export function getLastDays({ timezone, amount }) {
-  let m = moment().utcOffset(timezone);
-  return [m.subtract(amount, 'days').startOf('day').toISOString(), m.subtract(1, 'day').endOf('day').toISOString()];
+function toMoment(value) {
+  if (!value) {
+    return moment();
+  }
+  if (moment.isMoment(value)) {
+    return value;
+  }
+  return moment(value);
 }
 
-export function getNextDays({ timezone, amount }) {
-  let m = moment().utcOffset(timezone);
-  return [m.add(1, 'day').startOf('day').toISOString(), m.add(amount, 'days').endOf('day').toISOString()];
+export type Utc2unitOptions = {
+  now?: any;
+  unit: any;
+  timezone?: string;
+  offset?: number;
+};
+
+export function utc2unit(options: Utc2unitOptions) {
+  const { now, unit, timezone = '+00:00', offset } = options;
+  let m = toMoment(now);
+  m.utcOffset(timezone);
+  m.startOf(unit);
+  if (offset > 0) {
+    m.add(offset, unit === 'isoWeek' ? 'week' : unit);
+  } else if (offset < 0) {
+    m.subtract(-1 * offset, unit === 'isoWeek' ? 'week' : unit);
+  }
+  const fn = {
+    year: () => m.format('YYYY'),
+    quarter: () => m.format('YYYY[Q]Q'),
+    month: () => m.format('YYYY-MM'),
+    week: () => m.format('gggg[w]ww'),
+    isoWeek: () => m.format('GGGG[W]WW'),
+    day: () => m.format('YYYY-MM-DD'),
+  };
+  const r = fn[unit]?.();
+  return timezone ? r + timezone : r;
 }
 
-// const a = {
-//   a: 'a',
-//   b: 'b',
-//   c: { $eq: 'a' },
-//   d: { $notIn: ['a', 'b', 'c'] },
-//   'e.a.$dateOn': '2023-03-24+08:00',
-//   'e.b.$dateOn': '2023-03-24-08:00',
-//   'e.f.$dateOn': '2023-03-24',
-//   'e.f.$dateBefore': '{{$date.today}}',
-//   'e.e.$dateBefore': '{{$date.tomorrow}}',
-//   $and: [{ 'a.b': '{{ $user.id}}' }, { a: '{{$user.id }}' }],
-//   $or: [
-//     {
-//       $and: [{ a: '{{$user.id}}' }, { a: '{{ $user.id }}' }],
-//     },
-//   ],
-// };
+const toUnit = (unit, offset?: number) => {
+  return ({ now, timezone }) => {
+    return utc2unit({ now, timezone, unit, offset });
+  };
+};
 
-// parseFilter(a, {
-//   timezone: '+08:00',
-//   vars: {
-//     $date: {
-//       today: () => moment().toISOString(),
-//     },
-//     async $user() {
-//       return {
-//         id: 1,
-//       };
-//     },
-//   },
-// }).then((data) => {
-//   console.log(data);
-// });
+const toDays = (amount: number) => {
+  return ({ now, timezone }) =>
+    amount > 0 ? getNextDays({ now, timezone, amount }) : getLastDays({ now, timezone, amount: -1 * amount });
+};
+
+export function getDateVars() {
+  return {
+    today: toUnit('day'),
+    yesterday: toUnit('day', -1),
+    tomorrow: toUnit('day', 1),
+    thisWeek: toUnit('week'),
+    lastWeek: toUnit('week', -1),
+    nextWeek: toUnit('week', 1),
+    thisIsoWeek: toUnit('isoWeek'),
+    lastIsoWeek: toUnit('isoWeek', -1),
+    nextIsoWeek: toUnit('isoWeek', 1),
+    thisMonth: toUnit('month'),
+    lastMonth: toUnit('month', -1),
+    nextMonth: toUnit('month', 1),
+    thisQuarter: toUnit('quarter'),
+    lastQuarter: toUnit('quarter', -1),
+    nextQuarter: toUnit('quarter', 1),
+    thisYear: toUnit('year'),
+    lastYear: toUnit('year', -1),
+    nextYear: toUnit('year', 1),
+    last7Days: toDays(-7),
+    next7Days: toDays(7),
+    last30Days: toDays(-30),
+    next30Days: toDays(30),
+    last90Days: toDays(-90),
+    next90Days: toDays(90),
+  };
+}

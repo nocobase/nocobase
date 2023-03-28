@@ -1,44 +1,115 @@
-import moment, { MomentInput } from 'moment';
+import { parseDate, parseDateBetween } from '@nocobase/utils';
 import { Op } from 'sequelize';
-function stringToDate(value: string): Date {
-  return moment(value).toDate();
-}
-
-function getNextDay(value: MomentInput): Date {
-  return moment(value).add(1, 'd').toDate();
-}
 
 export default {
   $dateOn(value, ctx) {
-    // const field = ctx.db.getFieldByPath(ctx.fieldPath);
-    // console.log(field.isDateOnly());
-    return {
-      [Op.and]: [{ [Op.gte]: stringToDate(value) }, { [Op.lt]: getNextDay(value) }],
-    };
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.eq]: r,
+      };
+    }
+    if (Array.isArray(r)) {
+      return {
+        [Op.and]: [{ [Op.gte]: r[0] }, { [Op.lt]: r[1] }],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
   },
 
-  $dateNotOn(value) {
-    return {
-      [Op.or]: [{ [Op.lt]: stringToDate(value) }, { [Op.gte]: getNextDay(value) }],
-    };
+  $dateNotOn(value, ctx) {
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.ne]: r,
+      };
+    }
+    if (Array.isArray(r)) {
+      return {
+        [Op.or]: [{ [Op.lt]: r[0] }, { [Op.gte]: r[1] }],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
   },
 
-  $dateBefore(value) {
-    return { [Op.lt]: stringToDate(value) };
+  $dateBefore(value, ctx) {
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.lt]: r,
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.lt]: r[0],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
   },
 
-  $dateNotBefore(value) {
-    return {
-      [Op.gte]: stringToDate(value),
-    };
+  $dateNotBefore(value, ctx) {
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.gte]: r,
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.gte]: r[0],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
   },
 
-  $dateAfter(value) {
-    return { [Op.gte]: getNextDay(value) };
+  $dateAfter(value, ctx) {
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.gt]: r,
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.gte]: r[1],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
   },
 
-  $dateNotAfter(value) {
-    return { [Op.lt]: getNextDay(value) };
+  $dateNotAfter(value, ctx) {
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.lte]: r,
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.lt]: r[1],
+      };
+    }
+    throw new Error(`Invalid Date ${value}`);
+  },
+
+  $dateBetween(value, ctx) {
+    const r = parseDateBetween(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (r) {
+      return {
+        [Op.and]: [{ [Op.gte]: r[0] }, { [Op.lt]: r[1] }],
+      };
+    }
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBetween(value: string[]) {
