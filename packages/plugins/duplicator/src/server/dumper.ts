@@ -147,17 +147,23 @@ export class Dumper extends AppMigrator {
 
       // get user defined views in postgres
       const views = await db.sequelize.query(
-        `SELECT table_schema, table_name, pg_get_viewdef("table_name", true) as def
-         FROM information_schema.views
-         WHERE table_schema NOT IN ('information_schema', 'pg_catalog')
-         ORDER BY table_schema, table_name`,
+        `SELECT n.nspname    AS schema_name,
+                v.viewname   AS view_name,
+                v.definition AS view_definition
+         FROM pg_views v
+                JOIN
+              pg_namespace n ON v.schemaname = n.nspname
+         WHERE n.nspname NOT IN ('information_schema', 'pg_catalog')
+         ORDER BY schema_name,
+                  view_name;`,
         {
           type: 'SELECT',
         },
       );
 
+      console.log({ views });
       for (const v of views) {
-        sqlContent.push(`CREATE OR REPLACE VIEW ${v['table_name']} AS ${v['def']}`);
+        sqlContent.push(`CREATE OR REPLACE VIEW ${v['view_name']} AS ${v['view_definition']}`);
       }
     }
 
