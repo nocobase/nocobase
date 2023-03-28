@@ -3,6 +3,7 @@ import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRequest } from '../../../api-client';
 import { useProps } from '../../hooks/useProps';
+import { DatePickerProvider } from '../date-picker';
 import { FilterContext } from './context';
 import { FilterActionDesigner } from './Filter.Action.Designer';
 import { FilterAction } from './FilterAction';
@@ -26,20 +27,20 @@ export const Filter: any = observer((props: any) => {
   });
   return (
     <div className={className}>
-      <FilterContext.Provider
-        value={{
-          field,
-          fieldSchema,
-          dynamicComponent,
-          options: options || field.dataSource || [],
-          disabled: props.disabled,
-          // 筛选相关的参数不使用 UTC 格式
-          utc: false,
-        }}
-      >
-        <FilterGroup {...props} bordered={false} />
-        {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
-      </FilterContext.Provider>
+      <DatePickerProvider value={{ utc: false }}>
+        <FilterContext.Provider
+          value={{
+            field,
+            fieldSchema,
+            dynamicComponent,
+            options: options || field.dataSource || [],
+            disabled: props.disabled,
+          }}
+        >
+          <FilterGroup {...props} bordered={false} />
+          {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
+        </FilterContext.Provider>
+      </DatePickerProvider>
     </div>
   );
 });
