@@ -1,6 +1,5 @@
 import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 import moment from 'moment';
-import { useTranslation } from 'react-i18next';
 
 const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   if (!moment.isMoment(value)) return value;
@@ -83,7 +82,6 @@ export const mapDatePicker = function () {
 
 export const mapRangePicker = function () {
   return (props: any) => {
-    const { t } = useTranslation();
     const format = getDefaultFormat(props) as any;
     const onChange = props.onChange;
 
@@ -98,30 +96,6 @@ export const mapRangePicker = function () {
             moment2str(getRangeEnd(value[1], props), props),
           ]);
         }
-      },
-      ranges: {
-        [t('Today')]: [moment(), moment()],
-        [t('Last Week')]: [
-          moment().subtract(1, 'week').startOf('isoWeek'),
-          moment().subtract(1, 'week').endOf('isoWeek'),
-        ],
-        [t('This Week')]: [moment().startOf('isoWeek'), moment().endOf('isoWeek')],
-        [t('Next Week')]: [moment().add(1, 'week').startOf('isoWeek'), moment().add(1, 'week').endOf('isoWeek')],
-        [t('Last Month')]: [
-          moment().subtract(1, 'month').startOf('month'),
-          moment().subtract(1, 'month').endOf('month'),
-        ],
-        [t('This Month')]: [moment().startOf('month'), moment().endOf('month')],
-        [t('Next Month')]: [moment().add(1, 'month').startOf('month'), moment().add(1, 'month').endOf('month')],
-        [t('Last Year')]: [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
-        [t('This Year')]: [moment().startOf('year'), moment().endOf('year')],
-        [t('Next Year')]: [moment().add(1, 'year').startOf('year'), moment().add(1, 'year').endOf('year')],
-        [t('Last 7 Days')]: [moment().subtract(7, 'days'), moment()],
-        [t('Next 7 Days')]: [moment(), moment().add(7, 'days')],
-        [t('Last 30 Days')]: [moment().subtract(30, 'days'), moment()],
-        [t('Next 30 Days')]: [moment(), moment().add(30, 'days')],
-        [t('Last 90 Days')]: [moment().subtract(90, 'days'), moment()],
-        [t('Next 90 Days')]: [moment(), moment().add(90, 'days')],
       },
     } as any;
   };

@@ -111,10 +111,4 @@ export default {
     }
     throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
-
-  $dateBetween(value: string[]) {
-    return {
-      [Op.and]: [{ [Op.gte]: stringToDate(value[0]) }, { [Op.lt]: getNextDay(value[1]) }],
-    };
-  },
 } as Record<string, any>;
