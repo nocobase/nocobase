@@ -4,6 +4,7 @@ export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
   utcOffset?: any;
+  utc?: boolean;
 }
 
 export const getDefaultFormat = (props: any) => {
@@ -52,10 +53,15 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     return;
   }
   const offset = options.utcOffset || -1 * new Date().getTimezoneOffset();
+  const { gmt, picker, utc = true } = options;
+
+  if (!utc) {
+    return moment(val);
+  }
+
   if (moment.isMoment(val)) {
     return val.utcOffset(offset);
   }
-  const { gmt, picker } = options;
   if (gmt || picker) {
     return moment(val).utcOffset(0);
   }

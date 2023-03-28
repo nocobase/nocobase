@@ -52,9 +52,15 @@ const VariableCascader = connect((props) => {
   );
 });
 
+const isDateComponent = {
+  'DatePicker.RangePicker': true,
+  DatePicker: true,
+};
+
 export const DynamicComponent = (props) => {
-  const { dynamicComponent, disabled } = useContext(FilterContext);
+  const { dynamicComponent, disabled, utc } = useContext(FilterContext);
   const component = useComponent(dynamicComponent);
+  const utcProps = isDateComponent[props.schema?.['x-component']] ? { utc } : {};
   const form = useMemo(() => {
     return createForm({
       values: {
@@ -79,6 +85,7 @@ export const DynamicComponent = (props) => {
               style: {
                 minWidth: 150,
               },
+              ...utcProps,
             }),
             name: 'value',
             'x-read-pretty': false,

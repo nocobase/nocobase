@@ -203,7 +203,18 @@ describe('mapDatePicker', () => {
       onChange: jest.fn(),
     };
     const result = mapDatePicker()(props);
-    result.onChange(moment('2022-01-01T00:00:00.000Z'));
+    result.onChange(moment('2022-01-01 23:00:00'));
     expect(props.onChange).toHaveBeenCalledWith('2022-01-01');
+  });
+
+  it('utc is false and gmt is true', () => {
+    const props = {
+      value: '2022-01-01 23:00:00',
+      showTime: true,
+      gmt: true,
+      utc: false,
+    };
+    const result = mapDatePicker()(props);
+    expect(result.value.format('YYYY-MM-DD HH:mm:ss')).toBe('2022-01-01 23:00:00');
   });
 });

@@ -7,7 +7,9 @@ export interface FilterContextProps {
   fieldSchema?: Schema;
   dynamicComponent?: any;
   options?: any[];
-  disabled?: boolean
+  disabled?: boolean;
+  /** default is true */
+  utc?: boolean;
 }
 
 export const RemoveConditionContext = createContext(null);

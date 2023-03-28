@@ -27,7 +27,15 @@ export const Filter: any = observer((props: any) => {
   return (
     <div className={className}>
       <FilterContext.Provider
-        value={{ field, fieldSchema, dynamicComponent, options: options || field.dataSource || [], disabled: props.disabled }}
+        value={{
+          field,
+          fieldSchema,
+          dynamicComponent,
+          options: options || field.dataSource || [],
+          disabled: props.disabled,
+          // 筛选相关的参数不使用 UTC 格式
+          utc: false,
+        }}
       >
         <FilterGroup {...props} bordered={false} />
         {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
