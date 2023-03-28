@@ -160,11 +160,37 @@ describe('parseFilter', () => {
     await expectParseFilter(
       {
         'a.$dateOn': '2023',
+        'b.$dateOn': '2023+08:00',
       },
       {
         timezone: '+00:00',
       },
-    ).toEqual({ a: { $dateOn: '2023+00:00' } });
+    ).toEqual({ a: { $dateOn: '2023+00:00' }, b: { $dateOn: '2023+08:00' } });
+  });
+
+  test('timezone', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '2023',
+        'b.$dateOn': '2023+08:00',
+        'c.$dateOn': '2023+08:00',
+      },
+      {
+        timezone: '+00:00',
+        getField(path) {
+          if (path === 'a.$dateOn') {
+            return {
+              timezone: '+06:00',
+            };
+          }
+          if (path === 'c.$dateOn') {
+            return {
+              timezone: '+06:00',
+            };
+          }
+        },
+      },
+    ).toEqual({ a: { $dateOn: '2023+06:00' }, b: { $dateOn: '2023+08:00' }, c: { $dateOn: '2023+08:00' } });
   });
 
   test('vars', async () => {

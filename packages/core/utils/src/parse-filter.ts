@@ -65,12 +65,6 @@ function unflatten(obj, opts: any = {}) {
   return parsed;
 }
 
-function isNumeric(str: any) {
-  if (typeof str === 'number') return true;
-  if (typeof str != 'string') return false;
-  return !isNaN(str as any) && !isNaN(parseFloat(str));
-}
-
 const parsePath = (path: string) => {
   let operator = path.split('.').pop() || '';
   if (!operator.startsWith('$')) {
@@ -113,6 +107,7 @@ export type ParseFilterOptions = {
   vars?: Record<string, any>;
   now?: any;
   timezone?: string;
+  getField?: any;
 };
 
 export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) => {
@@ -120,6 +115,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   const vars = opts.vars || {};
   const timezone = opts.timezone;
   const now = opts.now;
+  const getField = opts.getField;
 
   const flat = flatten(filter, {
     breakOn({ key }) {
@@ -155,11 +151,13 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         if (match) {
           const key = match[1].trim();
           const val = get(vars, key, null);
-          value = typeof val === 'function' ? val?.({ operator, timezone, now }) : val;
+          const field = getField?.(path);
+          value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
         }
       }
       if (isDateOperator(operator)) {
-        return dateValueWrapper(value, timezone);
+        const field = getField?.(path);
+        return dateValueWrapper(value, field?.timezone || timezone);
       }
       return value;
     },
@@ -180,18 +178,15 @@ export function getDayRange(options: GetDayRangeOptions) {
       // 第二天开始计算
       m.add(1, 'day').startOf('day').format('YYYY-MM-DD'),
       // 第九天开始前结束
-      m
-        .clone()
-        .add(offset, 'day')
-        .startOf('day')
-        .format('YYYY-MM-DD'),
+      m.clone().add(offset, 'day').startOf('day').format('YYYY-MM-DD'),
       '[)',
       timezone,
     ];
   }
   return [
     // 今天开始前
-    m.clone()
+    m
+      .clone()
       .subtract(-1 * offset, 'day')
       .startOf('day')
       .format('YYYY-MM-DD'),
@@ -242,13 +237,21 @@ export function utc2unit(options: Utc2unitOptions) {
 }
 
 const toUnit = (unit, offset?: number) => {
-  return ({ now, timezone }) => {
+  return ({ now, timezone, field }) => {
+    if (field?.timezone) {
+      timezone = field?.timezone;
+    }
     return utc2unit({ now, timezone, unit, offset });
   };
 };
 
 const toDays = (offset: number) => {
-  return ({ now, timezone }) => getDayRange({ now, timezone, offset });
+  return ({ now, timezone, field }) => {
+    if (field?.timezone) {
+      timezone = field?.timezone;
+    }
+    return getDayRange({ now, timezone, offset });
+  };
 };
 
 export function getDateVars() {

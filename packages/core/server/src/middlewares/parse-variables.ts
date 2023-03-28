@@ -20,6 +20,12 @@ function getUser(ctx) {
   };
 }
 
+function isNumeric(str: any) {
+  if (typeof str === 'number') return true;
+  if (typeof str != 'string') return false;
+  return !isNaN(str as any) && !isNaN(parseFloat(str));
+}
+
 export const parseVariables = async (ctx, next) => {
   const filter = ctx.action.params.filter;
   console.log(ctx.get('x-timezone'));
@@ -29,6 +35,14 @@ export const parseVariables = async (ctx, next) => {
   ctx.action.params.filter = await parseFilter(filter, {
     timezone: ctx.get('x-timezone'),
     now: moment().toISOString(),
+    getField: (path) => {
+      const fieldPath = path
+        .split('.')
+        .filter((p) => !p.startsWith('$') && !isNumeric(p))
+        .join('.');
+      const { resourceName } = ctx.action;
+      return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
+    },
     vars: {
       $system: {
         now: moment().toISOString(),
