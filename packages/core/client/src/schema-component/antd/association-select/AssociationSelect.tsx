@@ -6,15 +6,15 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext, useFilterByTk } from '../../../block-provider';
+import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import {
-  useCollectionManager,
   useCollection,
-  useSortFields,
   useCollectionFilterOptions,
+  useCollectionManager,
+  useSortFields
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useDesignable, useCompile, useFieldComponentOptions, useFieldTitle } from '../../hooks';
+import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
@@ -103,7 +103,7 @@ AssociationSelect.Designer = () => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
+  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -424,7 +424,7 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
-      {form && !isSubFormAssocitionField && fieldComponentOptions && (
+      {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}
@@ -695,13 +695,9 @@ AssociationSelect.FilterDesigner = () => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const tk = useFilterByTk();
-  const {} = useCollection();
-  const { dn, refresh, insertAdjacent } = useDesignable();
+  const { dn, refresh } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -1015,7 +1011,9 @@ AssociationSelect.FilterDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
