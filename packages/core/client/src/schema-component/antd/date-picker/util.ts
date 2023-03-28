@@ -118,14 +118,18 @@ function getRangeEnd(value: moment.Moment, options: Moment2strOptions) {
 }
 
 const getStart = (offset: any, unit: moment.unitOfTime.StartOf) => {
-  return moment().add(offset, unit).startOf(unit);
+  return moment()
+    .add(offset, unit === 'isoWeek' ? 'week' : unit)
+    .startOf(unit);
 };
 
 const getEnd = (offset: any, unit: moment.unitOfTime.StartOf) => {
-  return moment().add(offset, unit).endOf(unit);
+  return moment()
+    .add(offset, unit === 'isoWeek' ? 'week' : unit)
+    .endOf(unit);
 };
 
-export const getDateRages = () => {
+export const getDateRanges = () => {
   return {
     today: () => [getStart(0, 'day'), getEnd(0, 'day')],
     lastWeek: () => [getStart(-1, 'isoWeek'), getEnd(-1, 'isoWeek')],
@@ -134,6 +138,9 @@ export const getDateRages = () => {
     lastMonth: () => [getStart(-1, 'month'), getEnd(-1, 'month')],
     thisMonth: () => [getStart(0, 'month'), getEnd(0, 'month')],
     nextMonth: () => [getStart(1, 'month'), getEnd(1, 'month')],
+    lastQuarter: () => [getStart(-1, 'quarter'), getEnd(-1, 'quarter')],
+    thisQuarter: () => [getStart(0, 'quarter'), getEnd(0, 'quarter')],
+    nextQuarter: () => [getStart(1, 'quarter'), getEnd(1, 'quarter')],
     lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
     thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
     nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],

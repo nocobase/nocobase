@@ -7,7 +7,7 @@ import type {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
-import { getDateRages, mapDatePicker, mapRangePicker } from './util';
+import { getDateRanges, mapDatePicker, mapRangePicker } from './util';
 
 interface IDatePickerProps {
   utc?: boolean;
@@ -43,7 +43,7 @@ export const DatePicker = (props) => {
 DatePicker.RangePicker = (props) => {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
-  const rangesValue = getDateRages();
+  const rangesValue = getDateRanges();
   const ranges = {
     [t('Today')]: rangesValue.today,
     [t('Last week')]: rangesValue.lastWeek,
@@ -52,6 +52,9 @@ DatePicker.RangePicker = (props) => {
     [t('Last month')]: rangesValue.lastMonth,
     [t('This month')]: rangesValue.thisMonth,
     [t('Next month')]: rangesValue.nextMonth,
+    [t('Last quarter')]: rangesValue.lastQuarter,
+    [t('This quarter')]: rangesValue.thisQuarter,
+    [t('Next quarter')]: rangesValue.nextQuarter,
     [t('Last year')]: rangesValue.lastYear,
     [t('This year')]: rangesValue.thisYear,
     [t('Next year')]: rangesValue.nextYear,
