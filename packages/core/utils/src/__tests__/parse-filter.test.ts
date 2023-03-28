@@ -1,4 +1,4 @@
-import { parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
+import { getDateVars, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
 
 describe('utc to unit', () => {
   const expectUtc2unit = (options: Utc2unitOptions) => {
@@ -123,6 +123,7 @@ describe.only('parseFilter', () => {
       },
     };
   };
+
   test('timezone', async () => {
     await expectParseFilter(
       {
@@ -138,13 +139,33 @@ describe.only('parseFilter', () => {
     await expectParseFilter(
       {
         'a.$dateOn': '{{$date.today}}',
+        'b.$eq': '{{$custom.foo}}',
+        'b.$ne': '{{$foo.bar}}',
       },
       {
         timezone: '+08:00',
         vars: {
+          $custom: {
+            foo: () => 'bar',
+          },
           $date: {
             today: () => '2023-01-01',
           },
+        },
+      },
+    ).toEqual({ a: { $dateOn: '2023-01-01+08:00' }, b: { $eq: 'bar', $ne: null } });
+  });
+
+  test('$date.today', async () => {
+    await expectParseFilter(
+      {
+        'a.$dateOn': '{{$date.today}}',
+      },
+      {
+        now: '2022-12-31T16:00:00.000Z',
+        timezone: '+08:00',
+        vars: {
+          $date: getDateVars(),
         },
       },
     ).toEqual({ a: { $dateOn: '2023-01-01+08:00' } });

@@ -1,4 +1,4 @@
-import { parseDate, parseDateBetween } from '@nocobase/utils';
+import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
 export default {
@@ -16,7 +16,7 @@ export default {
         [Op.and]: [{ [Op.gte]: r[0] }, { [Op.lt]: r[1] }],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotOn(value, ctx) {
@@ -33,7 +33,7 @@ export default {
         [Op.or]: [{ [Op.lt]: r[0] }, { [Op.gte]: r[1] }],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBefore(value, ctx) {
@@ -49,7 +49,7 @@ export default {
         [Op.lt]: r[0],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotBefore(value, ctx) {
@@ -65,7 +65,7 @@ export default {
         [Op.gte]: r[0],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateAfter(value, ctx) {
@@ -81,7 +81,7 @@ export default {
         [Op.gte]: r[1],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotAfter(value, ctx) {
@@ -97,11 +97,11 @@ export default {
         [Op.lt]: r[1],
       };
     }
-    throw new Error(`Invalid Date ${value}`);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBetween(value, ctx) {
-    const r = parseDateBetween(value, {
+    const r = parseDate(value, {
       timezone: ctx.db.options.timezone,
     });
     if (r) {

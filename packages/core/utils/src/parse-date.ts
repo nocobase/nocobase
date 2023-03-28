@@ -133,11 +133,17 @@ function dateRange(r: ParseDateResult) {
   return [m.startOf(r.unit), m.clone().add(1, r.unit).startOf(r.unit)].map(toISOString);
 }
 
-export function parseDate(value: string, options = {} as { timezone?: string }) {
+export function parseDate(value: any, options = {} as { timezone?: string }) {
+  if (Array.isArray(value)) {
+    return parseDateBetween(value, options);
+  }
   const input = value;
   const match = /(.+)((\+|\-)\d\d\:\d\d)$/.exec(value);
   if (match) {
     value = match[1];
+  }
+  if (/^(\(|\[)/.test(value)) {
+    return parseDateBetween(input, options);
   }
   for (const parse of parsers) {
     const r = parse(value);
@@ -154,7 +160,7 @@ export function parseDate(value: string, options = {} as { timezone?: string }) 
   }
 }
 
-export function parseDateBetween(value: any, options = {} as { timezone?: string }) {
+function parseDateBetween(value: any, options = {} as { timezone?: string }) {
   if (Array.isArray(value) && value.length > 1) {
     const [startValue, endValue, op = '[]', timezone] = value;
     const r0 = parseDate(startValue, { timezone });
