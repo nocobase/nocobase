@@ -40,7 +40,7 @@ export default {
     },
 
     async query(ctx, next) {
-      const { filterByTk, schema } = ctx.action.params;
+      const { filterByTk, schema = 'public' } = ctx.action.params;
 
       const sql = `SELECT *
                    FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))}`;
