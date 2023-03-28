@@ -125,12 +125,14 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return {
+
+  const result = {
     showTotal: (total) => t('Total {{count}} items', { count: total }),
     showSizeChanger: true,
     ...pagination1,
     ...pagination2,
   };
+  return result.total < result.pageSize ? false : result;
 };
 
 const useValidator = (validator: (value: any) => string) => {
@@ -174,6 +176,11 @@ export const Table: any = observer((props: any) => {
   const { expandFlag } = ctx;
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
+  console.log(
+    '🚀 ~ file: Table.tsx:177 ~ constTable:any=observer ~ pagination1, pagination2:',
+    pagination1,
+    pagination2,
+  );
   const requiredValidator = field.required || required;
   const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
   const [expandedKeys, setExpandesKeys] = useState([]);
