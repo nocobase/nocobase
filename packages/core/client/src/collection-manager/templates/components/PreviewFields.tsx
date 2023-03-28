@@ -22,7 +22,6 @@ const getInterfaceOptions = (data, type) => {
 };
 export const PreviewFields = (props) => {
   const { name, sources, viewName, schema } = props;
-  console.log(name, viewName, schema);
   const api = useAPIClient();
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
