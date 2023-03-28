@@ -21,7 +21,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 export const PreviewFields = (props) => {
-  const { name, sources, viewName, schema } = props;
+  const { name, sources, viewName, schema, fields } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
@@ -57,7 +57,13 @@ export const PreviewFields = (props) => {
         .then(({ data }) => {
           if (data) {
             setDataSource([]);
-            const fieldsData = Object.values(data?.data?.fields);
+            const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
+              if (v.source) {
+                return v;
+              } else {
+                return fields.find((h) => h.name === v.name);
+              }
+            });
             field.value = fieldsData;
             setDataSource(fieldsData);
             const pColumns = formatPreviewColumns(fieldsData);
@@ -98,6 +104,7 @@ export const PreviewFields = (props) => {
       title: t('Field name'),
       dataIndex: 'name',
       key: 'name',
+      width: 130,
     },
     {
       title: t('Field source'),
@@ -122,7 +129,7 @@ export const PreviewFields = (props) => {
     {
       title: t('Field type'),
       dataIndex: 'type',
-      width: 150,
+      width: 140,
       key: 'type',
       render: (text, _, index) => {
         const item = dataSource[index];
@@ -154,6 +161,7 @@ export const PreviewFields = (props) => {
           text
         ) : (
           <Select
+            defaultValue={text}
             style={{ width: '100%' }}
             onChange={(value) => handleFieldChange({ ...item, interface: value }, index)}
           >
@@ -174,13 +182,14 @@ export const PreviewFields = (props) => {
       title: t('Field display name'),
       dataIndex: 'title',
       key: 'title',
-      render: (text, _, index) => {
+      width: 180,
+      render: (text, record, index) => {
         const item = dataSource[index];
         return item.source ? (
-          text
+          record?.uiSchema?.title
         ) : (
           <Input
-            defaultValue={text}
+            defaultValue={record?.uiSchema?.title}
             onChange={(e) => handleFieldChange({ ...item, uiSchema: { title: e.target.value } }, index)}
           />
         );

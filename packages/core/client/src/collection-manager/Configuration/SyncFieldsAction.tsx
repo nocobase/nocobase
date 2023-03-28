@@ -3,7 +3,7 @@ import { ArrayTable } from '@formily/antd';
 import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button } from 'antd';
-import { cloneDeep, omit } from 'lodash';
+import { cloneDeep } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
@@ -124,14 +124,11 @@ export const SyncFieldsAction = (props) => {
 };
 
 export const SyncFieldsActionCom = (props) => {
-  const { scope, getContainer, item: record, children, trigger, align } = props;
-  const { getInterface, getTemplate } = useCollectionManager();
+  const { scope, getContainer, item: record, children } = props;
   const [visible, setVisible] = useState(false);
-  const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-
   return (
     record.template === 'view' && (
       <RecordProvider record={record}>
@@ -158,11 +155,8 @@ export const SyncFieldsActionCom = (props) => {
               useCancelAction,
               createOnly: true,
               isOverride: false,
-              override: false,
               useSyncFromDatabase,
               record,
-              showReverseFieldConfig: true,
-              targetScope,
               ...scope,
             }}
           />
