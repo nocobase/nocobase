@@ -1,53 +1,52 @@
-import _ from 'lodash';
 import { useFilterOptions } from '../../filter';
 
 interface GetOptionsParams {
   schema: any;
   operator: string;
-  /** to cache the result of processed collections */
-  cached: Record<string, any[]>;
+  maxDepth: number;
+  count?: number;
 }
 
-const useOptions = (collectionName: string, { schema, operator, cached }: GetOptionsParams) => {
-  if (cached[collectionName]) {
-    return _.cloneDeep(cached[collectionName]);
+const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
+  if (count > maxDepth) {
+    return [];
   }
 
-  const result = [];
-  cached[collectionName] = result;
-
-  useFilterOptions(collectionName).forEach((option) => {
+  const result = useFilterOptions(collectionName).map((option) => {
     if (!option.target) {
-      return result.push({
+      return {
         key: option.name,
         value: option.name,
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
         disabled: schema?.['x-component'] !== option.schema['x-component'],
-      });
+      };
     }
 
     const children =
       useOptions(option.target, {
         schema,
         operator,
-        cached,
+        maxDepth,
+        count: count + 1,
       }) || [];
 
-    result.push({
+    return {
       key: option.name,
       value: option.name,
       label: option.title,
       children,
       disabled: children.every((child) => child.disabled),
-    });
+    };
   });
 
   return result;
 };
 
 export const useUserVariable = ({ schema, operator }) => {
-  const options = useOptions('users', { schema, operator, cached: {} });
+  const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
+
+  console.log('options', options);
 
   return {
     title: `{{t("Current user")}}`,
