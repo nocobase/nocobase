@@ -26,6 +26,31 @@ export const view: ICollectionTemplate = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
+      'x-disabled': '{{ !createOnly }}',
+    },
+    schema: {
+      type: 'string',
+      'x-hidden': true,
+      'x-reactions': {
+        dependencies: ['name'],
+        fulfill: {
+          state: {
+            value: "{{$deps[0].split('_')?.[0]}}",
+          },
+        },
+      },
+    },
+    viewName: {
+      type: 'string',
+      'x-hidden': true,
+      'x-reactions': {
+        dependencies: ['name'],
+        fulfill: {
+          state: {
+            value: "{{$deps[0].split('_')?.[1]}}",
+          },
+        },
+      },
     },
     sources: {
       type: 'array',
@@ -41,15 +66,14 @@ export const view: ICollectionTemplate = {
     fields: {
       type: 'object',
       'x-component': PreviewFields,
-      'x-reactions':{
-        "dependencies": ["name"],
-        "fulfill": {
-            "schema": {
-              "x-component-props": "{{$form.values}}" //任意层次属性都支持表达式
-            }
-          }
-
-      }
+      'x-reactions': {
+        dependencies: ['name'],
+        fulfill: {
+          schema: {
+            'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
+          },
+        },
+      },
     },
     ...getConfigurableProperties('category'),
   },

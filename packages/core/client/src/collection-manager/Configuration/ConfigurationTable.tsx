@@ -78,7 +78,7 @@ export const ConfigurationTable = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
-   
+
   const data = useContext(CollectionCategroriesContext);
   const api = useAPIClient();
   const resource = api.resource('dbViews');
@@ -109,9 +109,10 @@ export const ConfigurationTable = () => {
   const loadDBViews = async () => {
     return resource.list().then(({ data }) => {
       return data?.data?.map((item: any) => {
+        const schema = item.schema;
         return {
-          label: compile(item.name),
-          value: item.name,
+          label: `${schema}_${compile(item.name)}`,
+          value: `${schema}_${item.name}`,
         };
       });
     });

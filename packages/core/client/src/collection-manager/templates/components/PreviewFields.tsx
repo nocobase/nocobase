@@ -21,7 +21,8 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 export const PreviewFields = (props) => {
-  const { name, sources } = props;
+  const { name, sources, viewName, schema } = props;
+  console.log(name, viewName, schema);
   const api = useAPIClient();
   const { t } = useTranslation();
   const [dataSource, setDataSource] = useState([]);
@@ -53,7 +54,7 @@ export const PreviewFields = (props) => {
     if (name) {
       api
         .resource(`dbViews`)
-        .get({ filterByTk: name })
+        .get({ filterByTk: viewName, schema })
         .then(({ data }) => {
           if (data) {
             setDataSource([]);
@@ -72,7 +73,7 @@ export const PreviewFields = (props) => {
     if (name) {
       api
         .resource(`dbViews`)
-        .query({ filterByTk: name, pageSize: 20 })
+        .query({ filterByTk: viewName, schema })
         .then(({ data }) => {
           if (data) {
             setPreviewData(data?.data || []);
@@ -197,7 +198,7 @@ export const PreviewFields = (props) => {
         title: compile(target),
         dataIndex: item.name,
         key: item.name,
-        width:150,
+        width: 150,
       };
     });
   };
@@ -215,7 +216,7 @@ export const PreviewFields = (props) => {
           key={name}
         />
         <h4>{t('Preview')}:</h4>
-        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000,y:300 }} />
+        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000, y: 300 }} />
       </>
     )
   );
