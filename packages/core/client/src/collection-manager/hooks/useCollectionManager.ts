@@ -88,7 +88,7 @@ export const useCollectionManager = () => {
     type: string | string[] = 'string',
     opts?: {
       cached?: Record<string, any>;
-      collectionNames: string[];
+      collectionNames?: string[];
       /**
        * 为 true 时允许查询所有关联字段
        * 为 Array<string> 时仅允许查询指定的关联字段
@@ -97,7 +97,7 @@ export const useCollectionManager = () => {
       /**
        * Max depth of recursion
        */
-      maxDepth: number;
+      maxDepth?: number;
     },
   ) => {
     const { association = false, cached = {}, collectionNames = [collectionName], maxDepth = 1 } = opts || {};
