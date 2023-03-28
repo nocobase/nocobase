@@ -61,7 +61,7 @@ export const PreviewFields = (props) => {
               if (v.source) {
                 return v;
               } else {
-                return fields.find((h) => h.name === v.name);
+                return fields.find((h) => h.name === v.name)||v;
               }
             });
             field.value = fieldsData;
@@ -133,7 +133,7 @@ export const PreviewFields = (props) => {
       key: 'type',
       render: (text, _, index) => {
         const item = dataSource[index];
-        return item.source || !item.possibleTypes ? (
+        return item?.source || !item?.possibleTypes ? (
           <Tag>{text}</Tag>
         ) : (
           <Select
