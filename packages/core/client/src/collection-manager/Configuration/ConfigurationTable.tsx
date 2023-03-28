@@ -87,17 +87,23 @@ export const ConfigurationTable = () => {
   const compile = useCompile();
   const loadCollections = async (field, options) => {
     const { targetScope } = options;
-    return collectonsRef.current
-      ?.filter((item) => !(item.autoCreate && item.isThrough))
-      .filter((item) =>
-        targetScope
-          ? targetScope['template']?.includes(item.template) || targetScope[field.props.name]?.includes(item.name)
-          : true,
-      )
-      .map((item: any) => ({
-        label: compile(item.title),
-        value: item.name,
-      }));
+    const isFieldInherits = field.props?.name === 'inherits';
+    const filteredItems = collectonsRef.current.filter((item) => {
+      const isAutoCreateAndThrough = item.autoCreate && item.isThrough;
+      if (isAutoCreateAndThrough) {
+        return false;
+      }
+      if (isFieldInherits && item.template === 'view') {
+        return false;
+      }
+      const templateIncluded = !targetScope?.template || targetScope.template.includes(item.template);
+      const nameIncluded = !targetScope?.[field.props?.name] || targetScope[field.props.name].includes(item.name);
+      return templateIncluded && nameIncluded;
+    });
+    return filteredItems.map((item) => ({
+      label: compile(item.title),
+      value: item.name,
+    }));
   };
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
