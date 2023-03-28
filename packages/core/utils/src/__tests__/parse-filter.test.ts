@@ -114,7 +114,7 @@ describe('utc to unit', () => {
   });
 });
 
-describe.only('getDayRange', () => {
+describe('getDayRange', () => {
   const expectDayRange = (options) => {
     const r = getDayRange(options);
     console.log(r, options);

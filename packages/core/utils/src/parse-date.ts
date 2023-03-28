@@ -1,6 +1,12 @@
 import moment from 'moment';
 
 function parseUTC(value) {
+  if (moment.isDate(value) || moment.isMoment(value)) {
+    return {
+      unit: 'utc',
+      start: value.toISOString(),
+    };
+  }
   if (value.endsWith('Z')) {
     return {
       unit: 'utc',
@@ -137,23 +143,24 @@ export function parseDate(value: any, options = {} as { timezone?: string }) {
   if (Array.isArray(value)) {
     return parseDateBetween(value, options);
   }
+  let timezone = options.timezone || '+00:00';
   const input = value;
-  const match = /(.+)((\+|\-)\d\d\:\d\d)$/.exec(value);
-  if (match) {
-    value = match[1];
-  }
-  if (/^(\(|\[)/.test(value)) {
-    return parseDateBetween(input, options);
+  if (typeof value === 'string') {
+    const match = /(.+)((\+|\-)\d\d\:\d\d)$/.exec(value);
+    if (match) {
+      value = match[1];
+      timezone = match[2];
+    }
+    if (/^(\(|\[)/.test(value)) {
+      return parseDateBetween(input, options);
+    }
   }
   for (const parse of parsers) {
     const r = parse(value);
     if (r) {
       r['input'] = input;
-      if (match) {
-        r['timezone'] = match[2];
-      }
       if (!r['timezone']) {
-        r['timezone'] = options.timezone || '+00:00';
+        r['timezone'] = timezone;
       }
       return dateRange(r);
     }

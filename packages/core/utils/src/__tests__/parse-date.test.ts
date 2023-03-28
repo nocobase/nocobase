@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { parseDate } from '../parse-date';
 
 describe('parse date', () => {
@@ -104,6 +105,8 @@ describe('parse date', () => {
   });
 
   it('should parse utc', () => {
+    expectDate(new Date('2023-01-12T12:23:59.326Z')).toEqual('2023-01-12T12:23:59.326Z');
+    expectDate(moment('2023-01-12T12:23:59.326Z')).toEqual('2023-01-12T12:23:59.326Z');
     expectDate('2023-01-12T12:23:59.326Z').toEqual('2023-01-12T12:23:59.326Z');
     expectDate('2023-01-12T12:23:59.326Z+08:00').toEqual('2023-01-12T12:23:59.326Z');
     expectDate('2023-01-12T12:23:59.326Z', { timezone: '+08:00' }).toEqual('2023-01-12T12:23:59.326Z');

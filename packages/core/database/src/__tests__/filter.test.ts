@@ -14,7 +14,7 @@ describe('filter', () => {
     await db.close();
   });
 
-  it('should filter by association field', async () => {
+  it.only('should filter by association field', async () => {
     const UserCollection = db.collection({
       name: 'users',
       fields: [
@@ -47,14 +47,14 @@ describe('filter', () => {
       },
     });
 
-    const response = await UserCollection.repository.find({
+    const response = await PostCollection.repository.find({
       filter: {
-        'posts.createdAt': {
+        'user.createdAt': {
           $dateOn: user.get('createdAt'),
         },
       },
     });
 
-    expect(response).toHaveLength(1);
+    expect(response).toHaveLength(2);
   });
 });
