@@ -176,11 +176,6 @@ export const Table: any = observer((props: any) => {
   const { expandFlag } = ctx;
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
-  console.log(
-    '🚀 ~ file: Table.tsx:177 ~ constTable:any=observer ~ pagination1, pagination2:',
-    pagination1,
-    pagination2,
-  );
   const requiredValidator = field.required || required;
   const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
   const [expandedKeys, setExpandesKeys] = useState([]);
