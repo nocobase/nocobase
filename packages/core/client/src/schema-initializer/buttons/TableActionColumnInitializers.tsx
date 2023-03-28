@@ -99,6 +99,10 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-action': 'update',
                 'x-decorator': 'ACLActionProvider',
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
             modifyFlag && {
               type: 'item',
@@ -203,6 +207,10 @@ export const TableActionColumnInitializers = (props: any) => {
                   useProps: '{{ useCustomizeUpdateActionProps }}',
                 },
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
             {
               type: 'item',
@@ -224,6 +232,10 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-component-props': {
                   useProps: '{{ useCustomizeRequestActionProps }}',
                 },
+              },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
               },
             },
           ],
