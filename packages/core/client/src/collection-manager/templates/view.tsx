@@ -47,7 +47,7 @@ export const view: ICollectionTemplate = {
         dependencies: ['name'],
         fulfill: {
           state: {
-            value: "{{$deps[0].split('_')?.[1]}}",
+            value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
           },
         },
       },
