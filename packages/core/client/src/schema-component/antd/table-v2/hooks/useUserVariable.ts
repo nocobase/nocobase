@@ -46,8 +46,6 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
 export const useUserVariable = ({ schema, operator }) => {
   const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
 
-  console.log('options', options);
-
   return {
     title: `{{t("Current user")}}`,
     value: '$user',
