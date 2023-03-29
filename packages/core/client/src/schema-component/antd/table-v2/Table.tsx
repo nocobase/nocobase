@@ -8,7 +8,6 @@ import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { unstable_batchedUpdates } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import {
@@ -126,14 +125,12 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-
-  const result = {
+  return {
     showTotal: (total) => t('Total {{count}} items', { count: total }),
     showSizeChanger: true,
     ...pagination1,
     ...pagination2,
   };
-  return result.total < result.pageSize ? false : result;
 };
 
 const useValidator = (validator: (value: any) => string) => {
@@ -423,8 +420,6 @@ export const Table: any = observer((props: any) => {
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
   const [tableHeight, setTableHeight] = useState(0);
   const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
-  const tableRef = useRef(null);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const scroll = useMemo(() => {
     return fixedBlock
@@ -437,26 +432,24 @@ export const Table: any = observer((props: any) => {
         };
   }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
-  const calcTableSize = () => {
-    // fixedBlock updated but dom not updated yet, so use setTimeout
-    setTimeout(() => {
-      if (!containerRef.current || !tableRef.current) return;
+  const elementRef = useRef<HTMLDivElement>();
 
-      const headerHeight = tableRef.current.querySelector('.ant-table-header')?.clientHeight || 0;
-      const paginationHeight = tableRef.current.querySelector('.ant-table-pagination')?.clientHeight || 0;
-      unstable_batchedUpdates(() => {
-        setTableHeight(Math.ceil(containerRef.current.clientHeight || 0));
-        setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 18));
-      });
-    });
+  const calcTableSize = () => {
+    if (!elementRef.current) return;
+    const clientRect = elementRef.current?.getBoundingClientRect();
+    setTableHeight(Math.ceil(clientRect?.height || 0));
   };
 
-  useEffect(calcTableSize, [field.value, fixedBlock]);
   useEventListener('resize', calcTableSize);
+
+  const mountedRef: React.RefCallback<HTMLDivElement> = (ref) => {
+    elementRef.current = ref;
+    calcTableSize();
+  };
 
   return (
     <div
-      ref={containerRef}
+      ref={mountedRef}
       className={css`
         height: 100%;
         overflow: hidden;
@@ -471,7 +464,11 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
-          ref={tableRef}
+          ref={(ref) => {
+            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+          }}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}
