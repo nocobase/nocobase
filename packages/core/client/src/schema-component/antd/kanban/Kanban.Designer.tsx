@@ -7,6 +7,7 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { useFixedBlockDesignerSetting } from '../page';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
@@ -45,6 +46,7 @@ export const KanbanDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

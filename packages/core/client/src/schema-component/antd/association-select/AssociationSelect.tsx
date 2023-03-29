@@ -15,6 +15,7 @@ import {
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
@@ -492,6 +493,7 @@ AssociationSelect.Designer = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);
           fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {
@@ -1019,6 +1021,7 @@ AssociationSelect.FilterDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           _.set(field.componentProps, 'service.params.filter', filter);
           fieldSchema['x-component-props'] = field.componentProps;
           dn.emit('patch', {

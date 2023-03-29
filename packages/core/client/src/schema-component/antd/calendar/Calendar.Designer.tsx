@@ -1,7 +1,7 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable, useFixedBlockDesignerSetting } from '../..';
+import { removeNullCondition, useDesignable, useFixedBlockDesignerSetting } from '../..';
 import { useCalendarBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
@@ -131,6 +131,7 @@ export const CalendarDesigner = () => {
           }
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

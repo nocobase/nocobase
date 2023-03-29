@@ -9,6 +9,7 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableSelectorDesigner = () => {
@@ -58,6 +59,7 @@ export const TableSelectorDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

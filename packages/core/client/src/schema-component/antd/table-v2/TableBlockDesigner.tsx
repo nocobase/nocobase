@@ -10,6 +10,7 @@ import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { useFixedBlockDesignerSetting } from '../page';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 
@@ -104,6 +105,7 @@ export const TableBlockDesigner = () => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;
