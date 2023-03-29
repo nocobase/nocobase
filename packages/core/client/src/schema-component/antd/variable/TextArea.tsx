@@ -74,7 +74,7 @@ function getValue(el) {
       values.push(node.textContent?.trim?.());
     }
   }
-  return values.join(' ').replace(/\s+/g, ' ').trim();
+  return values.join('');
 }
 
 function renderHTML(exp: string, keyLabelMap) {
@@ -111,9 +111,8 @@ function getLatestRange(element: HTMLElement): [number, number, number, number] 
     return [-1, 0, -1, 0];
   }
   const nodes = Array.from(element.childNodes);
-  const startElementIndex = nodes.indexOf(range.startContainer as HTMLElement);
-  const endElementIndex = nodes.indexOf(range.endContainer as HTMLElement);
-
+  const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
+  const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
   return [startElementIndex, range.startOffset, endElementIndex, range.endOffset];
 }
 
