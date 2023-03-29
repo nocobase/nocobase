@@ -74,7 +74,6 @@ export const useCollectionManager = () => {
         return getChildren(collectionKey);
       });
       if (isSupportView) {
-        console.log(8)
         const sourceCollections = collections.filter((v) => {
           return v.sources?.length === 1 && v?.sources[0] === name;
         });
