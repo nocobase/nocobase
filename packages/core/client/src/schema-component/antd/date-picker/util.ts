@@ -145,11 +145,11 @@ export const getDateRanges = () => {
     lastYear: () => [getStart(-1, 'year'), getEnd(-1, 'year')],
     thisYear: () => [getStart(0, 'year'), getEnd(0, 'year')],
     nextYear: () => [getStart(1, 'year'), getEnd(1, 'year')],
-    last7Days: () => [getStart(-7, 'days'), getEnd(-1, 'days')],
+    last7Days: () => [getStart(-6, 'days'), getEnd(0, 'days')],
     next7Days: () => [getStart(1, 'day'), getEnd(7, 'days')],
-    last30Days: () => [getStart(-30, 'days'), getEnd(-1, 'days')],
+    last30Days: () => [getStart(-29, 'days'), getEnd(0, 'days')],
     next30Days: () => [getStart(1, 'day'), getEnd(30, 'days')],
-    last90Days: () => [getStart(-90, 'days'), getEnd(-1, 'days')],
+    last90Days: () => [getStart(-89, 'days'), getEnd(0, 'days')],
     next90Days: () => [getStart(1, 'day'), getEnd(90, 'days')],
   };
 };

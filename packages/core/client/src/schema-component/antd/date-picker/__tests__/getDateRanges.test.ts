@@ -84,8 +84,8 @@ describe('getDateRanges', () => {
 
   it('last7Days', () => {
     const [start, end] = dateRanges.last7Days();
-    expect(start.toISOString()).toBe(moment().add(-7, 'days').startOf('days').toISOString());
-    expect(end.toISOString()).toBe(moment().add(-1, 'days').endOf('days').toISOString());
+    expect(start.toISOString()).toBe(moment().add(-6, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(moment().endOf('days').toISOString());
   });
 
   it('next7Days', () => {
@@ -96,8 +96,8 @@ describe('getDateRanges', () => {
 
   it('last30Days', () => {
     const [start, end] = dateRanges.last30Days();
-    expect(start.toISOString()).toBe(moment().add(-30, 'days').startOf('days').toISOString());
-    expect(end.toISOString()).toBe(moment().add(-1, 'days').endOf('days').toISOString());
+    expect(start.toISOString()).toBe(moment().add(-29, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(moment().endOf('days').toISOString());
   });
 
   it('next30Days', () => {
@@ -108,8 +108,8 @@ describe('getDateRanges', () => {
 
   it('last90Days', () => {
     const [start, end] = dateRanges.last90Days();
-    expect(start.toISOString()).toBe(moment().add(-90, 'days').startOf('days').toISOString());
-    expect(end.toISOString()).toBe(moment().add(-1, 'days').endOf('days').toISOString());
+    expect(start.toISOString()).toBe(moment().add(-89, 'days').startOf('days').toISOString());
+    expect(end.toISOString()).toBe(moment().endOf('days').toISOString());
   });
 
   it('next90Days', () => {
