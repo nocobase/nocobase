@@ -466,9 +466,11 @@ export const Table: any = observer((props: any) => {
       <SortableWrapper>
         <AntdTable
           ref={(ref) => {
-            const headerHeight = ref?.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-            const paginationHeight = ref?.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-            setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+            if (ref) {
+              const headerHeight = ref.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
+              const paginationHeight = ref.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
+              setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
+            }
           }}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
