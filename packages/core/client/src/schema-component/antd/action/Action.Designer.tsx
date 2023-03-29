@@ -52,6 +52,7 @@ export const ActionDesigner = (props) => {
   const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isSupportEditButton = fieldSchema['x-action'] !== 'expandAll';
+  const isLink = fieldSchema['x-component'] === 'Action.Link';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -96,7 +97,7 @@ export const ActionDesigner = (props) => {
                   title: t('Button icon'),
                   default: fieldSchema?.['x-component-props']?.icon,
                   'x-component-props': {},
-                  'x-visible': isSupportEditButton,
+                  'x-visible': isSupportEditButton && !isLink,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 type: {
@@ -113,6 +114,7 @@ export const ActionDesigner = (props) => {
                     { value: 'primary', label: '{{t("Highlight")}}' },
                     { value: 'danger', label: '{{t("Danger red")}}' },
                   ],
+                  'x-visible': !isLink,
                 },
               },
             } as ISchema
