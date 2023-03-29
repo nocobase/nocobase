@@ -6,6 +6,8 @@ export default {
   "{{count}} more items": "{{count}} больше элементов",
   "Total {{count}} items": "Всего {{count}} элементов",
   "Today": "Сегодня",
+  "Yesterday": "Вчера",
+  "Tomorrow": "Завтра",
   "Month": "Месяц",
   "Week": "Неделя",
   "This week": "Эта неделя",

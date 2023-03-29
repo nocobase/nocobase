@@ -6,6 +6,8 @@ export default {
   "{{count}} more items": "{{count}} öğe daha",
   "Total {{count}} items": "Toplam {{count}} adet öğe",
   "Today": "Bugün",
+  "Yesterday": "Dün",
+  "Tomorrow": "Yarın",
   "Month": "Ay",
   "Week": "Hafta",
   "This week": "Bu Hafta",

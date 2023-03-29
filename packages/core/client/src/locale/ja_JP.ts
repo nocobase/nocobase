@@ -6,6 +6,8 @@ export default {
   "{{count}} more items": "{{count}} 件以上",
   "Total {{count}} items": "合計 {{count}} 件",
   "Today": "今日",
+  "Yesterday": "昨日",
+  "Tomorrow": "明日",
   "Month": "月",
   "Week": "週",
   "This week": "今週",

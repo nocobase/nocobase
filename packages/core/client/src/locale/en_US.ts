@@ -6,6 +6,8 @@ export default {
   "{{count}} more items": "{{count}} more items",
   "Total {{count}} items": "Total {{count}} items",
   "Today": "Today",
+  "Yesterday": "Yesterday",
+  "Tomorrow": "Tomorrow",
   "Month": "Month",
   "Week": "Week",
   "This week": "This week",
