@@ -24,3 +24,20 @@ export const isPlainObject = (value) => {
   const prototype = Object.getPrototypeOf(value);
   return prototype === null || prototype === Object.prototype;
 };
+
+export const hasEmptyValue = (objOrArr: object | any[]) => {
+  let result = true;
+  for (const key in objOrArr) {
+    result = false;
+    if (isArray(objOrArr[key]) && objOrArr[key].length === 0) {
+      return true;
+    }
+    if (!objOrArr[key]) {
+      return true;
+    }
+    if (isPlainObject(objOrArr[key]) || isArray(objOrArr[key])) {
+      return hasEmptyValue(objOrArr[key]);
+    }
+  }
+  return result;
+};
