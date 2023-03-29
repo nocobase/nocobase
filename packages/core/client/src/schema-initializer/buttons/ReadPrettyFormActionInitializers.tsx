@@ -132,6 +132,10 @@ export const ReadPrettyFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -154,6 +158,10 @@ export const ReadPrettyFormActionInitializers = {
             'x-component-props': {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
       ],
