@@ -8,6 +8,7 @@ import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { unstable_batchedUpdates } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable } from '../..';
 import {
@@ -437,15 +438,20 @@ export const Table: any = observer((props: any) => {
   }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
 
   const calcTableSize = () => {
-    if (!containerRef.current || !tableRef.current) return;
-    setTableHeight(Math.ceil(containerRef.current.clientHeight || 0));
+    // fixedBlock updated but dom not updated yet, so use setTimeout
+    setTimeout(() => {
+      if (!containerRef.current || !tableRef.current) return;
 
-    const headerHeight = tableRef.current.querySelector('.ant-table-header')?.clientHeight || 0;
-    const paginationHeight = tableRef.current.querySelector('.ant-table-pagination')?.clientHeight || 0;
-    setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 18));
+      const headerHeight = tableRef.current.querySelector('.ant-table-header')?.clientHeight || 0;
+      const paginationHeight = tableRef.current.querySelector('.ant-table-pagination')?.clientHeight || 0;
+      unstable_batchedUpdates(() => {
+        setTableHeight(Math.ceil(containerRef.current.clientHeight || 0));
+        setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 18));
+      });
+    });
   };
 
-  useEffect(calcTableSize, [field.value]);
+  useEffect(calcTableSize, [field.value, fixedBlock]);
   useEventListener('resize', calcTableSize);
 
   return (
