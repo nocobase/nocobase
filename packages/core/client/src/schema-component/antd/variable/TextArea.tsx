@@ -124,6 +124,7 @@ export function TextArea(props) {
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
@@ -193,14 +194,15 @@ export function TextArea(props) {
   }
 
   function onInput({ currentTarget }) {
+    if (ime) {
+      return;
+    }
     setChanged(true);
     setRange(getLatestRange(currentTarget));
     onChange(getValue(currentTarget));
   }
 
   function onBlur({ currentTarget }) {
-    const sel = window.getSelection?.();
-    const range = sel?.getRangeAt(0);
     setRange(getLatestRange(currentTarget));
   }
 
@@ -232,6 +234,7 @@ export function TextArea(props) {
           if (e.key === 'Enter') {
             e.preventDefault();
           }
+          setIME(e.keyCode === 229);
         }}
         className={cx(
           'ant-input',
