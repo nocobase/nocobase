@@ -61,7 +61,7 @@ export const PreviewFields = (props) => {
               if (v.source) {
                 return v;
               } else {
-                return fields.find((h) => h.name === v.name)||v;
+                return fields.find((h) => h.name === v.name) || v;
               }
             });
             field.value = fieldsData;
@@ -207,6 +207,12 @@ export const PreviewFields = (props) => {
         dataIndex: item.name,
         key: item.name,
         width: 150,
+        render: (text) => {
+          if (typeof text === 'boolean') {
+            return text?.toString();
+          }
+          return text;
+        },
       };
     });
   };
