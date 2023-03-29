@@ -255,9 +255,7 @@ export const AuditLogsViewActionInitializer = (props) => {
                                                             type: 'array',
                                                             'x-component': 'TableV2',
                                                             'x-component-props': {
-                                                              rowSelection: {
-                                                                type: 'checkbox',
-                                                              },
+                                                              rowSelection: false,
                                                               useProps: '{{ useTableFieldProps }}',
                                                             },
                                                             properties: {

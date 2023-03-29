@@ -1,4 +1,4 @@
-import { useCompile } from '@nocobase/client';
+import { EllipsisWithTooltip, useCompile } from '@nocobase/client';
 import React from 'react';
 import { observer, useField } from '@formily/react';
 
@@ -8,5 +8,9 @@ export const AuditLogsField = observer(() => {
   if (!field.value) {
     return null;
   }
-  return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
+  return (
+    <EllipsisWithTooltip ellipsis>
+      {field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}
+    </EllipsisWithTooltip>
+  );
 });
