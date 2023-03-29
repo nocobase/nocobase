@@ -22,18 +22,22 @@ describe('view inference', function () {
         {
           name: 'name',
           type: 'string',
+          interface: 'test',
         },
         {
           name: 'age',
           type: 'integer',
+          interface: 'test',
         },
         {
           name: 'profile',
           type: 'json',
+          interface: 'test',
         },
         {
           name: 'posts',
           type: 'hasMany',
+          interface: 'test',
         },
       ],
     });
@@ -44,10 +48,12 @@ describe('view inference', function () {
         {
           name: 'title',
           type: 'string',
+          interface: 'test',
         },
         {
           name: 'user',
           type: 'belongsTo',
+          interface: 'test',
         },
       ],
     });
