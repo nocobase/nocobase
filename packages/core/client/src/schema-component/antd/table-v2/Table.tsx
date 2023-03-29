@@ -125,12 +125,13 @@ const usePaginationProps = (pagination1, pagination2) => {
   if (!pagination2 && pagination1 === false) {
     return false;
   }
-  return {
+  const result = {
     showTotal: (total) => t('Total {{count}} items', { count: total }),
     showSizeChanger: true,
     ...pagination1,
     ...pagination2,
   };
+  return result.total < result.pageSize ? false : result;
 };
 
 const useValidator = (validator: (value: any) => string) => {
