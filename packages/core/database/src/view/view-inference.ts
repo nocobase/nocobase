@@ -55,7 +55,7 @@ export class ViewFieldInference {
             return collection.getField(fieldName);
           })();
 
-          if (collectionField) {
+          if (collectionField && collectionField.options.interface) {
             return [
               name,
               {
