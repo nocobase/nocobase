@@ -147,6 +147,7 @@ export const CreateRecordAction = observer((props) => {
         ) : (
           <Button
             type={componentType}
+            danger={componentType === 'danger'}
             icon={<PlusOutlined />}
             onClick={(info) => {
               setVisible(true);
