@@ -197,24 +197,26 @@ export const PreviewFields = (props) => {
     },
   ];
   const formatPreviewColumns = (data) => {
-    return data?.map((item) => {
-      const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
-      const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
-        ?.title;
-      const target = sourceField || item?.uiSchema?.title || item.name;
-      return {
-        title: compile(target),
-        dataIndex: item.name,
-        key: item.name,
-        width: 150,
-        render: (text) => {
-          if (typeof text === 'boolean') {
-            return text?.toString();
-          }
-          return text;
-        },
-      };
-    });
+    return data
+      .filter((k) => k.source || k.interface)
+      ?.map((item) => {
+        const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
+        const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
+          ?.title;
+        const target = sourceField || item?.uiSchema?.title || item.name;
+        return {
+          title: compile(target),
+          dataIndex: item.name,
+          key: item.name,
+          width: 150,
+          render: (text) => {
+            if (typeof text === 'boolean') {
+              return text?.toString();
+            }
+            return text;
+          },
+        };
+      });
   };
   return (
     dataSource.length > 0 && (
