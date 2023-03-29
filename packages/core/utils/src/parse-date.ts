@@ -172,9 +172,26 @@ function parseDateBetween(value: any, options = {} as { timezone?: string }) {
     const [startValue, endValue, op = '[]', timezone] = value;
     const r0 = parseDate(startValue, { timezone });
     const r1 = parseDate(endValue, { timezone });
-    const start = op.startsWith('(') ? r0[1] : r0[0];
-    const end = op.endsWith(')') ? r1[0] : r1[1];
-    return [start, end];
+    let start;
+    let startOp;
+    let end;
+    let endOp;
+    if (typeof r0 === 'string') {
+      start = r0;
+      startOp = op[0];
+    } else {
+      start = op.startsWith('(') ? r0[1] : r0[0];
+      startOp = '[';
+    }
+    if (typeof r1 === 'string') {
+      end = r1;
+      endOp = op[1];
+    } else {
+      end = op.endsWith(')') ? r1[0] : r1[1];
+      endOp = ')';
+    }
+    const newOp = startOp + endOp;
+    return newOp === '[)' ? [start, end] : [start, end, newOp];
   }
   if (typeof value !== 'string') {
     return;
