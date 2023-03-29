@@ -91,10 +91,11 @@ export const mapRangePicker = function () {
       value: str2moment(props.value, props),
       onChange: (value: moment.Moment[]) => {
         if (onChange) {
-          onChange([
-            moment2str(getRangeStart(value[0], props), props),
-            moment2str(getRangeEnd(value[1], props), props),
-          ]);
+          onChange(
+            value
+              ? [moment2str(getRangeStart(value[0], props), props), moment2str(getRangeEnd(value[1], props), props)]
+              : [],
+          );
         }
       },
     } as any;
