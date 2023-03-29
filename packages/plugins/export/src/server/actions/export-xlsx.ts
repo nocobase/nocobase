@@ -27,7 +27,7 @@ export async function exportXlsx(ctx: Context, next: Next) {
   const { rows, ranges } = await render({ columns, fields: collectionFields, data }, ctx);
   ctx.body = xlsx.build([
     {
-      name: title,
+      name: 'Sheet 1',
       data: rows,
       options: {
         '!merges': ranges,

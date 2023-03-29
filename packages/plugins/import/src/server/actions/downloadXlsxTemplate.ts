@@ -14,7 +14,7 @@ export async function downloadXlsxTemplate(ctx: Context, next: Next) {
 
   ctx.body = xlsx.build([
     {
-      name: title,
+      name: 'Sheet 1',
       data,
       options: {},
     },
@@ -23,7 +23,7 @@ export async function downloadXlsxTemplate(ctx: Context, next: Next) {
   ctx.set({
     'Content-Type': 'application/octet-stream',
     // to avoid "invalid character" error in header (RFC)
-    'Content-Disposition': `attachment; filename=${encodeURI(title)}.xlsx`,
+    'Content-Disposition': `attachment; filename=${encodeURIComponent(title)}.xlsx`,
   });
 
   await next();
