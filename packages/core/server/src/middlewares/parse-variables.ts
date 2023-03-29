@@ -1,11 +1,9 @@
-import { Collection } from '@nocobase/database';
 import { getDateVars, parseFilter } from '@nocobase/utils';
-import moment from 'moment';
 
 function getUser(ctx) {
   return async ({ fields }) => {
-    const collection = ctx.db.getCollection('users') as Collection;
-    const userFields = fields.filter((f) => f && collection.hasField(f));
+    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    ctx.logger?.info('filter-parse: ', { userFields });
     if (!ctx.state.currentUser) {
       return;
     }
@@ -15,6 +13,9 @@ function getUser(ctx) {
     const user = await ctx.db.getRepository('users').findOne({
       filterByTk: ctx.state.currentUser.id,
       fields: userFields,
+    });
+    ctx.logger?.info('filter-parse: ', {
+      $user: user?.toJSON(),
     });
     return user;
   };
@@ -34,7 +35,7 @@ export const parseVariables = async (ctx, next) => {
   }
   ctx.action.params.filter = await parseFilter(filter, {
     timezone: ctx.get('x-timezone'),
-    now: moment().toISOString(),
+    now: new Date().toISOString(),
     getField: (path) => {
       const fieldPath = path
         .split('.')
@@ -45,7 +46,7 @@ export const parseVariables = async (ctx, next) => {
     },
     vars: {
       $system: {
-        now: moment().toISOString(),
+        now: new Date().toISOString(),
       },
       $date: getDateVars(),
       $user: getUser(ctx),
