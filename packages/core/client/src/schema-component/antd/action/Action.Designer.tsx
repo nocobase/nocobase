@@ -8,6 +8,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
+import { OpenModeSchemaItems } from '../../../schema-items';
 
 import { requestSettingsSchema } from './utils';
 
@@ -139,62 +140,7 @@ export const ActionDesigner = (props) => {
           }}
         />
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
-        {isPopupAction && (
-          <SchemaSettings.SelectItem
-            title={t('Open mode')}
-            options={[
-              { label: t('Drawer'), value: 'drawer' },
-              { label: t('Dialog'), value: 'modal' },
-            ]}
-            value={fieldSchema?.['x-component-props']?.['openMode']}
-            onChange={(value) => {
-              field.componentProps.openMode = value;
-              fieldSchema['x-component-props']['openMode'] = value;
-
-              // when openMode change, set openSize value to default
-              delete fieldSchema['x-component-props']['openSize'];
-
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  'x-component-props': fieldSchema['x-component-props'],
-                },
-              });
-              dn.refresh();
-            }}
-          />
-        )}
-        {isPopupAction && ['modal', 'drawer'].includes(fieldSchema?.['x-component-props']?.['openMode']) && (
-          <SchemaSettings.Item>
-            <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
-              {t('Popup size')}
-              <Select
-                bordered={false}
-                options={[
-                  { label: t('Small'), value: 'small' },
-                  { label: t('Middle'), value: 'middle' },
-                  { label: t('Large'), value: 'large' },
-                ]}
-                value={
-                  fieldSchema?.['x-component-props']?.['openSize'] ??
-                  (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
-                }
-                onChange={(value) => {
-                  field.componentProps.openSize = value;
-                  fieldSchema['x-component-props']['openSize'] = value;
-                  dn.emit('patch', {
-                    schema: {
-                      'x-uid': fieldSchema['x-uid'],
-                      'x-component-props': fieldSchema['x-component-props'],
-                    },
-                  });
-                  dn.refresh();
-                }}
-                style={{ textAlign: 'right', minWidth: 100 }}
-              />
-            </div>
-          </SchemaSettings.Item>
-        )}
+        <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction}></OpenModeSchemaItems>
         {isUpdateModePopupAction && (
           <SchemaSettings.SelectItem
             title={t('Data will be updated')}

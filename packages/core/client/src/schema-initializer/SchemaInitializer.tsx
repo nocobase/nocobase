@@ -10,7 +10,7 @@ import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
   SchemaInitializerItemOptions,
-  SchemaInitializerItemProps
+  SchemaInitializerItemProps,
 } from './types';
 
 const defaultWrap = (s: ISchema) => s;
@@ -56,7 +56,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
           return <Menu.Divider key={item.key || `item-${indexA}`} />;
         }
         if (item.type === 'item' && item.component) {
-          const Component = findComponent(item.component);
+          const Component = typeof item.component === 'string' ? findComponent(item.component) : item.component;
           item.key = `${item.key || item.title}-${indexA}`;
           return (
             Component && (
