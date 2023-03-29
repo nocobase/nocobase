@@ -14,7 +14,7 @@ describe('filter', () => {
     await db.close();
   });
 
-  it.only('should filter by association field', async () => {
+  it('should filter by association field', async () => {
     const UserCollection = db.collection({
       name: 'users',
       fields: [
