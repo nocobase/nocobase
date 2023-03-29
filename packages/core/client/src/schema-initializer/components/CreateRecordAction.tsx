@@ -84,6 +84,7 @@ export const CreateRecordAction = observer((props) => {
   const fieldSchema = useFieldSchema();
   const enableChildren = fieldSchema['x-enable-children'] || [];
   const field = useField();
+  const componentType = field.componentProps.type || 'primary';
   const { getChildrenCollections } = useCollectionManager();
   const totalChildCollections = getChildrenCollections(collection.name);
   const inheritsCollections = enableChildren
@@ -97,7 +98,7 @@ export const CreateRecordAction = observer((props) => {
       }
       return {
         ...childCollection,
-        title: k.title||childCollection.title,
+        title: k.title || childCollection.title,
       };
     })
     .filter((v) => {
@@ -128,7 +129,7 @@ export const CreateRecordAction = observer((props) => {
       <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
         {inheritsCollections?.length > 0 ? (
           <Dropdown.Button
-            type="primary"
+            type={componentType}
             icon={<DownOutlined />}
             buttonsRender={([leftButton, rightButton]) => [
               leftButton,
@@ -145,7 +146,8 @@ export const CreateRecordAction = observer((props) => {
           </Dropdown.Button>
         ) : (
           <Button
-            type={'primary'}
+            type={componentType}
+            danger={componentType === 'danger'}
             icon={<PlusOutlined />}
             onClick={(info) => {
               setVisible(true);
