@@ -272,7 +272,15 @@ export class CollectionManagerPlugin extends Plugin {
           const [collectionSource, fieldSource] = field.get('source').split('.');
           const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
 
-          field.set('options', { ...collectionField.options, ...field.get('options') });
+          const newOptions = {};
+          lodash.merge(newOptions, collectionField.options);
+          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
+            if (srcValue === null) {
+              return objValue;
+            }
+          });
+
+          field.set('options', newOptions);
         }
       }
     };
