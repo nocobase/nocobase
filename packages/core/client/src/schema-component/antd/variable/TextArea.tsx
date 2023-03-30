@@ -141,6 +141,9 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
+      if (range.join() === '-1,0,-1,0') {
+        return;
+      }
       const sel = window.getSelection?.();
       if (sel) {
         const children = Array.from(current.childNodes) as HTMLElement[];
