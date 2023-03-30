@@ -360,7 +360,7 @@ export default {
   "is after": "晚于",
   "is on or after": "不早于",
   "is on or before": "不晚于",
-  "is between": "在范围内",
+  "is between": "介于",
 
   "Upload": "上传",
 
@@ -619,6 +619,7 @@ export default {
   'Current user': '当前用户',
   'Current record': '当前记录',
   'Current time': '当前时间',
+  'Now': '现在',
   'Popup close method': '弹窗关闭方式',
   'Automatic close': '自动关闭',
   'Manually close': '手动关闭',

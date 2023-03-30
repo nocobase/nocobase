@@ -15,12 +15,18 @@ const useVariableTypes = () => {
     {
       key: 'now',
       value: 'now',
-      label: `{{t("Current time")}}`,
+      label: `{{t("Now")}}`,
       disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
   ];
   const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema['x-component']);
   const dateOptions = [
+    {
+      key: 'now',
+      value: 'now',
+      label: `{{t("Now")}}`,
+      disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+    },
     {
       key: 'yesterday',
       value: 'yesterday',
@@ -151,12 +157,12 @@ const useVariableTypes = () => {
 
   return [
     userVariable,
-    {
-      title: `{{t("System variables")}}`,
-      value: '$system',
-      disabled: systemOptions.every((option) => option.disabled),
-      options: systemOptions,
-    },
+    // {
+    //   title: `{{t("System variables")}}`,
+    //   value: '$system',
+    //   disabled: systemOptions.every((option) => option.disabled),
+    //   options: systemOptions,
+    // },
     {
       title: `{{t("Date variables")}}`,
       value: '$date',
