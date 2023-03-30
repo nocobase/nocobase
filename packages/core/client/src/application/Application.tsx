@@ -1,6 +1,7 @@
 import { Spin } from 'antd';
 import { i18n as i18next } from 'i18next';
 import React, { useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
 import { ACLProvider } from '../acl';
@@ -131,6 +132,10 @@ export class Application {
     this.plugins.push(plugin);
   }
 
+  handleErrors(error: any, info: any) {
+    console.error(error, info);
+  }
+
   render() {
     return (props: any) => {
       const { plugins = [], dynamicImport } = this.options;
@@ -152,7 +157,11 @@ export class Application {
       if (loading) {
         return <Spin />;
       }
-      return <App providers={this.providers} />;
+      return (
+        <ErrorBoundary FallbackComponent={null} onError={this.handleErrors}>
+          <App providers={this.providers} />
+        </ErrorBoundary>
+      );
     };
   }
 }
