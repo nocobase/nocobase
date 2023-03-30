@@ -62,7 +62,6 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
             const result = evaluate(value.result || value.value, { ...scope, now: () => new Date().toString() });
             valueResult.push(result);
           } catch (error) {
-            console.log(error);
           }
         } else if (value?.mode === 'constant') {
           valueResult.push(value?.value || value);
