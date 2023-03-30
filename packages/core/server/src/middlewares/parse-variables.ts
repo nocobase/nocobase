@@ -29,7 +29,6 @@ function isNumeric(str: any) {
 
 export const parseVariables = async (ctx, next) => {
   const filter = ctx.action.params.filter;
-  console.log(ctx.get('x-timezone'));
   if (!filter) {
     return next();
   }
