@@ -129,6 +129,20 @@ export const defaultConfigurableProperties = {
       ...moreOptions,
     },
   },
+  fileStorage: {
+    title: '{{t("File storage")}}',
+    type: 'string',
+    'x-decorator': 'FormItem',
+    'x-component': 'Select',
+    'x-component-props': {
+      options: [
+        {
+          label: '{{t("Aliyun OSS")}}',
+          value: 'ali-oss',
+        },
+      ],
+    },
+  },
 };
 
 export type DefaultConfigurableKeys =
@@ -142,7 +156,8 @@ export type DefaultConfigurableKeys =
   | 'createdAt'
   | 'updatedAt'
   | 'sortable'
-  | 'moreOptions';
+  | 'moreOptions'
+  | 'fileStorage';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
   const props = {};
