@@ -104,7 +104,7 @@ export const Action: ComposedAction = observer((props: any) => {
       .filter((k) => !k.disabled)
       .map((v) => {
         return v.actions?.map((h) => {
-          linkageAction(h.operator, field, v.condition, values, designable);
+          linkageAction(h.operator, field, v.condition, values);
         });
       });
   }, [linkageRules, values]);
