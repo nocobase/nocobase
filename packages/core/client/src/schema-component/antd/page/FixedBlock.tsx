@@ -60,7 +60,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
   );
 };
 
-export const useFixedBlockDesignerSetting = () => {
+export const FixedBlockDesignerItem = () => {
   const field = useField();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
