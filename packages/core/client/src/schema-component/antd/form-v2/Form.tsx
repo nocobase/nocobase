@@ -71,8 +71,6 @@ const WithForm = (props) => {
   const { setFormValueChanged } = useActionContext();
   const linkageRules =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
-  const actionRef = React.useRef();
-  actionRef.current = linkageRules;
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -125,13 +123,7 @@ const WithForm = (props) => {
             const fields = h.targetFields.join(',');
             return onFieldReact(`*(${fields})`, (field: any, form) => {
               linkagefields.push(field);
-              //@ts-ignore
-              const flag = actionRef.current?.[index]?.actions?.find((v) => {
-                return (
-                  v.operator === h.operator && v.targetFields === h.targetFields && v?.value?.value === h?.value?.value
-                );
-              });
-              flag && linkageMergeAction(h, field, v.condition, form?.values);
+              linkageMergeAction(h, field, v.condition, form?.values);
               if (index === linkageRules.length - 1) {
                 setTimeout(() =>
                   linkagefields.map((v) => {
