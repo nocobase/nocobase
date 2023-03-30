@@ -69,37 +69,49 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = (operator, field, condition, values, designable) => {
-  const displayResult = [field.display];
-  const disableResult = [field.disabled];
+export const linkageAction = (operator, field, condition, values) => {
+  const disableResult = field?.linkageProperty?.disabled || [false];
+  const displayResult = field?.linkageProperty?.display || ['visible'];
   switch (operator) {
     case ActionType.Visible:
       if (conditionAnalyse(condition, values)) {
         displayResult.push(operator);
+        field.data = field.data || {};
+        field.data.hidden = false;
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: displayResult,
+      };
       field.display = last(displayResult);
       break;
     case ActionType.Hidden:
       if (conditionAnalyse(condition, values)) {
-        if (!designable) {
-          displayResult.push(operator);
-        } else {
-          field.data = field.data || {};
-          field.data.hidden = true;
-        }
+        field.data = field.data || {};
+        field.data.hidden = true;
+      } else {
+        field.data = field.data || {};
+        field.data.hidden = false;
       }
-      field.display = last(displayResult);
       break;
     case ActionType.Disabled:
       if (conditionAnalyse(condition, values)) {
         disableResult.push(true);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: disableResult,
+      };
       field.disabled = last(disableResult);
       break;
     case ActionType.Active:
       if (conditionAnalyse(condition, values)) {
         disableResult.push(false);
       }
+      field.linkageProperty = {
+        ...field.linkageProperty,
+        required: disableResult,
+      };
       field.disabled = last(disableResult);
       break;
     default:

@@ -1,14 +1,14 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu, Select } from 'antd';
+import { Menu } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
-import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { OpenModeSchemaItems } from '../../../schema-items';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 import { requestSettingsSchema } from './utils';
 
@@ -49,7 +49,9 @@ export const ActionDesigner = (props) => {
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
-  const isLinkageAction = Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0;
+  const isLinkageAction =
+    (Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0) ||
+    fieldSchema?.parent?.['x-initializer'] === 'DetailsActionInitializers';
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isSupportEditButton = fieldSchema['x-action'] !== 'expandAll';
   const isLink = fieldSchema['x-component'] === 'Action.Link';

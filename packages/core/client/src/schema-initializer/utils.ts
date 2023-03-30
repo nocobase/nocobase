@@ -821,7 +821,7 @@ export const createDetailsBlockSchema = (options) => {
           useProps: '{{ useDetailsBlockProps }}',
         },
         properties: {
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
