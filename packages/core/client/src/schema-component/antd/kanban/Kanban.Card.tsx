@@ -4,15 +4,11 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Card } from 'antd';
 import React, { useContext, useState } from 'react';
 import cls from 'classnames';
-import { ActionContext, BlockItem } from '..';
+import { ActionContext } from '..';
 import { DndContext } from '../..';
 import { RecordProvider } from '../../../record-provider';
 import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
 import { KanbanCardContext } from './context';
-
-const FormItem = observer((props) => {
-  return <BlockItem {...props} />;
-});
 
 export const KanbanCard: any = observer((props: any) => {
   const { setDisableCardDrag, cardViewerSchema, card, cardField, columnIndex, cardIndex } =
@@ -89,7 +85,14 @@ export const KanbanCard: any = observer((props: any) => {
         </DndContext>
       </Card>
       {cardViewerSchema && (
-        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+        <ActionContext.Provider
+          value={{
+            openMode: fieldSchema['x-component-props']?.['openMode'] || 'drawer',
+            openSize: fieldSchema['x-component-props']?.['openSize'],
+            visible,
+            setVisible,
+          }}
+        >
           <RecordProvider record={card}>
             <RecursionField
               basePath={cardField.address.concat(`${columnIndex}.cardViewer.${cardIndex}`)}

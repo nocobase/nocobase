@@ -1,6 +1,7 @@
+import { css } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Tag } from 'antd';
+import { Typography } from 'antd';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
@@ -52,7 +53,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
             {snapshot ? (
               text
             ) : isTagsMode ? (
-              <Tag>{text}</Tag>
+              <Typography.Text underline>{text}</Typography.Text>
             ) : (
               <a
                 onClick={(e) => {
@@ -67,7 +68,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
               </a>
             )}
           </span>
-          {index < arr.length - 1 && !isTagsMode ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
         </Fragment>
       );
     });

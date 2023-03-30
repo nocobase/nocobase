@@ -8,7 +8,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { useFixedBlockDesignerSetting } from '../page';
+import { FixedBlockDesignerItem } from '../page';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const KanbanDesigner = () => {
@@ -22,7 +22,6 @@ export const KanbanDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -60,7 +59,7 @@ export const KanbanDesigner = () => {
           });
         }}
       />
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />

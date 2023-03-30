@@ -44,7 +44,7 @@ export const EnableChildCollections = observer((props: any) => {
         properties: {
           childrenCollections: {
             type: 'array',
-            default: defaultValues,
+            default: defaultValues.filter((v) => childrenCollections.find((k) => k.name === v.collection)),
             'x-component': 'ArrayItems',
             'x-decorator': 'FormItem',
             items: {

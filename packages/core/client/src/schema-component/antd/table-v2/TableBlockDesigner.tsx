@@ -11,7 +11,7 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { useFixedBlockDesignerSetting } from '../page';
+import { FixedBlockDesignerItem } from '../page';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
@@ -43,7 +43,6 @@ export const TableBlockDesigner = () => {
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
   const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -84,7 +83,7 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={

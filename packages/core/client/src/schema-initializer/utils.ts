@@ -821,7 +821,7 @@ export const createDetailsBlockSchema = (options) => {
           useProps: '{{ useDetailsBlockProps }}',
         },
         properties: {
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1339,6 +1339,9 @@ export const createKanbanBlockSchema = (options) => {
             'x-label-disabled': true,
             'x-decorator': 'BlockItem',
             'x-component': 'Kanban.Card',
+            'x-component-props': {
+              openMode: 'drawer',
+            },
             'x-designer': 'Kanban.Card.Designer',
             properties: {
               grid: {
@@ -1353,6 +1356,7 @@ export const createKanbanBlockSchema = (options) => {
             title: '{{ t("View") }}',
             'x-designer': 'Action.Designer',
             'x-component': 'Kanban.CardViewer',
+            'x-action': 'view',
             'x-component-props': {
               openMode: 'drawer',
             },
