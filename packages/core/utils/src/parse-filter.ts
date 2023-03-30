@@ -85,7 +85,11 @@ const isDateOperator = (op) => {
   ].includes(op);
 };
 
-const dateValueWrapper = (value: string, timezone?: string) => {
+function isDate(input) {
+  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
+}
+
+const dateValueWrapper = (value: any, timezone?: string) => {
   if (!value) {
     return null;
   }
@@ -97,10 +101,17 @@ const dateValueWrapper = (value: string, timezone?: string) => {
     }
     return value;
   }
-  if (!timezone || /(\+|\-)\d\d\:\d\d$/.test(value)) {
-    return value;
+
+  if (typeof value === 'string') {
+    if (!timezone || /(\+|\-)\d\d\:\d\d$/.test(value)) {
+      return value;
+    }
+    return value + timezone;
   }
-  return value + timezone;
+
+  if (isDate(value)) {
+    return value.toISOString();
+  }
 };
 
 export type ParseFilterOptions = {
@@ -187,11 +198,11 @@ export function getDayRange(options: GetDayRangeOptions) {
     // 今天开始前
     m
       .clone()
-      .subtract(-1 * offset, 'day')
+      .subtract(-1 * offset - 1, 'day')
       .startOf('day')
       .format('YYYY-MM-DD'),
-    // 今天开始前
-    m.startOf('day').format('YYYY-MM-DD'),
+    // 明天开始前
+    m.clone().add(1, 'day').startOf('day').format('YYYY-MM-DD'),
     '[)',
     timezone,
   ];

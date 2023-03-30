@@ -1,7 +1,14 @@
 import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
+function isDate(input) {
+  return input instanceof Date || Object.prototype.toString.call(input) === '[object Date]';
+}
+
 const toDate = (date) => {
+  if (isDate(date)) {
+    return date;
+  }
   return new Date(date);
 };
 

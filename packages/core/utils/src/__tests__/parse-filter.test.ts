@@ -137,12 +137,12 @@ describe('getDayRange', () => {
       now: '2023-03-28T16:00:00.000Z',
       offset: -7,
       timezone: '+00:00',
-    }).toEqual(['2023-03-21', '2023-03-28', '[)', '+00:00']);
+    }).toEqual(['2023-03-22', '2023-03-29', '[)', '+00:00']);
     expectDayRange({
       now: '2023-03-28T16:00:00.000Z',
       offset: -7,
       timezone: '+08:00',
-    }).toEqual(['2023-03-22', '2023-03-29', '[)', '+08:00']);
+    }).toEqual(['2023-03-23', '2023-03-30', '[)', '+08:00']);
   });
 });
 
@@ -151,6 +151,7 @@ describe('parseFilter', () => {
     return {
       async toEqual(expected) {
         const r = await parseFilter(filter, options);
+        console.log(filter, r);
         return expect(r).toEqual(expected);
       },
     };
@@ -266,5 +267,45 @@ describe('parseFilter', () => {
         },
       },
     ).toEqual({ user: { id: { $eq: null } }, team: { id: { $eq: null }, name: { $eq: null } } });
+  });
+
+  test('$user', async () => {
+    const date = new Date();
+    await expectParseFilter(
+      {
+        'createdAt.$eq': '{{$user.team.createdAt}}',
+      },
+      {
+        vars: {
+          $user: async (fields) => {
+            return {
+              team: {
+                createdAt: date,
+              },
+            };
+          },
+        },
+      },
+    ).toEqual({ createdAt: { $eq: date } });
+  });
+
+  test('$dateOn', async () => {
+    const date = new Date();
+    await expectParseFilter(
+      {
+        'createdAt.$dateOn': '{{$user.team.createdAt}}',
+      },
+      {
+        vars: {
+          $user: async (fields) => {
+            return {
+              team: {
+                createdAt: date,
+              },
+            };
+          },
+        },
+      },
+    ).toEqual({ createdAt: { $dateOn: date.toISOString() } });
   });
 });
