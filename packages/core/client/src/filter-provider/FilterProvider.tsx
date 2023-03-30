@@ -57,7 +57,10 @@ export const FilterBlockRecord = ({
   const associatedFields = useAssociatedFields();
   const container = useRef(null);
 
-  const shouldApplyFilter = field.decoratorType !== 'FormBlockProvider' && field.decoratorProps.blockType !== 'filter';
+  const shouldApplyFilter =
+    field.decoratorType !== 'FilterFormBlockProvider' &&
+    field.decoratorType !== 'FormBlockProvider' &&
+    field.decoratorProps.blockType !== 'filter';
 
   const addBlockToDataBlocks = () => {
     recordDataBlocks({

@@ -94,7 +94,7 @@ export const useFormBlockProps = () => {
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
-      ctx.form.query('parent').take((field) => {
+      ctx.form?.query('parent').take((field) => {
         field.disabled = true;
         field.value = new Proxy({ ...record }, {});
       });
@@ -102,7 +102,7 @@ export const useFormBlockProps = () => {
   });
 
   useEffect(() => {
-    ctx.form.setInitialValues(ctx.service?.data?.data);
+    ctx.form?.setInitialValues(ctx.service?.data?.data);
   }, []);
   return {
     form: ctx.form,

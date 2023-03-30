@@ -28,6 +28,24 @@ const getSchema = (schema: IField, record: any, compile) => {
     properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
+    properties['defaultValue']['x-reactions'] = {
+      dependencies: [
+        'uiSchema.x-component-props.gmt',
+        'uiSchema.x-component-props.showTime',
+        'uiSchema.x-component-props.dateFormat',
+        'uiSchema.x-component-props.timeFormat',
+      ],
+      fulfill: {
+        state: {
+          componentProps: {
+            gmt: '{{$deps[0]}}',
+            showTime: '{{$deps[1]}}',
+            dateFormat: '{{$deps[2]}}',
+            timeFormat: '{{$deps[3]}}',
+          },
+        },
+      },
+    };
   }
   const initialValue: any = {
     name: `f_${uid()}`,

@@ -3,13 +3,14 @@ import { SchemaComponentOptions } from '../schema-component/core/SchemaComponent
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
+import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
+import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
-import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
@@ -20,6 +21,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         TableBlockProvider,
         TableSelectorProvider,
         FormBlockProvider,
+        FilterFormBlockProvider,
         FormFieldProvider,
         DetailsBlockProvider,
         KanbanBlockProvider,

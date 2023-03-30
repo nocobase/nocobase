@@ -5,23 +5,20 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useDesignable,
-  useSortFields,
   useTableBlockContext,
 } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 export const AuditLogsDesigner = () => {
-  const { name, title, sortable } = useCollection();
+  const { name, title } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
-  const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
-  const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   return (
     <GeneralSchemaDesigner title={title || name}>
       <SchemaSettings.ModalItem

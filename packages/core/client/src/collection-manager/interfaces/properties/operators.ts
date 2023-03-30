@@ -52,6 +52,7 @@ export const datetime = [
   { label: "{{ t('is after') }}", value: '$dateAfter' },
   { label: "{{ t('is on or after') }}", value: '$dateNotBefore' },
   { label: "{{ t('is on or before') }}", value: '$dateNotAfter' },
+  { label: "{{ t('is between') }}", value: '$dateBetween', schema: { 'x-component': 'DatePicker.RangePicker' } },
   { label: "{{ t('is empty') }}", value: '$empty', noValue: true },
   { label: "{{ t('is not empty') }}", value: '$notEmpty', noValue: true },
 ];
@@ -70,30 +71,6 @@ export const number = [
 export const id = [
   { label: '{{t("is")}}', value: '$eq', selected: true },
   { label: '{{t("is not")}}', value: '$ne' },
-  {
-    label: '{{t("is variable")}}',
-    value: '$isVar',
-    schema: {
-      'x-component': 'VariableCascader',
-      'x-component-props': {},
-    },
-  },
-  {
-    label: '{{t("is current logged-in user")}}',
-    value: '$isCurrentUser',
-    noValue: true,
-    visible(field) {
-      return field.collectionName === 'users';
-    },
-  },
-  {
-    label: '{{t("is not current logged-in user")}}',
-    value: '$isNotCurrentUser',
-    noValue: true,
-    visible(field) {
-      return field.collectionName === 'users';
-    },
-  },
   { label: '{{t("exists")}}', value: '$exists', noValue: true },
   { label: '{{t("not exists")}}', value: '$notExists', noValue: true },
 ];
