@@ -114,7 +114,10 @@ export const Action: ComposedAction = observer((props: any) => {
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       disabled={disabled}
-      style={{ opacity: field?.data?.hidden && 0.1 }}
+      style={{
+        display: !designable && field?.data?.hidden && 'none',
+        opacity: designable && field?.data?.hidden && 0.1,
+      }}
       onClick={(e: React.MouseEvent) => {
         if (!disabled) {
           e.preventDefault();
