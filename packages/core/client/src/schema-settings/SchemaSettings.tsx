@@ -251,7 +251,7 @@ const findGridSchema = (fieldSchema) => {
 const findBlockSchema = (fieldSchema) => {
   if (!fieldSchema) return null;
 
-  if (fieldSchema?.parent['x-component'] === 'Grid.Col') {
+  if (fieldSchema?.parent?.['x-component'] === 'Grid.Col') {
     return fieldSchema;
   }
   return findBlockSchema(fieldSchema?.parent);
@@ -328,7 +328,6 @@ SchemaSettings.FormItemTemplate = (props) => {
         setVisible(false);
         const { title } = getCollection(collectionName);
         const blockSchema = findBlockSchema(fieldSchema);
-        console.log('🚀 ~ file: SchemaSettings.tsx:331 ~ onClick={ ~ blockSchema:', fieldSchema, blockSchema);
         const values = await FormDialog(t('Save as template'), () => {
           const componentTitle = {
             FormItem: t('Form'),
