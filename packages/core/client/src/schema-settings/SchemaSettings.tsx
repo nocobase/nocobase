@@ -153,6 +153,7 @@ SchemaSettings.Template = (props) => {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
+  const blockSchema = findBlockSchema(fieldSchema);
   if (!collectionName) {
     return null;
   }
@@ -205,7 +206,7 @@ SchemaSettings.Template = (props) => {
           t,
           api,
           refresh: dn.refresh.bind(dn),
-          current: fieldSchema.parent,
+          current: blockSchema.parent,
         });
         sdn.loadAPIClientEvents();
         const { key } = await saveAsTemplate({
@@ -213,9 +214,9 @@ SchemaSettings.Template = (props) => {
           resourceName,
           componentName,
           name: values.name,
-          uid: fieldSchema['x-uid'],
+          uid: blockSchema['x-uid'],
         });
-        sdn.removeWithoutEmit(fieldSchema);
+        sdn.removeWithoutEmit(blockSchema);
         sdn.insertBeforeEnd({
           type: 'void',
           'x-component': 'BlockTemplate',
@@ -245,6 +246,15 @@ const findGridSchema = (fieldSchema) => {
     }
     return buf;
   }, null);
+};
+
+const findBlockSchema = (fieldSchema) => {
+  if (!fieldSchema) return null;
+
+  if (fieldSchema?.parent['x-component'] === 'Grid.Col') {
+    return fieldSchema;
+  }
+  return findBlockSchema(fieldSchema?.parent);
 };
 
 const findBlockTemplateSchema = (fieldSchema) => {
@@ -317,7 +327,8 @@ SchemaSettings.FormItemTemplate = (props) => {
       onClick={async () => {
         setVisible(false);
         const { title } = getCollection(collectionName);
-        const gridSchema = findGridSchema(fieldSchema);
+        const blockSchema = findBlockSchema(fieldSchema);
+        console.log('🚀 ~ file: SchemaSettings.tsx:331 ~ onClick={ ~ blockSchema:', fieldSchema, blockSchema);
         const values = await FormDialog(t('Save as template'), () => {
           const componentTitle = {
             FormItem: t('Form'),
@@ -347,7 +358,7 @@ SchemaSettings.FormItemTemplate = (props) => {
           t,
           api,
           refresh: dn.refresh.bind(dn),
-          current: gridSchema.parent,
+          current: blockSchema.parent,
         });
         sdn.loadAPIClientEvents();
         const { key } = await saveAsTemplate({
@@ -355,9 +366,9 @@ SchemaSettings.FormItemTemplate = (props) => {
           resourceName,
           componentName,
           name: values.name,
-          uid: gridSchema['x-uid'],
+          uid: blockSchema['x-uid'],
         });
-        sdn.removeWithoutEmit(gridSchema);
+        sdn.removeWithoutEmit(blockSchema);
         sdn.insertAdjacent(insertAdjacentPosition, {
           type: 'void',
           'x-component': 'BlockTemplate',
