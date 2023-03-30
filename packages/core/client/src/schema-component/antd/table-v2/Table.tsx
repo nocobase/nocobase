@@ -15,7 +15,7 @@ import {
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext,
+  useTableSelectorContext
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
