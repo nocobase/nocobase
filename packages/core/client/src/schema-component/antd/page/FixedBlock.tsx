@@ -42,17 +42,20 @@ export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
   const record = useRecord();
-  const isPopup = Object.keys(record);
+  const isPopup = Object.keys(record).length;
+  if (isPopup) {
+    return <>{props.children}</>;
+  }
   /**
    * The fixedBlockUID of false means that the page has no fixed blocks
    * isPopup means that the FixedBlock is in the popup mode
    */
-  if (!fixedBlock && fixedBlockUID && !isPopup) return null;
+  if (!fixedBlock && fixedBlockUID) return null;
   return (
     <div
       className="nb-fixed-block"
       style={{
-        height: fixedBlockUID !== false ? `calc(100vh - ${height}px)` : undefined,
+        height: fixedBlockUID ? `calc(100vh - ${height}px)` : undefined,
       }}
     >
       {props.children}
@@ -67,30 +70,28 @@ export const FixedBlockDesignerItem = () => {
   const { dn } = useDesignable();
   const record = useRecord();
 
-  return useMemo(() => {
-    if (Object.keys(record).length) {
-      return;
-    }
-    return (
-      <SchemaSettings.SwitchItem
-        title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']?.fixedBlock}
-        onChange={async (fixedBlock) => {
-          const decoratorProps = {
-            ...fieldSchema['x-decorator-props'],
-            fixedBlock,
-          };
-          await dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': decoratorProps,
-            },
-          });
-          field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
-        }}
-      />
-    );
-  }, [fieldSchema['x-decorator-props'], field.decoratorProps?.fixedBlock, dn, record]);
+  if (Object.keys(record).length) {
+    return null;
+  }
+  return (
+    <SchemaSettings.SwitchItem
+      title={t('Fix block')}
+      checked={fieldSchema['x-decorator-props']?.fixedBlock}
+      onChange={async (fixedBlock) => {
+        const decoratorProps = {
+          ...fieldSchema['x-decorator-props'],
+          fixedBlock,
+        };
+        await dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': decoratorProps,
+          },
+        });
+        field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
+      }}
+    />
+  );
 };
 
 interface FixedBlockProps {
