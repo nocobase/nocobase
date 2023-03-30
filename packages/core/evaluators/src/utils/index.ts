@@ -46,16 +46,18 @@ export function evaluate(this: Evaluator, expression: string, scope: Scope = {})
 
     const item = get(context, v);
 
+    let result;
+
     if (item == null) {
-      return 'null';
+      result = 'null';
+    } else if (typeof item === 'function') {
+      result = item();
+      result = typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
+    } else {
+      result = replaceNumberIndex(v, context);
     }
 
-    if (typeof item === 'function') {
-      const result = item();
-      return typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
-    }
-
-    return replaceNumberIndex(v, context);
+    return ` ${result} `;
   });
   return this(exp, context);
 }

@@ -68,10 +68,10 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
 function getValue(el) {
   const values: any[] = [];
   for (const node of el.childNodes) {
-    if (node.nodeName === 'SPAN') {
+    if (node.nodeName === 'SPAN' && node['dataset']['key']) {
       values.push(`{{${node['dataset']['key']}}}`);
     } else {
-      values.push(node.textContent?.trim?.());
+      values.push(node.textContent);
     }
   }
   return values.join('');
