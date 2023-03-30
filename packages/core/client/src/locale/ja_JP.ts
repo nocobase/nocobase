@@ -58,6 +58,7 @@ export default {
   "Value":"フィールド値",
   "Disabled":"無効化",
   "Enabled":"有効化",
+  "Empty":"くうきち",
   "Linkage rule":"連動規則",
   "Linkage rules":"連動規則",
   "Condition":"条件＃ジョウケン＃",
