@@ -165,7 +165,7 @@ export default {
   "Collection template": "数据表模板",
   "Calendar collection": "日历数据表",
   "General collection": "普通数据表",
-  "Connect to database view":"连接视图",
+  "Connect to database view":"连接数据库视图",
   "Source collections":"来源数据表",
   "Field source":"来源字段",
   "Preview":"预览",
