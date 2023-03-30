@@ -8,6 +8,11 @@ describe('parse date', () => {
     return expect(r);
   };
 
+  it('should parse empty', async () => {
+    expectDate(null).toBeUndefined();
+    expectDate('').toBeUndefined();
+  });
+
   it('should parse year', async () => {
     expectDate('2023').toEqual(['2023-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z']);
     expectDate('2023+08:00').toEqual(['2022-12-31T16:00:00.000Z', '2023-12-31T16:00:00.000Z']);

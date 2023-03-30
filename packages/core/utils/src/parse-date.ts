@@ -140,6 +140,9 @@ function dateRange(r: ParseDateResult) {
 }
 
 export function parseDate(value: any, options = {} as { timezone?: string }) {
+  if (!value) {
+    return;
+  }
   if (Array.isArray(value)) {
     return parseDateBetween(value, options);
   }
