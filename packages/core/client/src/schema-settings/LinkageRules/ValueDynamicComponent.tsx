@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Input, Select } from 'antd';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { DynamicComponent } from './DynamicComponent';
-const { Option } = Select;
 import { Variable } from '.././../schema-component';
 import { useVariableOptions } from './Variables';
+
+const { Option } = Select;
 
 export const ValueDynamicComponent = (props) => {
   const { fieldValue, schema, setValue, collectionName } = props;
@@ -55,6 +57,14 @@ export const ValueDynamicComponent = (props) => {
             scope={scope}
             style={{ minWidth: 460, marginRight: 15 }}
           />
+          <>
+            <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+              {t('Syntax references')}:
+            </span>
+            <a href="https://formulajs.info/functions/" target="_blank">
+              Formula.js
+            </a>
+          </>
         </div>
       ) : null}
     </Input.Group>
