@@ -1,12 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FixedBlockDesignerItem, useCompile, useDesignable } from '../..';
+import { FixedBlockDesignerItem, removeNullCondition, useDesignable } from '../..';
 import { useCalendarBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const CalendarDesigner = () => {
   const field = useField();
@@ -115,7 +116,9 @@ export const CalendarDesigner = () => {
                 default: defaultFilter,
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
@@ -127,6 +130,7 @@ export const CalendarDesigner = () => {
           }
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

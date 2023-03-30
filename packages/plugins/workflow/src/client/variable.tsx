@@ -1,15 +1,14 @@
-import { useCollectionManager, useCompile } from "@nocobase/client";
-
-import { instructions, useAvailableUpstreams, useNodeContext } from "./nodes";
-import { useFlowContext } from "./FlowContext";
-import { triggers } from "./triggers";
-import { NAMESPACE } from "./locale";
+import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useFlowContext } from './FlowContext';
+import { NAMESPACE } from './locale';
+import { instructions, useAvailableUpstreams, useNodeContext } from './nodes';
+import { triggers } from './triggers';
 
 export type VariableOption = {
   key: string;
   value: string;
   label: string;
-  children?: VariableOption[]
+  children?: VariableOption[];
 };
 
 const VariableTypes = [
@@ -51,18 +50,18 @@ const VariableTypes = [
       {
         key: 'now',
         value: 'now',
-        label: `{{t("Current time", { ns: "${NAMESPACE}" })}}`,
-      }
-    ]
-  }
+        label: `{{t("Now")}}`,
+      },
+    ],
+  },
 ];
 
 export const TypeSets = {
   boolean: new Set(['boolean']),
   number: new Set(['integer', 'bigInt', 'float', 'double', 'real', 'decimal']),
   string: new Set(['string', 'text', 'password']),
-  date: new Set(['date', 'time'])
-}
+  date: new Set(['date', 'time']),
+};
 
 function matchFieldType(field, type): Boolean {
   if (typeof type === 'string') {
@@ -70,17 +69,17 @@ function matchFieldType(field, type): Boolean {
   }
 
   if (typeof type === 'object' && type.type === 'reference') {
-    return (field.collectionName === type.options?.collection && field.name === 'id')
-      || (field.type === 'belongsTo' && field.target === type.options?.collection);
+    return (
+      (field.collectionName === type.options?.collection && field.name === 'id') ||
+      (field.type === 'belongsTo' && field.target === type.options?.collection)
+    );
   }
 
   return false;
 }
 
 export function filterTypedFields(fields, types) {
-  return types
-    ? fields.filter(field => types.some(type => matchFieldType(field, type)))
-    : fields;
+  return types ? fields.filter((field) => types.some((type) => matchFieldType(field, type))) : fields;
 }
 
 export function useWorkflowVariableOptions() {
@@ -92,7 +91,7 @@ export function useWorkflowVariableOptions() {
       value: item.value,
       key: item.value,
       children: compile(options),
-      disabled: options && !options.length
+      disabled: options && !options.length,
     };
   });
   return options;
@@ -102,26 +101,28 @@ export function useCollectionFieldOptions(props) {
   const { fields, collection, types } = props;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  const result = filterTypedFields((fields ?? getCollectionFields(collection)), types)
-    .map(field => ({
-        label: compile(field.uiSchema?.title || field.name),
-        key: field.name,
-        value: field.name,
-        children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-          ? getCollectionFields(field.target)?.filter(subField => subField.interface && (!subField.target || subField.type === 'belongsTo'))
-            .map(subField => subField.type === 'belongsTo'
+  const result = filterTypedFields(fields ?? getCollectionFields(collection), types).map((field) => ({
+    label: compile(field.uiSchema?.title || field.name),
+    key: field.name,
+    value: field.name,
+    children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+      ? getCollectionFields(field.target)
+          ?.filter((subField) => subField.interface && (!subField.target || subField.type === 'belongsTo'))
+          .map((subField) =>
+            subField.type === 'belongsTo'
               ? {
-                label: `${compile(subField.uiSchema?.title || subField.name)} ID`,
-                key: subField.foreignKey,
-                value: subField.foreignKey,
-              }
+                  label: `${compile(subField.uiSchema?.title || subField.name)} ID`,
+                  key: subField.foreignKey,
+                  value: subField.foreignKey,
+                }
               : {
-                label: compile(subField.uiSchema?.title || subField.name),
-                key: subField.name,
-                value: subField.name,
-              })
-          : null
-      }));
+                  label: compile(subField.uiSchema?.title || subField.name),
+                  key: subField.name,
+                  value: subField.name,
+                },
+          )
+      : null,
+  }));
 
   return result;
 }

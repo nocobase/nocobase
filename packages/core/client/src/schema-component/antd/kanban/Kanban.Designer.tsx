@@ -7,7 +7,9 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
@@ -35,12 +37,15 @@ export const KanbanDesigner = () => {
                 default: defaultFilter,
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

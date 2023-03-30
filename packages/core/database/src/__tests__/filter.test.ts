@@ -47,14 +47,14 @@ describe('filter', () => {
       },
     });
 
-    const response = await UserCollection.repository.find({
+    const count = await PostCollection.repository.count({
       filter: {
-        'posts.createdAt': {
+        'user.createdAt': {
           $dateOn: user.get('createdAt'),
         },
       },
     });
 
-    expect(response).toHaveLength(1);
+    expect(count).toBe(2);
   });
 });

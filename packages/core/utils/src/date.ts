@@ -4,6 +4,7 @@ export interface Str2momentOptions {
   gmt?: boolean;
   picker?: 'year' | 'month' | 'week' | 'quarter';
   utcOffset?: any;
+  utc?: boolean;
 }
 
 export const getDefaultFormat = (props: any) => {
@@ -28,27 +29,22 @@ export const getDefaultFormat = (props: any) => {
   return props['showTime'] ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
 };
 
-export const toGmt = (value: moment.Moment | moment.Moment[]) => {
-  if (!value) {
+export const toGmt = (value: moment.Moment) => {
+  if (!value || !moment.isMoment(value)) {
     return value;
   }
-  if (Array.isArray(value)) {
-    return value.map((val) => `${val.format('YYYY-MM-DD')}T${val.format('HH:mm:ss.SSS')}Z`);
-  }
-  if (moment.isMoment(value)) {
-    return `${value.format('YYYY-MM-DD')}T${value.format('HH:mm:ss.SSS')}Z`;
-  }
+  return `${value.format('YYYY-MM-DD')}T${value.format('HH:mm:ss.SSS')}Z`;
 };
 
-export const toLocal = (value: moment.Moment | moment.Moment[]) => {
+export const toLocal = (value: moment.Moment) => {
   if (!value) {
     return value;
   }
   if (Array.isArray(value)) {
-    return value.map((val) => val.toISOString());
+    return value.map((val) => val.startOf('second').toISOString());
   }
   if (moment.isMoment(value)) {
-    return value.toISOString();
+    return value.startOf('second').toISOString();
   }
 };
 
@@ -57,10 +53,15 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     return;
   }
   const offset = options.utcOffset || -1 * new Date().getTimezoneOffset();
+  const { gmt, picker, utc = true } = options;
+
+  if (!utc) {
+    return moment(val);
+  }
+
   if (moment.isMoment(val)) {
     return val.utcOffset(offset);
   }
-  const { gmt, picker } = options;
   if (gmt || picker) {
     return moment(val).utcOffset(0);
   }
@@ -111,7 +112,7 @@ export interface Moment2strOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
 
-export const moment2str = (value?: moment.Moment | moment.Moment[], options: Moment2strOptions = {}) => {
+export const moment2str = (value?: moment.Moment, options: Moment2strOptions = {}) => {
   const { showTime, gmt, picker } = options;
   if (!value) {
     return value;
@@ -120,21 +121,4 @@ export const moment2str = (value?: moment.Moment | moment.Moment[], options: Mom
     return gmt ? toGmt(value) : toLocal(value);
   }
   return toGmtByPicker(value, picker);
-};
-
-export const mapDateFormat = function () {
-  return (props: any) => {
-    const format = getDefaultFormat(props) as any;
-    const onChange = props.onChange;
-    return {
-      ...props,
-      format: format,
-      value: str2moment(props.value, props),
-      onChange: (value: moment.Moment | moment.Moment[]) => {
-        if (onChange) {
-          onChange(moment2str(value, props));
-        }
-      },
-    };
-  };
 };
