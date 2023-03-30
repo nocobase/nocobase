@@ -2,13 +2,14 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useActionContext } from '../..';
+import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
+import { useRecord } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { useRecord } from '../../../record-provider';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -18,7 +19,6 @@ import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
-import { useDesignable } from '../../';
 import { linkageAction } from './utils';
 
 export const actionDesignerCss = css`
