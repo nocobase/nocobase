@@ -10,20 +10,22 @@ const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;
   height: number;
   fixedBlockUID: boolean | string;
+  fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
 }>({
   setFixedBlock: () => {},
   height: 0,
   fixedBlockUID: false,
+  fixedBlockUIDRef: { current: false },
 });
 
 export const useFixedSchema = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { setFixedBlock, fixedBlockUID } = useFixedBlock();
+  const { setFixedBlock, fixedBlockUID, fixedBlockUIDRef } = useFixedBlock();
   const hasSet = useRef(false);
 
   useEffect(() => {
-    if (!fixedBlockUID || hasSet.current) {
+    if (!fixedBlockUIDRef.current || hasSet.current) {
       setFixedBlock(field?.decoratorProps?.fixedBlock ? fieldSchema['x-uid'] : false);
       hasSet.current = true;
     }
@@ -39,6 +41,7 @@ export const useFixedBlock = () => {
 export const FixedBlockWrapper: React.FC = (props) => {
   const fixedBlock = useFixedSchema();
   const { height, fixedBlockUID } = useFixedBlock();
+
   // The fixedBlockUID of false means that the page has no fixed blocks
   if (!fixedBlock && fixedBlockUID) return null;
   return (
@@ -112,9 +115,14 @@ const fixedBlockCss = css`
 
 const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
-  const [fixedBlockUID, setFixedBlock] = useState<false | string>(false);
+  const [fixedBlockUID, _setFixedBlock] = useState<false | string>(false);
+  const fixedBlockUIDRef = useRef(fixedBlockUID);
+  const setFixedBlock = (v) => {
+    fixedBlockUIDRef.current = v;
+    _setFixedBlock(v);
+  };
   return (
-    <FixedBlockContext.Provider value={{ height, setFixedBlock, fixedBlockUID }}>
+    <FixedBlockContext.Provider value={{ height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
       <div
         className={fixedBlockUID ? fixedBlockCss : ''}
         style={{
