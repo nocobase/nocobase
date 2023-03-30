@@ -45,7 +45,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
   const isPopup = Object.keys(record);
   /**
    * The fixedBlockUID of false means that the page has no fixed blocks
-   * isPopup means that the page is in the popup mode
+   * isPopup means that the FixedBlock is in the popup mode
    */
   if (!fixedBlock && fixedBlockUID && !isPopup) return null;
   return (
