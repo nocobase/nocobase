@@ -53,14 +53,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
             {snapshot ? (
               text
             ) : isTagsMode ? (
-              <Typography.Text
-                className={css`
-                  margin-left: 8px;
-                `}
-                underline
-              >
-                {text}
-              </Typography.Text>
+              <Typography.Text underline>{text}</Typography.Text>
             ) : (
               <a
                 onClick={(e) => {
@@ -75,7 +68,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
               </a>
             )}
           </span>
-          {index < arr.length - 1 && !isTagsMode ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
         </Fragment>
       );
     });
