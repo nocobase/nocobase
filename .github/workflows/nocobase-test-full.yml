@@ -1,4 +1,4 @@
-name: NocoBase Test
+name: NocoBase Test Full
 
 on:
   push:
@@ -6,10 +6,18 @@ on:
       - main
       - develop
     paths:
-      - 'packages/**'
+      - 'packages/core/acl/**'
+      - 'packages/core/actions/**'
+      - 'packages/core/database/**'
+      - 'packages/core/server/**'
+      - 'packages/plugins/**/src/server/**'
   pull_request:
     paths:
-      - 'packages/**'
+      - 'packages/core/acl/**'
+      - 'packages/core/actions/**'
+      - 'packages/core/database/**'
+      - 'packages/core/server/**'
+      - 'packages/plugins/**/src/server/**'
 
 jobs:
   build-test:
