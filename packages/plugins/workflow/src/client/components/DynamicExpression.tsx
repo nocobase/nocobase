@@ -21,6 +21,7 @@ const InternalDynamicExpression = observer<any>((props) => {
   const { segments } = address.parent();
   const current = segments[segments.length - 1];
   const collection = getValuesIn([current, 'collection']);
+  console.log('-------', collection);
 
   const { interfaces, getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(collection)
@@ -53,10 +54,12 @@ function Config() {
   const field = useField<Field>();
   const { setValuesIn, getValuesIn } = useForm();
   const form = useForm();
+  const currentPath = field.address.segments[field.address.segments.length - 1];
 
   useFormEffects(() => {
     onFieldValueChange(field.address.concat('collection'), (f) => {
-      setValuesIn(field.address.concat('expression').segments, null);
+      console.log('----', f);
+      setValuesIn([currentPath, 'expression'], null);
     });
   });
 
