@@ -1,8 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import React, { useMemo } from 'react';
+import Item from 'antd/lib/list/Item';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
+import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCompile } from '../../hooks';
 import { defaultFieldNames, Select } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -12,15 +14,17 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   onChange?: (v: any) => void;
   target: string;
   wait?: number;
+  manual?: boolean;
   service: ResourceActionOptions<P>;
 };
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, ...others } = props;
+    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, manual = true, ...others } = props;
     const compile = useCompile();
+    const firstRun = useRef(false);
 
-    const { data, run } = useRequest(
+    const { data, run, loading } = useRequest(
       {
         action: 'list',
         ...service,
@@ -29,40 +33,86 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: {
-            $and: [service?.params?.filter].filter(Boolean),
-          },
+          filter: mergeFilter([service?.params?.filter]),
         },
       },
       {
+        manual,
         debounceWait: wait,
-        refreshDeps: [service, fieldNames.label, fieldNames.value],
       },
     );
 
+    const runDep = useMemo(
+      () =>
+        JSON.stringify({
+          service,
+          fieldNames,
+        }),
+      [service, fieldNames],
+    );
+
+    useEffect(() => {
+      // Lazy load
+      if (firstRun.current) {
+        run();
+      }
+    }, [runDep]);
+
     const onSearch = async (search) => {
       run({
-        filter: {
-          $and: [
-            {
-              [fieldNames.label]: {
-                $includes: search,
-              },
+        filter: mergeFilter([
+          {
+            [fieldNames.label]: {
+              $includes: search,
             },
-            service?.params?.filter,
-          ].filter(Boolean),
-        },
+          },
+          service?.params?.filter,
+        ]),
       });
     };
 
+    const getOptionsByFieldNames = useCallback(
+      (item) => {
+        return Object.keys(fieldNames).reduce((obj, key) => {
+          const value = item[fieldNames[key]];
+          if (value) {
+            // support hidden, disabled, etc.
+            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
+              key === 'label' ? compile(value) : value;
+          }
+          return obj;
+        }, {} as any);
+      },
+      [fieldNames],
+    );
+    const normalizeOptions = useCallback(
+      (obj) => {
+        if (objectValue || typeof obj === 'object') {
+          return getOptionsByFieldNames(obj);
+        }
+        return { [fieldNames.value]: obj, [fieldNames.label]: obj };
+      },
+      [objectValue, getOptionsByFieldNames],
+    );
+
     const options = useMemo(() => {
-      return (
-        data?.data?.map((item) => ({
-          ...item,
-          [fieldNames.label]: compile(item[fieldNames.label]),
-        })) || []
-      );
-    }, [data, fieldNames.label]);
+      if (!data?.data?.length) {
+        return value !== undefined && value !== null
+          ? Array.isArray(value)
+            ? value.map(normalizeOptions)
+            : [normalizeOptions(value)]
+          : [];
+      }
+      return data?.data?.map(getOptionsByFieldNames) || [];
+    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
+
+    const onDropdownVisibleChange = () => {
+      if (firstRun.current) {
+        return;
+      }
+      run();
+      firstRun.current = true;
+    };
 
     return (
       <Select
@@ -71,7 +121,11 @@ const InternalRemoteSelect = connect(
         filterSort={null}
         fieldNames={fieldNames}
         onSearch={onSearch}
+        onDropdownVisibleChange={onDropdownVisibleChange}
+        objectValue={objectValue}
+        value={value}
         {...others}
+        loading={loading}
         options={options}
       />
     );
@@ -79,7 +133,6 @@ const InternalRemoteSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

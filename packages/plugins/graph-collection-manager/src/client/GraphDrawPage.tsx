@@ -1,8 +1,10 @@
 import {
   ApartmentOutlined,
   FullscreenExitOutlined,
-  FullscreenOutlined, LineHeightOutlined, MenuOutlined,
-  ShareAltOutlined
+  FullscreenOutlined,
+  LineHeightOutlined,
+  MenuOutlined,
+  ShareAltOutlined,
 } from '@ant-design/icons';
 import { Graph } from '@antv/x6';
 import '@antv/x6-react-shape';
@@ -10,13 +12,19 @@ import { css, cx } from '@emotion/css';
 import { SchemaOptionsContext } from '@formily/react';
 import {
   APIClientProvider,
-  collection, CollectionManagerContext, CollectionManagerProvider,
+  collection,
+  CollectionManagerContext,
+  CollectionManagerProvider,
   CurrentAppInfoContext,
   SchemaComponent,
-  SchemaComponentOptions, Select, useAPIClient,
+  SchemaComponentOptions,
+  Select,
+  useAPIClient,
   useCollectionManager,
   useCompile,
-  useCurrentAppInfo
+  useCurrentAppInfo,
+  CollectionCategroriesProvider,
+  CollectionCategroriesContext,
 } from '@nocobase/client';
 import { useFullscreen } from 'ahooks';
 import { Button, Input, Layout, Menu, Popover, Switch, Tooltip } from 'antd';
@@ -28,7 +36,14 @@ import { AddCollectionAction } from './components/AddCollectionAction';
 import Entity from './components/Entity';
 import { SimpleNodeView } from './components/ViewNode';
 import { collectionListClass, graphCollectionContainerClass } from './style';
-import { formatData, getChildrenCollections, getDiffEdge, getDiffNode, getInheritCollections, useGCMTranslation } from './utils';
+import {
+  formatData,
+  getChildrenCollections,
+  getDiffEdge,
+  getDiffNode,
+  getInheritCollections,
+  useGCMTranslation,
+} from './utils';
 
 const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
@@ -360,6 +375,7 @@ export const GraphDrawPage = React.memo(() => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+  const categoryCtx = useContext(CollectionCategroriesContext);
   const scope = { ...options?.scope };
   const components = { ...options?.components };
   const useSaveGraphPositionAction = async (data) => {
@@ -392,7 +408,6 @@ export const GraphDrawPage = React.memo(() => {
   };
   const refreshGM = async () => {
     const data = await refreshCM();
-    console.log(data);
     targetGraph.collections = data;
     targetGraph.updatePositionAction = useUpdatePositionAction;
     const currentNodes = targetGraph.getNodes();
@@ -491,15 +506,17 @@ export const GraphDrawPage = React.memo(() => {
           <CurrentAppInfoContext.Provider value={database}>
             <APIClientProvider apiClient={api}>
               <SchemaComponentOptions inherit scope={scope} components={components}>
-                <CollectionManagerProvider
-                  collections={targetGraph?.collections}
-                  refreshCM={refreshGM}
-                  interfaces={ctx.interfaces}
-                >
-                  <div style={{ height: 'auto' }}>
-                    <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
-                  </div>
-                </CollectionManagerProvider>
+                <CollectionCategroriesProvider {...categoryCtx}>
+                  <CollectionManagerProvider
+                    collections={targetGraph?.collections}
+                    refreshCM={refreshGM}
+                    interfaces={ctx.interfaces}
+                  >
+                    <div style={{ height: 'auto' }}>
+                      <Entity node={node} setTargetNode={setTargetNode} targetGraph={targetGraph} />
+                    </div>
+                  </CollectionManagerProvider>
+                </CollectionCategroriesProvider>
               </SchemaComponentOptions>
             </APIClientProvider>
           </CurrentAppInfoContext.Provider>

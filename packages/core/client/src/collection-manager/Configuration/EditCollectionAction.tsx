@@ -1,8 +1,8 @@
 import { ArrayTable } from '@formily/antd';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { omit } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
+import omit from 'lodash/omit';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
@@ -78,10 +78,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
 
 export const useValuesFromRecord = (options) => {
   const record = useRecord();
-  const result = useRequest(() => Promise.resolve({ data: { autoGenId: true, ...record,category:record?.category.map((v)=>v.id) } }), {
-    ...options,
-    manual: true,
-  });
+  const result = useRequest(
+    () => Promise.resolve({ data: { ...omit(record, ['__parent']), category: record?.category.map((v) => v.id) } }),
+    {
+      ...options,
+      manual: true,
+    },
+  );
   const ctx = useActionContext();
   useEffect(() => {
     if (ctx.visible) {

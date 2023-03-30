@@ -6,7 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { useActionContext } from '../..';
 import { Icon } from '../../../icon';
 import { SortableItem } from '../../common';
-import { useCompile, useDesigner } from '../../hooks';
+import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
 import { useRecord } from '../../../record-provider';
 import ActionContainer from './Action.Container';
@@ -96,7 +96,8 @@ export const Action: ComposedAction = observer((props: any) => {
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
-  const { designable } = useDesignable();
+  const { designable, } = useDesignable();
+  const tarComponent=useComponent(component)||component;
   useEffect(() => {
     field.linkageProperty = {};
     linkageRules.map((v) => {
@@ -134,7 +135,7 @@ export const Action: ComposedAction = observer((props: any) => {
           }
         }
       }}
-      component={component || Button}
+      component={tarComponent || Button}
       className={classnames(className, actionDesignerCss)}
     >
       {title || compile(fieldSchema.title)}

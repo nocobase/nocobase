@@ -117,8 +117,7 @@ export function WorkflowCanvas() {
     <FlowContext.Provider value={{
       workflow,
       nodes,
-      onNodeAdded: refresh,
-      onNodeRemoved: refresh
+      refresh,
     }}>
       <div className="workflow-toolbar">
         <header>
@@ -199,7 +198,7 @@ export function WorkflowCanvas() {
         <div className={branchBlockClass}>
           <Branch entry={entry} />
         </div>
-        <div className={cx(nodeCardClass)}>
+        <div className={cx('end', nodeCardClass)}>
           <div className={cx(nodeMetaClass)}>
             <Tag color="#333">{lang('End')}</Tag>
           </div>

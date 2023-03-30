@@ -34,6 +34,14 @@ export const workflowPageClass = css`
     flex-direction: column;
     align-items: center;
     padding: 2em;
+
+    .end{
+      cursor: default;
+
+      &:hover{
+        box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+      }
+    }
   }
 `;
 
@@ -157,19 +165,27 @@ export const nodeClass = css`
 `;
 
 export const nodeCardClass = css`
+  position: relative;
   width: 20em;
   background: #fff;
   padding: 1em;
   box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+  border-radius: .5em;
+  cursor: pointer;
+  transition: box-shadow .3s ease;
+
+  &.configuring{
+    box-shadow: 0 .25em 1em rgba(0, 100, 200, .25);
+  }
 
   .workflow-node-remove-button,
   .workflow-node-job-button{
     position: absolute;
-    right: -.5em;
-    top: -.5em;
   }
 
   .workflow-node-remove-button{
+    right: .5em;
+    top: .5em;
     color: #999;
     opacity: 0;
     transition: opacity .3s ease;
@@ -185,8 +201,8 @@ export const nodeCardClass = css`
 
   .workflow-node-job-button{
     display: flex;
-    top: 0;
-    right: 0;
+    top: 1em;
+    right: 1em;
     width: 1.25rem;
     height: 1.25rem;
     min-width: 1.25rem;
@@ -200,7 +216,32 @@ export const nodeCardClass = css`
     }
   }
 
+  .ant-input{
+    font-weight: bold;
+
+    &:not(:focus){
+      transition: background-color .3s ease, border-color .3s ease;
+      border-color: #f7f7f7;
+      background-color: #f7f7f7;
+
+      &:not(:disabled):hover{
+        border-color: #eee;
+        background-color: #eee;
+      }
+
+      &:disabled:hover{
+        border-color: #f7f7f7;
+      }
+    }
+  }
+
+  .workflow-node-config-button{
+    padding: 0;
+  }
+
   &:hover{
+    box-shadow: 0 .25em .5em rgba(0, 0, 0, .25);
+
     .workflow-node-remove-button{
       opacity: 1;
     }
@@ -213,13 +254,20 @@ export const nodeHeaderClass = css`
 
 export const nodeMetaClass = css`
   margin-bottom: .5em;
+
+  .workflow-node-id{
+    color: #999;
+
+    &:before{
+      content: "#"
+    }
+  }
 `;
 
 export const nodeTitleClass = css`
   display: flex;
   align-items: center;
   font-weight: normal;
-
   .workflow-node-id{
     color: #999;
   }
@@ -234,4 +282,10 @@ export const nodeSubtreeClass = css`
 export const addButtonClass = css`
   flex-shrink: 0;
   padding: 2em 0;
+
+  > .ant-btn{
+    &:disabled{
+      visibility: hidden;
+    }
+  }
 `;

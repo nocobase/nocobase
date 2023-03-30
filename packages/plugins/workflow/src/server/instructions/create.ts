@@ -5,12 +5,12 @@ export default {
   async run(node: FlowNodeModel, input, processor) {
     const {
       collection,
-      params = {}
+      params: { appends = [], ...params } = {}
     } = node.config;
 
-    const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
+    const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);
     const options = processor.getParsedValue(params);
-    const result = await repo.create({
+    const result = await repository.create({
       ...options,
       context: {
         executionId: processor.execution.id
@@ -18,9 +18,22 @@ export default {
       transaction: processor.transaction
     });
 
+    if (result && appends.length) {
+      const includeFields = appends.filter(field => !result.get(field) || !result[field]);
+      const included = await model.findByPk(result[model.primaryKeyAttribute], {
+        attributes: [model.primaryKeyAttribute],
+        include: includeFields,
+        transaction: processor.transaction
+      });
+      includeFields.forEach(field => {
+        const value = included!.get(field);
+        result.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : value.toJSON(), { raw: true });
+      });
+    }
+
     return {
       // NOTE: get() for non-proxied instance (#380)
-      result: result.get(),
+      result: result?.toJSON(),
       status: JOB_STATUS.RESOLVED
     };
   }

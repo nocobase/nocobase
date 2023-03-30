@@ -123,6 +123,8 @@ ReadPretty.JSON = (props) => {
     <pre
       className={cx(prefixCls, props.className, css`
         margin-bottom: 0;
+        line-height: 1.5;
+        font-size: 90%;
       `)}
       style={props.style}
     >

@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash';
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { evaluators, Evaluator } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 
 import { NAMESPACE } from './locale';
@@ -69,12 +69,12 @@ export default {
     uiSchema: {
       type: 'number',
       // title,
-      'x-disabled': true,
       'x-component': 'Formula.Result',
       'x-component-props': {
         stringMode: true,
         step: '1',
       },
+      'x-read-pretty': true
     },
   },
   properties: {

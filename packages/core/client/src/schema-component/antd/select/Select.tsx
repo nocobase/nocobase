@@ -70,14 +70,16 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, value, ...others } = props;
-    const mode = props.mode || props.multiple ? 'multiple' : undefined;
+    let mode: any = props.multiple ? 'multiple' : props.mode;
+    if (mode === 'links') {
+      mode = undefined;
+    }
     const toValue = (v) => {
       if (['multiple', 'tags'].includes(mode)) {
         return v || [];
       }
       return v;
     };
-    console.log('props', props);
     if (objectValue) {
       return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
     }
@@ -98,7 +100,6 @@ const InternalSelect = connect(
   mapProps(
     {
       dataSource: 'options',
-      loading: true,
     },
     (props, field) => {
       return {

@@ -1,11 +1,11 @@
 import { ArrayField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
+import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
-import { useFormBlockContext } from './FormBlockProvider';
 
 export const TableSelectorContext = createContext<any>({});
 
@@ -13,6 +13,7 @@ const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const [expandFlag, setExpandFlag] = useState(false);
   // if (service.loading) {
   //   return <Spin />;
   // }
@@ -26,6 +27,10 @@ const InternalTableSelectorProvider = (props) => {
           params,
           extraFilter,
           rowKey,
+          expandFlag,
+          setExpandFlag: () => {
+            setExpandFlag(!expandFlag);
+          },
         }}
       >
         <RenderChildrenWithAssociationFilter {...props} />
@@ -99,18 +104,28 @@ const useAssociationNames = (collection) => {
 
 export const TableSelectorProvider = (props) => {
   const fieldSchema = useFieldSchema();
-  const ctx = useFormBlockContext();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
-
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(props.collection);
+  const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
-  // const value = ctx.form.query(collectionFieldSchema?.name).value();
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
   if (props.dragSort) {
     params['sort'] = ['sort'];
+  }
+  if (collection.tree && treeTable !== false) {
+    params['tree'] = true;
+    if (collectionFieldSchema.name === 'parent') {
+      params.filter = {
+        ...(params.filter ?? {}),
+        id: record.id && {
+          $ne: record.id,
+        },
+      };
+    }
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
@@ -181,9 +196,11 @@ export const TableSelectorProvider = (props) => {
     }
   }
   return (
-    <BlockProvider {...props} params={params}>
-      <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
-    </BlockProvider>
+    <SchemaComponentOptions scope={{ treeTable }}>
+      <BlockProvider {...props} params={params}>
+        <InternalTableSelectorProvider {...props} params={params} extraFilter={extraFilter} />
+      </BlockProvider>
+    </SchemaComponentOptions>
   );
 };
 

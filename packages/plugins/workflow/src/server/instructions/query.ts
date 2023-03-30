@@ -7,7 +7,8 @@ export default {
     const {
       collection,
       multiple,
-      params = {}
+      params = {},
+      failOnEmpty = false
     } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
@@ -19,6 +20,13 @@ export default {
       },
       transaction: processor.transaction
     });
+
+    if (failOnEmpty && (multiple ? !result.length : !result)) {
+      return {
+        result,
+        status: JOB_STATUS.FAILED
+      }
+    }
 
     // NOTE: `toJSON()` to avoid getting undefined value from Proxied model instance (#380)
     // e.g. Object.prototype.hasOwnProperty.call(result, 'id') // false

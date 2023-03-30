@@ -1,8 +1,11 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'users',
-  duplicator: 'optional',
+  namespace: 'users.users',
+  duplicator: {
+    dumpable: 'optional',
+    with: 'rolesUsers',
+  },
   name: 'users',
   title: '{{t("Users")}}',
   sortable: 'sort',
@@ -76,6 +79,11 @@ export default {
       name: 'resetToken',
       unique: true,
       hidden: true,
+    },
+    {
+      type: 'json',
+      name: 'systemSettings',
+      defaultValue: {},
     },
   ],
 } as CollectionOptions;

@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useCollection } from '@nocobase/client';
+import { Cascader, useCollection } from '@nocobase/client';
 import { useFields } from './useFields';
 
 export const useShared = () => {
@@ -38,7 +38,7 @@ export const useShared = () => {
                   dataIndex: {
                     type: 'array',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Cascader',
+                    'x-component': Cascader,
                     required: true,
                     enum: fields,
                     'x-component-props': {

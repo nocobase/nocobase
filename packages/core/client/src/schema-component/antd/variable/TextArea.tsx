@@ -3,6 +3,7 @@ import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../..';
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
@@ -105,9 +106,10 @@ function createVariableTagHTML(variable, keyLabelMap) {
 
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true, button } = props;
+  const compile = useCompile();
   const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
-  const options = (typeof scope === 'function' ? scope() : scope) ?? [];
+  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
   const [changed, setChanged] = useState(false);

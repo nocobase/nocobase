@@ -10,7 +10,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Database } from './database';
-import { Field, FieldOptions } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
@@ -19,8 +19,19 @@ export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type dumpable = 'required' | 'optional' | 'skip';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  namespace?: string;
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
   tableName?: string;
   inherits?: string[] | string;
   filterTargetKey?: string;
@@ -36,6 +47,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
+
+  tree?: string;
 
   [key: string]: any;
 }
@@ -69,6 +82,22 @@ export class Collection<
 
   get db() {
     return this.context.database;
+  }
+
+  get treeParentField(): BelongsToField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeParent) {
+        return field;
+      }
+    }
+  }
+
+  get treeChildrenField(): HasManyField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeChildren) {
+        return field;
+      }
+    }
   }
 
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -181,6 +210,7 @@ export class Collection<
 
     this.on('field.afterRemove', (field: Field) => {
       field.unbind();
+      this.db.emit('field.afterRemove', field);
     });
   }
 
@@ -231,6 +261,7 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+    this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
       { name, ...options },
@@ -308,13 +339,13 @@ export class Collection<
       })
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.model.tableName, options);
+      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
     this.remove();
   }
 
   async existsInDb(options?: Transactionable) {
-    return this.db.collectionExistsInDb(this.name, options);
+    return this.db.queryInterface.collectionTableExists(this, options);
   }
 
   removeField(name: string): void | Field {
@@ -356,7 +387,9 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
-    this.setRepository(options.repository);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 
@@ -539,17 +572,33 @@ export class Collection<
     return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 
-  public addSchemaTableName() {
+  public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
-    if (this.options.schema) {
-      return this.db.utils.addSchema(tableName, this.options.schema);
+    if (this.collectionSchema()) {
+      return this.db.utils.addSchema(tableName, this.collectionSchema());
     }
 
     return tableName;
   }
 
   public quotedTableName() {
-    return this.db.utils.quoteTable(this.addSchemaTableName());
+    return this.db.utils.quoteTable(this.getTableNameWithSchema());
+  }
+
+  public collectionSchema() {
+    if (this.options.schema) {
+      return this.options.schema;
+    }
+
+    if (this.db.options.schema) {
+      return this.db.options.schema;
+    }
+
+    if (this.db.inDialect('postgres')) {
+      return 'public';
+    }
+
+    return undefined;
   }
 }

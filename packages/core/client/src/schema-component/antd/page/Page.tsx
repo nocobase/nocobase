@@ -8,6 +8,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
+import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
 import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
@@ -110,13 +111,22 @@ const pageDesignerCss = css`
   }
 `;
 
+const pageWithFixedBlockCss = classNames([
+  'nb-page',
+  css`
+    > .nb-grid:not(:last-child) {
+      > .nb-schema-initializer-button {
+        display: none;
+      }
+    }
+  `,
+]);
+
 export const Page = (props) => {
   const { children, ...others } = props;
-  const field = useField();
   const compile = useCompile();
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
-  const history = useHistory();
   const dn = useDesignable();
   useEffect(() => {
     if (!title) {
@@ -138,168 +148,160 @@ export const Page = (props) => {
   const [height, setHeight] = useState(0);
 
   return (
-    <div className={pageDesignerCss}>
-      <PageDesigner title={fieldSchema.title || title} />
-      <div
-        ref={(ref) => {
-          setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
-        }}
-      >
-        {!disablePageHeader && (
-          <AntdPageHeader
-            className={css`
-              &.has-footer {
-                padding-top: 12px;
-                .ant-page-header-heading-left {
-                  /* margin: 0; */
-                }
-                .ant-page-header-footer {
-                  margin-top: 0;
-                }
-              }
-            `}
-            ghost={false}
-            title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
-            {...others}
-            footer={
-              enablePageTabs && (
-                <DndContext>
-                  <Tabs
-                    size={'small'}
-                    activeKey={activeKey}
-                    onTabClick={(activeKey) => {
-                      setLoading(true);
-                      setActiveKey(activeKey);
-                      window.history.pushState({}, '', location.pathname + `?tab=` + activeKey);
-                      setTimeout(() => {
-                        setLoading(false);
-                      }, 50);
-                    }}
-                    tabBarExtraContent={
-                      dn.designable && (
-                        <Button
-                          icon={<PlusOutlined />}
-                          className={css`
-                            border-color: rgb(241, 139, 98) !important;
-                            color: rgb(241, 139, 98) !important;
-                          `}
-                          type={'dashed'}
-                          onClick={async () => {
-                            const values = await FormDialog(t('Add tab'), () => {
-                              return (
-                                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-                                  <FormLayout layout={'vertical'}>
-                                    <SchemaComponent
-                                      schema={{
-                                        properties: {
-                                          title: {
-                                            title: t('Tab name'),
-                                            'x-component': 'Input',
-                                            'x-decorator': 'FormItem',
-                                            required: true,
-                                          },
-                                          icon: {
-                                            title: t('Icon'),
-                                            'x-component': 'IconPicker',
-                                            'x-decorator': 'FormItem',
-                                          },
-                                        },
-                                      }}
-                                    />
-                                  </FormLayout>
-                                </SchemaComponentOptions>
-                              );
-                            }).open({
-                              initialValues: {},
-                            });
-                            const { title, icon } = values;
-                            dn.insertBeforeEnd({
-                              type: 'void',
-                              title,
-                              'x-icon': icon,
-                              'x-component': 'Grid',
-                              'x-initializer': 'BlockInitializers',
-                              properties: {},
-                            });
-                          }}
-                        >
-                          {t('Add tab')}
-                        </Button>
-                      )
-                    }
-                  >
-                    {fieldSchema.mapProperties((schema) => {
-                      return (
-                        <Tabs.TabPane
-                          tab={
-                            <SortableItem
-                              id={schema.name}
-                              schema={schema}
-                              className={classNames('nb-action-link', designerCss, props.className)}
-                            >
-                              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                              <span>{schema.title || t('Unnamed')}</span>
-                              <PageTabDesigner schema={schema} />
-                            </SortableItem>
-                          }
-                          key={schema.name}
-                        />
-                      );
-                    })}
-                  </Tabs>
-                </DndContext>
-              )
-            }
-          />
-        )}
-      </div>
-      <div style={{ margin: 24 }}>
-        {loading ? (
-          <Spin />
-        ) : !disablePageHeader && enablePageTabs ? (
-          fieldSchema.mapProperties((schema) => {
-            if (schema.name !== activeKey) return null;
-            return (
-              <FixedBlock
-                key={schema.name}
-                height={
-                  // header 46 margin 48
-                  height + 46 + 48
-                }
-              >
-                <SchemaComponent
-                  schema={
-                    new Schema({
-                      properties: {
-                        [schema.name]: schema,
-                      },
-                    })
-                  }
-                />
-              </FixedBlock>
-            );
-          })
-        ) : (
-          <FixedBlock
-            height={
-              // header 46 margin 48
-              height + 46 + 48
-            }
-          >
-            <div
+    <FilterBlockProvider>
+      <div className={pageDesignerCss}>
+        <PageDesigner title={fieldSchema.title || title} />
+        <div
+          ref={(ref) => {
+            setHeight(Math.floor(ref?.getBoundingClientRect().height || 0) + 1);
+          }}
+        >
+          {!disablePageHeader && (
+            <AntdPageHeader
               className={css`
-                > .nb-grid:not(:last-child) {
-                  > .nb-schema-initializer-button {
-                    display: none;
+                &.has-footer {
+                  padding-top: 12px;
+                  .ant-page-header-heading-left {
+                    /* margin: 0; */
+                  }
+                  .ant-page-header-footer {
+                    margin-top: 0;
                   }
                 }
               `}
+              ghost={false}
+              title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
+              {...others}
+              footer={
+                enablePageTabs && (
+                  <DndContext>
+                    <Tabs
+                      size={'small'}
+                      activeKey={activeKey}
+                      onTabClick={(activeKey) => {
+                        setLoading(true);
+                        setActiveKey(activeKey);
+                        window.history.pushState({}, '', window.location.pathname + `?tab=` + activeKey);
+                        setTimeout(() => {
+                          setLoading(false);
+                        }, 50);
+                      }}
+                      tabBarExtraContent={
+                        dn.designable && (
+                          <Button
+                            icon={<PlusOutlined />}
+                            className={css`
+                              border-color: rgb(241, 139, 98) !important;
+                              color: rgb(241, 139, 98) !important;
+                            `}
+                            type={'dashed'}
+                            onClick={async () => {
+                              const values = await FormDialog(t('Add tab'), () => {
+                                return (
+                                  <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                                    <FormLayout layout={'vertical'}>
+                                      <SchemaComponent
+                                        schema={{
+                                          properties: {
+                                            title: {
+                                              title: t('Tab name'),
+                                              'x-component': 'Input',
+                                              'x-decorator': 'FormItem',
+                                              required: true,
+                                            },
+                                            icon: {
+                                              title: t('Icon'),
+                                              'x-component': 'IconPicker',
+                                              'x-decorator': 'FormItem',
+                                            },
+                                          },
+                                        }}
+                                      />
+                                    </FormLayout>
+                                  </SchemaComponentOptions>
+                                );
+                              }).open({
+                                initialValues: {},
+                              });
+                              const { title, icon } = values;
+                              dn.insertBeforeEnd({
+                                type: 'void',
+                                title,
+                                'x-icon': icon,
+                                'x-component': 'Grid',
+                                'x-initializer': 'BlockInitializers',
+                                properties: {},
+                              });
+                            }}
+                          >
+                            {t('Add tab')}
+                          </Button>
+                        )
+                      }
+                    >
+                      {fieldSchema.mapProperties((schema) => {
+                        return (
+                          <Tabs.TabPane
+                            tab={
+                              <SortableItem
+                                id={schema.name}
+                                schema={schema}
+                                className={classNames('nb-action-link', designerCss, props.className)}
+                              >
+                                {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+                                <span>{schema.title || t('Unnamed')}</span>
+                                <PageTabDesigner schema={schema} />
+                              </SortableItem>
+                            }
+                            key={schema.name}
+                          />
+                        );
+                      })}
+                    </Tabs>
+                  </DndContext>
+                )
+              }
+            />
+          )}
+        </div>
+        <div className={'m24'} style={{ margin: 24 }}>
+          {loading ? (
+            <Spin />
+          ) : !disablePageHeader && enablePageTabs ? (
+            fieldSchema.mapProperties((schema) => {
+              if (schema.name !== activeKey) return null;
+              return (
+                <FixedBlock
+                  key={schema.name}
+                  height={
+                    // header 46 margin 48
+                    height + 46 + 48
+                  }
+                >
+                  <SchemaComponent
+                    schema={
+                      new Schema({
+                        properties: {
+                          [schema.name]: schema,
+                        },
+                      })
+                    }
+                  />
+                </FixedBlock>
+              );
+            })
+          ) : (
+            <FixedBlock
+              height={
+                // header 46 margin 48
+                height + 46 + 48
+              }
             >
-              {props.children}
-            </div>
-          </FixedBlock>
-        )}
+              <div className={pageWithFixedBlockCss}>{props.children}</div>
+            </FixedBlock>
+          )}
+        </div>
       </div>
-    </div>
+    </FilterBlockProvider>
   );
 };

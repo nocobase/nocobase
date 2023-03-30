@@ -67,6 +67,10 @@ NocoBase adopts plugin architecture, all new features can be implemented by deve
 
 If you need commercial version and commercial services, please feel free to contact us by email: hello@nocobase.com
 
+Also by WeChat：  
+
+![](https://www.nocobase.com/images/wechat.png)  
+
 ## Installation
 
 NocoBase supports three installation methods:

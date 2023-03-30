@@ -18,7 +18,7 @@ import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
 
 const Columns = forwardRef((props, ref: any) => (
-  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'hidden' }} {...props} />
+  <div ref={ref} style={{ whiteSpace: 'nowrap', height: '100%', overflowY: 'clip' }} {...props} />
 ));
 
 const DroppableBoard = withDroppable(Columns);

@@ -7,7 +7,7 @@ import {
   SchemaInitializerProvider,
 } from '@nocobase/client';
 import React, { useContext, useEffect } from 'react';
-import { useSnapshotInterface } from './interface';
+import { snapshot } from './interface';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 import { SnapshotBlockInitializers } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializers';
 import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlockInitializers/SnapshotBlockInitializersDetailItem';
@@ -17,7 +17,6 @@ import { SnapshotOwnerCollectionFieldsSelect } from './components/SnapshotOwnerC
 
 export default React.memo((props) => {
   const initializers = useContext(SchemaInitializerContext);
-  const snapshot = useSnapshotInterface();
 
   useEffect(() => {
     registerField(snapshot.group, snapshot.name as string, snapshot);

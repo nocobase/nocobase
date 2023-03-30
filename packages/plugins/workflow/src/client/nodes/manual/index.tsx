@@ -7,6 +7,7 @@ import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
+import { JOB_STATUS } from '../../constants';
 
 
 const MULTIPLE_ASSIGNED_MODE = {
@@ -34,34 +35,25 @@ export default {
   type: 'manual',
   group: 'manual',
   fieldset: {
-    'config.assignees': {
+    assignees: {
       type: 'array',
-      name: 'config.assignees',
       title: `{{t("Assignees", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'AssigneesSelect',
       'x-component-props': {
         // multiple: true,
-        // fieldNames: {
-        //   label: 'nickname',
-        //   value: 'id',
-        // },
-        // service: {
-        //   resource: 'users'
-        // },
       },
       required: true,
       default: [],
     },
-    'config.mode': {
+    mode: {
       type: 'number',
-      name: 'config.mode',
       title: `{{t("Mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'ModeConfig',
       default: 1,
       'x-reactions': {
-        dependencies: ['config.assignees'],
+        dependencies: ['assignees'],
         fulfill: {
           state: {
             visible: '{{$deps[0].length > 1}}',
@@ -69,7 +61,7 @@ export default {
         },
       }
     },
-    'config.schema': {
+    schema: {
       type: 'void',
       title: `{{t("User interface", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
@@ -81,6 +73,10 @@ export default {
         },
       }
     },
+    actions: {
+      type: 'array',
+      default: [JOB_STATUS.RESOLVED]
+    }
   },
   view: {
 

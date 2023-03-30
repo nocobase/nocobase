@@ -13,8 +13,8 @@ function AssociationInput(props) {
   const { getCollectionFields } = useCollectionManager();
   const { path } = useField();
   const fieldName = path.segments[path.segments.length - 1] as string;
-  const { values: data } = useForm();
-  const fields = getCollectionFields(data?.config?.collection);
+  const { values: config } = useForm();
+  const fields = getCollectionFields(config?.collection);
   const { type } = fields.find(item => item.name === fieldName);
 
   const value = Array.isArray(props.value) ? props.value.join(',') : props.value;
@@ -33,8 +33,8 @@ export default observer(({ value, disabled, onChange }: any) => {
   const compile = useCompile();
   const form = useForm();
   const { getCollection, getCollectionFields } = useCollectionManager();
-  const { values: data } = useForm();
-  const collectionName = data?.config?.collection;
+  const { values: config } = useForm();
+  const collectionName = config?.collection;
   const fields = getCollectionFields(collectionName)
     .filter(field => (
       !field.hidden
@@ -78,7 +78,7 @@ export default observer(({ value, disabled, onChange }: any) => {
                     }
                   `}>
                     <Variable.Input
-                      scope={['hasMany', 'belongsToMany'].includes(field.type) ? [] : scope}
+                      scope={scope}
                       value={value[field.name]}
                       onChange={(next) => {
                         onChange({ ...value, [field.name]: next });
@@ -89,7 +89,10 @@ export default observer(({ value, disabled, onChange }: any) => {
                           type: 'void',
                           properties: {
                             [field.name]: {
-                              'x-component': ConstantCompoent
+                              'x-component': ConstantCompoent,
+                              ['x-validator']() {
+                                return '';
+                              }
                             }
                           }
                         }}

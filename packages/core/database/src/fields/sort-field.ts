@@ -53,9 +53,21 @@ export class SortField extends Field {
       transaction,
     });
 
+    const orderKey = (() => {
+      const model = this.collection.model;
+      if (model.primaryKeyAttribute) {
+        return model.primaryKeyAttribute;
+      }
+      if (model.rawAttributes['createdAt']) {
+        return 'createdAt';
+      }
+
+      throw new Error(`can not find order key for collection ${this.collection.name}`);
+    })();
+
     if (emptyCount === totalCount && emptyCount > 0) {
       const records = await this.collection.repository.find({
-        order: [this.collection.model.primaryKeyAttribute],
+        order: [orderKey],
         transaction,
       });
 
@@ -66,6 +78,7 @@ export class SortField extends Field {
             sort: start,
           },
           {
+            hooks: false,
             transaction,
             silent: true,
           },
