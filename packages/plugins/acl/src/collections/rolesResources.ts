@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'acl',
+  namespace: 'acl.acl',
   duplicator: 'required',
   name: 'rolesResources',
   model: 'RoleResourceModel',

@@ -1,5 +1,6 @@
 import { clone } from '@formily/shared';
 import { CascaderProps } from 'antd';
+import _ from 'lodash';
 import { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
@@ -19,11 +20,11 @@ export const useCollectionManager = () => {
       },
       [],
     );
-    return inheritedFields;
+    return inheritedFields.filter(Boolean);
   };
 
   const getCollectionFields = (name: string): CollectionFieldOptions[] => {
-    const currentFields = collections?.find((collection) => collection.name === name)?.fields;
+    const currentFields = collections?.find((collection) => collection.name === name)?.fields || [];
     const inheritedFields = getInheritedFields(name);
     const totalFields = unionBy(currentFields?.concat(inheritedFields) || [], 'name').filter((v: any) => {
       return !v.isForeignKey;
@@ -81,18 +82,35 @@ export const useCollectionManager = () => {
     return collection?.fields || [];
   };
 
+  // 缓存下面已经获取的 options，防止无限循环
   const getCollectionFieldsOptions = (
     collectionName: string,
     type: string | string[] = 'string',
     opts?: {
+      cached?: Record<string, any>;
+      collectionNames?: string[];
       /**
        * 为 true 时允许查询所有关联字段
        * 为 Array<string> 时仅允许查询指定的关联字段
        */
       association?: boolean | string[];
+      /**
+       * Max depth of recursion
+       */
+      maxDepth?: number;
     },
   ) => {
-    const { association = false } = opts || {};
+    const { association = false, cached = {}, collectionNames = [collectionName], maxDepth = 1 } = opts || {};
+
+    if (collectionNames.length - 1 > maxDepth) {
+      return;
+    }
+
+    if (cached[collectionName]) {
+      // avoid infinite recursion
+      return _.cloneDeep(cached[collectionName]);
+    }
+
     if (typeof type === 'string') {
       type = [type];
     }
@@ -110,9 +128,16 @@ export const useCollectionManager = () => {
         const result: CascaderProps<any>['options'][0] = {
           value: field.name,
           label: compile(field?.uiSchema?.title) || field.name,
+          ...field,
         };
         if (association && field.target) {
-          result.children = getCollectionFieldsOptions(field.target, type, opts);
+          result.children = collectionNames.includes(field.target)
+            ? []
+            : getCollectionFieldsOptions(field.target, type, {
+                ...opts,
+                cached,
+                collectionNames: [...collectionNames, field.target],
+              });
           if (!result.children?.length) {
             return null;
           }
@@ -122,6 +147,7 @@ export const useCollectionManager = () => {
       // 过滤 map 产生为 null 的数据
       .filter(Boolean);
 
+    cached[collectionName] = options;
     return options;
   };
 
@@ -174,8 +200,8 @@ export const useCollectionManager = () => {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {
-      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields;
-      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields;
+      const currentFields = collections?.find((collection) => collection.name === currentCollection)?.fields || [];
+      const parentFields = collections?.find((collection) => collection.name === parentCollection)?.fields || [];
       const inheritKeys = getInheritCollections(currentCollection);
       const index = inheritKeys.indexOf(parentCollection);
       let filterFields = currentFields;

@@ -5,7 +5,12 @@ import { useFlowContext } from "./FlowContext";
 import { triggers } from "./triggers";
 import { NAMESPACE } from "./locale";
 
-export type VariableOption = { key: string, value: string; label: string; children?: VariableOption[] };
+export type VariableOption = {
+  key: string;
+  value: string;
+  label: string;
+  children?: VariableOption[]
+};
 
 const VariableTypes = [
   {
@@ -97,17 +102,26 @@ export function useCollectionFieldOptions(props) {
   const { fields, collection, types } = props;
   const compile = useCompile();
   const { getCollectionFields } = useCollectionManager();
-  return filterTypedFields((fields ?? getCollectionFields(collection)), types)
-    .filter(field => field.interface && (!field.target || field.type === 'belongsTo'))
-    .map(field => field.type === 'belongsTo'
-      ? {
-        label: `${compile(field.uiSchema?.title || field.name)} ID`,
-        key: field.foreignKey,
-        value: field.foreignKey,
-      }
-      : {
+  const result = filterTypedFields((fields ?? getCollectionFields(collection)), types)
+    .map(field => ({
         label: compile(field.uiSchema?.title || field.name),
         key: field.name,
         value: field.name,
-      });
+        children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+          ? getCollectionFields(field.target)?.filter(subField => subField.interface && (!subField.target || subField.type === 'belongsTo'))
+            .map(subField => subField.type === 'belongsTo'
+              ? {
+                label: `${compile(subField.uiSchema?.title || subField.name)} ID`,
+                key: subField.foreignKey,
+                value: subField.foreignKey,
+              }
+              : {
+                label: compile(subField.uiSchema?.title || subField.name),
+                key: subField.name,
+                value: subField.name,
+              })
+          : null
+      }));
+
+  return result;
 }

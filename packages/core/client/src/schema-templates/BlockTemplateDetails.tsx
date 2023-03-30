@@ -81,7 +81,7 @@ export const BlockTemplateDetails = () => {
         ghost={false}
         title={<EditableTitle filterByTk={key} title={data?.data?.name} />}
       />
-      <div style={{ margin: 24 }}>
+      <div className={'m24'} style={{ margin: 24 }}>
         <SchemaComponentContext.Provider value={{ ...value, designable: true }}>
           <RemoteSchemaComponent uid={data?.data?.uid} />
         </SchemaComponentContext.Provider>

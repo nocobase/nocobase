@@ -38,18 +38,26 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     action: 'list',
     params: {
       paginate: false,
-      appends: ['fields', 'fields.uiSchema', 'category'],
+      appends: ['fields', 'category'],
       filter: {
         // inherit: false,
       },
       sort: ['sort'],
     },
   };
+  const coptions = {
+    url: 'collectionCategories:list',
+    params: {
+      paginate: false,
+      sort: ['sort'],
+    },
+  };
   const service = useRequest(options);
+  const result = useRequest(coptions);
+
   if (service.loading) {
     return <Spin />;
   }
-
   const refreshCM = async (opts) => {
     if (opts?.reload) {
       setContentLoading(true);
@@ -62,40 +70,32 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     }
     return data?.data || [];
   };
+  const refreshCategory = async () => {
+    const { data } = await api.request(coptions);
+    result.mutate(data);
+    return data?.data || [];
+  };
 
   return (
-    <CollectionManagerProvider
-      service={{ ...service, contentLoading, setContentLoading }}
-      collections={service?.data?.data}
-      refreshCM={refreshCM}
-      {...props}
-    />
+    <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
+      <CollectionManagerProvider
+        service={{ ...service, contentLoading, setContentLoading }}
+        collections={service?.data?.data}
+        refreshCM={refreshCM}
+        {...props}
+      />
+    </CollectionCategroriesProvider>
   );
 };
 
 export const CollectionCategroriesProvider = (props) => {
-  const api = useAPIClient();
-  const options = {
-    url: 'collectionCategories:list',
-    params: {
-      paginate: false,
-      sort: ['sort'],
-    },
-  };
-  const result = useRequest(options);
-  if (result.loading) {
-    return <Spin />;
-  }
+  const { service, refreshCategory } = props;
   return (
     <CollectionCategroriesContext.Provider
       value={{
-        ...result,
-        data: result?.data?.data,
-        refresh: async () => {
-          const { data } = await api.request(options);
-          result.mutate(data);
-          return data?.data || [];
-        },
+        data: service?.data?.data,
+        refresh: refreshCategory,
+        ...props
       }}
     >
       {props.children}

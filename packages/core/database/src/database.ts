@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils,
+  Utils
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,15 +58,17 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener,
+  ValidateListener
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
+import { registerBuiltInListeners } from './listeners';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
+import { CollectionGroupManager } from './collection-group-manager';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -184,6 +186,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   logger: Logger;
 
+  collectionGroupManager = new CollectionGroupManager(this);
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -274,7 +278,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core',
+      namespace: 'core.migration',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
     });
@@ -360,6 +364,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         options.schema = this.options.schema;
       }
     });
+
+    registerBuiltInListeners(this);
   }
 
   addMigration(item: MigrationItem) {
@@ -398,6 +404,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    options = lodash.cloneDeep(options);
+
     if (this.options.underscored) {
       options.underscored = true;
     }

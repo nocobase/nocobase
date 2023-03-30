@@ -41,6 +41,11 @@ export class CollectionModel extends MagicAttributeModel {
       await this.loadFields({ transaction });
     }
 
+    await this.db.emitAsync('collection:loaded', {
+      collection,
+      transaction,
+    });
+
     return collection;
   }
 

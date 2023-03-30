@@ -13,21 +13,29 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
+import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
 const divWrap = (schema: ISchema) => {
   return {
     type: 'void',
     'x-component': 'div',
+    'x-component-props': {
+      className: 'nb-block-wrap',
+    },
     properties: {
       [schema.name || uid()]: schema,
     },
   };
 };
 
-export const FormItem: any = observer((props) => {
+export const FormItem: any = observer((props: any) => {
+  useEnsureOperatorsValid();
+
   const field = useField();
   const ctx = useContext(BlockRequestContext);
   const schema = useFieldSchema();
+
   useEffect(() => {
     if (ctx?.block === 'form') {
       ctx.field.data = ctx.field.data || {};
@@ -62,8 +70,8 @@ export const FormItem: any = observer((props) => {
   );
 });
 
-FormItem.Designer = (props) => {
-  const { getCollectionFields, getCollection, getInterface, getCollectionJoinField } = useCollectionManager();
+FormItem.Designer = () => {
+  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
@@ -422,6 +430,27 @@ FormItem.Designer = (props) => {
           }}
         />
       )}
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+        <SchemaSettings.SwitchItem
+          title={t('Enable link')}
+          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          onChange={(flag) => {
+            fieldSchema['x-component-props'] = {
+              ...fieldSchema?.['x-component-props'],
+              mode: flag ? 'links' : 'tags',
+            };
+            dn.emit('patch', {
+              schema: {
+                'x-uid': fieldSchema['x-uid'],
+                'x-component-props': {
+                  ...fieldSchema?.['x-component-props'],
+                },
+              },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
       {form &&
         !form?.readPretty &&
         collectionField?.interface !== 'o2m' &&
@@ -516,3 +545,5 @@ FormItem.Designer = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+FormItem.FilterFormDesigner = FilterFormDesigner;

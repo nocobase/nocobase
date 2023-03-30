@@ -358,7 +358,7 @@ export const Grid: any = observer((props: any) => {
   );
 });
 
-Grid.Row = observer((props) => {
+Grid.Row = observer(() => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const addr = field.address.toString();
@@ -416,12 +416,12 @@ Grid.Col = observer((props: any) => {
   const { cols = [] } = useContext(GridRowContext);
   const schema = useFieldSchema();
   const field = useField();
-  let width = '100%';
+  let width = '';
   if (cols?.length) {
     const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
     width = `calc(${w}% - 24px - 24px / ${cols.length})`;
   }
-  const { isOver, setNodeRef } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: field.address.toString(),
     data: {
       insertAdjacent: 'beforeEnd',
@@ -431,17 +431,7 @@ Grid.Col = observer((props: any) => {
   });
   return (
     <GridColContext.Provider value={{ cols, schema }}>
-      <div
-        ref={setNodeRef}
-        style={{ width }}
-        className={cls(
-          'nb-grid-col',
-          css`
-            position: relative;
-            /* z-index: 0; */
-          `,
-        )}
-      >
+      <div ref={setNodeRef} style={{ width }} className={cls('nb-grid-col')}>
         {props.children}
       </div>
     </GridColContext.Provider>

@@ -26,7 +26,7 @@ export class SyncRunner {
       );
     }
 
-    const tableName = inheritedCollection.addSchemaTableName();
+    const tableName = inheritedCollection.getTableNameWithSchema();
 
     const attributes = model.tableAttributes;
 
@@ -44,7 +44,7 @@ export class SyncRunner {
           `SELECT column_default
            FROM information_schema.columns
            WHERE table_name = '${parent.model.tableName}'
-            and table_schema = '${parent.collectionSchema()}'
+             and table_schema = '${parent.collectionSchema()}'
              and "column_name" = 'id';`,
           {
             transaction,
@@ -88,7 +88,7 @@ export class SyncRunner {
     // if we have max sequence, set it to child table
     if (maxSequenceName) {
       const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
-        db.getCollection(parent).addSchemaTableName(),
+        db.getCollection(parent).getTableNameWithSchema(),
       );
 
       const sequenceTables = [...parentsDeep, tableName];
@@ -101,8 +101,10 @@ export class SyncRunner {
 
         const idColumnQuery = await queryInterface.sequelize.query(
           `SELECT column_name
-FROM information_schema.columns
-WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schemaName}';
+           FROM information_schema.columns
+           WHERE table_name = '${queryName}'
+             and column_name = 'id'
+             and table_schema = '${schemaName}';
           `,
           {
             transaction,
@@ -163,7 +165,7 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
       ';',
       ` INHERITS (${parents
         .map((t) => {
-          return t.addSchemaTableName();
+          return t.getTableNameWithSchema();
         })
         .join(', ')});`,
     );

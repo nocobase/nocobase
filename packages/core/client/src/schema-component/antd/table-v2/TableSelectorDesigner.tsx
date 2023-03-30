@@ -1,5 +1,6 @@
 import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { cloneDeep } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableSelectorContext } from '../../../block-provider';
@@ -8,7 +9,6 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { cloneDeep } from 'lodash';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
@@ -33,6 +33,7 @@ export const TableSelectorDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
+  const collection = useCollection();
   const { dragSort } = field.decoratorProps;
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
@@ -77,6 +78,27 @@ export const TableSelectorDesigner = () => {
           });
         }}
       />
+      {collection?.tree && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          defaultChecked={true}
+          checked={field.decoratorProps.treeTable !== false}
+          onChange={(flag) => {
+            field.form.clearFormGraph(`${field.address}.*`);
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+            service.run(params);
+          }}
+        />
+      )}
       {!dragSort && (
         <SchemaSettings.ModalItem
           title={t('Set default sorting rules')}

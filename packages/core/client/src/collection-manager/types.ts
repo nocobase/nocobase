@@ -24,6 +24,7 @@ export interface CollectionOptions {
   sortable?: any;
   fields?: FieldOptions[];
   inherits?: string[];
+  tree?: string;
 }
 
 export interface ICollectionProviderProps {

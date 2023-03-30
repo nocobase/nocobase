@@ -34,6 +34,14 @@ export const workflowPageClass = css`
     flex-direction: column;
     align-items: center;
     padding: 2em;
+
+    .end{
+      cursor: default;
+
+      &:hover{
+        box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+      }
+    }
   }
 `;
 

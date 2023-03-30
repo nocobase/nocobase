@@ -164,7 +164,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if (Array.from(el.classList).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
@@ -234,7 +234,7 @@ export const TriggerConfig = () => {
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select{
+                        .ant-select:not(.full-width){
                           width: auto;
                           min-width: 6em;
                         }
@@ -242,28 +242,30 @@ export const TriggerConfig = () => {
                     },
                     properties: fieldset
                   },
-                  actions: executed
-                  ? null
-                  : {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
-                    properties: {
-                      cancel: {
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction: '{{ cm.useCancelAction }}',
+                  actions: {
+                    ...(executed
+                    ? {}
+                    : {
+                      type: 'void',
+                      'x-component': 'Action.Drawer.Footer',
+                      properties: {
+                        cancel: {
+                          title: '{{t("Cancel")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            useAction: '{{ cm.useCancelAction }}',
+                          },
                         },
-                      },
-                      submit: {
-                        title: '{{t("Submit")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction: useUpdateConfigAction
+                        submit: {
+                          title: '{{t("Submit")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'primary',
+                            useAction: useUpdateConfigAction
+                          }
                         }
                       }
-                    }
+                    })
                   }
                 }
               }

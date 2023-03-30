@@ -1,34 +1,39 @@
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import EventEmitter from 'events';
 import http, { IncomingMessage, ServerResponse } from 'http';
-import Application, { ApplicationOptions } from './application';
+import Application from './application';
 
-type AppSelector = (req: IncomingMessage) => Application | string | undefined | null;
+type AppSelectorReturn = Application | string | undefined | null;
 
-export class AppManager extends EventEmitter {
+type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
+
+export class AppManager {
   public applications: Map<string, Application> = new Map<string, Application>();
+  public app: Application;
 
-  constructor(public app: Application) {
-    super();
-
-    app.on('beforeStop', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.stop(options)),
-      );
-    });
-
-    app.on('afterDestroy', async (mainApp, options) => {
-      return await Promise.all(
-        [...this.applications.values()].map((application: Application) => application.destroy(options)),
-      );
-    });
+  constructor(app: Application) {
+    this.bindMainApplication(app);
   }
 
-  appSelector: AppSelector = (req: IncomingMessage) => this.app;
+  bindMainApplication(mainApp: Application) {
+    this.app = mainApp;
+    const passEventToSubApps = (eventName, method) => {
+      mainApp.on(eventName, async (mainApp, options) => {
+        console.log(`receive event ${eventName} from ${mainApp.name}`);
+        for (const application of this.applications.values()) {
+          console.log(`pass ${eventName} to ${application.name} `);
+          await application[method](options);
+        }
+      });
+    };
 
-  createApplication(name: string, options: ApplicationOptions): Application {
-    const application = new Application(options);
-    this.applications.set(name, application);
+    passEventToSubApps('beforeDestroy', 'destroy');
+    passEventToSubApps('beforeStop', 'stop');
+  }
+
+  appSelector: AppSelector = async (req: IncomingMessage) => this.app;
+
+  addSubApp(application): Application {
+    this.applications.set(application.name, application);
+    this.app.emit('afterSubAppAdded', application);
     return application;
   }
 
@@ -40,6 +45,7 @@ export class AppManager extends EventEmitter {
 
     await application.destroy();
 
+    console.log(`remove application ${name}`);
     this.applications.delete(name);
   }
 
@@ -53,7 +59,7 @@ export class AppManager extends EventEmitter {
   }
 
   async getApplication(appName: string, options = {}): Promise<null | Application> {
-    await this.emitAsync('beforeGetApplication', {
+    await this.app.emitAsync('beforeGetApplication', {
       appManager: this,
       name: appName,
       options,
@@ -66,11 +72,10 @@ export class AppManager extends EventEmitter {
     return async (req: IncomingMessage, res: ServerResponse) => {
       const appManager = this.app.appManager;
 
-      let handleApp: any = appManager.appSelector(req) || appManager.app;
+      let handleApp: any = (await appManager.appSelector(req)) || appManager.app;
 
       if (typeof handleApp === 'string') {
         handleApp = await appManager.getApplication(handleApp);
-
         if (!handleApp) {
           res.statusCode = 404;
           return res.end(
@@ -84,13 +89,11 @@ export class AppManager extends EventEmitter {
             }),
           );
         }
+
+        if (handleApp.stopped) await handleApp.start();
       }
 
       handleApp.callback()(req, res);
     };
   }
-
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
-
-applyMixins(AppManager, [AsyncEmitter]);

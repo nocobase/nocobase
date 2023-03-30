@@ -192,6 +192,19 @@ const schema2: ISchema = {
             // accept: 'jpg,png'
           },
         },
+        'options.theme': {
+          type: 'string',
+          title: '{{t("Theme")}}',
+          'x-component': 'Select',
+          'x-component-props': {
+            // mode: 'multiple',
+          },
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '{{t("Default theme")}}', value: 'default' },
+            { label: '{{t("Compact theme")}}', value: 'compact' },
+          ],
+        },
         enabledLanguages: {
           type: 'array',
           title: '{{t("Enabled languages")}}',

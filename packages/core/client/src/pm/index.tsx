@@ -1,6 +1,6 @@
 import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Avatar, Card, Layout, Menu, message, PageHeader, Popconfirm, Result, Spin, Switch, Tabs } from 'antd';
+import { Avatar, Card, Layout, Menu, message, Modal, PageHeader, Popconfirm, Result, Spin, Switch, Tabs } from 'antd';
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -53,11 +53,20 @@ const PluginCard = (props) => {
         <Switch
           size={'small'}
           onChange={async (checked) => {
+            Modal.warn({
+              title: checked ? t('Plugin staring') : t('Plugin stopping'),
+              content: t('The application is reloading, please do not close the page.'),
+              okButtonProps: {
+                style: {
+                  display: 'none',
+                },
+              },
+            });
             await api.request({
               url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
             });
-            message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
             window.location.reload();
+            // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
           }}
           defaultChecked={data.enabled}
         ></Switch>,
@@ -210,7 +219,7 @@ const PluginList = (props) => {
           </Tabs>
         }
       />
-      <div style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -390,7 +399,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div style={{ margin: 24 }}>
+          <div className={'m24'} style={{ margin: 24 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

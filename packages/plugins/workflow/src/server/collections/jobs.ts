@@ -1,31 +1,31 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'workflow',
+  namespace: 'workflow.executionLogs',
   duplicator: 'optional',
   name: 'jobs',
   fields: [
     {
       type: 'belongsTo',
-      name: 'execution'
+      name: 'execution',
     },
     {
       type: 'belongsTo',
       name: 'node',
-      target: 'flow_nodes'
+      target: 'flow_nodes',
     },
     {
       type: 'belongsTo',
       name: 'upstream',
-      target: 'jobs'
+      target: 'jobs',
     },
     {
       type: 'integer',
-      name: 'status'
+      name: 'status',
     },
     {
       type: 'json',
-      name: 'result'
-    }
-  ]
+      name: 'result',
+    },
+  ],
 } as CollectionOptions;

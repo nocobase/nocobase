@@ -24,7 +24,7 @@ const supportsType = [
   'o2m',
   'm2m',
 ];
-const VariableTypes = (currentCollection) => {
+const useVariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
   const collection = getCollection(currentCollection);
   const fields = getCollectionFields(currentCollection);
@@ -94,7 +94,7 @@ const VariableTypes = (currentCollection) => {
 
 export function useVariableOptions(collectionName) {
   const compile = useCompile();
-  const options = VariableTypes(collectionName).map((item: any) => {
+  const options = useVariableTypes(collectionName).map((item) => {
     const options = typeof item.options === 'function' ? item.options() : item.options;
     return {
       label: compile(item.title),

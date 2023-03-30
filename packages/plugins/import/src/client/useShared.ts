@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import type { VoidField } from '@formily/core';
-import { useCollection } from '@nocobase/client';
+import { useCollection, Cascader } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE } from './constants';
 import { useFields } from './useFields';
@@ -52,7 +52,7 @@ export const useShared = () => {
                   dataIndex: {
                     type: 'array',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Cascader',
+                    'x-component': Cascader,
                     required: true,
                     enum: fields,
                     'x-component-props': {
@@ -61,7 +61,6 @@ export const useShared = () => {
                         value: 'name',
                         children: 'children',
                       },
-                      // labelInValue: true,
                       changeOnSelect: false,
                     },
                   },

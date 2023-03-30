@@ -102,7 +102,7 @@ export class ApplicationVersion {
     if (!app.db.hasCollection('applicationVersion')) {
       app.db.collection({
         name: 'applicationVersion',
-        namespace: 'core',
+        namespace: 'core.applicationVersion',
         duplicator: 'required',
         timestamps: false,
         fields: [{ name: 'value', type: 'string' }],
@@ -229,13 +229,17 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+
     const logger = createAppLogger(options.logger);
     this._logger = logger.instance;
+
     // @ts-ignore
     this._events = [];
     // @ts-ignore
     this._eventsCount = [];
+
     this.removeAllListeners();
+
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
@@ -267,7 +271,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       });
     }
 
-    this._appManager = new AppManager(this);
+    if (this._appManager) {
+      this._appManager.bindMainApplication(this);
+    } else {
+      this._appManager = new AppManager(this);
+    }
 
     if (this.options.acl !== false) {
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
@@ -293,6 +301,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     db.setLogger(this._logger);
+
     return db;
   }
 
@@ -350,7 +359,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async load(options?: any) {
     if (options?.reload) {
-      console.log(`Reload the application configuration`);
+      console.log(`Reload the ${this.name} application configuration`);
       const oldDb = this._db;
       this.init();
       await oldDb.close();
@@ -366,6 +375,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       ...options,
       reload: true,
     });
+
+    await this.emitAsync('afterReload', this, options);
   }
 
   getPlugin<P extends Plugin>(name: string) {
@@ -398,7 +409,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   async start(options: StartOptions = {}) {
-    // reconnect database
     if (this.db.closed()) {
       await this.db.reconnect();
     }
@@ -412,6 +422,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.listen?.port) {
       const pmServer = await this.pm.listen();
+
       const listen = () =>
         new Promise((resolve, reject) => {
           const Server = this.listen(options?.listen, () => {
@@ -452,6 +463,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStop', this, options);
 
+    // close http server
+    if (this.listenServer) {
+      await promisify(this.listenServer.close).call(this.listenServer);
+      this.listenServer = null;
+    }
+
     try {
       // close database connection
       // silent if database already closed
@@ -462,14 +479,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       console.log(e);
     }
 
-    // close http server
-    if (this.listenServer) {
-      await promisify(this.listenServer.close).call(this.listenServer);
-      this.listenServer = null;
-    }
-
     await this.emitAsync('afterStop', this, options);
     this.stopped = true;
+    console.log(`${this.name} is stopped`);
   }
 
   async destroy(options: any = {}) {

@@ -6,6 +6,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
+    "@koa/multer": "^3.0.2",
     "@nocobase/client": "0.9.1-alpha.2",
     "@nocobase/database": "0.9.1-alpha.2",
     "@nocobase/server": "0.9.1-alpha.2",
@@ -13,6 +14,7 @@
     "dayjs": "^1.11.7",
     "decompress": "^4.2.1",
     "inquirer": "^8.0.0",
+    "koa-send": "^5.0.1",
     "lodash": "^4.17.21",
     "mkdirp": "^1.0.4",
     "tar": "^6.1.13"

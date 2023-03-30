@@ -6,7 +6,7 @@ import parse from 'json-templates';
 import { css } from "@emotion/css";
 import moment from 'moment';
 
-import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
+import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useCurrentUserContext, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
 import { uid } from "@nocobase/utils/client";
 
 import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from "../../constants";
@@ -386,9 +386,9 @@ function FlowContextProvider(props) {
     if (!executionId) {
       return;
     }
-    api.resource('executions').get?.({
+    api.resource('users_jobs').get?.({
       filterByTk: executionId,
-      appends: ['workflow', 'workflow.nodes', 'jobs'],
+      appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
     })
       .then(({ data }) => {
         const {
@@ -422,14 +422,21 @@ function FlowContextProvider(props) {
 
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status, result, updatedAt } = useRecord();
+  const { id, node, workflow, status, result, updatedAt, userId } = useRecord();
+  const { data: user } = useCurrentUserContext();
 
+  const disabled = Boolean(status) || user?.data?.id !== userId;
   const form = useMemo(() => createForm({
-    readPretty: Boolean(status),
+    readPretty: disabled,
+    disabled,
     initialValues: result
   }), [result]);
 
   const { blocks, collection, actions } = node.config.schema ?? {};
+  const availableActions = Object.keys(actions).reduce((buttons, key) => ({ ...buttons, [key]: {
+    ...actions[key],
+    'x-disabled': disabled
+  } }), {});
 
   const statusOption = JobStatusOptionsMap[status];
   const actionSchema = status
@@ -454,7 +461,7 @@ WorkflowTodo.Drawer = function () {
         'x-content': statusOption.label
       }
     }
-    : actions;
+    : availableActions;
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>

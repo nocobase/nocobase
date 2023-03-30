@@ -29,6 +29,7 @@ export class PresetNocoBase extends Plugin {
   localPlugins = [
     'sample-hello',
     'multi-app-manager',
+    'multi-app-share-collection',
     'oidc',
     'saml',
     'map',
@@ -54,11 +55,13 @@ export class PresetNocoBase extends Plugin {
 
   async addBuiltInPlugins(options?: any) {
     const builtInPlugins = this.getBuiltInPlugins();
+
     await this.app.pm.add(builtInPlugins, {
       enabled: true,
       builtIn: true,
       installed: true,
     });
+
     const localPlugins = this.getLocalPlugins();
     await this.app.pm.add(localPlugins, {});
     await this.app.reload({ method: options.method });
@@ -71,23 +74,16 @@ export class PresetNocoBase extends Plugin {
       }
       const version = await this.app.version.get();
       console.log(`The version number before upgrade is ${version}`);
-      // const result = await this.app.version.satisfies('<0.8.0-alpha.1');
-      // if (result) {
-      //   const r = await this.db.collectionExistsInDb('applicationPlugins');
-      //   if (r) {
-      //     console.log(`Clear the installed application plugins`);
-      //     await this.db.getRepository('applicationPlugins').destroy({ truncate: true });
-      //     await this.app.reload({ method: options.method });
-      //   }
-      // }
     });
 
     this.app.on('beforeUpgrade', async (options) => {
       const result = await this.app.version.satisfies('<0.8.0-alpha.1');
+
       if (result) {
         console.log(`Initialize all built-in plugins beforeUpgrade`);
         await this.addBuiltInPlugins({ method: 'upgrade' });
       }
+
       const builtInPlugins = this.getBuiltInPlugins();
       const plugins = await this.app.db.getRepository('applicationPlugins').find();
       const pluginNames = plugins.map((p) => p.name);
@@ -109,7 +105,7 @@ export class PresetNocoBase extends Plugin {
     });
 
     this.app.on('beforeInstall', async (options) => {
-      console.log(`Initialize all built-in plugins beforeInstall`);
+      console.log(`Initialize all built-in plugins beforeInstall in ${this.app.name}`);
       await this.addBuiltInPlugins({ method: 'install' });
     });
   }

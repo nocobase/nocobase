@@ -3,14 +3,13 @@ import { i18n as i18next } from 'i18next';
 import React, { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink } from 'react-router-dom';
-import { ACLProvider, ACLShortcut } from '../acl';
+import { ACLProvider } from '../acl';
 import { AntdConfigProvider } from '../antd-config-provider';
 import { APIClient, APIClientProvider } from '../api-client';
 import { BlockSchemaComponentProvider } from '../block-provider';
-import { CollectionManagerShortcut } from '../collection-manager';
 import { RemoteDocumentTitleProvider } from '../document-title';
 import { i18n } from '../i18n';
-import { PluginManagerProvider } from '../plugin-manager';
+import { PinnedPluginListProvider } from '../plugin-manager';
 import PMProvider, { PluginManagerLink, SettingsCenterDropdown } from '../pm';
 import {
   AdminLayout,
@@ -18,17 +17,17 @@ import {
   RemoteRouteSwitchProvider,
   RouteSchemaComponent,
   RouteSwitch,
-  useRoutes,
+  useRoutes
 } from '../route-switch';
 import {
   AntdSchemaComponentProvider,
   DesignableSwitch,
   MenuItemInitializers,
-  SchemaComponentProvider,
+  SchemaComponentProvider
 } from '../schema-component';
 import { SchemaInitializerProvider } from '../schema-initializer';
-import { BlockTemplateDetails, BlockTemplatePage, SchemaTemplateShortcut } from '../schema-templates';
-import { SystemSettingsProvider, SystemSettingsShortcut } from '../system-settings';
+import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
+import { SystemSettingsProvider } from '../system-settings';
 import { SigninPage, SignupPage } from '../user';
 import { SigninPageExtensionProvider } from '../user/SigninPageExtension';
 import { compose } from './compose';
@@ -94,18 +93,16 @@ export class Application {
       },
     });
     this.use(SystemSettingsProvider);
-    this.use(PluginManagerProvider, {
-      components: {
-        ACLShortcut,
-        DesignableSwitch,
-        CollectionManagerShortcut,
-        SystemSettingsShortcut,
-        SchemaTemplateShortcut,
-        PluginManagerLink,
-        SettingsCenterDropdown,
+    this.use(PinnedPluginListProvider, {
+      items: {
+        ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
+        pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
+        sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
       },
     });
-    this.use(SchemaComponentProvider, { components: { Link, NavLink } });
+    this.use(SchemaComponentProvider, {
+      components: { Link, NavLink, DesignableSwitch, PluginManagerLink, SettingsCenterDropdown },
+    });
     this.use(SchemaInitializerProvider, {
       initializers: {
         MenuItemInitializers,
