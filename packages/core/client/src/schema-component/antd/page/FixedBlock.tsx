@@ -52,7 +52,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
     <div
       className="nb-fixed-block"
       style={{
-        height: fixedBlockUID !== false ? `calc(100vh - ${height}px)` : undefined,
+        height: fixedBlock ? `calc(100vh - ${height}px)` : undefined,
       }}
     >
       {props.children}
@@ -67,30 +67,28 @@ export const FixedBlockDesignerItem = () => {
   const { dn } = useDesignable();
   const record = useRecord();
 
-  return useMemo(() => {
-    if (Object.keys(record).length) {
-      return;
-    }
-    return (
-      <SchemaSettings.SwitchItem
-        title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']?.fixedBlock}
-        onChange={async (fixedBlock) => {
-          const decoratorProps = {
-            ...fieldSchema['x-decorator-props'],
-            fixedBlock,
-          };
-          await dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': decoratorProps,
-            },
-          });
-          field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
-        }}
-      />
-    );
-  }, [fieldSchema['x-decorator-props'], field.decoratorProps?.fixedBlock, dn, record]);
+  if (Object.keys(record).length) {
+    return null;
+  }
+  return (
+    <SchemaSettings.SwitchItem
+      title={t('Fix block')}
+      checked={fieldSchema['x-decorator-props']?.fixedBlock}
+      onChange={async (fixedBlock) => {
+        const decoratorProps = {
+          ...fieldSchema['x-decorator-props'],
+          fixedBlock,
+        };
+        await dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': decoratorProps,
+          },
+        });
+        field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
+      }}
+    />
+  );
 };
 
 interface FixedBlockProps {
