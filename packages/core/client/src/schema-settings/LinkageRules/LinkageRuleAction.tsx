@@ -1,12 +1,13 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer, useField } from '@formily/react';
 import { TreeSelect } from '@formily/antd';
-import {  Select, Space } from 'antd';
+import { Select, Space } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { uid } from '@formily/shared';
 import { useCompile } from '../..';
-import { RemoveActionContext } from './context';
+import { RemoveActionContext, LinkageLogicContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
 import { ActionType } from './type';
@@ -28,60 +29,61 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
     operators,
   } = useValues(options);
   return (
-    <div style={{ marginBottom: 8 }}>
-      <Space
-        className={css`
-          .ant-space-item {
-            max-width: 95%;
-          }
-        `}
-      >
-        <TreeSelect
+    <LinkageLogicContext.Provider value={uid()}>
+      <div style={{ marginBottom: 8 }}>
+        <Space
           className={css`
-            min-width: 160px;
+            .ant-space-item {
+              max-width: 95%;
+            }
           `}
-          fieldNames={{
-            label: 'title',
-            value: 'name',
-            children: 'children',
-          }}
-          treeCheckable={true}
-          value={value?.targetFields}
-          multiple
-          allowClear
-          treeData={compile(fields)}
-          onChange={(value) => {
-            console.log(value)
-            setDataIndex(value);
-          }}
-          placeholder={t('Select Field')}
-        />
-        <Select
-          value={operator}
-          className={css`
-            min-width: 120px;
-          `}
-          options={compile(operators)}
-          onChange={(value) => {
-            setOperator(value);
-          }}
-          placeholder={t('action')}
-        />
-        {[ActionType.Value].includes(operator) && (
-          <ValueDynamicComponent
-            fieldValue={fieldValue}
-            schema={schema}
-            setValue={setValue}
-            collectionName={collectionName}
+        >
+          <TreeSelect
+            className={css`
+              min-width: 160px;
+            `}
+            fieldNames={{
+              label: 'title',
+              value: 'name',
+              children: 'children',
+            }}
+            treeCheckable={true}
+            value={value?.targetFields}
+            multiple
+            allowClear
+            treeData={compile(fields)}
+            onChange={(value) => {
+              setDataIndex(value);
+            }}
+            placeholder={t('Select Field')}
           />
-        )}
-        {!props.disabled && (
-          <a>
-            <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
-          </a>
-        )}
-      </Space>
-    </div>
+          <Select
+            value={operator}
+            className={css`
+              min-width: 120px;
+            `}
+            options={compile(operators)}
+            onChange={(value) => {
+              setOperator(value);
+            }}
+            placeholder={t('action')}
+          />
+          {[ActionType.Value].includes(operator) && (
+            <ValueDynamicComponent
+              fieldValue={fieldValue}
+              schema={schema}
+              setValue={setValue}
+              collectionName={collectionName}
+            />
+          )}
+          {!props.disabled && (
+            <a>
+              <CloseCircleOutlined onClick={() => remove()} style={{ color: '#bfbfbf' }} />
+            </a>
+          )}
+        </Space>
+      </div>
+    </LinkageLogicContext.Provider>
   );
 });
 
