@@ -1,6 +1,7 @@
 import QueryInterface from './query-interface';
 import { Collection } from '../collection';
 import { Transactionable } from 'sequelize';
+import sqlParser from '../sql-parser';
 
 export default class MysqlQueryInterface extends QueryInterface {
   constructor(db) {
@@ -44,9 +45,7 @@ export default class MysqlQueryInterface extends QueryInterface {
       const match = createView.match(regex);
       const sql = match[0];
 
-      const { Parser } = require('node-sql-parser');
-      const parser = new Parser();
-      const ast = parser.astify(sql);
+      const { ast } = sqlParser.parse(sql);
 
       const columns = ast.columns;
 
