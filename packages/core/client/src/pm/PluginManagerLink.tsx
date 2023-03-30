@@ -2,20 +2,20 @@ import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { ActionContext, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <Button
       icon={<ApiOutlined />}
       title={t('Plugin manager')}
       onClick={() => {
-        history.push('/admin/pm/list');
+        navigate('/admin/pm/list');
       }}
     />
   );
@@ -36,7 +36,7 @@ export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const compile = useCompile();
-  const history = useHistory();
+  const navigate = useNavigate();
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
@@ -50,7 +50,7 @@ export const SettingsCenterDropdown = () => {
               return (
                 <Menu.Item
                   onClick={() => {
-                    history.push('/admin/settings/' + tab.path);
+                    navigate('/admin/settings/' + tab.path);
                   }}
                   key={tab.path}
                 >
@@ -61,7 +61,7 @@ export const SettingsCenterDropdown = () => {
             <Menu.Divider></Menu.Divider>
             <Menu.Item
               onClick={() => {
-                history.push('/admin/settings');
+                navigate('/admin/settings');
               }}
               key="/admin/settings"
             >

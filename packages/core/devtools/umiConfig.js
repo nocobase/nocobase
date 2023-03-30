@@ -26,6 +26,10 @@ function getUmiConfig() {
   }
 
   return {
+    alias: getPackagePaths().reduce((memo, item) => {
+      memo[item[0]] = item[1]
+      return memo
+    }, {}),
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.APP_ENV': process.env.APP_ENV,
@@ -86,6 +90,7 @@ function getPackagePaths() {
 function resolveNocobasePackagesAlias(config) {
   const pkgs = getPackagePaths();
   for (const [pkg, dir] of pkgs) {
+    console.log('config', config.module.rules)
     config.module.rules.get('ts-in-node_modules').include.add(dir);
     config.resolve.alias.set(pkg, dir);
   }

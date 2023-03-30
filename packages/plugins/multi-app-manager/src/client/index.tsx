@@ -3,17 +3,17 @@ import {
   PinnedPluginListProvider,
   SchemaComponentOptions,
   SettingsCenterProvider,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { data, loading, run } = useRequest(
     {
       resource: 'applications',
@@ -41,7 +41,7 @@ const MultiAppManager = () => {
       {(data?.data || []).length > 0 && <Menu.Divider />}
       <Menu.Item
         onClick={() => {
-          history.push('/admin/settings/multi-app-manager/applications');
+          navigate('/admin/settings/multi-app-manager/applications');
         }}
       >
         {t('Manage applications')}

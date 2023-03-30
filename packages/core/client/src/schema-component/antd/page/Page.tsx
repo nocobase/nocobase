@@ -1,12 +1,12 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
@@ -138,7 +138,7 @@ export const Page = (props) => {
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const location = useLocation<any>();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState(() => {
     // @ts-ignore

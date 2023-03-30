@@ -4,7 +4,7 @@ import { Avatar, Card, Layout, Menu, message, Modal, PageHeader, Popconfirm, Res
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
@@ -19,7 +19,7 @@ import { SystemSettingsPane } from '../system-settings';
 export const SettingsCenterContext = createContext<any>({});
 
 const PluginCard = (props) => {
-  const history = useHistory<any>();
+  const navigate = useNavigate();
   const { data = {} } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -31,7 +31,7 @@ const PluginCard = (props) => {
         data.enabled ? (
           <SettingOutlined
             onClick={() => {
-              history.push(`/admin/settings/${data.name}`);
+              navigate(`/admin/settings/${data.name}`);
             }}
           />
         ) : null,
@@ -194,9 +194,9 @@ const MarketplacePlugins = () => {
 };
 
 const PluginList = (props) => {
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
-  const { tabName = 'local' } = match.params || {};
+  const params = useParams<any>();
+  const { tabName = 'local' } = params || {};
+  const navigate = useNavigate();
   const { setTitle } = useDocumentTitle();
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
@@ -210,7 +210,7 @@ const PluginList = (props) => {
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}`);
+              navigate(`/admin/pm/list/${activeKey}`);
             }}
           >
             <Tabs.TabPane tab={t('Local')} key={'local'} />
@@ -305,8 +305,8 @@ export const getPluginsTabs = (items, snippets) => {
 
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
-  const match = useRouteMatch<any>();
-  const history = useHistory<any>();
+  const navigate = useNavigate();
+  const params = useParams<any>();
   const items = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
@@ -315,18 +315,18 @@ const SettingsCenter = (props) => {
     const tabName = pluginsTabs[0].tabs[0].key;
     return `/admin/settings/${pluginName}/${tabName}`;
   }, [pluginsTabs]);
-  const { pluginName, tabName } = match.params || {};
+  const { pluginName, tabName } = params || {};
   const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
   const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!items[pluginName]) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!tabName) {
     const firstTabName = Object.keys(items[pluginName]?.tabs).shift();
-    return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
+    return <Navigate replace to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
   const plugin: any = pluginsTabs.find((v) => v.key === pluginName);
@@ -375,7 +375,7 @@ const SettingsCenter = (props) => {
             onClick={(e) => {
               const item = items[e.key];
               const tabKey = Object.keys(item.tabs).shift();
-              history.push(`/admin/settings/${e.key}/${tabKey}`);
+              navigate(`/admin/settings/${e.key}/${tabKey}`);
             }}
             items={menuItems as any}
           />
@@ -389,7 +389,7 @@ const SettingsCenter = (props) => {
                 <Tabs
                   activeKey={tabName}
                   onChange={(activeKey) => {
-                    history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                    navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
                 >
                   {plugin.tabs?.map((tab) => {

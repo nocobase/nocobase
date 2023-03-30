@@ -1,5 +1,5 @@
 import React from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { RouteContext } from './context';
 import { useRouteComponent } from './hooks';
 import { RouteSwitchProps } from './types';
@@ -10,50 +10,48 @@ export function RouteSwitch(props: RouteSwitchProps) {
     return null;
   }
   return (
-    <Switch>
+    <Routes>
       {routes.map((route, index) => {
+        console.log('🚀 ~ file: RouteSwitch.tsx:35 ~ {routes.map ~ route:', route);
+
         if (route.type == 'redirect') {
           return (
-            <Redirect
+            <Route
+              path={route.from}
+              caseSensitive={route.sensitive}
               key={index}
-              to={route.to}
-              push={route.push}
-              from={route.from}
-              path={route.path}
-              exact={route.exact}
-              strict={route.strict}
+              element={<Navigate replace to={route.to}></Navigate>}
             />
           );
         }
         if (!route.path && Array.isArray(route.routes)) {
-          route.path = route.routes.map((r) => r.path) as any;
         }
+        console.log(route.path);
         return (
           <Route
-            key={index}
-            path={route.path}
-            exact={route.exact}
-            strict={route.strict}
-            sensitive={route.sensitive}
-            render={(props) => {
-              return (
-                <RouteContext.Provider value={route}>
-                  <ComponentRenderer {...props} route={route} />
-                </RouteContext.Provider>
-              );
-            }}
-          />
+            key={route.path as string}
+            path={route.path as string}
+            index={route.path === undefined}
+            caseSensitive={route.sensitive}
+            element={
+              <RouteContext.Provider value={route}>
+                <ComponentRenderer route={route} />
+              </RouteContext.Provider>
+            }
+          ></Route>
         );
       })}
-    </Switch>
+    </Routes>
   );
 }
 
 function ComponentRenderer(props) {
+  console.log('🚀 ~ file: RouteSwitch.tsx:36 ~ ComponentRenderer ~ props?.route?.:', props?.route);
   const Component = useRouteComponent(props?.route?.component);
+  console.log('🚀 ~ file: RouteSwitch.tsx:36 ~ ComponentRenderer ~ Component:', Component);
   return (
     <Component {...props}>
-      <RouteSwitch routes={props.route.routes} />
+      <RouteSwitch routes={props?.route?.routes} />
     </Component>
   );
 }

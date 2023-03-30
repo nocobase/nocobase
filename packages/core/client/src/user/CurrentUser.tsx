@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { Dropdown, Menu } from 'antd';
 import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { ChangePassword } from './ChangePassword';
@@ -23,7 +23,7 @@ const ApplicationVersion = () => {
 export const DropdownVisibleContext = createContext(null);
 
 export const CurrentUser = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const api = useAPIClient();
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
@@ -51,7 +51,7 @@ export const CurrentUser = () => {
                 onClick={async () => {
                   await api.resource('users').signout();
                   api.auth.setToken(null);
-                  history.push('/signin');
+                  navigate('/signin');
                 }}
               >
                 {t('Sign out')}
