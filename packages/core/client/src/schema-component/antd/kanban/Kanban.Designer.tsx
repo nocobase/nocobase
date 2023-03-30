@@ -7,7 +7,7 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlockDesignerSetting } from '../page';
+import { FixedBlockDesignerItem } from '../page';
 
 export const KanbanDesigner = () => {
   const { name, title } = useCollection();
@@ -20,7 +20,6 @@ export const KanbanDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const template = useSchemaTemplate();
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
@@ -55,7 +54,7 @@ export const KanbanDesigner = () => {
           });
         }}
       />
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Kanban'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />

@@ -338,15 +338,28 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
   return groups;
 };
 
-const getItem = (field: FieldOptions, schemaName: string, collectionName: string, getCollectionFields) => {
+const getItem = (
+  field: FieldOptions,
+  schemaName: string,
+  collectionName: string,
+  getCollectionFields,
+  processedCollections: string[],
+) => {
   if (field.interface === 'm2o') {
+    if (processedCollections.includes(field.target)) return null;
+
     const subFields = getCollectionFields(field.target);
 
     return {
       type: 'subMenu',
       title: field.uiSchema?.title,
       children: subFields
-        .map((subField) => getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields))
+        .map((subField) =>
+          getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
+            ...processedCollections,
+            field.target,
+          ]),
+        )
         .filter(Boolean),
     } as SchemaInitializerItemOptions;
   }
@@ -385,7 +398,7 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
     ?.filter((field) => {
       return interfaces.includes(field.interface);
     })
-    ?.map((field) => getItem(field, field.name, name, getCollectionFields));
+    ?.map((field) => getItem(field, field.name, name, getCollectionFields, []));
   return groups;
 };
 
@@ -808,7 +821,7 @@ export const createDetailsBlockSchema = (options) => {
           useProps: '{{ useDetailsBlockProps }}',
         },
         properties: {
-          actions: {
+          [uid()]: {
             type: 'void',
             'x-initializer': actionInitializers,
             'x-component': 'ActionBar',
@@ -1456,6 +1469,9 @@ export const createKanbanBlockSchema = (options) => {
             'x-label-disabled': true,
             'x-decorator': 'BlockItem',
             'x-component': 'Kanban.Card',
+            'x-component-props': {
+              openMode: 'drawer',
+            },
             'x-designer': 'Kanban.Card.Designer',
             properties: {
               grid: {
@@ -1470,6 +1486,7 @@ export const createKanbanBlockSchema = (options) => {
             title: '{{ t("View") }}',
             'x-designer': 'Action.Designer',
             'x-component': 'Kanban.CardViewer',
+            'x-action': 'view',
             'x-component-props': {
               openMode: 'drawer',
             },

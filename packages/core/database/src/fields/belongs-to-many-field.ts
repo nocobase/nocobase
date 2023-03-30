@@ -32,9 +32,21 @@ export class BelongsToManyField extends RelationField {
 
     const onDelete = this.options.onDelete || 'CASCADE';
 
+    const targetAssociation = association.toTarget;
+
+    if (association.targetKey) {
+      targetAssociation.targetKey = association.targetKey;
+    }
+
+    const sourceAssociation = association.toSource;
+
+    if (association.sourceKey) {
+      sourceAssociation.targetKey = association.sourceKey;
+    }
+
     return [
-      BelongsToField.toReference(db, association.toSource, onDelete),
-      BelongsToField.toReference(db, association.toTarget, onDelete),
+      BelongsToField.toReference(db, targetAssociation, onDelete),
+      BelongsToField.toReference(db, sourceAssociation, onDelete),
     ];
   }
 
@@ -59,6 +71,7 @@ export class BelongsToManyField extends RelationField {
         name: through,
       };
 
+      // set through collection schema
       if (this.collection.collectionSchema()) {
         throughCollectionOptions['schema'] = this.collection.collectionSchema();
       }

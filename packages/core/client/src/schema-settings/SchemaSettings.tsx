@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
-import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse, ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd';
+import { FormDialog, FormItem, FormLayout, Input, ArrayCollapse } from '@formily/antd';
 import { createForm, Field, GeneralField } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import _ from 'lodash';
@@ -853,6 +854,90 @@ SchemaSettings.BlockTitleItem = () => {
   );
 };
 
+SchemaSettings.DefaultSortingRules = (props) => {
+  const { sort, sortFields, onSubmit } = props;
+  const { t } = useTranslation();
+
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Set default sorting rules')}
+      components={{ ArrayItems }}
+      schema={
+        {
+          type: 'object',
+          title: t('Set default sorting rules'),
+          properties: {
+            sort: {
+              type: 'array',
+              default: sort,
+              'x-component': 'ArrayItems',
+              'x-decorator': 'FormItem',
+              items: {
+                type: 'object',
+                properties: {
+                  space: {
+                    type: 'void',
+                    'x-component': 'Space',
+                    properties: {
+                      sort: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.SortHandle',
+                      },
+                      field: {
+                        type: 'string',
+                        enum: sortFields,
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Select',
+                        'x-component-props': {
+                          style: {
+                            width: 260,
+                          },
+                        },
+                      },
+                      direction: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Radio.Group',
+                        'x-component-props': {
+                          optionType: 'button',
+                        },
+                        enum: [
+                          {
+                            label: t('ASC'),
+                            value: 'asc',
+                          },
+                          {
+                            label: t('DESC'),
+                            value: 'desc',
+                          },
+                        ],
+                      },
+                      remove: {
+                        type: 'void',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'ArrayItems.Remove',
+                      },
+                    },
+                  },
+                },
+              },
+              properties: {
+                add: {
+                  type: 'void',
+                  title: t('Add sort field'),
+                  'x-component': 'ArrayItems.Addition',
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={onSubmit}
+    />
+  );
+};
+
 SchemaSettings.LinkageRules = (props) => {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
@@ -950,7 +1035,15 @@ SchemaSettings.EnableChildCollections = (props) => {
           ['x-uid']: uid,
         };
         fieldSchema['x-enable-children'] = enableChildren;
+        fieldSchema['x-component-props'] = {
+          openMode: 'drawer',
+          component: 'CreateRecordAction',
+        };
         schema['x-enable-children'] = enableChildren;
+        schema['x-component-props'] = {
+          openMode: 'drawer',
+          component: 'CreateRecordAction',
+        };
         dn.emit('patch', {
           schema,
         });

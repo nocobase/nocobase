@@ -5,8 +5,13 @@ import { SchemaInitializer } from '..';
 import { useCurrentSchema } from '../utils';
 
 export const InitializerWithSwitch = (props) => {
-  const { type, schema, item, insert } = props;
-  const { exists, remove } = useCurrentSchema(schema?.[type] || item?.schema?.[type], type, item.find, item.remove);
+  const { type, schema, item, insert, remove: passInRemove } = props;
+  const { exists, remove } = useCurrentSchema(
+    schema?.[type] || item?.schema?.[type],
+    type,
+    item.find,
+    passInRemove ?? item.remove,
+  );
   return (
     <SchemaInitializer.SwitchItem
       checked={exists}

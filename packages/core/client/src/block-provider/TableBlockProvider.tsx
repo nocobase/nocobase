@@ -3,7 +3,7 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { SchemaComponentOptions, useFixedSchema, removeNullCondition } from '../schema-component';
+import { SchemaComponentOptions, removeNullCondition, FixedBlockWrapper } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { findFilterTargets } from './hooks';
@@ -24,24 +24,25 @@ const InternalTableBlockProvider = (props: Props) => {
   const field = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
-  useFixedSchema();
   return (
-    <TableBlockContext.Provider
-      value={{
-        field,
-        service,
-        resource,
-        params,
-        showIndex,
-        dragSort,
-        rowKey,
-        expandFlag,
-        childrenColumnName,
-        setExpandFlag: () => setExpandFlag(!expandFlag),
-      }}
-    >
-      <RenderChildrenWithAssociationFilter {...props} />
-    </TableBlockContext.Provider>
+    <FixedBlockWrapper>
+      <TableBlockContext.Provider
+        value={{
+          field,
+          service,
+          resource,
+          params,
+          showIndex,
+          dragSort,
+          rowKey,
+          expandFlag,
+          childrenColumnName,
+          setExpandFlag: () => setExpandFlag(!expandFlag),
+        }}
+      >
+        <RenderChildrenWithAssociationFilter {...props} />
+      </TableBlockContext.Provider>
+    </FixedBlockWrapper>
   );
 };
 
