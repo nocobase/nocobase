@@ -1,4 +1,4 @@
-import { every, some, get } from 'lodash';
+import { every, some, findIndex } from 'lodash';
 import flat from 'flat';
 import jsonLogic from '../../common/utils/logic';
 
@@ -8,7 +8,7 @@ function getInnermostKeyAndValue(obj) {
   }
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
+      if (Object.prototype.toString.call(obj[key]) === '[object Object]' && obj[key] !== null) {
         return getInnermostKeyAndValue(obj[key]);
       } else {
         return { key, value: obj[key] };
@@ -31,6 +31,32 @@ const getVariableValue = (str, values) => {
   const match = regex.exec(str);
   return values[match?.[1]];
 };
+const getTargetField = (obj) => {
+  const keys = getAllKeys(obj);
+  const index = findIndex(keys, (key, index, keys) => {
+    if (key.includes('$') && index > 0) {
+      return true;
+    }
+  });
+  const result = keys.slice(0, index);
+  return result;
+};
+
+function getAllKeys(obj) {
+  const keys = [];
+  function traverse(o) {
+    Object.keys(o)
+      .sort()
+      .forEach(function (key) {
+        keys.push(key);
+        if (o[key] && typeof o[key] === 'object') {
+          traverse(o[key]);
+        }
+      });
+  }
+  traverse(obj);
+  return keys;
+}
 
 export const conditionAnalyse = (rules, values) => {
   const type = Object.keys(rules)[0] || '$and';
@@ -39,12 +65,13 @@ export const conditionAnalyse = (rules, values) => {
     const jsonlogic = getInnermostKeyAndValue(c);
     const operator = jsonlogic?.key;
     const value = getValue(jsonlogic?.value, values);
-    const targetField = Object.keys(flat(c))[0]?.replace?.(`.${operator}`, '');
+    const targetField = getTargetField(c);
     if (!operator) {
       return true;
     }
     try {
-      const result = jsonLogic.apply({ [operator]: [flat(values)?.[targetField], value] });
+      const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
+      const result = jsonLogic.apply({ [operator]: [currentValue, value] });
       return result;
     } catch (error) {
       console.error(error);

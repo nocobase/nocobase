@@ -39,7 +39,10 @@ http://ricostacruz.com/cheatsheets/umdjs.html
   var jsonLogic = {};
   var operations = {
     $is: function (a, b) {
-      return a == b;
+      return a === b;
+    },
+    $match: function (a, b) {
+      return JSON.stringify(a) === JSON.stringify(b);
     },
     $eq: function (a, b) {
       return a === b;
