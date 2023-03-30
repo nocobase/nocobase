@@ -3,10 +3,9 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { Col, Collapse, Input, Row, Tree } from 'antd';
 import cls from 'classnames';
-import React, { ChangeEvent, MouseEvent, useState } from 'react';
-import { useAssociationFilterProps } from '../../../block-provider/hooks';
+import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
-import { useCompile, useDesigner } from '../../hooks';
+import { useCompile, useDesigner, useProps } from '../../hooks';
 import { AssociationFilter } from './AssociationFilter';
 
 const { Panel } = Collapse;
@@ -15,11 +14,9 @@ export const AssociationFilterItem = (props) => {
   const collectionField = AssociationFilter.useAssociationField();
 
   // 把一些可定制的状态通过 hook 提取出去了，为了兼容之前添加的 Table 区块，这里加了个默认值
-  const { useProps = useAssociationFilterProps } = props;
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const compile = useCompile();
-
   const {
     list,
     onSelected,
@@ -28,10 +25,12 @@ export const AssociationFilterItem = (props) => {
     run,
     valueKey: _valueKey,
     labelKey: _labelKey,
-  } = useProps();
+    defaultCollapse,
+  } = useProps(props);
 
   const [searchVisible, setSearchVisible] = useState(false);
 
+  const defaultActiveKeyCollapse = useMemo<React.Key[]>(() => (defaultCollapse ? [collectionField.name] : []), []);
   const valueKey = _valueKey || collectionField?.targetKey || 'id';
   const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
@@ -131,11 +130,7 @@ export const AssociationFilterItem = (props) => {
       )}
     >
       <Designer />
-      <Collapse
-        defaultActiveKey={[collectionField.uiSchemaUid]}
-        ghost
-        expandIcon={searchVisible ? () => null : undefined}
-      >
+      <Collapse defaultActiveKey={defaultActiveKeyCollapse} ghost expandIcon={searchVisible ? () => null : undefined}>
         <Panel
           className={css`
             & .ant-collapse-content-box {
@@ -216,7 +211,7 @@ export const AssociationFilterItem = (props) => {
               </Col>
             </Row>
           }
-          key={collectionField.uiSchemaUid}
+          key={defaultActiveKeyCollapse[0]}
         >
           <Tree
             style={{ padding: '16px 0' }}

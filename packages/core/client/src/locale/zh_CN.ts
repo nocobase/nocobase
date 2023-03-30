@@ -63,6 +63,7 @@ export default {
   'Collapse all':'全部收起',
   'Expand all':'全部展开',
   'Expand/Collapse':'展开/折叠',
+  'Default collapse':'默认展开',
   'Tree collection': '树结构表',
   "Tree table":"树表格",
   'Parent ID': '父记录ID',
