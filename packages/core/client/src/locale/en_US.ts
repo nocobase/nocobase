@@ -37,6 +37,7 @@ export default {
   "Collections & Fields": "Collections & Fields",
   "All collections":"All collections",
   "Add category":"Add category",
+  "Enable child collections":"Enable child collections",
   "Delete category":"Delete category",
   "Edit category":"Edit category",
   "Collection category":"Collection category",
