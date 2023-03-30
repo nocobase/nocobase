@@ -43,7 +43,7 @@ export const ValueDynamicComponent = (props) => {
           })}
         </div>
       ) : mode === 'express' ? (
-        <div style={{ minWidth: 150, maxWidth: 430 }}>
+        <div style={{ minWidth: 150, maxWidth: 430, fontSize: 13 }}>
           <Variable.TextArea
             value={fieldValue?.value}
             onChange={(value) => {
