@@ -58,7 +58,7 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
       if (conditionAnalyse(condition, values)) {
         if (value?.mode === 'express') {
           const scope = cloneDeep(values);
-          const result = evaluate(value.result || value.value, { ...scope, now: ()=>new Date().toString() });
+          const result = evaluate(value.result || value.value, { ...scope, now: () => new Date().toString() });
           valueResult.push(result);
         } else if (value?.mode === 'constant') {
           valueResult.push(value?.value || value);
@@ -70,7 +70,7 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
         ...field.linkageProperty,
         value: valueResult,
       };
-      setTimeout(() => (field.value = last(valueResult) === undefined ? field.value : last(valueResult)));
+      field.value = last(valueResult) === undefined ? field.value : last(valueResult);
       break;
     default:
       return null;
