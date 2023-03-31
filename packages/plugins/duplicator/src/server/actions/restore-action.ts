@@ -30,7 +30,9 @@ export async function restoreAction(ctx, next) {
   app.log.info('Restore complete, exiting now...');
 
   if (typeof jest === 'undefined') {
-    process.exit(100);
+    process.nextTick(() => {
+      process.exit(100);
+    });
   }
 }
 
