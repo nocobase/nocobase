@@ -81,10 +81,12 @@ module.exports = (cli) => {
             env: {
               APP_PORT: serverPort,
             },
-          }).catch((res) => {
-            if (res.exitCode == 100) {
+          }).catch((err) => {
+            if (err.exitCode == 100) {
               console.log('Restarting server...');
               runDevServer();
+            } else {
+              console.error(err);
             }
           });
         };
