@@ -5,7 +5,7 @@ import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile } from '../../../';
+import { useCompile, EllipsisWithTooltip } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
@@ -213,18 +213,28 @@ export const PreviewFields = (props) => {
           key: item.name,
           width: 150,
           render: (v, record, index) => {
+            const content = record[item.name];
             const objSchema: any = {
               type: 'object',
-              properties: { [item.name]: { ...schema, default: v, 'x-read-pretty': true,title:null } },
+              properties: {
+                [item.name]: { ...schema, default: content, 'x-read-pretty': true, title: null },
+              },
             };
-            return <RecursionField schema={objSchema} onlyRenderProperties name={index} />;
+            return (
+              <EllipsisWithTooltip
+                ellipsis={true}
+                popoverContent={<RecursionField schema={objSchema} name={index} onlyRenderProperties />}
+              >
+                <RecursionField schema={objSchema} name={index} onlyRenderProperties />
+              </EllipsisWithTooltip>
+            );
           },
         };
       });
   };
   return (
     dataSource.length > 0 && (
-      <>
+      <div>
         <h4>{t('Fields')}:</h4>
         <Table
           bordered
@@ -237,7 +247,7 @@ export const PreviewFields = (props) => {
         />
         <h4>{t('Preview')}:</h4>
         <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000, y: 300 }} />
-      </>
+      </div>
     )
   );
 };
