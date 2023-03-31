@@ -30,11 +30,24 @@ export const FormFieldLinkageRuleAction = observer((props: any) => {
   } = useValues(options);
   return (
     <LinkageLogicContext.Provider value={uid()}>
-      <div style={{ marginBottom: 8 }}>
+      <div
+        style={{ marginBottom: 8 }}
+        className={css`
+          .ant-space {
+            display: inline-block;
+          }
+        `}
+      >
         <Space
           className={css`
+            .ant-space {
+              display: inline-block;
+            }
             .ant-space-item {
               max-width: 95%;
+              display: inline-block;
+              margin: 2px;
+              vertical-align: top;
             }
           `}
         >
