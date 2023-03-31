@@ -13,6 +13,7 @@ export const useRestartServer = () => {
         .request({
           resource: 'duplicator',
           action: 'dumpableCollections',
+          isNotificationsEnabled: false,
         })
         .catch((error) => {
           console.error(error);
