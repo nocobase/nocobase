@@ -42,50 +42,75 @@ export class SortField extends Field {
   };
 
   initRecordsSortValue = async ({ transaction }) => {
-    const totalCount = await this.collection.repository.count({
-      transaction,
-    });
-
-    const emptyCount = await this.collection.repository.count({
-      filter: {
-        [this.name]: null,
-      },
-      transaction,
-    });
-
-    const orderKey = (() => {
-      const model = this.collection.model;
-      if (model.primaryKeyAttribute) {
-        return model.primaryKeyAttribute;
-      }
-      if (model.rawAttributes['createdAt']) {
-        return 'createdAt';
+    const doInit = async (scopeKey = null, scopeValue = null) => {
+      const filter = {};
+      if (scopeKey && scopeValue) {
+        filter[scopeKey] = scopeValue;
       }
 
-      throw new Error(`can not find order key for collection ${this.collection.name}`);
-    })();
-
-    if (emptyCount === totalCount && emptyCount > 0) {
-      const records = await this.collection.repository.find({
-        order: [orderKey],
+      const totalCount = await this.collection.repository.count({
+        filter,
         transaction,
       });
 
-      let start = 1;
-      for (const record of records) {
-        await record.update(
-          {
-            sort: start,
-          },
-          {
-            hooks: false,
-            transaction,
-            silent: true,
-          },
-        );
+      const emptyCount = await this.collection.repository.count({
+        filter: {
+          [this.name]: null,
+          ...filter,
+        },
+        transaction,
+      });
 
-        start += 1;
+      const orderKey = (() => {
+        const model = this.collection.model;
+        if (model.primaryKeyAttribute) {
+          return model.primaryKeyAttribute;
+        }
+        if (model.rawAttributes['createdAt']) {
+          return 'createdAt';
+        }
+
+        throw new Error(`can not find order key for collection ${this.collection.name}`);
+      })();
+
+      if (emptyCount === totalCount && emptyCount > 0) {
+        const records = await this.collection.repository.find({
+          order: [orderKey],
+          filter,
+          transaction,
+        });
+
+        let start = 1;
+        for (const record of records) {
+          await record.update(
+            {
+              sort: start,
+            },
+            {
+              hooks: false,
+              transaction,
+              silent: true,
+            },
+          );
+
+          start += 1;
+        }
       }
+    };
+
+    const scopeKey = this.options.scopeKey;
+    if (scopeKey) {
+      const groups = await this.collection.repository.find({
+        attributes: [scopeKey],
+        group: [scopeKey],
+        raw: true,
+      });
+
+      for (const group of groups) {
+        await doInit(scopeKey, group[scopeKey]);
+      }
+    } else {
+      await doInit();
     }
   };
 
