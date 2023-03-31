@@ -5,7 +5,7 @@ import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, EllipsisWithTooltip } from '../../../';
+import { useCompile, EllipsisWithTooltip, TableBlockProvider } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
@@ -76,16 +76,20 @@ export const PreviewFields = (props) => {
 
   useEffect(() => {
     if (name) {
-      api
-        .resource(`dbViews`)
-        .query({ filterByTk: viewName, schema })
-        .then(({ data }) => {
-          if (data) {
-            setPreviewData(data?.data || []);
-          }
-        });
+      getPreviewData({ page: 1, pageSize: 10 });
     }
   }, [name]);
+
+  const getPreviewData = ({ page, pageSize }) => {
+    api
+      .resource(`dbViews`)
+      .query({ filterByTk: viewName, schema, page, pageSize })
+      .then(({ data }) => {
+        if (data) {
+          setPreviewData(data?.data || []);
+        }
+      });
+  };
 
   const handleFieldChange = (record, index) => {
     dataSource.splice(index, 1, record);
@@ -246,7 +250,18 @@ export const PreviewFields = (props) => {
           key={name}
         />
         <h4>{t('Preview')}:</h4>
-        <Table bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000, y: 300 }} />
+        <TableBlockProvider>
+          <Table
+            key={name}
+            onChange={(pagination, filters, sorter, extra) => {
+              getPreviewData({ page: pagination.current, pageSize: pagination.pageSize });
+            }}
+            bordered
+            columns={previewColumns}
+            dataSource={previewData}
+            scroll={{ x: 1000, y: 300 }}
+          />
+        </TableBlockProvider>
       </div>
     )
   );
