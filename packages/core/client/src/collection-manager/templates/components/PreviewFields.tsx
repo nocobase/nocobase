@@ -21,7 +21,6 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  console.log(props);
   const { name, sources, viewName, schema, fields } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
