@@ -161,7 +161,6 @@ export class Dumper extends AppMigrator {
         },
       );
 
-      console.log({ views });
       for (const v of views) {
         sqlContent.push(`CREATE OR REPLACE VIEW ${v['view_name']} AS ${v['view_definition']}`);
       }
