@@ -227,7 +227,6 @@ export const PreviewFields = (props) => {
             return (
               <EllipsisWithTooltip
                 ellipsis={true}
-                popoverContent={<RecursionField schema={objSchema} name={index} onlyRenderProperties />}
               >
                 <RecursionField schema={objSchema} name={index} onlyRenderProperties />
               </EllipsisWithTooltip>
