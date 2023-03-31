@@ -29,7 +29,9 @@ export async function restoreAction(ctx, next) {
   await next();
   app.log.info('Restore complete, exiting now...');
 
-  process.exit(100);
+  if (typeof jest === 'undefined') {
+    process.exit(100);
+  }
 }
 
 export const getPackageContent = async (ctx, next) => {
