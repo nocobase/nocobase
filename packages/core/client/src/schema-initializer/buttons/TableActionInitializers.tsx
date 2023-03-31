@@ -34,7 +34,23 @@ export const TableActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' || collection.template !== 'file';
+          },
+        },
+        {
+          type: 'item',
+          title: "{{t('Upload')}}",
+          component: 'UploadActionInitializer',
+          schema: {
+            'x-align': 'right',
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return collection.template === 'file';
           },
         },
         {

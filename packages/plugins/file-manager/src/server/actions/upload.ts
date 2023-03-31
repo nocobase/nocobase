@@ -43,10 +43,10 @@ export async function middleware(ctx: Context, next: Next) {
   const Storage = ctx.db.getCollection('storages');
   let storage;
 
-  if (resourceName === 'attachments') {
-    // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
-    storage = await Storage.repository.findOne({ filter: { default: true } });
-  } else if (associatedName) {
+  // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
+  storage = await Storage.repository.findOne({ filter: { default: true } });
+
+  if (associatedName) {
     const AssociatedCollection = ctx.db.getCollection(associatedName);
     const resourceField = AssociatedCollection.getField(resourceName);
     ctx.resourceField = resourceField;
@@ -109,7 +109,7 @@ export async function action(ctx: Context, next: Next) {
     ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
   };
 
-  const attachment = await ctx.db.sequelize.transaction(async (transaction) => {
+  const fileData = await ctx.db.sequelize.transaction(async (transaction) => {
     // TODO(optimize): 应使用关联 accessors 获取
     const result = await storage.createAttachment(data, { context: ctx, transaction });
 
@@ -136,7 +136,7 @@ export async function action(ctx: Context, next: Next) {
 
   // 将存储引擎的信息附在已创建的记录里，节省一次查询
   // attachment.setDataValue('storage', storage);
-  ctx.body = attachment;
+  ctx.body = fileData;
 
   await next();
 }

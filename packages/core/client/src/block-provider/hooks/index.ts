@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { message, Modal } from 'antd';
+import { message, Modal, notification } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -14,13 +14,26 @@ import { useCollection } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
-import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
+import { FILE_LIMIT_SIZE, removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+
+interface FileData {
+  title: string;
+  filename: string;
+  extname: string;
+  size: number;
+  mimetype: string;
+  path: string;
+  url: string;
+  preview: string;
+  meta?: any;
+  storageId?: number;
+}
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -84,7 +97,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
-  console.log('form.values',  form.values);
+  console.log('form.values', form.values);
   return form.values;
   let values = {};
   for (const key in form.values) {
@@ -802,7 +815,7 @@ export const useAssociationFilterProps = () => {
   const fieldSchema = useFieldSchema();
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
-  const field = useField()
+  const field = useField();
   const collectionFieldName = collectionField.name;
   const { data, params, run } = useRequest(
     {
@@ -812,7 +825,7 @@ export const useAssociationFilterProps = () => {
         fields: [labelKey, valueKey],
         pageSize: 200,
         page: 1,
-        ...field.componentProps?.params
+        ...field.componentProps?.params,
       },
     },
     {
@@ -820,7 +833,6 @@ export const useAssociationFilterProps = () => {
       debounceWait: 300,
     },
   );
-
 
   const list = data?.data || [];
   const onSelected = (value) => {
@@ -970,7 +982,6 @@ export const useAssociationFilterBlockProps = () => {
     });
   };
 
-
   return {
     /** 渲染 Collapse 的列表数据 */
     list,
@@ -980,5 +991,75 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
+  };
+};
+
+export const useUploadFiles = () => {
+  const { service } = useBlockRequestContext();
+  const collection = useCollection();
+  const api = useAPIClient();
+  const { t } = useTranslation();
+  const uploadingFiles = {};
+
+  let pendingNumber = 0;
+
+  const formatFile = (file): FileData => {
+    return {
+      title: file.title,
+      url: file.url,
+      size: file.size,
+      mimetype: file.mimetype,
+      path: file.path,
+      storageId: file.storageId,
+      filename: file.filename,
+      extname: file.extname,
+      preview: file.url,
+      meta: {},
+    };
+  };
+  const create = (file: FileData) => {
+    return api.request({
+      url: `${collection.name}:create`,
+      method: 'POST',
+      data: file,
+    });
+  };
+
+  return {
+    /**
+     * 返回 false 会阻止上传，返回 true 会继续上传
+     */
+    beforeUpload(file) {
+      if (file.size > FILE_LIMIT_SIZE) {
+        notification.error({
+          message: `${t('File size cannot exceed')} ${FILE_LIMIT_SIZE / 1024 / 1024}M`,
+        });
+        file.status = 'error';
+        return false;
+      }
+      return true;
+    },
+    onChange(fileList) {
+      fileList.forEach((file) => {
+        if (file.status === 'uploading') {
+          uploadingFiles[file.uid] = true;
+        }
+        if (file.status === 'done' && uploadingFiles[file.uid]) {
+          delete uploadingFiles[file.uid];
+          pendingNumber++;
+          create(formatFile(file.response.data))
+            .then(() => {
+              pendingNumber--;
+              if (pendingNumber === 0) {
+                service?.refresh?.();
+              }
+            })
+            .catch((error) => {
+              console.error(error);
+              pendingNumber--;
+            });
+        }
+      });
+    },
   };
 };
