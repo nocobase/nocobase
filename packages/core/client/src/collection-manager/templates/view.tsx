@@ -33,7 +33,7 @@ export const view: ICollectionTemplate = {
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['name'],
-        when: "{{$deps[0].split('_').length>3}}",
+        when: "{{isPG}}",
         fulfill: {
           state: {
             value: "{{$deps[0].split('_')?.[0]}}",
@@ -51,7 +51,7 @@ export const view: ICollectionTemplate = {
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['name'],
-        when: "{{$deps[0].split('_').length>3}}",
+        when: "{{isPG}}",
         fulfill: {
           state: {
             value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',

@@ -197,6 +197,7 @@ export const PreviewFields = (props) => {
     },
   ];
   const formatPreviewColumns = (data) => {
+    console.log(data)
     return data
       .filter((k) => k.source || k.interface)
       ?.map((item) => {

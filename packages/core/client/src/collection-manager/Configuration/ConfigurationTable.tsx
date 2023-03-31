@@ -147,6 +147,7 @@ export const ConfigurationTable = () => {
           useCancelAction,
           interfaces,
           enableInherits: database?.dialect === 'postgres',
+          isPG:database?.dialect === 'postgres',
         }}
       />
     </SchemaComponentContext.Provider>
