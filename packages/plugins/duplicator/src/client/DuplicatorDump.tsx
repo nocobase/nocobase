@@ -28,6 +28,7 @@ export const DuplicatorDump = () => {
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph({ collections: data.userCollections });
   const [pageLoading, setPageLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
   const [fileName, setFileName] = React.useState('');
   const tableHeight = useTableHeight();
   const compile = useCompile();
@@ -221,12 +222,18 @@ export const DuplicatorDump = () => {
               responseType: 'blob',
             })
             .then((response) => {
+              setSuccess(true);
               setPageLoading(false);
               const match = /filename="(.+)"/.exec(response?.headers?.['content-disposition'] || '');
-              const filename = match ? match[1] : 'duplicator.nbdump';
+              const filename = match ? match[1] : 'duplicator.nbump';
               let blob = new Blob([response.data]);
               setFileName(filename);
               saveAs(blob, filename);
+            })
+            .catch((error) => {
+              console.error(error);
+              setSuccess(false);
+              setPageLoading(false);
             });
         },
       },
@@ -349,7 +356,7 @@ export const DuplicatorDump = () => {
           onNotTransferAll={handleNotTransferAll}
         />
       ) : (
-        <ResultWithLoading type="backup" fileName={fileName} loading={pageLoading} />
+        <ResultWithLoading type="backup" fileName={fileName} loading={pageLoading} success={success} />
       )}
     </DuplicatorSteps>
   );

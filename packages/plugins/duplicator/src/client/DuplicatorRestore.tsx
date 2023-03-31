@@ -8,8 +8,9 @@ import { DuplicatorSteps } from './DuplicatorSteps';
 import { usePluginUtils } from './hooks/i18';
 import { useCollectionsGraph } from './hooks/useCollectionsGraph';
 import { Category, CollectionData, GroupData } from './hooks/useDumpableCollections';
+import { useRestartServer } from './hooks/useRestartServer';
 import { useTableHeight } from './hooks/useTableHeight';
-import { ResultWithLoading } from './ResultWithLoading';
+import { ResultWithLoading, WAIT_INTERVAL } from './ResultWithLoading';
 import { TableTransfer } from './TableTransfer';
 import { getTargetListByKeys } from './utils/getTargetListByKeys';
 import { splitDataSource } from './utils/splitDataSource';
@@ -32,6 +33,8 @@ export const DuplicatorRestore = () => {
   const [targetSelectedKeys, setTargetSelectedKeys] = React.useState([]);
   const { findAddable, findRemovable } = useCollectionsGraph({ collections: data.userCollections });
   const [pageLoading, setPageLoading] = React.useState(false);
+  const [success, setSuccess] = React.useState(false);
+  const { restart, loading: restartLoading } = useRestartServer();
   const [restoreKey, setRestoreKey] = React.useState('');
   const tableHeight = useTableHeight();
   const compile = useCompile();
@@ -238,6 +241,17 @@ export const DuplicatorRestore = () => {
             })
             .then(() => {
               setPageLoading(false);
+              restart(() => {
+                setSuccess(true);
+                setTimeout(() => {
+                  window.location.reload();
+                }, WAIT_INTERVAL);
+              });
+            })
+            .catch((error) => {
+              console.error(error);
+              setSuccess(false);
+              setPageLoading(false);
             });
         },
       },
@@ -426,7 +440,13 @@ export const DuplicatorRestore = () => {
           />
         );
       case 3:
-        return <ResultWithLoading type="restore" loading={pageLoading} />;
+        return (
+          <ResultWithLoading
+            type={restartLoading ? 'restart' : 'restore'}
+            loading={pageLoading || restartLoading}
+            success={success}
+          />
+        );
       default:
         return null;
     }
