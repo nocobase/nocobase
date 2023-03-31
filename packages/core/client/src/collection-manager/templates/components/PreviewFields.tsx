@@ -215,7 +215,7 @@ export const PreviewFields = (props) => {
           title: compile(target),
           dataIndex: item.name,
           key: item.name,
-          width: 150,
+          width: 200,
           render: (v, record, index) => {
             const content = record[item.name];
             const objSchema: any = {
@@ -253,9 +253,7 @@ export const PreviewFields = (props) => {
         <TableBlockProvider>
           <Table
             key={name}
-            onChange={(pagination, filters, sorter, extra) => {
-              getPreviewData({ page: pagination.current, pageSize: pagination.pageSize });
-            }}
+            pagination={false}
             bordered
             columns={previewColumns}
             dataSource={previewData}
