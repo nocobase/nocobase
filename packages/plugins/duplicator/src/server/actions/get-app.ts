@@ -1,4 +1,6 @@
-export async function getApp(ctx, subAppName) {
+import { Application } from '@nocobase/server';
+
+export async function getApp(ctx, subAppName): Promise<Application> {
   let app = ctx.app;
 
   if (subAppName) {

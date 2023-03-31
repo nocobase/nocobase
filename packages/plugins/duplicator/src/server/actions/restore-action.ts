@@ -2,6 +2,7 @@ import * as os from 'os';
 import path from 'path';
 import { Restorer } from '../restorer';
 import { getApp } from './get-app';
+import * as process from 'process';
 
 export async function restoreAction(ctx, next) {
   const { restoreKey, groups = [], collections = [] } = ctx.request.body;
@@ -21,7 +22,14 @@ export async function restoreAction(ctx, next) {
     selectedUserCollections: collections,
   });
 
+  ctx.body = {
+    success: true,
+  };
+
   await next();
+  app.log.info('Restore complete, exiting now...');
+
+  process.exit(100);
 }
 
 export const getPackageContent = async (ctx, next) => {
