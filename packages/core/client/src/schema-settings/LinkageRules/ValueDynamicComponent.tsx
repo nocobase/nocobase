@@ -30,7 +30,7 @@ export const ValueDynamicComponent = (props) => {
         <Option value="empty">{t('Empty')}</Option>
       </Select>
       {mode === 'constant' ? (
-        <div style={{ minWidth: 150, maxWidth: 430 }}>
+        <div style={{ minWidth: 150, maxWidth: 430, marginLeft: 5 }}>
           {React.createElement(DynamicComponent, {
             value: fieldValue?.value || fieldValue,
             schema,
