@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Input, Select, Tag } from 'antd';
 import { Cascader } from '@formily/antd';
-import { useField, useForm } from '@formily/react';
+import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
@@ -30,7 +30,7 @@ export const PreviewFields = (props) => {
   const [sourceFields, setSourceFields] = useState([]);
   const field: any = useField();
   const form = useForm();
-  const { getCollection } = useCollectionManager();
+  const { getCollection, getCollectionField, getInterface } = useCollectionManager();
   const compile = useCompile();
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
@@ -197,7 +197,6 @@ export const PreviewFields = (props) => {
     },
   ];
   const formatPreviewColumns = (data) => {
-    console.log(data)
     return data
       .filter((k) => k.source || k.interface)
       ?.map((item) => {
@@ -205,16 +204,20 @@ export const PreviewFields = (props) => {
         const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
           ?.title;
         const target = sourceField || item?.uiSchema?.title || item.name;
+        const schema: any = item.source
+          ? getCollectionField(item.source)?.uiSchema
+          : getInterface(item.interface)?.properties?.['uiSchema.title'];
         return {
           title: compile(target),
           dataIndex: item.name,
           key: item.name,
           width: 150,
-          render: (text) => {
-            if (typeof text === 'boolean') {
-              return text?.toString();
-            }
-            return text;
+          render: (v, record, index) => {
+            const objSchema: any = {
+              type: 'object',
+              properties: { [item.name]: { ...schema, default: v, 'x-read-pretty': true,title:null } },
+            };
+            return <RecursionField schema={objSchema} onlyRenderProperties name={index} />;
           },
         };
       });
