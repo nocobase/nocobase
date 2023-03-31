@@ -117,8 +117,8 @@ export const ConfigurationTable = () => {
       return data?.data?.map((item: any) => {
         const schema = item.schema;
         return {
-          label: `${schema}.${compile(item.name)}`,
-          value: `${schema}_${item.name}`,
+          label: schema ? `${schema}.${compile(item.name)}` : item.name,
+          value: schema?`${schema}_${item.name}`:item.name 
         };
       });
     });

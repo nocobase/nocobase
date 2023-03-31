@@ -33,9 +33,15 @@ export const view: ICollectionTemplate = {
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['name'],
+        when: "{{$deps[0].split('_').length>3}}",
         fulfill: {
           state: {
             value: "{{$deps[0].split('_')?.[0]}}",
+          },
+        },
+        otherwise: {
+          state: {
+            value: null,
           },
         },
       },
@@ -45,9 +51,15 @@ export const view: ICollectionTemplate = {
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['name'],
+        when: "{{$deps[0].split('_').length>3}}",
         fulfill: {
           state: {
             value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
+          },
+        },
+        otherwise: {
+          state: {
+            value: '{{$deps[0]}}',
           },
         },
       },
