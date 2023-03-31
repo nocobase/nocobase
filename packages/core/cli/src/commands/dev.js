@@ -60,6 +60,7 @@ module.exports = (cli) => {
       // }
       if (server || !client) {
         console.log('starting server', serverPort);
+
         const argv = [
           '-P',
           './tsconfig.server.json',
@@ -74,11 +75,21 @@ module.exports = (cli) => {
         if (opts.dbSync) {
           argv.push('--db-sync');
         }
-        run('ts-node-dev', argv, {
-          env: {
-            APP_PORT: serverPort,
-          },
-        });
+
+        const runDevServer = () => {
+          run('ts-node-dev', argv, {
+            env: {
+              APP_PORT: serverPort,
+            },
+          }).catch((res) => {
+            if (res.exitCode == 100) {
+              console.log('Restarting server...');
+              runDevServer();
+            }
+          });
+        };
+
+        runDevServer();
       }
       if (client || !server) {
         console.log('starting client', 1 * clientPort);
