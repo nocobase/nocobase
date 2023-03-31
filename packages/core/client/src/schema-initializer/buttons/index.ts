@@ -20,6 +20,5 @@ export * from './TableActionInitializers';
 export * from './TableColumnInitializers';
 export * from './TableSelectorInitializers';
 export * from './TabPaneInitializers';
-export * from './ViewTableActionInitializers';
 // association filter
 export * from '../../schema-component/antd/association-filter/AssociationFilter';

@@ -17,8 +17,6 @@ export const TableBlockInitializer = (props) => {
         const schema = createTableBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
-          tableActionInitializers:
-            collection.template === 'view' ? 'ViewTableActionInitializers' : 'TableActionInitializers',
         });
         insert(schema);
       }}
