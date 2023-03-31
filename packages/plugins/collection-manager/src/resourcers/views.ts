@@ -40,10 +40,13 @@ export default {
     },
 
     async query(ctx, next) {
-      const { filterByTk, schema = 'public' } = ctx.action.params;
+      const { filterByTk, schema = 'public', page = 1, pageSize = 10 } = ctx.action.params;
+
+      const offset = (page - 1) * pageSize;
+      const limit = 1 * pageSize;
 
       const sql = `SELECT *
-                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))}`;
+                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))} LIMIT ${limit} OFFSET ${offset}`;
 
       ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
       await next();
