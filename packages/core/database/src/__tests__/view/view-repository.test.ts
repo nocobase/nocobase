@@ -16,39 +16,52 @@ describe('view repository', () => {
   });
 
   it('should support find view without primary key', async () => {
+    const UserCollection = await db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await UserCollection.repository.create({
+      values: [{ name: 'a' }, { name: 'b' }, { name: 'c' }, { name: 'd' }],
+    });
+
     const viewName = `t_${uid(6)}`;
     const dropSQL = `DROP VIEW IF EXISTS ${viewName};`;
     await db.sequelize.query(dropSQL);
 
-    const viewSQL = `CREATE VIEW ${viewName} AS
-     WITH RECURSIVE numbers (number) AS (
-  SELECT 1
-  UNION ALL
-
-  SELECT number + 1
-  FROM numbers
-  WHERE number < 100
-)
-SELECT * FROM numbers`;
+    const viewSQL = `CREATE VIEW ${viewName} AS select id as aaa, name from ${UserCollection.quotedTableName()}`;
 
     await db.sequelize.query(viewSQL);
 
     const viewCollection = db.collection({
       name: viewName,
       view: true,
+      schema: db.inDialect('postgres') ? 'public' : undefined,
       fields: [
         {
+          type: 'string',
+          name: 'name',
+        },
+        {
           type: 'integer',
-          name: 'number',
+          name: 'aaa',
         },
       ],
     });
 
     const results = await viewCollection.repository.findAndCount({
-      offset: 20,
-      limit: 10,
+      offset: 1,
+      limit: 1,
     });
 
-    console.log({ results });
+    expect(results[0].length).toBe(1);
+    expect(results[1]).toBe(4);
   });
 });

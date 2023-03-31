@@ -337,6 +337,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
+    console.log('opts', opts);
+
     if (this.collection.isParent()) {
       for (const row of rows) {
         const rowCollectionName = this.database.tableNameCollectionMap.get(
