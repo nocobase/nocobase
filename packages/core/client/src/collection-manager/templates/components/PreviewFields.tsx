@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Input, Select, Tag } from 'antd';
+import { Table, Input, Select, Tag, Spin } from 'antd';
 import { Cascader } from '@formily/antd';
 import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,7 @@ export const PreviewFields = (props) => {
   const { name, sources, viewName, schema, fields } = props;
   const api = useAPIClient();
   const { t } = useTranslation();
+  const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState([]);
   const [previewColumns, setPreviewColumns] = useState([]);
   const [previewData, setPreviewData] = useState([]);
@@ -51,11 +52,13 @@ export const PreviewFields = (props) => {
 
   useEffect(() => {
     if (name) {
+      setLoading(true);
       api
         .resource(`dbViews`)
         .get({ filterByTk: viewName, schema })
         .then(({ data }) => {
           if (data) {
+            setLoading(false);
             setDataSource([]);
             const fieldsData = Object.values(data?.data?.fields)?.map((v: any) => {
               if (v.source) {
@@ -209,7 +212,7 @@ export const PreviewFields = (props) => {
           ?.title;
         const target = sourceField || item?.uiSchema?.title || item.name;
         const schema: any = item.source
-          ? getCollectionField(item.source)?.uiSchema
+          ? getCollectionField(typeof item.source === 'string' ? item.source : item.source.join('.'))?.uiSchema
           : getInterface(item.interface)?.properties?.['uiSchema.title'];
         return {
           title: compile(target),
@@ -225,9 +228,7 @@ export const PreviewFields = (props) => {
               },
             };
             return (
-              <EllipsisWithTooltip
-                ellipsis={true}
-              >
+              <EllipsisWithTooltip ellipsis={true}>
                 <RecursionField schema={objSchema} name={index} onlyRenderProperties />
               </EllipsisWithTooltip>
             );
@@ -236,30 +237,32 @@ export const PreviewFields = (props) => {
       });
   };
   return (
-    dataSource.length > 0 && (
-      <div>
-        <h4>{t('Fields')}:</h4>
-        <Table
-          bordered
-          columns={columns}
-          dataSource={dataSource}
-          scroll={{ y: 300 }}
-          pagination={false}
-          rowClassName="editable-row"
-          key={name}
-        />
-        <h4>{t('Preview')}:</h4>
-        <TableBlockProvider>
+    <Spin spinning={loading}>
+      {dataSource.length > 0 && (
+        <>
+          <h4>{t('Fields')}:</h4>
           <Table
-            key={name}
-            pagination={false}
             bordered
-            columns={previewColumns}
-            dataSource={previewData}
-            scroll={{ x: 1000, y: 300 }}
+            columns={columns}
+            dataSource={dataSource}
+            scroll={{ y: 300 }}
+            pagination={false}
+            rowClassName="editable-row"
+            key={name}
           />
-        </TableBlockProvider>
-      </div>
-    )
+          <h4>{t('Preview')}:</h4>
+          <TableBlockProvider>
+            <Table
+              key={name}
+              pagination={false}
+              bordered
+              columns={previewColumns}
+              dataSource={previewData}
+              scroll={{ x: 1000, y: 300 }}
+            />
+          </TableBlockProvider>
+        </>
+      )}
+    </Spin>
   );
 };
