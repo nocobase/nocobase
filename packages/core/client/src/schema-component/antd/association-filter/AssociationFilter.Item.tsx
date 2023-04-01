@@ -6,6 +6,7 @@ import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
+import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
 
 const { Panel } = Collapse;
@@ -78,6 +79,7 @@ export const AssociationFilterItem = (props) => {
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
 
   return (
     <SortableItem
@@ -221,7 +223,9 @@ export const AssociationFilterItem = (props) => {
             treeData={list}
             onSelect={onSelect}
             fieldNames={fieldNames}
-            titleRender={(node) => compile(node[labelKey])}
+            titleRender={(node) => {
+              return getLabelFormatValue(labelUiSchema, compile(node[labelKey]));
+            }}
             selectedKeys={selectedKeys}
             blockNode
           />

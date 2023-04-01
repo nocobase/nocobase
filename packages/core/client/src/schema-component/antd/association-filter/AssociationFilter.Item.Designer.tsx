@@ -1,4 +1,5 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -9,7 +10,6 @@ import {
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
-import _ from 'lodash';
 
 export const AssociationFilterItemDesigner = (props) => {
   const fieldSchema = useFieldSchema();
@@ -30,9 +30,10 @@ export const AssociationFilterItemDesigner = (props) => {
   const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
 
   const options = targetFields
-    .filter(
-      (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
-    )
+    // .filter(
+    //   (field) => field?.interface && ['id', 'input', 'phone', 'email', 'integer', 'number'].includes(field?.interface),
+    // )
+    .filter((field) => !field?.target && field.type !== 'boolean')
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,

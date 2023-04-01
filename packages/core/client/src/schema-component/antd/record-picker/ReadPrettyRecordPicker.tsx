@@ -1,4 +1,3 @@
-import { css } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Typography } from 'antd';
@@ -46,7 +45,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
       const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
-      const text = getLabelFormatValue(labelUiSchema, val);
+      const text = getLabelFormatValue(labelUiSchema, val, true);
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
