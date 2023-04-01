@@ -21,7 +21,7 @@ export function getConfigByEnv() {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect: process.env.DB_DIALECT || 'sqlite',
-    logging: process.env.DB_LOGGING === 'on' ? console.log : false,
+    logging: process.env.DB_LOGGING === 'on' ? customLogger : false,
     storage:
       process.env.DB_STORAGE && process.env.DB_STORAGE !== ':memory:'
         ? resolve(process.cwd(), process.env.DB_STORAGE)
@@ -37,6 +37,11 @@ export function getConfigByEnv() {
       application_name: process.env.DB_DIALECT == 'postgres' ? 'nocobase.main' : undefined,
     },
   };
+}
+
+function customLogger(queryString, queryObject) {
+  console.log(queryString); // outputs a string
+  console.log(queryObject.bind); // outputs an array
 }
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {
