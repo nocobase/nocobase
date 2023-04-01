@@ -14,6 +14,7 @@ const postgres = {
   'timestamp without time zone': 'date',
   'timestamp with time zone': 'date',
   date: 'date',
+  boolean: 'boolean',
 
   json: ['json', 'array'],
   jsonb: ['jsonb', 'array'],
