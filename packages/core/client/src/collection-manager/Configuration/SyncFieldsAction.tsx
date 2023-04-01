@@ -18,7 +18,6 @@ import { useAPIClient } from '../../api-client';
 import { PreviewFields } from '../templates/components/PreviewFields';
 import { PreviewTable } from '../templates/components/PreviewTable';
 
-
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
     return;
@@ -66,12 +65,12 @@ const getSchema = (schema: IField, record: any, compile) => {
           schema: {
             type: 'string',
             'x-hidden': true,
-             default:record?.schema
+            default: record?.schema,
           },
           viewName: {
             type: 'string',
             'x-hidden': true,
-            default:record?.viewName
+            default: record?.viewName,
           },
           fields: {
             type: 'array',
@@ -79,6 +78,7 @@ const getSchema = (schema: IField, record: any, compile) => {
             'x-component-props': {
               ...record,
             },
+            default: record.fields,
           },
           preview: {
             type: 'object',
@@ -90,7 +90,7 @@ const getSchema = (schema: IField, record: any, compile) => {
               dependencies: ['fields'],
               fulfill: {
                 schema: {
-                  'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
+                  'x-component-props': '{{{...record,...$form.values}}}', //任意层次属性都支持表达式
                 },
               },
             },

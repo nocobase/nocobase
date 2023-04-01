@@ -83,6 +83,7 @@ export const PreviewTable = (props) => {
           columns={previewColumns}
           dataSource={previewData}
           scroll={{ x: 1000, y: 300 }}
+          key={name}
         />,
       ]}
     </Spin>
