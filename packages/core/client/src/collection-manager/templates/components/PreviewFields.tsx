@@ -5,7 +5,7 @@ import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, EllipsisWithTooltip, TableBlockProvider, ResourceActionContext } from '../../../';
+import { useCompile, EllipsisWithTooltip, ResourceActionContext } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
@@ -22,7 +22,7 @@ const getInterfaceOptions = (data, type) => {
 };
 const PreviewCom = (props) => {
   const { name, sources, viewName, schema } = props;
-  const { data:fields } = useContext(ResourceActionContext);
+  const { data: fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -251,17 +251,15 @@ const PreviewCom = (props) => {
             rowClassName="editable-row"
             key={name}
           />
-          <h4 style={{marginTop:10}}>{t('Preview')}:</h4>
-          <TableBlockProvider>
-            <Table
-              key={name}
-              pagination={false}
-              bordered
-              columns={previewColumns}
-              dataSource={previewData}
-              scroll={{ x: 1000 }}
-            />
-          </TableBlockProvider>
+          <h4 style={{ marginTop: 10 }}>{t('Preview')}:</h4>
+          <Table
+            key={name}
+            pagination={false}
+            bordered
+            columns={previewColumns}
+            dataSource={previewData}
+            scroll={{ x: 1000 }}
+          />
         </>
       )}
     </Spin>
