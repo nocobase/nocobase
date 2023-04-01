@@ -11,15 +11,15 @@ import {
   afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions,
+  beforeInitOptions
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
 import lodash, { castArray } from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
-import viewResourcer from './resourcers/views';
 import collectionActions from './resourcers/collections';
+import viewResourcer from './resourcers/views';
 
 import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
@@ -89,6 +89,13 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (collection.isInherited() && (<InheritedCollection>collection).parentFields().has(model.get('name'))) {
         model.set('overriding', true);
+      }
+    });
+
+    this.app.db.on('fields.beforeValidate', async (model) => {
+      if (model.get('name') && model.get('name').includes('.')) {
+        model.set('field', model.get('name'));
+        model.set('name', model.get('name').replace(/\./g, '_'));
       }
     });
 

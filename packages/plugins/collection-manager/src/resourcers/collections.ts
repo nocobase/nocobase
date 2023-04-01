@@ -4,7 +4,11 @@ export default {
   async ['collections:setFields'](ctx, next) {
     const { filterByTk, values } = ctx.action.params;
 
-    const fields = values.fields;
+    // WARN: 删掉 key 才能保存
+    const fields = values.fields?.map(f => {
+      delete f.key;
+      return f;
+    });
 
     const db = ctx.app.db as Database;
 
