@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { Table, Input, Select, Tag, Spin } from 'antd';
 import { Cascader } from '@formily/antd';
 import { useField, useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, EllipsisWithTooltip, TableBlockProvider } from '../../../';
+import { useCompile, EllipsisWithTooltip, TableBlockProvider, ResourceActionContext } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
@@ -21,7 +21,8 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  const { name, sources, viewName, schema, fields } = props;
+  const { name, sources, viewName, schema } = props;
+  const { data:fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
@@ -64,7 +65,7 @@ const PreviewCom = (props) => {
               if (v.source) {
                 return v;
               } else {
-                return fields.find((h) => h.name === v.name) || v;
+                return fields?.data.find((h) => h.name === v.name) || v;
               }
             });
             field.value = fieldsData;
