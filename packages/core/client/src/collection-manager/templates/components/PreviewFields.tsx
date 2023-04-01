@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Table, Input, Select, Tag, Spin } from 'antd';
 import { Cascader } from '@formily/antd';
-import { useField, useForm, RecursionField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, EllipsisWithTooltip, ResourceActionContext } from '../../../';
+import { useCompile, ResourceActionContext } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
 
 const getInterfaceOptions = (data, type) => {
@@ -27,12 +27,10 @@ const PreviewCom = (props) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState([]);
-  const [previewColumns, setPreviewColumns] = useState([]);
-  const [previewData, setPreviewData] = useState([]);
   const [sourceFields, setSourceFields] = useState([]);
   const field: any = useField();
   const form = useForm();
-  const { getCollection, getCollectionField, getInterface } = useCollectionManager();
+  const { getCollection } = useCollectionManager();
   const compile = useCompile();
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
@@ -70,35 +68,14 @@ const PreviewCom = (props) => {
             });
             field.value = fieldsData;
             setDataSource(fieldsData);
-            const pColumns = formatPreviewColumns(fieldsData);
-            setPreviewColumns(pColumns);
             form.setValuesIn('sources', data.data?.sources);
           }
         });
     }
   }, [name]);
 
-  useEffect(() => {
-    if (name) {
-      getPreviewData({ page: 1, pageSize: 10 });
-    }
-  }, [name]);
-
-  const getPreviewData = ({ page, pageSize }) => {
-    api
-      .resource(`dbViews`)
-      .query({ filterByTk: viewName, schema, page, pageSize })
-      .then(({ data }) => {
-        if (data) {
-          setPreviewData(data?.data || []);
-        }
-      });
-  };
-
   const handleFieldChange = (record, index) => {
     dataSource.splice(index, 1, record);
-    const pColumns = formatPreviewColumns(dataSource);
-    setPreviewColumns(pColumns);
     setDataSource(dataSource);
     field.value = dataSource.map((v) => {
       return {
@@ -204,39 +181,6 @@ const PreviewCom = (props) => {
       },
     },
   ];
-  const formatPreviewColumns = (data) => {
-    return data
-      .filter((k) => k.source || k.interface)
-      ?.map((item) => {
-        const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
-        const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
-          ?.title;
-        const target = sourceField || item?.uiSchema?.title || item.name;
-        const schema: any = item.source
-          ? getCollectionField(typeof item.source === 'string' ? item.source : item.source.join('.'))?.uiSchema
-          : getInterface(item.interface)?.default?.uiSchema;
-        return {
-          title: compile(target),
-          dataIndex: item.name,
-          key: item.name,
-          width: 200,
-          render: (v, record, index) => {
-            const content = record[item.name];
-            const objSchema: any = {
-              type: 'object',
-              properties: {
-                [item.name]: { ...schema, default: content, 'x-read-pretty': true, title: null },
-              },
-            };
-            return (
-              <EllipsisWithTooltip ellipsis={true}>
-                <RecursionField schema={objSchema} name={index} onlyRenderProperties />
-              </EllipsisWithTooltip>
-            );
-          },
-        };
-      });
-  };
   return (
     <Spin spinning={loading}>
       {dataSource.length > 0 && (
@@ -250,14 +194,6 @@ const PreviewCom = (props) => {
             pagination={false}
             rowClassName="editable-row"
             key={name}
-          />
-          <h4 style={{ marginTop: 10 }}>{t('Preview')}:</h4>
-          <Table
-            pagination={false}
-            bordered
-            columns={previewColumns}
-            dataSource={previewData}
-            scroll={{ x: 1000 }}
           />
         </>
       )}

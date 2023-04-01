@@ -16,6 +16,8 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import * as components from './components';
 import { useAPIClient } from '../../api-client';
 import { PreviewFields } from '../templates/components/PreviewFields';
+import { PreviewTable } from '../templates/components/PreviewTable';
+
 
 const getSchema = (schema: IField, record: any, compile) => {
   if (!schema) {
@@ -64,6 +66,13 @@ const getSchema = (schema: IField, record: any, compile) => {
           fields: {
             type: 'object',
             'x-component': PreviewFields,
+            'x-component-props': {
+              ...record,
+            },
+          },
+          preview: {
+            type: 'object',
+            'x-component': PreviewTable,
             'x-component-props': {
               ...record,
             },

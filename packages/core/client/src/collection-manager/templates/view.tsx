@@ -1,6 +1,8 @@
 import { getConfigurableProperties } from './properties';
 import { ICollectionTemplate } from './types';
 import { PreviewFields } from './components/PreviewFields';
+import { PreviewTable } from './components/PreviewTable';
+
 
 export const view: ICollectionTemplate = {
   name: 'view',
@@ -76,10 +78,22 @@ export const view: ICollectionTemplate = {
       'x-disabled': true,
     },
     fields: {
-      type: 'object',
+      type: 'array',
       'x-component': PreviewFields,
       'x-reactions': {
         dependencies: ['name'],
+        fulfill: {
+          schema: {
+            'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
+          },
+        },
+      },
+    },
+    preview: {
+      type: 'object',
+      'x-component': PreviewTable,
+      'x-reactions': {
+        dependencies: ['name','fields'],
         fulfill: {
           schema: {
             'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
