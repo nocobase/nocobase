@@ -3,37 +3,40 @@ import { Input, Cascader, Tooltip, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
+import * as sanitizeHTML from 'sanitize-html';
+
 import { useCompile } from '../..';
+
+type RangeIndexes = [number, number, number, number];
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
-function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
+function pasteHTML(container: HTMLElement, html: string, { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {}) {
   // IE9 and non-IE
   const sel = window.getSelection?.();
-  if (!sel?.getRangeAt || !sel.rangeCount) {
-    return;
-  }
-  const range = sel.getRangeAt(0);
+  const range = sel?.getRangeAt(0);
   if (!range) {
     return;
   }
-  const children = Array.from(container.childNodes) as HTMLElement[];
-  if (indexes[0] === -1) {
-    if (indexes[1]) {
-      range.setStartAfter(children[indexes[1] - 1]);
-    }
-  } else {
-    range.setStart(children[indexes[0]], indexes[1]);
-  }
 
-  if (indexes[2] === -1) {
-    if (indexes[3]) {
-      range.setEndAfter(children[indexes[3] - 1]);
+  if (indexes) {
+    const children = Array.from(container.childNodes);
+    if (indexes[0] === -1) {
+      if (indexes[1]) {
+        range.setStartAfter(children[indexes[1] - 1]);
+      }
+    } else {
+      range.setStart(children[indexes[0]], indexes[1]);
     }
-  } else {
-    range.setEnd(children[indexes[2]], indexes[3]);
+
+    if (indexes[2] === -1) {
+      if (indexes[3]) {
+        range.setEndAfter(children[indexes[3] - 1]);
+      }
+    } else {
+      range.setEnd(children[indexes[2]], indexes[3]);
+    }
   }
-  range.deleteContents();
 
   // Range.createContextualFragment() would be useful here but is
   // only relatively recently standardized and is not supported in
@@ -47,11 +50,12 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     lastNode = frag.appendChild(el.firstChild);
   }
   const { firstChild } = frag;
+  range.deleteContents();
   range.insertNode(frag);
 
   // Preserve the selection
   if (lastNode) {
-    const next = range.cloneRange();
+    const next = new Range();
     next.setStartAfter(lastNode);
     if (selectPastedContent) {
       if (firstChild) {
@@ -68,8 +72,8 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
 function getValue(el) {
   const values: any[] = [];
   for (const node of el.childNodes) {
-    if (node.nodeName === 'SPAN' && node['dataset']['key']) {
-      values.push(`{{${node['dataset']['key']}}}`);
+    if (node.nodeName === 'SPAN' && node['dataset']['variable']) {
+      values.push(`{{${node['dataset']['variable']}}}`);
     } else {
       values.push(node.textContent);
     }
@@ -99,21 +103,77 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${labels?.join(
     ' / ',
   )}</span>`;
 }
 
-function getLatestRange(element: HTMLElement): [number, number, number, number] {
+function getCurrentRange(element: HTMLElement): [number, number, number, number] {
   const sel = window.getSelection?.();
   const range = sel?.getRangeAt(0);
   if (!range) {
     return [-1, 0, -1, 0];
   }
   const nodes = Array.from(element.childNodes);
+  if (!nodes.length) {
+    return [-1, 0, -1, 0];
+  }
+
   const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
   const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
-  return [startElementIndex, range.startOffset, endElementIndex, range.endOffset];
+  let result: RangeIndexes = [startElementIndex, range.startOffset, endElementIndex, range.endOffset];
+
+  // console.log(nodes, range, startElementIndex, endElementIndex);
+  // [#, <>, #, #, <>]
+  // [#, #]
+  // [<>, #, #]
+  // [#, #, <>]
+  if (startElementIndex === -1) {
+    let realIndex = range.startOffset;
+    let lastNode = nodes[realIndex];
+    let collapseFlag = false;
+    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
+      // set a flag for collapse
+      collapseFlag = true;
+    }
+    let textOffset = 0;
+    for (let i = range.startOffset - 1; i >= 0; i--) {
+      if (collapseFlag) {
+        if (nodes[i].nodeName === '#text') {
+          textOffset += nodes[i].textContent.length;
+        } else {
+          collapseFlag = false;
+        }
+      }
+      if (nodes[i].nodeName === '#text' && lastNode?.nodeName === '#text') {
+        realIndex -= 1;
+      }
+      lastNode = nodes[i];
+    }
+
+    result = textOffset ? [realIndex, textOffset, realIndex, textOffset] : [-1, realIndex, -1, realIndex];
+  } else {
+    let realIndex = 0;
+    let textOffset = 0;
+    const currentIndex = startElementIndex;
+    for (let i = 0; i < currentIndex + 1; i++) {
+      // console.log(i, realIndex, textOffset);
+      if (nodes[i].nodeName === '#text') {
+        if (i !== currentIndex && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
+          realIndex += 1;
+        }
+        textOffset += i === currentIndex ? range.startOffset : nodes[i].textContent.length;
+      } else {
+        realIndex += 1;
+        textOffset = 0;
+      }
+    }
+    result = [realIndex, textOffset, realIndex, textOffset];
+  }
+
+  // console.log(result);
+
+  return result;
 }
 
 export function TextArea(props) {
@@ -187,12 +247,12 @@ export function TextArea(props) {
 
     current.focus();
 
-    pasteHtml(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+    pasteHTML(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
       range,
     });
 
     setChanged(true);
-    setRange(getLatestRange(current));
+    setRange(getCurrentRange(current));
     onChange(getValue(current));
   }
 
@@ -201,13 +261,55 @@ export function TextArea(props) {
       return;
     }
     setChanged(true);
-    setRange(getLatestRange(currentTarget));
+    setRange(getCurrentRange(currentTarget));
     onChange(getValue(currentTarget));
   }
 
   function onBlur({ currentTarget }) {
-    setRange(getLatestRange(currentTarget));
+    setRange(getCurrentRange(currentTarget));
   }
+
+  function onKeyDown(ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+    }
+    setIME(ev.keyCode === 229);
+    // if (ev.key === 'Control') {
+    //   console.debug(getSelection().getRangeAt(0));
+    // }
+    // if (ev.key === 'Alt') {
+    //   console.debug(getCurrentRange(ev.currentTarget));
+    // }
+  }
+
+  function onPaste(ev) {
+    ev.preventDefault();
+    const input = ev.clipboardData.getData('text/html') || ev.clipboardData.getData('text');
+    const sanitizedHTML = sanitizeHTML(input, {
+      allowedTags: ['span'],
+      allowedAttributes: {
+        span: ['data-variable', 'contenteditable'],
+      },
+      allowedClasses: {
+        span: ['ant-tag', 'ant-tag-*'],
+      },
+      transformTags: {
+        span(tagName, attribs) {
+          return attribs['data-variable'] ? {
+            tagName: tagName,
+            attribs,
+          } : {};
+        }
+      }
+    }).replace(/\n/g, ' ');
+    // ev.clipboardData.setData('text/html', sanitizedHTML);
+    // console.log(input, sanitizedHTML);
+    setChanged(true);
+    pasteHTML(ev.currentTarget, sanitizedHTML);
+    setRange(getCurrentRange(ev.currentTarget));
+    onChange(getValue(ev.currentTarget));
+  }
+
 
   const disabled = props.disabled || form.disabled;
 
@@ -233,12 +335,8 @@ export function TextArea(props) {
       <div
         onInput={onInput}
         onBlur={onBlur}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-          }
-          setIME(e.keyCode === 229);
-        }}
+        onKeyDown={onKeyDown}
+        onPaste={onPaste}
         className={cx(
           'ant-input',
           { 'ant-input-disabled': disabled },
