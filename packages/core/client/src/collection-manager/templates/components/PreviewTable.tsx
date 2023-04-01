@@ -1,13 +1,13 @@
+import { RecursionField, useForm } from '@formily/react';
+import { Spin, Table } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { Table, Spin } from 'antd';
-import { useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
+import { EllipsisWithTooltip, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, EllipsisWithTooltip } from '../../../';
 
 export const PreviewTable = (props) => {
-  const { name, viewName, schema,fields } = props;
+  const { name, viewName, schema, fields } = props;
   const [previewColumns, setPreviewColumns] = useState([]);
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
@@ -75,17 +75,31 @@ export const PreviewTable = (props) => {
   };
   return (
     <Spin spinning={loading}>
-      {previewColumns?.length > 0 && [
-        <h4 style={{ marginTop: 10 }}>{t('Preview')}:</h4>,
-        <Table
-          pagination={false}
-          bordered
-          columns={previewColumns}
-          dataSource={previewData}
-          scroll={{ x: 1000, y: 300 }}
-          key={name}
-        />,
-      ]}
+      <div
+        style={{
+          marginBottom: 22,
+        }}
+      >
+        {previewColumns?.length > 0 && [
+          <div className="ant-formily-item-label" style={{ marginTop: 24 }}>
+            <div className="ant-formily-item-label-content">
+              <span>
+                <label>{t('Preview')}</label>
+              </span>
+            </div>
+            <span className="ant-formily-item-colon">:</span>
+          </div>,
+          <Table
+            size={'middle'}
+            pagination={false}
+            bordered
+            columns={previewColumns}
+            dataSource={previewData}
+            scroll={{ x: 1000, y: 300 }}
+            key={name}
+          />,
+        ]}
+      </div>
     </Spin>
   );
 };

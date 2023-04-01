@@ -1,12 +1,12 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { Table, Input, Select, Tag, Spin } from 'antd';
 import { Cascader } from '@formily/antd';
 import { useField, useForm } from '@formily/react';
+import { Input, Select, Spin, Table, Tag } from 'antd';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ResourceActionContext, useCompile } from '../../../';
 import { useAPIClient } from '../../../api-client';
-import { useCollectionManager } from '../../hooks/useCollectionManager';
-import { useCompile, ResourceActionContext } from '../../../';
 import { getOptions } from '../../Configuration/interfaces';
+import { useCollectionManager } from '../../hooks/useCollectionManager';
 
 const getInterfaceOptions = (data, type) => {
   const interfaceOptions = [];
@@ -185,9 +185,17 @@ const PreviewCom = (props) => {
     <Spin spinning={loading}>
       {dataSource.length > 0 && (
         <>
-          <h4>{t('Fields')}:</h4>
+          <div className="ant-formily-item-label">
+            <div className="ant-formily-item-label-content">
+              <span>
+                <label>{t('Fields')}</label>
+              </span>
+            </div>
+            <span className="ant-formily-item-colon">:</span>
+          </div>
           <Table
             bordered
+            size={'middle'}
             columns={columns}
             dataSource={dataSource}
             scroll={{ y: 300 }}
