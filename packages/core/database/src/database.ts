@@ -311,7 +311,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   initListener() {
     this.on('beforeDefine', (model, options) => {
-      if (this.options.underscored) {
+      if (this.options.underscored && options.underscored === undefined) {
         options.underscored = true;
       }
     });
@@ -617,7 +617,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
-    if (options.field && this.options.underscored) {
+    if (options.field && options.underscored) {
       options.field = snakeCase(options.field);
     }
 
