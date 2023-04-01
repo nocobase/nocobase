@@ -237,6 +237,7 @@ export abstract class Field {
     if (this.dataType) {
       Object.assign(opts, { type: this.dataType });
     }
+
     return opts;
   }
 

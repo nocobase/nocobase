@@ -27,6 +27,28 @@ describe('view collection', function () {
     await app.destroy();
   });
 
+  it('should support view with dot field', async () => {
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSQL = `CREATE VIEW test_view AS select 1+1 as "dot.results"`;
+    await db.sequelize.query(viewSQL);
+
+    await collectionRepository.create({
+      values: {
+        name: 'view_collection',
+        viewName: 'test_view',
+        fields: [{ type: 'string', name: 'dot_result', field: 'dot.results' }],
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+      },
+      context: {},
+    });
+
+    const viewCollection = db.getCollection('view_collection');
+
+    const results = await viewCollection.repository.find();
+    expect(results.length).toBe(1);
+  });
+
   it('should create view collection by view name', async () => {
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
