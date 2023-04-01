@@ -1,6 +1,7 @@
 import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
+import { isString } from '@nocobase/utils/client';
 import { Button, Space } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
@@ -18,7 +19,8 @@ export const ReadPretty: Composed = () => null;
 
 ReadPretty.File = (props: UploadProps) => {
   const field = useField<Field>();
-  const images = toImages(toArr(field.value));
+  const value = isString(field.value) ? (field.parent as any).value?.[field.index] : field.value;
+  const images = toImages(toArr(value));
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const { size } = props;

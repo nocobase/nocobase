@@ -30,7 +30,7 @@ interface FileData {
   mimetype: string;
   path: string;
   url: string;
-  preview: string;
+  preview?: string;
   meta?: any;
   storageId?: number;
 }
@@ -1013,7 +1013,6 @@ export const useUploadFiles = () => {
       storageId: file.storageId,
       filename: file.filename,
       extname: file.extname,
-      preview: file.url,
       meta: {},
     };
   };

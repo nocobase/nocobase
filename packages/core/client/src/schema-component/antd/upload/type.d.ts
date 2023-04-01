@@ -30,6 +30,7 @@ export type ComposedUpload = React.FC<UploadProps> & {
   DraggerV2?: React.FC<DraggerProps>;
   File?: React.FC<UploadProps>;
   Attachment?: React.FC<UploadProps>;
+  Selector?: React.FC<any>;
 };
 
 export type IUploadProps = {

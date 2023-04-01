@@ -88,7 +88,7 @@ FormItem.Designer = () => {
     ? getCollectionFields(collectionField.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
+  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -386,7 +386,7 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {form && !isSubFormAssocitionField && fieldComponentOptions && (
+      {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}
