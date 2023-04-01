@@ -1,4 +1,4 @@
-import { SchemaInitializerContext } from '@nocobase/client';
+import { SchemaInitializerContext, useCollection } from '@nocobase/client';
 import { useContext } from 'react';
 
 export const ImportInitializerProvider = (props: any) => {
@@ -17,6 +17,10 @@ export const ImportInitializerProvider = (props: any) => {
         'x-acl-action-props': {
           skipScopeCheck: true,
         },
+      },
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
       },
     });
   return props.children;

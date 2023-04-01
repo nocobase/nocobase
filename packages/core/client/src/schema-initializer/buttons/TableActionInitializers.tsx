@@ -32,6 +32,10 @@ export const TableActionInitializers = {
               skipScopeCheck: true,
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -40,6 +44,10 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
@@ -60,7 +68,7 @@ export const TableActionInitializers = {
           visible: () => {
             const schema = useFieldSchema();
             const collection = useCollection();
-            const { treeTable } = schema?.parent?.['x-decorator-props']||{};
+            const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
             return collection.tree && treeTable !== false;
           },
         },
@@ -68,6 +76,10 @@ export const TableActionInitializers = {
     },
     {
       type: 'divider',
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'item',
@@ -82,9 +94,17 @@ export const TableActionInitializers = {
         )?.[1];
         return resultSchema;
       },
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'divider',
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'subMenu',
@@ -135,6 +155,10 @@ export const TableActionInitializers = {
           },
         },
       ],
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
   ],
 };

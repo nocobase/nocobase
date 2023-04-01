@@ -13,7 +13,7 @@ registerValidateRules({
         return {
           type: 'error',
           message: `${i18n.t('The field value cannot be greater than ')}${maxValue * 100}%`,
-        }
+        };
       }
     }
 
@@ -22,7 +22,7 @@ registerValidateRules({
         return {
           type: 'error',
           message: `${i18n.t('The field value cannot be less than ')}${minValue * 100}%`,
-        }
+        };
       }
     }
 
@@ -36,12 +36,12 @@ registerValidateRules({
       return {
         type: 'error',
         message: `${i18n.t('The field value is not an integer number')}`,
-      }
+      };
     }
 
     return true;
-  }
-})
+  },
+});
 
 // registerValidateFormats({
 //   percentInteger: /^(\d+)(.\d{0,2})?$/,
@@ -68,6 +68,7 @@ export const percent: IField = {
       },
     },
   },
+  availableTypes: ['float'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -104,7 +105,9 @@ export const percent: IField = {
         'x-reactions': `{{(field) => {
           const targetValue = field.query('.minimum').value();
           field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Maximum must greater than minimum')}' : ''
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
+              'Maximum must greater than minimum',
+            )}' : ''
         }}}`,
       },
       minValue: {
@@ -119,7 +122,9 @@ export const percent: IField = {
           dependencies: ['.maximum'],
           fulfill: {
             state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Minimum must less than maximum')}' : ''}}`,
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
+                'Minimum must less than maximum',
+              )}' : ''}}`,
             },
           },
         },
@@ -132,10 +137,12 @@ export const percent: IField = {
         'x-component-props': {
           allowClear: true,
         },
-        enum: [{
-          label: '{{ t("Integer") }}',
-          value: 'Integer',
-        }]
+        enum: [
+          {
+            label: '{{ t("Integer") }}',
+            value: 'Integer',
+          },
+        ],
       },
       pattern: {
         type: 'string',
@@ -145,8 +152,8 @@ export const percent: IField = {
         'x-component-props': {
           prefix: '/',
           suffix: '/',
-        }
+        },
       },
     };
-  }
+  },
 };

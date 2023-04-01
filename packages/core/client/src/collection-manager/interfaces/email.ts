@@ -18,6 +18,7 @@ export const email: IField = {
       'x-validator': 'email',
     },
   },
+  availableTypes:['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

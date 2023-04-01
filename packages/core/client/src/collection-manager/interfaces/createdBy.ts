@@ -28,6 +28,7 @@ export const createdBy: IField = {
       'x-read-pretty': true,
     },
   },
+  availableTypes:['belongsTo'],
   properties: {
     ...defaultProps,
   },

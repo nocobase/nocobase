@@ -19,10 +19,12 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     return;
   }
   const properties = cloneDeep(schema.properties) as any;
-  properties.name['x-disabled'] = true;
+  if (properties?.name) {
+    properties.name['x-disabled'] = true;
+  }
 
   if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
+    properties['defaultValue'] = cloneDeep(schema.default.uiSchema)||{};
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
     properties['defaultValue']['x-reactions'] = {
@@ -156,7 +158,7 @@ export const EditFieldAction = (props) => {
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
               defaultValues.autoCreateReverseField = false;
-              defaultValues.reverseField = interfaceConf.default?.reverseField;
+              defaultValues.reverseField = interfaceConf?.default?.reverseField;
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
             }
