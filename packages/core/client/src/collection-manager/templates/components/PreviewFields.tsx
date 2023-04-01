@@ -213,7 +213,7 @@ const PreviewCom = (props) => {
         const target = sourceField || item?.uiSchema?.title || item.name;
         const schema: any = item.source
           ? getCollectionField(typeof item.source === 'string' ? item.source : item.source.join('.'))?.uiSchema
-          : getInterface(item.interface)?.properties?.['uiSchema.title'];
+          : getInterface(item.interface)?.default?.uiSchema;
         return {
           title: compile(target),
           dataIndex: item.name,
@@ -258,7 +258,7 @@ const PreviewCom = (props) => {
               bordered
               columns={previewColumns}
               dataSource={previewData}
-              scroll={{ x: 1000, y: 300 }}
+              scroll={{ x: 1000 }}
             />
           </TableBlockProvider>
         </>
@@ -268,7 +268,7 @@ const PreviewCom = (props) => {
 };
 
 function areEqual(prevProps, nextProps) {
-  return nextProps.name === prevProps.name&&nextProps.sources===prevProps.sources;
+  return nextProps.name === prevProps.name && nextProps.sources === prevProps.sources;
 }
 
 export const PreviewFields = React.memo(PreviewCom, areEqual);
