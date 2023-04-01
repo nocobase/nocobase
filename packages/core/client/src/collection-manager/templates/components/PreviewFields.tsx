@@ -253,7 +253,6 @@ const PreviewCom = (props) => {
           />
           <h4 style={{ marginTop: 10 }}>{t('Preview')}:</h4>
           <Table
-            key={name}
             pagination={false}
             bordered
             columns={previewColumns}
