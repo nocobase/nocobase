@@ -8,6 +8,7 @@ import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
+import { EllipsisWithTooltip } from '../input';
 
 const { Panel } = Collapse;
 
@@ -218,13 +219,22 @@ export const AssociationFilterItem = (props) => {
           <Tree
             style={{ padding: '16px 0' }}
             onExpand={onExpand}
+            rootClassName={css`
+              .ant-tree-node-content-wrapper {
+                overflow-x: hidden;
+              }
+            `}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
             treeData={list}
             onSelect={onSelect}
             fieldNames={fieldNames}
             titleRender={(node) => {
-              return getLabelFormatValue(labelUiSchema, compile(node[labelKey]));
+              return (
+                <EllipsisWithTooltip ellipsis>
+                  {getLabelFormatValue(labelUiSchema, compile(node[labelKey]))}
+                </EllipsisWithTooltip>
+              );
             }}
             selectedKeys={selectedKeys}
             blockNode
