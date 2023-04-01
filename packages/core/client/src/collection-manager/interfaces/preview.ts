@@ -12,7 +12,7 @@ export const preview: IField = {
     uiSchema: {
       type: 'string',
       title: '{{t("Preview")}}',
-      'x-component': 'Upload.Selector',
+      'x-component': 'Preview.Selector',
       'x-read-pretty': true,
     },
   },

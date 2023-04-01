@@ -8,7 +8,7 @@ import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
-import { Upload } from '../upload';
+import { Preview } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
@@ -87,7 +87,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const collectionField = useAssociation(props);
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = labelUiSchema?.['x-component'] === 'Upload.Selector';
+  const showFilePicker = labelUiSchema?.['x-component'] === 'Preview.Selector';
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
 
@@ -126,7 +126,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   return (
     <div>
       {showFilePicker ? (
-        <Upload.Selector value={options} multiple onSelect={handleSelect} onRemove={handleRemove} />
+        <Preview.Selector value={options} multiple onSelect={handleSelect} onRemove={handleRemove} />
       ) : (
         <Select
           {...others}
