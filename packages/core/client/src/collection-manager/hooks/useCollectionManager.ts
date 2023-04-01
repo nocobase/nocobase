@@ -62,7 +62,7 @@ export const useCollectionManager = () => {
     return getParents(name);
   };
 
-  const getChildrenCollections = (name) => {
+  const getChildrenCollections = (name, isSupportView = false) => {
     const children = [];
     const getChildren = (name) => {
       const inheritCollections = collections.filter((v) => {
@@ -73,6 +73,16 @@ export const useCollectionManager = () => {
         children.push(v);
         return getChildren(collectionKey);
       });
+      if (isSupportView) {
+        const sourceCollections = collections.filter((v) => {
+          return v.sources?.length === 1 && v?.sources[0] === name;
+        });
+        sourceCollections.forEach((v) => {
+          const collectionKey = v.name;
+          children.push(v);
+          return getChildren(collectionKey);
+        });
+      }
       return uniqBy(children, 'key');
     };
     return getChildren(name);

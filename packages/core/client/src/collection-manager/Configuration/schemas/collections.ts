@@ -258,7 +258,8 @@ export const collectionTableSchema: ISchema = {
                       },
                       'x-reactions': (field) => {
                         const i = field.path.segments[1];
-                        const table = field.form.getValuesIn(`table.${i}`);
+                        const key = field.path.segments[0];
+                        const table = field.form.getValuesIn(`${key}.${i}`);
                         if (table) {
                           field.title = `${compile(table.title)} - ${compile('{{ t("Configure fields") }}')}`;
                         }

@@ -18,6 +18,7 @@ export const password: IField = {
       'x-component': 'Password',
     },
   },
+  availableTypes:['password'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

@@ -18,6 +18,7 @@ export const select: IField = {
       enum: [],
     },
   },
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

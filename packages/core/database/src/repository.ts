@@ -11,7 +11,7 @@ import {
   Op,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
-  WhereOperators
+  WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
@@ -340,7 +340,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (this.collection.isParent()) {
       for (const row of rows) {
         const rowCollectionName = this.database.tableNameCollectionMap.get(
-          options.raw ? row['__tableName'] : row.get('__tableName'),
+          options.raw
+            ? `${row['__schemaName']}.${row['__tableName']}`
+            : `${row.get('__schemaName')}.${row.get('__tableName')}`,
         ).name;
 
         options.raw

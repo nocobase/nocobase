@@ -50,6 +50,7 @@ export const o2m: IField = {
       },
     },
   },
+  availableTypes:['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty }) {
     if (block === 'Form') {
       if (schema['x-component'] === 'TableField') {

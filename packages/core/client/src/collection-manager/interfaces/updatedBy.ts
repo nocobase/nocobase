@@ -27,6 +27,7 @@ export const updatedBy: IField = {
       'x-read-pretty': true,
     },
   },
+  availableTypes: ['belongsTo'],
   properties: {
     ...defaultProps,
   },

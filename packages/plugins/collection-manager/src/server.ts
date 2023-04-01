@@ -15,9 +15,13 @@ import {
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
-import lodash from 'lodash';
+import lodash, { castArray } from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';
+import collectionActions from './resourcers/collections';
+import viewResourcer from './resourcers/views';
+
+import { beforeCreateForViewCollection } from './hooks/beforeCreateForViewCollection';
 
 export class CollectionManagerPlugin extends Plugin {
   public schema: string;
@@ -46,18 +50,16 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.collections`,
-      actions: [
-        'collections:*',
-        // 'fields:*',
-        'collections.fields:*',
-      ],
+      actions: ['collections:*', 'collections.fields:*', 'dbViews:*'],
     });
 
     this.app.db.on('collections.beforeCreate', async (model) => {
-      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm') {
+      if (this.app.db.inDialect('postgres') && this.schema && model.get('from') != 'db2cm' && !model.get('schema')) {
         model.set('schema', this.schema);
       }
     });
+
+    this.app.db.on('collections.beforeCreate', beforeCreateForViewCollection(this.db));
 
     this.app.db.on(
       'collections.afterCreateWithAssociations',
@@ -87,6 +89,13 @@ export class CollectionManagerPlugin extends Plugin {
 
       if (collection.isInherited() && (<InheritedCollection>collection).parentFields().has(model.get('name'))) {
         model.set('overriding', true);
+      }
+    });
+
+    this.app.db.on('fields.beforeValidate', async (model) => {
+      if (model.get('name') && model.get('name').includes('.')) {
+        model.set('field', model.get('name'));
+        model.set('name', model.get('name').replace(/\./g, '_'));
       }
     });
 
@@ -259,6 +268,55 @@ export class CollectionManagerPlugin extends Plugin {
         });
       }
       await next();
+    });
+
+    this.app.resource(viewResourcer);
+    this.app.actions(collectionActions);
+
+    const handleFieldSource = (fields) => {
+      for (const field of castArray(fields)) {
+        if (field.get('source')) {
+          const [collectionSource, fieldSource] = field.get('source').split('.');
+          const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
+
+          const newOptions = {};
+          lodash.merge(newOptions, collectionField.options);
+          lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
+            if (srcValue === null) {
+              return objValue;
+            }
+          });
+
+          field.set('options', newOptions);
+        }
+      }
+    };
+
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+
+      // handle collections:list
+      if (
+        ctx.action.resourceName === 'collections' &&
+        ctx.action.actionName == 'list' &&
+        ctx.action.params?.paginate == 'false'
+      ) {
+        for (const collection of ctx.body) {
+          if (collection.get('view')) {
+            const fields = collection.fields;
+            handleFieldSource(fields);
+          }
+        }
+      }
+
+      //handle collections:fields:list
+      if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'list') {
+        handleFieldSource(ctx.action.params?.paginate == 'false' ? ctx.body : ctx.body.rows);
+      }
+
+      if (ctx.action.resourceName == 'collections.fields' && ctx.action.actionName == 'get') {
+        handleFieldSource(ctx.body);
+      }
     });
 
     this.app.db.extendCollection({

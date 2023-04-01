@@ -60,6 +60,7 @@ describe('field indexes', () => {
 
   it('field value cannot be duplicated with unique index', async () => {
     const tableName = 'test1';
+
     // create a field with unique constraint
     const field = await agent.resource('collections.fields', tableName).create({
       values: {
