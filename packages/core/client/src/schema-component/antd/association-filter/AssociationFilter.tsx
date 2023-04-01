@@ -26,6 +26,8 @@ export const AssociationFilter = (props) => {
           'nb-block-item',
           props.className,
           css`
+            height: 100%;
+            overflow-y: auto;
             position: relative;
             &:hover {
               > .general-schema-designer {
