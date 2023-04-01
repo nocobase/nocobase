@@ -192,7 +192,7 @@ Upload.Attachment = connect((props: UploadProps) => {
       )}
     </div>
   );
-}, mapReadPretty(ReadPretty.Attachment));
+}, mapReadPretty(ReadPretty.File));
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {

@@ -11,12 +11,12 @@ import type { UploadProps } from './type';
 
 type Composed = React.FC<UploadProps> & {
   Upload?: React.FC<UploadProps>;
-  Attachment?: React.FC<UploadProps>;
+  File?: React.FC<UploadProps>;
 };
 
 export const ReadPretty: Composed = () => null;
 
-ReadPretty.Attachment = (props: UploadProps) => {
+ReadPretty.File = (props: UploadProps) => {
   const field = useField<Field>();
   const images = toImages(toArr(field.value));
   const [photoIndex, setPhotoIndex] = useState(0);
