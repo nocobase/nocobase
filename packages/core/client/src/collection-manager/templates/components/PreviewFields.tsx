@@ -251,7 +251,7 @@ const PreviewCom = (props) => {
             rowClassName="editable-row"
             key={name}
           />
-          <h4>{t('Preview')}:</h4>
+          <h4 style={{marginTop:10}}>{t('Preview')}:</h4>
           <TableBlockProvider>
             <Table
               key={name}
