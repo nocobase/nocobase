@@ -63,8 +63,18 @@ const getSchema = (schema: IField, record: any, compile) => {
         },
         title: `${compile('{{ t("Sync from database") }}')}`,
         properties: {
+          schema: {
+            type: 'string',
+            'x-hidden': true,
+             default:record?.schema
+          },
+          viewName: {
+            type: 'string',
+            'x-hidden': true,
+            default:record?.viewName
+          },
           fields: {
-            type: 'object',
+            type: 'array',
             'x-component': PreviewFields,
             'x-component-props': {
               ...record,
@@ -75,6 +85,14 @@ const getSchema = (schema: IField, record: any, compile) => {
             'x-component': PreviewTable,
             'x-component-props': {
               ...record,
+            },
+            'x-reactions': {
+              dependencies: ['fields'],
+              fulfill: {
+                schema: {
+                  'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
+                },
+              },
             },
           },
           footer: {

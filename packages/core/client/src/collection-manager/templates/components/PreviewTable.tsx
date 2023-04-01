@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table } from 'antd';
+import { Table, Spin } from 'antd';
 import { useForm, RecursionField } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
@@ -7,15 +7,15 @@ import { useCollectionManager } from '../../hooks/useCollectionManager';
 import { useCompile, EllipsisWithTooltip } from '../../../';
 
 export const PreviewTable = (props) => {
-  const { name, viewName, schema, fields } = props;
+  const { name, viewName, schema,fields } = props;
   const [previewColumns, setPreviewColumns] = useState([]);
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
+  const [loading, setLoading] = useState(false);
   const { getCollection, getCollectionField, getInterface } = useCollectionManager();
   const api = useAPIClient();
   const { t } = useTranslation();
   const form = useForm();
-
   useEffect(() => {
     if (name) {
       getPreviewData();
@@ -28,11 +28,13 @@ export const PreviewTable = (props) => {
   }, [form.values.fields]);
 
   const getPreviewData = () => {
+    setLoading(true);
     api
       .resource(`dbViews`)
       .query({ filterByTk: viewName, schema })
       .then(({ data }) => {
         if (data) {
+          setLoading(false);
           setPreviewData(data?.data || []);
         }
       });
@@ -72,11 +74,17 @@ export const PreviewTable = (props) => {
       });
   };
   return (
-    <>
-      {name && [
+    <Spin spinning={loading}>
+      {previewColumns?.length > 0 && [
         <h4 style={{ marginTop: 10 }}>{t('Preview')}:</h4>,
-        <Table pagination={false} bordered columns={previewColumns} dataSource={previewData} scroll={{ x: 1000 }} />,
+        <Table
+          pagination={false}
+          bordered
+          columns={previewColumns}
+          dataSource={previewData}
+          scroll={{ x: 1000, y: 300 }}
+        />,
       ]}
-    </>
+    </Spin>
   );
 };
