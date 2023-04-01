@@ -64,8 +64,8 @@ function pasteHTML(container: HTMLElement, html: string, { selectPastedContent =
     } else {
       next.collapse(true);
     }
-    sel.removeAllRanges();
-    sel.addRange(next);
+    sel!.removeAllRanges();
+    sel!.addRange(next);
   }
 }
 
@@ -108,7 +108,53 @@ function createVariableTagHTML(variable, keyLabelMap) {
   )}</span>`;
 }
 
-function getCurrentRange(element: HTMLElement): [number, number, number, number] {
+// [#, <>, #, #, <>]
+// [#, #]
+// [<>, #, #]
+// [#, #, <>]
+function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [number, number] {
+  if (index === -1) {
+    let realIndex = offset;
+    let collapseFlag = false;
+    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
+      // set a flag for collapse
+      collapseFlag = true;
+    }
+    let textOffset = 0;
+    for (let i = offset - 1; i >= 0; i--) {
+      if (collapseFlag) {
+        if (nodes[i].nodeName === '#text') {
+          textOffset += nodes[i].textContent!.length;
+        } else {
+          collapseFlag = false;
+        }
+      }
+      if (nodes[i].nodeName === '#text' && nodes[i + 1]?.nodeName === '#text') {
+        realIndex -= 1;
+      }
+    }
+
+    return textOffset ? [realIndex, textOffset] : [-1, realIndex];
+  } else {
+    let realIndex = 0;
+    let textOffset = 0;
+    for (let i = 0; i < index + 1; i++) {
+      // console.log(i, realIndex, textOffset);
+      if (nodes[i].nodeName === '#text') {
+        if (i !== index && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
+          realIndex += 1;
+        }
+        textOffset += i === index ? offset : nodes[i].textContent!.length;
+      } else {
+        realIndex += 1;
+        textOffset = 0;
+      }
+    }
+    return [realIndex, textOffset];
+  }
+}
+
+function getCurrentRange(element: HTMLElement): RangeIndexes {
   const sel = window.getSelection?.();
   const range = sel?.getRangeAt(0);
   if (!range) {
@@ -121,58 +167,8 @@ function getCurrentRange(element: HTMLElement): [number, number, number, number]
 
   const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
   const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
-  let result: RangeIndexes = [startElementIndex, range.startOffset, endElementIndex, range.endOffset];
 
-  // console.log(nodes, range, startElementIndex, endElementIndex);
-  // [#, <>, #, #, <>]
-  // [#, #]
-  // [<>, #, #]
-  // [#, #, <>]
-  if (startElementIndex === -1) {
-    let realIndex = range.startOffset;
-    let lastNode = nodes[realIndex];
-    let collapseFlag = false;
-    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
-      // set a flag for collapse
-      collapseFlag = true;
-    }
-    let textOffset = 0;
-    for (let i = range.startOffset - 1; i >= 0; i--) {
-      if (collapseFlag) {
-        if (nodes[i].nodeName === '#text') {
-          textOffset += nodes[i].textContent.length;
-        } else {
-          collapseFlag = false;
-        }
-      }
-      if (nodes[i].nodeName === '#text' && lastNode?.nodeName === '#text') {
-        realIndex -= 1;
-      }
-      lastNode = nodes[i];
-    }
-
-    result = textOffset ? [realIndex, textOffset, realIndex, textOffset] : [-1, realIndex, -1, realIndex];
-  } else {
-    let realIndex = 0;
-    let textOffset = 0;
-    const currentIndex = startElementIndex;
-    for (let i = 0; i < currentIndex + 1; i++) {
-      // console.log(i, realIndex, textOffset);
-      if (nodes[i].nodeName === '#text') {
-        if (i !== currentIndex && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
-          realIndex += 1;
-        }
-        textOffset += i === currentIndex ? range.startOffset : nodes[i].textContent.length;
-      } else {
-        realIndex += 1;
-        textOffset = 0;
-      }
-    }
-    result = [realIndex, textOffset, realIndex, textOffset];
-  }
-
-  // console.log(result);
-
+  const result: RangeIndexes = [...getSingleEndRange(nodes, startElementIndex, range.startOffset), ...getSingleEndRange(nodes, endElementIndex, range.endOffset)];
   return result;
 }
 
