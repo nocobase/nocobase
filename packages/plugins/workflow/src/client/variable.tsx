@@ -122,7 +122,7 @@ export function useCollectionFieldOptions(options, depth = 1): VariableOption[] 
         key: field.name,
         value: field.name,
         children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && depth > 0
-          ? useCollectionFieldOptions(field.target, depth - 1)
+          ? useCollectionFieldOptions({ collection: field.target, types }, depth - 1)
           : null
       });
     });
