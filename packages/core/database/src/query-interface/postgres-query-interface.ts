@@ -1,5 +1,6 @@
 import QueryInterface from './query-interface';
 import { Collection } from '../collection';
+import sqlParser from '../sql-parser';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
@@ -32,7 +33,13 @@ export default class PostgresQueryInterface extends QueryInterface {
     return await this.db.sequelize.query(sql, { type: 'SELECT' });
   }
 
-  async viewColumnUsage(options) {
+  async viewColumnUsage(options): Promise<{
+    [view_column_name: string]: {
+      column_name: string;
+      table_name: string;
+      table_schema?: string;
+    };
+  }> {
     const { viewName, schema = 'public' } = options;
     const sql = `
       SELECT *
@@ -41,6 +48,49 @@ export default class PostgresQueryInterface extends QueryInterface {
         AND view_name = '${viewName}';
     `;
 
-    return (await this.db.sequelize.query(sql, { type: 'SELECT' })) as any;
+    const columnUsages = (await this.db.sequelize.query(sql, { type: 'SELECT' })) as Array<{
+      column_name: string;
+      table_name: string;
+      table_schema: string;
+    }>;
+
+    const viewDefQuery = await this.db.sequelize.query(
+      `
+    SELECT viewname, definition
+FROM pg_views
+WHERE schemaname = '${schema}' AND viewname = '${viewName}';
+    `,
+      { type: 'SELECT' },
+    );
+
+    const def = viewDefQuery[0]['definition'];
+    try {
+      const { ast } = sqlParser.parse(def);
+      const columns = ast[0].columns;
+
+      const usages = columns
+        .map((column) => {
+          const fieldAlias = column.as || column.expr.column;
+          const columnUsage = columnUsages.find(
+            (columnUsage) =>
+              columnUsage.column_name === column.expr.column && columnUsage.table_name === column.expr.table,
+          );
+
+          return [
+            fieldAlias,
+            columnUsage
+              ? {
+                  ...columnUsage,
+                }
+              : null,
+          ];
+        })
+        .filter(([, columnUsage]) => columnUsage !== null);
+
+      return Object.fromEntries(usages);
+    } catch (e) {
+      this.db.logger.warn(e);
+      return {};
+    }
   }
 }

@@ -13,13 +13,13 @@ export default abstract class QueryInterface {
 
   abstract listViews();
 
-  abstract viewColumnUsage(options: { viewName: string; schema?: string }): Promise<
-    Array<{
+  abstract viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
+    [view_column_name: string]: {
       column_name: string;
       table_name: string;
       table_schema?: string;
-    }>
-  >;
+    };
+  }>;
 
   async dropAll(options) {
     if (options.drop !== true) return;
