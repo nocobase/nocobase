@@ -251,6 +251,7 @@ export class Collection<
     }
 
     const fieldName = options.field || snakeCase(name);
+
     const field = this.findField((f) => {
       if (f.name === name) {
         return false;
@@ -260,9 +261,11 @@ export class Collection<
       }
       return snakeCase(f.name) === fieldName;
     });
+
     if (!field) {
       return;
     }
+
     if (options.type !== field.type) {
       throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
     }

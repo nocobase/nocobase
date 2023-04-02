@@ -353,6 +353,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.on('beforeDefineCollection', (options) => {
+      if (this.options.underscored && options.underscored === undefined) {
+        options.underscored = true;
+      }
+
       if (options.underscored) {
         if (lodash.get(options, 'sortable.scopeKey')) {
           options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
@@ -617,7 +621,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
-    if (options.field && options.underscored) {
+    if (options.field && context.collection.options.underscored) {
       options.field = snakeCase(options.field);
     }
 
