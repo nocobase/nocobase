@@ -18,14 +18,15 @@ import {
   RemoteRouteSwitchProvider,
   RouteSchemaComponent,
   RouteSwitch,
-  useRoutes
+  useRoutes,
 } from '../route-switch';
 import {
   AntdSchemaComponentProvider,
   DesignableSwitch,
   MenuItemInitializers,
-  SchemaComponentProvider
+  SchemaComponentProvider,
 } from '../schema-component';
+import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsProvider } from '../system-settings';
@@ -132,8 +133,8 @@ export class Application {
     this.plugins.push(plugin);
   }
 
-  handleErrors(error: any, info: any) {
-    console.error(error, info);
+  handleErrors(error: any) {
+    console.error(error);
   }
 
   render() {
@@ -158,7 +159,7 @@ export class Application {
         return <Spin />;
       }
       return (
-        <ErrorBoundary FallbackComponent={null} onError={this.handleErrors}>
+        <ErrorBoundary FallbackComponent={ErrorFallback} onError={this.handleErrors}>
           <App providers={this.providers} />
         </ErrorBoundary>
       );
