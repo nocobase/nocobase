@@ -149,7 +149,7 @@ export class Collection<
   tableName() {
     const { name, tableName } = this.options;
     const tName = tableName || name;
-    return this.db.options.underscored ? snakeCase(tName) : tName;
+    return this.options.underscored ? snakeCase(tName) : tName;
   }
 
   protected sequelizeModelOptions() {
@@ -246,10 +246,12 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    if (!this.db.options.underscored) {
+    if (!this.options.underscored) {
       return;
     }
+
     const fieldName = options.field || snakeCase(name);
+
     const field = this.findField((f) => {
       if (f.name === name) {
         return false;
@@ -259,9 +261,11 @@ export class Collection<
       }
       return snakeCase(f.name) === fieldName;
     });
+
     if (!field) {
       return;
     }
+
     if (options.type !== field.type) {
       throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
     }
