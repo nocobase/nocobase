@@ -135,6 +135,7 @@ export const defaultConfigurableProperties = {
     'x-decorator': 'FormItem',
     'x-component': 'Select',
     'x-component-props': {
+      defaultValue: 'local',
       options: [
         {
           label: '{{t("Local storage")}}',
