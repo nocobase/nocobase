@@ -151,6 +151,7 @@ export const TableSelectorProvider = (props) => {
       } else {
         extraFilter = {
           [collectionField.foreignKey]: {
+            // TODO: 这是什么意思？为什么要设置为 null？
             $is: null,
           },
         };

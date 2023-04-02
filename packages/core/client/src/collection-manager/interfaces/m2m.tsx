@@ -52,7 +52,13 @@ export const m2m: IField = {
     },
   },
   availableTypes:['belongsToMany'],
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
+  schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {
         Object.assign(schema, {

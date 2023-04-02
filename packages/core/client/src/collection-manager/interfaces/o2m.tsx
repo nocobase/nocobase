@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties
+  reverseFieldProperties,
 } from './properties';
 import { IField } from './types';
 
@@ -51,7 +51,13 @@ export const o2m: IField = {
     },
   },
   availableTypes:['hasMany'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'TableField') {
         const association = `${field.collectionName}.${field.name}`;

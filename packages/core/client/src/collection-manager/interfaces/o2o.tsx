@@ -118,7 +118,7 @@ export const o2o: IField = {
     },
   },
   availableTypes:['hasOne'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -126,6 +126,12 @@ export const o2o: IField = {
 
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
+    }
+
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
     }
   },
   properties: {
@@ -296,7 +302,7 @@ export const oho: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -304,6 +310,12 @@ export const oho: IField = {
 
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
+    }
+
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
     }
   },
   properties: {
@@ -465,7 +477,7 @@ export const obo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -473,6 +485,12 @@ export const obo: IField = {
 
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
+    }
+
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
     }
   },
   properties: {

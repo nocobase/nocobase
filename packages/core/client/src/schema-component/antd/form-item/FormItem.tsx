@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
+import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -71,8 +71,8 @@ export const FormItem: any = observer((props: any) => {
 });
 
 FormItem.Designer = () => {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getField, template } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
@@ -415,6 +415,7 @@ FormItem.Designer = () => {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
+              targetCollection: getCollection(collectionField.target),
             });
 
             insertAdjacent('beforeBegin', divWrap(schema), {
