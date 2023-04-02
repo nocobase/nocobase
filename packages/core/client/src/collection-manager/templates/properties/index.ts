@@ -137,8 +137,8 @@ export const defaultConfigurableProperties = {
     'x-component-props': {
       options: [
         {
-          label: '{{t("Aliyun OSS")}}',
-          value: 'ali-oss',
+          label: '{{t("Local storage")}}',
+          value: 'local',
         },
       ],
     },
