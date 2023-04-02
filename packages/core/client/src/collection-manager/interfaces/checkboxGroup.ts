@@ -17,6 +17,7 @@ export const checkboxGroup: IField = {
       'x-component': 'Checkbox.Group',
     },
   },
+  availableTypes:['array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

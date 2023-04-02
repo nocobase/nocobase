@@ -1,5 +1,3 @@
-import lodash from 'lodash';
-
 export interface Reference {
   sourceCollectionName: string;
   sourceField: string;
@@ -15,6 +13,8 @@ class ReferencesMap {
     if (!reference.onDelete) {
       reference.onDelete = 'SET NULL';
     }
+
+    reference.onDelete = reference.onDelete.toUpperCase();
 
     const existReference = this.existReference(reference);
 
@@ -59,6 +59,7 @@ class ReferencesMap {
 
   removeReference(reference: Reference) {
     const references = this.map.get(reference.targetCollectionName);
+
     if (!references) {
       return;
     }

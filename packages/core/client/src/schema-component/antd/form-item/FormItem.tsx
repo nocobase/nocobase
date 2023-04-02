@@ -20,6 +20,9 @@ const divWrap = (schema: ISchema) => {
   return {
     type: 'void',
     'x-component': 'div',
+    'x-component-props': {
+      className: 'nb-block-wrap',
+    },
     properties: {
       [schema.name || uid()]: schema,
     },

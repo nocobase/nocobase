@@ -51,7 +51,8 @@ export const TableActionColumnInitializers = (props: any) => {
   const { refresh } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
-  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props']||{};
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -98,8 +99,12 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-action': 'update',
                 'x-decorator': 'ACLActionProvider',
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
-            {
+            modifyFlag && {
               type: 'item',
               title: t('Delete'),
               component: 'DestroyActionInitializer',
@@ -202,6 +207,10 @@ export const TableActionColumnInitializers = (props: any) => {
                   useProps: '{{ useCustomizeUpdateActionProps }}',
                 },
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
             {
               type: 'item',
@@ -223,6 +232,10 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-component-props': {
                   useProps: '{{ useCustomizeRequestActionProps }}',
                 },
+              },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
               },
             },
           ],

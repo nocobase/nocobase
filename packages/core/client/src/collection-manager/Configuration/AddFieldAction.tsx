@@ -28,6 +28,24 @@ const getSchema = (schema: IField, record: any, compile) => {
     properties['defaultValue'] = cloneDeep(schema?.default?.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
+    properties['defaultValue']['x-reactions'] = {
+      dependencies: [
+        'uiSchema.x-component-props.gmt',
+        'uiSchema.x-component-props.showTime',
+        'uiSchema.x-component-props.dateFormat',
+        'uiSchema.x-component-props.timeFormat',
+      ],
+      fulfill: {
+        state: {
+          componentProps: {
+            gmt: '{{$deps[0]}}',
+            showTime: '{{$deps[1]}}',
+            dateFormat: '{{$deps[2]}}',
+            timeFormat: '{{$deps[3]}}',
+          },
+        },
+      },
+    };
   }
   const initialValue: any = {
     name: `f_${uid()}`,
@@ -194,72 +212,74 @@ export const AddFieldAction = (props) => {
     return optionArr;
   };
   return (
-    <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <Dropdown
-          getPopupContainer={getContainer}
-          trigger={trigger}
-          align={align}
-          overlay={
-            <Menu
-              style={{
-                maxHeight: '60vh',
-                overflow: 'auto',
-              }}
-              onClick={(e) => {
-                //@ts-ignore
-                const targetScope = e.item.props['data-targetScope'];
-                targetScope && setTargetScope(targetScope);
-                const schema = getSchema(getInterface(e.key), record, compile);
-                if (schema) {
-                  setSchema(schema);
-                  setVisible(true);
-                }
-              }}
-            >
-              {getFieldOptions().map((option) => {
-                return (
-                  option.children.length > 0 && (
-                    <Menu.ItemGroup key={option.label} title={compile(option.label)}>
-                      {option.children
-                        .filter((child) => !['o2o', 'subTable'].includes(child.name))
-                        .map((child) => {
-                          return (
-                            <Menu.Item key={child.name} data-targetScope={child.targetScope}>
-                              {compile(child.title)}
-                            </Menu.Item>
-                          );
-                        })}
-                    </Menu.ItemGroup>
-                  )
-                );
-              })}
-            </Menu>
-          }
-        >
-          {children || (
-            <Button icon={<PlusOutlined />} type={'primary'}>
-              {t('Add field')}
-            </Button>
-          )}
-        </Dropdown>
-        <SchemaComponent
-          schema={schema}
-          components={{ ...components, ArrayTable }}
-          scope={{
-            getContainer,
-            useCancelAction,
-            createOnly: true,
-            isOverride: false,
-            override: false,
-            useCreateCollectionField,
-            record,
-            showReverseFieldConfig: true,
-            targetScope,
-            ...scope,
-          }}
-        />
-      </ActionContext.Provider>
-    </RecordProvider>
+    record.template !== 'view' && (
+      <RecordProvider record={record}>
+        <ActionContext.Provider value={{ visible, setVisible }}>
+          <Dropdown
+            getPopupContainer={getContainer}
+            trigger={trigger}
+            align={align}
+            overlay={
+              <Menu
+                style={{
+                  maxHeight: '60vh',
+                  overflow: 'auto',
+                }}
+                onClick={(e) => {
+                  //@ts-ignore
+                  const targetScope = e.item.props['data-targetScope'];
+                  targetScope && setTargetScope(targetScope);
+                  const schema = getSchema(getInterface(e.key), record, compile);
+                  if (schema) {
+                    setSchema(schema);
+                    setVisible(true);
+                  }
+                }}
+              >
+                {getFieldOptions().map((option) => {
+                  return (
+                    option.children.length > 0 && (
+                      <Menu.ItemGroup key={option.label} title={compile(option.label)}>
+                        {option.children
+                          .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                          .map((child) => {
+                            return (
+                              <Menu.Item key={child.name} data-targetScope={child.targetScope}>
+                                {compile(child.title)}
+                              </Menu.Item>
+                            );
+                          })}
+                      </Menu.ItemGroup>
+                    )
+                  );
+                })}
+              </Menu>
+            }
+          >
+            {children || (
+              <Button icon={<PlusOutlined />} type={'primary'}>
+                {t('Add field')}
+              </Button>
+            )}
+          </Dropdown>
+          <SchemaComponent
+            schema={schema}
+            components={{ ...components, ArrayTable }}
+            scope={{
+              getContainer,
+              useCancelAction,
+              createOnly: true,
+              isOverride: false,
+              override: false,
+              useCreateCollectionField,
+              record,
+              showReverseFieldConfig: true,
+              targetScope,
+              ...scope,
+            }}
+          />
+        </ActionContext.Provider>
+      </RecordProvider>
+    )
   );
 };

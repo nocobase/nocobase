@@ -2,24 +2,19 @@ import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useActionContext } from '../action';
+import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
 export const FormDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
-  const ctx = useFormBlockContext();
-  const field = useField();
   const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
-  const { t } = useTranslation();
-  const { visible } = useActionContext();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
 
   return (
@@ -108,12 +103,15 @@ export const DetailsDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

@@ -62,7 +62,7 @@ export const useCollectionManager = () => {
     return getParents(name);
   };
 
-  const getChildrenCollections = (name) => {
+  const getChildrenCollections = (name, isSupportView = false) => {
     const children = [];
     const getChildren = (name) => {
       const inheritCollections = collections.filter((v) => {
@@ -73,6 +73,16 @@ export const useCollectionManager = () => {
         children.push(v);
         return getChildren(collectionKey);
       });
+      if (isSupportView) {
+        const sourceCollections = collections.filter((v) => {
+          return v.sources?.length === 1 && v?.sources[0] === name;
+        });
+        sourceCollections.forEach((v) => {
+          const collectionKey = v.name;
+          children.push(v);
+          return getChildren(collectionKey);
+        });
+      }
       return uniqBy(children, 'key');
     };
     return getChildren(name);
@@ -88,17 +98,26 @@ export const useCollectionManager = () => {
     type: string | string[] = 'string',
     opts?: {
       cached?: Record<string, any>;
+      collectionNames?: string[];
       /**
        * 为 true 时允许查询所有关联字段
        * 为 Array<string> 时仅允许查询指定的关联字段
        */
       association?: boolean | string[];
+      /**
+       * Max depth of recursion
+       */
+      maxDepth?: number;
     },
   ) => {
-    const { association = false, cached = {} } = opts || {};
+    const { association = false, cached = {}, collectionNames = [collectionName], maxDepth = 1 } = opts || {};
 
-    // 防止无限循环
+    if (collectionNames.length - 1 > maxDepth) {
+      return;
+    }
+
     if (cached[collectionName]) {
+      // avoid infinite recursion
       return _.cloneDeep(cached[collectionName]);
     }
 
@@ -122,7 +141,13 @@ export const useCollectionManager = () => {
           ...field,
         };
         if (association && field.target) {
-          result.children = getCollectionFieldsOptions(field.target, type, { ...opts, cached });
+          result.children = collectionNames.includes(field.target)
+            ? []
+            : getCollectionFieldsOptions(field.target, type, {
+                ...opts,
+                cached,
+                collectionNames: [...collectionNames, field.target],
+              });
           if (!result.children?.length) {
             return null;
           }

@@ -4,7 +4,7 @@ import {
   useCollectionFilterOptions,
   useDesignable,
   useSchemaTemplate,
-  useFixedBlockDesignerSetting,
+  FixedBlockDesignerItem,
   GeneralSchemaDesigner,
   SchemaSettings,
   mergeFilter,
@@ -12,7 +12,7 @@ import {
 } from '@nocobase/client';
 import set from 'lodash/set';
 import React from 'react';
-import { useTranslation} from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 import { useMapTranslation } from '../locale';
 import { useMapBlockContext } from './MapBlockProvider';
 
@@ -33,7 +33,6 @@ export const MapBlockDesigner = () => {
   const defaultZoom = fieldSchema?.['x-component-props']?.['zoom'] || 13;
 
   const template = useSchemaTemplate();
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
 
   const mapFieldOptions = getCollectionFieldsOptions(collection?.name, ['point', 'lineString', 'polygon']);
   const markerFieldOptions = getCollectionFieldsOptions(collection?.name, 'string');
@@ -41,7 +40,7 @@ export const MapBlockDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.SelectItem
         title={mapT('Map field')}
         value={fieldNames.field}

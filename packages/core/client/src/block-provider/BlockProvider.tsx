@@ -292,9 +292,27 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  return {
+  const record = useRecord();
+  const { fields } = useCollection();
+  const filterFields = fields
+    .filter((v) => {
+      return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
+    })
+    .map((v) => v.name);
+  const filter = Object.keys(record)
+    .filter((key) => filterFields.includes(key))
+    .reduce((result, key) => {
+      result[key] = record[key];
+      return result;
+    }, {});
+
+  const obj = {
     filterByTk: filterByTk,
   };
+  if (!filterByTk) {
+    obj['filter'] = filter;
+  }
+  return obj;
 };
 
 export const RecordLink = (props) => {

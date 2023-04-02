@@ -13,6 +13,8 @@ describe('remove action', () => {
     app = mockServer();
     registerActions(app);
 
+    await app.db.clean({ drop: true });
+
     PostTag = app.collection({
       name: 'posts_tags',
       fields: [{ type: 'string', name: 'tagged_at' }],

@@ -12,4 +12,4 @@ export interface FilterContextProps {
 
 export const RemoveActionContext = createContext(null);
 export const FilterContext = createContext<FilterContextProps>(null);
-export const FilterLogicContext = createContext(null);
+export const LinkageLogicContext = createContext(null);

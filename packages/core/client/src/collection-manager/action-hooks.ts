@@ -126,6 +126,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
         operators?.filter?.((operator) => {
           return !operator?.visible || operator.visible(field);
         }) || [],
+      interface: field.interface,
     };
     if (field.target && depth > 2) {
       return;

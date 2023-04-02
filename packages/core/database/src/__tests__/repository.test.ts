@@ -311,6 +311,20 @@ describe('repository.update', () => {
       name: 'post1',
       userId: user.id,
     });
+
+    await User.repository.update({
+      filterByTk: user.id,
+      values: {
+        posts: [{ name: 'post2' }, { name: 'post3' }],
+      },
+    });
+
+    const updated2 = await User.repository.findOne({
+      filterByTk: user.id,
+      appends: ['posts'],
+    });
+
+    expect(updated2.posts.length).toBe(2);
   });
 
   it('update2', async () => {

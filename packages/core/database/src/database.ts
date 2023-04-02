@@ -15,7 +15,7 @@ import {
   Sequelize,
   SyncOptions,
   Transactionable,
-  Utils
+  Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
@@ -58,7 +58,7 @@ import {
   SyncListener,
   UpdateListener,
   UpdateWithAssociationsListener,
-  ValidateListener
+  ValidateListener,
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
@@ -69,6 +69,7 @@ import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
+import { ViewCollection } from './view-collection';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -221,7 +222,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.options = opts;
 
-    this.sequelize = new Sequelize(opts);
+    this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -297,9 +298,20 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.logger = logger;
   }
 
+  sequelizeOptions(options) {
+    if (options.dialect === 'postgres') {
+      options.hooks = {
+        afterConnect: async (connection) => {
+          await connection.query('SET search_path TO public;');
+        },
+      };
+    }
+    return options;
+  }
+
   initListener() {
     this.on('beforeDefine', (model, options) => {
-      if (this.options.underscored) {
+      if (this.options.underscored && options.underscored === undefined) {
         options.underscored = true;
       }
     });
@@ -341,6 +353,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.on('beforeDefineCollection', (options) => {
+      if (this.options.underscored && options.underscored === undefined) {
+        options.underscored = true;
+      }
+
       if (options.underscored) {
         if (lodash.get(options, 'sortable.scopeKey')) {
           options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
@@ -416,14 +432,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return options.inherits && lodash.castArray(options.inherits).length > 0;
     })();
 
-    const collection = hasValidInheritsOptions
-      ? new InheritedCollection(options, {
-          database: this,
-        })
-      : new Collection(options, {
-          database: this,
-        });
+    const hasViewOptions = options.viewName || options.view;
 
+    const collectionKlass = (() => {
+      if (hasValidInheritsOptions) {
+        return InheritedCollection;
+      }
+
+      if (hasViewOptions) {
+        return ViewCollection;
+      }
+
+      return Collection;
+    })();
+
+    const collection = new collectionKlass(options, { database: this });
     this.collections.set(collection.name, collection);
 
     this.emit('afterDefineCollection', collection);
@@ -598,7 +621,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
-    if (options.field && this.options.underscored) {
+    if (options.field && context.collection.options.underscored) {
       options.field = snakeCase(options.field);
     }
 
@@ -647,7 +670,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    await this.sequelize.getQueryInterface().dropAllTables(others);
+    await this.queryInterface.dropAll(options);
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {

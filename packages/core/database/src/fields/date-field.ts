@@ -6,6 +6,10 @@ export class DateField extends Field {
     return DataTypes.DATE(3);
   }
 
+  get timezone() {
+    return this.isGMT() ? '+00:00' : null;
+  }
+
   getProps() {
     return this.options?.uiSchema?.['x-component-props'] || {};
   }
@@ -17,7 +21,7 @@ export class DateField extends Field {
 
   isGMT() {
     const props = this.getProps();
-    return props.gmt || !props.showTime;
+    return props.gmt;
   }
 }
 
