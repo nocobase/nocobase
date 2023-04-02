@@ -33,13 +33,13 @@ export default class SqliteQueryInterface extends QueryInterface {
     });
   }
 
-  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<
-    Array<{
+  async viewColumnUsage(options: { viewName: string; schema?: string }): Promise<{
+    [view_column_name: string]: {
       column_name: string;
       table_name: string;
       table_schema?: string;
-    }>
-  > {
+    };
+  }> {
     try {
       const viewDefinition = await this.db.sequelize.query(
         `SELECT sql FROM sqlite_master WHERE name = '${options.viewName}' AND type = 'view'`,
@@ -60,14 +60,17 @@ export default class SqliteQueryInterface extends QueryInterface {
       const results = [];
       for (const column of columns) {
         if (column.expr.type === 'column_ref') {
-          results.push({
-            column_name: column.expr.column,
-            table_name: column.expr.table,
-          });
+          results.push([
+            column.as || column.expr.column,
+            {
+              column_name: column.expr.column,
+              table_name: column.expr.table,
+            },
+          ]);
         }
       }
 
-      return results;
+      return Object.fromEntries(results);
     } catch (e) {
       this.db.logger.warn(e);
       return [];
