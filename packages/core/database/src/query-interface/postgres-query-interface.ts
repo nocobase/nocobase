@@ -56,9 +56,7 @@ export default class PostgresQueryInterface extends QueryInterface {
 
     const viewDefQuery = await this.db.sequelize.query(
       `
-    SELECT viewname, definition
-FROM pg_views
-WHERE schemaname = '${schema}' AND viewname = '${viewName}';
+    select pg_get_viewdef(format('%I.%I', '${schema}', '${viewName}')::regclass, true) as definition
     `,
       { type: 'SELECT' },
     );
@@ -71,10 +69,19 @@ WHERE schemaname = '${schema}' AND viewname = '${viewName}';
       const usages = columns
         .map((column) => {
           const fieldAlias = column.as || column.expr.column;
-          const columnUsage = columnUsages.find(
-            (columnUsage) =>
-              columnUsage.column_name === column.expr.column && columnUsage.table_name === column.expr.table,
-          );
+          const columnUsage = columnUsages.find((columnUsage) => {
+            let columnExprTable = column.expr.table;
+
+            // handle column alias
+            const from = ast[0].from;
+            const findAs = from.find((from) => from.as === columnExprTable);
+
+            if (findAs) {
+              columnExprTable = findAs.table;
+            }
+
+            return columnUsage.column_name === column.expr.column && columnUsage.table_name === columnExprTable;
+          });
 
           return [
             fieldAlias,
