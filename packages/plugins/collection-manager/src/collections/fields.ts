@@ -27,6 +27,14 @@ export default {
       type: 'uid',
       name: 'name',
       prefix: 'f_',
+      async skipValidate({ instance, transaction }) {
+        const collectionName = instance.get('collectionName');
+        const collection = await instance.getCollection({
+          transaction,
+        });
+
+        return collection.get('view');
+      },
     },
     {
       type: 'string',

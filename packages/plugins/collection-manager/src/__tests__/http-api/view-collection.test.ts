@@ -53,7 +53,7 @@ SELECT * FROM numbers;
     const viewSQL = `CREATE VIEW test_view AS SELECT 1+1 as 结果`;
     await db.sequelize.query(viewSQL);
 
-    const viewCollection = await app.db.getCollection('collections').repository.create({
+    await app.db.getCollection('collections').repository.create({
       values: {
         name: viewName,
         schema: db.inDialect('postgres') ? 'public' : undefined,
@@ -68,7 +68,8 @@ SELECT * FROM numbers;
       context: {},
     });
 
-    const results = await viewCollection.repository.find();
+    const ViewCollection = app.db.getCollection(viewName);
+    const results = await ViewCollection.repository.find();
 
     expect(results.length).toBe(1);
   });

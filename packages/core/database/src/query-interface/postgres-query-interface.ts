@@ -62,6 +62,7 @@ export default class PostgresQueryInterface extends QueryInterface {
     );
 
     const def = viewDefQuery[0]['definition'];
+
     try {
       const { ast } = sqlParser.parse(def);
       const columns = ast[0].columns;
@@ -94,7 +95,6 @@ export default class PostgresQueryInterface extends QueryInterface {
         })
         .filter(([, columnUsage]) => columnUsage !== null);
 
-      console.log(usages);
       return Object.fromEntries(usages);
     } catch (e) {
       this.db.logger.warn(e);

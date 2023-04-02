@@ -10,7 +10,11 @@ export class UidField extends Field {
   init() {
     const { name, prefix = '', pattern } = this.options;
     const re = new RegExp(pattern || '^[A-Za-z0-9][A-Za-z0-9_-]*$');
-    this.listener = async (instance) => {
+    this.listener = async (instance, { transaction }) => {
+      if (this.options.skipValidate && (await this.options.skipValidate({ instance, transaction }))) {
+        return;
+      }
+
       const value = instance.get(name);
 
       if (!value) {
