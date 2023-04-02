@@ -38,7 +38,7 @@ const MenuGroup = (props) => {
 };
 
 export const ActionDesigner = (props) => {
-  const { modalTip, ...restProps } = props;
+  const { modalTip, linkageAction, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
@@ -50,6 +50,7 @@ export const ActionDesigner = (props) => {
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
   const isLinkageAction =
+    linkageAction ||
     (Object.keys(useFormBlockContext()).length > 0 && Object.keys(useRecord()).length > 0) ||
     fieldSchema?.parent?.['x-initializer'] === 'DetailsActionInitializers';
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
