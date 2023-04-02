@@ -73,7 +73,7 @@ export default class SqliteQueryInterface extends QueryInterface {
       return Object.fromEntries(results);
     } catch (e) {
       this.db.logger.warn(e);
-      return [];
+      return {};
     }
   }
 }
