@@ -123,6 +123,9 @@ export const o2o: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -298,6 +301,9 @@ export const oho: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -464,6 +470,9 @@ export const obo: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {

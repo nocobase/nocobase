@@ -80,6 +80,9 @@ export const m2m: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   initialize: (values: any) => {

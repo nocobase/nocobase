@@ -87,7 +87,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const collectionField = useAssociation(props);
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = labelUiSchema?.['x-component'] === 'Preview.Selector';
+  const showFilePicker = isShowFilePicker(labelUiSchema);
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
 
@@ -189,3 +189,7 @@ const Drawer: React.FunctionComponent<{
     </RecordPickerContext.Provider>
   );
 };
+
+export function isShowFilePicker(labelUiSchema) {
+  return labelUiSchema?.['x-component'] === 'Preview.Selector';
+}
