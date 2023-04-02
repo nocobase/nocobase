@@ -6,6 +6,7 @@ describe('view collection', () => {
   let app: MockServer;
   let agent;
   let testViewName;
+  let db;
 
   beforeEach(async () => {
     app = await createApp({
@@ -14,6 +15,8 @@ describe('view collection', () => {
       },
     });
     agent = app.agent();
+    db = app.db;
+
     testViewName = `view_${uid(6)}`;
     const dropSQL = `DROP VIEW IF EXISTS ${testViewName}`;
     await app.db.sequelize.query(dropSQL);
@@ -41,6 +44,33 @@ SELECT * FROM numbers;
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should create view collection with chinese character column', async () => {
+    const viewName = 'test_view';
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW test_view AS SELECT 1+1 as 结果`;
+    await db.sequelize.query(viewSQL);
+
+    const viewCollection = await app.db.getCollection('collections').repository.create({
+      values: {
+        name: viewName,
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+        view: true,
+        fields: [
+          {
+            type: 'string',
+            name: '结果',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const results = await viewCollection.repository.find();
+
+    expect(results.length).toBe(1);
   });
 
   it('should list views', async () => {
