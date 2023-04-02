@@ -779,6 +779,8 @@ export const useCollectionDataSourceItems = (componentName) => {
             return false;
           } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
             return false;
+          } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
+            return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
           }
