@@ -157,6 +157,7 @@ export const TriggerConfig = () => {
         title: t
       }
     });
+    refresh();
   }
 
   function onOpenDrawer(ev) {
