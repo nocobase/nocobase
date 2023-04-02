@@ -35,7 +35,6 @@ export default class PostgresQueryInterface extends QueryInterface {
 
   async viewColumnUsage(options): Promise<{
     [view_column_name: string]: {
-      view_column_name: string;
       column_name: string;
       table_name: string;
       table_schema?: string;
