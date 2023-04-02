@@ -49,6 +49,34 @@ describe('view collection', function () {
     expect(results.length).toBe(1);
   });
 
+  it('should support view with uppercase field in underscored env', async () => {
+    if (!db.options.underscored) {
+      return;
+    }
+
+    const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
+    await db.sequelize.query(dropViewSQL);
+    const viewSQL = `CREATE VIEW test_view AS select 1+1 as "Uppercase"`;
+    await db.sequelize.query(viewSQL);
+
+    await collectionRepository.create({
+      values: {
+        name: 'view_collection',
+        viewName: 'test_view',
+        isView: true,
+        fields: [{ type: 'string', name: 'Uppercase', field: 'Uppercase' }],
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+      },
+      context: {},
+    });
+
+    const viewCollection = db.getCollection('view_collection');
+
+    expect(viewCollection.model.rawAttributes['Uppercase'].field).toEqual('Uppercase');
+    const results = await viewCollection.repository.find();
+    expect(results.length).toBe(1);
+  });
+
   it('should create view collection by view name', async () => {
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
