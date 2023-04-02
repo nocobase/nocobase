@@ -7,6 +7,7 @@ import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
 import Lightbox from 'react-image-lightbox';
+import { useRecord } from '../../../record-provider';
 import { isImage, toArr, toImages } from './shared';
 import type { UploadProps } from './type';
 
@@ -18,8 +19,9 @@ type Composed = React.FC<UploadProps> & {
 export const ReadPretty: Composed = () => null;
 
 ReadPretty.File = (props: UploadProps) => {
+  const record = useRecord();
   const field = useField<Field>();
-  const value = isString(field.value) ? (field.parent as any).value?.[field.index] : field.value;
+  const value = isString(field.value) ? record : field.value;
   const images = toImages(toArr(value));
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);

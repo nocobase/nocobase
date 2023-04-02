@@ -74,7 +74,7 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 };
 
 export const useTableColumnInitializerFields = () => {
-  const { name, currentFields = [], template } = useCollection();
+  const { name, currentFields = [] } = useCollection();
   const { getInterface, getCollection } = useCollectionManager();
   return currentFields
     .filter(
