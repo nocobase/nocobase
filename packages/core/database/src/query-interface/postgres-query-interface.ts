@@ -64,29 +64,33 @@ WHERE schemaname = '${schema}' AND viewname = '${viewName}';
     );
 
     const def = viewDefQuery[0]['definition'];
-    const { ast } = sqlParser.parse(def);
+    try {
+      const { ast } = sqlParser.parse(def);
+      const columns = ast[0].columns;
 
-    const columns = ast[0].columns;
+      const usages = columns
+        .map((column) => {
+          const fieldAlias = column.as || column.expr.column;
+          const columnUsage = columnUsages.find(
+            (columnUsage) =>
+              columnUsage.column_name === column.expr.column && columnUsage.table_name === column.expr.table,
+          );
 
-    const usages = columns
-      .map((column) => {
-        const fieldAlias = column.as || column.expr.column;
-        const columnUsage = columnUsages.find(
-          (columnUsage) =>
-            columnUsage.column_name === column.expr.column && columnUsage.table_name === column.expr.table,
-        );
+          return [
+            fieldAlias,
+            columnUsage
+              ? {
+                  ...columnUsage,
+                }
+              : null,
+          ];
+        })
+        .filter(([, columnUsage]) => columnUsage !== null);
 
-        return [
-          fieldAlias,
-          columnUsage
-            ? {
-                ...columnUsage,
-              }
-            : null,
-        ];
-      })
-      .filter(([, columnUsage]) => columnUsage !== null);
-
-    return Object.fromEntries(usages);
+      return Object.fromEntries(usages);
+    } catch (e) {
+      this.db.logger.warn(e);
+      return {};
+    }
   }
 }
