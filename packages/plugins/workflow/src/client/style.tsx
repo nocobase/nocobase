@@ -47,23 +47,6 @@ export const workflowPageClass = css`
 
 export const workflowVersionDropdownClass = css`
   .ant-dropdown-menu-item{
-
-    strong{
-      font-weight: normal;
-    }
-
-    &.enabled{
-      strong{
-        font-weight: bold;
-      }
-    }
-
-    &.unexecuted{
-      strong{
-        font-style: italic;
-      }
-    }
-
     .ant-dropdown-menu-title-content{
       text-align: right;
 
@@ -71,6 +54,22 @@ export const workflowVersionDropdownClass = css`
         margin-left: 0.5rem;
         color: #999;
         font-size: 80%;
+      }
+
+      strong{
+        font-weight: normal;
+      }
+
+      > .enabled{
+        strong{
+          font-weight: bold;
+        }
+      }
+
+      > .unexecuted{
+        strong{
+          font-style: italic;
+        }
       }
     }
   }

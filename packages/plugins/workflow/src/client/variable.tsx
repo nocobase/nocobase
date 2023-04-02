@@ -8,7 +8,7 @@ export type VariableOption = {
   key: string;
   value: string;
   label: string;
-  children?: VariableOption[];
+  children?: VariableOption[] | null;
 };
 
 const VariableTypes = [
@@ -97,32 +97,35 @@ export function useWorkflowVariableOptions() {
   return options;
 }
 
-export function useCollectionFieldOptions(props) {
-  const { fields, collection, types } = props;
-  const compile = useCompile();
+function useCollectionNormalFields(collection) {
   const { getCollectionFields } = useCollectionManager();
-  const result = filterTypedFields(fields ?? getCollectionFields(collection), types).map((field) => ({
-    label: compile(field.uiSchema?.title || field.name),
-    key: field.name,
-    value: field.name,
-    children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-      ? getCollectionFields(field.target)
-          ?.filter((subField) => subField.interface && (!subField.target || subField.type === 'belongsTo'))
-          .map((subField) =>
-            subField.type === 'belongsTo'
-              ? {
-                  label: `${compile(subField.uiSchema?.title || subField.name)} ID`,
-                  key: subField.foreignKey,
-                  value: subField.foreignKey,
-                }
-              : {
-                  label: compile(subField.uiSchema?.title || subField.name),
-                  key: subField.name,
-                  value: subField.name,
-                },
-          )
-      : null,
-  }));
+  const fields = getCollectionFields(collection);
+  return fields.filter(field => field.interface);
+}
+
+export function useCollectionFieldOptions(options, depth = 1): VariableOption[] {
+  const { fields, collection, types } = options;
+  const compile = useCompile();
+  const result: VariableOption[] = [];
+  filterTypedFields((fields ?? useCollectionNormalFields(collection)), types)
+    .forEach(field => {
+      const label = compile(field.uiSchema?.title || field.name);
+      if (field.type === 'belongsTo') {
+        result.push({
+          label: `${label} ID`,
+          key: field.foreignKey,
+          value: field.foreignKey,
+        });
+      }
+      result.push({
+        label,
+        key: field.name,
+        value: field.name,
+        children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && depth > 0
+          ? useCollectionFieldOptions({ collection: field.target, types }, depth - 1)
+          : null
+      });
+    });
 
   return result;
 }
