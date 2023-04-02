@@ -94,7 +94,6 @@ export default class PostgresQueryInterface extends QueryInterface {
         })
         .filter(([, columnUsage]) => columnUsage !== null);
 
-      console.log(usages);
       return Object.fromEntries(usages);
     } catch (e) {
       this.db.logger.warn(e);
