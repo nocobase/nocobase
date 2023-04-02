@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { css, cx } from "@emotion/css";
 import { ISchema, useForm } from "@formily/react";
 import { Registry } from "@nocobase/utils/client";
@@ -131,6 +131,12 @@ export const TriggerConfig = () => {
   const api = useAPIClient();
   const compile = useCompile();
   const { workflow, refresh } = useFlowContext();
+  const [editingTitle, setEditingTitle] = useState<string>('');
+  const [editingConfig, setEditingConfig] = useState(false);
+  useEffect(() => {
+    setEditingTitle(workflow.title ?? typeTitle);
+  }, [workflow]);
+
   if (!workflow || !workflow.type) {
     return null;
   }
@@ -138,9 +144,6 @@ export const TriggerConfig = () => {
   const { title: typeTitle, fieldset, scope, components } = triggers.get(type);
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
-
-  const [editingTitle, setEditingTitle] = useState<string>(title ?? typeTitle);
-  const [editingConfig, setEditingConfig] = useState(false);
 
   async function onChangeTitle(next) {
     const t = next || typeTitle;
@@ -154,7 +157,6 @@ export const TriggerConfig = () => {
         title: t
       }
     });
-    refresh();
   }
 
   function onOpenDrawer(ev) {
