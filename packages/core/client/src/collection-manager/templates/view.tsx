@@ -80,6 +80,7 @@ export const view: ICollectionTemplate = {
     fields: {
       type: 'array',
       'x-component': PreviewFields,
+      'x-visible': '{{ createOnly }}',
       'x-reactions': {
         dependencies: ['name'],
         fulfill: {
@@ -91,6 +92,7 @@ export const view: ICollectionTemplate = {
     },
     preview: {
       type: 'object',
+      'x-visible': '{{ createOnly }}',
       'x-component': PreviewTable,
       'x-reactions': {
         dependencies: ['name','fields'],
