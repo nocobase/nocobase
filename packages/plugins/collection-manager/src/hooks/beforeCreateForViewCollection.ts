@@ -10,6 +10,7 @@ export function beforeCreateForViewCollection(db: Database) {
 
     const exists = await db.getRepository('collections').count({
       filterByTk: name,
+      transaction,
     });
 
     if (exists) {
