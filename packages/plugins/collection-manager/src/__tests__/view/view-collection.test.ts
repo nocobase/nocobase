@@ -65,6 +65,8 @@ describe('view collection', function () {
 
     const otherSchemaView = db.getCollection(`${randomSchema}_${viewName}`);
     expect(otherSchemaView).toBeInstanceOf(ViewCollection);
+    expect(otherSchemaView.options.viewName).toBe(viewName);
+    expect(otherSchemaView.options.schema).toBe(randomSchema);
   });
 
   it('should support view with dot field', async () => {

@@ -15,6 +15,13 @@ export function beforeCreateForViewCollection(db: Database) {
     if (exists) {
       const prefix = model.get('schema') || 'public';
       const viewName = `${prefix}_${name}`;
+
+      // set collection viewName
+      if (!model.get('viewName')) {
+        model.set('viewName', name);
+      }
+
+      // set collection name
       model.set('name', viewName);
     }
   };
