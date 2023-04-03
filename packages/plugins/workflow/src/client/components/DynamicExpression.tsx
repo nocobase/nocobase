@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { onFieldValueChange } from '@formily/core';
-import { observer, connect, useForm, useField, mapReadPretty, useFormEffects } from '@formily/react';
+import { observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-import { useCompile, Variable } from "@nocobase/client";
+import { Variable } from "@nocobase/client";
 
 import { NAMESPACE } from "../locale";
 import { useCollectionFieldOptions } from "../variable";

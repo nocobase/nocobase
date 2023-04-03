@@ -189,7 +189,14 @@ export function TextArea(props) {
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
   useEffect(() => {
+    setSelectedVar([]);
+  }, [scope]);
+
+  useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
+    if (!changed) {
+      setRange([-1, 0, -1, 0]);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -199,6 +206,7 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
+      setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }
