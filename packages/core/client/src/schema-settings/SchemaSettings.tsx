@@ -944,7 +944,7 @@ SchemaSettings.LinkageRules = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const { getTemplateById } = useSchemaTemplateManager();
-  const type = fieldSchema['x-component'] === 'Action' ? 'button' : 'field';
+  const type = ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field';
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   return (
     <SchemaSettings.ModalItem
