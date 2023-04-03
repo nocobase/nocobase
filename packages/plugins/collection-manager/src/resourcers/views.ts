@@ -46,7 +46,9 @@ export default {
             const viewName = dbView.name;
             const schema = dbView.schema;
 
-            return collection.options.name === viewName && collection.options.schema === schema;
+            const collectionViewName = collection.options.viewName || collection.options.name;
+
+            return collectionViewName === viewName && collection.options.schema === schema;
           });
         });
 
