@@ -705,6 +705,8 @@ export const useCollectionDataSourceItems = (componentName) => {
             return false;
           } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
             return false;
+          } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
+            return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
           }
@@ -931,7 +933,7 @@ export const createFilterFormBlockSchema = (options) => {
   const resourceName = resource || association || collection;
   const schema: ISchema = {
     type: 'void',
-    'x-decorator': 'FormBlockProvider',
+    'x-decorator': 'FilterFormBlockProvider',
     'x-decorator-props': {
       ...others,
       action,

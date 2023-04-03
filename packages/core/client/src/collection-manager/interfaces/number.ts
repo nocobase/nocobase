@@ -22,6 +22,7 @@ export const number: IField = {
       },
     },
   },
+  availableTypes:['double'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

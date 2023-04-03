@@ -13,7 +13,8 @@ export * from './AddCollectionAction';
 export * from './EditCollectionAction';
 export * from './ConfigurationTabs';
 export * from './AddCategoryAction';
-export * from './EditCategoryAction'
+export * from './EditCategoryAction';
+export * from './SyncFieldsAction';
 
 registerValidateFormats({
   uid: /^[A-Za-z0-9][A-Za-z0-9_-]*$/,

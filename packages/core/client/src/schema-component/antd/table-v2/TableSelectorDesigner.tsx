@@ -9,6 +9,8 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableSelectorDesigner = () => {
   const { name, title } = useCollection();
@@ -49,12 +51,15 @@ export const TableSelectorDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;

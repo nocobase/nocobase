@@ -18,6 +18,7 @@ export const input: IField = {
       'x-component': 'Input',
     },
   },
+  availableTypes:['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

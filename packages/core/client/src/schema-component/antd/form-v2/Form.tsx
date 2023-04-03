@@ -69,7 +69,8 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'] || [];
+  const linkageRules =
+    (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -100,7 +101,9 @@ const WithForm = (props) => {
               };
             });
             onFieldChange(`*(${fields})`, ['value', 'required', 'pattern', 'display'], (field: any) => {
-              field.linkageProperty = {};
+              field.linkageProperty = {
+                display: field.linkageProperty?.display,
+              };
             });
           }
         });
@@ -111,31 +114,36 @@ const WithForm = (props) => {
     };
   }, []);
   useEffect(() => {
-    const id = uid();
-    form.addEffects(id, () => {
+    if (linkageRules.length > 0) {
+      const id = uid();
       const linkagefields = [];
-      return linkageRules.map((v, index) => {
-        return v.actions?.map((h) => {
-          if (h.targetFields) {
-            const fields = h.targetFields.join(',');
-            return onFieldReact(`*(${fields})`, (field: any, form) => {
-              linkagefields.push(field);
-              linkageMergeAction(h, field, v.condition, form?.values);
-              if (index === linkageRules.length - 1) {
-                setTimeout(() =>
-                  linkagefields.map((v) => {
-                    v.linkageProperty = {};
-                  }),
-                );
-              }
-            });
-          }
+      const formGraph = form.getFormGraph();
+      form.addEffects(id, () => {
+        return linkageRules.map((v, index) => {
+          return v.actions?.map((h) => {
+            if (h.targetFields) {
+              const fields = h.targetFields.join(',');
+              return onFieldReact(`*(${fields})`, (field: any, form) => {
+                linkagefields.push(field);
+                linkageMergeAction(h, field, v.condition, form?.values);
+                if (index === linkageRules.length - 1) {
+                  setTimeout(() =>
+                    linkagefields.map((v) => {
+                      v.linkageProperty = {};
+                    }),
+                  );
+                }
+              });
+            }
+          });
         });
       });
-    });
-    return () => {
-      form.removeEffects(id);
-    };
+      return () => {
+        form.removeEffects(id);
+        form.clearFormGraph();
+        form.setFormGraph(formGraph);
+      };
+    }
   }, [linkageRules]);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };

@@ -6,7 +6,9 @@ import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
+import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
+import { EllipsisWithTooltip } from '../input';
 
 const { Panel } = Collapse;
 
@@ -78,6 +80,7 @@ export const AssociationFilterItem = (props) => {
   };
 
   const title = fieldSchema.title ?? collectionField.uiSchema?.title;
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
 
   return (
     <SortableItem
@@ -216,12 +219,23 @@ export const AssociationFilterItem = (props) => {
           <Tree
             style={{ padding: '16px 0' }}
             onExpand={onExpand}
+            rootClassName={css`
+              .ant-tree-node-content-wrapper {
+                overflow-x: hidden;
+              }
+            `}
             expandedKeys={expandedKeys}
             autoExpandParent={autoExpandParent}
             treeData={list}
             onSelect={onSelect}
             fieldNames={fieldNames}
-            titleRender={(node) => compile(node[labelKey])}
+            titleRender={(node) => {
+              return (
+                <EllipsisWithTooltip ellipsis>
+                  {getLabelFormatValue(labelUiSchema, compile(node[labelKey]))}
+                </EllipsisWithTooltip>
+              );
+            }}
             selectedKeys={selectedKeys}
             blockNode
           />

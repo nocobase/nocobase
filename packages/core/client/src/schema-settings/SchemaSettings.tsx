@@ -775,7 +775,7 @@ SchemaSettings.ModalItem = (props) => {
     onSubmit,
     asyncGetInitialValues,
     initialValues,
-    width,
+    width = 'fit-content',
     ...others
   } = props;
   const options = useContext(SchemaOptionsContext);
@@ -792,7 +792,7 @@ SchemaSettings.ModalItem = (props) => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
-                <FormLayout layout={'vertical'}>
+                <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
                   <SchemaComponent components={components} scope={scope} schema={schema} />
                 </FormLayout>
               </SchemaComponentOptions>
@@ -950,7 +950,7 @@ SchemaSettings.LinkageRules = (props) => {
     <SchemaSettings.ModalItem
       title={t('Linkage rules')}
       components={{ ArrayCollapse, FormLayout }}
-      width={750}
+      width={770}
       schema={
         {
           type: 'object',
@@ -960,7 +960,9 @@ SchemaSettings.LinkageRules = (props) => {
               'x-component': FormLinkageRules,
               'x-component-props': {
                 useProps: () => {
-                  const options = useCollectionFilterOptions(collectionName);
+                  const options = useCollectionFilterOptions(collectionName).filter(
+                    (v) => !['o2m', 'm2m'].includes(v.interface),
+                  );
                   return {
                     options,
                     defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],

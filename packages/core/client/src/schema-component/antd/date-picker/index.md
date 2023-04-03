@@ -17,9 +17,21 @@ group:
 
 <code src="./demos/demo3.tsx" />
 
-### RangePicker
+### DatePicker (non-UTC)
+
+<code src="./demos/demo5.tsx" />
+
+### RangePicker (GMT)
 
 <code src="./demos/demo2.tsx" />
+
+### RangePicker (non-GMT)
+
+<code src="./demos/demo6.tsx" />
+
+### RangePicker (non-UTC)
+
+<code src="./demos/demo7.tsx" />
 
 ## API
 

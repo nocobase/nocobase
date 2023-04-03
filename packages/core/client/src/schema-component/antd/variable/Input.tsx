@@ -1,10 +1,10 @@
-import React from 'react';
-import { useForm } from '@formily/react';
-import { Cascader, Input as AntInput, Button, Tag, InputNumber, Select, DatePicker } from 'antd';
 import { CloseCircleFilled } from '@ant-design/icons';
-import { cx, css } from '@emotion/css';
-import { useTranslation } from 'react-i18next';
+import { css, cx } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { Button, Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
 import moment from 'moment';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useCompile } from '../..';
 
@@ -136,7 +136,7 @@ export function Input(props) {
 
   const variableText = variable
     ?.reduce((opts, key, i) => {
-      const option = (i ? (opts[i - 1] as VariableOptions).children : options)?.find((item) => item.value === key);
+      const option = (i ? (opts[i - 1] as VariableOptions)?.children : options)?.find((item) => item.value === key);
       return option ? opts.concat(option) : opts;
     }, [] as VariableOptions[])
     .map((item) => item.label)

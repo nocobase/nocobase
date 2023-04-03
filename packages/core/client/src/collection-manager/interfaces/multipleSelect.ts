@@ -21,6 +21,7 @@ export const multipleSelect: IField = {
       enum: [],
     },
   },
+  availableTypes:['array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

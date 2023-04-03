@@ -3,6 +3,7 @@ import { SchemaComponentOptions } from '../schema-component/core/SchemaComponent
 import { RecordLink, useParamsFromRecord, useSourceIdFromParentRecord, useSourceIdFromRecord } from './BlockProvider';
 import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockProvider';
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
+import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
@@ -22,6 +23,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         TableBlockProvider,
         TableSelectorProvider,
         FormBlockProvider,
+        FilterFormBlockProvider,
         FormFieldProvider,
         DetailsBlockProvider,
         KanbanBlockProvider,
