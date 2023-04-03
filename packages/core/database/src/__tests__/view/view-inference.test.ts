@@ -15,6 +15,48 @@ describe('view inference', function () {
     await db.close();
   });
 
+  it('should infer field with alias', async () => {
+    if (db.options.dialect !== 'postgres') return;
+
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'id',
+          type: 'bigInt',
+          interface: 'bigInt',
+        },
+        {
+          name: 'name',
+          type: 'string',
+          interface: 'test',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const viewName = 'user_posts';
+
+    const dropViewSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await db.sequelize.query(dropViewSQL);
+
+    const viewSQL = `
+       CREATE VIEW ${viewName} as SELECT 1 as const_field, users.id as user_id_field, users.name FROM ${UserCollection.quotedTableName()} as users
+    `;
+
+    await db.sequelize.query(viewSQL);
+
+    const inferredFields = await ViewFieldInference.inferFields({
+      db,
+      viewName,
+      viewSchema: 'public',
+    });
+
+    expect(inferredFields['user_id_field'].source).toBe('users.id');
+    expect(inferredFields['name'].source).toBe('users.name');
+  });
+
   it('should infer collection fields', async () => {
     const UserCollection = db.collection({
       name: 'users',

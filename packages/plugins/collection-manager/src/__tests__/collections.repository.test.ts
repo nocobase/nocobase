@@ -1,4 +1,4 @@
-import Database, { Collection as DBCollection } from '@nocobase/database';
+import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
 import CollectionManagerPlugin, { CollectionRepository } from '@nocobase/plugin-collection-manager';
@@ -604,5 +604,79 @@ describe('collections repository', () => {
     }
 
     expect(err).toBeFalsy();
+  });
+
+  it('should update association field', async () => {
+    const A = await Collection.repository.create({
+      values: {
+        name: 'a',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'bs',
+            type: 'hasMany',
+            uiSchema: {
+              title: 'bs-title',
+            },
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const B = await Collection.repository.create({
+      values: {
+        name: 'b',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'a',
+          },
+        ],
+        uiSchema: {
+          title: 'b-title',
+        },
+      },
+      context: {},
+    });
+
+    const C = await Collection.repository.create({
+      values: {
+        name: 'c',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'a',
+          },
+        ],
+        uiSchema: {
+          title: 'c-title',
+        },
+      },
+      context: {},
+    });
+
+    await db.sync();
+
+    await db.getRepository<HasManyRepository>('collections.fields', 'c').update({
+      filterByTk: 'a',
+      values: {
+        key: C.key,
+        uiSchema: {
+          title: 'c-hello-world',
+        },
+      },
+    });
   });
 });

@@ -3,38 +3,41 @@ import { Input, Cascader, Button, Popover } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
+import * as sanitizeHTML from 'sanitize-html';
+
 import { useCompile } from '../..';
 import { XButton } from './XButton';
 
+type RangeIndexes = [number, number, number, number];
+
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
-function pasteHtml(container, html, { selectPastedContent = false, range: indexes }) {
+function pasteHTML(container: HTMLElement, html: string, { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {}) {
   // IE9 and non-IE
   const sel = window.getSelection?.();
-  if (!sel?.getRangeAt || !sel.rangeCount) {
-    return;
-  }
-  const range = sel.getRangeAt(0);
+  const range = sel?.getRangeAt(0);
   if (!range) {
     return;
   }
-  const children = Array.from(container.childNodes) as HTMLElement[];
-  if (indexes[0] === -1) {
-    if (indexes[1]) {
-      range.setStartAfter(children[indexes[1] - 1]);
-    }
-  } else {
-    range.setStart(children[indexes[0]], indexes[1]);
-  }
 
-  if (indexes[2] === -1) {
-    if (indexes[3]) {
-      range.setEndAfter(children[indexes[3] - 1]);
+  if (indexes) {
+    const children = Array.from(container.childNodes);
+    if (indexes[0] === -1) {
+      if (indexes[1]) {
+        range.setStartAfter(children[indexes[1] - 1]);
+      }
+    } else {
+      range.setStart(children[indexes[0]], indexes[1]);
     }
-  } else {
-    range.setEnd(children[indexes[2]], indexes[3]);
+
+    if (indexes[2] === -1) {
+      if (indexes[3]) {
+        range.setEndAfter(children[indexes[3] - 1]);
+      }
+    } else {
+      range.setEnd(children[indexes[2]], indexes[3]);
+    }
   }
-  range.deleteContents();
 
   // Range.createContextualFragment() would be useful here but is
   // only relatively recently standardized and is not supported in
@@ -48,11 +51,12 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     lastNode = frag.appendChild(el.firstChild);
   }
   const { firstChild } = frag;
+  range.deleteContents();
   range.insertNode(frag);
 
   // Preserve the selection
   if (lastNode) {
-    const next = range.cloneRange();
+    const next = new Range();
     next.setStartAfter(lastNode);
     if (selectPastedContent) {
       if (firstChild) {
@@ -61,21 +65,21 @@ function pasteHtml(container, html, { selectPastedContent = false, range: indexe
     } else {
       next.collapse(true);
     }
-    sel.removeAllRanges();
-    sel.addRange(next);
+    sel!.removeAllRanges();
+    sel!.addRange(next);
   }
 }
 
 function getValue(el) {
   const values: any[] = [];
   for (const node of el.childNodes) {
-    if (node.nodeName === 'SPAN') {
-      values.push(`{{${node['dataset']['key']}}}`);
+    if (node.nodeName === 'SPAN' && node['dataset']['variable']) {
+      values.push(`{{${node['dataset']['variable']}}}`);
     } else {
-      values.push(node.textContent?.trim?.());
+      values.push(node.textContent);
     }
   }
-  return values.join(' ').replace(/\s+/g, ' ').trim();
+  return values.join('');
 }
 
 function renderHTML(exp: string, keyLabelMap) {
@@ -100,9 +104,73 @@ function createOptionsValueLabelMap(options: any[]) {
 
 function createVariableTagHTML(variable, keyLabelMap) {
   const labels = keyLabelMap.get(variable);
-  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-key="${variable}">${labels?.join(
+  return `<span class="ant-tag ant-tag-blue" contentEditable="false" data-variable="${variable}">${labels?.join(
     ' / ',
   )}</span>`;
+}
+
+// [#, <>, #, #, <>]
+// [#, #]
+// [<>, #, #]
+// [#, #, <>]
+function getSingleEndRange(nodes: ChildNode[], index: number, offset: number): [number, number] {
+  if (index === -1) {
+    let realIndex = offset;
+    let collapseFlag = false;
+    if (realIndex && nodes[realIndex - 1].nodeName === '#text' && nodes[realIndex]?.nodeName === '#text') {
+      // set a flag for collapse
+      collapseFlag = true;
+    }
+    let textOffset = 0;
+    for (let i = offset - 1; i >= 0; i--) {
+      if (collapseFlag) {
+        if (nodes[i].nodeName === '#text') {
+          textOffset += nodes[i].textContent!.length;
+        } else {
+          collapseFlag = false;
+        }
+      }
+      if (nodes[i].nodeName === '#text' && nodes[i + 1]?.nodeName === '#text') {
+        realIndex -= 1;
+      }
+    }
+
+    return textOffset ? [realIndex, textOffset] : [-1, realIndex];
+  } else {
+    let realIndex = 0;
+    let textOffset = 0;
+    for (let i = 0; i < index + 1; i++) {
+      // console.log(i, realIndex, textOffset);
+      if (nodes[i].nodeName === '#text') {
+        if (i !== index && nodes[i + 1] && nodes[i + 1].nodeName !== '#text') {
+          realIndex += 1;
+        }
+        textOffset += i === index ? offset : nodes[i].textContent!.length;
+      } else {
+        realIndex += 1;
+        textOffset = 0;
+      }
+    }
+    return [realIndex, textOffset];
+  }
+}
+
+function getCurrentRange(element: HTMLElement): RangeIndexes {
+  const sel = window.getSelection?.();
+  const range = sel?.getRangeAt(0);
+  if (!range) {
+    return [-1, 0, -1, 0];
+  }
+  const nodes = Array.from(element.childNodes);
+  if (!nodes.length) {
+    return [-1, 0, -1, 0];
+  }
+
+  const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
+  const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
+
+  const result: RangeIndexes = [...getSingleEndRange(nodes, startElementIndex, range.startOffset), ...getSingleEndRange(nodes, endElementIndex, range.endOffset)];
+  return result;
 }
 
 export function TextArea(props) {
@@ -113,33 +181,58 @@ export function TextArea(props) {
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
   const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const [ime, setIME] = useState<boolean>(false);
   const [changed, setChanged] = useState(false);
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
-  // [startElementIndex, startOffset, endElementIndex, endOffset]
+  // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
   const [selectedVar, setSelectedVar] = useState<string[]>([]);
 
   useEffect(() => {
-    if (changed) {
-      return;
-    }
     setHtml(renderHTML(value ?? '', keyLabelMap));
   }, [value]);
 
   useEffect(() => {
     const { current } = inputRef;
-    if (!current || changed) {
+    if (!current) {
       return;
     }
     const nextRange = new Range();
-    const { lastChild } = current;
-    if (lastChild) {
-      nextRange.setStartAfter(lastChild);
-      nextRange.setEndAfter(lastChild);
-      const nodes = Array.from(current.childNodes);
-      const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
-      setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+    if (changed) {
+      if (range.join() === '-1,0,-1,0') {
+        return;
+      }
+      const sel = window.getSelection?.();
+      if (sel) {
+        const children = Array.from(current.childNodes) as HTMLElement[];
+        if (range[0] === -1) {
+          if (range[1]) {
+            nextRange.setStartAfter(children[range[1] - 1]);
+          }
+        } else {
+          nextRange.setStart(children[range[0]], range[1]);
+        }
+        if (range[2] === -1) {
+          if (range[3]) {
+            nextRange.setEndAfter(children[range[3] - 1]);
+          }
+        } else {
+          nextRange.setEnd(children[range[2]], range[3]);
+        }
+        nextRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(nextRange);
+      }
+    } else {
+      const { lastChild } = current;
+      if (lastChild) {
+        nextRange.setStartAfter(lastChild);
+        nextRange.setEndAfter(lastChild);
+        const nodes = Array.from(current.childNodes);
+        const startElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        const endElementIndex = nextRange.startContainer === current ? -1 : nodes.indexOf(lastChild);
+        setRange([startElementIndex, nextRange.startOffset, endElementIndex, nextRange.endOffset]);
+      }
     }
   }, [html]);
 
@@ -152,30 +245,69 @@ export function TextArea(props) {
 
     current.focus();
 
-    pasteHtml(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+    pasteHTML(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
       range,
     });
 
     setChanged(true);
+    setRange(getCurrentRange(current));
     onChange(getValue(current));
   }
 
   function onInput({ currentTarget }) {
+    if (ime) {
+      return;
+    }
     setChanged(true);
+    setRange(getCurrentRange(currentTarget));
     onChange(getValue(currentTarget));
   }
 
   function onBlur({ currentTarget }) {
-    const sel = window.getSelection?.();
-    if (!sel?.getRangeAt || !sel.rangeCount) {
-      return;
-    }
-    const r = sel.getRangeAt(0);
-    const nodes = Array.from(currentTarget.childNodes);
-    const startElementIndex = nodes.indexOf(r.startContainer);
-    const endElementIndex = nodes.indexOf(r.endContainer);
-    setRange([startElementIndex, r.startOffset, endElementIndex, r.endOffset]);
+    setRange(getCurrentRange(currentTarget));
   }
+
+  function onKeyDown(ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+    }
+    setIME(ev.keyCode === 229);
+    // if (ev.key === 'Control') {
+    //   console.debug(getSelection().getRangeAt(0));
+    // }
+    // if (ev.key === 'Alt') {
+    //   console.debug(getCurrentRange(ev.currentTarget));
+    // }
+  }
+
+  function onPaste(ev) {
+    ev.preventDefault();
+    const input = ev.clipboardData.getData('text/html') || ev.clipboardData.getData('text');
+    const sanitizedHTML = sanitizeHTML(input, {
+      allowedTags: ['span'],
+      allowedAttributes: {
+        span: ['data-variable', 'contenteditable'],
+      },
+      allowedClasses: {
+        span: ['ant-tag', 'ant-tag-*'],
+      },
+      transformTags: {
+        span(tagName, attribs) {
+          return attribs['data-variable'] ? {
+            tagName: tagName,
+            attribs,
+          } : {};
+        }
+      }
+    }).replace(/\n/g, ' ');
+    // ev.clipboardData.setData('text/html', sanitizedHTML);
+    // console.log(input, sanitizedHTML);
+    setChanged(true);
+    pasteHTML(ev.currentTarget, sanitizedHTML);
+    setRange(getCurrentRange(ev.currentTarget));
+    onChange(getValue(ev.currentTarget));
+  }
+
 
   const disabled = props.disabled || form.disabled;
 
@@ -201,11 +333,8 @@ export function TextArea(props) {
       <div
         onInput={onInput}
         onBlur={onBlur}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-          }
-        }}
+        onKeyDown={onKeyDown}
+        onPaste={onPaste}
         className={cx(
           'ant-input',
           { 'ant-input-disabled': disabled },

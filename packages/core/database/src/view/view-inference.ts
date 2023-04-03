@@ -33,7 +33,7 @@ export class ViewFieldInference {
     // @ts-ignore
     return Object.fromEntries(
       Object.entries(columns).map(([name, column]) => {
-        const usage = columnUsage.find((item) => item.column_name === name);
+        const usage = columnUsage[name];
 
         if (usage) {
           const collectionField = (() => {

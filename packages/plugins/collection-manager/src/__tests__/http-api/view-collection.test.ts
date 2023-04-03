@@ -67,6 +67,7 @@ SELECT * FROM numbers;
 
     expect(response.status).toBe(200);
     const data = response.body.data;
+
     if (app.db.options.dialect === 'mysql') {
       expect(data.fields.n.type).toBe('bigInt');
     } else if (app.db.options.dialect == 'postgres') {
