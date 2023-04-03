@@ -1,10 +1,10 @@
-import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import { getConfigurableProperties } from '@nocobase/client';
+import { CollectionOptions } from '@nocobase/database';
 
-export const file: ICollectionTemplate = {
+export const file = {
   name: 'file',
   title: '{{t("File collection")}}',
-  order: 4,
+  order: 3,
   color: 'blue',
   default: {
     createdBy: true,
@@ -117,12 +117,23 @@ export const file: ICollectionTemplate = {
       },
     ],
   },
-  configurableProperties: getConfigurableProperties(
-    'title',
-    'name',
-    'inherits',
-    'category',
-    'fileStorage',
-    'moreOptions',
-  ),
-};
+  configurableProperties: {
+    ...getConfigurableProperties('title', 'name', 'inherits', 'category'),
+    fileStorage: {
+      title: '{{t("File storage")}}',
+      type: 'string',
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-component-props': {
+        defaultValue: 'local',
+        options: [
+          {
+            label: '{{t("Local storage")}}',
+            value: 'local',
+          },
+        ],
+      },
+    },
+    ...getConfigurableProperties('moreOptions'),
+  },
+} as CollectionOptions;

@@ -129,21 +129,6 @@ export const defaultConfigurableProperties = {
       ...moreOptions,
     },
   },
-  fileStorage: {
-    title: '{{t("File storage")}}',
-    type: 'string',
-    'x-decorator': 'FormItem',
-    'x-component': 'Select',
-    'x-component-props': {
-      defaultValue: 'local',
-      options: [
-        {
-          label: '{{t("Local storage")}}',
-          value: 'local',
-        },
-      ],
-    },
-  },
 };
 
 export type DefaultConfigurableKeys =
@@ -157,8 +142,7 @@ export type DefaultConfigurableKeys =
   | 'createdAt'
   | 'updatedAt'
   | 'sortable'
-  | 'moreOptions'
-  | 'fileStorage';
+  | 'moreOptions';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
   const props = {};
