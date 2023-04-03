@@ -28,7 +28,7 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: `t_${uid()}`,
+    name : `t_${uid()}`,
     template: schema.name,
     view: schema.name === 'view',
     category,

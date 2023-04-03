@@ -3,7 +3,6 @@ import { ICollectionTemplate } from './types';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 
-
 export const view: ICollectionTemplate = {
   name: 'view',
   title: '{{t("Connect to database view")}}',
@@ -21,6 +20,16 @@ export const view: ICollectionTemplate = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
+
+    databaseView: {
+      title: '{{t("Connect to database view")}}',
+      type: 'single',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Select',
+      'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
+      'x-disabled': '{{ !createOnly }}',
+    },
     name: {
       type: 'string',
       title: '{{t("Collection name")}}',
@@ -31,22 +40,27 @@ export const view: ICollectionTemplate = {
       'x-validator': 'uid',
       description:
         "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
-    },
-    databaseView: {
-      title: '{{t("Connect to database view")}}',
-      type: 'single',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Select',
-      'x-reactions': ['{{useAsyncDataSource(loadDBViews)}}'],
-      'x-disabled': '{{ !createOnly }}',
+      'x-reactions': {
+        dependencies: ['databaseView'],
+        when: '{{isPG}}',
+        fulfill: {
+          state: {
+            initialValue: '{{$deps[0]&&$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
+          },
+        },
+        otherwise: {
+          state: {
+            value: null,
+          },
+        },
+      },
     },
     schema: {
       type: 'string',
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['databaseView'],
-        when: "{{isPG}}",
+        when: '{{isPG}}',
         fulfill: {
           state: {
             value: "{{$deps[0].split('_')?.[0]}}",
@@ -64,7 +78,7 @@ export const view: ICollectionTemplate = {
       'x-hidden': true,
       'x-reactions': {
         dependencies: ['databaseView'],
-        when: "{{isPG}}",
+        when: '{{isPG}}',
         fulfill: {
           state: {
             value: '{{$deps[0].match(/^([^_]+)_(.*)$/)?.[2]}}',
@@ -106,7 +120,7 @@ export const view: ICollectionTemplate = {
       'x-visible': '{{ createOnly }}',
       'x-component': PreviewTable,
       'x-reactions': {
-        dependencies: ['name','fields'],
+        dependencies: ['name', 'fields'],
         fulfill: {
           schema: {
             'x-component-props': '{{$form.values}}', //任意层次属性都支持表达式
