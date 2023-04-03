@@ -47,7 +47,7 @@ export const PreviewTable = (props) => {
         const fieldSource = typeof item?.source === 'string' ? item?.source?.split('.') : item?.source;
         const sourceField = getCollection(fieldSource?.[0])?.fields.find((v) => v.name === fieldSource?.[1])?.uiSchema
           ?.title;
-        const target = sourceField || item?.uiSchema?.title || item.name;
+        const target = item?.uiSchema?.title || sourceField || item.name;
         const schema: any = item.source
           ? getCollectionField(typeof item.source === 'string' ? item.source : item.source.join('.'))?.uiSchema
           : getInterface(item.interface)?.default?.uiSchema;
