@@ -2,15 +2,19 @@ import { Database } from '@nocobase/database';
 
 export function beforeCreateForViewCollection(db: Database) {
   return async (model, { transaction, context }) => {
-    if (model.get('viewSQL')) {
-      const name = model.get('name');
-      const sql = model.get('viewSQL');
+    if (!model.get('view')) {
+      return;
+    }
 
-      await db.sequelize.query(`CREATE OR REPLACE VIEW "${name}" AS ${sql}`, {
-        transaction,
-      });
+    const name = model.get('name');
+    const exists = await db.getRepository('collections').count({
+      filterByTk: name,
+    });
 
-      model.set('viewName', name);
+    if (exists) {
+      const prefix = model.get('schema') || 'public';
+      const viewName = `${prefix}_${name}`;
+      model.set('name', viewName);
     }
   };
 }
