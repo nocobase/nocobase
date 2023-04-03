@@ -6,7 +6,7 @@ const { defaultProps } = interfacesProperties;
 
 export default {
   name: 'expression',
-  type: 'object',
+  type: 'string',
   group: 'advanced',
   order: 1,
   title: `{{t("Dynamic expression", { ns: "${NAMESPACE}" })}}`,
@@ -14,9 +14,9 @@ export default {
   sortable: true,
   default: {
     type: 'expression',
+    title: '{{t("Expression")}}',
     uiSchema: {
-      type: 'object',
-      // title,
+      type: 'string',
       'x-component': 'DynamicExpression',
     },
   },

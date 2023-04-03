@@ -1,45 +1,28 @@
-import React from "react";
-import { Field, onFieldValueChange } from '@formily/core';
-import { connect, useForm, useField, useFormEffects, observer, Schema, RecursionField, mapReadPretty } from '@formily/react';
-import { FormLayout } from '@formily/antd';
+import React, { useState } from "react";
+import { onFieldValueChange } from '@formily/core';
+import { observer, connect, useForm, useField, mapReadPretty, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
 
-import { SchemaComponentOptions, useCollectionDataSource, useCollectionManager, useCompile, Variable } from "@nocobase/client";
+import { useCompile, Variable } from "@nocobase/client";
 
 import { NAMESPACE } from "../locale";
-import { getOptions } from "@nocobase/evaluators/client";
+import { useCollectionFieldOptions } from "../variable";
 
 
 
-const InternalDynamicExpression = observer<any>((props) => {
+const InternalExpression = observer((props: any) => {
   const { value, onChange } = props;
-  const compile = useCompile();
-  const { getValuesIn } = useForm();
-  const { address } = useField();
-  const { segments } = address.parent();
-  const current = segments[segments.length - 1];
-  const collection = getValuesIn([current, 'collection']);
-  console.log('-------', collection);
+  const [collection, setCollection] = useState(null);
 
-  const { interfaces, getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(collection)
-    .filter(field => field.name !== current);
-  const options: any[] = [];
-  fields.forEach(field => {
-    if (field.type === 'belongsTo') {
-      options.push({
-        label: `${compile(field.uiSchema?.title || field.name)} ID`,
-        value: field.foreignKey,
-      });
-    }
-    options.push({
-      label: compile(field.uiSchema?.title),
-      value: field.name,
-      children: interfaces[field.interface]?.usePathOptions?.(field)
+  useFormEffects(() => {
+    onFieldValueChange('sourceCollection', (f) => {
+      setCollection(f.value);
+      onChange(null);
     });
   });
+
+  const options = useCollectionFieldOptions({ collection });
 
   return (
     <Variable.TextArea
@@ -50,87 +33,11 @@ const InternalDynamicExpression = observer<any>((props) => {
   );
 });
 
-function Config() {
-  const field = useField<Field>();
-  const { setValuesIn, getValuesIn } = useForm();
-  const form = useForm();
-  const currentPath = field.address.segments[field.address.segments.length - 1];
-
-  useFormEffects(() => {
-    onFieldValueChange(field.address.concat('collection'), (f) => {
-      console.log('----', f);
-      setValuesIn([currentPath, 'expression'], null);
-    });
-  });
-
-  return (
-    <FormLayout layout="horizontal" className={css`
-      .ant-formily-item-label{
-        line-height: 32px;
-      }
-    `}>
-      <SchemaComponentOptions scope={{ useCollectionDataSource }} components={{ InternalDynamicExpression }}>
-        <RecursionField
-          onlyRenderProperties
-          schema={new Schema({
-            properties: {
-              engine: {
-                type: 'string',
-                title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Radio.Group',
-                enum: getOptions(),
-                default: 'math.js',
-              },
-              collection: {
-                type: 'string',
-                title: '{{t("Collection")}}',
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': 'Select',
-                'x-component-props': {
-                  placeholder: '{{t("Select collection")}}'
-                },
-                'x-reactions': [
-                  '{{useCollectionDataSource()}}',
-                  // {
-                  //   target: 'expression',
-                  //   effects: ['onFieldValueChange'],
-                  //   fulfill: {
-                  //     state: {
-                  //       value: null,
-                  //     }
-                  //   }
-                  // }
-                ],
-              },
-              expression: {
-                type: 'string',
-                title: '{{t("Expression")}}',
-                required: true,
-                'x-component': 'InternalDynamicExpression',
-                'x-decorator': 'FormItem',
-              }
-            }
-          })}
-        />
-      </SchemaComponentOptions>
-    </FormLayout>
-  );
-}
-
-type Value = {
-  engine?: string;
-  collection?: string;
-  expression?: string;
-};
-
-function Result({ value }: { value: Value }) {
-  const { collection, expression } = value ?? {};
+function Result({ value }) {
   const { t } = useTranslation();
-  return collection && expression
+  return value
     ? <Tag color="purple">{t('Expression')}</Tag>
     : <Tag>{t('Unconfigured', { ns: NAMESPACE })}</Tag>;
 }
 
-export const DynamicExpression = connect(Config, mapReadPretty(Result));
+export const DynamicExpression = connect(InternalExpression, mapReadPretty(Result));

@@ -10,6 +10,6 @@ export interface ExpressionFieldOptions extends BaseFieldOptions {
 
 export class ExpressionField extends Field {
   get dataType() {
-    return DataTypes.JSON;
+    return DataTypes.TEXT;
   }
 }

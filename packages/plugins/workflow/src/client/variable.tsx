@@ -99,12 +99,15 @@ export function useWorkflowVariableOptions() {
 
 function useCollectionNormalFields(collection) {
   const { getCollectionFields } = useCollectionManager();
+  if (!collection) {
+    return [];
+  }
   const fields = getCollectionFields(collection);
   return fields.filter(field => field.interface);
 }
 
-export function useCollectionFieldOptions(options, depth = 1): VariableOption[] {
-  const { fields, collection, types } = options;
+export function useCollectionFieldOptions(options): VariableOption[] {
+  const { fields, collection, types, depth = 1 } = options;
   const compile = useCompile();
   const result: VariableOption[] = [];
   filterTypedFields((fields ?? useCollectionNormalFields(collection)), types)
@@ -122,7 +125,7 @@ export function useCollectionFieldOptions(options, depth = 1): VariableOption[] 
         key: field.name,
         value: field.name,
         children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && depth > 0
-          ? useCollectionFieldOptions({ collection: field.target, types }, depth - 1)
+          ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
           : null
       });
     });

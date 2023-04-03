@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Card } from 'antd';
-import { CollectionManagerContext, PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider, registerField } from '@nocobase/client';
+import { CollectionManagerContext, PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider, registerField, useCollectionDataSource } from '@nocobase/client';
 
 import { WorkflowPage } from './WorkflowPage';
 import { ExecutionPage } from './ExecutionPage';
@@ -19,7 +19,7 @@ import expressionField from './interfaces/expression';
 
 
 
-registerField(expressionField.group, 'expression', expressionField);
+// registerField(expressionField.group, 'expression', expressionField);
 
 export const WorkflowContext = React.createContext({});
 
@@ -90,6 +90,9 @@ export const WorkflowProvider = (props) => {
               WorkflowTodo,
               WorkflowTodoBlockInitializer,
               DynamicExpression
+            }}
+            scope={{
+              useCollectionDataSource
             }}
           >
             <CollectionManagerContext.Provider
