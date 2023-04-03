@@ -27,14 +27,28 @@ export default {
 
       await next();
     },
-    async list(ctx, next) {
+
+    list: async function (ctx, next) {
       const db = ctx.app.db as Database;
       const dbViews = await db.queryInterface.listViews();
-      ctx.body = dbViews.map((dbView) => {
-        return {
-          ...dbView,
-        };
-      });
+
+      const viewCollections = Array.from(db.collections.values()).filter((collection) => collection.isView());
+
+      ctx.body = dbViews
+        .map((dbView) => {
+          return {
+            ...dbView,
+          };
+        })
+        .filter((dbView) => {
+          // if view is connected, skip
+          return !viewCollections.find((collection) => {
+            const viewName = dbView.name;
+            const schema = dbView.schema;
+
+            return collection.options.name === viewName && collection.options.schema === schema;
+          });
+        });
 
       await next();
     },
@@ -46,7 +60,9 @@ export default {
       const limit = 1 * pageSize;
 
       const sql = `SELECT *
-                   FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))} LIMIT ${limit} OFFSET ${offset}`;
+                   FROM ${ctx.app.db.utils.quoteTable(
+                     ctx.app.db.utils.addSchema(filterByTk, schema),
+                   )} LIMIT ${limit} OFFSET ${offset}`;
 
       ctx.body = await ctx.app.db.sequelize.query(sql, { type: 'SELECT' });
       await next();
