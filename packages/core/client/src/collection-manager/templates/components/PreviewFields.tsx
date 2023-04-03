@@ -170,9 +170,7 @@ const PreviewCom = (props) => {
       width: 180,
       render: (text, record, index) => {
         const item = dataSource[index];
-        return item.source ? (
-          record?.uiSchema?.title
-        ) : (
+        return (
           <Input
             defaultValue={record?.uiSchema?.title}
             onChange={(e) => handleFieldChange({ ...item, uiSchema: { title: e.target.value } }, index)}
