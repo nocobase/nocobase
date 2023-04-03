@@ -21,7 +21,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  const { name, sources, viewName, schema } = props;
+  const { name, viewName,sources, schema } = props;
   const { data: fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -47,14 +47,14 @@ const PreviewCom = (props) => {
       });
     });
     setSourceFields(data);
-  }, [sources, name]);
+  }, [sources, viewName]);
 
   useEffect(() => {
-    if (name) {
+    if (viewName) {
       setLoading(true);
       api
         .resource(`dbViews`)
-        .get({ filterByTk: viewName, schema })
+        .get({ filterByTk: name, schema })
         .then(({ data }) => {
           if (data) {
             setLoading(false);

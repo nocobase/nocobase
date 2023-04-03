@@ -21,7 +21,7 @@ export const view: ICollectionTemplate = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
-    name: {
+    viewName: {
       title: '{{t("Connect to database view")}}',
       type: 'single',
       required: true,
@@ -34,7 +34,7 @@ export const view: ICollectionTemplate = {
       type: 'string',
       'x-hidden': true,
       'x-reactions': {
-        dependencies: ['name'],
+        dependencies: ['viewName'],
         when: "{{isPG}}",
         fulfill: {
           state: {
@@ -48,11 +48,11 @@ export const view: ICollectionTemplate = {
         },
       },
     },
-    viewName: {
+    name: {
       type: 'string',
       'x-hidden': true,
       'x-reactions': {
-        dependencies: ['name'],
+        dependencies: ['viewName'],
         when: "{{isPG}}",
         fulfill: {
           state: {
