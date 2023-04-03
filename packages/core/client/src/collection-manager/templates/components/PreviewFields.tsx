@@ -21,7 +21,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  const { name, viewName,sources, schema } = props;
+  const { databaseView, viewName,sources, schema } = props;
   const { data: fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -47,14 +47,14 @@ const PreviewCom = (props) => {
       });
     });
     setSourceFields(data);
-  }, [sources, viewName]);
+  }, [sources, databaseView]);
 
   useEffect(() => {
-    if (viewName) {
+    if (databaseView) {
       setLoading(true);
       api
         .resource(`dbViews`)
-        .get({ filterByTk: name, schema })
+        .get({ filterByTk: viewName, schema })
         .then(({ data }) => {
           if (data) {
             setLoading(false);
@@ -72,7 +72,7 @@ const PreviewCom = (props) => {
           }
         });
     }
-  }, [name]);
+  }, [databaseView]);
 
   const handleFieldChange = (record, index) => {
     dataSource.splice(index, 1, record);
@@ -175,7 +175,7 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            defaultValue={record?.uiSchema?.title}
+            defaultValue={record?.uiSchema?.title||text}
             onChange={(e) =>
               handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
             }
@@ -204,7 +204,7 @@ const PreviewCom = (props) => {
             scroll={{ y: 300 }}
             pagination={false}
             rowClassName="editable-row"
-            key={name}
+            key={viewName}
           />
         </>
       )}

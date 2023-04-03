@@ -28,7 +28,7 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: schema.name !== 'view' ? `t_${uid()}` : null,
+    name: `t_${uid()}`,
     template: schema.name,
     view: schema.name === 'view',
     category,
@@ -194,7 +194,7 @@ const useCreateCollection = (schema?: any) => {
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource, collection } = useResourceContext();
+  const { resource } = useResourceContext();
   return {
     async run() {
       await form.submit();

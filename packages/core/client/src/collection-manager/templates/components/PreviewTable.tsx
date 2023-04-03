@@ -7,7 +7,7 @@ import { useAPIClient } from '../../../api-client';
 import { useCollectionManager } from '../../hooks/useCollectionManager';
 
 export const PreviewTable = (props) => {
-  const { name, schema, viewName, fields } = props;
+  const { databaseView, schema, viewName, fields } = props;
   const [previewColumns, setPreviewColumns] = useState([]);
   const [previewData, setPreviewData] = useState([]);
   const compile = useCompile();
@@ -17,10 +17,10 @@ export const PreviewTable = (props) => {
   const { t } = useTranslation();
   const form = useForm();
   useEffect(() => {
-    if (viewName) {
+    if (databaseView) {
       getPreviewData();
     }
-  }, [viewName]);
+  }, [databaseView]);
 
   useEffect(() => {
     const pColumns = formatPreviewColumns(fields);
@@ -31,7 +31,7 @@ export const PreviewTable = (props) => {
     setLoading(true);
     api
       .resource(`dbViews`)
-      .query({ filterByTk: name, schema })
+      .query({ filterByTk: viewName, schema })
       .then(({ data }) => {
         if (data) {
           setLoading(false);
@@ -96,7 +96,7 @@ export const PreviewTable = (props) => {
             columns={previewColumns}
             dataSource={previewData}
             scroll={{ x: 1000, y: 300 }}
-            key={name}
+            key={viewName}
           />,
         ]}
       </div>

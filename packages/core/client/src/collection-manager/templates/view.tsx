@@ -21,7 +21,18 @@ export const view: ICollectionTemplate = {
       'x-decorator': 'FormItem',
       'x-component': 'Input',
     },
-    viewName: {
+    name: {
+      type: 'string',
+      title: '{{t("Collection name")}}',
+      required: true,
+      'x-disabled': '{{ !createOnly }}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+      'x-validator': 'uid',
+      description:
+        "{{t('Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.')}}",
+    },
+    databaseView: {
       title: '{{t("Connect to database view")}}',
       type: 'single',
       required: true,
@@ -34,7 +45,7 @@ export const view: ICollectionTemplate = {
       type: 'string',
       'x-hidden': true,
       'x-reactions': {
-        dependencies: ['viewName'],
+        dependencies: ['databaseView'],
         when: "{{isPG}}",
         fulfill: {
           state: {
@@ -48,11 +59,11 @@ export const view: ICollectionTemplate = {
         },
       },
     },
-    name: {
+    viewName: {
       type: 'string',
       'x-hidden': true,
       'x-reactions': {
-        dependencies: ['viewName'],
+        dependencies: ['databaseView'],
         when: "{{isPG}}",
         fulfill: {
           state: {
