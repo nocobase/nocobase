@@ -47,7 +47,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
         style={{ ...ellipsisDefaultStyle }}
         onMouseEnter={(e) => {
           const el = e.target as any;
-          setEllipsis(el.scrollWidth > el.clientWidth);
+          setEllipsis(el.scrollWidth >= el.clientWidth);
         }}
       >
         {props.children}

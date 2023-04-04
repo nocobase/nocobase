@@ -5,6 +5,7 @@ import { Tag } from 'antd';
 import React from 'react';
 import { useCompile } from '../../hooks';
 import { defaultFieldNames, getCurrentOptions } from './shared';
+import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type Composed = {
   Select?: React.FC<any>;
@@ -24,13 +25,16 @@ export const ReadPretty = observer((props: any) => {
   }
   const dataSource = field.dataSource || props.options || [];
   const options = getCurrentOptions(field.value, dataSource, fieldNames);
+
   return (
     <div>
-      {options.map((option, key) => (
-        <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-          {compile(option[fieldNames.label])}
-        </Tag>
-      ))}
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>
+        {options.map((option, key) => (
+          <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
+            {compile(option[fieldNames.label])}
+          </Tag>
+        ))}
+      </EllipsisWithTooltip>
     </div>
   );
 });

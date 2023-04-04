@@ -47,6 +47,7 @@ const useTableColumns = () => {
         sorter: s['x-component-props']?.['sorter'],
         width: 200,
         ...s['x-component-props'],
+        ellipsis: true,
         render: (v, record) => {
           const index = field.value?.indexOf(record);
           return (
