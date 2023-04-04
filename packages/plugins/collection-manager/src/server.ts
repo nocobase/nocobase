@@ -11,7 +11,7 @@ import {
   afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
-  beforeInitOptions
+  beforeInitOptions,
 } from './hooks';
 
 import { InheritedCollection } from '@nocobase/database';
@@ -277,16 +277,22 @@ export class CollectionManagerPlugin extends Plugin {
       for (const field of castArray(fields)) {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
+          // find original field
           const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
 
           const newOptions = {};
+
+          // write original field options
           lodash.merge(newOptions, collectionField.options);
+
+          // merge with current field options
           lodash.mergeWith(newOptions, field.get(), (objValue, srcValue) => {
             if (srcValue === null) {
               return objValue;
             }
           });
 
+          // set final options
           field.set('options', newOptions);
         }
       }
