@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Dropdown, Menu, Button } from 'antd';
@@ -7,6 +7,9 @@ import { observer } from '@formily/react';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
 import { ActionContext, useCompile, useActionContext } from '../../schema-component';
 import { useRecordPkValue, useACLRolesCheck } from '../../acl/ACLProvider';
+import { useRecord } from '../../record-provider';
+import { useDesignable } from '../../';
+import { linkageAction } from '../../schema-component/antd/action/utils';
 
 export const actionDesignerCss = css`
   position: relative;
@@ -83,7 +86,7 @@ export const CreateRecordAction = observer((props) => {
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
   const enableChildren = fieldSchema['x-enable-children'] || [];
-  const field = useField();
+  const field: any = useField();
   const componentType = field.componentProps.type || 'primary';
   const { getChildrenCollections } = useCollectionManager();
   const totalChildCollections = getChildrenCollections(collection.name);
@@ -105,8 +108,11 @@ export const CreateRecordAction = observer((props) => {
       return v && actionAclCheck(`${v.name}:create`);
     });
   const [currentCollection, setCurrentCollection] = useState(collection.name);
+  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+  const values = useRecord();
   const ctx = useActionContext();
   const compile = useCompile();
+  const { designable } = useDesignable();
   const menu = (
     <Menu>
       {inheritsCollections.map((option) => {
@@ -124,6 +130,16 @@ export const CreateRecordAction = observer((props) => {
       })}
     </Menu>
   );
+  useEffect(() => {
+    field.linkageProperty = {};
+    linkageRules
+      .filter((k) => !k.disabled)
+      .map((v) => {
+        return v.actions?.map((h) => {
+          linkageAction(h.operator, field, v.condition, values);
+        });
+      });
+  }, [linkageRules, values]);
   return (
     <div className={actionDesignerCss}>
       <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
@@ -147,11 +163,16 @@ export const CreateRecordAction = observer((props) => {
         ) : (
           <Button
             type={componentType}
+            disabled={field.disabled}
             danger={componentType === 'danger'}
             icon={<PlusOutlined />}
             onClick={(info) => {
               setVisible(true);
               setCurrentCollection(collection.name);
+            }}
+            style={{
+              display: !designable && field?.data?.hidden && 'none',
+              opacity: designable && field?.data?.hidden && 0.1,
             }}
           >
             {props.children}
@@ -165,10 +186,3 @@ export const CreateRecordAction = observer((props) => {
   );
 });
 
-// export const CreateRecordAction = observer((props: any) => {
-//   return (
-//     <Action {...props} component={CreateAction}>
-//       {props.children}
-//     </Action>
-//   );
-// });

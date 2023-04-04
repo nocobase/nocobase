@@ -81,7 +81,7 @@ export const linkageAction = (operator, field, condition, values) => {
       }
       field.linkageProperty = {
         ...field.linkageProperty,
-        required: displayResult,
+        display: displayResult,
       };
       field.display = last(displayResult);
       break;
@@ -100,7 +100,7 @@ export const linkageAction = (operator, field, condition, values) => {
       }
       field.linkageProperty = {
         ...field.linkageProperty,
-        required: disableResult,
+        disabled: disableResult,
       };
       field.disabled = last(disableResult);
       break;
@@ -110,7 +110,7 @@ export const linkageAction = (operator, field, condition, values) => {
       }
       field.linkageProperty = {
         ...field.linkageProperty,
-        required: disableResult,
+        disabled: disableResult,
       };
       field.disabled = last(disableResult);
       break;
