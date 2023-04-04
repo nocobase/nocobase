@@ -43,12 +43,14 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       addFilter[this.associationField.targetKey] = options.filterByTk;
     }
 
-    return await targetRepository.find({
-      ...omit(options, ['filterByTk']),
+    const findOptions = {
+      ...omit(options, ['filterByTk', 'where', 'values', 'attributes']),
       filter: {
         $and: [options.filter || {}, addFilter],
       },
-    });
+    };
+
+    return await targetRepository.find(findOptions);
   }
 
   @transaction((args, transaction) => {

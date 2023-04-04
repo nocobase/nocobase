@@ -673,6 +673,7 @@ describe('collections repository', () => {
       filterByTk: 'a',
       values: {
         key: C.key,
+        collectionName: 'c',
         uiSchema: {
           title: 'c-hello-world',
         },
