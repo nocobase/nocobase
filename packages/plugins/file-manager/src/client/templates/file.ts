@@ -148,6 +148,5 @@ export const file = {
       'x-component': 'Select',
       'x-reactions': ['{{useAsyncDataSource(loadStorages)}}'],
     },
-    ...getConfigurableProperties('moreOptions'),
   },
 } as CollectionOptions;
