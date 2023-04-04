@@ -14,7 +14,7 @@ const schema = {
       type: 'string',
       title: `编辑模式`,
       'x-decorator': 'FormItem',
-      'x-component': 'Preview.Selector',
+      'x-component': 'Preview',
       'x-component-props': {
         action: 'attachments:upload',
         // multiple: true,
@@ -33,7 +33,7 @@ const schema = {
       title: `阅读模式`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Preview.Selector',
+      'x-component': 'Preview',
       'x-component-props': {
         // multiple: true,
       },

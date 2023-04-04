@@ -57,7 +57,7 @@ const schema = {
         },
       ],
       'x-decorator': 'FormItem',
-      'x-component': 'Preview.Selector',
+      'x-component': 'Preview',
       'x-component-props': {
         action: 'attachments:upload',
         multiple: true,
@@ -86,7 +86,7 @@ const schema = {
       title: `阅读模式`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Preview.Selector',
+      'x-component': 'Preview',
       'x-component-props': {
         multiple: true,
       },
@@ -96,7 +96,7 @@ const schema = {
       title: `小图预览`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Preview.Selector',
+      'x-component': 'Preview',
       'x-component-props': {
         multiple: true,
         size: 'small',

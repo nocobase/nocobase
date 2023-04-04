@@ -8,7 +8,7 @@ import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
-import { Preview } from '../preview';
+import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
@@ -126,7 +126,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   return (
     <div>
       {showFilePicker ? (
-        <Preview.Selector value={options} multiple onSelect={handleSelect} onRemove={handleRemove} />
+        <FileSelector value={options} multiple onSelect={handleSelect} onRemove={handleRemove} />
       ) : (
         <Select
           {...others}
@@ -191,5 +191,5 @@ const Drawer: React.FunctionComponent<{
 };
 
 export function isShowFilePicker(labelUiSchema) {
-  return labelUiSchema?.['x-component'] === 'Preview.Selector';
+  return labelUiSchema?.['x-component'] === 'Preview';
 }

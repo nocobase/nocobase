@@ -22,7 +22,6 @@ export * from './o2o';
 export * from './password';
 export * from './percent';
 export * from './phone';
-export * from './preview';
 export * from './radioGroup';
 export * from './richText';
 export * from './select';
@@ -31,4 +30,5 @@ export * from './textarea';
 export * from './time';
 export * from './updatedAt';
 export * from './updatedBy';
+export * from './url';
 

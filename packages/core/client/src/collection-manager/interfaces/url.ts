@@ -2,17 +2,17 @@ import { ISchema } from '@formily/react';
 import { defaultProps, operators } from './properties';
 import { IField } from './types';
 
-export const preview: IField = {
-  name: 'preview',
+export const url: IField = {
+  name: 'url',
   type: 'string',
   group: 'media',
-  title: '{{t("Preview")}}',
+  title: '{{t("URL")}}',
   default: {
     type: 'string',
     uiSchema: {
       type: 'string',
-      title: '{{t("Preview")}}',
-      'x-component': 'Preview.Selector',
+      title: '{{t("URL")}}',
+      'x-component': 'Input.URL',
       'x-read-pretty': true,
     },
   },

@@ -16,11 +16,11 @@ interface TPreview {
   Selector: React.FC<any>;
 }
 
-export const Preview: TPreview = (props) => {
+export const Preview = connect((props) => {
   return <ReadPretty.File {...props} />;
-};
+}, mapReadPretty(ReadPretty.File));
 
-Preview.Selector = connect((props: any) => {
+export const FileSelector = (props: any) => {
   const { disabled, multiple, value, onRemove, onSelect } = props;
   const [fileList, setFileList] = useState([]);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -174,6 +174,6 @@ Preview.Selector = connect((props: any) => {
       )}
     </div>
   );
-}, mapReadPretty(Preview));
+};
 
 export default Preview;

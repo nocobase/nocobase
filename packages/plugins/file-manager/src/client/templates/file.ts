@@ -86,7 +86,7 @@ export const file = {
       },
       // 文件的可访问地址
       {
-        interface: 'input',
+        interface: 'url',
         type: 'string',
         name: 'url',
         uiSchema: {
@@ -98,16 +98,26 @@ export const file = {
       },
       // 用于预览
       {
-        interface: 'preview',
+        interface: 'url',
         type: 'string',
         name: 'preview',
         field: 'url', // 直接引用 url 字段
         uiSchema: {
           type: 'string',
           title: '{{t("Preview")}}',
-          'x-component': 'Preview.Selector',
+          'x-component': 'Preview',
+          'x-component-props': {
+            'pattern-disable': true,
+          },
           'x-read-pretty': true,
         },
+      },
+      {
+        comment: '存储引擎',
+        type: 'belongsTo',
+        name: 'storage',
+        target: 'storages',
+        foreignKey: 'storageId',
       },
       // '其他文件信息（如图片的宽高）',
       {
