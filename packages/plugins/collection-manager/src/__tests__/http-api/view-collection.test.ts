@@ -47,6 +47,25 @@ SELECT * FROM numbers;
     const response = await agent.resource('dbViews').list();
     expect(response.status).toBe(200);
     expect(response.body.data.find((item) => item.name === testViewName)).toBeTruthy();
+
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: testViewName,
+        view: true,
+        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        fields: [
+          {
+            name: 'numbers',
+            type: 'integer',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const response2 = await agent.resource('dbViews').list();
+    expect(response2.status).toBe(200);
+    expect(response2.body.data.find((item) => item.name === testViewName)).toBeFalsy();
   });
 
   it('should query views data', async () => {
