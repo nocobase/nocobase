@@ -6,7 +6,7 @@ import { Trans, useTranslation } from "react-i18next";
 
 import { Registry } from "@nocobase/utils/client";
 import { Variable, useCompile } from "@nocobase/client";
-import { evaluators, renderReference } from "@nocobase/evaluators/client";
+import { evaluators } from "@nocobase/evaluators/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
@@ -15,6 +15,7 @@ import { branchBlockClass, nodeSubtreeClass } from "../style";
 import { lang, NAMESPACE } from "../locale";
 import { useWorkflowVariableOptions } from "../variable";
 import { RadioWithTooltip, RadioWithTooltipOption } from "../components/RadioWithTooltip";
+import { renderEngineReference } from "../components/renderEngineReference";
 
 interface Calculator {
   name: string;
@@ -380,7 +381,7 @@ export default {
             visible: '{{$deps[0] !== "basic"}}'
           },
           schema: {
-            description: '{{renderReference($deps[0])}}',
+            description: '{{renderEngineReference($deps[0])}}',
           }
         }
       },
@@ -441,7 +442,7 @@ export default {
     )
   },
   scope: {
-    renderReference,
+    renderEngineReference,
     useWorkflowVariableOptions
   },
   components: {

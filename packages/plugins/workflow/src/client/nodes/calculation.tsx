@@ -7,12 +7,13 @@ import { useTranslation } from 'react-i18next';
 import { Radio } from 'antd';
 
 import { SchemaInitializer, SchemaInitializerItemOptions, Variable } from '@nocobase/client';
-import { evaluators, renderReference, Evaluator, getOptions } from '@nocobase/evaluators/client';
+import { evaluators, Evaluator, getOptions } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
 import { TypeSets, useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { renderEngineReference } from '../components/renderEngineReference';
 
 
 
@@ -101,7 +102,7 @@ export default {
           dependencies: ['engine'],
           fulfill: {
             schema: {
-              description: '{{renderReference($deps[0])}}',
+              description: '{{renderEngineReference($deps[0])}}',
             }
           }
         },
@@ -131,7 +132,7 @@ export default {
   },
   scope: {
     useWorkflowVariableOptions,
-    renderReference
+    renderEngineReference
   },
   components: {
     CalculationResult({ dataSource }) {
