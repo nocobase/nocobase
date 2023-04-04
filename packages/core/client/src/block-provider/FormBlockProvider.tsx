@@ -49,7 +49,7 @@ const InternalFormBlockProvider = (props) => {
   );
 };
 
-const useIsEmptyRecord = () => {
+export const useIsEmptyRecord = () => {
   const record = useRecord();
   const keys = Object.keys(record);
   if (keys.includes('__parent')) {
