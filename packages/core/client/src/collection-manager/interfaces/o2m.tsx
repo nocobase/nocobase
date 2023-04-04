@@ -50,7 +50,7 @@ export const o2m: IField = {
       },
     },
   },
-  availableTypes:['hasMany'],
+  availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
     if (targetCollection?.template === 'file') {
       const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
@@ -180,7 +180,7 @@ export const o2m: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',

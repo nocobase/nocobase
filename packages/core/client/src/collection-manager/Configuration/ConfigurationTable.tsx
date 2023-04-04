@@ -3,6 +3,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import React, { useContext, useRef, useState } from 'react';
 import { CollectionFieldsTable } from '.';
+import { useAPIClient } from '../../api-client';
 import { useCurrentAppInfo } from '../../appInfo';
 import { useRecord } from '../../record-provider';
 import { SchemaComponent, SchemaComponentContext, useCompile } from '../../schema-component';
@@ -11,16 +12,21 @@ import { CollectionCategroriesContext } from '../context';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
-import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
+import { FieldSummary } from './components/FieldSummary';
 import { collectionSchema } from './schemas/collections';
-import { useAPIClient } from '../../api-client';
 
-const useAsyncDataSource = (service: any) => {
+/**
+ * @param service
+ * @param exclude 不需要显示的 collection templates
+ * @returns
+ */
+const useAsyncDataSource = (service: any, exclude?: string[]) => {
   return (field: any, options?: any) => {
     field.loading = true;
-    service(field, options).then(
+    service(field, options, exclude).then(
       action.bound((data: any) => {
+        debugger;
         field.dataSource = data;
         field.loading = false;
       }),
@@ -85,10 +91,21 @@ export const ConfigurationTable = () => {
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
-  const loadCollections = async (field, options) => {
+
+  /**
+   *
+   * @param field
+   * @param options
+   * @param exclude 不需要返回的 collection templates
+   * @returns
+   */
+  const loadCollections = async (field, options, exclude?: string[]) => {
     const { targetScope } = options;
     const isFieldInherits = field.props?.name === 'inherits';
     const filteredItems = collectonsRef.current.filter((item) => {
+      if (exclude?.includes(item.template)) {
+        return false;
+      }
       const isAutoCreateAndThrough = item.autoCreate && item.isThrough;
       if (isAutoCreateAndThrough) {
         return false;
@@ -118,7 +135,7 @@ export const ConfigurationTable = () => {
         const schema = item.schema;
         return {
           label: schema ? `${schema}.${compile(item.name)}` : item.name,
-          value: schema?`${schema}_${item.name}`:item.name 
+          value: schema ? `${schema}_${item.name}` : item.name,
         };
       });
     });
@@ -147,7 +164,7 @@ export const ConfigurationTable = () => {
           useCancelAction,
           interfaces,
           enableInherits: database?.dialect === 'postgres',
-          isPG:database?.dialect === 'postgres',
+          isPG: database?.dialect === 'postgres',
         }}
       />
     </SchemaComponentContext.Provider>

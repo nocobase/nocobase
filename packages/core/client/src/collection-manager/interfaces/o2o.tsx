@@ -117,7 +117,7 @@ export const o2o: IField = {
       },
     },
   },
-  availableTypes:['hasOne'],
+  availableTypes: ['hasOne'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
@@ -182,7 +182,7 @@ export const o2o: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -366,7 +366,7 @@ export const oho: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
