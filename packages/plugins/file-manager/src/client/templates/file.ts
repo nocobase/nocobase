@@ -129,20 +129,14 @@ export const file = {
   },
   configurableProperties: {
     ...getConfigurableProperties('title', 'name', 'inherits', 'category'),
-    fileStorage: {
+    storage: {
       title: '{{t("File storage")}}',
-      type: 'string',
+      type: 'hasOne',
+      name: 'storage',
+      required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Select',
-      'x-component-props': {
-        defaultValue: 'local',
-        options: [
-          {
-            label: '{{t("Local storage")}}',
-            value: 'local',
-          },
-        ],
-      },
+      'x-reactions': ['{{useAsyncDataSource(loadStorages)}}'],
     },
     ...getConfigurableProperties('moreOptions'),
   },

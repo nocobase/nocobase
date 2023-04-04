@@ -40,11 +40,12 @@ export async function middleware(ctx: Context, next: Next) {
   // 3. 无字段时按 storages 表的默认项
   // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
 
+  const collection = ctx.db.getCollection(resourceName);
   const Storage = ctx.db.getCollection('storages');
   let storage;
 
   // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
-  storage = await Storage.repository.findOne({ filter: { default: true } });
+  storage = await Storage.repository.findOne({ filter: { name: collection.options.storage } });
 
   if (associatedName) {
     const AssociatedCollection = ctx.db.getCollection(associatedName);

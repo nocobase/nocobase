@@ -26,7 +26,6 @@ const useAsyncDataSource = (service: any, exclude?: string[]) => {
     field.loading = true;
     service(field, options, exclude).then(
       action.bound((data: any) => {
-        debugger;
         field.dataSource = data;
         field.loading = false;
       }),
@@ -140,6 +139,21 @@ export const ConfigurationTable = () => {
       });
     });
   };
+
+  const loadStorages = async () => {
+    return api
+      .resource('storages')
+      .list()
+      .then(({ data }) => {
+        return data?.data?.map((item: any) => {
+          return {
+            label: compile(item.title),
+            value: item.name,
+          };
+        });
+      });
+  };
+
   const ctx = useContext(SchemaComponentContext);
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
@@ -159,6 +173,7 @@ export const ConfigurationTable = () => {
           loadCollections,
           loadCategories,
           loadDBViews,
+          loadStorages,
           useCurrentFields,
           useNewId,
           useCancelAction,
