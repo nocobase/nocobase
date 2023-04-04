@@ -44,8 +44,12 @@ export async function middleware(ctx: Context, next: Next) {
   const Storage = ctx.db.getCollection('storages');
   let storage;
 
-  // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
-  storage = await Storage.repository.findOne({ filter: { name: collection.options.storage } });
+  // 目前仅 file collection 支持自定义存储引擎
+  if (collection.options.template === 'file') {
+    storage = await Storage.repository.findOne({ filter: { name: collection.options.storage } });
+  } else {
+    storage = await Storage.repository.findOne({ filter: { default: true } });
+  }
 
   if (associatedName) {
     const AssociatedCollection = ctx.db.getCollection(associatedName);
