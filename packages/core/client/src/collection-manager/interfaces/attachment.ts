@@ -22,6 +22,7 @@ export const attachment: IField = {
       },
     },
   },
+  availableTypes:['belongsToMany'],
   schemaInitialize(schema: ISchema, { block }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

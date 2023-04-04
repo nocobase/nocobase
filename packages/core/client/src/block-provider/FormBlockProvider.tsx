@@ -5,7 +5,7 @@ import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { useDesignable } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
@@ -72,7 +72,8 @@ export const FormBlockProvider = (props) => {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (currentCollection.name === collection && !isEmptyRecord) || !currentCollection.name;
+  const createFlag =
+    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'}>
@@ -88,8 +89,20 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
+  const record = useRecord();
+  const { fieldSchema } = useActionContext();
+  const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
-    ctx.form.setInitialValues(ctx.service?.data?.data);
+    if (addChild) {
+      ctx.form?.query('parent').take((field) => {
+        field.disabled = true;
+        field.value = new Proxy({ ...record }, {});
+      });
+    }
+  });
+
+  useEffect(() => {
+    ctx.form?.setInitialValues(ctx.service?.data?.data);
   }, []);
   return {
     form: ctx.form,

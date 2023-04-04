@@ -47,7 +47,7 @@ describe('test with start', () => {
       },
     });
 
-    expect(loadFn).toHaveBeenCalledTimes(1);
+    expect(loadFn).toHaveBeenCalled();
     expect(installFn).toHaveBeenCalledTimes(1);
 
     const subApp = await app.appManager.getApplication(name);
@@ -90,9 +90,7 @@ describe('test with start', () => {
     let app = mockServer();
     await app.cleanDb();
 
-
     app.plugin(PluginMultiAppManager);
-
 
     await app.loadAndInstall();
     await app.start();

@@ -1,7 +1,43 @@
-import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
-import Plugin from '..';
-const pgOnly = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
+import { BelongsToManyRepository, Database } from '@nocobase/database';
+import { MockServer, mockServer, pgOnly } from '@nocobase/test';
+
+pgOnly()('enable plugin', () => {
+  let mainDb: Database;
+  let mainApp: MockServer;
+
+  beforeEach(async () => {
+    const app = mockServer({
+      acl: false,
+      plugins: ['nocobase'],
+    });
+
+    await app.load();
+
+    await app.install({
+      clean: true,
+    });
+
+    mainApp = app;
+
+    mainDb = mainApp.db;
+  });
+
+  afterEach(async () => {
+    await mainApp.destroy();
+  });
+
+  it('should throw error when enable plugin, when multi-app plugin is not enabled', async () => {
+    console.log('enable share collection plugin');
+    let error;
+    try {
+      await mainApp.pm.enable('multi-app-share-collection');
+    } catch (e) {
+      error = e;
+    }
+
+    expect(error.message).toBe('multi-app-share-collection plugin need multi-app-manager plugin enabled');
+  });
+});
 
 pgOnly()('collection sync', () => {
   let mainDb: Database;
@@ -90,6 +126,47 @@ pgOnly()('collection sync', () => {
     expect(userInSub2.get('roles').map((item) => item.name)).toContain(defaultRoleInSub2.name);
   });
 
+  it('should in sub app schema when sub app lazy load', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.appManager.removeApplication('sub1');
+
+    const sub1 = await mainApp.appManager.getApplication('sub1');
+
+    expect(sub1.db.options.schema).toBe('sub1');
+  });
+
+  it('should sync plugin status into lazy load sub app', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.appManager.removeApplication('sub1');
+
+    await mainApp.pm.enable('map');
+
+    const sub1 = await mainApp.appManager.getApplication('sub1');
+
+    await sub1.reload();
+
+    console.log(sub1.pm.plugins);
+    expect(sub1.pm.plugins.get('map').options.enabled).toBeTruthy();
+
+    const sub1MapPlugin = await sub1.db.getRepository('applicationPlugins').findOne({
+      filter: {
+        name: 'map',
+      },
+    });
+
+    expect(sub1MapPlugin.get('enabled')).toBeTruthy();
+  });
+
   it('should sync plugin status between apps', async () => {
     await mainApp.db.getRepository('applications').create({
       values: {
@@ -109,9 +186,9 @@ pgOnly()('collection sync', () => {
 
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeFalsy();
     await mainApp.pm.enable('map');
-
     expect((await getSubAppMapRecord(sub1)).get('enabled')).toBeTruthy();
 
+    // create new app sub2
     await mainApp.db.getRepository('applications').create({
       values: {
         name: 'sub2',
@@ -120,6 +197,7 @@ pgOnly()('collection sync', () => {
 
     const sub2 = await mainApp.appManager.getApplication('sub2');
     expect((await getSubAppMapRecord(sub2)).get('enabled')).toBeTruthy();
+    expect(sub2.pm.plugins.get('map').options.enabled).toBeTruthy();
   });
 
   it('should not sync roles in sub app', async () => {
@@ -373,5 +451,39 @@ pgOnly()('collection sync', () => {
     const mainTestCollection = await mainDb.getCollection('testCollection');
     const sub1TestCollection = await sub1.db.getCollection('testCollection');
     expect(sub1TestCollection.collectionSchema()).toEqual(mainTestCollection.collectionSchema());
+  });
+
+  it('should set collection black list', async () => {
+    await mainApp.db.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'testCollection',
+        fields: [
+          {
+            name: 'testField',
+            type: 'string',
+          },
+        ],
+      },
+    });
+
+    const BlackListRepository = await mainApp.db
+      .getCollection('applications')
+      .repository.relation<BelongsToManyRepository>('collectionBlacklist')
+      .of('sub1');
+
+    const blackList = await BlackListRepository.find();
+
+    expect(blackList.length).toBe(0);
+
+    await BlackListRepository.toggle('testCollection');
+    const blackList1 = await BlackListRepository.find();
+
+    expect(blackList1.length).toBe(1);
   });
 });

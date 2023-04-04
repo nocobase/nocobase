@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties,
+  reverseFieldProperties
 } from './properties';
 import { IField } from './types';
 
@@ -50,6 +50,7 @@ export const m2o: IField = {
       },
     },
   },
+  availableTypes:['belongsTo'],
   schemaInitialize(schema: ISchema, { block, readPretty }) {
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {

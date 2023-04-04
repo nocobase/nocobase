@@ -28,8 +28,9 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: `t_${uid()}`,
+    name: schema.name !== 'view' ? `t_${uid()}` : null,
     template: schema.name,
+    view: schema.name === 'view',
     category,
     ...cloneDeep(schema.default),
   };
@@ -84,7 +85,7 @@ const getSchema = (schema, category, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(),
+                  useAction: () => useCreateCollection(schema),
                 },
               },
             },
@@ -188,17 +189,20 @@ const useDefaultCollectionFields = (values) => {
   return defaults;
 };
 
-const useCreateCollection = () => {
+const useCreateCollection = (schema?: any) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource } = useResourceContext();
+  const { resource, collection } = useResourceContext();
   return {
     async run() {
       await form.submit();
       const values = cloneDeep(form.values);
-      const fields = useDefaultCollectionFields(values);
+      if (schema?.events?.beforeSubmit) {
+        schema.events.beforeSubmit(values);
+      }
+      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
@@ -232,8 +236,15 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const items = templateOptions().map((option) => {
-    return { label: compile(option.title), key: option.name };
+  const collectionTemplates = templateOptions();
+  const items = [];
+  collectionTemplates.forEach((item) => {
+    if (item.divider) {
+      items.push({
+        type: 'divider',
+      });
+    }
+    items.push({ label: compile(item.title), key: item.name });
   });
   const {
     state: { category },

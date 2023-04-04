@@ -1,11 +1,11 @@
-import Database, { IDatabaseOptions } from '@nocobase/database';
-import Application, { AppManager, InstallOptions, Plugin } from '@nocobase/server';
+import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
+import Application, { AppManager, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
 
-export type AppDbCreator = (app: Application) => Promise<void>;
+export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
 
 const defaultDbCreator = async (app: Application) => {
@@ -86,13 +86,6 @@ export class PluginMultiAppManager extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
-  async install(options?: InstallOptions) {
-    // const repo = this.db.getRepository<any>('collections');
-    // if (repo) {
-    //   await repo.db2cm('applications');
-    // }
-  }
-
   beforeLoad() {
     this.db.registerModels({
       ApplicationModel,
@@ -121,39 +114,89 @@ export class PluginMultiAppManager extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    // after application created
     this.db.on('applications.afterCreateWithAssociations', async (model: ApplicationModel, options) => {
       const { transaction } = options;
 
-      await model.registerToMainApp(this.app, {
-        transaction,
-        dbCreator: this.appDbCreator,
+      const subApp = model.registerToMainApp(this.app, {
         appOptionsFactory: this.appOptionsFactory,
       });
+
+      // create database
+      await this.appDbCreator(subApp, transaction);
+
+      // reload subApp plugin
+      await subApp.reload();
+
+      // sync subApp collections
+      await subApp.db.sync();
+
+      // install subApp
+      await subApp.install();
+
+      await subApp.reload();
     });
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await this.app.appManager.removeApplication(model.get('name') as string);
     });
 
-    this.app.appManager.on(
+    // lazy load application
+    // if application not in appManager, load it from database
+    this.app.on(
       'beforeGetApplication',
-      async ({ appManager, name }: { appManager: AppManager; name: string }) => {
-        if (!appManager.applications.has(name)) {
-          const existsApplication = (await this.app.db.getRepository('applications').findOne({
-            filter: {
-              name,
-            },
-          })) as ApplicationModel | null;
+      async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
+        if (appManager.applications.has(name)) {
+          return;
+        }
 
-          if (existsApplication) {
-            await existsApplication.registerToMainApp(this.app, {
-              dbCreator: this.appDbCreator,
-              appOptionsFactory: this.appOptionsFactory,
-            });
-          }
+        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+          filter: {
+            name,
+          },
+        })) as ApplicationModel | null;
+
+        if (!applicationRecord) {
+          return;
+        }
+
+        const subApp = await applicationRecord.registerToMainApp(this.app, {
+          appOptionsFactory: this.appOptionsFactory,
+        });
+
+        // must skip load on upgrade
+        if (!options?.upgrading) {
+          await subApp.load();
         }
       },
     );
+
+    this.app.on('afterUpgrade', async (app, options) => {
+      const cliArgs = options?.cliArgs;
+      const repository = this.db.getRepository('applications');
+      const instances = await repository.find();
+      for (const instance of instances) {
+        const subApp = await this.app.appManager.getApplication(instance.name, {
+          upgrading: true,
+        });
+
+        try {
+          console.log(`${instance.name}: upgrading...`);
+
+          await subApp.upgrade({
+            cliArgs,
+          });
+
+          await subApp.stop({
+            cliArgs,
+          });
+        } catch (error) {
+          console.log(`${instance.name}: upgrade failed`);
+          this.app.logger.error(error);
+          console.error(error);
+        }
+      }
+    });
 
     this.app.resourcer.registerActionHandlers({
       'applications:listPinned': async (ctx, next) => {
@@ -169,7 +212,13 @@ export class PluginMultiAppManager extends Plugin {
     this.app.acl.allow('applications', 'listPinned', 'loggedIn');
 
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.applications`,
+      name: `
+        pm.$;
+        {
+          this.name;
+        }
+      .
+        applications`,
       actions: ['applications:*'],
     });
   }

@@ -1,6 +1,7 @@
 import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
+import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 
 
@@ -313,6 +314,48 @@ describe('workflow > instructions > query', () => {
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result.length).toBe(0);
+    });
+  });
+
+  describe('failOnEmpty', () => {
+    it('failOnEmpty', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'categories',
+          failOnEmpty: true
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
+      const [job] = await execution.getJobs();
+      expect(job.status).toBe(JOB_STATUS.FAILED);
+      expect(job.result).toBe(null);
+    });
+
+    it('failOnEmpty && multiple', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'categories',
+          multiple: true,
+          failOnEmpty: true
+        }
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.FAILED);
+      const [job] = await execution.getJobs();
+      expect(job.result).toMatchObject([]);
     });
   });
 });

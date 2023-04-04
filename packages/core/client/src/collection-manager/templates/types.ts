@@ -9,10 +9,13 @@ export interface ICollectionTemplate {
   order?: number;
   /** 默认配置 */
   default?: CollectionOptions;
+  events?: any;
   /** UI 可配置的 CollectionOptions 参数（添加或编辑的 Collection 表单的字段） */
   configurableProperties?: Record<string, ISchema>;
   /** 当前模板可用的字段类型 */
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
+  /** 是否分割线 */
+  divider?: boolean;
 }
 
 interface AvailableFieldInterfacesInclude {
@@ -22,7 +25,6 @@ interface AvailableFieldInterfacesInclude {
 interface AvailableFieldInterfacesExclude {
   exclude?: any[];
 }
-
 
 interface CollectionOptions {
   /**
@@ -48,4 +50,5 @@ interface CollectionOptions {
   inherits?: string | string[];
   /* 字段列表 */
   fields?: FieldOptions[];
+  [key: string]: any;
 }

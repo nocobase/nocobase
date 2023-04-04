@@ -1,9 +1,9 @@
-import React from "react";
+import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from "../../collection-manager";
-import { createDetailsBlockSchema } from "../utils";
-import { DataBlockInitializer } from "./DataBlockInitializer";
+import { useCollectionManager } from '../../collection-manager';
+import { createDetailsBlockSchema } from '../utils';
+import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const DetailsBlockInitializer = (props) => {
   const { insert } = props;
@@ -15,7 +15,11 @@ export const DetailsBlockInitializer = (props) => {
       componentType={'Details'}
       onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name);
-        const schema = createDetailsBlockSchema({ collection: item.name, rowKey: collection.filterTargetKey || 'id' });
+        const schema = createDetailsBlockSchema({
+          collection: item.name,
+          rowKey: collection.filterTargetKey || 'id',
+          actionInitializers: collection.template !== 'view' && 'DetailsActionInitializers',
+        });
         insert(schema);
       }}
     />

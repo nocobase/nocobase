@@ -1,4 +1,5 @@
 import { Plugin, PluginManager } from '@nocobase/server';
+import fs from 'fs';
 import send from 'koa-send';
 import serve from 'koa-static';
 import isEmpty from 'lodash/isEmpty';
@@ -8,6 +9,32 @@ import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
+
+async function getReadMe(name: string, locale: string) {
+  const packageName = PluginManager.getPackageName(name);
+  const dir = resolve(process.cwd(), 'node_modules', packageName);
+  let file = resolve(dir, `README.${locale}.md`);
+  if (fs.existsSync(file)) {
+    return (await fs.promises.readFile(file)).toString();
+  }
+  file = resolve(dir, `README.md`);
+  return (await fs.promises.readFile(file)).toString();
+}
+
+async function getLang(ctx) {
+  const SystemSetting = ctx.db.getRepository('systemSettings');
+  const systemSetting = await SystemSetting.findOne();
+  const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
+  const currentUser = ctx.state.currentUser;
+  let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
+  if (enabledLanguages.includes(currentUser?.appLang)) {
+    lang = currentUser?.appLang;
+  }
+  if (ctx.request.query.locale) {
+    lang = ctx.request.query.locale;
+  }
+  return lang;
+}
 
 export class ClientPlugin extends Plugin {
   async beforeLoad() {
@@ -27,7 +54,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getLang');
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
-    this.app.acl.allow('plugins', 'getPinned', 'loggedIn');
+    this.app.acl.allow('plugins', '*', 'public');
     const dialect = this.app.db.sequelize.getDialect();
     const locales = require('./locale').default;
     this.app.resource({
@@ -48,21 +75,12 @@ export class ClientPlugin extends Plugin {
             },
             version: await ctx.app.version.get(),
             lang,
+            theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
           };
           await next();
         },
         async getLang(ctx, next) {
-          const SystemSetting = ctx.db.getRepository('systemSettings');
-          const systemSetting = await SystemSetting.findOne();
-          const enabledLanguages: string[] = systemSetting.get('enabledLanguages') || [];
-          const currentUser = ctx.state.currentUser;
-          let lang = enabledLanguages?.[0] || process.env.APP_LANG || 'en-US';
-          if (enabledLanguages.includes(currentUser?.appLang)) {
-            lang = currentUser?.appLang;
-          }
-          if (ctx.request.query.locale) {
-            lang = ctx.request.query.locale;
-          }
+          const lang = await getLang(ctx);
           if (isEmpty(locales[lang])) {
             locales[lang] = {};
           }
@@ -119,6 +137,15 @@ export class ClientPlugin extends Plugin {
             { component: 'SystemSettingsShortcut' },
             { component: 'FileStorageShortcut' },
           ];
+          await next();
+        },
+        async getInfo(ctx, next) {
+          const lang = await getLang(ctx);
+          const { filterByTk } = ctx.action.params;
+          ctx.body = {
+            filterByTk,
+            readMe: await getReadMe(filterByTk, lang),
+          };
           await next();
         },
       },

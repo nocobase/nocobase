@@ -13,7 +13,7 @@ const InternalField: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const { name, interface: interfaceType, uiSchema, defaultValue } = useCollectionField();
   const collectionField = useCollectionField();
-  const component = useComponent(uiSchema?.['x-component']);
+  const component = useComponent(uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
@@ -73,7 +73,6 @@ const InternalField: React.FC = (props) => {
   if (!uiSchema) {
     return null;
   }
-
   return React.createElement(component, props, props.children);
 };
 
@@ -107,7 +106,6 @@ export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const field = fieldSchema?.['x-component-props']?.['field'];
   const { snapshot } = useActionContext();
-
   return (
     <CollectionFieldProvider
       name={fieldSchema.name}

@@ -25,13 +25,15 @@ services:
     networks:
       - nocobase
   postgres:
-    image: postgres:10
+    image: postgres:latest
     restart: always
     networks:
       - nocobase
     command: postgres -c wal_level=logical
     ports:
       - "${DB_POSTGRES_PORT}:5432"
+    volumes:
+      - ./storage/db/postgres/backups:/backups
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}

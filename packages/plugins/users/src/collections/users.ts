@@ -91,5 +91,10 @@ export default {
       unique: true,
       hidden: true,
     },
+    {
+      type: 'json',
+      name: 'systemSettings',
+      defaultValue: {},
+    },
   ],
 } as CollectionOptions;
