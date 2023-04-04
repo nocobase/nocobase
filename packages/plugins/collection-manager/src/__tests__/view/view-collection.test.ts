@@ -53,10 +53,28 @@ describe('view collection', function () {
     const viewCollection = db.getCollection(viewName);
     expect(viewCollection).toBeInstanceOf(ViewCollection);
 
+    let err;
+    try {
+      await collectionRepository.create({
+        values: {
+          name: viewName,
+          view: true,
+          fields: [{ type: 'string', name: 'view_2' }],
+          schema: randomSchema,
+        },
+        context: {},
+      });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeTruthy();
+
     await collectionRepository.create({
       values: {
-        name: viewName,
+        name: `${randomSchema}_${viewName}`,
         view: true,
+        viewName: 'test_view',
         fields: [{ type: 'string', name: 'view_2' }],
         schema: randomSchema,
       },
@@ -64,7 +82,6 @@ describe('view collection', function () {
     });
 
     const otherSchemaView = db.getCollection(`${randomSchema}_${viewName}`);
-    expect(otherSchemaView).toBeInstanceOf(ViewCollection);
     expect(otherSchemaView.options.viewName).toBe(viewName);
     expect(otherSchemaView.options.schema).toBe(randomSchema);
   });
