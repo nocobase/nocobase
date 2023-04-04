@@ -14,6 +14,7 @@ export const file = {
         interface: 'input',
         type: 'string',
         name: 'title',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("Title")}}',
@@ -26,6 +27,7 @@ export const file = {
         interface: 'input',
         type: 'string',
         name: 'filename',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("File name")}}',
@@ -38,6 +40,7 @@ export const file = {
         interface: 'input',
         type: 'string',
         name: 'extname',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("Extension name")}}',
@@ -50,6 +53,7 @@ export const file = {
         interface: 'integer',
         type: 'integer',
         name: 'size',
+        deletable: false,
         uiSchema: {
           type: 'number',
           title: '{{t("Size")}}',
@@ -65,6 +69,7 @@ export const file = {
         interface: 'input',
         type: 'string',
         name: 'mimetype',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("Mime type")}}',
@@ -77,6 +82,7 @@ export const file = {
         interface: 'input',
         type: 'string',
         name: 'path',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("Path")}}',
@@ -89,6 +95,7 @@ export const file = {
         interface: 'url',
         type: 'string',
         name: 'url',
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("URL")}}',
@@ -102,6 +109,7 @@ export const file = {
         type: 'string',
         name: 'preview',
         field: 'url', // 直接引用 url 字段
+        deletable: false,
         uiSchema: {
           type: 'string',
           title: '{{t("Preview")}}',
@@ -118,11 +126,13 @@ export const file = {
         name: 'storage',
         target: 'storages',
         foreignKey: 'storageId',
+        deletable: false,
       },
       // '其他文件信息（如图片的宽高）',
       {
         type: 'jsonb',
         name: 'meta',
+        deletable: false,
         defaultValue: {},
       },
     ],
