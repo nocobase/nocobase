@@ -68,6 +68,8 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async install(options?: InstallOptions) {}
 
+  async beforeEnable() {}
+
   async afterEnable() {}
 
   async afterDisable() {}
