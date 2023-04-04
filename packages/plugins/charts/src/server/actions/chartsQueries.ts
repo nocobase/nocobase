@@ -4,12 +4,17 @@ import { query } from '../query';
 export const getData = async (ctx, next) => {
   const { filterByTk } = ctx.action.params;
   const r = ctx.db.getRepository('chartsQueries');
-  const instance = await r.findOne({ filterByTk });
-  const result = await query[instance.type](instance.options, { db: ctx.db, skipError: true });
-  if (typeof result === 'string') {
-    ctx.body = JSON5.parse(result);
-  } else {
-    ctx.body = result;
+  try {
+    const instance = await r.findOne({ filterByTk });
+    const result = await query[instance.type](instance.options, { db: ctx.db, skipError: true });
+    if (typeof result === 'string') {
+      ctx.body = JSON5.parse(result);
+    } else {
+      ctx.body = result;
+    }
+  } catch (error) {
+    ctx.body = [];
+    ctx.logger.info('chartsQueries', error);
   }
   return next();
 };
