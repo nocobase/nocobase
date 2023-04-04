@@ -177,7 +177,7 @@ describe('workflow > instructions > calculation', () => {
       const n1 = await workflow.createNode({
         type: 'calculation',
         config: {
-          dynamic: '{{$context.data.dexp}}',
+          dynamic: '{{$context.data.category}}',
           scope: '{{$context.data}}',
         }
       });
@@ -185,7 +185,7 @@ describe('workflow > instructions > calculation', () => {
       const post = await PostRepo.create({
         values: {
           title: 't1',
-          dexp: {
+          category: {
             engine: 'math.js',
             expression: '1 + {{read}}',
           }
@@ -217,7 +217,7 @@ describe('workflow > instructions > calculation', () => {
       const n2 = await workflow.createNode({
         type: 'calculation',
         config: {
-          dynamic: `{{$jobsMapByNodeId.${n1.id}.dexp}}`,
+          dynamic: `{{$jobsMapByNodeId.${n1.id}}}`,
           scope: '{{$context.data}}',
         },
         upstreamId: n1.id
@@ -228,10 +228,8 @@ describe('workflow > instructions > calculation', () => {
       const category = await CategoryRepo.create({
         values: {
           title: 'c1',
-          dexp: {
-            engine: 'math.js',
-            expression: '1 + {{read}}',
-          }
+          engine: 'math.js',
+          expression: '1 + {{read}}',
         }
       });
 

@@ -8,8 +8,16 @@ export default {
       name: 'title',
     },
     {
-      type: 'expression',
-      name: 'dexp'
+      type: 'string',
+      name: 'engine'
+    },
+    {
+      type: 'string',
+      name: 'collection'
+    },
+    {
+      type: 'text',
+      name: 'expression'
     }
   ],
 } as CollectionOptions;

@@ -23,7 +23,7 @@ export const expression: ICollectionTemplate = {
           title: '{{t("Calculation engine")}}',
           'x-component': 'Radio.Group',
           enum: getOptions(),
-          required: true
+          default: 'formula.js',
         },
       },
       {
@@ -37,7 +37,6 @@ export const expression: ICollectionTemplate = {
           'x-component-props': {
             multiple: true
           },
-          required: true
         }
       },
       {
@@ -48,7 +47,6 @@ export const expression: ICollectionTemplate = {
           type: 'string',
           title: '{{t("Expression")}}',
           'x-component': 'DynamicExpression',
-          required: true
         }
       }
     ],
