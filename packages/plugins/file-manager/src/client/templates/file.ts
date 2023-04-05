@@ -135,7 +135,12 @@ export const file = {
     ],
   },
   configurableProperties: {
-    ...getConfigurableProperties('title', 'name', 'inherits', 'category'),
+    ...getConfigurableProperties('title', 'name'),
+    inherits: {
+      ...getConfigurableProperties('inherits').inherits,
+      'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+    },
+    ...getConfigurableProperties('category'),
     storage: {
       title: '{{t("File storage")}}',
       type: 'hasOne',
