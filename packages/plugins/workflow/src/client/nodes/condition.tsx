@@ -6,7 +6,7 @@ import { Trans, useTranslation } from "react-i18next";
 
 import { Registry } from "@nocobase/utils/client";
 import { Variable, useCompile } from "@nocobase/client";
-import evaluators, { renderReference } from "@nocobase/evaluators/client";
+import { evaluators, renderReference } from "@nocobase/evaluators/client";
 
 import { NodeDefaultView } from ".";
 import { Branch } from "../Branch";
@@ -363,7 +363,7 @@ export default {
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine);
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' 1 ');
         try {
           evaluate(exp);
           return '';

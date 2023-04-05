@@ -51,6 +51,7 @@ export const m2m: IField = {
       },
     },
   },
+  availableTypes:['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block }) {
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {

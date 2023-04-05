@@ -63,10 +63,13 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
 import DatabaseUtils from './database-utils';
+import { registerBuiltInListeners } from './listeners';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import buildQueryInterface from './query-interface/query-interface-builder';
 import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
+import { CollectionGroupManager } from './collection-group-manager';
+import { ViewCollection } from './view-collection';
 
 export interface MergeOptions extends merge.Options {}
 
@@ -184,6 +187,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   logger: Logger;
 
+  collectionGroupManager = new CollectionGroupManager(this);
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -217,7 +222,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
     this.options = opts;
 
-    this.sequelize = new Sequelize(opts);
+    this.sequelize = new Sequelize(this.sequelizeOptions(this.options));
 
     this.queryInterface = buildQueryInterface(this);
 
@@ -274,7 +279,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       name: 'migrations',
       autoGenId: false,
       timestamps: false,
-      namespace: 'core',
+      namespace: 'core.migration',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
     });
@@ -293,6 +298,17 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.logger = logger;
   }
 
+  sequelizeOptions(options) {
+    if (options.dialect === 'postgres') {
+      options.hooks = {
+        afterConnect: async (connection) => {
+          await connection.query('SET search_path TO public;');
+        },
+      };
+    }
+    return options;
+  }
+
   initListener() {
     this.on('afterConnect', async (client) => {
       if (this.inDialect('postgres')) {
@@ -301,7 +317,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.on('beforeDefine', (model, options) => {
-      if (this.options.underscored) {
+      if (this.options.underscored && options.underscored === undefined) {
         options.underscored = true;
       }
     });
@@ -343,6 +359,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     });
 
     this.on('beforeDefineCollection', (options) => {
+      if (this.options.underscored && options.underscored === undefined) {
+        options.underscored = true;
+      }
+
       if (options.underscored) {
         if (lodash.get(options, 'sortable.scopeKey')) {
           options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
@@ -370,19 +390,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
     this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
       if (dataCollection.isParent()) {
         for (const row of data) {
-          const tableName = findOptions.raw ? row['__tableName'] : row.get('__tableName');
+          const rowCollectionName = this.tableNameCollectionMap.get(
+            findOptions.raw
+              ? `${row['__schemaName']}.${row['__tableName']}`
+              : `${row.get('__schemaName')}.${row.get('__tableName')}`,
+          ).name;
 
-          const rowCollection = this.tableNameCollectionMap.get(tableName);
-
-          if (!rowCollection) {
+          if (!rowCollectionName) {
             throw new Error(
-              `Can not find collection by table name ${tableName}, current collections: ${Array.from(
+              `Can not find collection by table name ${rowCollectionName}, current collections: ${Array.from(
                 this.tableNameCollectionMap.keys(),
               ).join(', ')}`,
             );
           }
-
-          const rowCollectionName = rowCollection.name;
 
           findOptions.raw
             ? (row['__collection'] = rowCollectionName)
@@ -392,6 +412,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         }
       }
     });
+
+    registerBuiltInListeners(this);
   }
 
   addMigration(item: MigrationItem) {
@@ -430,6 +452,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
   collection<Attributes = any, CreateAttributes = Attributes>(
     options: CollectionOptions,
   ): Collection<Attributes, CreateAttributes> {
+    options = lodash.cloneDeep(options);
+
     if (this.options.underscored) {
       options.underscored = true;
     }
@@ -440,14 +464,21 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return options.inherits && lodash.castArray(options.inherits).length > 0;
     })();
 
-    const collection = hasValidInheritsOptions
-      ? new InheritedCollection(options, {
-          database: this,
-        })
-      : new Collection(options, {
-          database: this,
-        });
+    const hasViewOptions = options.viewName || options.view;
 
+    const collectionKlass = (() => {
+      if (hasValidInheritsOptions) {
+        return InheritedCollection;
+      }
+
+      if (hasViewOptions) {
+        return ViewCollection;
+      }
+
+      return Collection;
+    })();
+
+    const collection = new collectionKlass(options, { database: this });
     this.collections.set(collection.name, collection);
 
     this.emit('afterDefineCollection', collection);
@@ -622,7 +653,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
-    if (options.field && this.options.underscored) {
+    if (options.field && context.collection.options.underscored) {
       options.field = snakeCase(options.field);
     }
 
@@ -671,7 +702,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    await this.sequelize.getQueryInterface().dropAllTables(others);
+    await this.queryInterface.dropAll(options);
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {

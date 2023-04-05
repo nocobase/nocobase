@@ -62,7 +62,7 @@ export const useValues = () => {
       const s2 = cloneDeep(operator?.schema);
       field.data.schema = merge(s1, s2);
       field.data.dataIndex = dataIndex;
-      field.data.value = null;
+      field.data.value = operator?.noValue ? operator.default || true : null;
       data2value();
     },
     setOperator(operatorValue) {

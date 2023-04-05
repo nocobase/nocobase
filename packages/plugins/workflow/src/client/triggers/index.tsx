@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { css, cx } from "@emotion/css";
 import { ISchema, useForm } from "@formily/react";
 import { Registry } from "@nocobase/utils/client";
@@ -131,6 +131,12 @@ export const TriggerConfig = () => {
   const api = useAPIClient();
   const compile = useCompile();
   const { workflow, refresh } = useFlowContext();
+  const [editingTitle, setEditingTitle] = useState<string>('');
+  const [editingConfig, setEditingConfig] = useState(false);
+  useEffect(() => {
+    setEditingTitle(workflow.title ?? typeTitle);
+  }, [workflow]);
+
   if (!workflow || !workflow.type) {
     return null;
   }
@@ -138,9 +144,6 @@ export const TriggerConfig = () => {
   const { title: typeTitle, fieldset, scope, components } = triggers.get(type);
   const detailText = executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = `${lang('Trigger')}: ${compile(typeTitle)}`;
-
-  const [editingTitle, setEditingTitle] = useState<string>(title ?? typeTitle);
-  const [editingConfig, setEditingConfig] = useState(false);
 
   async function onChangeTitle(next) {
     const t = next || typeTitle;
@@ -164,7 +167,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if (Array.from(el.classList).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
@@ -234,7 +237,7 @@ export const TriggerConfig = () => {
                     'x-component': 'fieldset',
                     'x-component-props': {
                       className: css`
-                        .ant-select{
+                        .ant-select:not(.full-width){
                           width: auto;
                           min-width: 6em;
                         }
@@ -242,28 +245,30 @@ export const TriggerConfig = () => {
                     },
                     properties: fieldset
                   },
-                  actions: executed
-                  ? null
-                  : {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
-                    properties: {
-                      cancel: {
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction: '{{ cm.useCancelAction }}',
+                  actions: {
+                    ...(executed
+                    ? {}
+                    : {
+                      type: 'void',
+                      'x-component': 'Action.Drawer.Footer',
+                      properties: {
+                        cancel: {
+                          title: '{{t("Cancel")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            useAction: '{{ cm.useCancelAction }}',
+                          },
                         },
-                      },
-                      submit: {
-                        title: '{{t("Submit")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction: useUpdateConfigAction
+                        submit: {
+                          title: '{{t("Submit")}}',
+                          'x-component': 'Action',
+                          'x-component-props': {
+                            type: 'primary',
+                            useAction: useUpdateConfigAction
+                          }
                         }
                       }
-                    }
+                    })
                   }
                 }
               }

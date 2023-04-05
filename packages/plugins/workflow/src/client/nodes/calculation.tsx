@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import parse from 'json-templates';
 
 import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
-import evaluators, { renderReference, Evaluator } from '@nocobase/evaluators/client';
+import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
@@ -39,7 +39,7 @@ export default {
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
         const { evaluate } = evaluators.get(values.engine) as Evaluator;
-        const exp = value.trim().replace(/{{([^{}]+)}}/g, '1');
+        const exp = value.trim().replace(/{{([^{}]+)}}/g, ' 1 ');
         try {
           evaluate(exp);
           return '';

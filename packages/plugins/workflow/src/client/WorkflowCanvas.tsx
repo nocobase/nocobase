@@ -141,22 +141,21 @@ export function WorkflowCanvas() {
                   onClick={onSwitchVersion}
                   defaultSelectedKeys={[`${workflow.id}`]}
                   className={cx(workflowVersionDropdownClass)}
-                >
-                  {revisions.sort((a, b) => b.id - a.id).map((item, index) => (
-                    <Menu.Item
-                      key={`${item.id}`}
-                      icon={item.current ? <RightOutlined /> : null}
-                      className={classnames({
+                  items={revisions.sort((a, b) => b.id - a.id).map((item, index) => ({
+                    key: `${item.id}`,
+                    icon: item.current ? <RightOutlined /> : null,
+                    label: (
+                      <span className={classnames({
                         executed: item.executed,
                         unexecuted: !item.executed,
                         enabled: item.enabled,
-                      })}
-                    >
-                      <strong>{`#${item.id}`}</strong>
-                      <time>{(new Date(item.createdAt)).toLocaleString()}</time>
-                    </Menu.Item>
-                  ))}
-                </Menu>
+                      })}>
+                        <strong>{`#${item.id}`}</strong>
+                        <time>{(new Date(item.createdAt)).toLocaleString()}</time>
+                      </span>
+                    )
+                  }))}
+                />
               }
             >
               <Button type="text">
@@ -198,7 +197,7 @@ export function WorkflowCanvas() {
         <div className={branchBlockClass}>
           <Branch entry={entry} />
         </div>
-        <div className={cx(nodeCardClass)}>
+        <div className={cx('end', nodeCardClass)}>
           <div className={cx(nodeMetaClass)}>
             <Tag color="#333">{lang('End')}</Tag>
           </div>

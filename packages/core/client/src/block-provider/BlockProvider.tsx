@@ -16,6 +16,7 @@ import {
   WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
+import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 
@@ -34,7 +35,7 @@ interface UseResourceProps {
   block?: any;
 }
 
-const useAssociation = (props) => {
+export const useAssociation = (props) => {
   const { association } = props;
   const { getCollectionField } = useCollectionManager();
   if (typeof association === 'string') {
@@ -191,6 +192,7 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
               width: 200px;
               flex: 0 0 auto;
             `}
+            style={props.associationFilterStyle}
           >
             <RecursionField
               schema={fieldSchema}
@@ -233,7 +235,9 @@ export const BlockProvider = (props) => {
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
           <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props} />
+            <SharedFilterProvider {...props}>
+              <FilterBlockRecord {...props}>{props.children}</FilterBlockRecord>
+            </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>
       </BlockAssociationContext.Provider>
@@ -288,9 +292,27 @@ export const useSourceIdFromParentRecord = () => {
 
 export const useParamsFromRecord = () => {
   const filterByTk = useFilterByTk();
-  return {
+  const record = useRecord();
+  const { fields } = useCollection();
+  const filterFields = fields
+    .filter((v) => {
+      return ['boolean', 'date', 'integer', 'radio', 'sort', 'string', 'time', 'uid', 'uuid'].includes(v.type);
+    })
+    .map((v) => v.name);
+  const filter = Object.keys(record)
+    .filter((key) => filterFields.includes(key))
+    .reduce((result, key) => {
+      result[key] = record[key];
+      return result;
+    }, {});
+
+  const obj = {
     filterByTk: filterByTk,
   };
+  if (!filterByTk) {
+    obj['filter'] = filter;
+  }
+  return obj;
 };
 
 export const RecordLink = (props) => {

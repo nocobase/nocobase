@@ -375,7 +375,7 @@ export function NodeDefaultView(props) {
               type: 'void',
               properties: {
                 ...(instruction.view ? { view: instruction.view } : {}),
-                config: {
+                button: {
                   type: 'void',
                   'x-content': detailText,
                   'x-component': Button,
@@ -426,8 +426,10 @@ export function NodeDefaultView(props) {
                           .ant-picker,
                           .ant-input-number,
                           .ant-input-affix-wrapper{
-                            width: auto;
-                            min-width: 6em;
+                            &:not(.full-width){
+                              width: auto;
+                              min-width: 6em;
+                            }
                           }
                         `
                       },

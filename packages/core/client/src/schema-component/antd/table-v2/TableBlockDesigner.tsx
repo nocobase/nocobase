@@ -4,22 +4,26 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
-import { useFixedBlockDesignerSetting } from '../page';
+import { removeNullCondition } from '../filter';
+import { FixedBlockDesignerItem } from '../page';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
+  const { getCollectionField } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
   const sortFields = useSortFields(name);
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn } = useDesignable();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
@@ -36,12 +40,32 @@ export const TableBlockDesigner = () => {
         };
   });
   const template = useSchemaTemplate();
-  const { dragSort } = field.decoratorProps;
-  const fixedBlockDesignerSetting = useFixedBlockDesignerSetting();
-
+  const collection = useCollection();
+  const { dragSort, resource } = field.decoratorProps;
+  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
+      {collection?.tree && (
+        <SchemaSettings.SwitchItem
+          title={t('Tree table')}
+          defaultChecked={true}
+          checked={treeChildren ? field.decoratorProps.treeTable !== false : false}
+          onChange={(flag) => {
+            field.decoratorProps.treeTable = flag;
+            fieldSchema['x-decorator-props'].treeTable = flag;
+            const params = {
+              ...service.params?.[0],
+              tree: flag ? true : null,
+            };
+            dn.emit('patch', {
+              schema: fieldSchema,
+            });
+            dn.refresh();
+            service.run(params);
+          }}
+        />
+      )}
       {sortable && (
         <SchemaSettings.SwitchItem
           title={t('Enable drag and drop sorting')}
@@ -59,7 +83,7 @@ export const TableBlockDesigner = () => {
           }}
         />
       )}
-      {fixedBlockDesignerSetting}
+      <FixedBlockDesignerItem />
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
@@ -72,12 +96,15 @@ export const TableBlockDesigner = () => {
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
-                'x-component-props': {},
+                'x-component-props': {
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                },
               },
             },
           } as ISchema
         }
         onSubmit={({ filter }) => {
+          filter = removeNullCondition(filter);
           const params = field.decoratorProps.params || {};
           params.filter = filter;
           field.decoratorProps.params = params;
@@ -212,6 +239,7 @@ export const TableBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       {supportTemplate && <SchemaSettings.Divider />}
       {supportTemplate && (
         <SchemaSettings.Template componentName={'Table'} collectionName={name} resourceName={defaultResource} />

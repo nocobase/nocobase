@@ -14,6 +14,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { collectionSchema } from './schemas/collections';
+import { useAPIClient } from '../../api-client';
 
 const useAsyncDataSource = (service: any) => {
   return (field: any, options?: any) => {
@@ -77,23 +78,32 @@ export const ConfigurationTable = () => {
   const {
     data: { database },
   } = useCurrentAppInfo();
+
   const data = useContext(CollectionCategroriesContext);
+  const api = useAPIClient();
+  const resource = api.resource('dbViews');
   const collectonsRef: any = useRef();
   collectonsRef.current = collections;
   const compile = useCompile();
   const loadCollections = async (field, options) => {
     const { targetScope } = options;
-    return collectonsRef.current
-      ?.filter((item) => !(item.autoCreate && item.isThrough))
-      .filter((item) =>
-        targetScope
-          ? targetScope['template']?.includes(item.template) || targetScope[field.props.name]?.includes(item.name)
-          : true,
-      )
-      .map((item: any) => ({
-        label: compile(item.title),
-        value: item.name,
-      }));
+    const isFieldInherits = field.props?.name === 'inherits';
+    const filteredItems = collectonsRef.current.filter((item) => {
+      const isAutoCreateAndThrough = item.autoCreate && item.isThrough;
+      if (isAutoCreateAndThrough) {
+        return false;
+      }
+      if (isFieldInherits && item.template === 'view') {
+        return false;
+      }
+      const templateIncluded = !targetScope?.template || targetScope.template.includes(item.template);
+      const nameIncluded = !targetScope?.[field.props?.name] || targetScope[field.props.name].includes(item.name);
+      return templateIncluded && nameIncluded;
+    });
+    return filteredItems.map((item) => ({
+      label: compile(item.title),
+      value: item.name,
+    }));
   };
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
@@ -101,31 +111,45 @@ export const ConfigurationTable = () => {
       value: item.id,
     }));
   };
+
+  const loadDBViews = async () => {
+    return resource.list().then(({ data }) => {
+      return data?.data?.map((item: any) => {
+        const schema = item.schema;
+        return {
+          label: schema ? `${schema}.${compile(item.name)}` : item.name,
+          value: schema?`${schema}_${item.name}`:item.name 
+        };
+      });
+    });
+  };
   const ctx = useContext(SchemaComponentContext);
   return (
-      <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-        <SchemaComponent
-          schema={collectionSchema}
-          components={{
-            AddSubFieldAction,
-            EditSubFieldAction,
-            FieldSummary,
-            CollectionFieldsTable,
-          }}
-          scope={{
-            useDestroySubField,
-            useBulkDestroySubField,
-            useSelectedRowKeys,
-            useAsyncDataSource,
-            loadCollections,
-            loadCategories,
-            useCurrentFields,
-            useNewId,
-            useCancelAction,
-            interfaces,
-            enableInherits: database?.dialect === 'postgres',
-          }}
-        />
-      </SchemaComponentContext.Provider>
+    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+      <SchemaComponent
+        schema={collectionSchema}
+        components={{
+          AddSubFieldAction,
+          EditSubFieldAction,
+          FieldSummary,
+          CollectionFieldsTable,
+        }}
+        scope={{
+          useDestroySubField,
+          useBulkDestroySubField,
+          useSelectedRowKeys,
+          useAsyncDataSource,
+          loadCollections,
+          loadCategories,
+          loadDBViews,
+          useCurrentFields,
+          useNewId,
+          useCancelAction,
+          interfaces,
+          enableInherits: database?.dialect === 'postgres',
+          isPG:database?.dialect === 'postgres',
+        }}
+      />
+    </SchemaComponentContext.Provider>
   );
 };

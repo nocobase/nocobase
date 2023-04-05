@@ -1,6 +1,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -30,6 +30,7 @@ const getSchema = (schema, category, compile): ISchema => {
   const initialValue: any = {
     name: `t_${uid()}`,
     template: schema.name,
+    view: schema.name === 'view',
     category,
     ...cloneDeep(schema.default),
   };
@@ -84,7 +85,7 @@ const getSchema = (schema, category, compile): ISchema => {
                 'x-component': 'Action',
                 'x-component-props': {
                   type: 'primary',
-                  useAction: () => useCreateCollection(),
+                  useAction: () => useCreateCollection(schema),
                 },
               },
             },
@@ -188,17 +189,23 @@ const useDefaultCollectionFields = (values) => {
   return defaults;
 };
 
-const useCreateCollection = () => {
+const useCreateCollection = (schema?: any) => {
   const form = useForm();
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const field = useField();
   return {
     async run() {
+      field.data = field.data || {};
+      field.data.loading = true;
       await form.submit();
       const values = cloneDeep(form.values);
-      const fields = useDefaultCollectionFields(values);
+      if (schema?.events?.beforeSubmit) {
+        schema.events.beforeSubmit(values);
+      }
+      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
       if (values.autoCreateReverseField) {
       } else {
         delete values.reverseField;
@@ -214,6 +221,7 @@ const useCreateCollection = () => {
       });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
       await refreshCM();
     },
@@ -232,8 +240,15 @@ export const AddCollectionAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const items = templateOptions().map((option) => {
-    return { label: compile(option.title), key: option.name };
+  const collectionTemplates = templateOptions();
+  const items = [];
+  collectionTemplates.forEach((item) => {
+    if (item.divider) {
+      items.push({
+        type: 'divider',
+      });
+    }
+    items.push({ label: compile(item.title), key: item.name });
   });
   const {
     state: { category },

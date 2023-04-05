@@ -276,9 +276,9 @@ export const workflowSchema: ISchema = {
                         type: 'primary',
                       },
                       properties: {
-                        modal: {
+                        drawer: {
                           type: 'void',
-                          'x-component': 'Action.Modal',
+                          'x-component': 'Action.Drawer',
                           'x-decorator': 'Form',
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
@@ -299,7 +299,7 @@ export const workflowSchema: ISchema = {
                             },
                             footer: {
                               type: 'void',
-                              'x-component': 'Action.Modal.Footer',
+                              'x-component': 'Action.Drawer.Footer',
                               properties: {
                                 cancel: {
                                   title: '{{ t("Cancel") }}',

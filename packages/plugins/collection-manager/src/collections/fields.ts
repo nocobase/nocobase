@@ -1,7 +1,7 @@
 import { CollectionOptions } from '@nocobase/database';
 
 export default {
-  namespace: 'collection-manager',
+  namespace: 'collection-manager.collections',
   duplicator: 'required',
   name: 'fields',
   autoGenId: false,
@@ -58,12 +58,6 @@ export default {
       target: 'fields',
       sourceKey: 'key',
       foreignKey: 'reverseKey',
-    },
-    {
-      type: 'belongsTo',
-      name: 'uiSchema',
-      target: 'uiSchemas',
-      foreignKey: 'uiSchemaUid',
     },
     {
       type: 'json',

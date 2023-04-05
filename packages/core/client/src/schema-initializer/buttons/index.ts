@@ -6,6 +6,7 @@ export * from './CreateFormBulkEditBlockInitializers';
 export * from './CustomFormItemInitializers';
 export * from './DetailsActionInitializers';
 export * from './FormActionInitializers';
+export * from './FilterFormActionInitializers';
 export * from './FormItemInitializers';
 export * from './KanbanActionInitializers';
 export * from './ReadPrettyFormActionInitializers';

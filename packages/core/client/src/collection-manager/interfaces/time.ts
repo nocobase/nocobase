@@ -16,6 +16,7 @@ export const time: IField = {
       'x-component': 'TimePicker',
     },
   },
+  availableTypes: ['time'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

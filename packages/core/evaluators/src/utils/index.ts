@@ -15,13 +15,13 @@ function appendArrayColumn(scope, key) {
     if (Array.isArray(data) && !isIndex && !data[path]) {
       data[path] = data.map(item => item[path]);
     }
-    data = data[path];
+    data = data?.[path];
   }
 }
 
 function replaceNumberIndex(path: string, scope: Scope): string {
   const segments = path.split('.');
-  const paths = [];
+  const paths: string[] = [];
 
   for (let i = 0; i < segments.length; i++) {
     const p = segments[i];
@@ -46,16 +46,18 @@ export function evaluate(this: Evaluator, expression: string, scope: Scope = {})
 
     const item = get(context, v);
 
+    let result;
+
     if (item == null) {
-      return 'null';
+      result = 'null';
+    } else if (typeof item === 'function') {
+      result = item();
+      result = typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
+    } else {
+      result = replaceNumberIndex(v, context);
     }
 
-    if (typeof item === 'function') {
-      const result = item();
-      return typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
-    }
-
-    return replaceNumberIndex(v, context);
+    return ` ${result} `;
   });
   return this(exp, context);
 }

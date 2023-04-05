@@ -1,11 +1,15 @@
-import { useCollectionManager, useCompile } from "@nocobase/client";
+import { useCollectionManager, useCompile } from '@nocobase/client';
+import { useFlowContext } from './FlowContext';
+import { NAMESPACE } from './locale';
+import { instructions, useAvailableUpstreams, useNodeContext } from './nodes';
+import { triggers } from './triggers';
 
-import { instructions, useAvailableUpstreams, useNodeContext } from "./nodes";
-import { useFlowContext } from "./FlowContext";
-import { triggers } from "./triggers";
-import { NAMESPACE } from "./locale";
-
-export type VariableOption = { key: string, value: string; label: string; children?: VariableOption[] };
+export type VariableOption = {
+  key: string;
+  value: string;
+  label: string;
+  children?: VariableOption[] | null;
+};
 
 const VariableTypes = [
   {
@@ -46,18 +50,18 @@ const VariableTypes = [
       {
         key: 'now',
         value: 'now',
-        label: `{{t("Current time", { ns: "${NAMESPACE}" })}}`,
-      }
-    ]
-  }
+        label: `{{t("Now")}}`,
+      },
+    ],
+  },
 ];
 
 export const TypeSets = {
   boolean: new Set(['boolean']),
   number: new Set(['integer', 'bigInt', 'float', 'double', 'real', 'decimal']),
   string: new Set(['string', 'text', 'password']),
-  date: new Set(['date', 'time'])
-}
+  date: new Set(['date', 'time']),
+};
 
 function matchFieldType(field, type): Boolean {
   if (typeof type === 'string') {
@@ -65,17 +69,17 @@ function matchFieldType(field, type): Boolean {
   }
 
   if (typeof type === 'object' && type.type === 'reference') {
-    return (field.collectionName === type.options?.collection && field.name === 'id')
-      || (field.type === 'belongsTo' && field.target === type.options?.collection);
+    return (
+      (field.collectionName === type.options?.collection && field.name === 'id') ||
+      (field.type === 'belongsTo' && field.target === type.options?.collection)
+    );
   }
 
   return false;
 }
 
 export function filterTypedFields(fields, types) {
-  return types
-    ? fields.filter(field => types.some(type => matchFieldType(field, type)))
-    : fields;
+  return types ? fields.filter((field) => types.some((type) => matchFieldType(field, type))) : fields;
 }
 
 export function useWorkflowVariableOptions() {
@@ -87,27 +91,41 @@ export function useWorkflowVariableOptions() {
       value: item.value,
       key: item.value,
       children: compile(options),
-      disabled: options && !options.length
+      disabled: options && !options.length,
     };
   });
   return options;
 }
 
-export function useCollectionFieldOptions(props) {
-  const { fields, collection, types } = props;
-  const compile = useCompile();
+function useCollectionNormalFields(collection) {
   const { getCollectionFields } = useCollectionManager();
-  return filterTypedFields((fields ?? getCollectionFields(collection)), types)
-    .filter(field => field.interface && (!field.target || field.type === 'belongsTo'))
-    .map(field => field.type === 'belongsTo'
-      ? {
-        label: `${compile(field.uiSchema?.title || field.name)} ID`,
-        key: field.foreignKey,
-        value: field.foreignKey,
+  const fields = getCollectionFields(collection);
+  return fields.filter(field => field.interface);
+}
+
+export function useCollectionFieldOptions(options, depth = 1): VariableOption[] {
+  const { fields, collection, types } = options;
+  const compile = useCompile();
+  const result: VariableOption[] = [];
+  filterTypedFields((fields ?? useCollectionNormalFields(collection)), types)
+    .forEach(field => {
+      const label = compile(field.uiSchema?.title || field.name);
+      if (field.type === 'belongsTo') {
+        result.push({
+          label: `${label} ID`,
+          key: field.foreignKey,
+          value: field.foreignKey,
+        });
       }
-      : {
-        label: compile(field.uiSchema?.title || field.name),
+      result.push({
+        label,
         key: field.name,
         value: field.name,
+        children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && depth > 0
+          ? useCollectionFieldOptions({ collection: field.target, types }, depth - 1)
+          : null
       });
+    });
+
+  return result;
 }

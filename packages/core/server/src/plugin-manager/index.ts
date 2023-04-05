@@ -1,2 +1,1 @@
-export * from './PluginManager';
-
+export * from './plugin-manager';

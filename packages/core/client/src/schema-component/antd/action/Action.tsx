@@ -2,13 +2,14 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useActionContext } from '../..';
+import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
+import { useRecord } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { useCompile, useComponent, useDesigner } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
-import { useRecord } from '../../../record-provider';
 import ActionContainer from './Action.Container';
 import { ActionDesigner } from './Action.Designer';
 import { ActionDrawer } from './Action.Drawer';
@@ -18,7 +19,6 @@ import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
-import { useDesignable } from '../../';
 import { linkageAction } from './utils';
 
 export const actionDesignerCss = css`
@@ -96,22 +96,28 @@ export const Action: ComposedAction = observer((props: any) => {
   const disabled = form.disabled || field.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
-  const { designable, } = useDesignable();
-  const tarComponent=useComponent(component)||component;
+  const { designable } = useDesignable();
+  const tarComponent = useComponent(component) || component;
   useEffect(() => {
-    linkageRules.map((v) => {
-      return v.actions?.map((h) => {
-        linkageAction(h.operator, field, v.condition, values, designable);
+    field.linkageProperty = {};
+    linkageRules
+      .filter((k) => !k.disabled)
+      .map((v) => {
+        return v.actions?.map((h) => {
+          linkageAction(h.operator, field, v.condition, values);
+        });
       });
-    });
-  }, [linkageRules]);
+  }, [linkageRules, values]);
   const renderButton = () => (
     <SortableItem
       {...others}
       loading={field?.data?.loading}
       icon={<Icon type={icon} />}
       disabled={disabled}
-      style={{ border: field?.data?.hidden && '1px dashed #ede9e9' }}
+      style={{
+        display: !designable && field?.data?.hidden && 'none',
+        opacity: designable && field?.data?.hidden && 0.1,
+      }}
       onClick={(e: React.MouseEvent) => {
         if (!disabled) {
           e.preventDefault();
@@ -138,6 +144,7 @@ export const Action: ComposedAction = observer((props: any) => {
       <Designer {...designerProps} />
     </SortableItem>
   );
+
   return (
     <ActionContext.Provider
       value={{

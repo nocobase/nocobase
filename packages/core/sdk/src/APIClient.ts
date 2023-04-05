@@ -25,6 +25,10 @@ export interface IResource {
 export class Auth {
   protected api: APIClient;
 
+  protected NOCOBASE_LOCALE_KEY = 'NOCOBASE_LOCALE';
+
+  protected NOCOBASE_ROLE_KEY = 'NOCOBASE_ROLE';
+
   protected options = {
     token: null,
     locale: null,
@@ -33,10 +37,24 @@ export class Auth {
 
   constructor(api: APIClient) {
     this.api = api;
+    this.initKeys();
     this.locale = this.getLocale();
     this.role = this.getRole();
     this.token = this.getToken();
     this.api.axios.interceptors.request.use(this.middleware.bind(this));
+  }
+
+  initKeys() {
+    if (!window) {
+      return;
+    }
+    const match = window.location.pathname.match(/^\/apps\/([^/]*)\//);
+    if (!match) {
+      return;
+    }
+    const appName = match[1];
+    this.NOCOBASE_LOCALE_KEY = `${appName.toUpperCase()}_NOCOBASE_LOCALE`;
+    this.NOCOBASE_ROLE_KEY = `${appName.toUpperCase()}_NOCOBASE_ROLE`;
   }
 
   get locale() {
@@ -77,12 +95,12 @@ export class Auth {
   }
 
   getLocale() {
-    return this.api.storage.getItem('NOCOBASE_LOCALE');
+    return this.api.storage.getItem(this.NOCOBASE_LOCALE_KEY);
   }
 
   setLocale(locale: string) {
     this.options.locale = locale;
-    this.api.storage.setItem('NOCOBASE_LOCALE', locale || '');
+    this.api.storage.setItem(this.NOCOBASE_LOCALE_KEY, locale || '');
   }
 
   getToken() {
@@ -99,12 +117,12 @@ export class Auth {
   }
 
   getRole() {
-    return this.api.storage.getItem('NOCOBASE_ROLE');
+    return this.api.storage.getItem(this.NOCOBASE_ROLE_KEY);
   }
 
   setRole(role: string) {
     this.options.role = role;
-    this.api.storage.setItem('NOCOBASE_ROLE', role || '');
+    this.api.storage.setItem(this.NOCOBASE_ROLE_KEY, role || '');
   }
 
   async signIn(values, authenticator: string = 'password'): Promise<AxiosResponse<any>> {

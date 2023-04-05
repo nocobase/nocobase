@@ -71,7 +71,7 @@ const Entity: React.FC<{
     }));
   };
   const loadCategories = async () => {
-    return categoryData.data.map((item: any) => ({
+    return categoryData?.data.map((item: any) => ({
       label: compile(item.name),
       value: item.id,
     }));

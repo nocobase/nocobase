@@ -20,6 +20,7 @@ export const updatedAt: IField = {
       'x-read-pretty': true,
     },
   },
+  availableTypes: ['date'],
   properties: {
     ...defaultProps,
     ...dateTimeProps,

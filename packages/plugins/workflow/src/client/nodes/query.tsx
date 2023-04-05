@@ -1,11 +1,12 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
-import { collection, filter } from '../schemas/collection';
+import { appends, collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
+import { FieldsSelect } from '../components/FieldsSelect';
 
 
 
@@ -15,10 +16,9 @@ export default {
   group: 'collection',
   fieldset: {
     collection,
-    // 'config.multiple': {
+    // multiple: {
     //   type: 'boolean',
     //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-    //   name: 'config.multiple',
     //   'x-decorator': 'FormItem',
     //   'x-component': 'Checkbox',
     //   'x-component-props': {
@@ -27,11 +27,16 @@ export default {
     // },
     params: {
       type: 'object',
-      title: '',
-      'x-decorator': 'FormItem',
       properties: {
-        filter
+        filter,
+        appends
       }
+    },
+    failOnEmpty: {
+      type: 'boolean',
+      title: `{{t("Fail on no data", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
     }
   },
   view: {
@@ -41,7 +46,8 @@ export default {
     useCollectionDataSource
   },
   components: {
-    FilterDynamicComponent
+    FilterDynamicComponent,
+    FieldsSelect
   },
   getOptions(config, types) {
     return useCollectionFieldOptions({ collection: config.collection, types });

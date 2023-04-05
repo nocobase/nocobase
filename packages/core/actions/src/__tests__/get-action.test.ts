@@ -1,5 +1,5 @@
-import { MockServer, mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
+import { MockServer, mockServer } from './';
 
 describe('get action', () => {
   let app: MockServer;
@@ -120,11 +120,13 @@ describe('get action', () => {
 
     const postProfile = await Profile.repository.findOne();
 
-    const response = await app
-      .agent()
-      .resource('posts.profile', p1.get('id'))
-      .get();
+    const response = await app.agent().resource('posts.profile', p1.get('id')).get();
 
     expect(response.body['id']).toEqual(postProfile.get('id'));
+  });
+
+  it('should return null when source model not found', async () => {
+    const response = await app.agent().resource('posts.profile', 999).get();
+    expect(response.status).toEqual(200);
   });
 });

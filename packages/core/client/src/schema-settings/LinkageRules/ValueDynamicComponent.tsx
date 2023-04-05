@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Input, Select } from 'antd';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { DynamicComponent } from './DynamicComponent';
-const { Option } = Select;
 import { Variable } from '.././../schema-component';
 import { useVariableOptions } from './Variables';
+
+const { Option } = Select;
 
 export const ValueDynamicComponent = (props) => {
   const { fieldValue, schema, setValue, collectionName } = props;
@@ -12,14 +14,24 @@ export const ValueDynamicComponent = (props) => {
   const { t } = useTranslation();
   const scope = useVariableOptions(collectionName);
   return (
-    <Input.Group compact style={{ minWidth: 280 }}>
-      <Select value={mode} style={{ width: 150 }} onChange={(value) => setMode(value)}>
+    <Input.Group compact>
+      <Select
+        value={mode}
+        style={{ width: 150 }}
+        onChange={(value) => {
+          setMode(value);
+          setValue({
+            mode: value,
+          });
+        }}
+      >
         <Option value="constant">{t('Constant value')}</Option>
         <Option value="express">{t('Expression')}</Option>
+        <Option value="empty">{t('Empty')}</Option>
       </Select>
-      <div style={{ minWidth: 150, maxWidth: 430 }}>
-        {mode === 'constant' ? (
-          React.createElement(DynamicComponent, {
+      {mode === 'constant' ? (
+        <div style={{ minWidth: 150, maxWidth: 430, marginLeft: 5 }}>
+          {React.createElement(DynamicComponent, {
             value: fieldValue?.value || fieldValue,
             schema,
             onChange(value) {
@@ -28,8 +40,10 @@ export const ValueDynamicComponent = (props) => {
                 value,
               });
             },
-          })
-        ) : (
+          })}
+        </div>
+      ) : mode === 'express' ? (
+        <div style={{ minWidth: 150, maxWidth: 430, fontSize: 13 }}>
           <Variable.TextArea
             value={fieldValue?.value}
             onChange={(value) => {
@@ -43,8 +57,16 @@ export const ValueDynamicComponent = (props) => {
             scope={scope}
             style={{ minWidth: 460, marginRight: 15 }}
           />
-        )}
-      </div>
+          <>
+            <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+              {t('Syntax references')}:
+            </span>
+            <a href="https://formulajs.info/functions/" target="_blank">
+              Formula.js
+            </a>
+          </>
+        </div>
+      ) : null}
     </Input.Group>
   );
 };

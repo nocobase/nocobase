@@ -6,7 +6,7 @@ import set from 'lodash/set';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useRecord, RecordProvider } from '../../record-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -19,12 +19,32 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     return;
   }
   const properties = cloneDeep(schema.properties) as any;
-  properties.name['x-disabled'] = true;
+  if (properties?.name) {
+    properties.name['x-disabled'] = true;
+  }
 
   if (schema.hasDefaultValue === true) {
-    properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
+    properties['defaultValue'] = cloneDeep(schema.default.uiSchema)||{};
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
+    properties['defaultValue']['x-reactions'] = {
+      dependencies: [
+        'uiSchema.x-component-props.gmt',
+        'uiSchema.x-component-props.showTime',
+        'uiSchema.x-component-props.dateFormat',
+        'uiSchema.x-component-props.timeFormat',
+      ],
+      fulfill: {
+        state: {
+          componentProps: {
+            gmt: '{{$deps[0]}}',
+            showTime: '{{$deps[1]}}',
+            dateFormat: '{{$deps[2]}}',
+            timeFormat: '{{$deps[3]}}',
+          },
+        },
+      },
+    };
   }
 
   return {
@@ -115,7 +135,7 @@ export const EditCollectionField = (props) => {
 };
 
 export const EditFieldAction = (props) => {
-  const { scope, getContainer, item: record,children } = props;
+  const { scope, getContainer, item: record, children } = props;
   const { getInterface } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -131,14 +151,14 @@ export const EditFieldAction = (props) => {
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
               filterByTk: record.name,
-              appends: ['uiSchema', 'reverseField'],
+              appends: ['reverseField'],
             });
             setData(data?.data);
             const interfaceConf = getInterface(record.interface);
             const defaultValues: any = cloneDeep(data?.data) || {};
             if (!defaultValues?.reverseField) {
               defaultValues.autoCreateReverseField = false;
-              defaultValues.reverseField = interfaceConf.default?.reverseField;
+              defaultValues.reverseField = interfaceConf?.default?.reverseField;
               set(defaultValues.reverseField, 'name', `f_${uid()}`);
               set(defaultValues.reverseField, 'uiSchema.title', record.__parent.title);
             }
@@ -155,7 +175,7 @@ export const EditFieldAction = (props) => {
             setVisible(true);
           }}
         >
-          {children||t('Edit')}
+          {children || t('Edit')}
         </a>
         <SchemaComponent
           schema={schema}
