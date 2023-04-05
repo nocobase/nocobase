@@ -114,17 +114,22 @@ export async function action(ctx: Context, next: Next) {
   };
 
   const fileData = await ctx.db.sequelize.transaction(async (transaction) => {
-    // TODO(optimize): 应使用关联 accessors 获取
-    const result = await storage.createAttachment(data, { context: ctx, transaction });
-
     const { associatedName, associatedIndex, resourceName } = ctx.action.params;
     const AssociatedCollection = ctx.db.getCollection(associatedName);
+    const Repository = ctx.db.getRepository(resourceName);
+
+    const result = await Repository.create({
+      values: {
+        ...data,
+        storage,
+      },
+    });
 
     if (AssociatedCollection && associatedIndex && resourceName) {
       const Repo = AssociatedCollection.repository.relation(resourceName).of(associatedIndex);
-      const Attachment = ctx.db.getCollection('attachments').model;
+      const FileCollection = ctx.db.getCollection(resourceName).model;
       const opts = {
-        tk: result[Attachment.primaryKeyAttribute],
+        tk: result[FileCollection.primaryKeyAttribute],
         transaction,
       };
 

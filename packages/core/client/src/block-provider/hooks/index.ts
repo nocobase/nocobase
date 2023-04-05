@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { message, Modal, notification } from 'antd';
+import { Modal, message, notification } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -22,18 +22,6 @@ import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
 
-interface FileData {
-  title: string;
-  filename: string;
-  extname: string;
-  size: number;
-  mimetype: string;
-  path: string;
-  url: string;
-  preview?: string;
-  meta?: any;
-  storageId?: number;
-}
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -145,7 +133,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible, fieldSchema } = useActionContext();
+  const { setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
@@ -401,7 +389,6 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
@@ -482,7 +469,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   };
 };
 
-export const useCustomizeBulkEditActionProps = (props) => {
+export const useCustomizeBulkEditActionProps = () => {
   const form = useForm();
   const { t } = useTranslation();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -581,7 +568,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
-  const { visible, setVisible } = useActionContext();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -996,33 +983,10 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
-  const collection = useCollection();
-  const api = useAPIClient();
   const { t } = useTranslation();
   const uploadingFiles = {};
 
   let pendingNumber = 0;
-
-  const formatFile = (file): FileData => {
-    return {
-      title: file.title,
-      url: file.url,
-      size: file.size,
-      mimetype: file.mimetype,
-      path: file.path,
-      storageId: file.storageId,
-      filename: file.filename,
-      extname: file.extname,
-      meta: {},
-    };
-  };
-  const create = (file: FileData) => {
-    return api.request({
-      url: `${collection.name}:create`,
-      method: 'POST',
-      data: file,
-    });
-  };
 
   return {
     /**
@@ -1040,23 +1004,15 @@ export const useUploadFiles = () => {
     },
     onChange(fileList) {
       fileList.forEach((file) => {
-        if (file.status === 'uploading') {
+        if (file.status === 'uploading' && !uploadingFiles[file.uid]) {
+          pendingNumber++;
           uploadingFiles[file.uid] = true;
         }
         if (file.status === 'done' && uploadingFiles[file.uid]) {
           delete uploadingFiles[file.uid];
-          pendingNumber++;
-          create(formatFile(file.response.data))
-            .then(() => {
-              pendingNumber--;
-              if (pendingNumber === 0) {
-                service?.refresh?.();
-              }
-            })
-            .catch((error) => {
-              console.error(error);
-              pendingNumber--;
-            });
+          if (--pendingNumber === 0) {
+            service?.refresh?.();
+          }
         }
       });
     },
