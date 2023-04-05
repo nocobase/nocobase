@@ -40,13 +40,12 @@ export async function middleware(ctx: Context, next: Next) {
   // 3. 无字段时按 storages 表的默认项
   // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
 
-  const collection = ctx.db.getCollection(resourceName);
+  const Collection = ctx.db.getCollection(resourceName);
   const Storage = ctx.db.getCollection('storages');
   let storage;
 
-  // 目前仅 file collection 支持自定义存储引擎
-  if (collection.options.template === 'file') {
-    storage = await Storage.repository.findOne({ filter: { name: collection.options.storage } });
+  if (Collection.options.storage) {
+    storage = await Storage.repository.findOne({ filter: { name: Collection.options.storage } });
   } else {
     storage = await Storage.repository.findOne({ filter: { default: true } });
   }
