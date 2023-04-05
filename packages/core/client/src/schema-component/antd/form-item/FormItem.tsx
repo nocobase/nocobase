@@ -72,7 +72,7 @@ export const FormItem: any = observer((props: any) => {
 
 FormItem.Designer = () => {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
-  const { getField, template } = useCollection();
+  const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();

@@ -9,6 +9,7 @@ export const useFieldComponentOptions = () => {
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { t } = useTranslation();
+  const { label } = fieldSchema['x-component-props']?.fieldNames || {};
 
   const fieldComponentOptions = useMemo(() => {
     if (!collectionField || !collectionField?.interface) {
@@ -16,6 +17,14 @@ export const useFieldComponentOptions = () => {
     }
 
     if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
+
+    // TODO: 暂时先这样处理，后续需要优化
+    if (label === 'preview') {
+      return [
+        { label: t('Record picker'), value: 'CollectionField' },
+        { label: t('Select'), value: 'AssociationSelect' },
+      ];
+    }
 
     switch (collectionField.interface) {
       case 'o2m':
@@ -40,7 +49,7 @@ export const useFieldComponentOptions = () => {
           { label: t('Select'), value: 'AssociationSelect' },
         ];
     }
-  }, [t, collectionField?.interface]);
+  }, [t, collectionField?.interface, label]);
 
   return fieldComponentOptions;
 };
