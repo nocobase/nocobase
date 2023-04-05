@@ -9,13 +9,13 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, useDesignable } from '../..';
+import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext
+  useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -419,38 +419,22 @@ export const Table: any = observer((props: any) => {
   );
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
-  const [tableHeight, setTableHeight] = useState(0);
-  const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
+
+  const { height: tableHeight, tableSizeRefCallback } = useTableSize();
 
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
           x: 'max-content',
-          y: tableHeight - headerAndPaginationHeight,
+          y: tableHeight,
         }
       : {
           x: 'max-content',
         };
-  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
-
-  const elementRef = useRef<HTMLDivElement>();
-
-  const calcTableSize = () => {
-    if (!elementRef.current) return;
-    const clientRect = elementRef.current?.getBoundingClientRect();
-    setTableHeight(Math.ceil(clientRect?.height || 0));
-  };
-
-  useEventListener('resize', calcTableSize);
-
-  const mountedRef: React.RefCallback<HTMLDivElement> = (ref) => {
-    elementRef.current = ref;
-    calcTableSize();
-  };
+  }, [fixedBlock, tableHeight]);
 
   return (
     <div
-      ref={mountedRef}
       className={css`
         height: 100%;
         overflow: hidden;
@@ -465,13 +449,7 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
-          ref={(ref) => {
-            if (ref) {
-              const headerHeight = ref.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-              const paginationHeight = ref.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-              setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-            }
-          }}
+          ref={tableSizeRefCallback}
           rowKey={rowKey ?? defaultRowKey}
           {...others}
           {...restProps}

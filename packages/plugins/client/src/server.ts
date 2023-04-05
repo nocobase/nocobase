@@ -21,6 +21,40 @@ async function getReadMe(name: string, locale: string) {
   return (await fs.promises.readFile(file)).toString();
 }
 
+async function getTabs(name: string, locale: string) {
+  const packageName = PluginManager.getPackageName(name);
+  const dir = resolve(process.cwd(), 'node_modules', packageName);
+  let file = resolve(dir, 'tabs.json');
+  if (!fs.existsSync(file)) {
+    // TOOD: compatible README, remove it in all plugin has tabs.json
+    return [
+      {
+        title: 'README',
+        path: '__README__',
+      },
+    ];
+  }
+  return JSON.parse((await fs.promises.readFile(file)).toString());
+}
+
+interface TabInfoParams {
+  filterByTk: string;
+  path: string;
+  locale: string;
+}
+async function getTabInfo({ filterByTk, path, locale }: TabInfoParams) {
+  const packageName = PluginManager.getPackageName(filterByTk);
+  const dir = resolve(process.cwd(), 'node_modules', packageName);
+  if (path === '__README__') {
+    return await getReadMe(filterByTk, locale);
+  }
+  let file = resolve(dir, 'docs', locale, `${path}.md`);
+  if (!fs.existsSync(file)) {
+    return [];
+  }
+  return (await fs.promises.readFile(file)).toString();
+}
+
 async function getLang(ctx) {
   const SystemSetting = ctx.db.getRepository('systemSettings');
   const systemSetting = await SystemSetting.findOne();
@@ -145,6 +179,24 @@ export class ClientPlugin extends Plugin {
           ctx.body = {
             filterByTk,
             readMe: await getReadMe(filterByTk, lang),
+          };
+          await next();
+        },
+        async getTabs(ctx, next) {
+          const lang = await getLang(ctx);
+          const { filterByTk } = ctx.action.params;
+          ctx.body = {
+            filterByTk,
+            tabs: await getTabs(filterByTk, lang),
+          };
+          await next();
+        },
+        async getTabInfo(ctx, next) {
+          const locale = await getLang(ctx);
+          const { filterByTk } = ctx.action.params;
+          ctx.body = {
+            filterByTk,
+            content: await getTabInfo({ ...(ctx.action.params as any), locale }),
           };
           await next();
         },

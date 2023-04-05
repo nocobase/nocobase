@@ -18,7 +18,7 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 
@@ -251,6 +251,8 @@ export const InternalAdminLayout = (props: any) => {
       ></Layout.Sider>
       <Layout.Content
         className={css`
+          display: flex;
+          flex-direction: column;
           position: relative;
           overflow-y: auto;
           height: 100vh;
