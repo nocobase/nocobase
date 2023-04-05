@@ -1,9 +1,10 @@
 import { getConfigurableProperties } from '@nocobase/client';
 import { CollectionOptions } from '@nocobase/database';
+import { NAMESPACE } from '../locale';
 
 export const file = {
   name: 'file',
-  title: '{{t("File collection")}}',
+  title: `{{t("File collection", { ns: "${NAMESPACE}" })}}`,
   order: 3,
   color: 'blue',
   default: {
@@ -17,7 +18,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("Title")}}',
+          title: `{{t("Title")}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -30,7 +31,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("File name")}}',
+          title: `{{t("File name", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -43,7 +44,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("Extension name")}}',
+          title: `{{t("Extension name", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -56,7 +57,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'number',
-          title: '{{t("Size")}}',
+          title: `{{t("Size", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'InputNumber',
           'x-read-pretty': true,
           'x-component-props': {
@@ -72,7 +73,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("Mime type")}}',
+          title: `{{t("Mime type", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -85,7 +86,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("Path")}}',
+          title: `{{t("Path")}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },
@@ -98,7 +99,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("URL")}}',
+          title: `{{t("URL")}}`,
           'x-component': 'Input.URL',
           'x-read-pretty': true,
         },
@@ -112,7 +113,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: '{{t("Preview")}}',
+          title: `{{t("Preview")}}`,
           'x-component': 'Preview',
           'x-read-pretty': true,
         },
@@ -142,7 +143,7 @@ export const file = {
     },
     ...getConfigurableProperties('category'),
     storage: {
-      title: '{{t("File storage")}}',
+      title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
       type: 'hasOne',
       name: 'storage',
       required: true,
