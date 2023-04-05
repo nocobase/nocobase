@@ -119,8 +119,11 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   const handleRemove = (file) => {
     const newOptions = options.filter((option) => option.id !== file.id);
     setOptions(newOptions);
-    onChange(newOptions);
     setSelectedRows(newOptions);
+    if (newOptions.length === 0) {
+      return onChange(null);
+    }
+    onChange(newOptions);
   };
 
   return (
