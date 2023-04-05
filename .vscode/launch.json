@@ -33,7 +33,16 @@
         "<node_internals>/**"
       ],
       "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "runtimeArgs": [
+          "run",
+          "--inspect-brk",
+          "test",
+          "--runInBand",
+          "/${fileBasename}"
+        ],
+      }
     },
     {
       "type": "node",
