@@ -7,7 +7,7 @@ export const UploadActionInitializer = (props) => {
 
   const schema = {
     type: 'void',
-    'x-action': 'upload',
+    'x-action': 'create',
     title: "{{t('Upload')}}",
     'x-designer': 'Action.Designer',
     'x-component': 'Action',
@@ -29,7 +29,7 @@ export const UploadActionInitializer = (props) => {
             'x-component': 'Upload.DraggerV2',
             'x-component-props': {
               height: '50vh',
-              action: `${collection.name}:upload`,
+              action: `${collection.name}:create`,
               useProps: '{{useUploadFiles}}',
               multiple: true,
             },
