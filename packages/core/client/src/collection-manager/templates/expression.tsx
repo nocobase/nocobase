@@ -4,7 +4,7 @@ import { ICollectionTemplate } from './types';
 
 export const expression: ICollectionTemplate = {
   name: 'expression',
-  title: '{{t("Dynamic expression collection")}}',
+  title: '{{t("Expression collection")}}',
   order: 4,
   color: 'orange',
   default: {

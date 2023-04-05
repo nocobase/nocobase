@@ -9,14 +9,12 @@ export default {
   type: 'string',
   group: 'advanced',
   order: 1,
-  title: `{{t("Dynamic expression", { ns: "${NAMESPACE}" })}}`,
+  title: `{{t("Expression", { ns: "${NAMESPACE}" })}}`,
   description: `{{t("An expression for calculation in each rows", { ns: "${NAMESPACE}" })}}`,
   sortable: true,
   default: {
-    type: 'expression',
-    title: '{{t("Expression")}}',
+    type: 'text',
     uiSchema: {
-      type: 'string',
       'x-component': 'DynamicExpression',
     },
   },
