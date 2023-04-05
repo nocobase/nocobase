@@ -13,7 +13,6 @@ export const url: IField = {
       type: 'string',
       title: '{{t("URL")}}',
       'x-component': 'Input.URL',
-      'x-read-pretty': true,
     },
   },
   schemaInitialize(schema: ISchema, { block }) {
