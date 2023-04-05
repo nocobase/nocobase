@@ -92,7 +92,7 @@ export const file = {
       },
       // 文件的可访问地址
       {
-        interface: 'url',
+        interface: 'input',
         type: 'string',
         name: 'url',
         deletable: false,

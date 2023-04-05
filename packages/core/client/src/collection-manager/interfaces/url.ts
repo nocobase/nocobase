@@ -1,5 +1,5 @@
 import { ISchema } from '@formily/react';
-import { defaultProps, operators } from './properties';
+import { defaultProps } from './properties';
 import { IField } from './types';
 
 export const url: IField = {
@@ -23,8 +23,5 @@ export const url: IField = {
   },
   properties: {
     ...defaultProps,
-  },
-  filterable: {
-    operators: operators.string,
   },
 };
