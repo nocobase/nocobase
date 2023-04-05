@@ -146,6 +146,7 @@ export const CreateRecordAction = observer((props) => {
         {inheritsCollections?.length > 0 ? (
           <Dropdown.Button
             type={componentType}
+            danger={componentType === 'danger'}
             icon={<DownOutlined />}
             buttonsRender={([leftButton, rightButton]) => [
               leftButton,
@@ -185,4 +186,3 @@ export const CreateRecordAction = observer((props) => {
     </div>
   );
 });
-
