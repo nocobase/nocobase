@@ -1,6 +1,5 @@
 import multer from '@koa/multer';
 import { Context, Next } from '@nocobase/actions';
-import { BelongsToManyRepository, BelongsToRepository } from '@nocobase/database';
 import path from 'path';
 import { FILE_FIELD_NAME, LIMIT_FILES, LIMIT_MAX_FILE_SIZE } from '../constants';
 import * as Rules from '../rules';
@@ -29,35 +28,19 @@ function getFileFilter(ctx: Context) {
 }
 
 export async function middleware(ctx: Context, next: Next) {
-  const { resourceName, actionName, associatedName } = ctx.action.params;
+  const { resourceName, actionName } = ctx.action;
   if (actionName !== 'upload') {
     return next();
   }
 
-  // NOTE:
-  // 1. 存储引擎选择依赖于字段定义
-  // 2. 字段定义中需包含引擎的外键值
-  // 3. 无字段时按 storages 表的默认项
-  // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
-
-  const Collection = ctx.db.getCollection(resourceName);
+  const collection = ctx.db.getCollection(resourceName);
   const Storage = ctx.db.getCollection('storages');
   let storage;
 
-  if (Collection.options.storage) {
-    storage = await Storage.repository.findOne({ filter: { name: Collection.options.storage } });
+  if (collection.options.storage) {
+    storage = await Storage.repository.findOne({ filter: { name: collection.options.storage } });
   } else {
     storage = await Storage.repository.findOne({ filter: { default: true } });
-  }
-
-  if (associatedName) {
-    const AssociatedCollection = ctx.db.getCollection(associatedName);
-    const resourceField = AssociatedCollection.getField(resourceName);
-    ctx.resourceField = resourceField;
-    const { attachment = {} } = resourceField.options;
-    storage = await Storage.repository.findOne({
-      filter: attachment.storage ? { name: attachment.storage } : { default: true },
-    });
   }
 
   if (!storage) {
@@ -114,37 +97,20 @@ export async function action(ctx: Context, next: Next) {
   };
 
   const fileData = await ctx.db.sequelize.transaction(async (transaction) => {
-    const { associatedName, associatedIndex, resourceName } = ctx.action.params;
-    const AssociatedCollection = ctx.db.getCollection(associatedName);
-    const Repository = ctx.db.getRepository(resourceName);
+    const { resourceName } = ctx.action;
+    const repository = ctx.db.getRepository(resourceName);
 
-    const result = await Repository.create({
+    const result = await repository.create({
       values: {
         ...data,
         storage,
       },
+      transaction,
     });
-
-    if (AssociatedCollection && associatedIndex && resourceName) {
-      const Repo = AssociatedCollection.repository.relation(resourceName).of(associatedIndex);
-      const FileCollection = ctx.db.getCollection(resourceName).model;
-      const opts = {
-        tk: result[FileCollection.primaryKeyAttribute],
-        transaction,
-      };
-
-      if (Repo instanceof BelongsToManyRepository) {
-        await Repo.add(opts);
-      } else if (Repo instanceof BelongsToRepository) {
-        await Repo.set(opts);
-      }
-    }
 
     return result;
   });
 
-  // 将存储引擎的信息附在已创建的记录里，节省一次查询
-  // attachment.setDataValue('storage', storage);
   ctx.body = fileData;
 
   await next();
