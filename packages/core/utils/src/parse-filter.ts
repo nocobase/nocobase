@@ -1,6 +1,8 @@
+import jsonata from 'jsonata';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import moment from 'moment';
+import { isArray } from './common';
 
 const re = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
@@ -56,12 +58,12 @@ export function flatten(target, opts?: any) {
   return output;
 }
 
-function unflatten(obj, opts: any = {}) {
+async function unflatten(obj, opts: any = {}) {
   const parsed = {};
   const transformValue = opts.transformValue || keyIdentity;
-  Object.keys(obj).forEach((key) => {
-    set(parsed, key, transformValue(obj[key], key));
-  });
+  for (const key of Object.keys(obj)) {
+    set(parsed, key, await transformValue(obj[key], key));
+  }
   return parsed;
 }
 
@@ -154,16 +156,41 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   }
 
   return unflatten(flat, {
-    transformValue(value, path) {
+    async transformValue(value, path) {
       const { operator } = parsePath(path);
       // parse string variables
       if (typeof value === 'string') {
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
-          const val = get(vars, key, null);
-          const field = getField?.(path);
-          value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+          try {
+            if (key.startsWith('$user')) {
+              /**
+               * @example
+               * const vars = {user: {roles: [{name: 'admin'}, {name: 'user'}]}}
+               * jsonata('user.roles.name').evaluate(vars).then((data) => {
+               *  console.log(data) // ['admin', 'user']
+               * })
+               */
+              const val = (await jsonata(key.substring(6)).evaluate(vars.$user)) || null;
+
+              // 不知道为什么会有这个字段，先删除
+              if (isArray(val) && 'sequence' in val) {
+                // @ts-ignore
+                delete val.sequence;
+              }
+
+              const field = getField?.(path);
+              value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+            } else {
+              const val = get(vars, key, null);
+              const field = getField?.(path);
+              value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
+            }
+          } catch (err) {
+            console.error(err);
+            value = null;
+          }
         }
       }
       if (isDateOperator(operator)) {

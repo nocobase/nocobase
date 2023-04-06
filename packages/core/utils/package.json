@@ -8,7 +8,8 @@
     "@hapi/topo": "^6.0.0",
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
-    "graphlib": "^2.1.8"
+    "graphlib": "^2.1.8",
+    "jsonata": "^2.0.2"
   },
   "peerDependencies": {
     "moment": "2.x",
