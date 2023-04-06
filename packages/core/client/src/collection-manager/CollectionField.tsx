@@ -11,8 +11,7 @@ import { useCollectionField } from './hooks';
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const { name, interface: interfaceType, uiSchema, defaultValue } = useCollectionField();
-  const collectionField = useCollectionField();
+  const { uiSchema, defaultValue } = useCollectionField();
   const component = useComponent(uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {

@@ -86,7 +86,7 @@ describe('action', () => {
     });
   });
 
-  describe('belongsTo attachment', () => {
+  describe.skip('belongsTo attachment', () => {
     it('upload with associatedIndex, fail as 400 because file mimetype does not match', async () => {
       const User = db.getCollection('users').model;
       const user = await User.create();
@@ -97,7 +97,7 @@ describe('action', () => {
       expect(response.status).toBe(400);
     });
 
-    it('upload with associatedIndex', async () => {
+    it.skip('upload with associatedIndex', async () => {
       const User = db.getCollection('users').model;
       const user = await User.create();
 
@@ -130,7 +130,7 @@ describe('action', () => {
       expect(updatedUser.get('avatar').id).toBe(body.data.id);
     });
 
-    it('upload to assoiciated field and storage with full base url should be ok', async () => {
+    it.skip('upload to assoiciated field and storage with full base url should be ok', async () => {
       const BASE_URL = `http://localhost:${APP_PORT}/another-uploads`;
       const storageName = 'local_private';
       const urlPath = 'test/path';

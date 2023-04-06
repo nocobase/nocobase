@@ -55,6 +55,7 @@ export default {
   "UI editor": "UI エディタ",
   "Collection": "コレクション",
   "Enable child collections":"启用子表",
+  "Allow adding records to the current collection":"現在のデータ・フォームへのレコードの追加を許可する",
   "Collections & Fields": "コレクションとフィールド",
   "All collections":"すべてのデータテーブル",
   "Add category":"分類の追加",
@@ -578,4 +579,7 @@ export default {
   "Error message": "エラーメッセージ",
   "Record picker": "レコードピッカー",
   "Search and select collection": "Search and select collection",
+
+  'Click or drag file to this area to upload': 'クリックまたはドラッグしてファイルをアップロード',
+  'Support for a single or bulk upload, file size should not exceed': '単一または複数のファイルをアップロードできます。ファイルサイズは',
 }

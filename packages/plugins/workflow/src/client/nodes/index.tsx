@@ -97,6 +97,9 @@ export function useNodeContext() {
 
 export function useAvailableUpstreams(node) {
   const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
   for (let current = node.upstream; current; current = current.upstream) {
     stack.push(current);
   }

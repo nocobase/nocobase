@@ -29,7 +29,7 @@ async function refresh(app: Application, storages, options?: Transactionable) {
     filter: {
       type: STORAGE_TYPE_LOCAL,
     },
-    transaction: options?.transaction
+    transaction: options?.transaction,
   });
 
   const primaryKey = Storage.model.primaryKeyAttribute;

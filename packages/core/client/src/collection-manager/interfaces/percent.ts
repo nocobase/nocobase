@@ -1,8 +1,7 @@
-import { ISchema } from '@formily/react';
+import { registerValidateRules } from '@formily/core';
+import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
-import { i18n } from '../../i18n';
-import { registerValidateFormats, registerValidateRules, registerValidateLocale } from '@formily/core';
 
 registerValidateRules({
   percentMode(value, rule) {
@@ -51,7 +50,7 @@ export const percent: IField = {
   name: 'percent',
   type: 'object',
   group: 'basic',
-  order: 6,
+  order: 8,
   title: '{{t("Percent")}}',
   sortable: true,
   default: {
