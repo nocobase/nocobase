@@ -174,7 +174,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
                */
               const val = (await jsonata(key.substring(6)).evaluate(vars.$user)) || null;
 
-              // 不知道为什么会有这个字段，先删除
+              // jsonata 返回的一个字段，在这里没用，直接删除
               if (isArray(val) && 'sequence' in val) {
                 // @ts-ignore
                 delete val.sequence;
