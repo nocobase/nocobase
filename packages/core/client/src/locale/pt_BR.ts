@@ -642,5 +642,8 @@ export default {
   "UpdatedAt": "Registrando o horário da última atualização da linha",
   "Column width": "Largura da coluna",
   "Sortable": "Classificável",
-  "Enable link": "Habilitar link"
+  "Enable link": "Habilitar link",
+
+  'Click or drag file to this area to upload': 'Clique ou arraste o arquivo para esta área para fazer o upload',
+  'Support for a single or bulk upload, file size should not exceed': 'Suporte para upload único ou em massa, o tamanho do arquivo não deve exceder',
 };

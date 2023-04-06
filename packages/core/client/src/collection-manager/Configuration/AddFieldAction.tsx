@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { useForm } from '@formily/react';
+import { useForm, useField } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -136,9 +136,12 @@ const useCreateCollectionField = () => {
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const field = useField();
   return {
     async run() {
       await form.submit();
+      field.data = field.data || {};
+      field.data.loading = true;
       const values = cloneDeep(form.values);
       if (values.autoCreateReverseField) {
       } else {
@@ -148,6 +151,7 @@ const useCreateCollectionField = () => {
       await resource.create({ values });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
       await refreshCM();
     },

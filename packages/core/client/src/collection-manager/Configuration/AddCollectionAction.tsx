@@ -1,6 +1,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -9,9 +9,9 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { templateOptions } from './templates';
 
@@ -28,7 +28,7 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: schema.name !== 'view' ? `t_${uid()}` : null,
+    name: `t_${uid()}`,
     template: schema.name,
     view: schema.name === 'view',
     category,
@@ -194,9 +194,12 @@ const useCreateCollection = (schema?: any) => {
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource, collection } = useResourceContext();
+  const { resource } = useResourceContext();
+  const field = useField();
   return {
     async run() {
+      field.data = field.data || {};
+      field.data.loading = true;
       await form.submit();
       const values = cloneDeep(form.values);
       if (schema?.events?.beforeSubmit) {
@@ -218,6 +221,7 @@ const useCreateCollection = (schema?: any) => {
       });
       ctx.setVisible(false);
       await form.reset();
+      field.data.loading = false;
       refresh();
       await refreshCM();
     },

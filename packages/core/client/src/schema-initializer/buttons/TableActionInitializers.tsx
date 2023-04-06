@@ -34,7 +34,7 @@ export const TableActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' && collection.template !== 'file';
           },
         },
         {

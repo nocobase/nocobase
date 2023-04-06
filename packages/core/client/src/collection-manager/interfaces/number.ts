@@ -6,7 +6,7 @@ export const number: IField = {
   name: 'number',
   type: 'object',
   group: 'basic',
-  order: 5,
+  order: 7,
   title: '{{t("Number")}}',
   sortable: true,
   default: {

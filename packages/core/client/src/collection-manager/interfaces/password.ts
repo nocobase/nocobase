@@ -6,7 +6,7 @@ export const password: IField = {
   name: 'password',
   type: 'object',
   group: 'basic',
-  order: 7,
+  order: 9,
   title: '{{t("Password")}}',
   default: {
     type: 'password',
