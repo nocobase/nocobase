@@ -61,7 +61,16 @@ pgOnly()('collection inherits', () => {
         'tableoid.$childNotIn': [child1Collection.name],
       },
     });
+
     expect(records2.every((r) => r.get('__collection') !== child1Collection.name)).toBe(true);
+
+    const rootRecords = await rootCollection.repository.find({
+      filter: {
+        'tableoid.$childIn': [rootCollection.name],
+      },
+    });
+
+    expect(rootRecords.every((r) => r.get('__collection') === rootCollection.name)).toBe(true);
   });
 
   it('should list collection name in relation repository', async () => {
