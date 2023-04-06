@@ -389,7 +389,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
       if (dataCollection.isParent()) {
-        for (const row of data) {
+        for (const row of lodash.castArray(data)) {
           const rowCollectionName = this.tableNameCollectionMap.get(
             findOptions.raw
               ? `${row['__schemaName']}.${row['__tableName']}`

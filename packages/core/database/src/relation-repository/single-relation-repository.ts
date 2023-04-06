@@ -80,10 +80,18 @@ export abstract class SingleRelationRepository extends RelationRepository {
       return results[0];
     }
 
-    return await sourceModel[getAccessor]({
+    const data = await sourceModel[getAccessor]({
       ...findOptions,
       transaction,
     });
+
+    await this.collection.db.emitAsync('afterRepositoryFind', {
+      findOptions: options,
+      dataCollection: this.collection,
+      data,
+    });
+
+    return data;
   }
 
   async findOne(options?: SingleRelationFindOption): Promise<Model<any>> {
