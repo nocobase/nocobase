@@ -52,7 +52,13 @@ export const m2m: IField = {
     },
   },
   availableTypes:['belongsToMany'],
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
+  schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {
         Object.assign(schema, {
@@ -80,6 +86,9 @@ export const m2m: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   initialize: (values: any) => {

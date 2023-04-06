@@ -25,6 +25,7 @@ export interface CollectionOptions {
   fields?: FieldOptions[];
   inherits?: string[];
   tree?: string;
+  template?: string;
 }
 
 export interface ICollectionProviderProps {
