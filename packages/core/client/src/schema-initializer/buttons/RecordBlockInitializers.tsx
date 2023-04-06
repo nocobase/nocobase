@@ -300,12 +300,33 @@ export const RecordBlockInitializers = (props: any) => {
   const { t } = useTranslation();
   const { insertPosition, component, actionInitializers } = props;
   const collection = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections, getCollectionJoinField, getCollection } = useCollectionManager();
   const formChildrenCollections = getChildrenCollections(collection.name);
   const hasFormChildCollection = formChildrenCollections?.length > 0;
   const detailChildrenCollections = getChildrenCollections(collection.name, true);
   const hasDetailChildCollection = detailChildrenCollections?.length > 0;
   const modifyFlag = (collection as any).template !== 'view';
+  const recordPickerSchema = getRecordPickerSchema(fieldSchema);
+  const isAssociateInitializers = recordPickerSchema['x-component'] === 'RecordPicker.Viewer';
+  const collectionField = getCollectionJoinField(recordPickerSchema?.parent['x-collection-field']);
+  const associateOverideField = getChildrenCollections(collectionField?.collectionName)
+    .map((k) => {
+      const inheritRelateField = k.fields.find((v) => {
+        return v.name === collectionField.name;
+      });
+      if (inheritRelateField) {
+        return {
+          ...k,
+          targetCollection: getCollection(inheritRelateField?.target),
+          targetAssociation: `${inheritRelateField.collectionName}.${inheritRelateField.name}`,
+        };
+      }
+    })
+    .filter((v) => {
+      return v;
+    });
+  const resourceName = getCollection(collectionField?.collectionName);
+
   return (
     <SchemaInitializer.Button
       wrap={gridRowColWrap}
@@ -323,11 +344,20 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'details',
                   type: 'subMenu',
                   title: '{{t("Details")}}',
-                  children: useDetailCollections({
-                    ...props,
-                    childrenCollections: detailChildrenCollections,
-                    collection,
-                  }),
+                  children:
+                    isAssociateInitializers && associateOverideField.length > 0
+                      ? useRecordPickerDetailCollections({
+                          ...props,
+                          associateOverideField,
+                          collection,
+                          collectionField,
+                          resourceName,
+                        })
+                      : useDetailCollections({
+                          ...props,
+                          childrenCollections: detailChildrenCollections,
+                          collection,
+                        }),
                 }
               : {
                   key: 'details',
@@ -341,11 +371,20 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'form',
                   type: 'subMenu',
                   title: '{{t("Form")}}',
-                  children: useFormCollections({
-                    ...props,
-                    childrenCollections: formChildrenCollections,
-                    collection,
-                  }),
+                  children:
+                    isAssociateInitializers && associateOverideField.length > 0
+                      ? useRecordPickerFormCollections({
+                          ...props,
+                          associateOverideField,
+                          collection,
+                          collectionField,
+                          resourceName,
+                        })
+                      : useFormCollections({
+                          ...props,
+                          childrenCollections: formChildrenCollections,
+                          collection,
+                        }),
                 }
               : modifyFlag && {
                   key: 'form',
