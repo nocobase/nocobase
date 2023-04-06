@@ -13,12 +13,11 @@ import { getResourceLocale } from './resource';
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
   const dir = resolve(process.cwd(), 'node_modules', packageName);
-  let file = resolve(dir, `README.${locale}.md`);
-  if (fs.existsSync(file)) {
-    return (await fs.promises.readFile(file)).toString();
-  }
-  file = resolve(dir, `README.md`);
-  return (await fs.promises.readFile(file)).toString();
+  let files = [resolve(dir, `README.${locale}.md`), resolve(dir, `README.md`)];
+  const file = files.find((file) => {
+    return fs.existsSync(file);
+  });
+  return file ? (await fs.promises.readFile(file)).toString() : '';
 }
 
 async function getTabs(name: string, locale: string) {
@@ -26,7 +25,7 @@ async function getTabs(name: string, locale: string) {
   const dir = resolve(process.cwd(), 'node_modules', packageName);
   let file = resolve(dir, 'tabs.json');
   if (!fs.existsSync(file)) {
-    // TOOD: compatible README, remove it in all plugin has tabs.json
+    // TODO: compatible README, remove it in all plugin has tabs.json
     return [
       {
         title: 'README',
@@ -42,17 +41,22 @@ interface TabInfoParams {
   path: string;
   locale: string;
 }
+
 async function getTabInfo({ filterByTk, path, locale }: TabInfoParams) {
   const packageName = PluginManager.getPackageName(filterByTk);
   const dir = resolve(process.cwd(), 'node_modules', packageName);
   if (path === '__README__') {
     return await getReadMe(filterByTk, locale);
   }
-  let file = resolve(dir, 'docs', locale, `${path}.md`);
-  if (!fs.existsSync(file)) {
-    return [];
-  }
-  return (await fs.promises.readFile(file)).toString();
+  const files = [
+    resolve(dir, 'docs', locale, `${path}.md`),
+    // default
+    resolve(dir, 'docs', 'zh_CN', `${path}.md`),
+  ];
+  const file = files.find((file) => {
+    return fs.existsSync(file);
+  });
+  return file ? (await fs.promises.readFile(file)).toString() : '';
 }
 
 async function getLang(ctx) {
