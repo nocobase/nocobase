@@ -2,18 +2,58 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { RemoveConditionContext } from './context';
 import { DynamicComponent } from './DynamicComponent';
 import { useValues } from './useValues';
+import { useCollectionManager, useCollection } from '../../../collection-manager/hooks';
 
 export const FilterItem = observer((props: any) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const remove = useContext(RemoveConditionContext);
   const { schema, fields, operators, dataIndex, operator, setDataIndex, setOperator, value, setValue } = useValues();
+  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection();
+  const childrenCollections = getChildrenCollections(collection.name);
+  if (childrenCollections.length > 0&&!fields.find((v)=>v.name=='tableoid')) {
+    fields.push({
+      name: 'tableoid',
+      type: 'string',
+      title: 'Table OID(Inheritance)',
+      schema: {
+        'x-component': 'Select',
+        enum: [{ value: collection.name, label: t(collection.title) }].concat(
+          childrenCollections.map((v) => {
+            return {
+              value: v.name,
+              label: t(v.title),
+            };
+          }),
+        ),
+      },
+      operators: [
+        {
+          label: '{{t("contains")}}',
+          value: '$childIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+        {
+          label: '{{t("does not contain")}}',
+          value: '$childNotIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+      ],
+    });
+  }
   return (
     <div style={{ marginBottom: 8 }}>
       <Space>
