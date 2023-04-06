@@ -64,11 +64,10 @@ export const FormBlockProvider = (props) => {
   const { __collection, __parent } = record;
   const currentCollection = useCollection();
   const { getInheritCollections, getCollectionJoinField, getCollection } = useCollectionManager();
-
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
   let detailFlag = false;
-  if (isEmptyRecord) {
+  if (isEmptyRecord&& Object.keys(__parent).length === 0) {
     detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
@@ -77,7 +76,7 @@ export const FormBlockProvider = (props) => {
   const createFlag =
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   let relationFlag = false;
-  if (Object.keys(record).length > 0 && resource.includes('.')) {
+  if (isEmptyRecord && resource.includes('.')) {
     relationFlag = true;
     if (!designable) {
       const viewOwnRelation = [__collection, __parent?.__collection].includes(resource?.split('.')?.[0]);
