@@ -44,6 +44,7 @@ export default function (props) {
     });
 
   const ctx = useContext(PluginManagerContext);
+
   return (
     <SettingsCenterProvider
       settings={{
