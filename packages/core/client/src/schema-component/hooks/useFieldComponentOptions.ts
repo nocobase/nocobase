@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '../../collection-manager';
 
 export const useFieldComponentOptions = () => {
-  const { getCollectionJoinField } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -18,8 +18,8 @@ export const useFieldComponentOptions = () => {
 
     if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
 
-    // TODO: 暂时先这样处理，后续需要优化
-    if (label === 'preview') {
+    const collection = getCollection(collectionField.target);
+    if (collection?.template === 'file') {
       return [
         { label: t('Record picker'), value: 'CollectionField' },
         { label: t('Select'), value: 'AssociationSelect' },
