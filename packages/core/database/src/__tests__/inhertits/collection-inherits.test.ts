@@ -16,6 +16,60 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should set inherited map when inherits changed', async () => {
+    const A = db.collection({
+      name: 'a',
+      timestamps: false,
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      timestamps: false,
+      fields: [{ name: 'b_name', type: 'string' }],
+    });
+
+    const C = db.collection({
+      name: 'c',
+      timestamps: false,
+      fields: [{ name: 'c_name', type: 'string' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: ['a'],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual(['a']);
+    db.removeCollection('x');
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: [],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual([]);
+
+    db.removeCollection('x');
+
+    db.collection({
+      name: 'x',
+      timestamps: false,
+      inherits: ['c'],
+    });
+
+    expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual(['c']);
+  });
+
   it('should modify inherited collection parents', async () => {
     const A = db.collection({
       name: 'a',

@@ -5,7 +5,9 @@ export default class InheritanceMap {
   dag = new DAG();
 
   removeNode(name: string) {
-    this.dag.removeNode(name);
+    const node = this.getNode(name);
+    if (!node) return;
+    this.dag.removeNode(node);
   }
 
   getOrCreateNode(name: string) {
@@ -39,13 +41,12 @@ export default class InheritanceMap {
     const node = this.getNode(name);
     if (!node) return new Set();
 
-    return new Set(options.deep ? this.dag.getDescendants(node) : this.dag.getChildren(node));
+    return new Set((options.deep ? this.dag.getDescendants(node) : this.dag.getChildren(node)).map((n) => n.id));
   }
 
   getParents(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
     const node = this.getNode(name);
     if (!node) return new Set();
-
-    return new Set(options.deep ? this.dag.getAncestors(node) : this.dag.getParents(node));
+    return new Set((options.deep ? this.dag.getAncestors(node) : this.dag.getParents(node)).map((n) => n.id));
   }
 }
