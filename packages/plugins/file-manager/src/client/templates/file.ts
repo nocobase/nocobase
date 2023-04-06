@@ -20,7 +20,6 @@ export const file = {
           type: 'string',
           title: `{{t("Title")}}`,
           'x-component': 'Input',
-          'x-read-pretty': true,
         },
       },
       // '系统文件名（含扩展名）',
