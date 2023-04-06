@@ -10,17 +10,19 @@ export class SyncRunner {
 
     const dialect = db.sequelize.getDialect();
 
-    const queryInterface = db.sequelize.getQueryInterface();
-
     if (dialect != 'postgres') {
       throw new Error('Inherit model is only supported on postgres');
     }
+
+    const queryInterface = db.sequelize.getQueryInterface();
 
     const parents = inheritedCollection.parents;
 
     if (!parents) {
       throw new Error(
-        `Inherit model ${inheritedCollection.name} can't be created without parents, parents option is ${lodash
+        `Inherit model ${
+          inheritedCollection.name
+        } can't be created without parents collections, parents option is ${lodash
           .castArray(inheritedCollection.options.inherits)
           .join(', ')}`,
       );
@@ -33,6 +35,8 @@ export class SyncRunner {
     const childAttributes = lodash.pickBy(attributes, (value) => {
       return !value.inherit;
     });
+
+    await this.createTable(tableName, childAttributes, options, model, parents);
 
     let maxSequenceVal = 0;
     let maxSequenceName;
@@ -81,8 +85,6 @@ export class SyncRunner {
         }
       }
     }
-
-    await this.createTable(tableName, childAttributes, options, model, parents);
 
     // if we have max sequence, set it to child table
     if (maxSequenceName) {
