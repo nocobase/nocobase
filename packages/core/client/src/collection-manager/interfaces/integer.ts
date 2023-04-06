@@ -12,7 +12,7 @@ export const integer: IField = {
   name: 'integer',
   type: 'object',
   group: 'basic',
-  order: 5,
+  order: 6,
   title: '{{t("Integer")}}',
   sortable: true,
   default: {

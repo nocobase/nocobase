@@ -5,7 +5,8 @@ import { IField } from './types';
 export const url: IField = {
   name: 'url',
   type: 'string',
-  group: 'media',
+  group: 'basic',
+  order: 5,
   title: '{{t("URL")}}',
   default: {
     type: 'string',
