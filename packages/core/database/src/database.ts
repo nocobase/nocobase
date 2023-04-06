@@ -310,6 +310,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   initListener() {
+    this.on('afterConnect', async (client) => {
+      if (this.inDialect('postgres')) {
+        await client.query('SET search_path = public');
+      }
+    });
+
     this.on('beforeDefine', (model, options) => {
       if (this.options.underscored && options.underscored === undefined) {
         options.underscored = true;
@@ -378,6 +384,32 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (this.options.schema && !options.schema) {
         options.schema = this.options.schema;
+      }
+    });
+
+    this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
+      if (dataCollection.isParent()) {
+        for (const row of data) {
+          const rowCollectionName = this.tableNameCollectionMap.get(
+            findOptions.raw
+              ? `${row['__schemaName']}.${row['__tableName']}`
+              : `${row.get('__schemaName')}.${row.get('__tableName')}`,
+          ).name;
+
+          if (!rowCollectionName) {
+            throw new Error(
+              `Can not find collection by table name ${rowCollectionName}, current collections: ${Array.from(
+                this.tableNameCollectionMap.keys(),
+              ).join(', ')}`,
+            );
+          }
+
+          findOptions.raw
+            ? (row['__collection'] = rowCollectionName)
+            : row.set('__collection', rowCollectionName, {
+                raw: true,
+              });
+        }
       }
     });
 
