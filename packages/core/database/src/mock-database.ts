@@ -6,7 +6,6 @@ export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
       storage: ':memory:',
-      tablePrefix: `mock_${uid(6)}_`,
       dialect: 'sqlite',
       ...options,
     });
@@ -44,8 +43,10 @@ export function getConfigByEnv() {
 }
 
 function customLogger(queryString, queryObject) {
-  console.log(queryString); // outputs a string
-  console.log(queryObject.bind); // outputs an array
+  console.log(queryString);
+  if (queryObject.bind) {
+    console.log(queryObject.bind);
+  }
 }
 
 export function mockDatabase(options: IDatabaseOptions = {}): MockDatabase {

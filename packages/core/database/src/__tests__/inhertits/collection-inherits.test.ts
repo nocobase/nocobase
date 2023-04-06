@@ -16,6 +16,33 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should modify inherited collection parents', async () => {
+    const parentA = db.collection({
+      name: 'parent_a',
+      timestamps: false,
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const parentB = db.collection({
+      name: 'parent_b',
+      timestamps: false,
+      fields: [{ name: 'b_name', type: 'string' }],
+    });
+
+    const child = db.collection({
+      name: 'child',
+      timestamps: false,
+      inherits: ['parent_a'],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+  });
+
   it('should list data filtered by child type', async () => {
     const rootCollection = db.collection({
       name: 'root',
@@ -232,31 +259,6 @@ pgOnly()('collection inherits', () => {
     }).toThrowError();
 
     await db.sync();
-  });
-
-  it.skip('should not conflict when fields have same DateType', async () => {
-    db.collection({
-      name: 'parent',
-      fields: [{ name: 'field1', type: 'string' }],
-    });
-
-    expect(() => {
-      db.collection({
-        name: 'child',
-        inherits: ['parent'],
-        fields: [
-          {
-            name: 'field1',
-            type: 'sequence',
-            patterns: [
-              {
-                type: 'integer',
-              },
-            ],
-          },
-        ],
-      });
-    }).not.toThrowError();
   });
 
   it('should create inherits with lazy parents', async () => {
