@@ -21,14 +21,14 @@ export const UploadActionInitializer = (props) => {
       modal: {
         type: 'void',
         title: '{{ t("Upload files") }}',
-        'x-component': 'Action.Modal',
-        'x-component-props': {},
+        'x-component': 'Action.Container',
         properties: {
           upload: {
             type: 'void',
+            title: '{{ t("Upload files") }}',
             'x-component': 'Upload.DraggerV2',
             'x-component-props': {
-              height: '50vh',
+              height: '60vh',
               action: `${collection.name}:create`,
               useProps: '{{useUploadFiles}}',
               multiple: true,
