@@ -379,15 +379,15 @@ function useFlowRecordFromBlock(opts) {
 
 function FlowContextProvider(props) {
   const api = useAPIClient();
-  const { id, node, executionId } = useRecord();
+  const { id, node } = useRecord();
   const [flowContext, setFlowContext] = useState<any>(null);
 
   useEffect(() => {
-    if (!executionId) {
+    if (!id) {
       return;
     }
     api.resource('users_jobs').get?.({
-      filterByTk: executionId,
+      filterByTk: id,
       appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
     })
       .then(({ data }) => {
