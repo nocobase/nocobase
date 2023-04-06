@@ -55,7 +55,7 @@ export default {
   "UI editor": "界面配置",
   "Collection": "数据表",
   "Enable child collections":"启用子表",
-  "Allow adding records to the current collection":"允许给当前数据集添加记录",
+  "Allow adding records to the current collection":"允许向当前数据表里添加记录",
   "Collections & Fields": "数据表配置",
   "All collections":"全部数据表",
   "Add category":"添加分类",
