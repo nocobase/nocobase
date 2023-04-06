@@ -1,4 +1,4 @@
-import { FormProvider, SchemaComponent, useRecord } from '@nocobase/client';
+import { EllipsisWithTooltip, FormProvider, SchemaComponent, useRecord } from '@nocobase/client';
 import React from 'react';
 import { observer, useField } from '@formily/react';
 
@@ -19,5 +19,5 @@ export const AuditLogsValue = observer(() => {
       </FormProvider>
     );
   }
-  return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
+  return <EllipsisWithTooltip ellipsis>{field.value ? JSON.stringify(field.value) : null}</EllipsisWithTooltip>;
 });

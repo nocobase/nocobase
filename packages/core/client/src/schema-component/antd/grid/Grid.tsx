@@ -126,7 +126,7 @@ const ColDivider = (props) => {
       className={cls(
         'nb-col-divider',
         css`
-          width: 24px;
+          width: var(--nb-spacing);
         `,
       )}
       style={{ ...droppableStyle }}
@@ -152,7 +152,7 @@ const ColDivider = (props) => {
                     background: rgba(241, 139, 98, 0.06) !important;
                   }
                 }
-                width: 24px;
+                width: var(--nb-spacing);
                 height: 100%;
                 position: absolute;
                 cursor: col-resize;
@@ -219,10 +219,10 @@ const RowDivider = (props) => {
       className={cls(
         'nb-row-divider',
         css`
-          height: 24px;
+          height: var(--nb-spacing);
           width: 100%;
           position: absolute;
-          margin-top: -24px;
+          margin-top: calc(-1 * var(--nb-spacing));
         `,
       )}
       style={{
@@ -358,7 +358,7 @@ export const Grid: any = observer((props: any) => {
   );
 });
 
-Grid.Row = observer((props) => {
+Grid.Row = observer(() => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const addr = field.address.toString();
@@ -370,7 +370,7 @@ Grid.Row = observer((props) => {
         className={cls(
           'nb-grid-row',
           css`
-            margin: 0 -24px;
+            margin: 0 calc(-1 * var(--nb-spacing));
             display: flex;
             position: relative;
             /* z-index: 0; */
@@ -416,12 +416,12 @@ Grid.Col = observer((props: any) => {
   const { cols = [] } = useContext(GridRowContext);
   const schema = useFieldSchema();
   const field = useField();
-  let width = '100%';
+  let width = '';
   if (cols?.length) {
     const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-    width = `calc(${w}% - 24px - 24px / ${cols.length})`;
+    width = `calc(${w}% - var(--nb-spacing) * 2 / ${cols.length})`;
   }
-  const { isOver, setNodeRef } = useDroppable({
+  const { setNodeRef } = useDroppable({
     id: field.address.toString(),
     data: {
       insertAdjacent: 'beforeEnd',
@@ -431,17 +431,7 @@ Grid.Col = observer((props: any) => {
   });
   return (
     <GridColContext.Provider value={{ cols, schema }}>
-      <div
-        ref={setNodeRef}
-        style={{ width }}
-        className={cls(
-          'nb-grid-col',
-          css`
-            position: relative;
-            /* z-index: 0; */
-          `,
-        )}
-      >
+      <div ref={setNodeRef} style={{ width }} className={cls('nb-grid-col')}>
         {props.children}
       </div>
     </GridColContext.Provider>

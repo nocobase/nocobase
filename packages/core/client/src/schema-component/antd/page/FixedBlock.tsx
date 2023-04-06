@@ -1,143 +1,141 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { css } from '@emotion/css';
 import { SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { useRecord } from '../../../record-provider';
-import { useBlockTemplateContext } from '../../../schema-templates/BlockTemplate';
-import { uid } from '@formily/shared';
 
-const FixedBlockContext = React.createContext({
-  setFixedSchema: (schema: Schema) => {},
+const FixedBlockContext = React.createContext<{
+  setFixedBlock: (value: string | false) => void;
+  height: number;
+  fixedBlockUID: boolean | string;
+  fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
+}>({
+  setFixedBlock: () => {},
   height: 0,
-  fixedSchemaRef: {} as unknown as React.MutableRefObject<Schema>,
+  fixedBlockUID: false,
+  fixedBlockUIDRef: { current: false },
 });
 
 export const useFixedSchema = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { setFixedSchema, fixedSchemaRef } = useFixedBlock();
-  const { fieldSchema: templateFieldSchema } = useBlockTemplateContext();
+  const { setFixedBlock, fixedBlockUID, fixedBlockUIDRef } = useFixedBlock();
   const hasSet = useRef(false);
 
   useEffect(() => {
-    if (fieldSchema?.['x-decorator-props']?.fixedBlock) {
-      const nextSchema = templateFieldSchema || fieldSchema;
-      setFixedSchema(nextSchema);
+    if (!fixedBlockUIDRef.current || hasSet.current) {
+      setFixedBlock(field?.decoratorProps?.fixedBlock ? fieldSchema['x-uid'] : false);
       hasSet.current = true;
-    } else if (hasSet.current) {
-      setFixedSchema(null);
     }
-  }, [field?.decoratorProps?.fixedBlock, fieldSchema?.['x-decorator-props']?.fixedBlock]);
+  }, [field?.decoratorProps?.fixedBlock]);
 
-  useEffect(
-    () => () => {
-      if (hasSet.current && fixedSchemaRef.current) {
-        setFixedSchema(null);
-        fixedSchemaRef.current = null;
-      }
-    },
-    [],
-  );
+  return fieldSchema['x-uid'] === fixedBlockUID;
 };
 
 export const useFixedBlock = () => {
   return useContext(FixedBlockContext);
 };
 
-export const useFixedBlockDesignerSetting = () => {
+export const FixedBlockWrapper: React.FC = (props) => {
+  const fixedBlock = useFixedSchema();
+  const { height, fixedBlockUID } = useFixedBlock();
+  const record = useRecord();
+  const isPopup = Object.keys(record).length;
+  if (isPopup) {
+    return <>{props.children}</>;
+  }
+  /**
+   * The fixedBlockUID of false means that the page has no fixed blocks
+   * isPopup means that the FixedBlock is in the popup mode
+   */
+  if (!fixedBlock && fixedBlockUID) return null;
+  return (
+    <div
+      className="nb-fixed-block"
+      style={{
+        height: fixedBlockUID ? `calc(100vh - ${height}px)` : undefined,
+      }}
+    >
+      {props.children}
+    </div>
+  );
+};
+
+export const FixedBlockDesignerItem = () => {
   const field = useField();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const record = useRecord();
 
-  return useMemo(() => {
-    if (Object.keys(record).length) {
-      return;
-    }
-    return (
-      <SchemaSettings.SwitchItem
-        title={t('Fix block')}
-        checked={fieldSchema['x-decorator-props']?.fixedBlock}
-        onChange={async (fixedBlock) => {
-          const decoratorProps = {
-            ...fieldSchema['x-decorator-props'],
-            fixedBlock,
-          };
-          await dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': decoratorProps,
-            },
-          });
-          field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
-        }}
-      />
-    );
-  }, [fieldSchema['x-decorator-props'], field.decoratorProps?.fixedBlock, dn, record]);
+  if (Object.keys(record).length) {
+    return null;
+  }
+  return (
+    <SchemaSettings.SwitchItem
+      title={t('Fix block')}
+      checked={fieldSchema['x-decorator-props']?.fixedBlock}
+      onChange={async (fixedBlock) => {
+        const decoratorProps = {
+          ...fieldSchema['x-decorator-props'],
+          fixedBlock,
+        };
+        await dn.emit('patch', {
+          schema: {
+            ['x-uid']: fieldSchema['x-uid'],
+            'x-decorator-props': decoratorProps,
+          },
+        });
+        field.decoratorProps = fieldSchema['x-decorator-props'] = decoratorProps;
+      }}
+    />
+  );
 };
 
 interface FixedBlockProps {
   height: number;
 }
 
+const fixedBlockCss = css`
+  overflow: hidden;
+  position: relative;
+  .noco-card-item {
+    height: 100%;
+    .ant-card {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      .ant-card-body {
+        height: 1px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+    }
+  }
+`;
+
 const FixedBlock: React.FC<FixedBlockProps> = (props) => {
   const { height } = props;
-  const [fixedSchema, _setFixedSchema] = useState<Schema>();
-  const fixedSchemaRef = useRef(fixedSchema);
-
-  const setFixedSchema = (next) => {
-    if (fixedSchema && next) {
-      fixedSchemaRef.current = next;
-    }
-    _setFixedSchema(next);
+  const [fixedBlockUID, _setFixedBlock] = useState<false | string>(false);
+  const fixedBlockUIDRef = useRef(fixedBlockUID);
+  const setFixedBlock = (v) => {
+    fixedBlockUIDRef.current = v;
+    _setFixedBlock(v);
   };
-
-  const schema = useMemo<Schema>(() => {
-    return fixedSchema?.parent;
-  }, [fixedSchema]);
-
   return (
-    <FixedBlockContext.Provider value={{ height, setFixedSchema, fixedSchemaRef }}>
-      {schema ? (
-        <div
-          className={css`
-            height: 100%;
-            overflow: hidden;
-            .noco-card-item {
-              height: 100%;
-              .ant-card {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                .ant-card-body {
-                  display: flex;
-                  flex-direction: column;
-                  height: 100%;
-                  overflow: hidden;
-                  // padding-bottom: 0;
-                }
-              }
-              & .ant-spin-nested-loading {
-                height: 100%;
-                overflow: hidden;
-              }
-              & .ant-spin-container {
-                height: 100%;
-              }
-            }
-          `}
-          style={{
-            height: `calc(100vh - ${height}px)`,
-          }}
-        >
-          <RecursionField onlyRenderProperties={false} schema={schema} />
-        </div>
-      ) : (
-        props.children
-      )}
+    <FixedBlockContext.Provider value={{ height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
+      <div
+        className={fixedBlockUID ? fixedBlockCss : ''}
+        style={{
+          height: fixedBlockUID ? `calc(100vh - ${height}px)` : undefined,
+        }}
+      >
+        {props.children}
+      </div>
     </FixedBlockContext.Provider>
   );
 };

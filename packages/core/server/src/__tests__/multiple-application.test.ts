@@ -2,6 +2,7 @@ import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { IncomingMessage } from 'http';
 import * as url from 'url';
+import Application from '../application';
 
 describe('multiple apps', () => {
   it('should emit beforeGetApplication event', async () => {
@@ -9,11 +10,14 @@ describe('multiple apps', () => {
 
     const app = mockServer();
 
-    app.appManager.on('beforeGetApplication', beforeGetApplicationFn);
+    app.on('beforeGetApplication', beforeGetApplicationFn);
 
-    app.appManager.createApplication('sub1', {
-      database: app.db,
-    });
+    app.appManager.addSubApp(
+      new Application({
+        database: app.db,
+        name: 'sub1',
+      }),
+    );
 
     app.appManager.setAppSelector(() => 'sub1');
 
@@ -29,9 +33,12 @@ describe('multiple apps', () => {
   it('should listen stop event', async () => {
     const app = mockServer();
 
-    const subApp1 = app.appManager.createApplication('sub1', {
-      database: app.db,
-    });
+    const subApp1 = app.appManager.addSubApp(
+      new Application({
+        database: app.db,
+        name: 'sub1',
+      }),
+    );
 
     const subApp1StopFn = jest.fn();
 
@@ -40,8 +47,6 @@ describe('multiple apps', () => {
     await app.stop();
 
     expect(subApp1StopFn).toBeCalledTimes(1);
-
-    await app.destroy();
   });
 });
 
@@ -57,14 +62,18 @@ describe('multiple application', () => {
     await app.destroy();
   });
 
-  it('should create multiple apps', async () => {
+  it('should add multiple apps', async () => {
     const sub1 = `a_${uid()}`;
     const sub2 = `a_${uid()}`;
     const sub3 = `a_${uid()}`;
-    const subApp1 = app.appManager.createApplication(sub1, {
-      database: app.db,
-      acl: false,
-    });
+
+    const subApp1 = app.appManager.addSubApp(
+      new Application({
+        database: app.db,
+        acl: false,
+        name: sub1,
+      }),
+    );
 
     subApp1.resourcer.define({
       name: 'test',
@@ -75,10 +84,13 @@ describe('multiple application', () => {
       },
     });
 
-    const subApp2 = app.appManager.createApplication(sub2, {
-      database: app.db,
-      acl: false,
-    });
+    const subApp2 = app.appManager.addSubApp(
+      new Application({
+        database: app.db,
+        acl: false,
+        name: sub2,
+      }),
+    );
 
     subApp2.resourcer.define({
       name: 'test',

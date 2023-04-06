@@ -73,10 +73,10 @@ export const collectionFieldSchema: ISchema = {
       params: {
         paginate: false,
         filter: {
-          'interface.$not': null,
+          $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
         },
         sort: ['sort'],
-        appends: ['uiSchema'],
+        // appends: ['uiSchema'],
       },
     },
   },
@@ -104,6 +104,14 @@ export const collectionFieldSchema: ISchema = {
               title: "{{t('Delete record')}}",
               content: "{{t('Are you sure you want to delete it?')}}",
             },
+          },
+        },
+        syncfromDatabase: {
+          type: 'void',
+          title: '{{ t("Sync from database") }}',
+          'x-component': 'SyncFieldsAction',
+          'x-component-props': {
+            type: 'primary',
           },
         },
         create: {

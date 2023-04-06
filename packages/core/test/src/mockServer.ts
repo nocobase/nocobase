@@ -27,6 +27,7 @@ interface ActionParams {
    * @deprecated
    */
   associatedIndex?: string;
+
   [key: string]: any;
 }
 
@@ -41,6 +42,7 @@ interface SortActionParams {
   method?: string;
   target?: any;
   sticky?: boolean;
+
   [key: string]: any;
 }
 
@@ -51,12 +53,17 @@ interface Resource {
   update: (params?: ActionParams) => Promise<supertest.Response>;
   destroy: (params?: ActionParams) => Promise<supertest.Response>;
   sort: (params?: SortActionParams) => Promise<supertest.Response>;
+
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
 export class MockServer extends Application {
   async loadAndInstall(options: any = {}) {
     await this.load({ method: 'install' });
+
+    if (options.afterLoad) {
+      await options.afterLoad(this);
+    }
 
     await this.install({
       ...options,

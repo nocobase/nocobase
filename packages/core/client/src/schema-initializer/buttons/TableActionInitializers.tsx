@@ -1,4 +1,5 @@
-import { Schema } from '@formily/react';
+import { Schema, useFieldSchema } from '@formily/react';
+import { useCollection } from '../../';
 
 // 表格操作配置
 export const TableActionInitializers = {
@@ -31,6 +32,10 @@ export const TableActionInitializers = {
               skipScopeCheck: true,
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -39,6 +44,10 @@ export const TableActionInitializers = {
           schema: {
             'x-align': 'right',
             'x-decorator': 'ACLActionProvider',
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
@@ -49,10 +58,28 @@ export const TableActionInitializers = {
             'x-align': 'right',
           },
         },
+        {
+          type: 'item',
+          title: "{{t('Expand/Collapse')}}",
+          component: 'ExpandActionInitializer',
+          schema: {
+            'x-align': 'right',
+          },
+          visible: () => {
+            const schema = useFieldSchema();
+            const collection = useCollection();
+            const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
+            return collection.tree && treeTable !== false;
+          },
+        },
       ],
     },
     {
       type: 'divider',
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'item',
@@ -67,9 +94,17 @@ export const TableActionInitializers = {
         )?.[1];
         return resultSchema;
       },
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'divider',
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
     {
       type: 'subMenu',
@@ -120,6 +155,10 @@ export const TableActionInitializers = {
           },
         },
       ],
+      visible: () => {
+        const collection = useCollection();
+        return (collection as any).template !== 'view';
+      },
     },
   ],
 };

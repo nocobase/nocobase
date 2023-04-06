@@ -31,7 +31,7 @@ Radio.Group = connect(
     if (!isValid(props.value)) {
       return <div></div>;
     }
-    const { options = [], value } = props;
+    const { value } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
     return (

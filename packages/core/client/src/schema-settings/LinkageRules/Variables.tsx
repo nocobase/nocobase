@@ -17,11 +17,14 @@ const supportsType = [
   'checkboxGroup',
   'select',
   'multipleSelect',
+  'formula',
   'oho',
   'obo',
-  'm2o'
+  'm2o',
+  'o2m',
+  'm2m',
 ];
-const VariableTypes = (currentCollection) => {
+const useVariableTypes = (currentCollection) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
   const collection = getCollection(currentCollection);
   const fields = getCollectionFields(currentCollection);
@@ -45,10 +48,10 @@ const VariableTypes = (currentCollection) => {
             schema: field?.uiSchema,
             value: field.name,
           };
-          if (field.target && depth > 2) {
+          if (field.target && depth > 1) {
             return;
           }
-          if (depth > 2) {
+          if (depth > 1) {
             return option;
           }
           if (children?.length) {
@@ -91,7 +94,7 @@ const VariableTypes = (currentCollection) => {
 
 export function useVariableOptions(collectionName) {
   const compile = useCompile();
-  const options = VariableTypes(collectionName).map((item: any) => {
+  const options = useVariableTypes(collectionName).map((item) => {
     const options = typeof item.options === 'function' ? item.options() : item.options;
     return {
       label: compile(item.title),

@@ -40,7 +40,6 @@ export default ({ queryId, fields }: { queryId: number; fields }) => {
         type: 'array',
         'x-component': 'TableV2',
         'x-component-props': {
-          rowKey: 'id',
           scroll: { y: 300 },
         },
         default: dataSet,
@@ -63,6 +62,14 @@ export default ({ queryId, fields }: { queryId: number; fields }) => {
         <Spin />
       </>
     );
+  //对dataset中引用类型数据类型进行序列化处理
+  dataSet.forEach((item) => {
+    for (const key in item) {
+      if (item[key] && item[key] instanceof Object) {
+        item[key] = JSON.stringify(item[key]);
+      }
+    }
+  });
   return (
     <SchemaComponentProvider scope={{ dataSet }} components={{ TableV2, Input, FormItem }}>
       <BlockSchemaComponentProvider>

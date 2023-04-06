@@ -34,28 +34,19 @@ export const workflowPageClass = css`
     flex-direction: column;
     align-items: center;
     padding: 2em;
+
+    .end{
+      cursor: default;
+
+      &:hover{
+        box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+      }
+    }
   }
 `;
 
 export const workflowVersionDropdownClass = css`
   .ant-dropdown-menu-item{
-
-    strong{
-      font-weight: normal;
-    }
-
-    &.enabled{
-      strong{
-        font-weight: bold;
-      }
-    }
-
-    &.unexecuted{
-      strong{
-        font-style: italic;
-      }
-    }
-
     .ant-dropdown-menu-title-content{
       text-align: right;
 
@@ -63,6 +54,22 @@ export const workflowVersionDropdownClass = css`
         margin-left: 0.5rem;
         color: #999;
         font-size: 80%;
+      }
+
+      strong{
+        font-weight: normal;
+      }
+
+      > .enabled{
+        strong{
+          font-weight: bold;
+        }
+      }
+
+      > .unexecuted{
+        strong{
+          font-style: italic;
+        }
       }
     }
   }

@@ -34,6 +34,7 @@ export const chinaRegion: IField = {
       },
     },
   },
+  availableTypes:['belongsToMany'],
   initialize: (values: any) => {
     if (!values.through) {
       values.through = `t_${uid()}`;

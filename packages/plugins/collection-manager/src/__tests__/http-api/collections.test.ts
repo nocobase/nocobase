@@ -97,7 +97,7 @@ describe('collections repository', () => {
 
     const testCollection = app.db.getCollection('test');
 
-    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.addSchemaTableName());
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(testCollection.getTableNameWithSchema());
 
     expect(tableInfo['field']).toBeDefined();
   });
@@ -460,7 +460,7 @@ describe('collections repository', () => {
 
     const columnName = collection.model.rawAttributes.testField.field;
 
-    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(collection.addSchemaTableName());
+    const tableInfo = await app.db.sequelize.getQueryInterface().describeTable(collection.getTableNameWithSchema());
 
     expect(tableInfo[columnName]).toBeDefined();
   });
@@ -504,7 +504,7 @@ describe('collections repository', () => {
 
     const indexes = (await app.db.sequelize
       .getQueryInterface()
-      .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
+      .showIndex(app.db.getCollection('test').getTableNameWithSchema())) as any;
 
     const columnName = app.db.getCollection('test').model.rawAttributes.testField.field;
 
@@ -528,7 +528,7 @@ describe('collections repository', () => {
 
     const afterIndexes = (await app.db.sequelize
       .getQueryInterface()
-      .showIndex(app.db.getCollection('test').addSchemaTableName())) as any;
+      .showIndex(app.db.getCollection('test').getTableNameWithSchema())) as any;
 
     expect(
       afterIndexes.find(

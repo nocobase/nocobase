@@ -4,7 +4,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
+import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
+import _ from 'lodash';
 
 export const Resizable = (props) => {
   const { t } = useTranslation();
@@ -49,6 +51,9 @@ export const TableActionColumnInitializers = (props: any) => {
   const api = useAPIClient();
   const { refresh } = useDesignable();
   const { t } = useTranslation();
+  const collection = useCollection();
+  const { treeTable } = fieldSchema?.parent?.parent['x-decorator-props'] || {};
+  const modifyFlag = (collection as any).template !== 'view';
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
@@ -62,6 +67,7 @@ export const TableActionColumnInitializers = (props: any) => {
         if (!spaceSchema) {
           return;
         }
+        _.set(schema, 'x-designer-props.linkageAction', true);
         const dn = createDesignable({
           t,
           api,
@@ -95,8 +101,12 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-action': 'update',
                 'x-decorator': 'ACLActionProvider',
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
-            {
+            modifyFlag && {
               type: 'item',
               title: t('Delete'),
               component: 'DestroyActionInitializer',
@@ -106,6 +116,17 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
             },
+            collection.tree &&
+              treeTable !== false && {
+                type: 'item',
+                title: t('Add child'),
+                component: 'CreateChildInitializer',
+                schema: {
+                  'x-component': 'Action.Link',
+                  'x-action': 'create',
+                  'x-decorator': 'ACLActionProvider',
+                },
+              },
           ],
         },
         {
@@ -188,6 +209,10 @@ export const TableActionColumnInitializers = (props: any) => {
                   useProps: '{{ useCustomizeUpdateActionProps }}',
                 },
               },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
             },
             {
               type: 'item',
@@ -209,6 +234,10 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-component-props': {
                   useProps: '{{ useCustomizeRequestActionProps }}',
                 },
+              },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
               },
             },
           ],

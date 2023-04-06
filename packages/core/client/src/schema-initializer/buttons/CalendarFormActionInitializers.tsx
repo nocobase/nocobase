@@ -1,3 +1,5 @@
+import { useCollection } from '../..';
+
 // 表单的操作配置
 export const CalendarFormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -21,6 +23,10 @@ export const CalendarFormActionInitializers = {
               type: 'primary',
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -30,6 +36,10 @@ export const CalendarFormActionInitializers = {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -38,6 +48,10 @@ export const CalendarFormActionInitializers = {
           schema: {
             'x-component': 'Action',
             'x-decorator': 'ACLActionProvider',
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
@@ -130,6 +144,10 @@ export const CalendarFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
         },
         {
           type: 'item',
@@ -152,6 +170,10 @@ export const CalendarFormActionInitializers = {
             'x-component-props': {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
       ],

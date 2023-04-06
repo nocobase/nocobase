@@ -16,7 +16,6 @@ const ModeFieldsets = {
   [SCHEDULE_MODE.STATIC]: {
     startsOn: {
       type: 'datetime',
-      name: 'startsOn',
       title: `{{t("Starts on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
@@ -27,7 +26,6 @@ const ModeFieldsets = {
     },
     repeat: {
       type: 'string',
-      name: 'repeat',
       title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
@@ -52,7 +50,6 @@ const ModeFieldsets = {
     },
     endsOn: {
       type: 'datetime',
-      name: 'endsOn',
       title: `{{t("Ends on", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker',
@@ -62,7 +59,6 @@ const ModeFieldsets = {
     },
     limit: {
       type: 'number',
-      name: 'limit',
       title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
@@ -107,7 +103,6 @@ const ModeFieldsets = {
     },
     repeat: {
       type: 'string',
-      name: 'repeat',
       title: `{{t("Repeat mode", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RepeatField',
@@ -138,7 +133,6 @@ const ModeFieldsets = {
     },
     limit: {
       type: 'number',
-      name: 'limit',
       title: `{{t("Repeat limit", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',

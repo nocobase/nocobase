@@ -26,7 +26,7 @@ export class SyncRunner {
       );
     }
 
-    const tableName = inheritedCollection.addSchemaTableName();
+    const tableName = inheritedCollection.getTableNameWithSchema();
 
     const attributes = model.tableAttributes;
 
@@ -44,7 +44,7 @@ export class SyncRunner {
           `SELECT column_default
            FROM information_schema.columns
            WHERE table_name = '${parent.model.tableName}'
-            and table_schema = '${parent.collectionSchema()}'
+             and table_schema = '${parent.collectionSchema()}'
              and "column_name" = 'id';`,
           {
             transaction,
@@ -65,7 +65,6 @@ export class SyncRunner {
         const match = regex.exec(columnDefault);
 
         const sequenceName = match[1];
-
         const sequenceCurrentValResult = await queryInterface.sequelize.query(
           `select last_value
            from ${sequenceName}`,
@@ -88,7 +87,7 @@ export class SyncRunner {
     // if we have max sequence, set it to child table
     if (maxSequenceName) {
       const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
-        db.getCollection(parent).addSchemaTableName(),
+        db.getCollection(parent).getTableNameWithSchema(),
       );
 
       const sequenceTables = [...parentsDeep, tableName];
@@ -97,17 +96,16 @@ export class SyncRunner {
         const tableName = sequenceTable.tableName;
         const schemaName = sequenceTable.schema;
 
-        const queryName = Boolean(tableName.match(/[A-Z]/)) && !tableName.includes(`"`) ? `"${tableName}"` : tableName;
+        const idColumnSql = `SELECT column_name
+           FROM information_schema.columns
+           WHERE table_name = '${tableName}'
+             and column_name = 'id'
+             and table_schema = '${schemaName}';
+          `;
 
-        const idColumnQuery = await queryInterface.sequelize.query(
-          `SELECT column_name
-FROM information_schema.columns
-WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schemaName}';
-          `,
-          {
-            transaction,
-          },
-        );
+        const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
+          transaction,
+        });
 
         if (idColumnQuery[0].length == 0) {
           continue;
@@ -163,7 +161,7 @@ WHERE table_name='${queryName}' and column_name='id' and table_schema = '${schem
       ';',
       ` INHERITS (${parents
         .map((t) => {
-          return t.addSchemaTableName();
+          return t.getTableNameWithSchema();
         })
         .join(', ')});`,
     );

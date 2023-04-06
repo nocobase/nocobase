@@ -42,6 +42,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     const getAccessor = this.accessors().get;
     const sourceModel = await this.getSourceModel(transaction);
 
+    if (!sourceModel) return [];
+
     if (findOptions.include && findOptions.include.length > 0) {
       const ids = (
         await sourceModel[getAccessor]({
@@ -78,10 +80,18 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       });
     }
 
-    return await sourceModel[getAccessor]({
+    const data = await sourceModel[getAccessor]({
       ...findOptions,
       transaction,
     });
+
+    await this.collection.db.emitAsync('afterRepositoryFind', {
+      findOptions: options,
+      dataCollection: this.collection,
+      data,
+    });
+
+    return data;
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
@@ -103,6 +113,8 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);
+    if (!sourceModel) return 0;
+
     const queryOptions = this.buildQueryOptions(options);
 
     const count = await sourceModel[this.accessors().get]({

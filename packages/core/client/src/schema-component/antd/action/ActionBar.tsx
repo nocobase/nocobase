@@ -13,18 +13,20 @@ export const ActionBar = observer((props: any) => {
   const { designable } = useDesignable();
   if (layout === 'one-column') {
     return (
-      <div style={{ display: 'flex', ...style }} {...others}>
-        {props.children && (
-          <div style={{ marginRight: 8 }}>
-            <Space>
-              {fieldSchema.mapProperties((schema, key) => {
-                return <RecursionField key={key} name={key} schema={schema} />;
-              })}
-            </Space>
-          </div>
-        )}
-        {render()}
-      </div>
+      <DndContext>
+        <div style={{ display: 'flex', ...style }} {...others}>
+          {props.children && (
+            <div style={{ marginRight: 8 }}>
+              <Space>
+                {fieldSchema.mapProperties((schema, key) => {
+                  return <RecursionField key={key} name={key} schema={schema} />;
+                })}
+              </Space>
+            </div>
+          )}
+          {render()}
+        </div>
+      </DndContext>
     );
   }
   const hasActions = Object.keys(fieldSchema.properties ?? {}).length > 0;

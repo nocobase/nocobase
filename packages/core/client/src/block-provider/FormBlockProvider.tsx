@@ -5,7 +5,7 @@ import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { useDesignable } from '../schema-component';
+import { useActionContext, useDesignable } from '../schema-component';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
@@ -49,6 +49,15 @@ const InternalFormBlockProvider = (props) => {
   );
 };
 
+export const useIsEmptyRecord = () => {
+  const record = useRecord();
+  const keys = Object.keys(record);
+  if (keys.includes('__parent')) {
+    return keys.length > 1;
+  }
+  return keys.length > 0;
+};
+
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection, resource, association } = props;
@@ -57,14 +66,16 @@ export const FormBlockProvider = (props) => {
   const { getInheritCollections, getCollectionJoinField, getCollection } = useCollectionManager();
 
   const { designable } = useDesignable();
+  const isEmptyRecord = useIsEmptyRecord();
   let detailFlag = false;
-  if (Object.keys(record).length > 0 && Object.keys(__parent).length === 0) {
+  if (isEmptyRecord) {
     detailFlag = true;
     if (!designable && __collection) {
       detailFlag = __collection === collection;
     }
   }
-  const createFlag = (currentCollection.name === collection && !Object.keys(record).length) || !currentCollection.name;
+  const createFlag =
+    (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   let relationFlag = false;
   if (Object.keys(record).length > 0 && resource.includes('.')) {
     relationFlag = true;
@@ -96,8 +107,20 @@ export const useFormBlockContext = () => {
 
 export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
+  const record = useRecord();
+  const { fieldSchema } = useActionContext();
+  const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
-    ctx.form.setInitialValues(ctx.service?.data?.data);
+    if (addChild) {
+      ctx.form?.query('parent').take((field) => {
+        field.disabled = true;
+        field.value = new Proxy({ ...record }, {});
+      });
+    }
+  });
+
+  useEffect(() => {
+    ctx.form?.setInitialValues(ctx.service?.data?.data);
   }, []);
   return {
     form: ctx.form,

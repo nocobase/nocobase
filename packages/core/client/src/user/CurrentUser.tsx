@@ -1,22 +1,22 @@
+import { css } from '@emotion/css';
 import { Dropdown, Menu } from 'antd';
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useAPIClient, useCurrentUserContext } from '..';
-import { useRequest } from '../api-client';
+import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
-import {useCurrentAppInfo} from '../appInfo/CurrentAppInfoProvider'
-
+import { ThemeSettings } from './ThemeSettings';
 
 const ApplicationVersion = () => {
-  const data=useCurrentAppInfo();
+  const data = useCurrentAppInfo();
   return (
-      <Menu.Item key="version" disabled>
-        Version {data?.data?.version}
-      </Menu.Item>
+    <Menu.Item key="version" disabled>
+      Version {data?.data?.version}
+    </Menu.Item>
   );
 };
 
@@ -29,7 +29,7 @@ export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
   return (
-    <div style={{ display: 'inline-block', verticalAlign: 'top' }}>
+    <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
         <Dropdown
           visible={visible}
@@ -44,6 +44,7 @@ export const CurrentUser = () => {
               <ChangePassword />
               <SwitchRole />
               <LanguageSettings />
+              <ThemeSettings />
               <Menu.Divider />
               <Menu.Item
                 key="signout"
@@ -58,7 +59,17 @@ export const CurrentUser = () => {
             </Menu>
           }
         >
-          <span style={{ cursor: 'pointer', border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}>
+          <span
+            className={css`
+              max-width: 160px;
+              overflow: hidden;
+              display: inline-block;
+              line-height: 12px;
+              white-space: nowrap;
+              text-overflow: ellipsis;
+            `}
+            style={{ cursor: 'pointer', border: 0, padding: '16px', color: 'rgba(255, 255, 255, 0.65)' }}
+          >
             {data?.data?.nickname || data?.data?.email}
           </span>
         </Dropdown>

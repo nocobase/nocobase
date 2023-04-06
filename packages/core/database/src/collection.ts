@@ -10,7 +10,7 @@ import {
   Utils,
 } from 'sequelize';
 import { Database } from './database';
-import { Field, FieldOptions } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
@@ -19,10 +19,23 @@ export type RepositoryType = typeof Repository;
 
 export type CollectionSortable = string | boolean | { name?: string; scopeKey?: string };
 
+type dumpable = 'required' | 'optional' | 'skip';
+
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
+  namespace?: string;
+  duplicator?:
+    | dumpable
+    | {
+        dumpable: dumpable;
+        with?: string[] | string;
+        delayRestore?: any;
+      };
+
   tableName?: string;
   inherits?: string[] | string;
+  viewName?: string;
+
   filterTargetKey?: string;
   fields?: FieldOptions[];
   model?: string | ModelStatic<Model>;
@@ -36,6 +49,8 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @default 'options'
    */
   magicAttribute?: string;
+
+  tree?: string;
 
   [key: string]: any;
 }
@@ -56,7 +71,12 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    return lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    if (!targetKey && this.model.rawAttributes['id']) {
+      return 'id';
+    }
+
+    return targetKey;
   }
 
   get name() {
@@ -71,6 +91,22 @@ export class Collection<
     return this.context.database;
   }
 
+  get treeParentField(): BelongsToField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeParent) {
+        return field;
+      }
+    }
+  }
+
+  get treeChildrenField(): HasManyField | null {
+    for (const [_, field] of this.fields) {
+      if (field.options.treeChildren) {
+        return field;
+      }
+    }
+  }
+
   constructor(options: CollectionOptions, context: CollectionContext) {
     super();
     this.context = context;
@@ -82,7 +118,11 @@ export class Collection<
     this.modelInit();
 
     this.db.modelCollection.set(this.model, this);
-    this.db.tableNameCollectionMap.set(this.model.tableName, this);
+
+    // set tableName to collection map
+    // the form of key is `${schema}.${tableName}` if schema exists
+    // otherwise is `${tableName}`
+    this.db.tableNameCollectionMap.set(this.getTableNameWithSchemaAsString(), this);
 
     if (!options.inherits) {
       this.setFields(options.fields);
@@ -100,7 +140,11 @@ export class Collection<
   private checkTableName() {
     const tableName = this.tableName();
     for (const [k, collection] of this.db.collections) {
-      if (collection.name != this.options.name && tableName === collection.tableName()) {
+      if (
+        collection.name != this.options.name &&
+        tableName === collection.tableName() &&
+        collection.collectionSchema() === this.collectionSchema()
+      ) {
         throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
       }
     }
@@ -109,10 +153,10 @@ export class Collection<
   tableName() {
     const { name, tableName } = this.options;
     const tName = tableName || name;
-    return this.db.options.underscored ? snakeCase(tName) : tName;
+    return this.options.underscored ? snakeCase(tName) : tName;
   }
 
-  private sequelizeModelOptions() {
+  protected sequelizeModelOptions() {
     const { name } = this.options;
     return {
       ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
@@ -181,6 +225,7 @@ export class Collection<
 
     this.on('field.afterRemove', (field: Field) => {
       field.unbind();
+      this.db.emit('field.afterRemove', field);
     });
   }
 
@@ -205,10 +250,12 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    if (!this.db.options.underscored) {
+    if (!this.options.underscored) {
       return;
     }
+
     const fieldName = options.field || snakeCase(name);
+
     const field = this.findField((f) => {
       if (f.name === name) {
         return false;
@@ -218,9 +265,11 @@ export class Collection<
       }
       return snakeCase(f.name) === fieldName;
     });
+
     if (!field) {
       return;
     }
+
     if (options.type !== field.type) {
       throw new Error(`fields with same column must be of the same type ${JSON.stringify(options)}`);
     }
@@ -231,6 +280,18 @@ export class Collection<
     this.checkFieldType(name, options);
 
     const { database } = this.context;
+
+    if (options.source) {
+      const [sourceCollectionName, sourceFieldName] = options.source.split('.');
+      const sourceCollection = this.db.collections.get(sourceCollectionName);
+      if (!sourceCollection) {
+        throw new Error(`source collection "${sourceCollectionName}" not found`);
+      }
+      const sourceField = sourceCollection.fields.get(sourceFieldName);
+      options = { ...sourceField.options, ...options };
+    }
+
+    this.emit('field.beforeAdd', name, options, { collection: this });
 
     const field = database.buildField(
       { name, ...options },
@@ -303,12 +364,13 @@ export class Collection<
 
   async removeFromDb(options?: QueryInterfaceDropTableOptions) {
     if (
-      await this.existsInDb({
+      !this.isView() &&
+      (await this.existsInDb({
         transaction: options?.transaction,
-      })
+      }))
     ) {
       const queryInterface = this.db.sequelize.getQueryInterface();
-      await queryInterface.dropTable(this.addSchemaTableName(), options);
+      await queryInterface.dropTable(this.getTableNameWithSchema(), options);
     }
     this.remove();
   }
@@ -356,7 +418,9 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
-    this.setRepository(options.repository);
+    if (options.repository) {
+      this.setRepository(options.repository);
+    }
 
     this.context.database.emit('afterUpdateCollection', this);
 
@@ -539,18 +603,44 @@ export class Collection<
     return this.context.database.inheritanceMap.isParentNode(this.name);
   }
 
-  public addSchemaTableName() {
+  public getTableNameWithSchema() {
     const tableName = this.model.tableName;
 
-    if (this.collectionSchema()) {
+    if (this.collectionSchema() && this.db.inDialect('postgres')) {
       return this.db.utils.addSchema(tableName, this.collectionSchema());
     }
 
     return tableName;
   }
 
+  public tableNameAsString(options?: { ignorePublicSchema: boolean }) {
+    const tableNameWithSchema = this.getTableNameWithSchema();
+    if (lodash.isString(tableNameWithSchema)) {
+      return tableNameWithSchema;
+    }
+
+    const schema = tableNameWithSchema.schema;
+    const tableName = tableNameWithSchema.tableName;
+
+    if (options?.ignorePublicSchema && schema === 'public') {
+      return tableName;
+    }
+
+    return `${schema}.${tableName}`;
+  }
+
+  public getTableNameWithSchemaAsString() {
+    const tableName = this.model.tableName;
+
+    if (this.collectionSchema() && this.db.inDialect('postgres')) {
+      return `${this.collectionSchema()}.${tableName}`;
+    }
+
+    return tableName;
+  }
+
   public quotedTableName() {
-    return this.db.utils.quoteTable(this.addSchemaTableName());
+    return this.db.utils.quoteTable(this.getTableNameWithSchema());
   }
 
   public collectionSchema() {
@@ -567,5 +657,9 @@ export class Collection<
     }
 
     return undefined;
+  }
+
+  public isView() {
+    return false;
   }
 }

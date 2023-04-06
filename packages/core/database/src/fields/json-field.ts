@@ -20,6 +20,7 @@ export class JsonbField extends Field {
     return DataTypes.JSON;
   }
 }
+
 export interface JsonbFieldOptions extends BaseColumnFieldOptions {
   type: 'jsonb';
 }

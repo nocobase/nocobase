@@ -109,16 +109,32 @@ export class OptionsParser {
     return filterParams;
   }
 
-  protected inheritFromSubQuery(): any {
-    return [
+  protected inheritFromSubQuery(include): any {
+    include.push([
       Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
       '__tableName',
-    ];
+    ]);
+
+    include.push([
+      Sequelize.literal(`
+        (SELECT n.nspname
+        FROM pg_class c
+               JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.oid = "${this.collection.name}".tableoid)
+      `),
+      '__schemaName',
+    ]);
   }
 
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
+
+    if (this.options?.attributes) {
+      return {
+        attributes: this.options.attributes,
+      };
+    }
 
     let attributes: FindAttributeOptions = {
       include: [],
@@ -126,7 +142,7 @@ export class OptionsParser {
     }; // out put all fields by default
 
     if (this.collection.isParent()) {
-      attributes.include.push(this.inheritFromSubQuery());
+      this.inheritFromSubQuery(attributes.include);
     }
 
     if (this.options?.fields) {
@@ -140,7 +156,7 @@ export class OptionsParser {
           if (!Array.isArray(attributes)) {
             attributes = [];
             if (this.collection.isParent()) {
-              attributes.push(this.inheritFromSubQuery());
+              this.inheritFromSubQuery(attributes);
             }
           }
 

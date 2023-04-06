@@ -10,15 +10,15 @@ import {
   CurrentUserProvider,
   findByUid,
   findMenuItem,
+  PinnedPluginList,
   RemoteCollectionManagerProvider,
-  RemotePluginManagerToolbar,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
   useACLRoleContext,
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings,
+  useSystemSettings
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 
@@ -213,7 +213,7 @@ export const InternalAdminLayout = (props: any) => {
               z-index: 10;
             `}
           >
-            <RemotePluginManagerToolbar />
+            <PinnedPluginList />
             <CurrentUser />
           </div>
         </div>

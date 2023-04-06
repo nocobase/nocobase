@@ -1,7 +1,7 @@
 import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
-  namespace: 'china-region',
+  namespace: 'china-region.china-region',
   duplicator: 'skip',
   name: 'chinaRegions',
   title: '中国行政区划',
