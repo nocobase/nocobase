@@ -498,4 +498,7 @@ export default {
   'Single select and radio fields can be used as the grouping field': 'Одиночное поле выбора и радиополя могут использоваться в качестве поля группировки',
   'Sign up successfully, and automatically jump to the sign in page': 'Зарегистрируйтесь успешно и автоматически перейдете на страницу входа',
   "Search and select collection": "Search and select collection",
+
+  'Click or drag file to this area to upload': "Нажмите или перетащите файл в эту область, чтобы загрузить",
+  'Support for a single or bulk upload, file size should not exceed': "Поддержка одиночной или массовой загрузки, размер файла не должен превышать",
 }
