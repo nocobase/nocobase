@@ -246,6 +246,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.acl.allow('collections', 'list', 'loggedIn');
+    this.app.acl.allow('collectionCategories', 'list', 'loggedIn');
   }
 
   async load() {
