@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { ISchema, connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
@@ -11,7 +11,7 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useSortFields
+  useSortFields,
 } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
@@ -92,8 +92,8 @@ interface AssociationSelectInterface {
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
 AssociationSelect.Designer = () => {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getField, template } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -454,6 +454,7 @@ AssociationSelect.Designer = () => {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
+              targetCollection: getCollection(collectionField.target),
             });
 
             if (type === 'CollectionField') {
