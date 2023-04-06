@@ -118,4 +118,22 @@ describe('DAG', () => {
 
     expect(() => dag.addEdge(nodeC, nodeA)).toThrowError('Adding this edge would create a cycle.');
   });
+
+  it('should return all connected nodes of a given node', () => {
+    const nodeD = new DAGNode('D');
+    dag.addNode(nodeA);
+    dag.addNode(nodeB);
+    dag.addNode(nodeC);
+    dag.addNode(nodeD);
+    dag.addEdge(nodeA, nodeC);
+    dag.addEdge(nodeB, nodeC);
+    dag.addEdge(nodeB, nodeD);
+
+    const connectedNodes = dag.getConnectedNodes(nodeC);
+    expect(connectedNodes.size).toBe(4);
+    expect(connectedNodes.has(nodeA)).toBe(true);
+    expect(connectedNodes.has(nodeB)).toBe(true);
+    expect(connectedNodes.has(nodeC)).toBe(true);
+    expect(connectedNodes.has(nodeD)).toBe(true);
+  });
 });

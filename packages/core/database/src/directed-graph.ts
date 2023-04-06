@@ -94,6 +94,21 @@ class DAG {
     return this.getDescendants(node2).includes(node1);
   }
 
+  getConnectedNodes(node: DAGNode): Set<DAGNode> {
+    const connectedNodes = new Set<DAGNode>();
+    const visit = (currentNode: DAGNode) => {
+      if (!connectedNodes.has(currentNode)) {
+        connectedNodes.add(currentNode);
+        const parents = this.getParents(currentNode);
+        const children = this.getChildren(currentNode);
+        parents.forEach(visit);
+        children.forEach(visit);
+      }
+    };
+    visit(node);
+    return connectedNodes;
+  }
+
   topologicalSort() {
     const visited = new Set();
     const sorted = [];
