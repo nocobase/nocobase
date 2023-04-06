@@ -58,8 +58,19 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
   const { html, loading: parseLoading } = useParseMarkdown(data?.data?.content);
 
   return (
-    <div style={{ height: '70vh', overflowY: 'auto' }}>
-      {loading || parseLoading ? <Spin /> : <div dangerouslySetInnerHTML={{ __html: error ? '' : html }}></div>}
+    <div
+      className={css`
+        background: #ffffff;
+        padding: var(--nb-spacing);
+        height: 70vh;
+        overflow-y: auto;
+      `}
+    >
+      {loading || parseLoading ? (
+        <Spin />
+      ) : (
+        <div className="nb-markdown" dangerouslySetInnerHTML={{ __html: error ? '' : html }}></div>
+      )}
     </div>
   );
 };
@@ -70,6 +81,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
   const api = useAPIClient();
   const [pluginName, setPluginName] = useState<string>(null);
   const { t } = useTranslation();
+  const settingItems = useContext(SettingsCenterContext);
   const { data, loading } = useRequest({
     url: 'applicationPlugins:list',
     params: {
@@ -87,8 +99,8 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
     },
   );
 
-  const columns = useMemo(() => {
-    const tmp: TableProps<any>['columns'] = [
+  const columns = useMemo<TableProps<any>['columns']>(() => {
+    return [
       {
         title: t('Plugin name'),
         dataIndex: 'name',
@@ -108,9 +120,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
         dataIndex: 'author',
         width: 150,
       },
-    ];
-    if (!builtIn) {
-      tmp.push({
+      {
         title: t('Actions'),
         width: 220,
         render(data) {
@@ -128,7 +138,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
               >
                 {t('View')}
               </Link>
-              {data.enabled ? (
+              {data.enabled && settingItems[data.name] ? (
                 <Link
                   onClick={() => {
                     history.push(`/admin/settings/${data.name}`);
@@ -137,49 +147,51 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
                   {t('Setting')}
                 </Link>
               ) : null}
-              <Link
-                onClick={async () => {
-                  const checked = !data.enabled;
-                  Modal.warn({
-                    title: checked ? t('Plugin staring') : t('Plugin stopping'),
-                    content: t('The application is reloading, please do not close the page.'),
-                    okButtonProps: {
-                      style: {
-                        display: 'none',
-                      },
-                    },
-                  });
-                  await api.request({
-                    url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
-                  });
-                  window.location.reload();
-                  // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
-                }}
-              >
-                {t(data.enabled ? 'Disable' : 'Enable')}
-              </Link>
-              <Popconfirm
-                title={t('Are you sure to delete this plugin?')}
-                onConfirm={async () => {
-                  await api.request({
-                    url: `pm:remove/${data.name}`,
-                  });
-                  message.success(t('插件删除成功'));
-                  window.location.reload();
-                }}
-                onCancel={() => {}}
-                okText={t('Yes')}
-                cancelText={t('No')}
-              >
-                <Link>{t('Delete')}</Link>
-              </Popconfirm>
+              {!builtIn ? (
+                <>
+                  <Link
+                    onClick={async () => {
+                      const checked = !data.enabled;
+                      Modal.warn({
+                        title: checked ? t('Plugin staring') : t('Plugin stopping'),
+                        content: t('The application is reloading, please do not close the page.'),
+                        okButtonProps: {
+                          style: {
+                            display: 'none',
+                          },
+                        },
+                      });
+                      await api.request({
+                        url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
+                      });
+                      window.location.reload();
+                      // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
+                    }}
+                  >
+                    {t(data.enabled ? 'Disable' : 'Enable')}
+                  </Link>
+                  <Popconfirm
+                    title={t('Are you sure to delete this plugin?')}
+                    onConfirm={async () => {
+                      await api.request({
+                        url: `pm:remove/${data.name}`,
+                      });
+                      message.success(t('插件删除成功'));
+                      window.location.reload();
+                    }}
+                    onCancel={() => {}}
+                    okText={t('Yes')}
+                    cancelText={t('No')}
+                  >
+                    <Link>{t('Delete')}</Link>
+                  </Popconfirm>
+                </>
+              ) : null}
             </Space>
           );
         },
-      });
-    }
-
-    return tmp;
+      },
+    ];
   }, [t, builtIn]);
 
   const items = useMemo<TabsProps['items']>(() => {
@@ -206,7 +218,30 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
         padding: var(--nb-spacing);
       `}
     >
-      <Modal width={'70%'} title={pluginName} open={!!pluginName} onCancel={() => setPluginName(null)}>
+      <Modal
+        footer={false}
+        className={css`
+          .ant-modal-header {
+            background: #f0f2f5;
+          }
+
+          .ant-modal-body {
+            padding-top: 0;
+          }
+
+          .ant-modal-body {
+            background: #f0f2f5;
+          }
+        `}
+        width="70%"
+        title={
+          <Typography.Title level={2} style={{ margin: 0 }}>
+            {pluginName}
+          </Typography.Title>
+        }
+        open={!!pluginName}
+        onCancel={() => setPluginName(null)}
+      >
         <Tabs items={items}></Tabs>
       </Modal>
       <Table
@@ -476,7 +511,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div className={'m24'}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (
