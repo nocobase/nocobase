@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { Modal, message, notification } from 'antd';
+import { Modal, message } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -14,14 +14,13 @@ import { useCollection } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
-import { FILE_LIMIT_SIZE, removeNullCondition, useActionContext, useCompile } from '../../schema-component';
+import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -978,43 +977,5 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
-  };
-};
-
-export const useUploadFiles = () => {
-  const { service } = useBlockRequestContext();
-  const { t } = useTranslation();
-  const uploadingFiles = {};
-
-  let pendingNumber = 0;
-
-  return {
-    /**
-     * 返回 false 会阻止上传，返回 true 会继续上传
-     */
-    beforeUpload(file) {
-      if (file.size > FILE_LIMIT_SIZE) {
-        notification.error({
-          message: `${t('File size cannot exceed')} ${FILE_LIMIT_SIZE / 1024 / 1024}M`,
-        });
-        file.status = 'error';
-        return false;
-      }
-      return true;
-    },
-    onChange(fileList) {
-      fileList.forEach((file) => {
-        if (file.status === 'uploading' && !uploadingFiles[file.uid]) {
-          pendingNumber++;
-          uploadingFiles[file.uid] = true;
-        }
-        if (file.status === 'done' && uploadingFiles[file.uid]) {
-          delete uploadingFiles[file.uid];
-          if (--pendingNumber === 0) {
-            service?.refresh?.();
-          }
-        }
-      });
-    },
   };
 };

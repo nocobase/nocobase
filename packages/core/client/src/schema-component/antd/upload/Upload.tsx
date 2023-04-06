@@ -13,9 +13,6 @@ import { isImage, toArr, toFileList, toItem, toValue, useUploadProps } from './s
 import './style.less';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
-// 限制上传文件大小为 10M
-export const FILE_LIMIT_SIZE = 10 * 1024 * 1024;
-
 export const Upload: ComposedUpload = connect(
   (props: UploadProps) => {
     return <AntdUpload {...useUploadProps(props)} />;
@@ -216,8 +213,7 @@ Upload.DraggerV2 = connect(
   (props: DraggerV2Props) => {
     const { t } = useTranslation();
     const defaultTitle = t('Click or drag file to this area to upload');
-    const defaultSubTitle =
-      t('Support for a single or bulk upload, file size should not exceed') + ` ${FILE_LIMIT_SIZE / 1024 / 1024}MB`;
+    const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
     const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
     const extraProps: Record<string, any> = useProps?.() || {};
 

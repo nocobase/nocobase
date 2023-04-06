@@ -39,22 +39,6 @@ export const TableActionInitializers = {
         },
         {
           type: 'item',
-          title: "{{t('Upload')}}",
-          component: 'UploadActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-          visible: () => {
-            const collection = useCollection();
-            return collection.template === 'file';
-          },
-        },
-        {
-          type: 'item',
           title: "{{t('Delete')}}",
           component: 'BulkDestroyActionInitializer',
           schema: {

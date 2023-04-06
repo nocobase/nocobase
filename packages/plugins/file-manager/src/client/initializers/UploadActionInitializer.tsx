@@ -1,6 +1,5 @@
+import { ActionInitializer, useCollection } from '@nocobase/client';
 import React from 'react';
-import { useCollection } from '../../collection-manager';
-import { ActionInitializer } from './ActionInitializer';
 
 export const UploadActionInitializer = (props) => {
   const collection = useCollection();
