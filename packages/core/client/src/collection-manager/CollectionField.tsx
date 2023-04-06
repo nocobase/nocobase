@@ -59,18 +59,6 @@ const InternalField: React.FC = (props) => {
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
     field.component = [component, componentProps];
-    if (['select', 'multipleSelect'].includes(interfaceType)) {
-      field.componentProps.ellipsis = true;
-    }
-    // if (interfaceType === 'input') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'textarea') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'markdown') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'attachment') {
-    //   field.componentProps.size = 'small';
-    // }
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
     return null;
