@@ -7,6 +7,7 @@ interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean;
   skipExist?: boolean;
+  replaceCollection?: boolean;
 }
 
 export class CollectionModel extends MagicAttributeModel {
@@ -32,7 +33,12 @@ export class CollectionModel extends MagicAttributeModel {
         return collection;
       }
 
-      collection.updateOptions(collectionOptions);
+      if (loadOptions.replaceCollection) {
+        this.db.removeCollection(name);
+        collection = this.db.collection(collectionOptions);
+      } else {
+        collection.updateOptions(collectionOptions);
+      }
     } else {
       collection = this.db.collection(collectionOptions);
     }
@@ -87,9 +93,15 @@ export class CollectionModel extends MagicAttributeModel {
     });
   }
 
-  async migrate(options?: SyncOptions & Transactionable) {
+  async migrate(
+    options?: SyncOptions &
+      Transactionable & {
+        replaceCollection?: boolean;
+      },
+  ) {
     const collection = await this.load({
       transaction: options?.transaction,
+      replaceCollection: options.replaceCollection,
     });
 
     // postgres support zero column table, other database should not sync it to database

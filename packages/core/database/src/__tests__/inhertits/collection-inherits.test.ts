@@ -16,25 +16,6 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
-  it('should support modify inherit option', async () => {
-    const A = db.collection({
-      name: 'a',
-      timestamps: false,
-      fields: [{ name: 'a_name', type: 'string' }],
-    });
-
-    const B = db.collection({
-      name: 'b',
-      timestamps: false,
-      fields: [{ name: 'b_name', type: 'string' }],
-    });
-
-    B.updateOptions({
-      name: 'b',
-      inherits: ['a'],
-    });
-  });
-
   it('should modify inherited collection parents', async () => {
     const A = db.collection({
       name: 'a',
