@@ -58,6 +58,7 @@ export default {
   "All collections":"All collections",
   "Add category":"Add category",
   "Enable child collections":"Enable child collections",
+  "Allow adding records to the current collection":"Allow adding records to the current collection",
   "Delete category":"Delete category",
   "Edit category":"Edit category",
   "Collection category":"Collection category",
