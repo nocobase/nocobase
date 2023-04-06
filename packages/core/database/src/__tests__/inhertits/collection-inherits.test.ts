@@ -16,23 +16,37 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
-  it('should modify inherited collection parents', async () => {
-    const parentA = db.collection({
-      name: 'parent_a',
+  it('should support modify inherit option', async () => {
+    const A = db.collection({
+      name: 'a',
       timestamps: false,
       fields: [{ name: 'a_name', type: 'string' }],
     });
 
-    const parentB = db.collection({
-      name: 'parent_b',
+    const B = db.collection({
+      name: 'b',
       timestamps: false,
       fields: [{ name: 'b_name', type: 'string' }],
     });
 
-    const child = db.collection({
-      name: 'child',
+    B.updateOptions({
+      name: 'b',
+      inherits: ['a'],
+    });
+  });
+
+  it('should modify inherited collection parents', async () => {
+    const A = db.collection({
+      name: 'a',
       timestamps: false,
-      inherits: ['parent_a'],
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      timestamps: false,
+      inherits: ['a'],
+      fields: [{ name: 'b_name', type: 'string' }],
     });
 
     await db.sync({
@@ -40,6 +54,19 @@ pgOnly()('collection inherits', () => {
       alter: {
         drop: false,
       },
+    });
+
+    // inert 10 data into B
+    await B.repository.create({
+      values: Array.from({ length: 10 }).map((_, i) => ({
+        b_name: `b-${i}`,
+      })),
+    });
+
+    const C = db.collection({
+      name: 'c',
+      timestamps: false,
+      fields: [{ name: 'c_name', type: 'string' }],
     });
   });
 

@@ -418,6 +418,7 @@ export class Collection<
     this.options = newOptions;
 
     this.setFields(options.fields, false);
+
     if (options.repository) {
       this.setRepository(options.repository);
     }
