@@ -230,7 +230,7 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileCollection(targetCollection) ? (
         <SchemaSettings.SwitchItem
           key="quick-upload"
           title={t('Quick upload')}
@@ -250,7 +250,7 @@ FormItem.Designer = () => {
           }}
         />
       ) : null}
-      {isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileCollection(targetCollection) ? (
         <SchemaSettings.SwitchItem
           key="select-file"
           title={t('Select file')}
