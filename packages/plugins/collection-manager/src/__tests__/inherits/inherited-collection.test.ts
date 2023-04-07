@@ -3,7 +3,7 @@ import Application from '@nocobase/server';
 import { createApp } from '..';
 import { pgOnly } from '@nocobase/test';
 
-describe('Inherited Collection', () => {
+pgOnly()('Inherited Collection', () => {
   let db: Database;
   let app: Application;
 
@@ -22,6 +22,57 @@ describe('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should change inherits option', async () => {
+    const createCollection = async (name: string, options = {}) => {
+      // check collection exists or not
+      const exists = await collectionRepository.findOne({
+        filterByTk: name,
+      });
+
+      if (exists) {
+        await collectionRepository.update({
+          filterByTk: name,
+          values: {
+            ...options,
+          },
+        });
+      } else {
+        await collectionRepository.create({
+          values: {
+            name,
+            timestamps: false,
+            fields: [
+              {
+                name: `${name}_name`,
+                type: 'string',
+              },
+            ],
+          },
+          context: {},
+        });
+      }
+    };
+
+    await createCollection('a');
+
+    await createCollection('b', {
+      inherits: ['a'],
+    });
+
+    await createCollection('b', {
+      inherits: [],
+    });
+
+    // collection b should has fields of a collection
+    const bFields = await fieldsRepository.find({
+      filter: {
+        collectionName: 'b',
+      },
+    });
+
+    expect(bFields.find((item) => item.name === 'a_name')).toBeTruthy();
   });
 
   it('should support modify inherits option', async () => {
