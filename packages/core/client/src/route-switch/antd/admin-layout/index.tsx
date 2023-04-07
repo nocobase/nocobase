@@ -18,7 +18,7 @@ import {
   useDocumentTitle,
   useRequest,
   useRoute,
-  useSystemSettings
+  useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
 
@@ -271,6 +271,7 @@ export const InternalAdminLayout = (props: any) => {
       >
         <header
           className={css`
+            flex-shrink: 0;
             height: 46px;
             line-height: 46px;
             background: transparent;

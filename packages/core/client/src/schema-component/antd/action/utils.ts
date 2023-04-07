@@ -69,15 +69,16 @@ export const requestSettingsSchema: ISchema = {
   },
 };
 
-export const linkageAction = (operator, field, condition, values) => {
+export const linkageAction = (operator, field, condition, values, designable = false) => {
   const disableResult = field?.linkageProperty?.disabled || [false];
   const displayResult = field?.linkageProperty?.display || ['visible'];
+  const fieldName = designable ? 'hidden' : 'visible';
   switch (operator) {
     case ActionType.Visible:
       if (conditionAnalyse(condition, values)) {
         displayResult.push(operator);
         field.data = field.data || {};
-        field.data.hidden = false;
+        field.data[fieldName] = false;
       }
       field.linkageProperty = {
         ...field.linkageProperty,
@@ -88,10 +89,10 @@ export const linkageAction = (operator, field, condition, values) => {
     case ActionType.Hidden:
       if (conditionAnalyse(condition, values)) {
         field.data = field.data || {};
-        field.data.hidden = true;
+        field.data[fieldName] = true;
       } else {
         field.data = field.data || {};
-        field.data.hidden = false;
+        field.data[fieldName] = false;
       }
       break;
     case ActionType.Disabled:
