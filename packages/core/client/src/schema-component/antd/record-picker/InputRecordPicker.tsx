@@ -28,23 +28,25 @@ function flatData(data) {
 
 const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
-  const { multiple, value, setSelectedRows, selectedRows: rcSelectRows } = useContext(RecordPickerContext);
-  const { onRowSelectionChange, rowKey, ...others } = useTsp();
+  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [] } = useContext(RecordPickerContext);
+  const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
   return {
     ...others,
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
-      // defaultSelectedRowKeys: rcSelectRows?.map((item) => item[rowKey||'id']),
-      selectedRowKeys: rcSelectRows?.map((item) => item[rowKey || 'id']),
+      selectedRowKeys: rcSelectRows
+        .filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
+        .map((item) => item[rowKey]),
     },
+    dataSource: field.value?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey])),
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
         const scopeRows = flatData(field.value) || [];
         const allSelectedRows = rcSelectRows || [];
-        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey || 'id');
-        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey || 'id');
-        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey || 'id']);
+        const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey);
+        const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey);
+        const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey]);
         setSelectedRows?.(unionSelectedRows);
         onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
       } else {
@@ -57,11 +59,11 @@ const useTableSelectorProps = () => {
 
 const usePickActionProps = () => {
   const { setVisible } = useActionContext();
-  const { multiple, selectedRows, onChange } = useContext(RecordPickerContext);
+  const { multiple, selectedRows, onChange, options } = useContext(RecordPickerContext);
   return {
     onClick() {
       if (multiple) {
-        onChange(selectedRows);
+        onChange([...options, ...selectedRows]);
       } else {
         onChange(selectedRows?.[0] || null);
       }
@@ -102,7 +104,6 @@ export const InputRecordPicker: React.FC<any> = (props) => {
         };
       });
       setOptions(opts);
-      setSelectedRows(opts);
     }
   }, [value, fieldNames?.label]);
 
@@ -114,13 +115,11 @@ export const InputRecordPicker: React.FC<any> = (props) => {
 
   const handleSelect = () => {
     setVisible(true);
-    setSelectedRows(options);
   };
 
   const handleRemove = (file) => {
     const newOptions = options.filter((option) => option.id !== file.id);
     setOptions(newOptions);
-    setSelectedRows(newOptions);
     if (newOptions.length === 0) {
       return onChange(null);
     }
@@ -158,7 +157,17 @@ export const InputRecordPicker: React.FC<any> = (props) => {
           open={false}
         />
       )}
-      {Drawer({ multiple, onChange, selectedRows, setSelectedRows, collectionField, visible, setVisible, fieldSchema })}
+      {Drawer({
+        multiple,
+        onChange,
+        selectedRows,
+        setSelectedRows,
+        collectionField,
+        visible,
+        setVisible,
+        fieldSchema,
+        options,
+      })}
     </div>
   );
 };
@@ -172,9 +181,20 @@ const Drawer: React.FunctionComponent<{
   visible: boolean;
   setVisible: React.Dispatch<React.SetStateAction<boolean>>;
   fieldSchema;
-}> = ({ multiple, onChange, selectedRows, setSelectedRows, collectionField, visible, setVisible, fieldSchema }) => {
+  options: any[];
+}> = ({
+  multiple,
+  onChange,
+  selectedRows,
+  setSelectedRows,
+  collectionField,
+  visible,
+  setVisible,
+  fieldSchema,
+  options,
+}) => {
   return (
-    <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows }}>
+    <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows, options }}>
       <CollectionProvider allowNull name={collectionField?.target}>
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <FormProvider>
