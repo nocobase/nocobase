@@ -33,6 +33,9 @@ export const FileSelector = (props: Props) => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
 
+  // 兼容旧版本
+  const showSelectButton = selectFile === undefined && quickUpload === undefined;
+
   useEffect(() => {
     setFileList(toFileList(value));
   }, [value]);
@@ -126,6 +129,32 @@ export const FileSelector = (props: Props) => {
             );
           })}
           <>
+            {showSelectButton ? (
+              <div className={'ant-upload-list-picture-card-container'}>
+                <AntdUpload
+                  disabled={disabled}
+                  multiple={multiple}
+                  listType={'picture-card'}
+                  showUploadList={false}
+                  onRemove={handleRemove}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onClick={handleSelect}
+                  >
+                    <PlusOutlined />
+                    {t('Select')}
+                  </div>
+                </AntdUpload>
+              </div>
+            ) : null}
             {quickUpload ? (
               <div className={'ant-upload-list-picture-card-container'}>
                 <AntdUpload
