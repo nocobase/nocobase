@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { onFieldValueChange } from '@formily/core';
+import { onFieldInputValueChange } from '@formily/core';
 import { observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ const InternalExpression = observer((props: any) => {
   const [collection, setCollection] = useState(null);
 
   useFormEffects(() => {
-    onFieldValueChange('sourceCollection', (f) => {
+    onFieldInputValueChange('sourceCollection', (f) => {
       setCollection(f.value);
       onChange(null);
     });
