@@ -277,8 +277,8 @@ export const Page = (props) => {
                 <FixedBlock
                   key={schema.name}
                   height={
-                    // header 46 margin 48
-                    height + 46 + 48
+                    // header 46 margin --nb-spacing * 2
+                    `calc(${height}px + 46px + var(--nb-spacing) * 2)`
                   }
                 >
                   <SchemaComponent
@@ -296,8 +296,8 @@ export const Page = (props) => {
           ) : (
             <FixedBlock
               height={
-                // header 46 margin 48
-                height + 46 + 48
+                // header 46 margin --nb-spacing * 2
+                `calc(${height}px + 46px + var(--nb-spacing) * 2)`
               }
             >
               <div className={pageWithFixedBlockCss}>{props.children}</div>

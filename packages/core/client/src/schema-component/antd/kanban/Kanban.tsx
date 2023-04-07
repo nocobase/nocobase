@@ -1,6 +1,6 @@
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { css } from '@emotion/css'
+import { css } from '@emotion/css';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../..';
@@ -88,12 +88,16 @@ export const Kanban: any = observer((props: any) => {
   };
 
   return (
-    <Spin wrapperClassName={css`
-      overflow: hidden;
-      > .ant-spin-container {
+    <Spin
+      wrapperClassName={css`
+        overflow: hidden;
         height: 100%;
-      }
-    `} spinning={field.loading || false}>
+        > .ant-spin-container {
+          height: 100%;
+        }
+      `}
+      spinning={field.loading || false}
+    >
       <Board
         {...restProps}
         allowAddCard={!!schemas.cardAdder}
