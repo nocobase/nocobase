@@ -1,9 +1,10 @@
 import Database from '../../database';
 import { mockDatabase } from '../index';
 
-describe('ne operator', () => {
+describe('eq operator', () => {
   let db: Database;
   let Test;
+
   beforeEach(async () => {
     db = mockDatabase({});
 
@@ -19,31 +20,7 @@ describe('ne operator', () => {
     await db.close();
   });
 
-  it('should ne with null', async () => {
-    await db.getRepository('tests').create({});
-
-    const results = await db.getRepository('tests').count({
-      filter: {
-        'name.$ne': '123',
-      },
-    });
-
-    expect(results).toEqual(1);
-  });
-
-  it('compare with null', async () => {
-    await db.getRepository('tests').create({});
-
-    const results = await db.getRepository('tests').count({
-      filter: {
-        'name.$ne': null,
-      },
-    });
-
-    expect(results).toBe(0);
-  });
-
-  it('should ne with array', async () => {
+  it('should eq with array', async () => {
     await db.getRepository('tests').create({
       values: [
         { name: '123' },
@@ -54,10 +31,46 @@ describe('ne operator', () => {
 
     const results = await db.getRepository('tests').count({
       filter: {
-        'name.$ne': ['123', '234'],
+        'name.$eq': ['123', '234'],
+      },
+    });
+
+    expect(results).toEqual(2);
+  });
+
+  it('should eq with array', async () => {
+    await db.getRepository('tests').create({
+      values: [
+        { name: '123' },
+        { name: '234' },
+        { name: '345' },
+      ]
+    });
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$eq': '123',
       },
     });
 
     expect(results).toEqual(1);
+  });
+
+  it('should eq with array', async () => {
+    await db.getRepository('tests').create({
+      values: [
+        { name: '123' },
+        { name: '234' },
+        { name: '345' },
+      ]
+    });
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$eq': '456',
+      },
+    });
+
+    expect(results).toEqual(0);
   });
 });
