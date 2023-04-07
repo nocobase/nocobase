@@ -332,22 +332,22 @@ export class ACL extends EventEmitter {
   }
 
   async parseJsonTemplate(json: any, ctx: any) {
-    const state = JSON.parse(JSON.stringify(ctx.state));
-    return await parseFilter(json, {
-      timezone: ctx.get('x-timezone'),
-      now: new Date().toISOString(),
-      vars: {
-        ctx: {
-          state,
+    if (json.filter) {
+      const timezone = ctx?.get?.('x-timezone');
+      const state = JSON.parse(JSON.stringify(ctx.state));
+      const filter = await parseFilter(json.filter, {
+        timezone,
+        now: new Date().toISOString(),
+        vars: {
+          ctx: {
+            state,
+          },
+          $user: state.currentUser,
         },
-        $user: state.currentUser,
-      },
-    });
-    // return parse(json)({
-    //   ctx: {
-    //     state: JSON.parse(JSON.stringify(ctx.state)),
-    //   },
-    // });
+      });
+      json.filter = filter;
+    }
+    return json;
   }
 
   middleware() {
