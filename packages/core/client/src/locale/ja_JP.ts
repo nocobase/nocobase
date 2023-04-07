@@ -102,6 +102,7 @@ export default {
   "Set the data scope": "データ範囲の設定",
   "Data blocks": "データブロック",
   "Filter blocks": "フィルターブロック",
+  "Table OID(Inheritance)":"データテーブルOID(継承)",
   "Table": "テーブル",
   "Form": "フォーム",
   "Collapse": "折りたたみ",
