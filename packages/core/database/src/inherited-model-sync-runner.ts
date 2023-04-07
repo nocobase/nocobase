@@ -209,6 +209,50 @@ export class InheritedModelSyncRunner {
   static async resetSequence(collection, options) {
     const { db, transaction } = options;
     const connectedNodes = db.inheritanceMap.getConnectedNodes(collection.name);
-    console.log({ connectedNodes });
+    const connectedCollections = [...connectedNodes].map((node) => db.getCollection(node));
+    const connectedCollectionsWithId = connectedCollections.filter(
+      (x) => x.model.rawAttributes.id && x.model.rawAttributes.id.autoIncrement,
+    );
+
+    const sequenceResults = [];
+
+    for (const connectedCollection of connectedCollectionsWithId) {
+      const collectionSequence = await db.sequelize.query(
+        `
+        SELECT pg_get_serial_sequence('"${connectedCollection.collectionSchema()}"."${
+          connectedCollection.model.tableName
+        }"', 'id');
+      `,
+        {
+          transaction,
+        },
+      );
+
+      const maxId = await db.sequelize.query(
+        `
+        SELECT MAX(id) FROM ${connectedCollection.quotedTableName()};`,
+        {
+          transaction,
+        },
+      );
+
+      sequenceResults.push({
+        sequence: collectionSequence[0][0]['pg_get_serial_sequence'],
+        maxId: maxId[0][0].max,
+      });
+    }
+
+    const maxSequence = sequenceResults.reduce((prev, current) => (prev.maxId > current.maxId ? prev : current));
+
+    // set all connected collection to use same sequence
+    for (const connectedCollection of connectedCollectionsWithId) {
+      await db.sequelize.query(
+        `alter table ${connectedCollection.quotedTableName()}
+            alter column id set default nextval('${maxSequence.sequence}')`,
+        {
+          transaction,
+        },
+      );
+    }
   }
 }

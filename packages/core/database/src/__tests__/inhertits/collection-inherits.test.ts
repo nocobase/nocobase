@@ -34,7 +34,7 @@ pgOnly()('collection inherits', () => {
         ...options,
       });
 
-      await db.sync({
+      await collection.sync({
         force: false,
         alter: {
           drop: false,
