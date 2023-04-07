@@ -238,11 +238,12 @@ export class InheritedModelSyncRunner {
 
       sequenceResults.push({
         sequence: collectionSequence[0][0]['pg_get_serial_sequence'],
-        maxId: maxId[0][0].max,
+        maxId: maxId[0][0].max || 0,
       });
     }
 
-    const maxId = sequenceResults.reduce((prev, current) => (prev > current.maxId ? prev : current.maxId));
+    const maxId = sequenceResults.reduce((prev, current) => (prev > current.maxId ? prev : current.maxId), 0);
+
     const rootSequence = sequenceResults[0].sequence;
 
     // set rootSequence to maxId

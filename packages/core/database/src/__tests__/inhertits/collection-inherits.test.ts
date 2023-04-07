@@ -108,6 +108,7 @@ pgOnly()('collection inherits', () => {
     });
 
     expect((await findSequence('x')) === (await findSequence('d'))).toBeTruthy();
+    expect((await findSequence('b')) === (await findSequence('c'))).toBeTruthy();
   });
 
   it('should set inherited map when inherits changed', async () => {
