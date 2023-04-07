@@ -18,6 +18,6 @@ export const templateOptions = () =>
     .sort((a, b) => {
       return collectionTemplates[a].order - collectionTemplates[b].order;
     })
-    .map((templace) => {
-      return collectionTemplates[templace];
+    .map((template) => {
+      return collectionTemplates[template];
     });

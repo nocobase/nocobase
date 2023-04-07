@@ -9,11 +9,11 @@ import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
   TableFieldResource,
-  useActionContext,
+  WithoutTableFieldResource,
   useAPIClient,
+  useActionContext,
   useDesignable,
   useRecord,
-  WithoutTableFieldResource,
 } from '../';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';

@@ -335,6 +335,12 @@ export const useDestroyActionAndRefreshCM = () => {
   };
 };
 
+export const useDeleteButtonVisible = () => {
+  const { interface: i, deletable = true } = useRecord();
+
+  return deletable && i !== 'id';
+};
+
 export const useBulkDestroyActionAndRefreshCM = () => {
   const { run } = useBulkDestroyAction();
   const { refreshCM } = useCollectionManager();

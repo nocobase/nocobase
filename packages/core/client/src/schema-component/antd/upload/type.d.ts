@@ -16,10 +16,21 @@ export type DraggerProps = Omit<AntdDraggerProps, 'onChange'> & {
   children?: React.ReactNode;
 };
 
+export type DraggerV2Props = Omit<AntdDraggerProps, 'onChange'> & {
+  onChange?: (fileList: UploadFile[]) => void;
+  serviceErrorMessage?: string;
+  title?: string;
+  subTitle?: string;
+  children?: React.ReactNode;
+  useProps?: () => any;
+};
+
 export type ComposedUpload = React.FC<UploadProps> & {
   Dragger?: React.FC<DraggerProps>;
+  DraggerV2?: React.FC<DraggerProps>;
   File?: React.FC<UploadProps>;
   Attachment?: React.FC<UploadProps>;
+  Selector?: React.FC<any>;
 };
 
 export type IUploadProps = {

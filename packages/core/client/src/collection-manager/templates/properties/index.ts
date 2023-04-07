@@ -100,7 +100,7 @@ export const defaultConfigurableProperties = {
     },
     'x-disabled': '{{ !createOnly }}',
     'x-visible': '{{ enableInherits}}',
-    'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+    'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
   },
   category: {
     title: '{{t("Categories")}}',
@@ -145,7 +145,7 @@ export type DefaultConfigurableKeys =
   | 'moreOptions';
 
 export const getConfigurableProperties = (...keys: DefaultConfigurableKeys[]) => {
-  const props = {};
+  const props = {} as Record<DefaultConfigurableKeys, any>;
   for (const key of keys) {
     if (defaultConfigurableProperties[key]) {
       props[key] = defaultConfigurableProperties[key];
