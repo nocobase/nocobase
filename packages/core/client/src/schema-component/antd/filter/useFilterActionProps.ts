@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../..';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -9,7 +10,48 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 export const useFilterOptions = (collectionName: string) => {
   const { getCollectionFields } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
-  return useFilterFieldOptions(fields);
+  const options=useFilterFieldOptions(fields)
+  const compile = useCompile();
+  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection();
+  const childrenCollections = getChildrenCollections(collection.name);
+  if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
+    options.push({
+      name: 'tableoid',
+      type: 'string',
+      title: '{{t("Table OID(Inheritance)")}}',
+      schema: {
+        'x-component': 'Select',
+        enum: [{ value: collection.name, label: compile(collection.title) }].concat(
+          childrenCollections.map((v) => {
+            return {
+              value: v.name,
+              label: compile(v.title),
+            };
+          }),
+        ),
+      },
+      operators: [
+        {
+          label: '{{t("contains")}}',
+          value: '$childIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+        {
+          label: '{{t("does not contain")}}',
+          value: '$childNotIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+      ],
+    });
+  }
+  return options;
 };
 
 export const useFilterFieldOptions = (fields) => {
