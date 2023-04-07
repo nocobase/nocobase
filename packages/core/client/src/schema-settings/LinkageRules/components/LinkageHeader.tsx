@@ -17,7 +17,7 @@ const LinkageRulesTitle = (props) => {
   return (
     <Input.TextArea
       value={value.title}
-      defaultValue={t('linkage rule')}
+      defaultValue={t('Linkage rule')}
       onChange={(ev) => {
         ev.stopPropagation();
         array.field.value.splice(index, 1, { ...value, title: ev.target.value });
