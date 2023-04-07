@@ -7929,7 +7929,7 @@ antd@4.22.8:
     rc-util "^5.22.5"
     scroll-into-view-if-needed "^2.2.25"
 
-antd@^4.23:
+antd@^4.24.8:
   version "4.24.8"
   resolved "https://registry.yarnpkg.com/antd/-/antd-4.24.8.tgz#22f34de6857556868780dfa5fe7b374b0b71b517"
   integrity sha512-wrNy2Hi27uM3948okG3n2GwzQKBFUn1Qn5mn2I/ALcR28rC6cTjHYOuA248Zl9ECzz3jo4TY2R0SIa+5GZ/zGA==
