@@ -1,7 +1,6 @@
 import { Action } from '@nocobase/resourcer';
-import { assign, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
-import parse from 'json-templates';
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
@@ -135,7 +134,7 @@ export class ACL extends EventEmitter {
 
         if (params && resourcerAction.mergeParams) {
           const filteredParams = filterParams(ctx, resourceName, params);
-          const parsedParams = acl.parseJsonTemplate(filteredParams, ctx);
+          const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
 
           ctx.permission.parsedParams = parsedParams;
           ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
@@ -332,12 +331,23 @@ export class ACL extends EventEmitter {
     }
   }
 
-  parseJsonTemplate(json: any, ctx: any) {
-    return parse(json)({
-      ctx: {
-        state: JSON.parse(JSON.stringify(ctx.state)),
+  async parseJsonTemplate(json: any, ctx: any) {
+    const state = JSON.parse(JSON.stringify(ctx.state));
+    return await parseFilter(json, {
+      timezone: ctx.get('x-timezone'),
+      now: new Date().toISOString(),
+      vars: {
+        ctx: {
+          state,
+        },
+        $user: state.currentUser,
       },
     });
+    // return parse(json)({
+    //   ctx: {
+    //     state: JSON.parse(JSON.stringify(ctx.state)),
+    //   },
+    // });
   }
 
   middleware() {

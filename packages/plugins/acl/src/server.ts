@@ -537,7 +537,7 @@ export class PluginACL extends Plugin {
               ctx.permission.can = false;
             }
           } else {
-            const filter = parseJsonTemplate(action?.params?.filter || {}, ctx);
+            const filter = await parseJsonTemplate(action?.params?.filter || {}, ctx);
             const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
               filterByTk: resourceOf,
               filter,
