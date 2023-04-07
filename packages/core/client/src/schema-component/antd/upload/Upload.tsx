@@ -8,7 +8,6 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
-import { useActionContext } from '../action';
 import { ReadPretty } from './ReadPretty';
 import { isImage, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
 import './style.less';
@@ -218,7 +217,6 @@ Upload.DraggerV2 = connect(
     const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
     const extraProps: Record<string, any> = useProps?.() || {};
     const [loading, setLoading] = useState(false);
-    const { setVisible } = useActionContext();
 
     const handleChange = (fileList = []) => {
       const { onChange } = extraProps;
@@ -228,7 +226,6 @@ Upload.DraggerV2 = connect(
         setLoading(true);
       } else {
         setLoading(false);
-        setVisible(false);
       }
     };
 

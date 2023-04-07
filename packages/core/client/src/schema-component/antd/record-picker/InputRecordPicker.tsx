@@ -12,7 +12,8 @@ import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
-const RecordPickerContext = createContext(null);
+export const RecordPickerContext = createContext(null);
+
 function flatData(data) {
   let newArr = [];
   for (let i = 0; i < data.length; i++) {
