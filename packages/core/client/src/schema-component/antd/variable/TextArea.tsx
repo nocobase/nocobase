@@ -177,7 +177,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button } = props;
+  const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
   const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
@@ -340,6 +340,19 @@ export function TextArea(props) {
             }
           }
         }
+
+        .x-button{
+          .ant-select.ant-cascader{
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            min-width: auto;
+            width: calc(100% + 2px);
+            height: calc(100% + 2px);
+            overflow: hidden;
+            opacity: 0;
+          }
+        }
       `}
     >
       <div
@@ -367,20 +380,9 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Button className={css`
+      <Button className={cx('x-button', css`
         position: relative;
-
-        .ant-select.ant-cascader{
-          position: absolute;
-          top: -1px;
-          left: -1px;
-          min-width: auto;
-          width: calc(100% + 2px);
-          height: calc(100% + 2px);
-          overflow: hidden;
-          opacity: 0;
-        }
-      `}>
+      `)}>
         <span
           className={css`
             font-style: italic;
@@ -412,7 +414,7 @@ export function TextArea(props) {
               }
             }
           }}
-          popupClassName={css`
+          dropdownClassName={css`
             .ant-cascader-menu{
               margin-bottom: 0;
             }

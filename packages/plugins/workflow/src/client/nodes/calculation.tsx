@@ -6,20 +6,32 @@ import parse from 'json-templates';
 import { useTranslation } from 'react-i18next';
 import { Radio } from 'antd';
 
-import { SchemaInitializer, SchemaInitializerItemOptions, Variable } from '@nocobase/client';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
 import { evaluators, Evaluator, getOptions } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { TypeSets, useWorkflowVariableOptions } from '../variable';
+import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
 
 
 
-const DynamicConfig = observer<any>(({ value, onChange }) => {
+function matchDynamicExpressionCollectionField(field): boolean {
+  const { getCollectionFields, getCollection } = useCollectionManager();
+  if (field.type !== 'belongsTo') {
+    return false;
+  }
+
+  const fields = getCollectionFields(field.target);
+  return fields.some(f => f.interface === 'expression');
+}
+
+const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions();
+  const scope = useWorkflowVariableOptions([
+    matchDynamicExpressionCollectionField
+  ]);
 
   return (
     <FormLayout layout="vertical">
@@ -38,7 +50,11 @@ const DynamicConfig = observer<any>(({ value, onChange }) => {
       ) : null}
     </FormLayout>
   )
-});
+};
+
+function useWorkflowVariableEntityOptions() {
+  return useWorkflowVariableOptions([{ type: "reference", options: { collection: "*", entity: true } }]);
+}
 
 
 export default {
@@ -115,7 +131,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}'
+        scope: '{{useWorkflowVariableEntityOptions}}'
       },
       'x-reactions': {
         dependencies: ['dynamic'],
@@ -132,6 +148,7 @@ export default {
   },
   scope: {
     useWorkflowVariableOptions,
+    useWorkflowVariableEntityOptions,
     renderEngineReference
   },
   components: {
@@ -156,7 +173,7 @@ export default {
     DynamicConfig
   },
   getOptions(config, types) {
-    if (types && !types.some(type => type in TypeSets || Object.values(TypeSets).some(set => set.has(type)))) {
+    if (types && !types.some(type => type in BaseTypeSets || Object.values(BaseTypeSets).some(set => set.has(type)))) {
       return null;
     }
     return [

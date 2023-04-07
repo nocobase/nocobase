@@ -60,8 +60,8 @@ export default {
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
   'System variables': '系统变量',
+  'System time': '系统时间',
   'Date variables': '日期变量',
-  'Current time': '当前时间',
 
   'Executed at': '执行于',
   'Queueing': '队列中',
