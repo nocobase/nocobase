@@ -71,7 +71,6 @@ const WithForm = (props) => {
   const { setFormValueChanged } = useActionContext();
   const linkageRules =
     (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
-  form.clearFormGraph();
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
