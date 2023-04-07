@@ -333,6 +333,7 @@ export class ACL extends EventEmitter {
 
   async parseJsonTemplate(json: any, ctx: any) {
     if (json.filter) {
+      ctx.logger?.info?.('parseJsonTemplate.raw', JSON.parse(JSON.stringify(json.filter)));
       const timezone = ctx?.get?.('x-timezone');
       const state = JSON.parse(JSON.stringify(ctx.state));
       const filter = await parseFilter(json.filter, {
@@ -342,10 +343,11 @@ export class ACL extends EventEmitter {
           ctx: {
             state,
           },
-          $user: state.currentUser,
+          $user: async () => state.currentUser,
         },
       });
       json.filter = filter;
+      ctx.logger?.info?.('parseJsonTemplate.parsed', filter);
     }
     return json;
   }
