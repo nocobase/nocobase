@@ -242,13 +242,19 @@ export class InheritedModelSyncRunner {
       });
     }
 
-    const maxSequence = sequenceResults.reduce((prev, current) => (prev.maxId > current.maxId ? prev : current));
+    const maxId = sequenceResults.reduce((prev, current) => (prev > current.maxId ? prev : current.maxId));
+    const rootSequence = sequenceResults[0].sequence;
+
+    // set rootSequence to maxId
+    await db.sequelize.query(`alter sequence ${rootSequence} restart with ${maxId + 1}`, {
+      transaction,
+    });
 
     // set all connected collection to use same sequence
     for (const connectedCollection of connectedCollectionsWithId) {
       await db.sequelize.query(
         `alter table ${connectedCollection.quotedTableName()}
-            alter column id set default nextval('${maxSequence.sequence}')`,
+            alter column id set default nextval('${rootSequence}')`,
         {
           transaction,
         },
