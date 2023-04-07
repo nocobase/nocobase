@@ -55,6 +55,7 @@ export default {
   "UI editor": "界面配置",
   "Collection": "数据表",
   "Enable child collections":"启用子表",
+  "Allow adding records to the current collection":"允许向当前数据表里添加记录",
   "Collections & Fields": "数据表配置",
   "All collections":"全部数据表",
   "Add category":"添加分类",
@@ -719,4 +720,7 @@ export default {
   'Theme': '主题',
   'Default theme': '默认主题',
   'Compact theme': '紧凑主题',
+
+  'Click or drag file to this area to upload': '点击或拖拽文件到此区域上传',
+  'Support for a single or bulk upload, file size should not exceed': '支持单个或批量上传，文件大小不能超过',
 }

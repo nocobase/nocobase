@@ -1001,8 +1001,10 @@ SchemaSettings.LinkageRules = (props) => {
 SchemaSettings.EnableChildCollections = (props) => {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
+  console.log(fieldSchema);
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   return (
     <SchemaSettings.ModalItem
       title={t('Enable child collections')}
@@ -1024,10 +1026,18 @@ SchemaSettings.EnableChildCollections = (props) => {
                 },
               },
             },
+            allowAddToCurrent: {
+              type: 'boolean',
+              'x-content': "{{t('Allow adding records to the current collection')}}",
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+              default: allowAddToCurrent === undefined ? true : allowAddToCurrent,
+            },
           },
         } as ISchema
       }
       onSubmit={(v) => {
+        console.log(v);
         const enableChildren = [];
         for (const item of v.enableChildren.childrenCollections) {
           enableChildren.push(_.pickBy(item, _.identity));
@@ -1037,11 +1047,13 @@ SchemaSettings.EnableChildCollections = (props) => {
           ['x-uid']: uid,
         };
         fieldSchema['x-enable-children'] = enableChildren;
+        fieldSchema['x-allow-add-to-current'] = v.allowAddToCurrent;
         fieldSchema['x-component-props'] = {
           openMode: 'drawer',
           component: 'CreateRecordAction',
         };
         schema['x-enable-children'] = enableChildren;
+        schema['x-allow-add-to-current'] = v.allowAddToCurrent;
         schema['x-component-props'] = {
           openMode: 'drawer',
           component: 'CreateRecordAction',

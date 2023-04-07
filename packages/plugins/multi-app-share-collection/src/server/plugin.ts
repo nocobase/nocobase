@@ -114,6 +114,12 @@ class SubAppPlugin extends Plugin {
 export class MultiAppShareCollectionPlugin extends Plugin {
   afterAdd() {}
 
+  async beforeEnable() {
+    if (!this.db.inDialect('postgres')) {
+      throw new Error('multi-app-share-collection plugin only support postgres');
+    }
+  }
+
   async beforeLoad() {
     if (!this.db.inDialect('postgres')) {
       throw new Error('multi-app-share-collection plugin only support postgres');

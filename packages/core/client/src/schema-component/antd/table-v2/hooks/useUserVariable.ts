@@ -47,9 +47,10 @@ export const useUserVariable = ({ schema, operator }) => {
   const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
 
   return {
-    title: `{{t("Current user")}}`,
+    label: `{{t("Current user")}}`,
     value: '$user',
+    key: '$user',
     disabled: options.every((option) => option.disabled),
-    options: options,
+    children: options,
   };
 };

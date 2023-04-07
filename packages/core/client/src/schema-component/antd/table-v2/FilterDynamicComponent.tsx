@@ -4,21 +4,13 @@ import { useValues } from '../filter/useValues';
 import { Variable } from '../variable';
 import { useUserVariable } from './hooks/useUserVariable';
 
-const useVariableTypes = () => {
+const useVariableOptions = () => {
   const { operator, schema } = useValues();
   const operatorValue = operator?.value || '';
   const userVariable = useUserVariable({ schema, operator });
 
   if (!operator || !schema) return [];
 
-  const systemOptions = [
-    {
-      key: 'now',
-      value: 'now',
-      label: `{{t("Now")}}`,
-      disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
-    },
-  ];
   const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema['x-component']);
   const dateOptions = [
     {
@@ -157,38 +149,22 @@ const useVariableTypes = () => {
 
   return [
     userVariable,
-    // {
-    //   title: `{{t("System variables")}}`,
-    //   value: '$system',
-    //   disabled: systemOptions.every((option) => option.disabled),
-    //   options: systemOptions,
-    // },
     {
-      title: `{{t("Date variables")}}`,
+      label: `{{t("Date variables")}}`,
       value: '$date',
+      key: '$date',
       disabled: dateOptions.every((option) => option.disabled),
-      options: dateOptions,
+      children: dateOptions,
     },
   ];
 };
 
-const useVariableOptions = () => {
-  const compile = useCompile();
-  const options = useVariableTypes().map((item) => {
-    return {
-      label: compile(item.title),
-      value: item.value,
-      key: item.value,
-      children: compile(item.options),
-      disabled: item.disabled,
-    };
-  });
-  return options;
-};
-
 export function FilterDynamicComponent(props) {
   const { value, onChange, renderSchemaComponent } = props;
-  const scope = useVariableOptions();
+  const options = useVariableOptions();
+  const compile = useCompile();
+  const scope = compile(options);
+
   return (
     <Variable.Input value={value} onChange={onChange} scope={scope}>
       {renderSchemaComponent()}

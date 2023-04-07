@@ -1,6 +1,6 @@
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
-import { action as uploadAction, middleware as uploadMiddleware } from './actions/upload';
+import { createAction, uploadAction, middleware as uploadMiddleware } from './actions/upload';
 import { STORAGE_TYPE_LOCAL } from './constants';
 import { getStorageConfig } from './storages';
 
@@ -43,8 +43,8 @@ export default class PluginFileManager extends Plugin {
 
     this.app.acl.allow('attachments', 'upload', 'loggedIn');
 
-    // 暂时中间件只能通过 use 加进来
     this.app.resourcer.use(uploadMiddleware);
+    this.app.resourcer.use(createAction);
     this.app.resourcer.registerActionHandler('upload', uploadAction);
 
     if (process.env.APP_ENV !== 'production') {
