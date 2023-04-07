@@ -18,11 +18,11 @@ export const FilterItem = observer((props: any) => {
   const { getChildrenCollections } = useCollectionManager();
   const collection = useCollection();
   const childrenCollections = getChildrenCollections(collection.name);
-  if (childrenCollections.length > 0&&!fields.find((v)=>v.name=='tableoid')) {
+  if (childrenCollections.length > 0 && !fields.find((v) => v.name == 'tableoid')) {
     fields.push({
       name: 'tableoid',
       type: 'string',
-      title: 'Table OID(Inheritance)',
+      title: '{{t("Table OID(Inheritance)")}}',
       schema: {
         'x-component': 'Select',
         enum: [{ value: collection.name, label: t(collection.title) }].concat(

@@ -99,6 +99,7 @@ export default {
   "Data blocks": "Data blocks",
   "Filter blocks": "Filter blocks",
   "Table": "Table",
+  "Table OID(Inheritance)":"Table OID(Inheritance)",
   "Form": "Form",
   "Collapse": "Collapse",
   "Select data source": "Select data source",

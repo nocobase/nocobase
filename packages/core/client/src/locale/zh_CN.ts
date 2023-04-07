@@ -111,6 +111,7 @@ export default {
   "Filter blocks": "筛选区块",
   "Table": "表格",
   "Form": "表单",
+  "Table OID(Inheritance)":"数据表 OID(继承)",
   "Collapse": "折叠面板",
   "Select data source": "选择数据源",
   "Calendar": "日历",
