@@ -79,7 +79,7 @@ function matchFieldType(field, type): Boolean {
 
   if (inputType === 'object' && type.type === 'reference') {
     if (isAssociationField(field)) {
-      return type.options?.entity && (field.collectionName === type.options?.collection || field.collectionName === '*');
+      return type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*');
     } else if (field.isForeignKey) {
       return (
         (field.collectionName === type.options?.collection && field.name === 'id') ||

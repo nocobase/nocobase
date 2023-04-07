@@ -139,10 +139,18 @@ export default {
   },
   getOptions(config, types) {
     const { t } = useWorkflowTranslation();
-    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types, depth: config.appends?.length ? 1 : 0 });
-    const options: any[] = [
-      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
+    const rootFields = [
+      {
+        collectionName: config.collection,
+        name: 'data',
+        type: 'hasOne',
+        target: config.collection,
+        uiSchema: {
+          title: t('Trigger data')
+        }
+      }
     ];
+    const options = useCollectionFieldOptions({ fields: rootFields, types, depth: config.appends?.length ? 2 : 1 });
     return options;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {
