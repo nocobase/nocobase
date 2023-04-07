@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from '../upload/ReadPretty';
-import { isImage, toArr, toFileList, useUploadProps } from '../upload/shared';
+import { isImage, toFileList, useUploadProps } from '../upload/shared';
 import '../upload/style.less';
 import { UploadProps } from '../upload/type';
 
@@ -48,11 +48,13 @@ export const FileSelector = (props: Props) => {
     onSelect?.();
   };
 
+  const list = fileList.length ? (multiple ? fileList : [fileList[fileList.length - 1]]) : [];
+
   return (
     <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
-          {fileList.map((file) => {
+          {list.map((file) => {
             const handleClick = (e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -123,68 +125,66 @@ export const FileSelector = (props: Props) => {
               </div>
             );
           })}
-          {!disabled && (multiple || toArr(value).length < 1) && (
-            <>
-              {quickUpload ? (
-                <div className={'ant-upload-list-picture-card-container'}>
-                  <AntdUpload
-                    {...uploadProps}
-                    disabled={disabled}
-                    multiple={multiple}
-                    listType={'picture-card'}
-                    fileList={fileList}
-                    showUploadList={false}
-                    onRemove={handleRemove}
-                    onChange={(info) => {
-                      // 如果不在这里 setFileList 的话，会导致 onChange 只会执行一次
-                      setFileList([...info.fileList]);
-                      uploadProps.onChange?.(info);
+          <>
+            {quickUpload ? (
+              <div className={'ant-upload-list-picture-card-container'}>
+                <AntdUpload
+                  {...uploadProps}
+                  disabled={disabled}
+                  multiple={multiple}
+                  listType={'picture-card'}
+                  fileList={fileList}
+                  showUploadList={false}
+                  onRemove={handleRemove}
+                  onChange={(info) => {
+                    // 如果不在这里 setFileList 的话，会导致 onChange 只会执行一次
+                    setFileList([...info.fileList]);
+                    uploadProps.onChange?.(info);
+                  }}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
                   >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <PlusOutlined />
-                      {t('Upload')}
-                    </div>
-                  </AntdUpload>
-                </div>
-              ) : null}
-              {selectFile ? (
-                <div className={'ant-upload-list-picture-card-container'}>
-                  <AntdUpload
-                    disabled={disabled}
-                    multiple={multiple}
-                    listType={'picture-card'}
-                    showUploadList={false}
-                    onRemove={handleRemove}
+                    <PlusOutlined />
+                    {t('Upload')}
+                  </div>
+                </AntdUpload>
+              </div>
+            ) : null}
+            {selectFile ? (
+              <div className={'ant-upload-list-picture-card-container'}>
+                <AntdUpload
+                  disabled={disabled}
+                  multiple={multiple}
+                  listType={'picture-card'}
+                  showUploadList={false}
+                  onRemove={handleRemove}
+                >
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    onClick={handleSelect}
                   >
-                    <div
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      onClick={handleSelect}
-                    >
-                      <PlusOutlined />
-                      {t('Select')}
-                    </div>
-                  </AntdUpload>
-                </div>
-              ) : null}
-            </>
-          )}
+                    <PlusOutlined />
+                    {t('Select')}
+                  </div>
+                </AntdUpload>
+              </div>
+            ) : null}
+          </>
         </div>
       </div>
       {/* 预览图片的弹框 */}
