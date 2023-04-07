@@ -37,6 +37,7 @@ pgOnly()('Inherited Collection', () => {
           values: {
             ...options,
           },
+          context: {},
         });
       } else {
         await collectionRepository.create({
@@ -49,6 +50,7 @@ pgOnly()('Inherited Collection', () => {
                 type: 'string',
               },
             ],
+            ...options,
           },
           context: {},
         });
