@@ -1,5 +1,5 @@
 import lodash from 'lodash';
-import { DAG, DAGNode } from './directed-graph';
+import { DAG } from './directed-graph';
 
 export default class InheritanceMap {
   dag = new DAG();
@@ -12,14 +12,15 @@ export default class InheritanceMap {
 
   getOrCreateNode(name: string) {
     if (!this.dag.nodes.has(name)) {
-      this.dag.addNode(new DAGNode(name));
+      this.dag.addNode(name);
     }
 
     return this.getNode(name);
   }
 
   getNode(name: string) {
-    return this.dag.nodes.get(name);
+    if (!this.dag.nodes.has(name)) return null;
+    return name;
   }
 
   setInheritance(name: string, inherits: string | string[]) {
@@ -34,19 +35,26 @@ export default class InheritanceMap {
     const node = this.getNode(name);
     if (!node) return false;
 
-    return this.dag.getChildren(node).length > 0;
+    return this.dag.getChildren(node).size > 0;
   }
 
   getChildren(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
     const node = this.getNode(name);
     if (!node) return new Set();
 
-    return new Set((options.deep ? this.dag.getDescendants(node) : this.dag.getChildren(node)).map((n) => n.id));
+    return new Set(options.deep ? this.dag.getDescendants(node) : this.dag.getChildren(node));
   }
 
   getParents(name: string, options: { deep: boolean } = { deep: true }): Set<string> {
     const node = this.getNode(name);
     if (!node) return new Set();
-    return new Set((options.deep ? this.dag.getAncestors(node) : this.dag.getParents(node)).map((n) => n.id));
+    return new Set(options.deep ? this.dag.getAncestors(node) : this.dag.getParents(node));
+  }
+
+  getConnectedNodes(name: string): Set<string> {
+    const node = this.getNode(name);
+    if (!node) return new Set();
+
+    return new Set([...this.dag.getConnectedNodes(node)]);
   }
 }

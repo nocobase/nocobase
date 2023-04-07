@@ -3,7 +3,7 @@ import { Model as SequelizeModel, ModelStatic } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
-import { SyncRunner } from './sync-runner';
+import { InheritedModelSyncRunner } from './inherited-model-sync-runner';
 
 const _ = lodash;
 
@@ -194,7 +194,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     }
 
     if (this.collection.isInherited()) {
-      return SyncRunner.syncInheritModel(model, options);
+      return InheritedModelSyncRunner.sync(model, options);
     }
 
     return SequelizeModel.sync.call(this, options);

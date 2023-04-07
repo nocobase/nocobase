@@ -1,8 +1,8 @@
 import { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
 
-export class SyncRunner {
-  static async syncInheritModel(model: any, options: any) {
+export class InheritedModelSyncRunner {
+  static async sync(model: any, options: any) {
     const { transaction } = options;
 
     const inheritedCollection = model.collection as InheritedCollection;
@@ -49,90 +49,10 @@ export class SyncRunner {
       await this.createTable(tableName, childAttributes, options, model, parents);
     }
 
-    let maxSequenceVal = 0;
-    let maxSequenceName;
-
-    // find max sequence
-    if (childAttributes.id && childAttributes.id.autoIncrement) {
-      for (const parent of parents) {
-        const sequenceNameResult = await queryInterface.sequelize.query(
-          `SELECT column_default
-           FROM information_schema.columns
-           WHERE table_name = '${parent.model.tableName}'
-             and table_schema = '${parent.collectionSchema()}'
-             and "column_name" = 'id';`,
-          {
-            transaction,
-          },
-        );
-
-        if (!sequenceNameResult[0].length) {
-          continue;
-        }
-
-        const columnDefault = sequenceNameResult[0][0]['column_default'];
-
-        if (!columnDefault) {
-          throw new Error(`Can't find sequence name of ${parent}`);
-        }
-
-        const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
-        const match = regex.exec(columnDefault);
-
-        const sequenceName = match[1];
-        const sequenceCurrentValResult = await queryInterface.sequelize.query(
-          `select last_value
-           from ${sequenceName}`,
-          {
-            transaction,
-          },
-        );
-
-        const sequenceCurrentVal = parseInt(sequenceCurrentValResult[0][0]['last_value']);
-
-        if (sequenceCurrentVal > maxSequenceVal) {
-          maxSequenceName = sequenceName;
-          maxSequenceVal = sequenceCurrentVal;
-        }
-      }
-    }
-
-    // if we have max sequence, set it to child table
-    if (maxSequenceName) {
-      const parentsDeep = Array.from(db.inheritanceMap.getParents(inheritedCollection.name)).map((parent) =>
-        db.getCollection(parent).getTableNameWithSchema(),
-      );
-
-      const sequenceTables = [...parentsDeep, tableName];
-
-      for (const sequenceTable of sequenceTables) {
-        const tableName = sequenceTable.tableName;
-        const schemaName = sequenceTable.schema;
-
-        const idColumnSql = `SELECT column_name
-           FROM information_schema.columns
-           WHERE table_name = '${tableName}'
-             and column_name = 'id'
-             and table_schema = '${schemaName}';
-          `;
-
-        const idColumnQuery = await queryInterface.sequelize.query(idColumnSql, {
-          transaction,
-        });
-
-        if (idColumnQuery[0].length == 0) {
-          continue;
-        }
-
-        await queryInterface.sequelize.query(
-          `alter table ${db.utils.quoteTable(sequenceTable)}
-            alter column id set default nextval('${maxSequenceName}')`,
-          {
-            transaction,
-          },
-        );
-      }
-    }
+    await this.resetSequence(inheritedCollection, {
+      transaction,
+      db,
+    });
 
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
@@ -182,6 +102,7 @@ export class SyncRunner {
     return await model.sequelize.query(sql, options);
   }
 
+  // check table exists or not
   static async tableExists(tableName, db, transaction) {
     const sql = `
     SELECT EXISTS (
@@ -195,6 +116,7 @@ export class SyncRunner {
     return result[0].exists;
   }
 
+  // update table inherits option
   static async updateInherits(collection, options) {
     const { db, transaction } = options;
 
@@ -222,23 +144,71 @@ export class SyncRunner {
 
     const newParents = collection.options.inherits;
 
-    const shouldRemove = existParents.filter((x) => !newParents.includes(x));
-    const shouldAdd = newParents.filter((x) => !existParents.includes(x));
+    const shouldRemove = existParents.filter((x) => !newParents.includes(x)).map((x) => db.getCollection(x));
+    const shouldAdd = newParents.filter((x) => !existParents.includes(x)).map((x) => db.getCollection(x));
 
     for (const shouldRemoveItem of shouldRemove) {
       await db.sequelize.query(
-        `ALTER TABLE ${db.utils.quoteTable(collection.getTableNameWithSchema())} NO INHERIT ${shouldRemoveItem};`,
+        `ALTER TABLE ${collection.quotedTableName()} NO INHERIT ${shouldRemoveItem.quotedTableName()};`,
+        {
+          transaction,
+        },
+      );
+
+      await this.resetSequence(shouldRemoveItem, options);
+    }
+
+    for (const shouldAddItem of shouldAdd) {
+      await this.syncFieldsFromParent(collection, shouldAddItem, options);
+
+      await db.sequelize.query(
+        `ALTER TABLE ${collection.quotedTableName()} INHERIT ${shouldAddItem.quotedTableName()};`,
         {
           transaction,
         },
       );
     }
+  }
 
-    for (const shouldAddItem of shouldAdd) {
-      await db.sequelize.query(
-        `ALTER TABLE ${db.utils.quoteTable(collection.getTableNameWithSchema())} INHERIT ${shouldAddItem};`,
-        { transaction },
-      );
+  static async syncFieldsFromParent(childCollection, parentCollection, options) {
+    const { db, transaction } = options;
+
+    const parentModel = parentCollection.model;
+
+    const parentAttributes = parentModel.rawAttributes;
+
+    // query child table columns
+    const childColumns = await db.sequelize.query(
+      `SELECT column_name FROM information_schema.columns WHERE table_name = '${
+        childCollection.model.tableName
+      }' AND table_schema = '${childCollection.collectionSchema()}';`,
+      {
+        type: 'SELECT',
+        transaction,
+      },
+    );
+
+    const attributesNotInChild = Object.keys(parentAttributes).filter(
+      (attribute) => !childColumns.find((column) => column.column_name === parentAttributes[attribute].field),
+    );
+
+    for (const attribute of attributesNotInChild) {
+      const attributeDefinition = parentAttributes[attribute];
+
+      if (attributeDefinition.field) {
+        await db.sequelize
+          .getQueryInterface()
+          .addColumn(childCollection.getTableNameWithSchema(), attributeDefinition.field, attributeDefinition, {
+            transaction,
+          });
+      }
     }
+  }
+
+  // reset collection sequence
+  static async resetSequence(collection, options) {
+    const { db, transaction } = options;
+    const connectedNodes = db.inheritanceMap.getConnectedNodes(collection.name);
+    console.log({ connectedNodes });
   }
 }

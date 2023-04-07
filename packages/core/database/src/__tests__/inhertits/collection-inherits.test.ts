@@ -16,6 +16,92 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should reset id sequence of connected nodes', async () => {
+    const createCollection = async (name: string, options: {} = {}) => {
+      if (db.hasCollection(name)) {
+        db.removeCollection(name);
+      }
+
+      const collection = db.collection({
+        name,
+        timestamps: false,
+        fields: [
+          {
+            name: `${name}_name`,
+            type: 'string',
+          },
+        ],
+        ...options,
+      });
+
+      await db.sync({
+        force: false,
+        alter: {
+          drop: false,
+        },
+      });
+
+      return collection;
+    };
+
+    const findSequence = async (collectionName) => {
+      const collection = db.getCollection(collectionName);
+
+      const sequenceNameResult = await db.sequelize.query(
+        `SELECT column_default
+           FROM information_schema.columns
+           WHERE table_name = '${collection.model.tableName}'
+             and table_schema = '${collection.collectionSchema()}'
+             and "column_name" = 'id';`,
+      );
+
+      if (!sequenceNameResult[0].length) {
+        throw new Error(`Can't find sequence name of ${parent}`);
+      }
+
+      const columnDefault = sequenceNameResult[0][0]['column_default'];
+
+      if (!columnDefault) {
+        throw new Error(`Can't find sequence name of ${parent}`);
+      }
+
+      const regex = new RegExp(/nextval\('(.*)'::regclass\)/);
+      const match = regex.exec(columnDefault);
+
+      const sequenceName = match[1];
+      return sequenceName;
+    };
+
+    await createCollection('a');
+    await createCollection('b');
+
+    const C = await createCollection('c');
+
+    for (let i = 0; i < 10; i++) {
+      await C.repository.create({
+        values: {
+          c_name: `c_${i}`,
+        },
+      });
+    }
+
+    await createCollection('c', {
+      inherits: ['b'],
+    });
+
+    // collection b should use the same id sequence with collection c
+    const bSequenceName = await findSequence('b');
+    const cSequenceName = await findSequence('c');
+    expect(bSequenceName === cSequenceName).toBeTruthy();
+
+    await createCollection('x', {
+      inherits: ['a', 'b'],
+    });
+
+    expect((await findSequence('x')) === (await findSequence('a'))).toBeTruthy();
+    expect((await findSequence('b')) === (await findSequence('a'))).toBeTruthy();
+  });
+
   it('should set inherited map when inherits changed', async () => {
     const A = db.collection({
       name: 'a',
