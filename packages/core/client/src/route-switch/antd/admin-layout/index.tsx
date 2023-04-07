@@ -271,7 +271,6 @@ export const InternalAdminLayout = (props: any) => {
       >
         <header
           className={css`
-            flex-shrink: 0;
             height: 46px;
             line-height: 46px;
             background: transparent;
