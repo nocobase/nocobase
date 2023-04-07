@@ -24,7 +24,7 @@ export const Upload: ComposedUpload = connect(
 );
 
 Upload.Attachment = connect((props: UploadProps) => {
-  const { disabled, multiple, value, onChange, onRemove } = props;
+  const { disabled, multiple, value, onChange } = props;
   const [fileList, setFileList] = useState([]);
   const [sync, setSync] = useState(true);
   const images = fileList;

@@ -8,7 +8,7 @@ import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
@@ -81,6 +81,7 @@ FormItem.Designer = () => {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const targetCollection = getCollection(collectionField.target);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -229,6 +230,46 @@ FormItem.Designer = () => {
           }}
         />
       )}
+      {isFileCollection(targetCollection) ? (
+        <SchemaSettings.SwitchItem
+          key="quick-upload"
+          title={t('Quick upload')}
+          checked={fieldSchema['x-component-props']?.quickUpload as boolean}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.quickUpload = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].quickUpload = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
+      {isFileCollection(targetCollection) ? (
+        <SchemaSettings.SwitchItem
+          key="select-file"
+          title={t('Select file')}
+          checked={fieldSchema['x-component-props']?.selectFile as boolean}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.selectFile = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].selectFile = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
       {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
@@ -415,7 +456,7 @@ FormItem.Designer = () => {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
-              targetCollection: getCollection(collectionField.target),
+              targetCollection,
             });
 
             insertAdjacent('beforeBegin', divWrap(schema), {
@@ -546,5 +587,9 @@ FormItem.Designer = () => {
     </GeneralSchemaDesigner>
   );
 };
+
+function isFileCollection(collection: Collection) {
+  return collection?.template === 'file';
+}
 
 FormItem.FilterFormDesigner = FilterFormDesigner;

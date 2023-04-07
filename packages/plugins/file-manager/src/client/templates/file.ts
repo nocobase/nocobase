@@ -114,6 +114,10 @@ export const file = {
           type: 'string',
           title: `{{t("Preview")}}`,
           'x-component': 'Preview',
+          'x-component-props': {
+            quickUpload: true,
+            selectFile: true,
+          },
           'x-read-pretty': true,
         },
       },

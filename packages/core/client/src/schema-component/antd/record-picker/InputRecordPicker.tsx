@@ -82,8 +82,20 @@ const useAssociation = (props) => {
   return getField(fieldSchema.name);
 };
 
-export const InputRecordPicker: React.FC<any> = (props) => {
-  const { value, multiple, onChange, ...others } = props;
+interface IRecordPickerProps {
+  multiple?: boolean;
+  association?: string;
+  value?: any;
+  /** 是否显示 Upload 按钮（仅适用于文件场景下） */
+  quickUpload?: boolean;
+  /** 是否显示 Select 按钮（仅适用于文件场景下） */
+  selectFile?: boolean;
+  onChange?: (value: any) => void;
+  [key: string]: any;
+}
+
+export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
+  const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const fieldSchema = useFieldSchema();
@@ -115,6 +127,7 @@ export const InputRecordPicker: React.FC<any> = (props) => {
 
   const handleSelect = () => {
     setVisible(true);
+    setSelectedRows([]);
   };
 
   const handleRemove = (file) => {
@@ -129,7 +142,21 @@ export const InputRecordPicker: React.FC<any> = (props) => {
   return (
     <div>
       {showFilePicker ? (
-        <FileSelector value={options} multiple onSelect={handleSelect} onRemove={handleRemove} />
+        <FileSelector
+          value={options}
+          multiple
+          quickUpload={quickUpload}
+          selectFile={selectFile}
+          action={`${collectionField.target}:create`}
+          onSelect={handleSelect}
+          onRemove={handleRemove}
+          onChange={(changed) => {
+            if (changed.every((file) => file.status !== 'uploading')) {
+              changed = changed.filter((file) => file.status === 'done').map((file) => file.response.data);
+              onChange([...options, ...changed]);
+            }
+          }}
+        />
       ) : (
         <Select
           {...others}

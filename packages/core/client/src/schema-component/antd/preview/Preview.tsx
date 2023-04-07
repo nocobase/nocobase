@@ -1,6 +1,6 @@
 import { DeleteOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import { connect, mapReadPretty } from '@formily/react';
-import { Upload as AntdUpload, Button, Space } from 'antd';
+import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
@@ -8,20 +8,26 @@ import { useTranslation } from 'react-i18next';
 import Lightbox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from '../upload/ReadPretty';
-import { isImage, toArr, toFileList } from '../upload/shared';
+import { isImage, toArr, toFileList, useUploadProps } from '../upload/shared';
 import '../upload/style.less';
+import { UploadProps } from '../upload/type';
 
-interface TPreview {
-  (props: any): JSX.Element;
-  Selector: React.FC<any>;
-}
+type Props = UploadProps & {
+  /** 是否显示 Upload 按钮 */
+  quickUpload: boolean;
+  /** 是否显示 Select 按钮 */
+  selectFile: boolean;
+  onRemove?: (file) => void;
+  onSelect?: () => void;
+};
 
 export const Preview = connect((props) => {
   return <ReadPretty.File {...props} />;
 }, mapReadPretty(ReadPretty.File));
 
-export const FileSelector = (props: any) => {
-  const { disabled, multiple, value, onRemove, onSelect } = props;
+export const FileSelector = (props: Props) => {
+  const { disabled, multiple, value, quickUpload, selectFile, onRemove, onSelect } = props;
+  const uploadProps = useUploadProps({ ...props });
   const [fileList, setFileList] = useState([]);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
@@ -59,7 +65,7 @@ export const FileSelector = (props: any) => {
               }
             };
             return (
-              <div className={'ant-upload-list-picture-card-container'}>
+              <div key={file.id} className={'ant-upload-list-picture-card-container'}>
                 <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
                   <div className={'ant-upload-list-item-info'}>
                     <span className="ant-upload-span">
@@ -108,38 +114,76 @@ export const FileSelector = (props: any) => {
                       )}
                     </Space>
                   </span>
+                  {file.status === 'uploading' && (
+                    <div className={'ant-upload-list-item-progress'}>
+                      <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
           {!disabled && (multiple || toArr(value).length < 1) && (
-            <div className={'ant-upload-list-picture-card-container'}>
-              <AntdUpload
-                disabled={disabled}
-                multiple={multiple}
-                listType={'picture-card'}
-                fileList={fileList}
-                showUploadList={false}
-                onRemove={handleRemove}
-              >
-                {!disabled && (multiple || toArr(value).length < 1) && (
-                  <div
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+            <>
+              {quickUpload ? (
+                <div className={'ant-upload-list-picture-card-container'}>
+                  <AntdUpload
+                    {...uploadProps}
+                    disabled={disabled}
+                    multiple={multiple}
+                    listType={'picture-card'}
+                    fileList={fileList}
+                    showUploadList={false}
+                    onRemove={handleRemove}
+                    onChange={(info) => {
+                      // 如果不在这里 setFileList 的话，会导致 onChange 只会执行一次
+                      setFileList([...info.fileList]);
+                      uploadProps.onChange?.(info);
                     }}
-                    onClick={handleSelect}
                   >
-                    <PlusOutlined />
-                    {t('Select')}
-                  </div>
-                )}
-              </AntdUpload>
-            </div>
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <PlusOutlined />
+                      {t('Upload')}
+                    </div>
+                  </AntdUpload>
+                </div>
+              ) : null}
+              {selectFile ? (
+                <div className={'ant-upload-list-picture-card-container'}>
+                  <AntdUpload
+                    disabled={disabled}
+                    multiple={multiple}
+                    listType={'picture-card'}
+                    showUploadList={false}
+                    onRemove={handleRemove}
+                  >
+                    <div
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                      onClick={handleSelect}
+                    >
+                      <PlusOutlined />
+                      {t('Select')}
+                    </div>
+                  </AntdUpload>
+                </div>
+              ) : null}
+            </>
           )}
         </div>
       </div>
