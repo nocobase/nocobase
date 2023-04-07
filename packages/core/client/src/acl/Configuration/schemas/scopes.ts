@@ -24,6 +24,7 @@ export const rolesResourcesScopesCollection = {
 const useFormBlockProps = () => {
   const { name } = useContext(RoleResourceCollectionContext);
   const ctx = useFormBlockContext();
+  console.log(ctx)
   useEffect(() => {
     ctx.form.setInitialValues({
       resourceName: name,

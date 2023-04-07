@@ -11,9 +11,15 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   setupFiles: ['dotenv/config'],
   setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setup.ts'],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: '<rootDir>/',
-  }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(
+      { '@nocobase/evaluators/client': ['packages/core/evaluators/src/client'] ,...compilerOptions.paths, },
+      {
+        prefix: '<rootDir>/',
+      },
+    ),
+    '\\.(css|less)$': 'identity-obj-proxy',
+  },
   globals: {
     'ts-jest': {
       babelConfig: false,
