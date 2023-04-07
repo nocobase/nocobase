@@ -28,8 +28,16 @@ function flatData(data) {
 
 const useTableSelectorProps = () => {
   const field = useField<ArrayField>();
-  const { multiple, options = [], setSelectedRows, selectedRows: rcSelectRows = [] } = useContext(RecordPickerContext);
+  const {
+    multiple,
+    options = [],
+    setSelectedRows,
+    selectedRows: rcSelectRows = [],
+    onChange,
+  } = useContext(RecordPickerContext);
   const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
+  const { setVisible } = useActionContext();
+
   return {
     ...others,
     rowKey,
@@ -52,6 +60,8 @@ const useTableSelectorProps = () => {
       } else {
         setSelectedRows?.(selectedRows);
         onRowSelectionChange?.(selectedRowKeys, selectedRows);
+        onChange(selectedRows?.[0] || null);
+        setVisible(false);
       }
     },
   };
