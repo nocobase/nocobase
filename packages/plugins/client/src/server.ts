@@ -51,7 +51,8 @@ async function getTabInfo({ filterByTk, path, locale }: TabInfoParams) {
   const files = [
     resolve(dir, 'docs', locale, `${path}.md`),
     // default
-    resolve(dir, 'docs', 'zh_CN', `${path}.md`),
+    resolve(dir, 'docs', 'en-US', `${path}.md`),
+    resolve(dir, 'docs', 'zh-CN', `${path}.md`),
   ];
   const file = files.find((file) => {
     return fs.existsSync(file);

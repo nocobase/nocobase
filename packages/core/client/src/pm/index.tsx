@@ -104,6 +104,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
       {
         title: t('Plugin name'),
         dataIndex: 'name',
+        width: 300,
       },
       {
         title: t('Description'),
@@ -113,16 +114,16 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
       {
         title: t('Version'),
         dataIndex: 'version',
-        width: 200,
+        width: 300,
       },
       {
         title: t('Author'),
         dataIndex: 'author',
-        width: 150,
+        width: 200,
       },
       {
         title: t('Actions'),
-        width: 220,
+        width: 250,
         render(data) {
           return (
             <Space>
@@ -511,7 +512,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'}>
+          <div style={{ margin: 'var(--nb-spacing)' }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

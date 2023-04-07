@@ -264,7 +264,7 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className={'m24'} style={{ margin: 24 }}>
+        <div className="nb-page-content" style={{ margin: 'var(--nb-spacing)' }}>
           {loading ? (
             <Spin />
           ) : !disablePageHeader && enablePageTabs ? (
