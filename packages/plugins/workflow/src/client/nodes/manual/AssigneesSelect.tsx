@@ -6,12 +6,11 @@ import { useWorkflowVariableOptions } from '../../variable';
 
 
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
-  const scope = useWorkflowVariableOptions();
+  const scope = useWorkflowVariableOptions([{ type: 'reference', options: { collection: 'users' } }]);
 
   return (
     <Variable.Input
       scope={scope}
-      types={[{ type: 'reference', options: { collection: 'users' } }]}
       value={value[0]}
       onChange={(next) => {
         onChange([next]);

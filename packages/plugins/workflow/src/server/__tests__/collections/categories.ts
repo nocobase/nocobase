@@ -6,6 +6,18 @@ export default {
     {
       type: 'string',
       name: 'title',
+    },
+    {
+      type: 'string',
+      name: 'engine'
+    },
+    {
+      type: 'string',
+      name: 'collection'
+    },
+    {
+      type: 'text',
+      name: 'expression'
     }
   ],
 } as CollectionOptions;

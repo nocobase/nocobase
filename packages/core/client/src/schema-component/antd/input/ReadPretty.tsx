@@ -13,8 +13,8 @@ type Composed = {
   TextArea: React.FC<
     TextAreaProps & { ellipsis?: any; text?: any; addonBefore?: any; suffix?: any; addonAfter?: any; autop?: boolean }
   >;
-  Html?: any;
-  JSON?: React.FC<TextAreaProps & { space: number }>;
+  Html: any;
+  JSON: React.FC<TextAreaProps & { space: number }>;
 };
 
 export const ReadPretty: Composed = () => null;
@@ -63,10 +63,9 @@ ReadPretty.TextArea = (props) => {
 };
 
 function convertToText(html: string) {
-  let temp = document.createElement('div');
+  const temp = document.createElement('div');
   temp.innerHTML = html;
   const text = temp.innerText;
-  temp = null;
   return text.replace(/[\n\r]/g, '');
 }
 

@@ -4,9 +4,9 @@ import { useField } from '@formily/react';
 import { Input } from 'antd';
 import { TextAreaProps } from 'antd/lib/input';
 
-export type JSONTextAreaProps = TextAreaProps & { ref: Ref<any>, value: any, space: number };
+export type JSONTextAreaProps = TextAreaProps & { value?: string, space?: number };
 
-export const Json = React.forwardRef<Ref<any>>(({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
+export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
   const field = useField<Field>();
   return (
     <Input.TextArea
@@ -17,7 +17,7 @@ export const Json = React.forwardRef<Ref<any>>(({ value, onChange, space = 2, ..
         try {
           const v = ev.target.value.trim() !== '' ? JSON.parse(ev.target.value) : null;
           field.setFeedback({});
-          onChange(v);
+          onChange?.(v);
         } catch (err) {
           field.setFeedback({
             type: 'error',

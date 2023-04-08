@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Cascader, Tooltip, Button } from 'antd';
+import { Input, Cascader, Button } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,8 @@ function pasteHTML(container: HTMLElement, html: string, { selectPastedContent =
     if (indexes[0] === -1) {
       if (indexes[1]) {
         range.setStartAfter(children[indexes[1] - 1]);
+      } else {
+        range.setStart(container, 0);
       }
     } else {
       range.setStart(children[indexes[0]], indexes[1]);
@@ -32,6 +34,8 @@ function pasteHTML(container: HTMLElement, html: string, { selectPastedContent =
     if (indexes[2] === -1) {
       if (indexes[3]) {
         range.setEndAfter(children[indexes[3] - 1]);
+      } else {
+        range.setEnd(container, 0);
       }
     } else {
       range.setEnd(children[indexes[2]], indexes[3]);
@@ -173,7 +177,7 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button } = props;
+  const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
   const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
@@ -185,9 +189,17 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  const [selectedVar, setSelectedVar] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedVar([]);
+  }, [scope]);
 
   useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
+    if (!changed) {
+      setRange([-1, 0, -1, 0]);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -197,6 +209,7 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
+      setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }
@@ -234,8 +247,8 @@ export function TextArea(props) {
     }
   }, [html]);
 
-  function onInsert(keyPath) {
-    const variable: string[] = keyPath.filter((key) => Boolean(key.trim()));
+  function onInsert(paths: string[]) {
+    const variable: string[] = paths.filter((key) => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -243,7 +256,8 @@ export function TextArea(props) {
 
     current.focus();
 
-    pasteHTML(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+    const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
+    pasteHTML(current, content, {
       range,
     });
 
@@ -326,6 +340,19 @@ export function TextArea(props) {
             }
           }
         }
+
+        .x-button{
+          .ant-select.ant-cascader{
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            min-width: auto;
+            width: calc(100% + 2px);
+            height: calc(100% + 2px);
+            overflow: hidden;
+            opacity: 0;
+          }
+        }
       `}
     >
       <div
@@ -353,20 +380,61 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={t('Use variable')}>
-        <Cascader value={[]} options={options} onChange={onInsert}>
-          {button ?? (
-            <Button
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
+      <Button className={cx('x-button', css`
+        position: relative;
+      `)}>
+        <span
+          className={css`
+            font-style: italic;
+            font-family: "New York", "Times New Roman", Times, serif;
+          `}
+        >x</span>
+        <Cascader
+          placeholder={t('Select a variable')}
+          value={[]}
+          options={options}
+          onChange={(keyPaths = [], selectedOptions = []) => {
+            setSelectedVar(keyPaths as string[]);
+            if (!keyPaths.length) {
+              return;
+            }
+            const option = selectedOptions[selectedOptions.length - 1];
+            if (!option?.children?.length) {
+              onInsert(keyPaths);
+            }
+          }}
+          changeOnSelect
+          onClick={(e: any) => {
+            if (e.detail !== 2) {
+              return;
+            }
+            for (let n = e.target; n && n !== e.currentTarget; n = n.parentNode) {
+              if (Array.from(n.classList ?? []).includes('ant-cascader-menu-item')) {
+                onInsert(selectedVar);
+              }
+            }
+          }}
+          dropdownClassName={css`
+            .ant-cascader-menu{
+              margin-bottom: 0;
+            }
+          `}
+          dropdownRender={(menu) => (
+            <>
+              {menu}
+              <div
+                className={css`
+                  padding: .5em;
+                  border-top: 1px solid rgba(0, 0, 0, .06);
+                  color: rgba(0, 0, 0, .45);
+                `}
+              >
+                {t('Double click to choose entire object')}
+              </div>
+            </>
           )}
-        </Cascader>
-      </Tooltip>
+        />
+      </Button>
     </Input.Group>
   );
 }
