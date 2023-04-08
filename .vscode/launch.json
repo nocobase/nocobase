@@ -38,7 +38,7 @@
         "runtimeArgs": [
           "run",
           "--inspect-brk",
-          "test",
+          "win:test",
           "--runInBand",
           "/${fileBasename}"
         ],
