@@ -4,6 +4,7 @@ import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
+import initFields from './fields';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initInstructions, { Instruction } from './instructions';
@@ -72,11 +73,11 @@ export default class WorkflowPlugin extends Plugin {
   async load() {
     const { db, options } = this;
 
+    initFields(this);
     initActions(this);
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);
     initFunctions(this, options.functions);
-
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,

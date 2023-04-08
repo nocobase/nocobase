@@ -60,8 +60,8 @@ export default {
   'Arithmetic calculation': '算术运算',
   'String operation': '字符串',
   'System variables': '系统变量',
+  'System time': '系统时间',
   'Date variables': '日期变量',
-  'Current time': '当前时间',
 
   'Executed at': '执行于',
   'Queueing': '队列中',
@@ -86,6 +86,11 @@ export default {
   'Extended types': '扩展类型',
   'Node type': '节点类型',
   'Calculation': '运算',
+  'Expression type': '表达式类型',
+  'Static': '静态',
+  'Dynamic': '动态',
+  'Select dynamic expression': '选择动态表达式',
+  'Variable datasource': '变量数据源',
   'Calculation engine': '运算引擎',
   'Basic': '基础',
   'Calculation expression': '运算表达式',
@@ -165,4 +170,8 @@ export default {
 
   'Workflow todos': '工作流待办',
   'Task': '任务',
+
+  'Dynamic expression': '动态表达式',
+  'An expression for calculation in each rows': '每行数据计算规则不同时使用',
+  'Unconfigured': '未配置'
 };

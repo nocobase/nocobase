@@ -45,7 +45,7 @@ export default {
     FieldsSelect
   },
   getOptions(config, types) {
-    return useCollectionFieldOptions({ collection: config.collection, types });
+    return useCollectionFieldOptions({ collection: config.collection, types, depth: config.params?.appends?.length ? 1 : 0 });
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
