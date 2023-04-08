@@ -62,7 +62,7 @@ export default {
   "Delete category":"Delete category",
   "Edit category":"Edit category",
   "Collection category":"Collection category",
-  "Collection template":"collection template",
+  "Collection template":"Collection template",
   "Sort":"Sort",
   "Categories":"Categories",
   "Visible":"Visible",
