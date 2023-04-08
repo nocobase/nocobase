@@ -98,7 +98,7 @@ export const defaultConfigurableProperties = {
     'x-component-props': {
       mode: 'multiple',
     },
-    'x-disabled': '{{ !createOnly }}',
+    // 'x-disabled': '{{ !createOnly }}',
     'x-visible': '{{ enableInherits}}',
     'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
   },
