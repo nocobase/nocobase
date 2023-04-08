@@ -8,8 +8,10 @@ export type VariableOption = {
   key?: string;
   value: string;
   label: string;
-  children?: VariableOption[] | null;
+  children?: VariableOptions;
 };
+
+export type VariableOptions = VariableOption[] | null;
 
 const VariableTypes = [
   {
