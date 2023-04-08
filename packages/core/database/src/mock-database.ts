@@ -6,6 +6,7 @@ export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {
     super({
       storage: ':memory:',
+      tablePrefix: `mock_${uid(6)}_`,
       dialect: 'sqlite',
       ...options,
     });
