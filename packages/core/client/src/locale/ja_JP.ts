@@ -60,7 +60,6 @@ export default {
   "All collections":"すべてのデータテーブル",
   "Add category":"分類の追加",
   "Edit category":"分類の編集",
-  "collection template":"データテーブルテンプレート",
   "Sort":"ソート＃ソート＃",
   "Categories":"データテーブルカテゴリ",
   "Category name":"分類名",
