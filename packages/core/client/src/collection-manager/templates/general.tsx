@@ -9,5 +9,6 @@ export const general: ICollectionTemplate = {
   default: {
     fields: [],
   },
+  description: '{{t("General collection")}}',
   configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category', 'moreOptions'),
 };

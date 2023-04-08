@@ -6,6 +6,7 @@ export const tree: ICollectionTemplate = {
   title: '{{t("Tree collection")}}',
   order: 3,
   color: 'blue',
+  description: '{{t("Tree collection")}}',
   default: {
     tree: 'adjacencyList',
     fields: [

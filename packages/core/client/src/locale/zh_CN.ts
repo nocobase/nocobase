@@ -62,6 +62,7 @@ export default {
   "Delete category":"删除分类",
   "Edit category":"编辑分类",
   "Collection category":"数据表类别",
+  "collection template":"数据表模板",
   "Visible":"显示",
   "Read only":"只读(禁止编辑)",
   "Easy reading":"只读(阅读模式)",

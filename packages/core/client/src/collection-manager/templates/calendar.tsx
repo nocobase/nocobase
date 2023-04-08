@@ -6,6 +6,7 @@ export const calendar: ICollectionTemplate = {
   title: '{{t("Calendar collection")}}',
   order: 2,
   color: 'orange',
+  description: '{{t("Calendar collection")}}',
   default: {
     createdBy: true,
     updatedBy: true,

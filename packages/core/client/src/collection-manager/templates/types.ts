@@ -16,6 +16,8 @@ export interface ICollectionTemplate {
   availableFieldInterfaces?: AvailableFieldInterfacesInclude | AvailableFieldInterfacesExclude;
   /** 是否分割线 */
   divider?: boolean;
+  /** 模板描述 */
+  description?: string;
 }
 
 interface AvailableFieldInterfacesInclude {

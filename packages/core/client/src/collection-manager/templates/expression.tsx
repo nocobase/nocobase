@@ -54,5 +54,6 @@ export const expression: ICollectionTemplate = {
   availableFieldInterfaces: {
     include: [],
   },
+  description: '{{t("Expression collection")}}',
   configurableProperties: getConfigurableProperties('title', 'name', 'inherits','category'),
 };
