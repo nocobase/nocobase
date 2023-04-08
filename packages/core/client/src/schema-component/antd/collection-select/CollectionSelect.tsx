@@ -13,7 +13,7 @@ function useOptions({ filter }: CollectionSelectProps) {
   const compile = useCompile();
   const { collections = [] } = useCollectionManager();
   const filtered = typeof filter === 'function' ? collections.filter(filter) : collections;
-  return filtered.map(item => ({
+  return filtered.filter(item => !item.hidden).map(item => ({
     label: compile(item.title),
     value: item.name,
     color: item.category?.color,

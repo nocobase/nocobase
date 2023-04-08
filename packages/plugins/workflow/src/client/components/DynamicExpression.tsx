@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { onFieldInputValueChange } from '@formily/core';
-import { observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
+import React, { useState, useMemo } from "react";
+import { onFieldInputValueChange, onFormInitialValuesChange } from '@formily/core';
+import { useForm, observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-import { Variable } from "@nocobase/client";
+import { useRecord, Variable } from "@nocobase/client";
 
 import { NAMESPACE } from "../locale";
 import { useCollectionFieldOptions } from "../variable";
@@ -12,10 +12,14 @@ import { useCollectionFieldOptions } from "../variable";
 
 
 const InternalExpression = observer((props: any) => {
-  const { value, onChange } = props;
-  const [collection, setCollection] = useState(null);
+  const { onChange } = props;
+  const { values } = useForm();
+  const [collection, setCollection] = useState(values?.sourceCollection);
 
   useFormEffects(() => {
+    onFormInitialValuesChange(form => {
+      setCollection(form.values.sourceCollection);
+    });
     onFieldInputValueChange('sourceCollection', (f) => {
       setCollection(f.value);
       onChange(null);
@@ -26,17 +30,18 @@ const InternalExpression = observer((props: any) => {
 
   return (
     <Variable.TextArea
-      value={value}
-      onChange={onChange}
+      {...props}
       scope={options}
     />
   );
 });
 
-function Result({ value }) {
+function Result(props) {
   const { t } = useTranslation();
-  return value
-    ? <Tag color="purple">{t('Expression')}</Tag>
+  const values = useRecord();
+  const options = useMemo(() => useCollectionFieldOptions({ collection: values.sourceCollection }), [values.sourceCollection, values.sourceCollection]);
+  return props.value
+    ? <Variable.TextArea {...props} scope={options} />
     : <Tag>{t('Unconfigured', { ns: NAMESPACE })}</Tag>;
 }
 
