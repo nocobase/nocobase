@@ -6,6 +6,7 @@ import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
 import { cx, css } from '@emotion/css';
+import { Typography } from 'antd';
 
 type Composed = {
   Input: React.FC<InputProps & { ellipsis?: any }>;
@@ -40,17 +41,22 @@ ReadPretty.TextArea = (props) => {
   const { autop = true, ellipsis, text } = props;
   const html = (
     <div
-      style={{lineHeight: 1.612}}
+      style={{ lineHeight: 1.612 }}
       dangerouslySetInnerHTML={{
         __html: HTMLEncode(value).split('\n').join('<br/>'),
       }}
     />
   );
 
-  const content = ellipsis ?
-    (<EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
+  const content = ellipsis ? (
+    <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={autop ? html : value}>
       {text || value}
-    </EllipsisWithTooltip>) : (autop ? html : value);
+    </EllipsisWithTooltip>
+  ) : autop ? (
+    html
+  ) : (
+    value
+  );
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
       {props.addonBefore}
@@ -102,9 +108,9 @@ ReadPretty.Html = (props) => {
 ReadPretty.URL = (props) => {
   const prefixCls = usePrefixCls('description-url', props);
   const content = props.value && (
-    <a target={'_blank'} href={props.value as any}>
+    <Typography.Link ellipsis target={'_blank'} href={props.value as any}>
       {props.value}
-    </a>
+    </Typography.Link>
   );
   return (
     <div className={cls(prefixCls, props.className)} style={props.style}>
@@ -121,11 +127,15 @@ ReadPretty.JSON = (props) => {
   const prefixCls = usePrefixCls('json', props);
   return (
     <pre
-      className={cx(prefixCls, props.className, css`
-        margin-bottom: 0;
-        line-height: 1.5;
-        font-size: 90%;
-      `)}
+      className={cx(
+        prefixCls,
+        props.className,
+        css`
+          margin-bottom: 0;
+          line-height: 1.5;
+          font-size: 90%;
+        `,
+      )}
       style={props.style}
     >
       {props.value != null ? JSON.stringify(props.value, null, props.space ?? 2) : ''}
