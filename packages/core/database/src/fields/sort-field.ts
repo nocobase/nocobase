@@ -42,7 +42,19 @@ export class SortField extends Field {
   };
 
   initRecordsSortValue = async ({ transaction }) => {
-    const doInit = async (scopeKey = null, scopeValue = null) => {
+    const orderField = (() => {
+      const model = this.collection.model;
+      if (model.primaryKeyAttribute) {
+        return model.primaryKeyAttribute;
+      }
+      if (model.rawAttributes['createdAt']) {
+        return model.rawAttributes['createdAt'].field;
+      }
+
+      throw new Error(`can not find order key for collection ${this.collection.name}`);
+    })();
+
+    const needInit = async (scopeKey = null, scopeValue = null) => {
       const filter = {};
       if (scopeKey && scopeValue) {
         filter[scopeKey] = scopeValue;
@@ -61,44 +73,39 @@ export class SortField extends Field {
         transaction,
       });
 
-      const orderKey = (() => {
-        const model = this.collection.model;
-        if (model.primaryKeyAttribute) {
-          return model.primaryKeyAttribute;
-        }
-        if (model.rawAttributes['createdAt']) {
-          return 'createdAt';
-        }
+      return emptyCount === totalCount && emptyCount > 0;
+    };
 
-        throw new Error(`can not find order key for collection ${this.collection.name}`);
-      })();
+    const doInit = async (scopeKey = null, scopeValue = null) => {
+      const queryInterface = this.collection.db.sequelize.getQueryInterface();
 
-      if (emptyCount === totalCount && emptyCount > 0) {
-        const records = await this.collection.repository.find({
-          order: [orderKey],
-          filter,
-          transaction,
-        });
+      const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
-        let start = 1;
-        for (const record of records) {
-          await record.update(
-            {
-              sort: start,
-            },
-            {
-              hooks: false,
-              transaction,
-              silent: true,
-            },
-          );
+      const sql = `
+        WITH ordered_table AS (
+          SELECT *, ROW_NUMBER() OVER (${
+            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+          } ORDER BY ${quotedOrderField}) AS new_sequence_number
+          FROM ${this.collection.quotedTableName()} 
+          ${
+            scopeKey
+              ? `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue.map((v) => `'${v}'`).join(',')})`
+              : ''
+          }
+        )
+        UPDATE ${this.collection.quotedTableName()}
+        SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
+        FROM ordered_table
+        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField};
+      `;
 
-          start += 1;
-        }
-      }
+      await this.collection.db.sequelize.query(sql, {
+        transaction,
+      });
     };
 
     const scopeKey = this.options.scopeKey;
+
     if (scopeKey) {
       const groups = await this.collection.repository.find({
         attributes: [scopeKey],
@@ -106,10 +113,17 @@ export class SortField extends Field {
         raw: true,
       });
 
+      const needInitGroups = [];
       for (const group of groups) {
-        await doInit(scopeKey, group[scopeKey]);
+        if (await needInit(scopeKey, group[scopeKey])) {
+          needInitGroups.push(group['group']);
+        }
       }
-    } else {
+
+      if (needInitGroups.length > 0) {
+        await doInit(scopeKey, needInitGroups);
+      }
+    } else if (await needInit()) {
       await doInit();
     }
   };
