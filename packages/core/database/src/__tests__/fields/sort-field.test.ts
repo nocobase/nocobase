@@ -17,6 +17,50 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should init sorted value with thousand records', async () => {
+    const Test = db.collection({
+      name: 'tests',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'string',
+          name: 'group',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Test.model.bulkCreate(
+      (() => {
+        const values = [];
+        for (let i = 0; i < 100000; i++) {
+          values.push({
+            group: 'a',
+            name: `r${i}`,
+          });
+
+          values.push({
+            group: 'b',
+            name: `r${i}`,
+          });
+        }
+        return values;
+      })(),
+    );
+
+    Test.setField('sort', { type: 'sort', scopeKey: 'group' });
+
+    const begin = Date.now();
+    await db.sync();
+    const end = Date.now();
+    // log time cost as milliseconds
+    console.log(end - begin);
+  });
+
   it('should init sorted value with scopeKey', async () => {
     const Test = db.collection({
       name: 'tests',
