@@ -130,13 +130,14 @@ export function useWorkflowVariableOptions(types?) {
   return options;
 }
 
-function useNormallizedFields(collection) {
+function useNormallizedFields(collectionName) {
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
+  const collection = getCollection(collectionName);
   if (!collection) {
     return [];
   }
-  const { fields } = getCollection(collection);
+  const { fields } = collection;
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
   fields.forEach(field => {
