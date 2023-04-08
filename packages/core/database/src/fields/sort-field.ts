@@ -86,17 +86,31 @@ export class SortField extends Field {
           SELECT *, ROW_NUMBER() OVER (${
             scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
           } ORDER BY ${quotedOrderField}) AS new_sequence_number
-          FROM ${this.collection.quotedTableName()} 
+          FROM ${this.collection.quotedTableName()}
           ${
             scopeKey
               ? `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue.map((v) => `'${v}'`).join(',')})`
               : ''
           }
         )
-        UPDATE ${this.collection.quotedTableName()}
+        ${
+          this.collection.db.inDialect('mysql')
+            ? `
+             UPDATE ${this.collection.quotedTableName()}, ordered_table
+             SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
+             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+                ${scopeKey ? `AND ${this.collection.quotedTableName()}.${scopeKey} = ordered_table.${scopeKey}` : ''}
+            `
+            : `
+          UPDATE ${this.collection.quotedTableName()}
         SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
         FROM ordered_table
-        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField};
+        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
+                'ordered_table',
+              )}.${quotedOrderField};
+        `
+        }
+
       `;
 
       await this.collection.db.sequelize.query(sql, {
