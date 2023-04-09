@@ -56,6 +56,8 @@ export const m2o: IField = {
       const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
       fieldNames.label = 'preview';
       schema['x-component-props']['fieldNames'] = fieldNames;
+      schema['x-component-props'].quickUpload = true;
+      schema['x-component-props'].selectFile = true;
     }
 
     if (block === 'Form') {
