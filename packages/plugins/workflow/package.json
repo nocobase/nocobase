@@ -18,6 +18,7 @@
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "json-templates": "^4.2.0",
+    "lru-cache": "8.0.5",
     "moment": "^2.29.2",
     "react-js-cron": "^3.1.0"
   },

@@ -9,6 +9,7 @@ import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import FlowNodeModel from './models/FlowNode';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { Logger } from '@nocobase/logger';
 
 
 
@@ -29,6 +30,8 @@ export default class Processor {
     [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
   };
 
+  logger: Logger;
+
   transaction?: Transaction;
 
   nodes: FlowNodeModel[] = [];
@@ -37,6 +40,10 @@ export default class Processor {
   jobsMapByNodeId: { [key: number]: any } = {};
 
   constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
+    this.logger = options.plugin.getLogger({
+      workflowId: execution.workflowId,
+      executionId: execution.id,
+    });
   }
 
   // make dual linked nodes list then cache
@@ -137,12 +144,14 @@ export default class Processor {
     let job;
     try {
       // call instruction to get result and status
+      this.logger.info(`run instruction [${node.type}] for node (${node.id})`);
       job = await instruction(node, prevJob, this);
       if (!job) {
         return null;
       }
     } catch (err) {
       // for uncaught error, set to error
+      this.logger.error(`run instruction [${node.type}] for node (${node.id}) failed: `, { error: err })
       job = {
         result: err instanceof Error
           ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
@@ -162,8 +171,11 @@ export default class Processor {
     }
     const savedJob = await this.saveJob(job);
 
+    this.logger.info(`run instruction [${node.type}] for node (${node.id}) finished as ${savedJob.status}`, { data: savedJob.result });
+
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
+      this.logger.debug(`run next node (${node.id})`);
       return this.run(node.downstream, savedJob);
     }
 
@@ -183,9 +195,11 @@ export default class Processor {
 
   // parent node should take over the control
   public async end(node, job) {
+    this.logger.debug(`branch ended at node (${node.id})})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
+      this.logger.debug(`not on main, recall to parent entry node (${node.id})})`);
       await this.recall(parentNode, job);
       return job;
     }
@@ -207,6 +221,7 @@ export default class Processor {
 
   async exit(job: JobModel | null) {
     const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status) : EXECUTION_STATUS.RESOLVED;
+    this.logger.info(`all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
     return null;
   }
