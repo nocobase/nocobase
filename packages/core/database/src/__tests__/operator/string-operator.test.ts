@@ -1,4 +1,5 @@
 import Database, { Collection, mockDatabase } from '@nocobase/database';
+import { markValueAsJsonata } from '@nocobase/utils';
 
 describe('string operator', () => {
   let db: Database;
@@ -44,7 +45,7 @@ describe('string operator', () => {
     // array
     const res2 = await db.getRepository('users').find({
       filter: {
-        'name.$includes': ['u1', 'u2'],
+        'name.$includes': markValueAsJsonata(['u1', 'u2']),
       },
     });
 
@@ -99,7 +100,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notIncludes': ['u2'],
+            'name.$notIncludes': markValueAsJsonata(['u2']),
           },
         ],
       },
@@ -137,7 +138,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$startsWith': ['u1', 'u2'],
+            'name.$startsWith': markValueAsJsonata(['u1', 'u2']),
           },
         ],
       },
@@ -175,7 +176,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notStartsWith': ['u1', 'u2'],
+            'name.$notStartsWith': markValueAsJsonata(['u1', 'u2']),
           },
         ],
       },
@@ -211,7 +212,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$endWith': ['u1', 'u2'],
+            'name.$endWith': markValueAsJsonata(['u1', 'u2']),
           },
         ],
       },
@@ -250,7 +251,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notEndWith': ['u1', 'u2'],
+            'name.$notEndWith': markValueAsJsonata(['u1', 'u2']),
           },
         ],
       },
