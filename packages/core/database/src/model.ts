@@ -193,6 +193,13 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
     }
 
+    // rename table
+    if (options?.renameTable) {
+      await this.sequelize.getQueryInterface().renameTable(options.renameTable.from, options.renameTable.to, {
+        transaction: options?.transaction,
+      });
+    }
+
     if (this.collection.isInherited()) {
       return InheritedModelSyncRunner.sync(model, options);
     }

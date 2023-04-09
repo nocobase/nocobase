@@ -18,6 +18,10 @@ export function afterUpdateForCollection(db: Database) {
       const prevSet = new Set(prevInherits);
       const currentSet = new Set(currentInherits);
 
+      if (isSetEqual(prevSet, currentSet)) {
+        return;
+      }
+
       const removedParents = [...prevSet].filter((value) => !currentSet.has(value)) as string[];
       const addedParents = [...currentSet].filter((value) => !prevSet.has(value));
 

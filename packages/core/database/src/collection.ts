@@ -592,6 +592,7 @@ export class Collection<
     });
 
     for (const model of models) {
+      console.log(`sync model ${model.name}`);
       await model.sync(syncOptions);
     }
   }

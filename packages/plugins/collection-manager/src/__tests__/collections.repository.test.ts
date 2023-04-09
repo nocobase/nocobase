@@ -20,6 +20,59 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should rename collection ', async () => {
+    const UserCollection = await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const userTableName = db.getCollection('users').model.tableName;
+
+    const PostCollection = await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    // rename collection
+    await db.getCollection('collections').repository.update({
+      filter: {
+        name: 'users',
+      },
+      values: {
+        name: 'students',
+      },
+      context: {},
+    });
+
+    expect(db.getCollection('users')).toBeUndefined();
+    expect(db.getCollection('students')).toBeTruthy();
+
+    const tables = await db.sequelize.getQueryInterface().showAllTables();
+
+    // expect users table not exists
+    expect(tables).not.toContain(userTableName);
+  });
+
   it('should extend collections collection', async () => {
     expect(db.getRepository<CollectionRepository>('collections')).toBeTruthy();
 

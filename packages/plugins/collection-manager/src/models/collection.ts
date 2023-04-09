@@ -7,7 +7,7 @@ interface LoadOptions extends Transactionable {
   // TODO
   skipField?: boolean;
   skipExist?: boolean;
-  replaceCollection?: boolean;
+  replaceCollection?: string | boolean;
 }
 
 export class CollectionModel extends MagicAttributeModel {
@@ -16,6 +16,7 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async load(loadOptions: LoadOptions = {}) {
+    console.log('loadOptions', loadOptions.replaceCollection);
     const { skipExist, skipField, transaction } = loadOptions;
     const name = this.get('name');
 
@@ -26,6 +27,10 @@ export class CollectionModel extends MagicAttributeModel {
       fields: [],
     };
 
+    if (loadOptions.replaceCollection) {
+      this.db.removeCollection(lodash.isString(loadOptions.replaceCollection) ? loadOptions.replaceCollection : name);
+    }
+
     if (this.db.hasCollection(name)) {
       collection = this.db.getCollection(name);
 
@@ -33,12 +38,7 @@ export class CollectionModel extends MagicAttributeModel {
         return collection;
       }
 
-      if (loadOptions.replaceCollection) {
-        this.db.removeCollection(name);
-        collection = this.db.collection(collectionOptions);
-      } else {
-        collection.updateOptions(collectionOptions);
-      }
+      collection.updateOptions(collectionOptions);
     } else {
       collection = this.db.collection(collectionOptions);
     }
@@ -96,7 +96,11 @@ export class CollectionModel extends MagicAttributeModel {
   async migrate(
     options?: SyncOptions &
       Transactionable & {
-        replaceCollection?: boolean;
+        replaceCollection?: string | boolean;
+        renameTable?: {
+          from: any;
+          to?: any;
+        };
       },
   ) {
     const collection = await this.load({
@@ -110,7 +114,15 @@ export class CollectionModel extends MagicAttributeModel {
       return;
     }
 
+    if (options?.renameTable) {
+      options.renameTable = {
+        ...options.renameTable,
+        to: collection.model.tableName,
+      };
+    }
+
     try {
+      console.log(`...sync ${this.get('name')}`);
       await collection.sync({
         force: false,
         alter: {
