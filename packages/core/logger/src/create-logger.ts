@@ -4,7 +4,7 @@ import 'winston-daily-rotate-file';
 
 const { combine, timestamp, colorize, simple } = format;
 
-function loggingLevel() {
+export function loggingLevel() {
   return process.env.LOGGER_LEVEL || 'info';
 }
 
