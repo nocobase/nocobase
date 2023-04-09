@@ -23,8 +23,6 @@ describe('form field valuelinkage', () => {
         };
       };
       const schema: any = {
-        _isJSONSchemaObject: true,
-        version: '2.0',
         type: 'void',
         'x-acl-action-props': { skipScopeCheck: true },
         'x-acl-action': 'tags:create',
@@ -33,8 +31,6 @@ describe('form field valuelinkage', () => {
         'x-component': 'CardItem',
         properties: {
           ukypn3nb6bc: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
             type: 'void',
             'x-component': 'Form',
             'x-component-props': {
@@ -44,8 +40,6 @@ describe('form field valuelinkage', () => {
             properties: {
               grid: {
                 'x-uid': 'be1z5loyi4b',
-                _isJSONSchemaObject: true,
-                version: '2.0',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-linkage-rules': [
@@ -62,20 +56,14 @@ describe('form field valuelinkage', () => {
                 ],
                 properties: {
                   '18p3c2nodkw': {
-                    _isJSONSchemaObject: true,
-                    version: '2.0',
                     type: 'void',
                     'x-component': 'Grid.Row',
                     properties: {
                       '3p36izpvy9q': {
-                        _isJSONSchemaObject: true,
-                        version: '2.0',
                         type: 'void',
                         'x-component': 'Grid.Col',
                         properties: {
                           single: {
-                            _isJSONSchemaObject: true,
-                            version: '2.0',
                             type: 'string',
                             title: 'single',
                             'x-component': Input,
@@ -84,34 +72,25 @@ describe('form field valuelinkage', () => {
                               placeholder: 'single',
                             },
                             'x-uid': 'v5ivwvhzf0h',
-                            'x-async': false,
                             'x-index': 1,
                           },
                         },
                         'x-uid': 'u449wavgegj',
-                        'x-async': false,
                         'x-index': 1,
                       },
                     },
                     'x-uid': 'wge4djatqmf',
-                    'x-async': false,
                     'x-index': 1,
                   },
                   p4372tmusz2: {
-                    _isJSONSchemaObject: true,
-                    version: '2.0',
                     type: 'void',
                     'x-component': 'Grid.Row',
                     properties: {
                       xuiwn30smwl: {
-                        _isJSONSchemaObject: true,
-                        version: '2.0',
                         type: 'void',
                         'x-component': 'Grid.Col',
                         properties: {
                           name: {
-                            _isJSONSchemaObject: true,
-                            version: '2.0',
                             type: 'string',
                             title: 'name',
                             'x-component': Input,
@@ -120,31 +99,25 @@ describe('form field valuelinkage', () => {
                               placeholder: 'name',
                             },
                             'x-uid': '87092ocxwcn',
-                            'x-async': false,
                             'x-index': 1,
                           },
                         },
                         'x-uid': 'zmwq46ex99o',
-                        'x-async': false,
                         'x-index': 1,
                       },
                     },
                     'x-uid': 'hn5s91f453z',
-                    'x-async': false,
                     'x-index': 2,
                   },
                 },
-                'x-async': false,
                 'x-index': 1,
               },
             },
             'x-uid': 'he9901drbxl',
-            'x-async': false,
             'x-index': 1,
           },
         },
         'x-uid': 'mlfyjcsony9',
-        'x-async': false,
         'x-index': 1,
       };
       return (
@@ -153,7 +126,7 @@ describe('form field valuelinkage', () => {
         </SchemaComponentProvider>
       );
     };
-    const { getByText, getAllByPlaceholderText, getByTitle, container } = render(<ComponentA />);
+    const { getAllByPlaceholderText } = render(<ComponentA />);
     const f1 = getAllByPlaceholderText('single')[0];
     const f2 = getAllByPlaceholderText('name')[0];
     fireEvent.input(f1, { target: { value: 'apple' } });
@@ -168,8 +141,6 @@ describe('form field valuelinkage', () => {
         };
       };
       const schema: any = {
-        _isJSONSchemaObject: true,
-        version: '2.0',
         type: 'void',
         'x-acl-action-props': { skipScopeCheck: true },
         'x-acl-action': 'tags:create',
@@ -178,8 +149,6 @@ describe('form field valuelinkage', () => {
         'x-component': 'CardItem',
         properties: {
           ukypn3nb6bc: {
-            _isJSONSchemaObject: true,
-            version: '2.0',
             type: 'void',
             'x-component': 'Form',
             'x-component-props': {
@@ -189,8 +158,6 @@ describe('form field valuelinkage', () => {
             properties: {
               grid: {
                 'x-uid': 'be1z5loyi4b',
-                _isJSONSchemaObject: true,
-                version: '2.0',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-linkage-rules': [
@@ -207,20 +174,14 @@ describe('form field valuelinkage', () => {
                 ],
                 properties: {
                   '18p3c2nodkw': {
-                    _isJSONSchemaObject: true,
-                    version: '2.0',
                     type: 'void',
                     'x-component': 'Grid.Row',
                     properties: {
                       '3p36izpvy9q': {
-                        _isJSONSchemaObject: true,
-                        version: '2.0',
                         type: 'void',
                         'x-component': 'Grid.Col',
                         properties: {
                           single: {
-                            _isJSONSchemaObject: true,
-                            version: '2.0',
                             type: 'string',
                             title: 'single',
                             'x-component': Input,
@@ -229,34 +190,25 @@ describe('form field valuelinkage', () => {
                               placeholder: 'single',
                             },
                             'x-uid': 'v5ivwvhzf0h',
-                            'x-async': false,
                             'x-index': 1,
                           },
                         },
                         'x-uid': 'u449wavgegj',
-                        'x-async': false,
                         'x-index': 1,
                       },
                     },
                     'x-uid': 'wge4djatqmf',
-                    'x-async': false,
                     'x-index': 1,
                   },
-                  'p4372tmusz2': {
-                    _isJSONSchemaObject: true,
-                    version: '2.0',
+                  p4372tmusz2: {
                     type: 'void',
                     'x-component': 'Grid.Row',
                     properties: {
                       xuiwn30smwl: {
-                        _isJSONSchemaObject: true,
-                        version: '2.0',
                         type: 'void',
                         'x-component': 'Grid.Col',
                         properties: {
                           name: {
-                            _isJSONSchemaObject: true,
-                            version: '2.0',
                             type: 'string',
                             title: 'name',
                             'x-component': Input,
@@ -265,34 +217,25 @@ describe('form field valuelinkage', () => {
                               placeholder: 'name',
                             },
                             'x-uid': '87092ocxwcn',
-                            'x-async': false,
                             'x-index': 1,
                           },
                         },
                         'x-uid': 'zmwq46ex99o',
-                        'x-async': false,
                         'x-index': 1,
                       },
                     },
                     'x-uid': 'hn5s91f453z',
-                    'x-async': false,
                     'x-index': 2,
                   },
-                  'p455554dswd': {
-                    _isJSONSchemaObject: true,
-                    version: '2.0',
+                  p455554dswd: {
                     type: 'void',
                     'x-component': 'Grid.Row',
                     properties: {
                       number_link: {
-                        _isJSONSchemaObject: true,
-                        version: '2.0',
                         type: 'void',
                         'x-component': 'Grid.Col',
                         properties: {
                           number: {
-                            _isJSONSchemaObject: true,
-                            version: '2.0',
                             type: 'number',
                             'x-component': 'InputNumber',
                             'x-decorator': 'FormItem',
@@ -300,33 +243,25 @@ describe('form field valuelinkage', () => {
                               placeholder: 'number',
                             },
                             'x-uid': '4433434',
-                            'x-async': false,
                             'x-index': 1,
                           },
                         },
                         'x-uid': 'm444wq46ex9o',
-                        'x-async': false,
                         'x-index': 1,
                       },
                     },
                     'x-uid': 'hn5s91f453z',
-                    'x-async': false,
                     'x-index': 3,
                   },
-                
-                 
                 },
-                'x-async': false,
                 'x-index': 1,
               },
             },
             'x-uid': 'he9901drbxl',
-            'x-async': false,
             'x-index': 1,
           },
         },
         'x-uid': 'mlfyjcsony9',
-        'x-async': false,
         'x-index': 1,
       };
       return (
@@ -344,6 +279,157 @@ describe('form field valuelinkage', () => {
     const f3 = getAllByPlaceholderText('name')[0];
     fireEvent.input(f1, { target: { value: 'apple' } });
     expect(f3).toHaveValue('');
+    fireEvent.input(f2, { target: { value: 888 } });
+    expect(f3).toHaveValue('I LIKE IT');
+  });
+  it('updates name field value when any condictions are met', () => {
+    const ComponentA = () => {
+      const useFormBlockProps = () => {
+        const form = useMemo(() => createForm(), []);
+        return {
+          form: form,
+        };
+      };
+      const schema: any = {
+        type: 'void',
+        'x-acl-action-props': { skipScopeCheck: true },
+        'x-acl-action': 'tags:create',
+        'x-decorator': 'FormBlockProvider',
+        'x-decorator-props': { resource: 'tags', collection: 'tags' },
+        'x-component': 'CardItem',
+        properties: {
+          ukypn3nb6bc: {
+            type: 'void',
+            'x-component': 'Form',
+            'x-component-props': {
+              useProps: useFormBlockProps,
+            },
+            properties: {
+              grid: {
+                'x-uid': 'be1z5loyi4b',
+                type: 'void',
+                'x-component': 'Grid',
+                'x-linkage-rules': [
+                  {
+                    condition: { $any: [{ single: { $eq: 'apple' } }, { number: { $eq: 888 } }] },
+                    actions: [
+                      {
+                        targetFields: ['name'],
+                        operator: 'value',
+                        value: { mode: 'constant', value: 'I LIKE IT' },
+                      },
+                    ],
+                  },
+                ],
+                properties: {
+                  '18p3c2nodkw': {
+                    type: 'void',
+                    'x-component': 'Grid.Row',
+                    properties: {
+                      '3p36izpvy9q': {
+                        type: 'void',
+                        'x-component': 'Grid.Col',
+                        properties: {
+                          single: {
+                            type: 'string',
+                            title: 'single',
+                            'x-component': Input,
+                            'x-decorator': 'FormItem',
+                            'x-component-props': {
+                              placeholder: 'single',
+                            },
+                            'x-uid': 'v5ivwvhzf0h',
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'u449wavgegj',
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'wge4djatqmf',
+                    'x-index': 1,
+                  },
+                  p4372tmusz2: {
+                    type: 'void',
+                    'x-component': 'Grid.Row',
+                    properties: {
+                      xuiwn30smwl: {
+                        type: 'void',
+                        'x-component': 'Grid.Col',
+                        properties: {
+                          name: {
+                            type: 'string',
+                            title: 'name',
+                            'x-component': Input,
+                            'x-decorator': 'FormItem',
+                            'x-component-props': {
+                              placeholder: 'name',
+                            },
+                            'x-uid': '87092ocxwcn',
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'zmwq46ex99o',
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'hn5s91f453z',
+                    'x-index': 2,
+                  },
+                  p455554dswd: {
+                    type: 'void',
+                    'x-component': 'Grid.Row',
+                    properties: {
+                      number_link: {
+                        type: 'void',
+                        'x-component': 'Grid.Col',
+                        properties: {
+                          number: {
+                            type: 'number',
+                            'x-component': 'InputNumber',
+                            'x-decorator': 'FormItem',
+                            'x-component-props': {
+                              placeholder: 'number',
+                            },
+                            'x-uid': '4433434',
+                            'x-index': 1,
+                          },
+                        },
+                        'x-uid': 'm444wq46ex9o',
+                        'x-index': 1,
+                      },
+                    },
+                    'x-uid': 'hn5s91f453z',
+                    'x-index': 3,
+                  },
+                },
+                'x-index': 1,
+              },
+            },
+            'x-uid': 'he9901drbxl',
+            'x-index': 1,
+          },
+        },
+        'x-uid': 'mlfyjcsony9',
+        'x-index': 1,
+      };
+      return (
+        <SchemaComponentProvider
+          scope={{ useFormBlockProps }}
+          components={{ Form, Grid, FormItem, InputNumber, FormBlockProvider }}
+        >
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      );
+    };
+    const { getAllByPlaceholderText } = render(<ComponentA />);
+    const f1 = getAllByPlaceholderText('single')[0];
+    const f2 = getAllByPlaceholderText('number')[0];
+    const f3 = getAllByPlaceholderText('name')[0];
+    fireEvent.input(f1, { target: { value: 'apple' } });
+    expect(f3).toHaveValue('I LIKE IT');
+    fireEvent.input(f3, { target: { value: '' } });
+    fireEvent.input(f1, { target: { value: 'orange' } });
     fireEvent.input(f2, { target: { value: 888 } });
     expect(f3).toHaveValue('I LIKE IT');
   });
