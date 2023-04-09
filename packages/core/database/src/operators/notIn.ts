@@ -1,10 +1,10 @@
-import { getValueFromJsonata, isFromJsonata } from '@nocobase/utils';
+import { getMultiFieldParsedValue, isMultiFieldParsedValue } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
 export default {
   $notIn(val, ctx) {
-    if (isFromJsonata(val)) {
-      val = getValueFromJsonata(val);
+    if (isMultiFieldParsedValue(val)) {
+      val = getMultiFieldParsedValue(val);
     }
     return {
       [Op.or]: {

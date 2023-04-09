@@ -1,4 +1,4 @@
-import { markValueAsJsonata } from '@nocobase/utils';
+import { markAsMultiFieldParsedValue } from '@nocobase/utils';
 import Database from '../../database';
 import { Repository } from '../../repository';
 import { mockDatabase } from '../index';
@@ -72,7 +72,7 @@ describe('date operator test', () => {
     // 返回的日期是 2023-01-01T00:00:00.000Z 或者 2023-01-01T00:00:00.001Z
     const list = await repository.find({
       filter: {
-        'date1.$dateOn': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
+        'date1.$dateOn': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
       },
     });
     expect(list.length).toBe(2);
@@ -118,7 +118,7 @@ describe('date operator test', () => {
     // 返回的日期即不是 2023-01-01T00:00:00.000Z 也不是 2023-01-01T00:00:00.001Z
     const list = await repository.find({
       filter: {
-        'date1.$dateNotOn': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2023-01-01T00:00:00.001Z']),
+        'date1.$dateNotOn': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2023-01-01T00:00:00.001Z']),
       },
     });
     expect(list.length).toBe(2);
@@ -168,7 +168,7 @@ describe('date operator test', () => {
     // 返回的日期应该即早于 2023-01-01T00:00:00.000Z 又早于 2022-12-31T16:00:00.000Z
     const list = await repository.find({
       filter: {
-        'date1.$dateBefore': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
+        'date1.$dateBefore': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
       },
     });
     expect(list.length).toBe(1);
@@ -217,7 +217,7 @@ describe('date operator test', () => {
     // 返回的日期应该即不早于 2023-01-01T00:00:00.000Z 又不早于 2022-12-31T16:00:00.000Z
     const list = await repository.find({
       filter: {
-        'date1.$dateNotBefore': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
+        'date1.$dateNotBefore': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
       },
     });
     expect(list.length).toBe(2);
@@ -267,7 +267,7 @@ describe('date operator test', () => {
     // 返回的日期应该即晚于 2023-01-01T00:00:00.000Z 又晚于 2022-12-31T16:00:00.000Z
     const list = await repository.find({
       filter: {
-        'date1.$dateAfter': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
+        'date1.$dateAfter': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
       },
     });
     expect(list.length).toBe(1);
@@ -316,7 +316,7 @@ describe('date operator test', () => {
     // 返回的日期应该即不晚于 2023-01-01T00:00:00.000Z 又不晚于 2022-12-31T16:00:00.000Z
     const list = await repository.find({
       filter: {
-        'date1.$dateNotAfter': markValueAsJsonata(['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
+        'date1.$dateNotAfter': markAsMultiFieldParsedValue (['2023-01-01T00:00:00.000Z', '2022-12-31T16:00:00.000Z']),
       },
     });
     expect(list.length).toBe(2);

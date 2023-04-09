@@ -1,4 +1,4 @@
-import { markValueAsJsonata } from '@nocobase/utils';
+import { markAsMultiFieldParsedValue } from '@nocobase/utils';
 import Database from '../../database';
 import { mockDatabase } from '../index';
 
@@ -33,7 +33,7 @@ describe('ne operator', () => {
 
     const results2 = await db.getRepository('tests').count({
       filter: {
-        'name.$notIn': markValueAsJsonata(['123']),
+        'name.$notIn': markAsMultiFieldParsedValue (['123']),
       },
     });
     expect(results2).toEqual(1);

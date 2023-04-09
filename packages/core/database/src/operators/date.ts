@@ -1,4 +1,4 @@
-import { getValueFromJsonata, isArray, isFromJsonata, parseDate } from '@nocobase/utils';
+import { getMultiFieldParsedValue, isArray, isMultiFieldParsedValue, parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
 function isDate(input) {
@@ -112,8 +112,8 @@ const dateNotAfter = (value, ctx) => {
 
 export default {
   $dateOn(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.or]: value.map((v) => dateOn(v, ctx)),
@@ -124,8 +124,8 @@ export default {
   },
 
   $dateNotOn(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.and]: value.map((v) => dateNotOn(v, ctx)),
@@ -136,8 +136,8 @@ export default {
   },
 
   $dateBefore(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.and]: value.map((v) => dateBefore(v, ctx)),
@@ -148,8 +148,8 @@ export default {
   },
 
   $dateNotBefore(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.and]: value.map((v) => dateNotBefore(v, ctx)),
@@ -160,8 +160,8 @@ export default {
   },
 
   $dateAfter(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.and]: value.map((v) => dateAfter(v, ctx)),
@@ -172,8 +172,8 @@ export default {
   },
 
   $dateNotAfter(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
       if (isArray(value)) {
         return {
           [Op.and]: value.map((v) => dateNotAfter(v, ctx)),

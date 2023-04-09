@@ -1,11 +1,11 @@
-import { getValueFromJsonata, isArray, isFromJsonata } from '@nocobase/utils';
+import { getMultiFieldParsedValue, isArray, isMultiFieldParsedValue } from '@nocobase/utils';
 import { Op } from 'sequelize';
 import { isPg } from './utils';
 
 export default {
   $includes(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {
@@ -20,8 +20,8 @@ export default {
   },
 
   $notIncludes(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {
@@ -36,8 +36,8 @@ export default {
   },
 
   $startsWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {
@@ -52,8 +52,8 @@ export default {
   },
 
   $notStartsWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {
@@ -68,8 +68,8 @@ export default {
   },
 
   $endWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {
@@ -84,8 +84,8 @@ export default {
   },
 
   $notEndWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
+    if (isMultiFieldParsedValue(value)) {
+      value = getMultiFieldParsedValue(value);
     }
     if (isArray(value)) {
       return {

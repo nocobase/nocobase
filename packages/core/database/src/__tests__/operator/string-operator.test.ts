@@ -1,5 +1,5 @@
 import Database, { Collection, mockDatabase } from '@nocobase/database';
-import { markValueAsJsonata } from '@nocobase/utils';
+import { markAsMultiFieldParsedValue } from '@nocobase/utils';
 
 describe('string operator', () => {
   let db: Database;
@@ -45,7 +45,7 @@ describe('string operator', () => {
     // array
     const res2 = await db.getRepository('users').find({
       filter: {
-        'name.$includes': markValueAsJsonata(['u1', 'u2']),
+        'name.$includes': markAsMultiFieldParsedValue (['u1', 'u2']),
       },
     });
 
@@ -100,7 +100,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notIncludes': markValueAsJsonata(['u2']),
+            'name.$notIncludes': markAsMultiFieldParsedValue (['u2']),
           },
         ],
       },
@@ -138,7 +138,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$startsWith': markValueAsJsonata(['u1', 'u2']),
+            'name.$startsWith': markAsMultiFieldParsedValue (['u1', 'u2']),
           },
         ],
       },
@@ -176,7 +176,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notStartsWith': markValueAsJsonata(['u1', 'u2']),
+            'name.$notStartsWith': markAsMultiFieldParsedValue (['u1', 'u2']),
           },
         ],
       },
@@ -212,7 +212,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$endWith': markValueAsJsonata(['u1', 'u2']),
+            'name.$endWith': markAsMultiFieldParsedValue (['u1', 'u2']),
           },
         ],
       },
@@ -251,7 +251,7 @@ describe('string operator', () => {
       filter: {
         $and: [
           {
-            'name.$notEndWith': markValueAsJsonata(['u1', 'u2']),
+            'name.$notEndWith': markAsMultiFieldParsedValue (['u1', 'u2']),
           },
         ],
       },
