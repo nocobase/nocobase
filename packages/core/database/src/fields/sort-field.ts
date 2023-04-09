@@ -87,11 +87,19 @@ export class SortField extends Field {
             scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
           } ORDER BY ${quotedOrderField}) AS new_sequence_number
           FROM ${this.collection.quotedTableName()}
-          ${
-            scopeKey
-              ? `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue.map((v) => `'${v}'`).join(',')})`
-              : ''
-          }
+          ${(() => {
+            if (scopeKey && scopeValue) {
+              const hasNull = scopeValue.includes(null);
+
+              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+                .filter((v) => v !== null)
+                .map((v) => `'${v}'`)
+                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
+            }
+
+            return '';
+          })()}
+
         )
         ${
           this.collection.db.inDialect('mysql')
@@ -99,7 +107,6 @@ export class SortField extends Field {
              UPDATE ${this.collection.quotedTableName()}, ordered_table
              SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
              WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-                ${scopeKey ? `AND ${this.collection.quotedTableName()}.${scopeKey} = ordered_table.${scopeKey}` : ''}
             `
             : `
           UPDATE ${this.collection.quotedTableName()}
@@ -130,7 +137,7 @@ export class SortField extends Field {
       const needInitGroups = [];
       for (const group of groups) {
         if (await needInit(scopeKey, group[scopeKey])) {
-          needInitGroups.push(group['group']);
+          needInitGroups.push(group[scopeKey]);
         }
       }
 

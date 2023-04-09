@@ -95,6 +95,14 @@ describe('string field', () => {
           group: 'b',
           name: 'r4',
         },
+        {
+          group: null,
+          name: 'r5',
+        },
+        {
+          group: null,
+          name: 'r6',
+        },
       ],
     });
 
@@ -105,6 +113,8 @@ describe('string field', () => {
     const records = await Test.repository.find({});
     const r3 = records.find((r) => r.get('name') === 'r3');
     expect(r3.get('sort')).toBe(2);
+    const r5 = records.find((r) => r.get('name') === 'r5');
+    expect(r5.get('sort')).toBe(1);
   });
 
   it('should init sorted value by createdAt when primaryKey not exists', async () => {
