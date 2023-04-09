@@ -30,14 +30,26 @@ describe('string operator', () => {
         name: 'names of u1',
       },
     });
-
-    const u1Res = await db.getRepository('users').findOne({
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u2',
+      },
+    });
+    const res = await db.getRepository('users').findOne({
       filter: {
         'name.$includes': 'u1',
       },
     });
 
-    expect(u1Res.get('id')).toEqual(u1.get('id'));
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        'name.$includes': ['u1', 'u2'],
+      },
+    });
+
+    expect(res.get('id')).toBe(u1.get('id'));
+    expect(res2.length).toBe(2);
   });
 
   it('should query with and ', async () => {
@@ -57,6 +69,195 @@ describe('string operator', () => {
       },
     });
 
-    expect(u1Res.get('id')).toEqual(u1.get('id'));
+    expect(u1Res.get('id')).toBe(u1.get('id'));
+  });
+
+  it('$notIncludes', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u1',
+      },
+    });
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u2',
+      },
+    });
+
+    const res = await db.getRepository('users').findOne({
+      filter: {
+        $and: [
+          {
+            'name.$notIncludes': 'u1',
+          },
+        ],
+      },
+    });
+
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$notIncludes': ['u2'],
+          },
+        ],
+      },
+    });
+
+    expect(res.get('id')).toBe(u2.get('id'));
+    expect(res2.length).toBe(1);
+    expect(res2[0].get('id')).toBe(u1.get('id'));
+  });
+
+  it('$startsWith', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'u1 name',
+      },
+    });
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'u2 name',
+      },
+    });
+
+    const res = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$startsWith': 'u',
+          },
+        ],
+      },
+    });
+
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$startsWith': ['u1', 'u2'],
+          },
+        ],
+      },
+    });
+
+    expect(res.length).toBe(2);
+    expect(res2.length).toBe(2);
+    expect(res2[0].get('id')).toBe(u1.get('id'));
+    expect(res2[1].get('id')).toBe(u2.get('id'));
+  });
+
+  it('$notStartsWith', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'u1 name',
+      },
+    });
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'u2 name',
+      },
+    });
+    const res = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$notStartsWith': 'u',
+          },
+        ],
+      },
+    });
+
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$notStartsWith': ['u1', 'u2'],
+          },
+        ],
+      },
+    });
+
+    expect(res.length).toBe(0);
+    expect(res2.length).toBe(0);
+  });
+
+  it('$endWith', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u1',
+      },
+    });
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u2',
+      },
+    });
+    const res = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$endWith': 'u1',
+          },
+        ],
+      },
+    });
+
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$endWith': ['u1', 'u2'],
+          },
+        ],
+      },
+    });
+
+    expect(res.length).toBe(1);
+    expect(res[0].get('id')).toBe(u1.get('id'));
+    expect(res2.length).toBe(2);
+    expect(res2[0].get('id')).toBe(u1.get('id'));
+    expect(res2[1].get('id')).toBe(u2.get('id'));
+  });
+
+  it('$notEndWith', async () => {
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u1',
+      },
+    });
+    const u2 = await db.getRepository('users').create({
+      values: {
+        name: 'names of u2',
+      },
+    });
+    const res = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$notEndWith': 'u1',
+          },
+        ],
+      },
+    });
+
+    // array
+    const res2 = await db.getRepository('users').find({
+      filter: {
+        $and: [
+          {
+            'name.$notEndWith': ['u1', 'u2'],
+          },
+        ],
+      },
+    });
+
+    expect(res.length).toBe(1);
+    expect(res[0].get('id')).toBe(u2.get('id'));
+    expect(res2.length).toBe(0);
   });
 });
