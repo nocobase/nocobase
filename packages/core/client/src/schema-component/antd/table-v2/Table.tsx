@@ -15,7 +15,7 @@ import {
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext
+  useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -473,6 +473,7 @@ export const Table: any = observer((props: any) => {
             }
           }}
           rowKey={rowKey ?? defaultRowKey}
+          dataSource={field?.value?.slice?.()}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -492,7 +493,6 @@ export const Table: any = observer((props: any) => {
             },
             expandedRowKeys: expandedKeys,
           }}
-          dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (
