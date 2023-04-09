@@ -1,5 +1,6 @@
-import { mockDatabase } from '../index';
+import { markValueAsJsonata } from '@nocobase/utils';
 import Database from '../../database';
+import { mockDatabase } from '../index';
 
 describe('ne operator', () => {
   let db: Database;
@@ -29,5 +30,12 @@ describe('ne operator', () => {
     });
 
     expect(results).toEqual(1);
+
+    const results2 = await db.getRepository('tests').count({
+      filter: {
+        'name.$notIn': markValueAsJsonata(['123']),
+      },
+    });
+    expect(results2).toEqual(1);
   });
 });
