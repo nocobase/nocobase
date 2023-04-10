@@ -4,8 +4,12 @@ import 'winston-daily-rotate-file';
 
 const { combine, timestamp, colorize, simple } = format;
 
-function loggingLevel() {
+export function getLoggerLevel(): string {
   return process.env.LOGGER_LEVEL || 'info';
+}
+
+export function getLoggerFilePath(...paths: string[]): string {
+  return path.resolve(process.env.LOGGER_BASE_PATH || path.resolve(process.cwd(), 'storage', 'logs'), ...paths);
 }
 
 const Transports = {
@@ -16,13 +20,13 @@ const Transports = {
     });
   },
   dailyRotateFile(options: any) {
-    let dirname = process.env.DAILY_ROTATE_FILE_DIRNAME || path.resolve(process.cwd(), './storage/logs');
+    let dirname = getLoggerFilePath();
     if (!path.isAbsolute(dirname)) {
       dirname = path.resolve(process.cwd(), dirname);
     }
     return new winston.transports.DailyRotateFile({
       dirname,
-      level: loggingLevel(),
+      level: getLoggerLevel(),
       filename: 'nocobase-%DATE%.log',
       datePattern: 'YYYY-MM-DD-HH',
       maxFiles: '14d',
@@ -54,7 +58,7 @@ function createLogger(options: LoggerOptions = {}) {
     })
     .filter((t) => t);
   const logger = winston.createLogger({
-    level: loggingLevel(),
+    level: getLoggerLevel(),
     levels: winston.config.cli.levels,
     format: combine(timestamp(), format.errors({ stack: true }), format.json(), colorize()),
     ...options,

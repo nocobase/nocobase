@@ -1,5 +1,8 @@
 import path from 'path';
 
+import winston from 'winston';
+import LRUCache from 'lru-cache';
+
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
@@ -14,15 +17,43 @@ import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
 import initFunctions from './functions';
+import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
 
 type Pending = [ExecutionModel, JobModel?];
+
+type ID = number | string;
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
   functions: Registry<Function> = new Registry();
-  executing: ExecutionModel | null = null;
-  pending: Pending[] = [];
-  events: [WorkflowModel, any, { context?: any }][] = [];
+  private executing: ExecutionModel | null = null;
+  private pending: Pending[] = [];
+  private events: [WorkflowModel, any, { context?: any }][] = [];
+
+  private loggerCache: LRUCache<string, Logger>;
+
+  getLogger(workflowId: ID): Logger {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
+    const key = `${date}-${workflowId}}`;
+    if (this.loggerCache.has(key)) {
+      return this.loggerCache.get(key);
+    }
+
+    const logger = createLogger({
+      transports: [
+        'console',
+        new winston.transports.File({
+          filename: getLoggerFilePath('workflows', date, `${workflowId}.log`),
+          level: getLoggerLevel(),
+        })
+      ],
+    } as LoggerOptions);
+
+    this.loggerCache.set(key, logger);
+
+    return logger;
+  }
 
   onBeforeSave = async (instance: WorkflowModel, options) => {
     const Model = <typeof WorkflowModel>instance.constructor;
@@ -78,6 +109,14 @@ export default class WorkflowPlugin extends Plugin {
     initTriggers(this, options.triggers);
     initInstructions(this, options.instructions);
     initFunctions(this, options.functions);
+
+    this.loggerCache = new LRUCache({
+      max: 20,
+      updateAgeOnGet: true,
+      dispose(logger) {
+        (<Logger>logger).end();
+      }
+    });
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,
@@ -162,7 +201,7 @@ export default class WorkflowPlugin extends Plugin {
 
     this.events.push([workflow, context, options]);
 
-    this.app.logger.debug(`[Workflow] new event triggered, now events: ${this.events.length}`);
+    this.getLogger(workflow.id).debug(`new event triggered, now events: ${this.events.length}`, { data: workflow.config });
 
     if (this.events.length > 1) {
       return;
@@ -189,9 +228,8 @@ export default class WorkflowPlugin extends Plugin {
       });
 
       if (existed) {
-        this.app.logger.warn(
-          `[Workflow] workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
-        );
+        this.getLogger(workflow.id).warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+
         valid = false;
       }
     }
@@ -234,7 +272,7 @@ export default class WorkflowPlugin extends Plugin {
         return execution;
       });
 
-      this.app.logger.debug(`[Workflow] execution of workflow ${workflow.id} created as ${execution.id}`);
+      this.getLogger(workflow.id).debug(`execution of workflow ${workflow.id} created as ${execution.id}`, { data: execution.context });
 
       // NOTE: cache first execution for most cases
       if (!this.executing && !this.pending.length) {
@@ -292,12 +330,13 @@ export default class WorkflowPlugin extends Plugin {
 
     const processor = this.createProcessor(execution);
 
-    this.app.logger.info(`[Workflow] execution ${execution.id} ${job ? 'resuming' : 'starting'}...`);
+    this.getLogger(execution.workflowId).info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
 
     try {
       await (job ? processor.resume(job) : processor.start());
+      this.getLogger(execution.workflowId).info(`execution (${execution.id}) finished with status: ${execution.status}`);
     } catch (err) {
-      this.app.logger.error(`[Workflow] ${err.message}`, err);
+      this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }
 
     this.executing = null;
