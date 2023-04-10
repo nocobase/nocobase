@@ -1,5 +1,3 @@
-import { isPlainObject } from './common';
-
 export const getValuesByPath = (obj: object, path: string, defaultValue?: any) => {
   if (!obj) {
     return defaultValue;
@@ -19,9 +17,7 @@ export const getValuesByPath = (obj: object, path: string, defaultValue?: any) =
       break;
     }
 
-    if (isPlainObject(currentValue)) {
-      currentValue = currentValue[key] === undefined ? defaultValue : currentValue[key];
-    }
+    currentValue = currentValue?.[key] === undefined ? defaultValue : currentValue[key];
 
     if (currentValue == null) {
       break;
