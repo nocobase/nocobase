@@ -1,11 +1,4 @@
-import {
-  getDateVars,
-  getDayRange,
-  markAsMultiFieldParsedValue,
-  parseFilter,
-  utc2unit,
-  Utc2unitOptions,
-} from '../parse-filter';
+import { getDateVars, getDayRange, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
 
 describe('utc to unit', () => {
   const expectUtc2unit = (options: Utc2unitOptions) => {
@@ -311,7 +304,7 @@ describe('parseFilter', () => {
           },
         },
       },
-    ).toEqual({ roles: { name: { $eq: markAsMultiFieldParsedValue(['admin', 'user']) } } });
+    ).toEqual({ roles: { name: { $eq: ['admin', 'user'] } } });
   });
 
   test('$dateOn', async () => {
