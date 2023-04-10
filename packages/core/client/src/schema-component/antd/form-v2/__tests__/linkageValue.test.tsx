@@ -39,7 +39,6 @@ describe('form field valuelinkage', () => {
 
             properties: {
               grid: {
-                'x-uid': 'be1z5loyi4b',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-linkage-rules': [
@@ -71,16 +70,10 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'single',
                             },
-                            'x-uid': 'v5ivwvhzf0h',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'u449wavgegj',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'wge4djatqmf',
-                    'x-index': 1,
                   },
                   p4372tmusz2: {
                     type: 'void',
@@ -98,27 +91,16 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'name',
                             },
-                            'x-uid': '87092ocxwcn',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'zmwq46ex99o',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'hn5s91f453z',
-                    'x-index': 2,
                   },
                 },
-                'x-index': 1,
               },
             },
-            'x-uid': 'he9901drbxl',
-            'x-index': 1,
           },
         },
-        'x-uid': 'mlfyjcsony9',
-        'x-index': 1,
       };
       return (
         <SchemaComponentProvider scope={{ useFormBlockProps }} components={{ Form, Grid, FormItem, FormBlockProvider }}>
@@ -157,7 +139,6 @@ describe('form field valuelinkage', () => {
 
             properties: {
               grid: {
-                'x-uid': 'be1z5loyi4b',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-linkage-rules': [
@@ -189,16 +170,10 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'single',
                             },
-                            'x-uid': 'v5ivwvhzf0h',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'u449wavgegj',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'wge4djatqmf',
-                    'x-index': 1,
                   },
                   p4372tmusz2: {
                     type: 'void',
@@ -216,16 +191,10 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'name',
                             },
-                            'x-uid': '87092ocxwcn',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'zmwq46ex99o',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'hn5s91f453z',
-                    'x-index': 2,
                   },
                   p455554dswd: {
                     type: 'void',
@@ -242,27 +211,16 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'number',
                             },
-                            'x-uid': '4433434',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'm444wq46ex9o',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'hn5s91f453z',
-                    'x-index': 3,
                   },
                 },
-                'x-index': 1,
               },
             },
-            'x-uid': 'he9901drbxl',
-            'x-index': 1,
           },
         },
-        'x-uid': 'mlfyjcsony9',
-        'x-index': 1,
       };
       return (
         <SchemaComponentProvider
@@ -306,7 +264,6 @@ describe('form field valuelinkage', () => {
             },
             properties: {
               grid: {
-                'x-uid': 'be1z5loyi4b',
                 type: 'void',
                 'x-component': 'Grid',
                 'x-linkage-rules': [
@@ -338,16 +295,10 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'single',
                             },
-                            'x-uid': 'v5ivwvhzf0h',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'u449wavgegj',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'wge4djatqmf',
-                    'x-index': 1,
                   },
                   p4372tmusz2: {
                     type: 'void',
@@ -365,16 +316,10 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'name',
                             },
-                            'x-uid': '87092ocxwcn',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'zmwq46ex99o',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'hn5s91f453z',
-                    'x-index': 2,
                   },
                   p455554dswd: {
                     type: 'void',
@@ -391,27 +336,16 @@ describe('form field valuelinkage', () => {
                             'x-component-props': {
                               placeholder: 'number',
                             },
-                            'x-uid': '4433434',
-                            'x-index': 1,
                           },
                         },
-                        'x-uid': 'm444wq46ex9o',
-                        'x-index': 1,
                       },
                     },
-                    'x-uid': 'hn5s91f453z',
-                    'x-index': 3,
                   },
                 },
-                'x-index': 1,
               },
             },
-            'x-uid': 'he9901drbxl',
-            'x-index': 1,
           },
         },
-        'x-uid': 'mlfyjcsony9',
-        'x-index': 1,
       };
       return (
         <SchemaComponentProvider
