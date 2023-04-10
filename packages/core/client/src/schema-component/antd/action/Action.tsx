@@ -46,10 +46,6 @@ export const actionDesignerCss = css`
     display: none;
     background: rgba(241, 139, 98, 0.06);
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;

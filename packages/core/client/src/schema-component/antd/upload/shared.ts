@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { useField, useForm } from '@formily/react';
+import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadChangeParam } from 'antd/lib/upload';

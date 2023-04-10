@@ -1,12 +1,12 @@
-import React, { Fragment, useState, useEffect } from 'react';
-import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input } from 'antd';
-import { ArrayField } from '@formily/core';
-import { RecursionField, useField, useFieldSchema, observer, ISchema } from '@formily/react';
-import { toArr } from '@formily/shared';
-import cls from 'classnames';
 import { CopyOutlined } from '@ant-design/icons';
-import { clone } from 'lodash';
 import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
+import { ArrayField } from '@formily/core';
+import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { toArr } from '@formily/shared';
+import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input } from 'antd';
+import cls from 'classnames';
+import { clone } from 'lodash';
+import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LinkageRulesTitle = (props) => {
@@ -16,7 +16,7 @@ const LinkageRulesTitle = (props) => {
   const value = array?.field?.value[index];
   return (
     <Input.TextArea
-      value={value.title || t('linkage rule')}
+      value={value.title || t('Linkage rule')}
       onChange={(ev) => {
         ev.stopPropagation();
         array.field.value.splice(index, 1, { ...value, title: ev.target.value });

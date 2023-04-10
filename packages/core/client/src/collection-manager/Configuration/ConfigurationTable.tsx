@@ -15,6 +15,7 @@ import { AddSubFieldAction } from './AddSubFieldAction';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
 import { collectionSchema } from './schemas/collections';
+import {TemplateSummay} from './components/TemplateSummay';
 
 /**
  * @param service
@@ -163,6 +164,7 @@ export const ConfigurationTable = () => {
           AddSubFieldAction,
           EditSubFieldAction,
           FieldSummary,
+          TemplateSummay,
           CollectionFieldsTable,
         }}
         scope={{

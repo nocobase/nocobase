@@ -1,15 +1,60 @@
 import React from 'react';
+import { observer } from '@formily/react';
+import { FormLayout, FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
 import parse from 'json-templates';
+import { useTranslation } from 'react-i18next';
+import { Radio } from 'antd';
 
-import { SchemaInitializer, SchemaInitializerItemOptions } from '@nocobase/client';
-import { evaluators, renderReference, Evaluator } from '@nocobase/evaluators/client';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
+import { evaluators, Evaluator, getOptions } from '@nocobase/evaluators/client';
 
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { TypeSets, useWorkflowVariableOptions } from '../variable';
+import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { renderEngineReference } from '../components/renderEngineReference';
 
+
+
+function matchDynamicExpressionCollectionField(field): boolean {
+  const { getCollectionFields, getCollection } = useCollectionManager();
+  if (field.type !== 'belongsTo') {
+    return false;
+  }
+
+  const fields = getCollectionFields(field.target);
+  return fields.some(f => f.interface === 'expression');
+}
+
+const DynamicConfig = ({ value, onChange }) => {
+  const { t } = useTranslation();
+  const scope = useWorkflowVariableOptions([
+    matchDynamicExpressionCollectionField
+  ]);
+
+  return (
+    <FormLayout layout="vertical">
+      <FormItem label={t('Expression type', { ns: NAMESPACE })}>
+        <Radio.Group value={value === false ? false : (value || null)} onChange={(ev) => {
+          onChange(ev.target.value);
+        }}>
+          <Radio value={false}>{t("Static", { ns: NAMESPACE })}</Radio>
+          <Radio value={value || null}>{t("Dynamic", { ns: NAMESPACE })}</Radio>
+        </Radio.Group>
+      </FormItem>
+      {value !== false ? (
+        <FormItem label={t('Select dynamic expression', { ns: NAMESPACE })}>
+          <Variable.Input value={value || null} onChange={(v) => onChange(v)} scope={scope} />
+        </FormItem>
+      ) : null}
+    </FormLayout>
+  )
+};
+
+function useWorkflowVariableEntityOptions() {
+  return useWorkflowVariableOptions([{ type: "reference", options: { collection: "*", entity: true } }]);
+}
 
 
 export default {
@@ -17,16 +62,29 @@ export default {
   type: 'calculation',
   group: 'control',
   fieldset: {
+    dynamic: {
+      type: 'string',
+      'x-component': 'DynamicConfig',
+      default: false,
+    },
     engine: {
       type: 'string',
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
-        options: Array.from(evaluators.getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), [])
+        options: getOptions()
       },
       required: true,
-      default: 'math.js'
+      default: 'math.js',
+      'x-reactions': {
+        dependencies: ['dynamic'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] === false}}',
+          }
+        }
+      }
     },
     expression: {
       type: 'string',
@@ -47,15 +105,42 @@ export default {
           return lang('Expression syntax error');
         }
       },
+      'x-reactions': [
+        {
+          dependencies: ['dynamic'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] === false}}',
+            }
+          }
+        },
+        {
+          dependencies: ['engine'],
+          fulfill: {
+            schema: {
+              description: '{{renderEngineReference($deps[0])}}',
+            }
+          }
+        },
+      ],
+      required: true
+    },
+    scope: {
+      type: 'string',
+      title: `{{t("Variable datasource", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Variable.Input',
+      'x-component-props': {
+        scope: '{{useWorkflowVariableEntityOptions}}'
+      },
       'x-reactions': {
-        dependencies: ['engine'],
+        dependencies: ['dynamic'],
         fulfill: {
-          schema: {
-            description: '{{renderReference($deps[0])}}',
+          state: {
+            visible: '{{$deps[0] !== false}}',
           }
         }
-      },
-      required: true
+      }
     }
   },
   view: {
@@ -63,7 +148,8 @@ export default {
   },
   scope: {
     useWorkflowVariableOptions,
-    renderReference
+    useWorkflowVariableEntityOptions,
+    renderEngineReference
   },
   components: {
     CalculationResult({ dataSource }) {
@@ -83,10 +169,11 @@ export default {
         </pre>
       );
     },
-    RadioWithTooltip
+    RadioWithTooltip,
+    DynamicConfig
   },
   getOptions(config, types) {
-    if (types && !types.some(type => type in TypeSets || Object.values(TypeSets).some(set => set.has(type)))) {
+    if (types && !types.some(type => type in BaseTypeSets || Object.values(BaseTypeSets).some(set => set.has(type)))) {
       return null;
     }
     return [

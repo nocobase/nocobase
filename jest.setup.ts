@@ -1,5 +1,6 @@
 //@ts-nocheck
-import prettyFormat from 'pretty-format';
+import dotenv from 'dotenv';
+import path from 'path';
 
 class Worker {
   url: any;

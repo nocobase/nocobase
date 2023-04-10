@@ -157,7 +157,7 @@ export const createSchema = () => {
                 'x-component': 'Select',
                 'x-read-pretty': true,
                 enum: [
-                  { label: "{{ t('Insert') }}", value: 'create', color: 'green' },
+                  { label: "{{ t('Add new') }}", value: 'create', color: 'green' },
                   { label: "{{ t('Update') }}", value: 'update', color: 'blue' },
                   { label: "{{ t('Delete') }}", value: 'destroy', color: 'red' },
                 ],

@@ -14,6 +14,7 @@ import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
 import { templateOptions } from './templates';
+import { TemplateSummay } from './components/TemplateSummay';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -62,7 +63,7 @@ const getSchema = (schema, category, compile): ISchema => {
         properties: {
           summary: {
             type: 'void',
-            'x-component': 'FieldSummary',
+            'x-component': 'TemplateSummay',
             'x-component-props': {
               schemaKey: schema.name,
             },
@@ -283,7 +284,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable }}
+          components={{ ...components, ArrayTable, TemplateSummay }}
           scope={{
             getContainer,
             useCancelAction,

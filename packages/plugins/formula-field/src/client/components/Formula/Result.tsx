@@ -3,11 +3,11 @@ import { onFormValuesChange } from '@formily/core';
 import { useFieldSchema, useFormEffects } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
 
-import { evaluators, Evaluator } from '@nocobase/evaluators/client';
+import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import { Checkbox, DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
 
-import { toDbType } from '../../utils';
+import { toDbType } from '../../../utils';
 
 const TypedComponents = {
   boolean: Checkbox,

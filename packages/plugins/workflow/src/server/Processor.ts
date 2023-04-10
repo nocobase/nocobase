@@ -2,6 +2,7 @@ import { Transaction, Transactionable } from 'sequelize';
 import parse from 'json-templates';
 
 import { Model } from "@nocobase/database";
+import { appendArrayColumn } from '@nocobase/evaluators';
 
 import Plugin from '.';
 import ExecutionModel from './models/Execution';
@@ -296,6 +297,11 @@ export default class Processor {
   }
 
   public getParsedValue(value, node?) {
-    return parse(value)(this.getScope(node));
+    const template = parse(value);
+    const scope = this.getScope(node);
+    template.parameters.forEach(({ key }) => {
+      appendArrayColumn(scope, key);
+    });
+    return template(scope);
   }
 }
