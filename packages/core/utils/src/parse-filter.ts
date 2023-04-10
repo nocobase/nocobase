@@ -180,7 +180,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
                 delete val.sequence;
 
                 // 标记为一个特殊的值，用于在 operator 中识别出是一个对多字段解析出来的值
-                val = markAsMultiFieldParsedValue(val);
+                val = markValueAsJsonata(val);
               }
 
               const field = getField?.(path);
@@ -324,17 +324,17 @@ export function getDateVars() {
   };
 }
 
-export function markAsMultiFieldParsedValue(value: any) {
+export function markValueAsJsonata(value: any) {
   return {
     __jsonata__: true,
     value,
   };
 }
 
-export function isMultiFieldParsedValue(value: any) {
+export function isFromJsonata(value: any) {
   return value?.__jsonata__ ? true : false;
 }
 
-export function getMultiFieldParsedValue(value: any) {
+export function getValueFromJsonata(value: any) {
   return value?.__jsonata__ ? value.value : null;
 }
