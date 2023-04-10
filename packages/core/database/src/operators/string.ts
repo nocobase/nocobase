@@ -1,12 +1,9 @@
-import { getValueFromJsonata, isArray, isFromJsonata } from '@nocobase/utils';
+import { isArray } from '@nocobase/utils';
 import { Op } from 'sequelize';
 import { isPg } from './utils';
 
 export default {
   $includes(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.or]: value.map((v) => ({
@@ -20,9 +17,6 @@ export default {
   },
 
   $notIncludes(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.and]: value.map((v) => ({
@@ -36,9 +30,6 @@ export default {
   },
 
   $startsWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.or]: value.map((v) => ({
@@ -52,9 +43,6 @@ export default {
   },
 
   $notStartsWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.and]: value.map((v) => ({
@@ -68,9 +56,6 @@ export default {
   },
 
   $endWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.or]: value.map((v) => ({
@@ -84,9 +69,6 @@ export default {
   },
 
   $notEndWith(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-    }
     if (isArray(value)) {
       return {
         [Op.and]: value.map((v) => ({

@@ -172,15 +172,12 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
                *  console.log(data) // ['admin', 'user']
                * })
                */
-              let val = (await jsonata(key.substring(6)).evaluate(vars.$user)) || null;
+              const val = (await jsonata(key.substring(6)).evaluate(vars.$user)) || null;
 
               // jsonata 返回的一个字段，在这里没用，直接删除
               if (isArray(val) && 'sequence' in val) {
                 // @ts-ignore
                 delete val.sequence;
-
-                // 标记为一个特殊的值，用于在 operator 中识别出是一个对多字段解析出来的值
-                val = markValueAsJsonata(val);
               }
 
               const field = getField?.(path);
@@ -322,19 +319,4 @@ export function getDateVars() {
     last90Days: toDays(-90),
     next90Days: toDays(90),
   };
-}
-
-export function markValueAsJsonata(value: any) {
-  return {
-    __jsonata__: true,
-    value,
-  };
-}
-
-export function isFromJsonata(value: any) {
-  return value?.__jsonata__ ? true : false;
-}
-
-export function getValueFromJsonata(value: any) {
-  return value?.__jsonata__ ? value.value : null;
 }
