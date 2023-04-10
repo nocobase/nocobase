@@ -1,8 +1,6 @@
-import jsonata from 'jsonata';
-import get from 'lodash/get';
 import set from 'lodash/set';
 import moment from 'moment';
-import { isArray } from './common';
+import { getValuesByPath } from './getValuesByPath';
 
 const re = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
@@ -163,35 +161,9 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
-          try {
-            if (key.startsWith('$')) {
-              const [varName, valuePath] = splitPathToTwoParts(key);
-              /**
-               * @example
-               * const vars = {user: {roles: [{name: 'admin'}, {name: 'user'}]}}
-               * jsonata('user.roles.name').evaluate(vars).then((data) => {
-               *  console.log(data) // ['admin', 'user']
-               * })
-               */
-              const val = (await jsonata(valuePath).evaluate(vars[varName])) || null;
-
-              // jsonata 返回的一个字段，在这里没用，直接删除
-              if (isArray(val) && 'sequence' in val) {
-                // @ts-ignore
-                delete val.sequence;
-              }
-
-              const field = getField?.(path);
-              value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
-            } else {
-              const val = get(vars, key, null);
-              const field = getField?.(path);
-              value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
-            }
-          } catch (err) {
-            console.error(err);
-            value = null;
-          }
+          const val = getValuesByPath(vars, key, null);
+          const field = getField?.(path);
+          value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
         }
       }
       if (isDateOperator(operator)) {
