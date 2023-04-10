@@ -1,13 +1,29 @@
+import { CollectionFieldOptions } from '../../../../collection-manager';
 import { useFilterOptions } from '../../filter';
+
+interface Operator {
+  label: string;
+  value: string;
+}
 
 interface GetOptionsParams {
   schema: any;
-  operator: string;
+  operator: Operator;
   maxDepth: number;
   count?: number;
 }
 
-const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
+const isOperatorSupportMultiRelation = (operator: Operator) => {
+  if (!operator) return false;
+  return ['$eq', '$ne'].includes(operator.value);
+};
+
+const isSingleRelationField = (field: CollectionFieldOptions) => {
+  if (!field) return false;
+  return field.type === 'belongsTo' || field.type === 'hasOne';
+};
+
+export const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
   if (count > maxDepth) {
     return [];
   }
@@ -36,7 +52,9 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
       value: option.name,
       label: option.title,
       children,
-      disabled: children.every((child) => child.disabled),
+      disabled:
+        (!isSingleRelationField(option) && !isOperatorSupportMultiRelation(operator)) ||
+        children.every((child) => child.disabled),
     };
   });
 
