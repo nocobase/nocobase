@@ -499,7 +499,7 @@ export default {
   'Single select and radio fields can be used as the grouping field': 'Gruplama alanı olarak tek seçim ve radyo alanları kullanılabilir',
   'Sign up successfully, and automatically jump to the sign in page': 'Başarılı bir şekilde kaydolun ve otomatik olarak oturum açma sayfasına geçin',
   "Search and select collection": "Koleksiyon ara ve seç",
-  "This is likely a NocoBase internals bug. Please open an issue at <0>here</0>": "Bu, NocoBase iç işlevleri hatası olabilir. Lütfen <0>burada</0> bir sorun açın",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "Bu, NocoBase iç işlevleri hatası olabilir. Lütfen <1>burada</1> bir sorun açın",
   "Render Failed": "Oluşturma başarısız",
   "Feedback": "Geri bildirim",
   "Try again": "Tekrar dene",

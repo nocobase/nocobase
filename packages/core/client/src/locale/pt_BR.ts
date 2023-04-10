@@ -646,7 +646,7 @@ export default {
   "Column width": "Largura da coluna",
   "Sortable": "Classificável",
   "Enable link": "Habilitar link",
-  "This is likely a NocoBase internals bug. Please open an issue at <0>here</0>": "Isso provavelmente é um bug interno do NocoBase. Por favor, abra um problema em <0>aqui</0>",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "Isso provavelmente é um bug interno do NocoBase. Por favor, abra um problema em <1>aqui</1>",
   "Render Failed": "Falha na renderização",
   "Feedback": "Feedback",
   "Try again": "Tente novamente",

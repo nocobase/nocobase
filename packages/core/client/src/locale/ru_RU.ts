@@ -500,7 +500,7 @@ export default {
   'Single select and radio fields can be used as the grouping field': 'Одиночное поле выбора и радиополя могут использоваться в качестве поля группировки',
   'Sign up successfully, and automatically jump to the sign in page': 'Зарегистрируйтесь успешно и автоматически перейдете на страницу входа',
   "Search and select collection": "Поиск и выбор коллекции",
-  "This is likely a NocoBase internals bug. Please open an issue at <0>here</0>": "Это, вероятно, ошибка внутреннего устройства NocoBase. Пожалуйста, откройте проблему <0>здесь</0>",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "Это, вероятно, ошибка внутреннего устройства NocoBase. Пожалуйста, откройте проблему <1>здесь</1>",
   "Render Failed": "Ошибка рендеринга",
   "Feedback": "Обратная связь",
   "Try again": "Попробуйте еще раз",

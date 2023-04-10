@@ -742,7 +742,7 @@ export default {
   'Theme': '主题',
   'Default theme': '默认主题',
   'Compact theme': '紧凑主题',
-  "This is likely a NocoBase internals bug. Please open an issue at <0>here</0>": "这可能是 NocoBase 内部错误，请在 <0>这里</0> 提交 issue",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "这可能是 NocoBase 内部的问题，你可以在<1>这里</1>将该错误反馈给我们，我们会尽快修复",
   "Render Failed": "渲染失败",
   "Feedback": "反馈问题",
   "Try again": "重试一下",
