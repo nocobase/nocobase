@@ -70,7 +70,6 @@ export const uiSchemaTemplatesSchema: ISchema = {
               title: '{{ t("Delete") }}',
               'x-action': 'destroy',
               'x-component': 'Action',
-              'x-designer': 'Action.Designer',
               'x-component-props': {
                 icon: 'DeleteOutlined',
                 confirm: {

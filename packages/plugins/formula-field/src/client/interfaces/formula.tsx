@@ -1,9 +1,9 @@
 import { cloneDeep } from 'lodash';
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import { evaluators, Evaluator } from '@nocobase/evaluators/client';
+import evaluators, { Evaluator } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
 
-import { NAMESPACE } from './locale';
+import { NAMESPACE } from '../locale';
 
 
 
@@ -125,7 +125,7 @@ export default {
     ...datetimeProperties,
     engine: {
       type: 'string',
-      title: `{{t("Formula engine", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),

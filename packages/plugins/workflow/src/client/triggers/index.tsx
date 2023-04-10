@@ -13,6 +13,7 @@ import { useFlowContext } from "../FlowContext";
 import collection from './collection';
 import schedule from "./schedule/";
 import { lang, NAMESPACE } from "../locale";
+import { VariableOptions } from "../variable";
 
 
 function useUpdateConfigAction() {
@@ -44,7 +45,7 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any, types: any[]): { label: string; value: any; key: string }[];
+  getOptions?(config: any, types: any[]): VariableOptions;
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };

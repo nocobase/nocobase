@@ -1,25 +1,27 @@
-import React, { useRef } from 'react';
-import { Button, Cascader } from 'antd';
+import React, { useRef, useState } from 'react';
+import { Button, Cascader, Popover, Input as AntInput } from 'antd';
 import { css } from "@emotion/css";
 
 import { Input } from "../input";
 import { useTranslation } from 'react-i18next';
+import { XButton } from './XButton';
 
 
 
 // NOTE: https://stackoverflow.com/questions/23892547/what-is-the-best-way-to-trigger-onchange-event-in-react-js/46012210#46012210
 function setNativeInputValue(input, value) {
-  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(input.constructor.prototype, 'value').set;
-  nativeInputValueSetter.call(input, value);
+  const nativeInputValueSetter = Object.getOwnPropertyDescriptor(input.constructor.prototype, 'value')?.set;
+  nativeInputValueSetter?.call(input, value);
   input.dispatchEvent(new Event('input', {
     bubbles: true,
   }));
 }
 
 export function JSONInput(props) {
-  const inputRef = useRef(null);
+  const inputRef = useRef<any>(null);
   const { value, space = 2, scope } = props;
-  const { t } = useTranslation()
+  const { t } = useTranslation();
+  const [selectedVar, setSelectedVar] = useState<string[]>([]);
   const options = typeof scope === 'function' ? scope() : (scope ?? []);
 
   function onFormat() {
@@ -70,20 +72,24 @@ export function JSONInput(props) {
         `}
       >
         <Button onClick={onFormat}>{t('Prettify')}</Button>
-        <Cascader
-          value={[]}
-          options={options}
-          onChange={onInsert}
+        <Popover
+          content={(
+            <AntInput.Group compact>
+              <Cascader
+                placeholder={t('Select a variable')}
+                value={selectedVar}
+                options={options}
+                onChange={(keyPaths) => setSelectedVar(keyPaths as string[])}
+                changeOnSelect
+              />
+              <Button onClick={onInsert}>{t('Insert')}</Button>
+            </AntInput.Group>
+          )}
+          trigger="click"
+          placement="topRight"
         >
-          <Button
-            className={css`
-              font-style: italic;
-              font-family: "New York", "Times New Roman", Times, serif;
-            `}
-          >
-            x
-          </Button>
-        </Cascader>
+          <XButton />
+        </Popover>
       </Button.Group>
     </div>
   );

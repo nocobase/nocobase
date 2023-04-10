@@ -5,11 +5,13 @@ import { instructions, useAvailableUpstreams, useNodeContext } from './nodes';
 import { triggers } from './triggers';
 
 export type VariableOption = {
-  key: string;
+  key?: string;
   value: string;
   label: string;
-  children?: VariableOption[] | null;
+  children?: VariableOptions;
 };
+
+export type VariableOptions = VariableOption[] | null;
 
 const VariableTypes = [
   {
@@ -46,85 +48,163 @@ const VariableTypes = [
   {
     title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
     value: '$system',
-    options: [
-      {
-        key: 'now',
-        value: 'now',
-        label: `{{t("Now")}}`,
-      },
-    ],
+    options(types) {
+      return [
+        ...(!types || types.includes('date') ? [
+          {
+            key: 'now',
+            value: 'now',
+            label: `{{t("System time")}}`,
+          }
+        ] : [])
+      ];
+    }
   },
 ];
 
-export const TypeSets = {
-  boolean: new Set(['boolean']),
-  number: new Set(['integer', 'bigInt', 'float', 'double', 'real', 'decimal']),
-  string: new Set(['string', 'text', 'password']),
-  date: new Set(['date', 'time']),
+export const BaseTypeSets = {
+  boolean: new Set(['checkbox']),
+  number: new Set(['number', 'percent']),
+  string: new Set(['input', 'password', 'email', 'phone', 'select', 'radioGroup', 'text', 'markdown', 'richText', 'expression', 'time']),
+  date: new Set(['date', 'createdAt', 'updatedAt']),
 };
 
+// { type: 'reference', options: { collection: 'users', multiple: false } }
+// { type: 'reference', options: { collection: 'attachments', multiple: false } }
+// { type: 'reference', options: { collection: 'myExpressions', entity: false } }
+
 function matchFieldType(field, type): Boolean {
-  if (typeof type === 'string') {
-    return Boolean(TypeSets[type]?.has(field.type));
+  const inputType = typeof type;
+  if (inputType === 'string') {
+    return Boolean(BaseTypeSets[type]?.has(field.interface));
   }
 
-  if (typeof type === 'object' && type.type === 'reference') {
-    return (
-      (field.collectionName === type.options?.collection && field.name === 'id') ||
-      (field.type === 'belongsTo' && field.target === type.options?.collection)
-    );
+  if (inputType === 'object' && type.type === 'reference') {
+    if (isAssociationField(field)) {
+      return type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*');
+    } else if (field.isForeignKey) {
+      return (
+        (field.collectionName === type.options?.collection && field.name === 'id') ||
+        (field.target === type.options?.collection)
+      );
+    } else {
+      return false;
+    }
+  }
+
+  if (inputType === 'function') {
+    return type(field);
   }
 
   return false;
 }
 
-export function filterTypedFields(fields, types) {
-  return types ? fields.filter((field) => types.some((type) => matchFieldType(field, type))) : fields;
+function isAssociationField(field): boolean {
+  return ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
 }
 
-export function useWorkflowVariableOptions() {
+export function filterTypedFields(fields, types, depth = 1) {
+  if (!types) {
+    return fields;
+  }
+  return fields.filter((field) => {
+    if (isAssociationField(field) && depth && filterTypedFields(useNormallizedFields(field.target), types, depth - 1).length) {
+      return true;
+    }
+    return types.some((type) => matchFieldType(field, type));
+  });
+}
+
+export function useWorkflowVariableOptions(types?) {
   const compile = useCompile();
   const options = VariableTypes.map((item: any) => {
-    const options = typeof item.options === 'function' ? item.options().filter(Boolean) : item.options;
+    const opts = typeof item.options === 'function' ? item.options(types).filter(Boolean) : item.options;
     return {
       label: compile(item.title),
       value: item.value,
       key: item.value,
-      children: compile(options),
-      disabled: options && !options.length,
+      children: compile(opts),
+      disabled: opts && !opts.length,
     };
   });
   return options;
 }
 
-function useCollectionNormalFields(collection) {
-  const { getCollectionFields } = useCollectionManager();
-  const fields = getCollectionFields(collection);
-  return fields.filter(field => field.interface);
-}
-
-export function useCollectionFieldOptions(options, depth = 1): VariableOption[] {
-  const { fields, collection, types } = options;
+function useNormallizedFields(collectionName) {
   const compile = useCompile();
-  const result: VariableOption[] = [];
-  filterTypedFields((fields ?? useCollectionNormalFields(collection)), types)
-    .forEach(field => {
-      const label = compile(field.uiSchema?.title || field.name);
-      if (field.type === 'belongsTo') {
-        result.push({
-          label: `${label} ID`,
-          key: field.foreignKey,
-          value: field.foreignKey,
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(collectionName);
+  if (!collection) {
+    return [];
+  }
+  const { fields } = collection;
+  const foreignKeyFields: any[] = [];
+  const otherFields: any[] = [];
+  fields.forEach(field => {
+    if (field.isForeignKey) {
+      foreignKeyFields.push(field);
+    } else {
+      otherFields.push(field);
+    }
+  });
+  for (let i = otherFields.length - 1; i >= 0; i--) {
+    const field = otherFields[i];
+    if (field.type === 'belongsTo') {
+      const foreignKeyField = foreignKeyFields.find(f => f.name === field.foreignKey);
+      if (foreignKeyField) {
+        otherFields.splice(i, 0, {
+          ...foreignKeyField,
+          uiSchema: {
+            ...field.uiSchema,
+            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : foreignKeyField.name,
+          }
+        });
+      } else {
+        otherFields.splice(i, 0, {
+          ...field,
+          name: field.foreignKey,
+          type: 'bigInt',
+          isForeignKey: true,
+          interface: field.interface,
+          uiSchema: {
+            ...field.uiSchema,
+            title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : field.name,
+          }
         });
       }
-      result.push({
+    } else if (field.type === 'context' && field.collectionName === 'users') {
+      const belongsToField = otherFields.find(f => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
+      otherFields.splice(i, 0, {
+        ...field,
+        type: field.dataType,
+        interface: belongsToField.interface,
+        uiSchema: {
+          ...belongsToField.uiSchema,
+          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name
+        }
+      });
+    }
+  }
+
+  return otherFields.filter(field => field.interface && !field.hidden);
+}
+
+export function useCollectionFieldOptions(options): VariableOption[] {
+  const { fields, collection, types, depth = 1 } = options;
+  const compile = useCompile();
+  const normalizedFields = fields ?? useNormallizedFields(collection);
+  const result: VariableOption[] = filterTypedFields(normalizedFields, types, depth)
+    .filter(field => !isAssociationField(field) || depth)
+    .map(field => {
+      const label = compile(field.uiSchema?.title || field.name);
+      return {
         label,
         key: field.name,
         value: field.name,
-        children: ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type) && depth > 0
-          ? useCollectionFieldOptions({ collection: field.target, types }, depth - 1)
+        children: isAssociationField(field) && depth
+          ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
           : null
-      });
+      };
     });
 
   return result;

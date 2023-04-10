@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
+import { useCompile } from '..';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
@@ -155,7 +156,48 @@ export const useCollectionFilterOptions = (collectionName: string) => {
     });
     return options;
   };
-  return getOptions(fields, 1);
+  const options = getOptions(fields, 1);
+  const compile = useCompile();
+  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection();
+  const childrenCollections = getChildrenCollections(collection.name);
+  if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
+    options.push({
+      name: 'tableoid',
+      type: 'string',
+      title: '{{t("Table OID(Inheritance)")}}',
+      schema: {
+        'x-component': 'Select',
+        enum: [{ value: collection.name, label: compile(collection.title) }].concat(
+          childrenCollections.map((v) => {
+            return {
+              value: v.name,
+              label: compile(v.title),
+            };
+          }),
+        ),
+      },
+      operators: [
+        {
+          label: '{{t("contains")}}',
+          value: '$childIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+        {
+          label: '{{t("does not contain")}}',
+          value: '$childNotIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+      ],
+    });
+  }
+  return options;
 };
 
 export const useFilterDataSource = (options) => {

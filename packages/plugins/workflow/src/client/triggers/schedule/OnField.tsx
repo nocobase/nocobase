@@ -34,7 +34,7 @@ export function OnField({ value, onChange }) {
       {dir
         ? (
           <>
-            <InputNumber value={Math.abs(value.offset)} onChange={(v) => onChange({ ...value, offset: v * dir })}/>
+            <InputNumber value={Math.abs(value.offset)} onChange={(v) => onChange({ ...value, offset: (v ?? 0) * dir })}/>
             <Select value={value.unit || 86400000} onChange={unit => onChange({ ...value, unit })}>
               <Select.Option value={86400000}>{localT('Days')}</Select.Option>
               <Select.Option value={3600000}>{localT('Hours')}</Select.Option>

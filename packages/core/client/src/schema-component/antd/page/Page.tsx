@@ -26,10 +26,10 @@ const designerCss = css`
   }
   &.nb-action-link {
     > .general-schema-designer {
-      top: -10px;
-      bottom: -10px;
-      left: -10px;
-      right: -10px;
+      top: var(--nb-designer-offset);
+      bottom: var(--nb-designer-offset);
+      right: var(--nb-designer-offset);
+      left: var(--nb-designer-offset);
     }
   }
   > .general-schema-designer {
@@ -42,10 +42,6 @@ const designerCss = css`
     display: none;
     background: rgba(241, 139, 98, 0.06);
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;
@@ -90,10 +86,6 @@ const pageDesignerCss = css`
     display: none;
     /* background: rgba(241, 139, 98, 0.06); */
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       z-index: 9999;

@@ -451,6 +451,7 @@ export const Table: any = observer((props: any) => {
         <AntdTable
           ref={tableSizeRefCallback}
           rowKey={rowKey ?? defaultRowKey}
+          dataSource={field?.value?.slice?.()}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -470,7 +471,6 @@ export const Table: any = observer((props: any) => {
             },
             expandedRowKeys: expandedKeys,
           }}
-          dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (

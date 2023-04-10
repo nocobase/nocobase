@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { Card } from 'antd';
-import { PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
+import { CollectionManagerContext, PluginManagerContext, RouteSwitchContext, SchemaComponent, SchemaComponentOptions, SettingsCenterProvider, registerField, useCollectionDataSource } from '@nocobase/client';
+
 import { WorkflowPage } from './WorkflowPage';
 import { ExecutionPage } from './ExecutionPage';
 import { triggers } from './triggers';
@@ -13,6 +14,12 @@ import { ExecutionLink } from './ExecutionLink';
 import OpenDrawer from './components/OpenDrawer';
 import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
+import { DynamicExpression } from './components/DynamicExpression';
+import expressionField from './interfaces/expression';
+
+
+
+// registerField(expressionField.group, 'expression', expressionField);
 
 export const WorkflowContext = React.createContext({});
 
@@ -37,7 +44,8 @@ function WorkflowPane() {
 };
 
 export const WorkflowProvider = (props) => {
-  const ctx = useContext(PluginManagerContext);
+  const pmCtx = useContext(PluginManagerContext);
+  const cmCtx = useContext(CollectionManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
   routes[1].routes.unshift(
     {
@@ -71,16 +79,35 @@ export const WorkflowProvider = (props) => {
       <PluginManagerContext.Provider
         value={{
           components: {
-            ...ctx?.components,
+            ...pmCtx?.components,
             // WorkflowShortcut,
           },
         }}
       >
         <RouteSwitchContext.Provider value={{ components: { ...components, WorkflowPage, ExecutionPage }, ...others, routes }}>
-          <SchemaComponentOptions components={{ WorkflowTodo, WorkflowTodoBlockInitializer }}>
-            <WorkflowContext.Provider value={{ triggers, instructions }}>
-              {props.children}
-            </WorkflowContext.Provider>
+          <SchemaComponentOptions
+            components={{
+              WorkflowTodo,
+              WorkflowTodoBlockInitializer,
+              DynamicExpression
+            }}
+            scope={{
+              useCollectionDataSource
+            }}
+          >
+            <CollectionManagerContext.Provider
+              value={{
+                ...cmCtx,
+                interfaces: {
+                  ...cmCtx.interfaces,
+                  expression: expressionField
+                }
+              }}
+            >
+              <WorkflowContext.Provider value={{ triggers, instructions }}>
+                {props.children}
+              </WorkflowContext.Provider>
+            </CollectionManagerContext.Provider>
           </SchemaComponentOptions>
         </RouteSwitchContext.Provider>
       </PluginManagerContext.Provider>
