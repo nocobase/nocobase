@@ -40,10 +40,7 @@ export default class Processor {
   jobsMapByNodeId: { [key: number]: any } = {};
 
   constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
-    this.logger = options.plugin.getLogger({
-      workflowId: execution.workflowId,
-      executionId: execution.id,
-    });
+    this.logger = options.plugin.getLogger(execution.workflowId);
   }
 
   // make dual linked nodes list then cache
@@ -144,14 +141,15 @@ export default class Processor {
     let job;
     try {
       // call instruction to get result and status
-      this.logger.info(`run instruction [${node.type}] for node (${node.id})`);
+      this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`);
+      this.logger.debug(`config of node`, { data: node.config });
       job = await instruction(node, prevJob, this);
       if (!job) {
         return null;
       }
     } catch (err) {
       // for uncaught error, set to error
-      this.logger.error(`run instruction [${node.type}] for node (${node.id}) failed: `, { error: err })
+      this.logger.error(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `, { error: err });
       job = {
         result: err instanceof Error
           ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
@@ -171,7 +169,8 @@ export default class Processor {
     }
     const savedJob = await this.saveJob(job);
 
-    this.logger.info(`run instruction [${node.type}] for node (${node.id}) finished as ${savedJob.status}`, { data: savedJob.result });
+    this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`);
+    this.logger.debug(`result of node`, { data: savedJob.result });
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
@@ -221,7 +220,7 @@ export default class Processor {
 
   async exit(job: JobModel | null) {
     const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status) : EXECUTION_STATUS.RESOLVED;
-    this.logger.info(`all nodes finished, finishing execution...`);
+    this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
     return null;
   }
