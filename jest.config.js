@@ -9,8 +9,8 @@ module.exports = {
   testEnvironment: 'jsdom',
   preset: 'ts-jest',
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
-  setupFiles: ['dotenv/config'],
-  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setup.ts'],
+  setupFiles: ['./jest.setup.ts'],
+  setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
   moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
     prefix: '<rootDir>/',
   }),
