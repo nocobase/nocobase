@@ -164,7 +164,8 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         if (match) {
           const key = match[1].trim();
           try {
-            if (key.startsWith('$user')) {
+            if (key.startsWith('$')) {
+              const [varName, valuePath] = splitPathToTwoParts(key);
               /**
                * @example
                * const vars = {user: {roles: [{name: 'admin'}, {name: 'user'}]}}
@@ -172,7 +173,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
                *  console.log(data) // ['admin', 'user']
                * })
                */
-              const val = (await jsonata(key.substring(6)).evaluate(vars.$user)) || null;
+              const val = (await jsonata(valuePath).evaluate(vars[varName])) || null;
 
               // jsonata 返回的一个字段，在这里没用，直接删除
               if (isArray(val) && 'sequence' in val) {
@@ -319,4 +320,9 @@ export function getDateVars() {
     last90Days: toDays(-90),
     next90Days: toDays(90),
   };
+}
+
+export function splitPathToTwoParts(path: string) {
+  const parts = path.split('.');
+  return [parts.shift(), parts.join('.')];
 }
