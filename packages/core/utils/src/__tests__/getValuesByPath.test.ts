@@ -86,4 +86,12 @@ describe('getValuesByPath', () => {
     const result = getValuesByPath(arr, 'b', []);
     expect(result).toEqual([1, 2]);
   });
+
+  it('no match', () => {
+    const obj = {
+      a: { b: 1 },
+    };
+    const result = getValuesByPath(obj, 'c.c', null);
+    expect(result).toBe(null);
+  });
 });
