@@ -1,5 +1,24 @@
+//@ts-nocheck
 import prettyFormat from 'pretty-format';
 
+
+
+class Worker {
+  url: any;
+  constructor(stringUrl) {
+    this.url = stringUrl;
+    this.onmessage = () => {};
+  }
+
+  postMessage(msg) {
+    this.onmessage(msg);
+  }
+  onmessage(msg: any) {
+    throw new Error('Method not implemented.');
+  }
+}
+global['Worker'] = Worker;
+global.URL.createObjectURL = function () {};
 global['prettyFormat'] = prettyFormat;
 
 jest.setTimeout(300000);
