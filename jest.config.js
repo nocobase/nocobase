@@ -12,11 +12,10 @@ module.exports = {
   setupFiles: ['./jest.setup.ts'],
   setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
   moduleNameMapper: {
-    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.js',
-    '@nocobase/evaluators/client': '<rootDir>/packages/core/evaluators/src/client',
     ...pathsToModuleNameMapper(compilerOptions.paths, {
       prefix: '<rootDir>/',
     }),
+    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.js',
   },
   globals: {
     'ts-jest': {
