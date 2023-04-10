@@ -1,4 +1,4 @@
-import { getValueFromJsonata, isArray, isFromJsonata, parseDate } from '@nocobase/utils';
+import { parseDate } from '@nocobase/utils';
 import { Op } from 'sequelize';
 
 function isDate(input) {
@@ -12,175 +12,103 @@ const toDate = (date) => {
   return new Date(date);
 };
 
-const dateOn = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.eq]: toDate(r),
-    };
-  }
-  if (Array.isArray(r)) {
-    return {
-      [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
-const dateNotOn = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.ne]: toDate(r),
-    };
-  }
-  if (Array.isArray(r)) {
-    return {
-      [Op.or]: [{ [Op.lt]: toDate(r[0]) }, { [Op.gte]: toDate(r[1]) }],
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
-const dateBefore = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.lt]: toDate(r),
-    };
-  } else if (Array.isArray(r)) {
-    return {
-      [Op.lt]: toDate(r[0]),
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
-const dateNotBefore = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.gte]: toDate(r),
-    };
-  } else if (Array.isArray(r)) {
-    return {
-      [Op.gte]: toDate(r[0]),
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
-const dateAfter = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.gt]: toDate(r),
-    };
-  } else if (Array.isArray(r)) {
-    return {
-      [Op.gte]: toDate(r[1]),
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
-const dateNotAfter = (value, ctx) => {
-  const r = parseDate(value, {
-    timezone: ctx.db.options.timezone,
-  });
-  if (typeof r === 'string') {
-    return {
-      [Op.lte]: toDate(r),
-    };
-  } else if (Array.isArray(r)) {
-    return {
-      [Op.lt]: toDate(r[1]),
-    };
-  }
-  throw new Error(`Invalid Date ${JSON.stringify(value)}`);
-};
-
 export default {
   $dateOn(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.or]: value.map((v) => dateOn(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.eq]: toDate(r),
+      };
     }
-    return dateOn(value, ctx);
+    if (Array.isArray(r)) {
+      return {
+        [Op.and]: [{ [Op.gte]: toDate(r[0]) }, { [Op.lt]: toDate(r[1]) }],
+      };
+    }
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotOn(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.and]: value.map((v) => dateNotOn(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.ne]: toDate(r),
+      };
     }
-    return dateNotOn(value, ctx);
+    if (Array.isArray(r)) {
+      return {
+        [Op.or]: [{ [Op.lt]: toDate(r[0]) }, { [Op.gte]: toDate(r[1]) }],
+      };
+    }
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBefore(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.and]: value.map((v) => dateBefore(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.lt]: toDate(r),
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.lt]: toDate(r[0]),
+      };
     }
-    return dateBefore(value, ctx);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotBefore(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.and]: value.map((v) => dateNotBefore(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.gte]: toDate(r),
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.gte]: toDate(r[0]),
+      };
     }
-    return dateNotBefore(value, ctx);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateAfter(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.and]: value.map((v) => dateAfter(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.gt]: toDate(r),
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.gte]: toDate(r[1]),
+      };
     }
-    return dateAfter(value, ctx);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateNotAfter(value, ctx) {
-    if (isFromJsonata(value)) {
-      value = getValueFromJsonata(value);
-      if (isArray(value)) {
-        return {
-          [Op.and]: value.map((v) => dateNotAfter(v, ctx)),
-        };
-      }
+    const r = parseDate(value, {
+      timezone: ctx.db.options.timezone,
+    });
+    if (typeof r === 'string') {
+      return {
+        [Op.lte]: toDate(r),
+      };
+    } else if (Array.isArray(r)) {
+      return {
+        [Op.lt]: toDate(r[1]),
+      };
     }
-    return dateNotAfter(value, ctx);
+    throw new Error(`Invalid Date ${JSON.stringify(value)}`);
   },
 
   $dateBetween(value, ctx) {
