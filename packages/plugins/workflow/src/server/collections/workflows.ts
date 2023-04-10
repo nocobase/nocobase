@@ -38,7 +38,7 @@ export default function () {
       {
         type: 'boolean',
         name: 'useTransaction',
-        defaultValue: true,
+        // defaultValue: true,
       },
       {
         type: 'hasMany',
