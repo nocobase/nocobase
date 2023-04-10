@@ -13,6 +13,7 @@ import {
   TableProps,
   Tabs,
   TabsProps,
+  Tag,
   Typography,
 } from 'antd';
 import { sortBy } from 'lodash';
@@ -27,9 +28,9 @@ import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
 import { useCompile, useTableSize } from '../schema-component';
+import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
-import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 const { Link } = Typography;
 export const SettingsCenterContext = createContext<any>({});
 
@@ -62,7 +63,7 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
       className={css`
         background: #ffffff;
         padding: var(--nb-spacing);
-        height: 70vh;
+        height: 60vh;
         overflow-y: auto;
       `}
     >
@@ -79,14 +80,16 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
   const { builtIn } = props;
   const history = useHistory<any>();
   const api = useAPIClient();
+  const [plugin, setPlugin] = useState<any>({});
   const [pluginName, setPluginName] = useState<string>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const settingItems = useContext(SettingsCenterContext);
   const { data, loading } = useRequest({
     url: 'applicationPlugins:list',
     params: {
       filter: props.filter,
       sort: 'name',
+      paginate: false,
     },
   });
 
@@ -103,8 +106,9 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
     return [
       {
         title: t('Plugin name'),
-        dataIndex: 'name',
+        dataIndex: 'displayName',
         width: 300,
+        render: (displayName, record) => displayName || record.name,
       },
       {
         title: t('Description'),
@@ -116,20 +120,21 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
         dataIndex: 'version',
         width: 300,
       },
-      {
-        title: t('Author'),
-        dataIndex: 'author',
-        width: 200,
-      },
+      // {
+      //   title: t('Author'),
+      //   dataIndex: 'author',
+      //   width: 200,
+      // },
       {
         title: t('Actions'),
-        width: 250,
+        width: 300,
         render(data) {
           return (
             <Space>
               <Link
                 onClick={() => {
-                  setPluginName(data.name);
+                  setPlugin(data);
+                  setPluginName(data.displayName || data.name);
                   run({
                     params: {
                       filterByTk: data.name,
@@ -224,6 +229,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
         className={css`
           .ant-modal-header {
             background: #f0f2f5;
+            padding-bottom: 8px;
           }
 
           .ant-modal-body {
@@ -232,17 +238,30 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
 
           .ant-modal-body {
             background: #f0f2f5;
+            .plugin-desc {
+              padding-bottom: 8px;
+            }
           }
         `}
         width="70%"
         title={
           <Typography.Title level={2} style={{ margin: 0 }}>
             {pluginName}
+            <Tag
+              className={css`
+                vertical-align: middle;
+                margin-top: -3px;
+                margin-left: 8px;
+              `}
+            >
+              v{plugin.version}
+            </Tag>
           </Typography.Title>
         }
         open={!!pluginName}
         onCancel={() => setPluginName(null)}
       >
+        {plugin.description && <div className={'plugin-desc'}>{plugin.description}</div>}
         <Tabs items={items}></Tabs>
       </Modal>
       <Table
