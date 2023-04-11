@@ -78,7 +78,7 @@ export const Gantt: any = (props: any) => {
     handleWidth = 8,
     timeStep = 300000,
     arrowColor = 'grey',
-    fontFamily = 'Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue',
+    fontFamily = `-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'`,
     fontSize = currentTheme === 'compact' ? '12px' : '14px',
     arrowIndent = 20,
     todayColor = 'rgba(252, 248, 227, 0.5)',
