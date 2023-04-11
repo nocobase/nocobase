@@ -8,8 +8,6 @@ export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
   const processColor = isSelected ? task.styles.progressSelectedColor : task.styles.progressColor;
   const projectWith = task.x2 - task.x1;
 
-  console.log('task', task);
-
   return (
     <g tabIndex={0} className={cx(projectWrapper)}>
       <rect

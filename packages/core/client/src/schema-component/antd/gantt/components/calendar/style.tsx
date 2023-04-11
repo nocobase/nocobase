@@ -9,7 +9,7 @@ export const calendarBottomText = css`
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-  font-size: 11px;
+  font-weight: 500;
 `;
 
 export const calendarTopTick = css`
@@ -19,14 +19,14 @@ export const calendarTopTick = css`
 
 export const calendarTopText = css`
   text-anchor: middle;
-  fill: #555;
-  font-size: 12px;
+  /* fill: #555; */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
+  font-weight: 500;
 `;
 
 export const calendarHeader = css`
