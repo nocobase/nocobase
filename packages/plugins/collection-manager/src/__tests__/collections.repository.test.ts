@@ -42,6 +42,16 @@ describe('collections repository', () => {
             target: 'profiles',
             foreignKey: 'target_id',
           },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            target: 'tags',
+            through: 'users_tags',
+            foreignKey: 'user_id',
+            otherKey: 'tag_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
         ],
       },
       context: {},
@@ -66,6 +76,28 @@ describe('collections repository', () => {
       context: {},
     });
 
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'users',
+            target: 'users',
+            through: 'users_tags',
+            foreignKey: 'tag_id',
+            otherKey: 'user_id',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+      context: {},
+    });
     const userTableName = db.getCollection('users').model.tableName;
 
     await db.getRepository('collections').create({
@@ -99,6 +131,12 @@ describe('collections repository', () => {
         profile: {
           age: 18,
         },
+        tags: [
+          { name: 't1' },
+          {
+            name: 't2',
+          },
+        ],
       },
     });
 
@@ -133,10 +171,11 @@ describe('collections repository', () => {
 
     // students hasMany posts
     const student1 = await studentCollection.repository.findOne({
-      appends: ['posts', 'profile'],
+      appends: ['posts', 'profile', 'tags'],
     });
 
     expect(student1.get('posts')).toHaveLength(1);
+    expect(student1.get('tags')).toHaveLength(2);
     expect(student1.get('profile').age).toEqual(18);
 
     // posts belongsTo student
@@ -146,6 +185,8 @@ describe('collections repository', () => {
     });
 
     expect(post1.get('student').name).toEqual('u1');
+
+    // should rename through table foreignKey
   });
 
   it('should extend collections collection', async () => {
