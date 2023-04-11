@@ -78,7 +78,7 @@ export const Gantt: any = (props: any) => {
     timeStep = 300000,
     arrowColor = 'grey',
     fontFamily = 'Arial, Roboto, Oxygen, Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue',
-    fontSize = '14px',
+    fontSize = currentTheme === 'compact' ? '12px' : '14px',
     arrowIndent = 20,
     todayColor = 'rgba(252, 248, 227, 0.5)',
     viewDate,
