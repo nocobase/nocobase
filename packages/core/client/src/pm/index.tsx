@@ -80,8 +80,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
   const { builtIn } = props;
   const history = useHistory<any>();
   const api = useAPIClient();
-  const [plugin, setPlugin] = useState<any>({});
-  const [pluginName, setPluginName] = useState<string>(null);
+  const [plugin, setPlugin] = useState<any>(null);
   const { t, i18n } = useTranslation();
   const settingItems = useContext(SettingsCenterContext);
   const { data, loading } = useRequest({
@@ -134,7 +133,6 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
               <Link
                 onClick={() => {
                   setPlugin(data);
-                  setPluginName(data.displayName || data.name);
                   run({
                     params: {
                       filterByTk: data.name,
@@ -246,7 +244,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
         width="70%"
         title={
           <Typography.Title level={2} style={{ margin: 0 }}>
-            {pluginName}
+            {plugin?.displayName || plugin?.name}
             <Tag
               className={css`
                 vertical-align: middle;
@@ -254,14 +252,14 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
                 margin-left: 8px;
               `}
             >
-              v{plugin.version}
+              v{plugin?.version}
             </Tag>
           </Typography.Title>
         }
-        open={!!pluginName}
-        onCancel={() => setPluginName(null)}
+        open={!!plugin}
+        onCancel={() => setPlugin(null)}
       >
-        {plugin.description && <div className={'plugin-desc'}>{plugin.description}</div>}
+        {plugin?.description && <div className={'plugin-desc'}>{plugin?.description}</div>}
         <Tabs items={items}></Tabs>
       </Modal>
       <Table
