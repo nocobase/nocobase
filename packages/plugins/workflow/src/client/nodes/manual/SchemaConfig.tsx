@@ -531,7 +531,7 @@ export function SchemaConfig({ value, onChange }) {
       <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers, ...nodeInitializers }}>
         <SchemaComponentRefreshProvider
           onRefresh={() => {
-            const { tabs, footer } = get(schema.toJSON(), 'properties.drawer.properties');
+            const { tabs, footer } = get(schema.toJSON(), 'properties.drawer.properties') as any;
             const fields: any[] = [];
             findFormFields(tabs, fields);
 
