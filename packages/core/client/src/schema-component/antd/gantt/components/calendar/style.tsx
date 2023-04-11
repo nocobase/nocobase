@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 
 export const calendarBottomText = css`
   text-anchor: middle;
-  fill: #333;
+  fill: rgba(0, 0, 0, 0.85);
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
