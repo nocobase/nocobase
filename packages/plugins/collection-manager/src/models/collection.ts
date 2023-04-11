@@ -26,7 +26,7 @@ export class CollectionModel extends MagicAttributeModel {
       fields: [],
     };
 
-    if (loadOptions.replaceCollection) {
+    if (loadOptions?.replaceCollection) {
       this.db.removeCollection(lodash.isString(loadOptions.replaceCollection) ? loadOptions.replaceCollection : name);
     }
 
@@ -104,7 +104,7 @@ export class CollectionModel extends MagicAttributeModel {
   ) {
     const collection = await this.load({
       transaction: options?.transaction,
-      replaceCollection: options.replaceCollection,
+      replaceCollection: options?.replaceCollection,
     });
 
     // postgres support zero column table, other database should not sync it to database
