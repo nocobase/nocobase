@@ -100,12 +100,21 @@ describe('collections repository', () => {
     expect(tables).not.toContain(userTableName);
 
     const studentCollection = db.getCollection('students');
+
     expect(await studentCollection.repository.count()).toEqual(1);
+
+    // students hasMany posts
     const student1 = await studentCollection.repository.findOne({
       appends: ['posts'],
     });
 
     expect(student1.get('posts')).toHaveLength(1);
+
+    // posts belongsTo student
+    const postCollection = db.getCollection('posts');
+    const post1 = await postCollection.repository.findOne({
+      appends: ['student'],
+    });
   });
 
   it('should extend collections collection', async () => {

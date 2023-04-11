@@ -121,8 +121,6 @@ export class CollectionModel extends MagicAttributeModel {
     }
 
     try {
-      console.log(`...sync ${this.get('name')}`);
-
       await collection.sync({
         force: false,
         alter: {

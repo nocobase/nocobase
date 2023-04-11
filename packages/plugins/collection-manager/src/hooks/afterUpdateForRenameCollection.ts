@@ -1,7 +1,6 @@
 import { Database } from '@nocobase/database';
 import { CollectionModel } from '../models';
-import { CollectionsGraph } from '@nocobase/utils';
-import lodash from 'lodash';
+import { CollectionsGraph, inflection } from '@nocobase/utils';
 
 export function afterUpdateForRenameCollection(db: Database) {
   return async (model: CollectionModel, { context, transaction }) => {
@@ -42,17 +41,33 @@ export function afterUpdateForRenameCollection(db: Database) {
         };
 
         if (newOptions.foreignKey) {
+          newOptions.foreignKey = newOptions.foreignKey.replace(
+            new RegExp(`^${inflection.singularize(prevName)}`),
+            inflection.singularize(currentName),
+          );
         }
 
-        await associationField.update(
-          {
-            options: newOptions,
-          },
-          {
-            transaction,
-            raw: true,
-          },
-        );
+        const updateValues = {
+          options: newOptions,
+          name: (() => {
+            const name = associationField.get('name');
+
+            if (associationField.get('type') == 'belongsTo' || associationField.get('type') == 'hasOne') {
+              return name.replace(
+                new RegExp(`^${inflection.singularize(prevName)}`),
+                inflection.singularize(currentName),
+              );
+            }
+
+            return name.replace(new RegExp(`^${prevName}`), currentName);
+          })(),
+        };
+
+        console.log('updateValues', updateValues);
+        await associationField.update(updateValues, {
+          transaction,
+          raw: true,
+        });
       }
 
       // reload collections that depend on this collection
