@@ -147,7 +147,7 @@ export const useFilterAPI = () => {
           block.defaultFilter,
         ]);
 
-        return block.doFilter(
+        block.doFilter(
           {
             ...param,
             page: 1,

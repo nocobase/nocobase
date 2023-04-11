@@ -143,8 +143,28 @@ export const MapBlock = (props) => {
           return extData.id === item[getPrimaryKey()];
         });
 
+        // 筛选区块模式
         if (isConnected) {
-          doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
+          // 清楚其它点的选中状态
+          overlays.forEach((overlay) => {
+            if (overlay.dom === o.dom) return;
+            overlay.dom.style.filter = 'none';
+            (overlay.dom as any).__selected = false;
+          });
+
+          if ((o.dom as any).__selected) {
+            o.dom.style.filter = 'none';
+            (o.dom as any).__selected = false;
+
+            // 删除过滤参数
+            doFilter(null);
+          } else {
+            // 高亮选中的位置
+            o.dom.style.filter = 'brightness(1.2) contrast(1.2) hue-rotate(180deg)';
+            (o.dom as any).__selected = true;
+            doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
+          }
+
           return;
         }
 
