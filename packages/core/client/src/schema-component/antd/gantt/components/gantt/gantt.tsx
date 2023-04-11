@@ -54,10 +54,11 @@ const GanttRecordViewer = (props) => {
 };
 export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
+  const currentTheme = localStorage.getItem('NOCOBASE_THEME');
   const {
-    headerHeight = designable ? 64 : 55,
+    headerHeight = currentTheme === 'compact' ? (designable ? 52 : 45) : designable ? 64 : 55,
     listCellWidth = '155px',
-    rowHeight = 55.56,
+    rowHeight = currentTheme === 'compact' ? 45 : 55.56,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
@@ -129,7 +130,7 @@ export const Gantt: any = (props: any) => {
   useEffect(() => {
     tableCtx.field.onExpandClick = handleTableExpanderClick;
     tableCtx.field.onRowSelect = handleRowSelect;
-    tableCtx.setExpandFlag(true)
+    tableCtx.setExpandFlag(true);
   }, []);
   useEffect(() => {
     expandAndCollapseAll?.(!expandFlag);
