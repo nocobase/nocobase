@@ -37,7 +37,7 @@ export const GanttBlockInitializer = (props) => {
               value: field.name,
             };
           });
-          const numberFields = collectionFields
+        const numberFields = collectionFields
           ?.filter((field) => field.type === 'float')
           ?.map((field) => {
             return {
@@ -73,7 +73,7 @@ export const GanttBlockInitializer = (props) => {
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
-                       progress: {
+                      progress: {
                         title: t('Progress field'),
                         enum: numberFields,
                         'x-component': 'Select',
@@ -91,6 +91,7 @@ export const GanttBlockInitializer = (props) => {
                           { label: '{{t("Year")}}', value: 'year', color: 'green' },
                           { label: '{{t("QuarterYear")}}', value: 'quarterYear', color: 'red' },
                         ],
+                        default: 'day',
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
