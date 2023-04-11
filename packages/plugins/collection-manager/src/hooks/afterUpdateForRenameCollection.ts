@@ -1,5 +1,7 @@
 import { Database } from '@nocobase/database';
 import { CollectionModel } from '../models';
+import { CollectionsGraph } from '@nocobase/utils';
+import lodash from 'lodash';
 
 export function afterUpdateForRenameCollection(db: Database) {
   return async (model: CollectionModel, { context, transaction }) => {
@@ -14,7 +16,7 @@ export function afterUpdateForRenameCollection(db: Database) {
       const prevCollection = db.getCollection(prevName);
       const prevCollectionTableName = prevCollection.getTableNameWithSchema();
 
-      // update fields
+      // update old collection name to new collection name in fields
       await db.getRepository('fields').update({
         filter: {
           collectionName: prevName,
@@ -26,6 +28,49 @@ export function afterUpdateForRenameCollection(db: Database) {
         transaction,
       });
 
+      const associationFields = await db.getRepository('fields').find({
+        filter: {
+          'options.target': prevName,
+        },
+        transaction,
+      });
+
+      for (const associationField of associationFields) {
+        console.log(associationField.get('options'));
+        await associationField.update(
+          'options',
+          lodash.omit(
+            {
+              ...associationField.get('options'),
+              target: currentName,
+            },
+            ['transaction'],
+          ),
+          {
+            raw: true,
+            transaction,
+          },
+        );
+      }
+
+      // reload collections that depend on this collection
+      const relatedCollections = CollectionsGraph.preOrder({
+        collections: [...db.collections.values()].map((collection) => {
+          return {
+            name: collection.name,
+            fields: [...collection.fields.values()],
+            inherits: collection.options.inherits,
+          };
+        }),
+
+        node: prevName,
+        direction: 'reverse',
+      });
+
+      // should reload related collections
+      console.log(relatedCollections);
+
+      // update association models
       await model.migrate({
         transaction,
         replaceCollection: prevName,

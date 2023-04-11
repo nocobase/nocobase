@@ -29,6 +29,13 @@ describe('collections repository', () => {
             type: 'string',
             name: 'name',
           },
+          {
+            type: 'hasMany',
+            name: 'posts',
+            interface: 'o2m',
+            target: 'posts',
+            foreignKey: 'user_id',
+          },
         ],
       },
       context: {},
@@ -36,7 +43,7 @@ describe('collections repository', () => {
 
     const userTableName = db.getCollection('users').model.tableName;
 
-    const PostCollection = await db.getRepository('collections').create({
+    await db.getRepository('collections').create({
       values: {
         name: 'posts',
         fields: [
@@ -47,11 +54,31 @@ describe('collections repository', () => {
           {
             type: 'belongsTo',
             name: 'user',
+            target: 'users',
+            interface: 'm2o',
+            foreignKey: 'user_id',
           },
         ],
       },
       context: {},
     });
+
+    await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        posts: [
+          {
+            title: 'p1',
+          },
+        ],
+      },
+    });
+
+    const user1 = await db.getRepository('users').findOne({
+      appends: ['posts'],
+    });
+
+    expect(user1.get('posts')).toHaveLength(1);
 
     // rename collection
     await db.getCollection('collections').repository.update({
@@ -71,6 +98,14 @@ describe('collections repository', () => {
 
     // expect users table not exists
     expect(tables).not.toContain(userTableName);
+
+    const studentCollection = db.getCollection('students');
+    expect(await studentCollection.repository.count()).toEqual(1);
+    const student1 = await studentCollection.repository.findOne({
+      appends: ['posts'],
+    });
+
+    expect(student1.get('posts')).toHaveLength(1);
   });
 
   it('should extend collections collection', async () => {
