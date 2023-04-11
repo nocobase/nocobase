@@ -3,8 +3,7 @@ import { cx } from '@emotion/css';
 import { GridProps, Grid } from '../grid/grid';
 import { CalendarProps, Calendar } from '../calendar/calendar';
 import { TaskGanttContentProps, TaskGanttContent } from './task-gantt-content';
-import { ganttVerticalContainer,horizontalContainer } from './style';
-
+import { ganttVerticalContainer, horizontalContainer } from './style';
 
 export type TaskGanttProps = {
   gridProps: GridProps;
@@ -13,7 +12,7 @@ export type TaskGanttProps = {
   ganttHeight: number;
   scrollY: number;
   scrollX: number;
-  ref:any
+  ref: any;
 };
 export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
   ({ gridProps, calendarProps, barProps, ganttHeight, scrollY, scrollX }, ref: any) => {
@@ -40,6 +39,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
           width={gridProps.svgWidth}
           height={calendarProps.headerHeight}
           fontFamily={barProps.fontFamily}
+          style={{ borderBottom: '1px solid #f0f0f0' }}
         >
           <Calendar {...calendarProps} />
         </svg>
@@ -51,9 +51,10 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width={gridProps.svgWidth}
-            height={barProps.rowHeight * (barProps.tasks.length||3)}
+            height={barProps.rowHeight * (barProps.tasks.length || 3)}
             fontFamily={barProps.fontFamily}
             ref={ganttSVGRef}
+            style={{ borderBottom: '1px solid #f0f0f0' }}
           >
             <Grid {...gridProps} />
             <TaskGanttContent {...newBarProps} />
