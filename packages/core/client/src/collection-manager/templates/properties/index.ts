@@ -82,7 +82,7 @@ export const defaultConfigurableProperties = {
     type: 'string',
     title: '{{t("Collection name")}}',
     required: true,
-    'x-disabled': '{{ !createOnly }}',
+    // 'x-disabled': '{{ !createOnly }}',
     'x-decorator': 'FormItem',
     'x-component': 'Input',
     'x-validator': 'uid',
