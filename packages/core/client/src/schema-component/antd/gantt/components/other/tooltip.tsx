@@ -1,12 +1,13 @@
-import React, { useRef, useEffect, useState } from 'react';
 import { cx } from '@emotion/css';
-import { Task } from '../../types/public-types';
+import React, { useEffect, useRef, useState } from 'react';
+import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
+import { Task } from '../../types/public-types';
 import {
   tooltipDefaultContainer,
+  tooltipDefaultContainerParagraph,
   tooltipDetailsContainer,
   tooltipDetailsContainerHidden,
-  tooltipDefaultContainerParagraph,
 } from './style';
 
 export type TooltipProps = {
@@ -120,9 +121,9 @@ export const StandardTooltipContent: React.FC<{
   };
   return (
     <div className={cx(tooltipDefaultContainer)} style={style}>
-      <b style={{ fontSize: fontSize + 6 }}>{`${task.name}: ${task.start.getDate()}-${
-        task.start.getMonth() + 1
-      }-${task.start.getFullYear()} - ${task.end.getDate()}-${task.end.getMonth() + 1}-${task.end.getFullYear()}`}</b>
+      <b style={{ fontSize: fontSize + 6 }}>
+        {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
+      </b>
       {task.end.getTime() - task.start.getTime() !== 0 && (
         <p className={cx(tooltipDefaultContainerParagraph)}>{`Duration: ${~~(
           (task.end.getTime() - task.start.getTime()) /
@@ -130,7 +131,7 @@ export const StandardTooltipContent: React.FC<{
         )} day(s)`}</p>
       )}
 
-      <p className={cx(tooltipDefaultContainerParagraph)}>{!!task.progress && `Progress: ${task.progress} %`}</p>
+      <p className={cx(tooltipDefaultContainerParagraph)}>{!!task.progress && `Progress: ${task.progress}%`}</p>
     </div>
   );
 };

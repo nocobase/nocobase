@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
 import { cx } from '@emotion/css';
+import React, { useEffect, useRef, useState } from 'react';
+import { getYmd } from '../../helpers/other-helper';
 import { BarTask } from '../../types/bar-task';
 import { GanttContentMoveAction } from '../../types/gantt-task-actions';
 import { Bar } from './bar/bar';
@@ -7,7 +8,6 @@ import { BarSmall } from './bar/bar-small';
 import { Milestone } from './milestone/milestone';
 import { Project } from './project/project';
 import { barLabel, barLabelOutside, projectLabel } from './style';
-import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 
 export type TaskItemProps = {
   task: BarTask;
@@ -102,11 +102,7 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
         className={isProjectBar ? cx(projectLabel) : isTextInside ? cx(barLabel) : cx(barLabel) && cx(barLabelOutside)}
         ref={textRef}
       >
-        {isProjectBar
-          ? `${task.name}: ${task.start.getDate()}-${
-              task.start.getMonth() + 1
-            }-${task.start.getFullYear()} - ${task.end.getDate()}-${task.end.getMonth() + 1}-${task.end.getFullYear()}`
-          : task.name}
+        {isProjectBar ? `${task.name}: ${getYmd(task.start)} ~ ${getYmd(task.end)}` : task.name}
       </text>
     </g>
   );

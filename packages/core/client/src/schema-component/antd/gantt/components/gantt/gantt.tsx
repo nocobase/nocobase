@@ -1,30 +1,29 @@
-import React, { useState, SyntheticEvent, useRef, useEffect, useMemo, useCallback } from 'react';
-import { useFieldSchema, Schema, RecursionField } from '@formily/react';
-import { cx } from '@emotion/css';
-import { message } from 'antd';
+import { css, cx } from '@emotion/css';
 import { createForm } from '@formily/core';
-import { css } from '@emotion/css';
+import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { message } from 'antd';
+import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Task } from '../../types/public-types';
-import { GridProps } from '../grid/grid';
+import { useCurrentAppInfo } from '../../../../../appInfo';
+import { useBlockRequestContext, useGanttBlockContext, useTableBlockContext } from '../../../../../block-provider';
+import { RecordProvider } from '../../../../../record-provider';
+import { useDesignable } from '../../../../../schema-component';
+import { ActionContext } from '../../../action';
+import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
+import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
+import { BarTask } from '../../types/bar-task';
+import { DateSetup } from '../../types/date-setup';
+import { GanttEvent } from '../../types/gantt-task-actions';
+import { Task } from '../../types/public-types';
 import { CalendarProps } from '../calendar/calendar';
-import { TaskGanttContentProps } from './task-gantt-content';
+import { GridProps } from '../grid/grid';
+import { HorizontalScroll } from '../other/horizontal-scroll';
 import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 import { VerticalScroll } from '../other/vertical-scroll';
-import { TaskGantt } from './task-gantt';
-import { BarTask } from '../../types/bar-task';
-import { convertToBarTasks } from '../../helpers/bar-helper';
-import { GanttEvent } from '../../types/gantt-task-actions';
-import { DateSetup } from '../../types/date-setup';
-import { HorizontalScroll } from '../other/horizontal-scroll';
-import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
 import { wrapper } from './style';
-import { ActionContext } from '../../../action';
-import { useDesignable } from '../../../../../schema-component';
-import { useBlockRequestContext, useTableBlockContext, useGanttBlockContext } from '../../../../../block-provider';
-import { RecordProvider } from '../../../../../record-provider';
-import { useCurrentAppInfo } from '../../../../../appInfo';
+import { TaskGantt } from './task-gantt';
+import { TaskGanttContentProps } from './task-gantt-content';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;
@@ -64,7 +63,7 @@ export const Gantt: any = (props: any) => {
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
-    barCornerRadius = 3,
+    barCornerRadius = 2,
     barProgressColor = '#1890ff',
     barProgressSelectedColor = '#1890ff',
     barBackgroundColor = '#82bdff',
