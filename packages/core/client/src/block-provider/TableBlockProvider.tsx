@@ -21,7 +21,7 @@ interface Props {
 
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
-  const field = useField();
+  const field:any = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
   return (

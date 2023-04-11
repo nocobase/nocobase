@@ -10,7 +10,7 @@ const formatData = (
   fieldNames,
   tasks: any[] = [],
   projectId: any = undefined,
-  hideChildren: boolean = true,
+  hideChildren: boolean = false,
 ) => {
   data.forEach((item: any) => {
     if (item.children && item.children.length) {
@@ -93,7 +93,7 @@ export const useGanttBlockProps = () => {
     if (!ctx?.service?.loading) {
       const data = formatData(ctx.service.data?.data, ctx.fieldNames);
       const mergeTasks = data.map((v) => {
-        const task = ctx.field.data.find((k) => k.id === v.id) || { hideChildren: true };
+        const task = ctx.field.data.find((k) => k.id === v.id) || { hideChildren: false };
         return {
           ...v,
           hideChildren: task?.hideChildren,

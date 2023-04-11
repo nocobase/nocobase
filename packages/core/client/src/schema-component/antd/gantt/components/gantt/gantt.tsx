@@ -129,6 +129,7 @@ export const Gantt: any = (props: any) => {
   useEffect(() => {
     tableCtx.field.onExpandClick = handleTableExpanderClick;
     tableCtx.field.onRowSelect = handleRowSelect;
+    tableCtx.setExpandFlag(true)
   }, []);
   useEffect(() => {
     expandAndCollapseAll?.(!expandFlag);

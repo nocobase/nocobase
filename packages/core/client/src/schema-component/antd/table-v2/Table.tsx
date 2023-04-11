@@ -223,7 +223,7 @@ export const Table: any = observer((props: any) => {
     } else {
       setExpandesKeys([]);
     }
-  }, [expandFlag]);
+  }, [expandFlag, allIncludesChildren]);
 
   const components = useMemo(() => {
     return {
