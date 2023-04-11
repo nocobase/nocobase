@@ -48,6 +48,45 @@ export function afterUpdateForRenameCollection(db: Database) {
           }
         }
 
+        if (field.get('type') == 'belongsToMany') {
+          const oldForeignKey = options.foreignKey;
+          options.foreignKey = updateForeignKey(oldForeignKey);
+
+          if (oldForeignKey !== options.foreignKey) {
+            const reverseField = await db.getRepository('fields').findOne({
+              filter: {
+                collectionName: options.target,
+                'options.target': prevName,
+                'options.otherKey': oldForeignKey,
+              },
+              transaction,
+            });
+
+            await reverseField.update(
+              {
+                options: {
+                  ...reverseField.get('options'),
+                  otherKey: options.foreignKey,
+                },
+              },
+              {
+                transaction,
+                hooks: false,
+                raw: true,
+              },
+            );
+
+            const throughCollection = db.getCollection(options.through);
+
+            // rename column
+            await db.sequelize
+              .getQueryInterface()
+              .renameColumn(throughCollection.getTableNameWithSchema(), oldForeignKey, options.foreignKey, {
+                transaction,
+              });
+          }
+        }
+
         await field.update(
           {
             options,

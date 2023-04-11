@@ -187,6 +187,11 @@ describe('collections repository', () => {
     expect(post1.get('student').name).toEqual('u1');
 
     // should rename through table foreignKey
+    const throughCollection = db.getCollection('users_tags');
+    const throughTableName = throughCollection.getTableNameWithSchema();
+
+    const throughTable = await db.sequelize.getQueryInterface().describeTable(throughTableName);
+    expect(throughTable.student_id).toBeDefined();
   });
 
   it('should extend collections collection', async () => {
