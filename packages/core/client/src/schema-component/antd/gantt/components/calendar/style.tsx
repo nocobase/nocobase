@@ -13,7 +13,8 @@ export const calendarBottomText = css`
 `;
 
 export const calendarTopTick = css`
-  stroke: #e6e4e4;
+  stroke: #f0f0f0;
+  stroke-width: 0;
 `;
 
 export const calendarTopText = css`

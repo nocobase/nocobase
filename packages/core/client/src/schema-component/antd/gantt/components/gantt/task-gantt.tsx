@@ -39,7 +39,7 @@ export const TaskGantt: React.FC<TaskGanttProps> = forwardRef(
           width={gridProps.svgWidth}
           height={calendarProps.headerHeight}
           fontFamily={barProps.fontFamily}
-          style={{ borderBottom: '1px solid #f0f0f0' }}
+          style={{ borderBottom: '1px solid #f0f0f0',fontWeight:700 }}
         >
           <Calendar {...calendarProps} />
         </svg>
