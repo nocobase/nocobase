@@ -1,17 +1,19 @@
-import React from 'react';
 import { cx } from '@emotion/css';
+import React from 'react';
 import { TaskItemProps } from '../task-item';
-import { projectWrapper, projectBackground } from './style';
+import { projectBackground, projectWrapper } from './style';
 
 export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
   const barColor = isSelected ? task.styles.backgroundSelectedColor : task.styles.backgroundColor;
   const processColor = isSelected ? task.styles.progressSelectedColor : task.styles.progressColor;
   const projectWith = task.x2 - task.x1;
 
+  console.log('task', task);
+
   return (
     <g tabIndex={0} className={cx(projectWrapper)}>
       <rect
-        fill={barColor}
+        fill={task.color || barColor}
         x={task.x1}
         width={projectWith}
         y={task.y}
@@ -27,7 +29,7 @@ export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {
         height={task.height}
         ry={task.barCornerRadius}
         rx={task.barCornerRadius}
-        fill={processColor}
+        fill={task.color || processColor}
       />
     </g>
   );

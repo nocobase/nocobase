@@ -1,10 +1,11 @@
-import React from "react";
 import { cx } from '@emotion/css';
+import React from "react";
 import { barBackground } from './style';
 
 type BarDisplayProps = {
   x: number;
   y: number;
+  color?: string;
   width: number;
   height: number;
   isSelected: boolean;
@@ -23,6 +24,7 @@ type BarDisplayProps = {
 export const BarDisplay: React.FC<BarDisplayProps> = ({
   x,
   y,
+  color,
   width,
   height,
   isSelected,
@@ -33,10 +35,16 @@ export const BarDisplay: React.FC<BarDisplayProps> = ({
   onMouseDown,
 }) => {
   const getProcessColor = () => {
+    if (color) {
+      return color;
+    }
     return isSelected ? styles.progressSelectedColor : styles.progressColor;
   };
 
   const getBarColor = () => {
+    if (color) {
+      return color;
+    }
     return isSelected ? styles.backgroundSelectedColor : styles.backgroundColor;
   };
 

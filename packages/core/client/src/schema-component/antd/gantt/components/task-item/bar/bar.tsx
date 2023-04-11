@@ -1,10 +1,10 @@
-import React from "react";
 import { cx } from '@emotion/css';
+import React from "react";
 import { getProgressPoint } from "../../../helpers/bar-helper";
-import { BarDisplay } from "./bar-display";
-import { BarDateHandle } from "./bar-date-handle";
-import { BarProgressHandle } from "./bar-progress-handle";
 import { TaskItemProps } from "../task-item";
+import { BarDateHandle } from "./bar-date-handle";
+import { BarDisplay } from "./bar-display";
+import { BarProgressHandle } from "./bar-progress-handle";
 import { barWrapper } from './style';
 
 
@@ -27,6 +27,7 @@ export const Bar: React.FC<TaskItemProps> = ({
       <BarDisplay
         x={task.x1}
         y={task.y}
+        color={task.color}
         width={task.x2 - task.x1}
         height={task.height}
         progressX={task.progressX}

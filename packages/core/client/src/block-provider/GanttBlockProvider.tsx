@@ -23,6 +23,7 @@ const formatData = (
         progress: item[fieldNames.progress] * 100 || 0,
         hideChildren: hideChildren,
         project: projectId,
+        color: item.color,
       });
       formatData(item.children, fieldNames, tasks, item.id + '', hideChildren);
     } else {
@@ -34,6 +35,7 @@ const formatData = (
         type: fieldNames.end ? 'task' : 'milestone',
         progress: item[fieldNames.progress] * 100 || 0,
         project: projectId,
+        color: item.color,
       });
     }
   });
