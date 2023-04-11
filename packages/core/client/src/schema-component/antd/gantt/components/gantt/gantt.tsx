@@ -3,6 +3,7 @@ import { useFieldSchema, Schema, RecursionField } from '@formily/react';
 import { cx } from '@emotion/css';
 import { createForm } from '@formily/core';
 import { css } from '@emotion/css';
+import { flatMapDeep } from 'lodash';
 import { Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -416,7 +417,14 @@ export const Gantt: any = (props: any) => {
     await service?.refresh();
   };
   const handleBarClick = (data) => {
-    const recordData = service.data?.data?.find((item) => item.id === +data.id);
+    const flattenedData = flatMapDeep(service.data?.data, (node) => {
+      if (node.children) {
+        return [node, ...node.children];
+      } else {
+        return node;
+      }
+    });
+    const recordData = flattenedData?.find((item) => item.id === +data.id);
     if (!recordData) {
       return;
     }
