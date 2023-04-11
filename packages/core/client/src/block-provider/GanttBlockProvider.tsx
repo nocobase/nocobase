@@ -92,15 +92,8 @@ export const useGanttBlockProps = () => {
   useEffect(() => {
     if (!ctx?.service?.loading) {
       const data = formatData(ctx.service.data?.data, ctx.fieldNames);
-      const mergeTasks = data.map((v) => {
-        const task = ctx.field.data.find((k) => k.id === v.id) || { hideChildren: false };
-        return {
-          ...v,
-          hideChildren: task?.hideChildren,
-        };
-      });
-      setTasks(mergeTasks);
-      ctx.field.data = mergeTasks;
+      setTasks(data);
+      ctx.field.data = data;
     }
   }, [ctx?.service?.loading]);
   return {

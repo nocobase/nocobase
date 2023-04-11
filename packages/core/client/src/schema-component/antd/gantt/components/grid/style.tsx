@@ -10,7 +10,7 @@ export const gridHeightRow = css`
 
 export const gridRowLine = css`
   stroke: #f0f0f0;
-  stroke-width:1.5;
+  stroke-width:0;
   border-bottom: 1px solid #f0f0f0;
 `;
 

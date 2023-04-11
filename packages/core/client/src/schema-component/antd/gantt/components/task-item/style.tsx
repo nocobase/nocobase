@@ -13,7 +13,17 @@ export const barLabel =css`
   user-select: none;
   pointer-events: none;
 `
-
+export const projectLabel =css`
+  fill: #130d0d;
+  font-weight: 600;
+  dominant-baseline: central;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  pointer-events: none;
+`
 export const barLabelOutside =css`
   fill: #555;
   text-anchor: start;
