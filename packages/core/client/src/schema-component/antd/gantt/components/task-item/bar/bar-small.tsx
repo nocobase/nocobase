@@ -15,7 +15,7 @@ export const BarSmall: React.FC<TaskItemProps> = ({
   isSelected,
 }) => {
   const progressPoint = getProgressPoint(
-    task.progressWidth + task.x1,
+    task.progressWidth + task.x1+10,
     task.y,
     task.height
   );

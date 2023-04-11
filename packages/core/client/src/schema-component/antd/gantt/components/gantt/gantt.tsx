@@ -1,8 +1,10 @@
 import React, { useState, SyntheticEvent, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useFieldSchema, Schema, RecursionField } from '@formily/react';
 import { cx } from '@emotion/css';
+import { message } from 'antd';
 import { createForm } from '@formily/core';
 import { css } from '@emotion/css';
+import { useTranslation } from 'react-i18next';
 import { Task } from '../../types/public-types';
 import { GridProps } from '../grid/grid';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
@@ -56,7 +58,7 @@ export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
   const currentTheme = localStorage.getItem('NOCOBASE_THEME');
   const {
-    headerHeight = currentTheme === 'compact' ? (designable ? 52 : 45) : designable ? 64 : 55,
+    headerHeight = currentTheme === 'compact' ? (designable ? 53 : 45) : designable ? 65 : 55,
     listCellWidth = '155px',
     rowHeight = currentTheme === 'compact' ? 45 : 55.56,
     ganttHeight = 0,
@@ -92,6 +94,7 @@ export const Gantt: any = (props: any) => {
   const { onExpanderClick, tasks, expandAndCollapseAll } = useProps();
   const ctx = useGanttBlockContext();
   const appInfo = useCurrentAppInfo();
+  const { t } = useTranslation();
   const locale = appInfo.data?.lang;
   const tableCtx = useTableBlockContext();
   const { resource, service } = useBlockRequestContext();
@@ -404,6 +407,7 @@ export const Gantt: any = (props: any) => {
         [fieldNames.progress]: task.progress / 100,
       },
     });
+    message.success(t('Saved successfully'));
     await service?.refresh();
   };
   const handleTaskChange = async (task: Task) => {
@@ -415,6 +419,7 @@ export const Gantt: any = (props: any) => {
         [fieldNames.end]: task.end,
       },
     });
+    message.success(t('Saved successfully'));
     await service?.refresh();
   };
   const handleBarClick = (data) => {
