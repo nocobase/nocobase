@@ -70,6 +70,7 @@ export const GanttBlockInitializer = (props) => {
                       end: {
                         title: t('End date field'),
                         enum: dateFields,
+                        required: true,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                       },
