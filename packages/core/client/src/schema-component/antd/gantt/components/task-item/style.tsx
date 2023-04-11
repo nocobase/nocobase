@@ -4,7 +4,7 @@ import { css } from '@emotion/css';
 export const barLabel =css`
   fill: #fff;
   text-anchor: middle;
-  font-weight: lighter;
+  font-weight: 400;
   dominant-baseline: central;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
