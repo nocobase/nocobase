@@ -15,5 +15,5 @@ export const gridRowLine = css`
 `;
 
 export const gridTick = css`
-  stroke: #e6e4e4;
+  stroke: #f0f0f0;
 `;
