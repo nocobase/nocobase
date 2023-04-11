@@ -21,7 +21,7 @@ interface Props {
 
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
-  const field:any = useField();
+  const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
   return (
@@ -66,6 +66,9 @@ export const useAssociationNames = (collection) => {
     if (schema['x-component'] === 'TableV2') {
       return schema;
     }
+    if (schema['x-component'] === 'Gantt') {
+      return schema.properties?.table;
+    }
     return buf;
   }, new Schema({}));
   return uniq(
@@ -94,6 +97,7 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
+  console.log(props.collection);
   const resourceName = props.resource;
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
@@ -120,6 +124,7 @@ export const TableBlockProvider = (props) => {
       params['tree'] = true;
     }
   }
+  console.log(appends);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -175,7 +180,6 @@ export const useTableBlockProps = () => {
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
       ctx?.field?.onRowSelect?.(selectedRowKeys);
-
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({

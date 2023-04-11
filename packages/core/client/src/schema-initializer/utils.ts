@@ -1388,7 +1388,6 @@ export const createGanttBlockSchema = (options) => {
       },
       params: {
         paginate: false,
-        sort: ['sort'],
       },
       ...others,
     },
