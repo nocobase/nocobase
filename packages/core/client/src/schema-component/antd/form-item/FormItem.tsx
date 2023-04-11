@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, FormItem as Item, FormLayout } from '@formily/antd';
+import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -8,7 +8,7 @@ import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
@@ -71,7 +71,7 @@ export const FormItem: any = observer((props: any) => {
 });
 
 FormItem.Designer = () => {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
@@ -81,6 +81,7 @@ FormItem.Designer = () => {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const targetCollection = getCollection(collectionField.target);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
@@ -88,7 +89,7 @@ FormItem.Designer = () => {
     ? getCollectionFields(collectionField.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssocitionField = field.address.segments.includes('__form_grid');
+  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -229,6 +230,46 @@ FormItem.Designer = () => {
           }}
         />
       )}
+      {!form?.readPretty && isFileCollection(targetCollection) ? (
+        <SchemaSettings.SwitchItem
+          key="quick-upload"
+          title={t('Quick upload')}
+          checked={fieldSchema['x-component-props']?.quickUpload as boolean}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.quickUpload = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].quickUpload = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
+      {!form?.readPretty && isFileCollection(targetCollection) ? (
+        <SchemaSettings.SwitchItem
+          key="select-file"
+          title={t('Select file')}
+          checked={fieldSchema['x-component-props']?.selectFile as boolean}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.componentProps.selectFile = value;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props'].selectFile = value;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
       {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
@@ -386,7 +427,7 @@ FormItem.Designer = () => {
           }}
         />
       )}
-      {form && !isSubFormAssocitionField && fieldComponentOptions && (
+      {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}
@@ -415,6 +456,7 @@ FormItem.Designer = () => {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
+              targetCollection,
             });
 
             insertAdjacent('beforeBegin', divWrap(schema), {
@@ -545,5 +587,9 @@ FormItem.Designer = () => {
     </GeneralSchemaDesigner>
   );
 };
+
+function isFileCollection(collection: Collection) {
+  return collection?.template === 'file';
+}
 
 FormItem.FilterFormDesigner = FilterFormDesigner;

@@ -204,6 +204,35 @@ describe('workflow > triggers > collection', () => {
       expect(job.result.data.category.title).toBe('c1');
     });
 
+    it('appends belongsTo null', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          appends: ['category']
+        }
+      });
+
+      await workflow.createNode({
+        type: 'echo'
+      });
+
+      const post = await PostRepo.create({
+        values: {
+          title: 't1',
+        }
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.data.category).toBeNull();
+    });
+
     it('appends hasMany', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,

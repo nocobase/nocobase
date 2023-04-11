@@ -79,7 +79,7 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     });
     includeFields.forEach(field => {
       const value = included!.get(field);
-      data.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : value.toJSON(), { raw: true });
+      data.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : (value ? value.toJSON() : null), { raw: true });
     });
   }
 

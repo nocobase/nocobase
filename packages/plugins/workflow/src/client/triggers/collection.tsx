@@ -96,7 +96,7 @@ export default {
           dependencies: ['collection', 'mode'],
           fulfill: {
             state: {
-              visible: `{{$deps[0] && $deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED}}}`,
+              visible: `{{!!$deps[0] && ($deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
             },
           }
         },
@@ -139,10 +139,18 @@ export default {
   },
   getOptions(config, types) {
     const { t } = useWorkflowTranslation();
-    const fieldOptions = useCollectionFieldOptions({ collection: config.collection, types });
-    const options: any[] = [
-      ...(fieldOptions?.length ? [{ label: t('Trigger data'), key: 'data', value: 'data', children: fieldOptions }] : []),
+    const rootFields = [
+      {
+        collectionName: config.collection,
+        name: 'data',
+        type: 'hasOne',
+        target: config.collection,
+        uiSchema: {
+          title: t('Trigger data')
+        }
+      }
     ];
+    const options = useCollectionFieldOptions({ fields: rootFields, types, depth: config.appends?.length ? 2 : 1 });
     return options;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {

@@ -1,5 +1,5 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { message, Modal } from 'antd';
+import { Modal, message } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
@@ -84,7 +84,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
-  console.log('form.values',  form.values);
+  console.log('form.values', form.values);
   return form.values;
   let values = {};
   for (const key in form.values) {
@@ -132,7 +132,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible, fieldSchema } = useActionContext();
+  const { setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
@@ -388,7 +388,6 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
@@ -469,7 +468,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   };
 };
 
-export const useCustomizeBulkEditActionProps = (props) => {
+export const useCustomizeBulkEditActionProps = () => {
   const form = useForm();
   const { t } = useTranslation();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -568,7 +567,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
-  const { visible, setVisible } = useActionContext();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -804,7 +803,7 @@ export const useAssociationFilterProps = () => {
   const fieldSchema = useFieldSchema();
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
-  const field = useField()
+  const field = useField();
   const collectionFieldName = collectionField.name;
   const { data, params, run } = useRequest(
     {
@@ -814,7 +813,7 @@ export const useAssociationFilterProps = () => {
         fields: [labelKey, valueKey],
         pageSize: 200,
         page: 1,
-        ...field.componentProps?.params
+        ...field.componentProps?.params,
       },
     },
     {
@@ -822,7 +821,6 @@ export const useAssociationFilterProps = () => {
       debounceWait: 300,
     },
   );
-
 
   const list = data?.data || [];
   const onSelected = (value) => {
@@ -971,7 +969,6 @@ export const useAssociationFilterBlockProps = () => {
       );
     });
   };
-
 
   return {
     /** 渲染 Collapse 的列表数据 */

@@ -379,21 +379,21 @@ function useFlowRecordFromBlock(opts) {
 
 function FlowContextProvider(props) {
   const api = useAPIClient();
-  const { node, executionId } = useRecord();
+  const { id, node } = useRecord();
   const [flowContext, setFlowContext] = useState<any>(null);
 
   useEffect(() => {
-    if (!executionId) {
+    if (!id) {
       return;
     }
     api.resource('users_jobs').get?.({
-      filterByTk: executionId,
+      filterByTk: id,
       appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
     })
       .then(({ data }) => {
         const {
           workflow: { nodes = [], ...workflow } = {},
-          ...execution
+          execution
         } = data?.data ?? {};
         linkNodes(nodes);
         setFlowContext({
@@ -402,14 +402,14 @@ function FlowContextProvider(props) {
           execution
         });
       });
-  }, [executionId]);
+  }, [id]);
 
   if (!flowContext) {
     return null;
   }
 
-  const nodes = useAvailableUpstreams(flowContext.nodes.find(item => item.id === node.id));
-  const nodeComponents = nodes.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
+  const upstreams = useAvailableUpstreams(flowContext.nodes.find(item => item.id === node.id));
+  const nodeComponents = upstreams.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
 
   return (
     <FlowContext.Provider value={flowContext}>

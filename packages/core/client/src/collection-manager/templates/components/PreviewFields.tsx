@@ -21,7 +21,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  const { name, sources, viewName, schema } = props;
+  const { databaseView, viewName,sources, schema } = props;
   const { data: fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -30,7 +30,7 @@ const PreviewCom = (props) => {
   const [sourceFields, setSourceFields] = useState([]);
   const field: any = useField();
   const form = useForm();
-  const { getCollection } = useCollectionManager();
+  const { getCollection, getInterface } = useCollectionManager();
   const compile = useCompile();
   const initOptions = getOptions().filter((v) => !['relation', 'systemInfo'].includes(v.key));
   useEffect(() => {
@@ -47,10 +47,10 @@ const PreviewCom = (props) => {
       });
     });
     setSourceFields(data);
-  }, [sources, name]);
+  }, [sources, databaseView]);
 
   useEffect(() => {
-    if (name) {
+    if (databaseView) {
       setLoading(true);
       api
         .resource(`dbViews`)
@@ -72,7 +72,7 @@ const PreviewCom = (props) => {
           }
         });
     }
-  }, [name]);
+  }, [databaseView]);
 
   const handleFieldChange = (record, index) => {
     dataSource.splice(index, 1, record);
@@ -148,7 +148,10 @@ const PreviewCom = (props) => {
           <Select
             defaultValue={text}
             style={{ width: '100%' }}
-            onChange={(value) => handleFieldChange({ ...item, interface: value }, index)}
+            onChange={(value) => {
+              const interfaceConfig = getInterface(value);
+              handleFieldChange({ ...item, interface: value, uiSchema: interfaceConfig?.default?.uiSchema }, index);
+            }}
           >
             {data.map((group) => (
               <Select.OptGroup key={group.key} label={compile(group.label)}>
@@ -170,12 +173,12 @@ const PreviewCom = (props) => {
       width: 180,
       render: (text, record, index) => {
         const item = dataSource[index];
-        return item.source ? (
-          record?.uiSchema?.title
-        ) : (
+        return (
           <Input
-            defaultValue={record?.uiSchema?.title}
-            onChange={(e) => handleFieldChange({ ...item, uiSchema: { title: e.target.value } }, index)}
+            defaultValue={record?.uiSchema?.title||text}
+            onChange={(e) =>
+              handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
+            }
           />
         );
       },
@@ -201,7 +204,7 @@ const PreviewCom = (props) => {
             scroll={{ y: 300 }}
             pagination={false}
             rowClassName="editable-row"
-            key={name}
+            key={viewName}
           />
         </>
       )}

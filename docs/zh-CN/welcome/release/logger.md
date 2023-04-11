@@ -18,7 +18,7 @@ app.use(middleware);
 logger 相关环境变量有：
 
 - [LOGGER_TRANSPORT](/api/env#logger_transport)
-- [DAILY_ROTATE_FILE_DIRNAME](/api/env#daily_rotate_file_dirname)
+- [LOGGER_BASE_PATH](/api/env#logger_base_path)
 
 ## Application 的 logger 配置
 

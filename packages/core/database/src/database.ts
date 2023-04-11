@@ -310,6 +310,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   initListener() {
+    this.on('afterConnect', async (client) => {
+      if (this.inDialect('postgres')) {
+        await client.query('SET search_path = public');
+      }
+    });
+
     this.on('beforeDefine', (model, options) => {
       if (this.options.underscored && options.underscored === undefined) {
         options.underscored = true;
@@ -378,6 +384,36 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
       if (this.options.schema && !options.schema) {
         options.schema = this.options.schema;
+      }
+    });
+
+    this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
+      if (dataCollection.isParent()) {
+        for (const row of data) {
+          const rowCollection = this.tableNameCollectionMap.get(
+            findOptions.raw
+              ? `${row['__schemaName']}.${row['__tableName']}`
+              : `${row.get('__schemaName')}.${row.get('__tableName')}`,
+          );
+
+          if (!rowCollection) {
+            this.logger.warn(
+              `Can not find collection by table name ${JSON.stringify(row)}, current collections: ${Array.from(
+                this.tableNameCollectionMap.keys(),
+              ).join(', ')}`,
+            );
+
+            return;
+          }
+
+          const rowCollectionName = rowCollection.name;
+
+          findOptions.raw
+            ? (row['__collection'] = rowCollectionName)
+            : row.set('__collection', rowCollectionName, {
+                raw: true,
+              });
+        }
       }
     });
 

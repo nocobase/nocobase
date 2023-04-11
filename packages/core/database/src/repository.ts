@@ -337,21 +337,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       });
     }
 
-    if (this.collection.isParent()) {
-      for (const row of rows) {
-        const rowCollectionName = this.database.tableNameCollectionMap.get(
-          options.raw
-            ? `${row['__schemaName']}.${row['__tableName']}`
-            : `${row.get('__schemaName')}.${row.get('__tableName')}`,
-        ).name;
-
-        options.raw
-          ? (row['__collection'] = rowCollectionName)
-          : row.set('__collection', rowCollectionName, {
-              raw: true,
-            });
-      }
-    }
+    await this.collection.db.emitAsync('afterRepositoryFind', {
+      findOptions: options,
+      dataCollection: this.collection,
+      data: rows,
+    });
 
     return rows;
   }

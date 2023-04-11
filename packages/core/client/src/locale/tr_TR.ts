@@ -497,4 +497,7 @@ export default {
   'Single select and radio fields can be used as the grouping field': 'Gruplama alanı olarak tek seçim ve radyo alanları kullanılabilir',
   'Sign up successfully, and automatically jump to the sign in page': 'Başarılı bir şekilde kaydolun ve otomatik olarak oturum açma sayfasına geçin',
   "Search and select collection": "Search and select collection",
+
+  'Click or drag file to this area to upload': "Dosyayı yüklemek için buraya tıklayın veya sürükleyin",
+  'Support for a single or bulk upload, file size should not exceed': "Tek veya toplu yükleme destekler, dosya boyutu aşmamalıdır",
 }
