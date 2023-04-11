@@ -24,6 +24,62 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it('should rename inherited collection', async () => {
+    const parent = await collectionRepository.create({
+      values: {
+        name: 'parent',
+        timestamps: false,
+        fields: [
+          {
+            name: 'parent-name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const child1 = await collectionRepository.create({
+      values: {
+        name: 'child1',
+        timestamps: false,
+        inherits: [parent.get('name')],
+        fields: [
+          {
+            name: 'child-name',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    // rename parents
+    await db.getCollection('collections').repository.update({
+      filter: {
+        name: 'parent',
+      },
+      values: {
+        name: 'root',
+      },
+      context: {},
+    });
+
+    const child1Collection = db.getCollection('child1');
+    expect(child1Collection.options.inherits).toEqual(['root']);
+
+    await child1Collection.repository.create({
+      values: {
+        child_name: 'child1',
+        parent_name: 'root',
+      },
+    });
+    const rootCollection = db.getCollection('root');
+    const rootRecords = await rootCollection.repository.find({});
+
+    expect(rootRecords.length).toEqual(1);
+  });
+
   it('should change inherits option', async () => {
     const createCollection = async (name: string, options = {}) => {
       // check collection exists or not

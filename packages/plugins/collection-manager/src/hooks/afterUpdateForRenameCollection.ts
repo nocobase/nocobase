@@ -154,6 +154,37 @@ export function afterUpdateForRenameCollection(db: Database) {
         direction: 'reverse',
       });
 
+      // update inherited collections
+      const children = db.inheritanceMap.getChildren(prevName);
+      if (children.size > 0) {
+        const childrenModels = await db.getRepository('collections').find({
+          filter: {
+            name: [...children],
+          },
+          transaction,
+        });
+
+        for (const child of childrenModels) {
+          const options = child.get('options');
+          await child.update(
+            {
+              options: {
+                ...options,
+                inherits: options.inherits.map((name) => {
+                  if (name == prevName) {
+                    return currentName;
+                  }
+                  return name;
+                }),
+              },
+            },
+            {
+              transaction,
+            },
+          );
+        }
+      }
+
       const relatedCollectionModels = await db.getRepository('collections').find({
         filter: {
           name: relatedCollections,
@@ -162,6 +193,7 @@ export function afterUpdateForRenameCollection(db: Database) {
       });
 
       for (const relatedCollectionModel of relatedCollectionModels) {
+        console.log('load collection', relatedCollectionModel.name);
         await relatedCollectionModel.load({
           transaction,
           replaceCollection: true,

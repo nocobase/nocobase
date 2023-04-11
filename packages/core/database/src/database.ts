@@ -391,7 +391,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       if (dataCollection.isParent()) {
         for (const row of data) {
           const rowCollectionName = this.tableNameCollectionMap.get(
-            findOptions.raw
+            findOptions?.raw
               ? `${row['__schemaName']}.${row['__tableName']}`
               : `${row.get('__schemaName')}.${row.get('__tableName')}`,
           ).name;
