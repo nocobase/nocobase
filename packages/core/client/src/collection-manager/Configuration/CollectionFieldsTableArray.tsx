@@ -1,21 +1,20 @@
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
+import { findIndex } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { findIndex } from 'lodash';
 import {
   RecordIndexProvider,
   RecordProvider,
-  useCollectionManager,
-  useRequest,
-  useSchemaInitializer,
-  useRecord,
-  useCompile,
   SchemaComponent,
-  useCollection,
+  useCollectionManager,
+  useCompile,
+  useRecord,
+  useRequest,
+  useSchemaInitializer
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -245,7 +244,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         />
       );
     }
-   
+
   };
   return (
     <div

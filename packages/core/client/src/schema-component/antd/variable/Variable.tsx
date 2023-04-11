@@ -1,4 +1,4 @@
-import { connect } from '@formily/react';
+import { connect, mapReadPretty } from '@formily/react';
 
 import { Input } from "./Input";
 import { TextArea } from "./TextArea";
@@ -12,7 +12,7 @@ export function Variable() {
 
 Variable.Input = connect(Input);
 
-Variable.TextArea = connect(TextArea);
+Variable.TextArea = connect(TextArea, mapReadPretty(TextArea.ReadPretty));
 
 Variable.JSON = connect(JSONInput);
 

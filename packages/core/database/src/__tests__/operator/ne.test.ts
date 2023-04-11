@@ -1,5 +1,5 @@
-import { mockDatabase } from '../index';
 import Database from '../../database';
+import { mockDatabase } from '../index';
 
 describe('ne operator', () => {
   let db: Database;
@@ -41,5 +41,23 @@ describe('ne operator', () => {
     });
 
     expect(results).toBe(0);
+  });
+
+  it('should ne with array', async () => {
+    await db.getRepository('tests').create({
+      values: [
+        { name: '123' },
+        { name: '234' },
+        { name: '345' },
+      ]
+    });
+
+    const results = await db.getRepository('tests').count({
+      filter: {
+        'name.$ne': ['123', '234'],
+      },
+    });
+
+    expect(results).toEqual(1);
   });
 });

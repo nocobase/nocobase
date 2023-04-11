@@ -2,7 +2,7 @@ import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { useEventListener, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
@@ -15,7 +15,7 @@ import {
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext
+  useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -473,6 +473,7 @@ export const Table: any = observer((props: any) => {
             }
           }}
           rowKey={rowKey ?? defaultRowKey}
+          dataSource={field?.value?.slice?.()}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -492,7 +493,6 @@ export const Table: any = observer((props: any) => {
             },
             expandedRowKeys: expandedKeys,
           }}
-          dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (

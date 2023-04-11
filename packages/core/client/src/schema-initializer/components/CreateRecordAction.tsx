@@ -4,6 +4,7 @@ import { RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Dropdown, Menu, Button } from 'antd';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCollection, CollectionProvider } from '../../collection-manager';
 import { ActionContext, useCompile, useActionContext } from '../../schema-component';
 import { useRecordPkValue, useACLRolesCheck } from '../../acl/ACLProvider';
@@ -86,7 +87,9 @@ export const CreateRecordAction = observer((props) => {
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
   const enableChildren = fieldSchema['x-enable-children'] || [];
+  const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   const field: any = useField();
+  const { t } = useTranslation();
   const componentType = field.componentProps.type || 'primary';
   const { getChildrenCollections } = useCollectionManager();
   const totalChildCollections = getChildrenCollections(collection.name);
@@ -144,22 +147,32 @@ export const CreateRecordAction = observer((props) => {
     <div className={actionDesignerCss}>
       <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
         {inheritsCollections?.length > 0 ? (
-          <Dropdown.Button
-            type={componentType}
-            icon={<DownOutlined />}
-            buttonsRender={([leftButton, rightButton]) => [
-              leftButton,
-              React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-            ]}
-            overlay={menu}
-            onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(collection.name);
-            }}
-          >
-            <PlusOutlined />
-            {props.children}
-          </Dropdown.Button>
+          allowAddToCurrent === undefined || allowAddToCurrent ? (
+            <Dropdown.Button
+              type={componentType}
+              icon={<DownOutlined />}
+              buttonsRender={([leftButton, rightButton]) => [
+                leftButton,
+                React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+              ]}
+              overlay={menu}
+              onClick={(info) => {
+                setVisible(true);
+                setCurrentCollection(collection.name);
+              }}
+            >
+              <PlusOutlined />
+              {props.children}
+            </Dropdown.Button>
+          ) : (
+            <Dropdown overlay={menu}>
+              {
+                <Button icon={<PlusOutlined />} type={'primary'}>
+                  {props.children} <DownOutlined />
+                </Button>
+              }
+            </Dropdown>
+          )
         ) : (
           <Button
             type={componentType}
@@ -185,4 +198,3 @@ export const CreateRecordAction = observer((props) => {
     </div>
   );
 });
-

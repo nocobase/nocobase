@@ -371,8 +371,8 @@ export const EditDefaultValue = () => {
 };
 
 export const EditComponent = () => {
-  const { getInterface, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
+  const { getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getField, template } = useCollection();
   const tk = useFilterByTk();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
@@ -413,6 +413,7 @@ export const EditComponent = () => {
           block: 'Form',
           readPretty: field.readPretty,
           action: tk ? 'get' : null,
+          targetCollection: getCollection(collectionField.target),
         });
 
         insertAdjacent('beforeBegin', divWrap(schema), {

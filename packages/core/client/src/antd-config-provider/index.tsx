@@ -18,6 +18,9 @@ export function AntdConfigProvider(props) {
   const { data, loading } = useRequest(
     {
       url: 'app:getLang',
+      params: {
+        locale: api.auth.locale,
+      },
     },
     {
       onSuccess(data) {

@@ -30,7 +30,7 @@ import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
 import request from "./request";
-import { VariableOption } from '../variable';
+import { VariableOptions } from '../variable';
 
 export interface Instruction {
   title: string;
@@ -43,7 +43,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): VariableOption[] | null;
+  getOptions?(config, types?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };
@@ -97,6 +97,9 @@ export function useNodeContext() {
 
 export function useAvailableUpstreams(node) {
   const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
   for (let current = node.upstream; current; current = current.upstream) {
     stack.push(current);
   }

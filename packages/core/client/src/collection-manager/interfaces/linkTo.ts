@@ -45,8 +45,16 @@ export const linkTo: IField = {
       },
     },
   },
-  availableTypes:['belongsToMany'],
-  schemaInitialize(schema: ISchema, { readPretty, block }) {
+  availableTypes: ['belongsToMany'],
+  schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+      schema['x-component-props'].quickUpload = true;
+      schema['x-component-props'].selectFile = true;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {
         Object.assign(schema, {
@@ -60,7 +68,7 @@ export const linkTo: IField = {
           selector: cloneDeep(recordPickerSelector),
         };
       }
-      return schema
+      return schema;
     } else {
       if (readPretty) {
         schema['properties'] = {
@@ -69,8 +77,16 @@ export const linkTo: IField = {
       } else {
         schema['properties'] = {
           selector: cloneDeep(recordPickerSelector),
-        }
+        };
       }
+    }
+
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   initialize: (values: any) => {
