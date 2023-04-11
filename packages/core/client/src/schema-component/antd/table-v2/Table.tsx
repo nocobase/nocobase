@@ -440,6 +440,14 @@ export const Table: any = observer((props: any) => {
         overflow: hidden;
         .ant-table-wrapper {
           height: 100%;
+          .ant-spin-nested-loading {
+            height: 100%;
+            .ant-spin-container {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+            }
+          }
         }
         .ant-table {
           overflow-x: auto;
