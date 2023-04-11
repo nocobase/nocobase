@@ -16,6 +16,7 @@ export const barLabel =css`
 export const projectLabel =css`
   fill: #130d0d;
   font-weight: 600;
+  font-size: 0.9em;
   dominant-baseline: central;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
