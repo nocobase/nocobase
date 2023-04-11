@@ -98,14 +98,14 @@ const ConstantTypes = {
 
 
 
-function getTypedConstantOption(type) {
+function getTypedConstantOption(type, props) {
   const { t } = useTranslation();
 
   return {
     value: '',
     label: t('Constant'),
     children: Object.values(ConstantTypes),
-    component: ConstantTypes[type]?.component
+    content: ConstantTypes[type]?.component({ value: props.value, onChange: props.onChange })
   };
 }
 
@@ -122,18 +122,18 @@ export function Input(props) {
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
   const compile = useCompile();
-  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component: React.FC<any> } = children
+  const { content, ...constantOption }: VariableOptions & { content: React.ReactNode } = children
     ? {
       value: '',
       label: '{{t("Constant")}}',
-      component: () => children
+      content: children
     }
     : (useTypedConstant
-      ? getTypedConstantOption(type)
+      ? getTypedConstantOption(type, props)
       : {
         value: '',
         label: '{{t("Null")}}',
-        component: ConstantTypes.null.component
+        content: ConstantTypes.null.component()
       }
     );
   const options: VariableOptions[] = compile([
@@ -247,9 +247,7 @@ export function Input(props) {
             </span>
           ) : null}
         </div>
-      ) : (
-        <ConstantComponent value={value} onChange={onChange} />
-      )}
+      ) : content}
       {options.length > 1 ? (
         <Cascader
           options={options}
