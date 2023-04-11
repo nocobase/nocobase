@@ -6,6 +6,7 @@ import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
+import _ from 'lodash';
 
 const GridRowContext = createContext<any>({});
 const GridColContext = createContext<any>({});
@@ -105,8 +106,8 @@ const ColDivider = (props) => {
       prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
       nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
       const dividerWidth = (el.clientWidth * (props.cols.length + 1)) / props.cols.length;
-      const preWidth = (100 * (prev.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth;
-      const nextWidth = (100 * (next.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth;
+      const preWidth = ((100 * (prev.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
+      const nextWidth = ((100 * (next.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
 
       prevSchema['x-component-props']['width'] = preWidth;
       nextSchema['x-component-props']['width'] = nextWidth;
@@ -384,6 +385,7 @@ Grid.Row = observer(() => {
         className={cls(
           'nb-grid-row',
           css`
+            overflow-x: hidden;
             margin: 0 calc(-1 * var(--nb-spacing));
             display: flex;
             position: relative;
