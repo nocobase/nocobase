@@ -26,6 +26,7 @@ export const MapBlock = (props) => {
   const { t } = useMapTranslation();
   const compile = useCompile();
   const { isConnected, doFilter } = useFilterAPI();
+  const [, setPrevSelected] = useState(null);
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
 
@@ -111,6 +112,7 @@ export const MapBlock = (props) => {
         const overlay = mapRef.current.setOverlay(field.type, data, {
           strokeColor: '#4e9bff',
           fillColor: '#4e9bff',
+          cursor: 'pointer',
           label: {
             direction: 'bottom',
             offset: [0, 5],
@@ -145,25 +147,20 @@ export const MapBlock = (props) => {
 
         // 筛选区块模式
         if (isConnected) {
-          // 清楚其它点的选中状态
-          overlays.forEach((overlay) => {
-            if (overlay.dom === o.dom) return;
-            overlay.dom.style.filter = 'none';
-            (overlay.dom as any).__selected = false;
+          setPrevSelected((prev) => {
+            prev && clearSelected(prev);
+            if (prev === o) {
+              clearSelected(o);
+
+              // 删除过滤参数
+              doFilter(null);
+              return null;
+            } else {
+              selectMarker(o);
+              doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
+            }
+            return o;
           });
-
-          if ((o.dom as any).__selected) {
-            o.dom.style.filter = 'none';
-            (o.dom as any).__selected = false;
-
-            // 删除过滤参数
-            doFilter(null);
-          } else {
-            // 高亮选中的位置
-            o.dom.style.filter = 'brightness(1.2) contrast(1.2) hue-rotate(180deg)';
-            (o.dom as any).__selected = true;
-            doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
-          }
 
           return;
         }
@@ -285,3 +282,29 @@ const MapBlockDrawer = (props) => {
     )
   );
 };
+
+function clearSelected(marker: AMap.Marker | AMap.Polygon | AMap.Polyline | AMap.Circle) {
+  if ((marker as AMap.Marker).dom) {
+    (marker as AMap.Marker).dom.style.filter = 'none';
+
+    // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
+  } else if ((marker as AMap.Polygon).setOptions) {
+    (marker as AMap.Polygon).setOptions({
+      strokeColor: '#4e9bff',
+      fillColor: '#4e9bff',
+    });
+  }
+}
+
+function selectMarker(marker: AMap.Marker | AMap.Polygon | AMap.Polyline | AMap.Circle) {
+  if ((marker as AMap.Marker).dom) {
+    (marker as AMap.Marker).dom.style.filter = 'brightness(1.2) contrast(1.2) hue-rotate(180deg)';
+
+    // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
+  } else if ((marker as AMap.Polygon).setOptions) {
+    (marker as AMap.Polygon).setOptions({
+      strokeColor: '#F18b62',
+      fillColor: '#F18b62',
+    });
+  }
+}
