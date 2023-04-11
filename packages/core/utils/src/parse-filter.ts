@@ -56,11 +56,11 @@ export function flatten(target, opts?: any) {
   return output;
 }
 
-async function unflatten(obj, opts: any = {}) {
+function unflatten(obj, opts: any = {}) {
   const parsed = {};
   const transformValue = opts.transformValue || keyIdentity;
   for (const key of Object.keys(obj)) {
-    set(parsed, key, await transformValue(obj[key], key));
+    set(parsed, key, transformValue(obj[key], key));
   }
   return parsed;
 }
@@ -154,7 +154,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
   }
 
   return unflatten(flat, {
-    async transformValue(value, path) {
+    transformValue(value, path) {
       const { operator } = parsePath(path);
       // parse string variables
       if (typeof value === 'string') {
