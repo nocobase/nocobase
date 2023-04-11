@@ -36,19 +36,21 @@ export function afterUpdateForRenameCollection(db: Database) {
       });
 
       for (const associationField of associationFields) {
-        console.log(associationField.get('options'));
+        const newOptions = {
+          ...associationField.get('options'),
+          target: currentName,
+        };
+
+        if (newOptions.foreignKey) {
+        }
+
         await associationField.update(
-          'options',
-          lodash.omit(
-            {
-              ...associationField.get('options'),
-              target: currentName,
-            },
-            ['transaction'],
-          ),
           {
-            raw: true,
+            options: newOptions,
+          },
+          {
             transaction,
+            raw: true,
           },
         );
       }
@@ -67,8 +69,19 @@ export function afterUpdateForRenameCollection(db: Database) {
         direction: 'reverse',
       });
 
-      // should reload related collections
-      console.log(relatedCollections);
+      const relatedCollectionModels = await db.getRepository('collections').find({
+        filter: {
+          name: relatedCollections,
+        },
+        transaction,
+      });
+
+      for (const relatedCollectionModel of relatedCollectionModels) {
+        await relatedCollectionModel.load({
+          transaction,
+          replaceCollection: true,
+        });
+      }
 
       // update association models
       await model.migrate({

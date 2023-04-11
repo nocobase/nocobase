@@ -592,8 +592,11 @@ export class Collection<
     });
 
     for (const model of models) {
-      console.log(`sync model ${model.name}`);
-      await model.sync(syncOptions);
+      if (model === this.model) {
+        await model.sync(syncOptions);
+      } else {
+        await model.sync(lodash.omit(syncOptions, ['renameTable']));
+      }
     }
   }
 

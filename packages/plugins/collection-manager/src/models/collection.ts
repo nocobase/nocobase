@@ -16,7 +16,6 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async load(loadOptions: LoadOptions = {}) {
-    console.log('loadOptions', loadOptions.replaceCollection);
     const { skipExist, skipField, transaction } = loadOptions;
     const name = this.get('name');
 
@@ -123,6 +122,7 @@ export class CollectionModel extends MagicAttributeModel {
 
     try {
       console.log(`...sync ${this.get('name')}`);
+
       await collection.sync({
         force: false,
         alter: {
