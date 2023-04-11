@@ -36,6 +36,31 @@ describe('collections repository', () => {
             target: 'posts',
             foreignKey: 'user_id',
           },
+          {
+            type: 'hasOne',
+            name: 'profile',
+            target: 'profiles',
+            foreignKey: 'target_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'profiles',
+        fields: [
+          {
+            type: 'integer',
+            name: 'age',
+          },
+          {
+            type: 'belongsTo',
+            name: 'user',
+            target: 'users',
+            foreignKey: 'target_id',
+          },
         ],
       },
       context: {},
@@ -71,6 +96,9 @@ describe('collections repository', () => {
             title: 'p1',
           },
         ],
+        profile: {
+          age: 18,
+        },
       },
     });
 
@@ -105,16 +133,19 @@ describe('collections repository', () => {
 
     // students hasMany posts
     const student1 = await studentCollection.repository.findOne({
-      appends: ['posts'],
+      appends: ['posts', 'profile'],
     });
 
     expect(student1.get('posts')).toHaveLength(1);
+    expect(student1.get('profile').age).toEqual(18);
 
     // posts belongsTo student
     const postCollection = db.getCollection('posts');
     const post1 = await postCollection.repository.findOne({
       appends: ['student'],
     });
+
+    expect(post1.get('student').name).toEqual('u1');
   });
 
   it('should extend collections collection', async () => {

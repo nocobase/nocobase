@@ -1,6 +1,7 @@
 import { Database } from '@nocobase/database';
 import { CollectionModel } from '../models';
 import { CollectionsGraph, inflection } from '@nocobase/utils';
+import lodash from 'lodash';
 
 export function afterUpdateForRenameCollection(db: Database) {
   return async (model: CollectionModel, { context, transaction }) => {
@@ -15,17 +16,50 @@ export function afterUpdateForRenameCollection(db: Database) {
       const prevCollection = db.getCollection(prevName);
       const prevCollectionTableName = prevCollection.getTableNameWithSchema();
 
-      // update old collection name to new collection name in fields
-      await db.getRepository('fields').update({
+      const updateForeignKey = (foreignKey) => {
+        return foreignKey.replace(
+          new RegExp(`^${inflection.singularize(prevName)}`),
+          inflection.singularize(currentName),
+        );
+      };
+
+      const collectionFields = await db.getRepository('fields').find({
         filter: {
           collectionName: prevName,
         },
-        values: {
-          collectionName: currentName,
-        },
-        hooks: false,
         transaction,
       });
+
+      for (const field of collectionFields) {
+        const options = lodash.cloneDeep(field.get('options'));
+
+        if (['hasMany', 'hasOne'].includes(field.get('type')) && options.foreignKey) {
+          const oldForeignKey = options.foreignKey;
+          options.foreignKey = updateForeignKey(oldForeignKey);
+
+          if (oldForeignKey !== options.foreignKey) {
+            // rename column
+            const target = db.getCollection(options.target);
+            const targetTableName = target.getTableNameWithSchema();
+
+            await db.sequelize.getQueryInterface().renameColumn(targetTableName, oldForeignKey, options.foreignKey, {
+              transaction,
+            });
+          }
+        }
+
+        await field.update(
+          {
+            options,
+            collectionName: currentName,
+          },
+          {
+            hooks: false,
+            raw: true,
+            transaction,
+          },
+        );
+      }
 
       const associationFields = await db.getRepository('fields').find({
         filter: {
@@ -41,10 +75,7 @@ export function afterUpdateForRenameCollection(db: Database) {
         };
 
         if (newOptions.foreignKey) {
-          newOptions.foreignKey = newOptions.foreignKey.replace(
-            new RegExp(`^${inflection.singularize(prevName)}`),
-            inflection.singularize(currentName),
-          );
+          newOptions.foreignKey = updateForeignKey(newOptions.foreignKey);
         }
 
         const updateValues = {
@@ -63,9 +94,9 @@ export function afterUpdateForRenameCollection(db: Database) {
           })(),
         };
 
-        console.log('updateValues', updateValues);
         await associationField.update(updateValues, {
           transaction,
+          hooks: false,
           raw: true,
         });
       }
