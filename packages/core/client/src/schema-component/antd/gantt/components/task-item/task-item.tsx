@@ -7,6 +7,7 @@ import { BarSmall } from './bar/bar-small';
 import { Milestone } from './milestone/milestone';
 import { Project } from './project/project';
 import { barLabel, barLabelOutside, projectLabel } from './style';
+import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 
 export type TaskItemProps = {
   task: BarTask;
@@ -67,7 +68,6 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       return task.x1 + width + arrowIndent * +hasChild + arrowIndent * 0.2;
     }
   };
-
   return (
     <g
       onKeyDown={(e) => {
@@ -98,11 +98,15 @@ export const TaskItem: React.FC<TaskItemProps> = (props) => {
       {taskItem}
       <text
         x={isProjectBar ? task.x1 : getX()}
-        y={isProjectBar ? task.y-8 : task.y + taskHeight * 0.5}
+        y={isProjectBar ? task.y - 8 : task.y + taskHeight * 0.5}
         className={isProjectBar ? cx(projectLabel) : isTextInside ? cx(barLabel) : cx(barLabel) && cx(barLabelOutside)}
         ref={textRef}
       >
-        {task.name}
+        {isProjectBar
+          ? `${task.name}: ${task.start.getDate()}-${
+              task.start.getMonth() + 1
+            }-${task.start.getFullYear()} - ${task.end.getDate()}-${task.end.getMonth() + 1}-${task.end.getFullYear()}`
+          : task.name}
       </text>
     </g>
   );
