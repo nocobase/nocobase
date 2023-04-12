@@ -505,7 +505,6 @@ export const Gantt: any = (props: any) => {
             scrollX={scrollX}
             ref={verticalGanttContainerRef}
           />
-
           {ganttEvent.changedTask && (
             <Tooltip
               arrowIndent={arrowIndent}
@@ -532,15 +531,15 @@ export const Gantt: any = (props: any) => {
             onScroll={handleScrollY}
             rtl={rtl}
           />
+          <HorizontalScroll
+            svgWidth={svgWidth}
+            taskListWidth={taskListWidth}
+            scroll={scrollX}
+            rtl={rtl}
+            onScroll={handleScrollX}
+          />
         </div>
       </div>
-      <HorizontalScroll
-        svgWidth={svgWidth}
-        taskListWidth={taskListWidth}
-        scroll={scrollX}
-        rtl={rtl}
-        onScroll={handleScrollX}
-      />
     </div>
   );
 };

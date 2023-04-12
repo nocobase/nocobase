@@ -25,7 +25,7 @@ export const HorizontalScroll: React.FC<{
           ? `0px ${taskListWidth}px 0px 0px`
           : `0px 0px 0px ${taskListWidth}px`,
       }}
-      className={cx(scrollWrapper)}
+      className={`${cx(scrollWrapper)} gantt-horizontal-scoll` }
       onScroll={onScroll}
       ref={scrollRef}
     >
