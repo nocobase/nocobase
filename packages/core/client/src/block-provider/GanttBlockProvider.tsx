@@ -13,6 +13,7 @@ const formatData = (
   hideChildren: boolean = false,
 ) => {
   data.forEach((item: any) => {
+    const percent=item[fieldNames.progress] * 100;
     if (item.children && item.children.length) {
       tasks.push({
         start: new Date(item[fieldNames.start]),
@@ -20,7 +21,7 @@ const formatData = (
         name: item[fieldNames.title],
         id: item.id + '',
         type: 'project',
-        progress: item[fieldNames.progress] * 100 || 0,
+        progress: percent>100?100:percent || 0,
         hideChildren: hideChildren,
         project: projectId,
         color: item.color,
@@ -33,7 +34,7 @@ const formatData = (
         name: item[fieldNames.title],
         id: item.id + '',
         type: fieldNames.end ? 'task' : 'milestone',
-        progress: item[fieldNames.progress] * 100 || 0,
+        progress: percent>100?100:percent || 0,
         project: projectId,
         color: item.color,
       });
