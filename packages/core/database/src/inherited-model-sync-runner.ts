@@ -14,8 +14,6 @@ export class InheritedModelSyncRunner {
       throw new Error('Inherit model is only supported on postgres');
     }
 
-    console.log(`run sync inherit model ${inheritedCollection.name}`);
-
     const queryInterface = db.sequelize.getQueryInterface();
 
     const parents = inheritedCollection.parents;
@@ -120,6 +118,7 @@ export class InheritedModelSyncRunner {
   static async updateInherits(collection, options) {
     const { db, transaction } = options;
 
+    // find all parents of table
     const querySql = `
         SELECT child_schema.nspname  AS child_schema,
                child_table.relname   AS child_table,
@@ -138,14 +137,24 @@ export class InheritedModelSyncRunner {
       type: 'SELECT',
     });
 
-    const existParents = queryRes.map((row) => {
-      return row.parent_table;
+    const existParentsTables = queryRes.map((row) => {
+      return {
+        schema: row.parent_schema,
+        tableName: row.parent_table,
+      };
+    });
+
+    const existParentCollections = existParentsTables.map((x) => {
+      return db.tableNameCollectionMap.get(`${x.schema}.${x.tableName}`);
     });
 
     const newParents = collection.options.inherits;
 
-    const shouldRemove = existParents.filter((x) => !newParents.includes(x)).map((x) => db.getCollection(x));
-    const shouldAdd = newParents.filter((x) => !existParents.includes(x)).map((x) => db.getCollection(x));
+    const shouldRemove = existParentCollections.filter((x) => !newParents.includes(x.name));
+
+    const shouldAdd = newParents
+      .filter((x) => !existParentCollections.map((c) => c.name).includes(x))
+      .map((x) => db.getCollection(x));
 
     for (const shouldRemoveItem of shouldRemove) {
       await db.sequelize.query(
@@ -210,9 +219,19 @@ export class InheritedModelSyncRunner {
     const { db, transaction } = options;
     const connectedNodes = db.inheritanceMap.getConnectedNodes(collection.name);
     const connectedCollections = [...connectedNodes].map((node) => db.getCollection(node));
+
+    if (connectedCollections.length == 0) return;
+
     const connectedCollectionsWithId = connectedCollections.filter(
       (x) => x.model.rawAttributes.id && x.model.rawAttributes.id.autoIncrement,
     );
+
+    for (const connectedCollection of connectedCollections) {
+      if (!(await connectedCollection.existsInDb({ transaction }))) {
+        console.log(`Collection ${connectedCollection.name} does not exist in db, skip reset sequence`);
+        return;
+      }
+    }
 
     const sequenceResults = [];
 

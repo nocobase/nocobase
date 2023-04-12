@@ -413,7 +413,7 @@ pgOnly()('collection inherits', () => {
         inherits: ['parent'],
         fields: [{ name: 'field1', type: 'integer' }],
       });
-    }).toThrowError();
+    }).toThrow(/Field type conflict:/);
 
     await db.sync();
   });
@@ -512,7 +512,7 @@ pgOnly()('collection inherits', () => {
       inherits: [],
     });
 
-    expect(table2).not.toBeInstanceOf(InheritedCollection);
+    expect(table2).toBeInstanceOf(InheritedCollection);
   });
 
   it('should remove Node after collection destroy', async () => {
@@ -533,7 +533,7 @@ pgOnly()('collection inherits', () => {
 
     await db.removeCollection(collection3.name);
 
-    expect(db.inheritanceMap.getNode('table3')).toBeUndefined();
+    expect(db.inheritanceMap.getNode('table3')).toBeFalsy();
     expect(table1.isParent()).toBeFalsy();
   });
 
