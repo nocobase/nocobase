@@ -48,7 +48,7 @@ export function afterUpdateForRenameCollection(db: Database) {
           }
         }
 
-        if (field.get('type') == 'belongsToMany') {
+        if (field.get('type') == 'belongsToMany' && !db.inDialect('sqlite')) {
           const oldForeignKey = options.foreignKey;
           options.foreignKey = updateForeignKey(oldForeignKey);
 
@@ -78,7 +78,7 @@ export function afterUpdateForRenameCollection(db: Database) {
 
             const throughCollection = db.getCollection(options.through);
 
-            // rename column
+            // rename column in through table
             await db.sequelize
               .getQueryInterface()
               .renameColumn(throughCollection.getTableNameWithSchema(), oldForeignKey, options.foreignKey, {
@@ -179,6 +179,7 @@ export function afterUpdateForRenameCollection(db: Database) {
               },
             },
             {
+              hooks: false,
               transaction,
             },
           );
@@ -193,7 +194,6 @@ export function afterUpdateForRenameCollection(db: Database) {
       });
 
       for (const relatedCollectionModel of relatedCollectionModels) {
-        console.log('load collection', relatedCollectionModel.name);
         await relatedCollectionModel.load({
           transaction,
           replaceCollection: true,

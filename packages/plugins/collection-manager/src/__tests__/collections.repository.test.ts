@@ -98,6 +98,7 @@ describe('collections repository', () => {
       },
       context: {},
     });
+
     const userTableName = db.getCollection('users').model.tableName;
 
     await db.getRepository('collections').create({
@@ -190,8 +191,11 @@ describe('collections repository', () => {
     const throughCollection = db.getCollection('users_tags');
     const throughTableName = throughCollection.getTableNameWithSchema();
 
-    const throughTable = await db.sequelize.getQueryInterface().describeTable(throughTableName);
-    expect(throughTable.student_id).toBeDefined();
+    // sqlite not support rename through table foreignKey
+    if (!db.inDialect('sqlite')) {
+      const throughTable = await db.sequelize.getQueryInterface().describeTable(throughTableName);
+      expect(throughTable.student_id).toBeDefined();
+    }
   });
 
   it('should extend collections collection', async () => {
