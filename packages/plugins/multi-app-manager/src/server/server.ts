@@ -98,7 +98,11 @@ export class PluginMultiAppManager extends Plugin {
         return req.headers['x-app'];
       }
       if (req.headers['x-hostname']) {
-        const appInstance = await this.db.getRepository('applications').findOne({
+        const repository = this.db.getRepository('applications');
+        if (!repository) {
+          return null;
+        }
+        const appInstance = await repository.findOne({
           filter: {
             cname: req.headers['x-hostname'],
           },

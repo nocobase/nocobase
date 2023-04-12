@@ -45,6 +45,26 @@ export class PluginManager {
     this.repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
 
+    this.app.resourcer.use(async (ctx, next) => {
+      await next();
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'applicationPlugins' && actionName === 'list') {
+        const lng = ctx.getCurrentLocale();
+        if (Array.isArray(ctx.body)) {
+          ctx.body = ctx.body.map((plugin) => {
+            const json = plugin.toJSON();
+            const packageName = PluginManager.getPackageName(json.name);
+            const packageJson = PluginManager.getPackageJson(packageName);
+            return {
+              displayName: packageJson[`displayName.${lng}`] || packageJson.displayName,
+              description: packageJson[`description.${lng}`] || packageJson.description,
+              ...json,
+            };
+          });
+        }
+      }
+    });
+
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*', 'applicationPlugins:list'],
