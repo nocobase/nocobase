@@ -69,8 +69,8 @@ export const GanttDesigner = () => {
           { label: compile('{{t("Day")}}'), value: 'day', color: 'yellow' },
           { label: compile('{{t("Week")}}'), value: 'week', color: 'pule' },
           { label: compile('{{t("Month")}}'), value: 'month', color: 'green' },
-          { label: compile('{{t("Year")}}'), value: 'year', color: 'green' },
           { label: compile('{{t("QuarterYear")}}'), value: 'quarterYear', color: 'red' },
+          { label: compile('{{t("Year")}}'), value: 'year', color: 'green' },
         ]}
         onChange={(range) => {
           const fieldNames = field.decoratorProps.fieldNames || {};
