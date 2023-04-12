@@ -1,10 +1,10 @@
-import { Schema, useFieldSchema } from '@formily/react';
-import { isEmpty, isPlainObject } from '@nocobase/utils/client';
+import { Schema, SchemaKey, useFieldSchema } from '@formily/react';
+import { getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { mergeFilter } from '../block-provider';
 import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import { Collection, FieldOptions, useCollection } from '../collection-manager';
+import { Collection, CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
@@ -45,37 +45,34 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   }
 };
 
-/**
- * Recursively flatten an object and generate a query object.
- * @param result - The resulting query object.
- * @param obj - The object to be flattened and queried.
- * @param key - The current key in the object tree.
- * @param operators - The operators to use for each field.
- * @returns The resulting query object.
- */
-const flattenAndQueryObject = (result: Record<string, any>, obj: any, key: string, operators: Record<string, any>) => {
-  if (!obj) return result;
-
-  if (!isPlainObject(obj)) {
-    result[key] = {
-      [operators[key] || '$eq']: obj,
-    };
-  } else {
-    Object.keys(obj).forEach((k) => {
-      flattenAndQueryObject(result, obj[k], `${key}.${k}`, operators);
-    });
-  }
-
-  return result;
-};
-
-export const transformToFilter = (values: Record<string, any>, fieldSchema: Schema) => {
+export const transformToFilter = (
+  values: Record<string, any>,
+  fieldSchema: Schema,
+  getField: (name: SchemaKey) => CollectionFieldOptions,
+) => {
   const { operators } = findFilterOperators(fieldSchema);
 
   return {
     $and: Object.keys(values)
-      .map((key) => flattenAndQueryObject({}, values[key], key, operators))
-      .filter((item) => !isEmpty(item)),
+      .map((key) => {
+        const collectionField = getField(key);
+        if (collectionField.targetKey) {
+          key = `${key}.${collectionField.targetKey}`;
+        }
+
+        const value = getValuesByPath(values, key);
+
+        if (!value) {
+          return null;
+        }
+
+        return {
+          [key]: {
+            [operators[key] || '$eq']: value,
+          },
+        };
+      })
+      .filter(Boolean),
   };
 };
 
@@ -86,7 +83,9 @@ export const useAssociatedFields = () => {
 };
 
 export const isAssocField = (field?: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field?.interface);
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion'].includes(
+    field?.interface,
+  );
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {

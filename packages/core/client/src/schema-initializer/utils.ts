@@ -294,10 +294,10 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
       if (isAssocField(field)) {
         schema = {
           type: 'string',
-          name: field.name,
+          name: `${field.name}`,
           required: false,
-          'x-designer': 'AssociationSelect.FilterDesigner',
-          'x-component': 'AssociationSelect',
+          'x-designer': 'FormItem.FilterFormDesigner',
+          'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
