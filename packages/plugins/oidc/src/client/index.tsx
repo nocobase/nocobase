@@ -11,7 +11,7 @@ export default function (props) {
     <SigninPageExtensionProvider component={OIDCList}>
       <SettingsCenterProvider
         settings={{
-          'oidc-manager': {
+          oidc: {
             title: t('OIDC manager'),
             icon: 'FileOutlined',
             tabs: {

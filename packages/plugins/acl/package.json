@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-acl",
+  "displayName": "ACL",
+  "displayName.zh-CN": "权限控制",
+  "description": "A simple access control based on roles, resources and actions",
+  "description.zh-CN": "基于角色、资源和操作的权限控制插件",
   "version": "0.9.1-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

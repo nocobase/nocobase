@@ -63,7 +63,9 @@ const designerCss = css`
 const pageDesignerCss = css`
   position: relative;
   z-index: 20;
-  padding-top: 1px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     > .general-schema-designer {
@@ -104,8 +106,9 @@ const pageDesignerCss = css`
 `;
 
 const pageWithFixedBlockCss = classNames([
-  'nb-page',
+  'nb-page-content',
   css`
+    height: 100%;
     > .nb-grid:not(:last-child) {
       > .nb-schema-initializer-button {
         display: none;
@@ -256,7 +259,7 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className={'m24'} style={{ margin: 24 }}>
+        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
           {loading ? (
             <Spin />
           ) : !disablePageHeader && enablePageTabs ? (
@@ -266,8 +269,8 @@ export const Page = (props) => {
                 <FixedBlock
                   key={schema.name}
                   height={
-                    // header 46 margin 48
-                    height + 46 + 48
+                    // header 46 margin --nb-spacing * 2
+                    `calc(${height}px + 46px + var(--nb-spacing) * 2)`
                   }
                 >
                   <SchemaComponent
@@ -285,8 +288,8 @@ export const Page = (props) => {
           ) : (
             <FixedBlock
               height={
-                // header 46 margin 48
-                height + 46 + 48
+                // header 46 margin --nb-spacing * 2
+                `calc(${height}px + 46px + var(--nb-spacing) * 2)`
               }
             >
               <div className={pageWithFixedBlockCss}>{props.children}</div>
