@@ -11,7 +11,7 @@ export const BlockTemplatePage = () => {
   return (
     <div>
       <AntdPageHeader ghost={false} title={t('Block templates')} />
-      <div className={'m24'} style={{ margin: 24 }}>
+      <div style={{ margin: 'var(--nb-spacing)' }}>
         <CollectionManagerProvider collections={[uiSchemaTemplatesCollection]}>
           <SchemaComponent schema={uiSchemaTemplatesSchema} />
         </CollectionManagerProvider>

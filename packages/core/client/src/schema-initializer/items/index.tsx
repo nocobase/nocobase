@@ -28,6 +28,7 @@ export * from './FilterCollapseBlockInitializer';
 export * from './FilterFormBlockInitializer';
 export * from './FormBlockInitializer';
 export * from './G2PlotInitializer';
+export * from './GanttBlockInitializer';
 export * from './InitializerWithSwitch';
 export * from './KanbanBlockInitializer';
 export * from './MarkdownBlockInitializer';

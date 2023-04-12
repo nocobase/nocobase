@@ -1,8 +1,9 @@
 import { Database } from '@nocobase/database';
 import { prepareApp } from './prepare';
+import { MockServer } from '@nocobase/test';
 
 describe('list action with acl', () => {
-  let app;
+  let app: MockServer;
 
   let Post;
 
@@ -16,6 +17,11 @@ describe('list action with acl', () => {
         {
           type: 'bigInt',
           name: 'createdById',
+        },
+        {
+          type: 'belongsTo',
+          name: 'createdBy',
+          target: 'users',
         },
       ],
     });
@@ -85,12 +91,55 @@ describe('list action with acl', () => {
       },
     );
 
+    //@ts-ignore
     const response = await app.agent().set('X-With-ACL-Meta', true).resource('tests').list({});
 
     const data = response.body;
     expect(data.meta.allowedActions.view).toEqual(['t1', 't2', 't3']);
     expect(data.meta.allowedActions.update).toEqual(['t1', 't2']);
     expect(data.meta.allowedActions.destroy).toEqual(['t3']);
+  });
+
+  it('should list items meta permissions by association field', async () => {
+    const userRole = app.acl.define({
+      role: 'user',
+    });
+
+    userRole.grantAction('posts:view', {});
+
+    userRole.grantAction('posts:update', {
+      filter: {
+        'createdBy.id': '{{ ctx.state.currentUser.id }}',
+      },
+    });
+
+    await Post.repository.create({
+      values: [
+        { title: 'p1', createdById: 1 },
+        { title: 'p2', createdById: 1 },
+        { title: 'p3', createdById: 2 },
+      ],
+    });
+
+    app.resourcer.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'user';
+        ctx.state.currentUser = {
+          id: 1,
+        };
+
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await (app as any).agent().set('X-With-ACL-Meta', true).resource('posts').list();
+    const data = response.body;
+    expect(data.meta.allowedActions.view).toEqual([1, 2, 3]);
+    expect(data.meta.allowedActions.update).toEqual([1, 2]);
+    expect(data.meta.allowedActions.destroy).toEqual([]);
   });
 
   it('should list items with meta permission', async () => {
@@ -126,6 +175,7 @@ describe('list action with acl', () => {
       },
     );
 
+    // @ts-ignore
     const response = await app.agent().set('X-With-ACL-Meta', true).resource('posts').list({});
 
     const data = response.body;
@@ -167,6 +217,7 @@ describe('list action with acl', () => {
       },
     );
 
+    // @ts-ignore
     const getResponse = await app.agent().set('X-With-ACL-Meta', true).resource('posts').get({
       filterByTk: 1,
     });

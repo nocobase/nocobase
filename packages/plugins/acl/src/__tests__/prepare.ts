@@ -1,7 +1,7 @@
-import { mockServer } from '@nocobase/test';
+import { mockServer, MockServer } from '@nocobase/test';
 import PluginACL from '../server';
 
-export async function prepareApp() {
+export async function prepareApp(): Promise<MockServer> {
   const app = mockServer({
     registerActions: true,
     acl: true,
