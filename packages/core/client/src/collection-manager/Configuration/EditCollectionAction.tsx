@@ -26,10 +26,10 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     name: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
-      'x-disabled': true,
+      // 'x-disabled': true,
     },
   };
-  properties.name['x-disabled'] = true;
+  // properties.name['x-disabled'] = true;
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
