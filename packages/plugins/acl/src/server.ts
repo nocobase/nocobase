@@ -736,13 +736,15 @@ export class PluginACL extends Plugin {
                   }
 
                   if (typeof key === 'string' && key !== snakeCase(key)) {
-                    const setKey = isAssociationKey
+                    const setKey = isAssociationKey(key)
                       ? (() => {
                           const parts = key.split('.');
 
                           parts[parts.length - 1] = lodash.snakeCase(parts[parts.length - 1]);
 
-                          return `${parts.join('.')}$`;
+                          const result = parts.join('.');
+
+                          return result.endsWith('$') ? result : `${result}$`;
                         })()
                       : snakeCase(key);
                     const setValue = lodash.cloneDeep(obj[key]);
