@@ -2,8 +2,8 @@ import { css } from '@emotion/css';
 
 export const scrollWrapper = css`
   overflow: auto;
-  position: relative;
-  top: -14px;
+  position: absolute;
+  bottom: -4px;
   max-width: 100%;
   /*firefox*/
   scrollbar-width: thin;
@@ -17,16 +17,14 @@ export const scrollWrapper = css`
     background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    border: 6px solid transparent;
-    background: rgba(0, 0, 0, 0.2);
-    background: var(--palette-black-alpha-20, rgba(0, 0, 0, 0.2));
+    border: 5px solid transparent;
+    background:  #5c5858cc;
     border-radius: 10px;
     background-clip: padding-box;
   }
   &::-webkit-scrollbar-thumb:hover {
-    border: 4px solid transparent;
-    background: rgba(0, 0, 0, 0.3);
-    background: var(--palette-black-alpha-30, rgba(0, 0, 0, 0.3));
+    border: 3px solid transparent;
+    background: #5c5858bd;
     background-clip: padding-box;
   }
 `;
