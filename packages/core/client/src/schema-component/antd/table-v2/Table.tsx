@@ -167,6 +167,7 @@ export const Table: any = observer((props: any) => {
     rowSelection,
     rowKey,
     required,
+    onExpand,
     ...others
   } = { ...others1, ...others2 } as any;
   const schema = useFieldSchema();
@@ -209,11 +210,6 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
-  // useEffect(() => {
-  //   const data = field.value;
-  //   field.value = null;
-  //   field.value = data;
-  // }, [treeTable]);
 
   useEffect(() => {
     if (treeTable !== false) {
@@ -227,7 +223,7 @@ export const Table: any = observer((props: any) => {
     } else {
       setExpandesKeys([]);
     }
-  }, [expandFlag]);
+  }, [expandFlag, allIncludesChildren]);
 
   const components = useMemo(() => {
     return {
@@ -332,6 +328,8 @@ export const Table: any = observer((props: any) => {
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
               index = index + (current - 1) * pageSize + 1;
+            } else {
+              index = index + 1;
             }
             if (record.__index) {
               index = extractIndex(record.__index);
@@ -490,6 +488,7 @@ export const Table: any = observer((props: any) => {
             onExpand: (flag, record) => {
               const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
               setExpandesKeys(newKeys);
+              onExpand?.(flag, record);
             },
             expandedRowKeys: expandedKeys,
           }}
