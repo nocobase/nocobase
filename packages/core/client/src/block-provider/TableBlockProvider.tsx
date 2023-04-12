@@ -97,7 +97,6 @@ export const useAssociationNames = (collection) => {
 };
 
 export const TableBlockProvider = (props) => {
-  console.log(props.collection);
   const resourceName = props.resource;
   const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
@@ -124,7 +123,6 @@ export const TableBlockProvider = (props) => {
       params['tree'] = true;
     }
   }
-  console.log(appends);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
