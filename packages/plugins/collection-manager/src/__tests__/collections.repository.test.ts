@@ -20,6 +20,96 @@ describe('collections repository', () => {
     await app.destroy();
   });
 
+  it('should rename through collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts_tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            type: 'string',
+            name: 'title',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'tags',
+            through: 'posts_tags',
+            targetKey: 'id',
+            sourceKey: 'id',
+            foreignKey: 'post_id',
+            otherKey: 'tag_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsToMany',
+            name: 'posts',
+            through: 'posts_tags',
+            targetKey: 'id',
+            sourceKey: 'id',
+            otherKey: 'post_id',
+            foreignKey: 'tag_id',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('posts').repository.create({
+      values: {
+        title: 'post1',
+        tags: [
+          {
+            name: 'tag1',
+          },
+          {
+            name: 'tag2',
+          },
+        ],
+      },
+    });
+
+    // update through collection
+    await db.getRepository('collections').update({
+      filter: {
+        name: 'posts_tags',
+      },
+      values: {
+        name: 'posts_tags_2012',
+      },
+      context: {},
+    });
+
+    const post = await db.getCollection('posts').repository.findOne({
+      appends: ['tags'],
+    });
+
+    expect(post.get('tags').length).toBe(2);
+  });
+
   it('should rename collection ', async () => {
     const UserCollection = await db.getRepository('collections').create({
       values: {

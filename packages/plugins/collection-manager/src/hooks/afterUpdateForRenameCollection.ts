@@ -140,6 +140,31 @@ export function afterUpdateForRenameCollection(db: Database) {
         });
       }
 
+      const associationThroughFields = await db.getRepository('fields').find({
+        filter: {
+          'options.through': prevName,
+        },
+        transaction,
+      });
+
+      for (const associationThroughField of associationThroughFields) {
+        const newOptions = {
+          ...associationThroughField.get('options'),
+          through: currentName,
+        };
+
+        await associationThroughField.update(
+          {
+            options: newOptions,
+          },
+          {
+            transaction,
+            hooks: false,
+            raw: true,
+          },
+        );
+      }
+
       // reload collections that depend on this collection
       const relatedCollections = CollectionsGraph.preOrder({
         collections: [...db.collections.values()].map((collection) => {
