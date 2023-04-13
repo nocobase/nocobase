@@ -79,6 +79,8 @@ export default {
   "Value":"フィールド値",
   "Disabled":"無効化",
   "Enabled":"有効化",
+  'On':'有効化',
+  'Off':'無効化',
   "Empty":"くうきち",
   "Linkage rule":"連動規則",
   "Linkage rules":"連動規則",

@@ -74,6 +74,8 @@ export default {
   "Value":"Value",
   "Disabled":"Disabled",
   "Enabled":"Enabled",
+  'On':'On',
+  'Off':'Off',
   "Empty":"Empty",
   "Linkage rule":"Linkage rule",
   "Linkage rules":"Linkage rules",

@@ -41,6 +41,8 @@ export default {
   "Setting": "设置",
   "Enable": "启用",
   "Disable": "禁用",
+  'On':'启用',
+  'Off':'禁用',
   "Logo": "Logo",
   "Add menu item": "添加菜单项",
   "Page": "页面",
