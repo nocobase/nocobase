@@ -30,25 +30,35 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
       id: '__unknown__',
       title: 'Unknown',
       color: 'default',
-      cards: [],
+      cards: dataSource
     },
   };
-  groupField.uiSchema.enum.forEach((item) => {
-    columns[item.value] = {
-      id: item.value,
-      title: item.label,
-      color: item.color,
-      cards: [],
-    };
-  });
-  dataSource.forEach((ds) => {
-    const value = ds[groupField.name];
-    if (value && columns[value]) {
-      columns[value].cards.push(ds);
-    } else {
-      columns.__unknown__.cards.push(ds);
-    }
-  });
+  if (groupField?.dataSource) {
+    groupField?.dataSource?.forEach((item) => {
+      columns[item.id] = {
+        id: item.id,
+        title: item.id,
+        cards: [],
+      };
+    });
+  } else {
+    groupField.uiSchema.enum?.forEach((item) => {
+      columns[item.value] = {
+        id: item.value,
+        title: item.label,
+        color: item.color,
+        cards: [],
+      };
+    });
+  }
+  // dataSource.forEach((ds) => {
+  //   const value = ds[groupField.name];
+  //   if (value && columns[value]) {
+  //     columns[value].cards.push(ds);
+  //   } else {
+  //     columns.__unknown__.cards.push(ds);
+  //   }
+  // });
   if (columns.__unknown__.cards.length === 0) {
     delete columns.__unknown__;
   }
@@ -111,9 +121,8 @@ export const Kanban: any = observer((props: any) => {
             <Tag color={color}>{title}</Tag>
           </div>
         )}
-        renderCard={(card, { column, dragging }) => {
+        renderCard={(card, { column, dragging },index) => {
           const columnIndex = field.value?.indexOf(column);
-          const cardIndex = column?.cards?.indexOf(card);
           return (
             schemas.card && (
               <RecordProvider record={card}>
@@ -126,7 +135,7 @@ export const Kanban: any = observer((props: any) => {
                     column,
                     dragging,
                     columnIndex,
-                    cardIndex,
+                    cardIndex:index,
                   }}
                 >
                   <RecursionField name={schemas.card.name} schema={schemas.card} />

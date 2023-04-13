@@ -1,10 +1,13 @@
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useState, useEffect } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
 import { useKanbanBlockContext } from '../block-provider';
 import Card from './Card';
 import CardAdder from './CardAdder';
 import { pickPropOut } from './utils';
 import withDroppable from './withDroppable';
+import { useAPIClient } from '../api-client';
+import { useCollection } from '../collection-manager/hooks';
+import { isAssocField } from '../filter-provider/utils';
 
 const ColumnEmptyPlaceholder = forwardRef(
   (
@@ -34,8 +37,35 @@ function Column({
   allowAddCard,
   cardAdderPosition = 'top',
 }) {
-  const { fixedBlock } = useKanbanBlockContext();
+  const { fixedBlock, groupField } = useKanbanBlockContext();
+  const { name } = useCollection();
   const [headerHeight, setHeaderHeight] = useState(0);
+  const [cardData, setCardData] = useState(children.cards);
+  const isAssociationField = isAssocField(groupField);
+
+  const api = useAPIClient();
+  useEffect(() => {
+    if (children.id !== '__unknown__') {
+      const filter = isAssociationField
+        ? {
+            $and: [{ [groupField.name]: { id: { $eq: children.id } } }],
+          }
+        : {
+            $and: [{ [groupField.name]: { $eq: children.id } }],
+          };
+      api
+        .resource(name)
+        .list({
+          filter: filter,
+        })
+        .then(({ data }) => {
+          if (data) {
+            setCardData(data?.data);
+            children.cards = data?.data;
+          }
+        });
+    }
+  }, [groupField, children.id]);
   return (
     <Draggable draggableId={`column-draggable-${children.id}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
       {(columnProvided) => {
@@ -64,18 +94,21 @@ function Column({
             </div>
             {cardAdderPosition === 'top' && allowAddCard && renderCardAdder({ column: children, onConfirm: onCardNew })}
             <DroppableColumn droppableId={String(children.id)}>
-              {children?.cards?.length ? (
+              {cardData?.length ? (
                 <div
                   className="react-kanban-card-skeleton"
                   style={{
                     height: fixedBlock ? '100%' : undefined,
+                    minHeight: 50,
                   }}
                 >
-                  {children.cards.map((card, index) => (
+                  {cardData.map((card, index) => (
                     <Card
                       key={card.id}
                       index={index}
-                      renderCard={(dragging) => renderCard(children, card, dragging)}
+                      renderCard={(dragging) => {
+                        return renderCard(children, new Proxy(card, {}), dragging, index);
+                      }}
                       disableCardDrag={disableCardDrag}
                     >
                       {card}

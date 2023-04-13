@@ -133,8 +133,8 @@ function UncontrolledBoard({
             addCard: handleCardAdd.bind(null, column),
           }),
       })}
-      renderCard={(column, card, dragging) => {
-        if (renderCard) return renderCard(card, { removeCard: handleCardRemove.bind(null, column, card), dragging });
+      renderCard={(column, card, dragging,index) => {
+        if (renderCard) return renderCard(card, { removeCard: handleCardRemove.bind(null, column, card), dragging },index);
         return (
           <DefaultCard
             dragging={dragging}
@@ -200,8 +200,8 @@ function ControlledBoard({
         return <ColumnAdder onConfirm={(title) => onNewColumnConfirm({ title, cards: [] })} />;
       }}
       {...(renderColumnHeader && { renderColumnHeader: renderColumnHeader })}
-      renderCard={(column, card, dragging) => {
-        if (renderCard) return renderCard(card, { column, dragging });
+      renderCard={(column, card, dragging,index) => {
+        if (renderCard) return renderCard(card, { column, dragging },index);
         return (
           <DefaultCard
             dragging={dragging}
