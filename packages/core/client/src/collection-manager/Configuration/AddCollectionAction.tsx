@@ -213,18 +213,22 @@ const useCreateCollection = (schema?: any) => {
       }
       delete values.id;
       delete values.autoCreateReverseField;
-      await resource.create({
-        values: {
-          logging: true,
-          ...values,
-          fields,
-        },
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
-      await refreshCM();
+      try {
+        await resource.create({
+          values: {
+            logging: true,
+            ...values,
+            fields,
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
+      }
     },
   };
 };
