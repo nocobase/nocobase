@@ -180,6 +180,7 @@ export const useKanbanBlockProps = () => {
         };
       }
       await ctx.resource.move(values);
+      ctx.field.updateColumn = [fromColumnId, toColumnId];
     },
   };
 };

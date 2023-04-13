@@ -37,14 +37,17 @@ function Column({
   allowAddCard,
   cardAdderPosition = 'top',
 }) {
-  const { fixedBlock, groupField } = useKanbanBlockContext();
+  const { fixedBlock, groupField, field } = useKanbanBlockContext();
   const { name } = useCollection();
   const [headerHeight, setHeaderHeight] = useState(0);
   const [cardData, setCardData] = useState(children.cards);
   const isAssociationField = isAssocField(groupField);
-
   const api = useAPIClient();
   useEffect(() => {
+    getColumnDatas();
+  }, [groupField, children.id]);
+
+  const getColumnDatas = () => {
     if (children.id !== '__unknown__') {
       const filter = isAssociationField
         ? {
@@ -65,7 +68,7 @@ function Column({
           }
         });
     }
-  }, [groupField, children.id]);
+  };
   return (
     <Draggable draggableId={`column-draggable-${children.id}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
       {(columnProvided) => {

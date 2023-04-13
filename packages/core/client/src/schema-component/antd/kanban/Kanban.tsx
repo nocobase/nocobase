@@ -25,14 +25,7 @@ const useCreateActionProps = () => {
 };
 
 export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
-  const columns = {
-    __unknown__: {
-      id: '__unknown__',
-      title: 'Unknown',
-      color: 'default',
-      cards: dataSource
-    },
-  };
+  const columns:any = {};
   if (groupField?.dataSource) {
     groupField?.dataSource?.forEach((item) => {
       columns[item.id] = {
@@ -51,15 +44,13 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
       };
     });
   }
-  // dataSource.forEach((ds) => {
-  //   const value = ds[groupField.name];
-  //   if (value && columns[value]) {
-  //     columns[value].cards.push(ds);
-  //   } else {
-  //     columns.__unknown__.cards.push(ds);
-  //   }
-  // });
-  if (columns.__unknown__.cards.length === 0) {
+  columns['__unknown__'] = {
+    id: '__unknown__',
+    title: 'Unknown',
+    color: 'default',
+    cards: dataSource,
+  };
+  if (dataSource.length === 0) {
     delete columns.__unknown__;
   }
   return Object.values(columns);
@@ -94,6 +85,7 @@ export const Kanban: any = observer((props: any) => {
   const handleCardDragEnd = (card, fromColumn, toColumn) => {
     onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
     const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
+    console.log(8)
     field.value = updatedBoard.columns;
   };
 
@@ -121,7 +113,7 @@ export const Kanban: any = observer((props: any) => {
             <Tag color={color}>{title}</Tag>
           </div>
         )}
-        renderCard={(card, { column, dragging },index) => {
+        renderCard={(card, { column, dragging }, index) => {
           const columnIndex = field.value?.indexOf(column);
           return (
             schemas.card && (
@@ -135,7 +127,7 @@ export const Kanban: any = observer((props: any) => {
                     column,
                     dragging,
                     columnIndex,
-                    cardIndex:index,
+                    cardIndex: index,
                   }}
                 >
                   <RecursionField name={schemas.card.name} schema={schemas.card} />
