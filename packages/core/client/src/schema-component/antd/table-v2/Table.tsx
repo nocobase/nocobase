@@ -131,7 +131,7 @@ const usePaginationProps = (pagination1, pagination2) => {
     ...pagination1,
     ...pagination2,
   };
-  return result.total < result.pageSize ? false : result;
+  return result.total <= result.pageSize ? false : result;
 };
 
 const useValidator = (validator: (value: any) => string) => {
