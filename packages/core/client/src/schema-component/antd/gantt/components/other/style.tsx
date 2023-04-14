@@ -23,7 +23,7 @@ export const scrollWrapper = css`
     background-clip: padding-box;
   }
   &::-webkit-scrollbar-thumb:hover {
-    border: 3px solid transparent;
+    border: 4px solid transparent;
     background: #5c5858bd;
     background-clip: padding-box;
   }
