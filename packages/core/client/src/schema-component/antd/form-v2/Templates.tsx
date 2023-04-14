@@ -13,7 +13,7 @@ export const Templates = () => {
   const fieldSchema = useFieldSchema();
   const templates = findDataTemplates(fieldSchema);
   const defaultTemplate = templates.find((item) => item.default);
-  const [value, setValue] = React.useState(defaultTemplate?.id || templates.length);
+  const [value, setValue] = React.useState(defaultTemplate?.id === undefined ? templates.length : defaultTemplate?.id);
   const api = useAPIClient();
   const [templateData, setTemplateData] = React.useState<any>(null);
   const { getCollectionFields } = useCollectionManager();
@@ -28,7 +28,7 @@ export const Templates = () => {
   }, []);
 
   useEffect(() => {
-    if (value === templates.length - 1) {
+    if (templates[value].noTemplate) {
       return;
     }
     const template = templates.find((item) => item.id === value);
@@ -40,12 +40,13 @@ export const Templates = () => {
     templates.push({
       title: '不使用模板',
       id: templates.length,
+      noTemplate: true,
     });
   }
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
-    if (value !== templates.length - 1) {
+    if (!option.noTemplate) {
       setTemplateData(await fetchTemplateData(api, option));
     }
   }, []);
