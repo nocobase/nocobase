@@ -1000,6 +1000,14 @@ SchemaSettings.LinkageRules = (props) => {
   );
 };
 
+export const useDataTemplates = () => {
+  const fieldSchema = useFieldSchema();
+  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  return {
+    templates: gridSchema?.['x-data-templates'] || fieldSchema?.['x-data-templates'],
+  };
+};
+
 SchemaSettings.DataTemplates = (props) => {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
@@ -1007,6 +1015,8 @@ SchemaSettings.DataTemplates = (props) => {
   const { t } = useTranslation();
   const { getTemplateById } = useSchemaTemplateManager();
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const { templates } = useDataTemplates();
+
   return (
     <SchemaSettings.ModalItem
       title={t('Select existing data as template')}
@@ -1022,7 +1032,7 @@ SchemaSettings.DataTemplates = (props) => {
               'x-component-props': {
                 useProps: () => {
                   return {
-                    defaultValues: gridSchema?.['x-data-templates'] || fieldSchema?.['x-data-templates'],
+                    defaultValues: templates,
                     collectionName,
                   };
                 },
