@@ -27,6 +27,7 @@ export const FormDesigner = () => {
         resourceName={defaultResource}
       />
       <SchemaSettings.LinkageRules collectionName={name} />
+      <SchemaSettings.DataTemplates collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

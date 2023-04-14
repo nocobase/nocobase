@@ -1,7 +1,6 @@
 import { clone } from '@formily/shared';
 import { CascaderProps } from 'antd';
-import _ from 'lodash';
-import { reduce, unionBy, uniq, uniqBy } from 'lodash';
+import _, { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
@@ -108,9 +107,31 @@ export const useCollectionManager = () => {
        * Max depth of recursion
        */
       maxDepth?: number;
+      allowAllTypes?: boolean;
+      /**
+       * 排除这些接口的字段
+       */
+      exceptInterfaces?: string[];
+      /**
+       * field value 的前缀，用 . 连接，比如 a.b.c
+       */
+      prefixFieldValue?: string;
+      /**
+       * 是否使用 prefixFieldValue 作为 field value
+       */
+      usePrefix?: boolean;
     },
   ) => {
-    const { association = false, cached = {}, collectionNames = [collectionName], maxDepth = 1 } = opts || {};
+    const {
+      association = false,
+      cached = {},
+      collectionNames = [collectionName],
+      maxDepth = 1,
+      allowAllTypes = false,
+      exceptInterfaces = [],
+      prefixFieldValue = '',
+      usePrefix = false,
+    } = opts || {};
 
     if (collectionNames.length - 1 > maxDepth) {
       return;
@@ -129,14 +150,16 @@ export const useCollectionManager = () => {
       ?.filter(
         (field) =>
           field.interface &&
-          (type.includes(field.type) ||
+          !exceptInterfaces.includes(field.interface) &&
+          (allowAllTypes ||
+            type.includes(field.type) ||
             (association && field.target && field.target !== collectionName && Array.isArray(association)
               ? association.includes(field.interface)
               : false)),
       )
       ?.map((field) => {
         const result: CascaderProps<any>['options'][0] = {
-          value: field.name,
+          value: usePrefix && prefixFieldValue ? `${prefixFieldValue}.${field.name}` : field.name,
           label: compile(field?.uiSchema?.title) || field.name,
           ...field,
         };
@@ -147,6 +170,12 @@ export const useCollectionManager = () => {
                 ...opts,
                 cached,
                 collectionNames: [...collectionNames, field.target],
+                prefixFieldValue: usePrefix
+                  ? prefixFieldValue
+                    ? `${prefixFieldValue}.${field.name}`
+                    : field.name
+                  : '',
+                usePrefix,
               });
           if (!result.children?.length) {
             return null;
@@ -159,6 +188,50 @@ export const useCollectionManager = () => {
 
     cached[collectionName] = options;
     return options;
+  };
+
+  const getCollection = (name: any) => {
+    if (typeof name !== 'string') {
+      return name;
+    }
+    return collections?.find((collection) => collection.name === name);
+  };
+
+  // 获取当前 collection 继承链路上的所有 collection
+  const getAllCollectionsInheritChain = (collectionName: string) => {
+    const collectionsInheritChain = [collectionName];
+    const getInheritChain = (name: string) => {
+      const collection = getCollection(name);
+      if (collection) {
+        const { inherits } = collection;
+        const children = getChildrenCollections(name);
+        // 搜寻祖先表
+        if (inherits) {
+          for (let index = 0; index < inherits.length; index++) {
+            const collectionKey = inherits[index];
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+        // 搜寻后代表
+        if (children) {
+          for (let index = 0; index < children.length; index++) {
+            const collectionKey = children[index].name;
+            if (collectionsInheritChain.includes(collectionKey)) {
+              continue;
+            }
+            collectionsInheritChain.push(collectionKey);
+            getInheritChain(collectionKey);
+          }
+        }
+      }
+      return collectionsInheritChain;
+    };
+
+    return getInheritChain(collectionName);
   };
 
   return {
@@ -176,12 +249,7 @@ export const useCollectionManager = () => {
     getCollectionFields,
     getCollectionFieldsOptions,
     getCurrentCollectionFields,
-    getCollection(name: any) {
-      if (typeof name !== 'string') {
-        return name;
-      }
-      return collections?.find((collection) => collection.name === name);
-    },
+    getCollection,
     getCollectionJoinField(name: string) {
       if (!name) {
         return;
@@ -227,5 +295,6 @@ export const useCollectionManager = () => {
         });
       });
     },
+    getAllCollectionsInheritChain,
   };
 };
