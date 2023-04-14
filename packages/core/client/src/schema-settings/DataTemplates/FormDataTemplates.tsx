@@ -3,7 +3,7 @@ import { TreeSelect } from 'antd';
 import React, { useMemo } from 'react';
 import { AssociationSelect, SchemaComponent } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
-import { ArrayCollapse } from './components/LinkageHeader';
+import { ArrayCollapse } from './components/DataTemplateTitle';
 import { useCollectionState } from './hooks/useCollectionState';
 
 export const FormDataTemplates = observer((props: any) => {

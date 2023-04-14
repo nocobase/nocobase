@@ -9,7 +9,7 @@ import { clone } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const LinkageRulesTitle = (props) => {
+const DataTemplateTitle = (props) => {
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
@@ -159,7 +159,7 @@ export const ArrayCollapse: ComposedArrayCollapse = observer((props: IArrayColla
                     {header}
                   </Badge>
                 ) : (
-                  <LinkageRulesTitle item={item.initialValue || item} index={index} />
+                  <DataTemplateTitle item={item.initialValue || item} index={index} />
                 )}
               </ArrayBase.Item>
             );
