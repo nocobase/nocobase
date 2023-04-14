@@ -24,40 +24,8 @@ const useCreateActionProps = () => {
   };
 };
 
-// export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
-//   const columns:any = {};
-//   if (groupField?.dataSource) {
-//     groupField?.dataSource?.forEach((item) => {
-//       columns[item.id] = {
-//         id: item.id,
-//         title: item.id,
-//         cards: [],
-//       };
-//     });
-//   } else {
-//     groupField.uiSchema.enum?.forEach((item) => {
-//       columns[item.value] = {
-//         id: item.value,
-//         title: item.label,
-//         color: item.color,
-//         cards: [],
-//       };
-//     });
-//   }
-//   columns['__unknown__'] = {
-//     id: '__unknown__',
-//     title: 'Unknown',
-//     color: 'default',
-//     cards: dataSource,
-//   };
-//   if (dataSource.length === 0) {
-//     delete columns.__unknown__;
-//   }
-//   return Object.values(columns);
-// };
-
 export const Kanban: any = observer((props: any) => {
-  const { groupField, onCardDragEnd, ...restProps } = useProps(props);
+  const { groupField, onCardDragEnd, updateColumns, ...restProps } = useProps(props);
   const field = useField<ArrayField>();
   const fieldSchema = useFieldSchema();
   const [disableCardDrag, setDisableCardDrag] = useState(false);
@@ -85,10 +53,8 @@ export const Kanban: any = observer((props: any) => {
   const handleCardDragEnd = (card, fromColumn, toColumn) => {
     onCardDragEnd?.({ columns: field.value, groupField }, fromColumn, toColumn);
     const updatedBoard = Board.moveCard({ columns: field.value }, fromColumn, toColumn);
-    console.log(8)
     field.value = updatedBoard.columns;
   };
-
   return (
     <Spin
       wrapperClassName={css`
@@ -102,6 +68,7 @@ export const Kanban: any = observer((props: any) => {
     >
       <Board
         {...restProps}
+        updateColumns={updateColumns}
         allowAddCard={!!schemas.cardAdder}
         disableColumnDrag
         cardAdderPosition={'bottom'}

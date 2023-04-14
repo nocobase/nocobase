@@ -54,6 +54,7 @@ function UncontrolledBoard({
   disableColumnDrag,
   allowAddCard,
   onNewCardConfirm,
+  updateColumns,
 }) {
   const [board, setBoard] = useState(initialBoard);
   const handleOnCardDragEnd = partialRight(handleOnDragEnd, { moveCallback: moveCard, notifyCallback: onCardDragEnd });
@@ -115,6 +116,7 @@ function UncontrolledBoard({
 
   return (
     <BoardContainer
+      updateColumns={updateColumns}
       cardAdderPosition={cardAdderPosition}
       onCardDragEnd={handleOnCardDragEnd}
       onColumnDragEnd={handleOnColumnDragEnd}
@@ -133,8 +135,9 @@ function UncontrolledBoard({
             addCard: handleCardAdd.bind(null, column),
           }),
       })}
-      renderCard={(column, card, dragging,index) => {
-        if (renderCard) return renderCard(card, { removeCard: handleCardRemove.bind(null, column, card), dragging },index);
+      renderCard={(column, card, dragging, index) => {
+        if (renderCard)
+          return renderCard(card, { removeCard: handleCardRemove.bind(null, column, card), dragging }, index);
         return (
           <DefaultCard
             dragging={dragging}
@@ -161,6 +164,7 @@ function UncontrolledBoard({
 
 function ControlledBoard({
   children: board,
+  updateColumns,
   onCardDragEnd,
   onColumnDragEnd,
   allowAddColumn,
@@ -189,6 +193,7 @@ function ControlledBoard({
 
   return (
     <BoardContainer
+      updateColumns={updateColumns}
       cardAdderPosition={cardAdderPosition}
       onCardDragEnd={handleOnCardDragEnd}
       onColumnDragEnd={handleOnColumnDragEnd}
@@ -200,8 +205,8 @@ function ControlledBoard({
         return <ColumnAdder onConfirm={(title) => onNewColumnConfirm({ title, cards: [] })} />;
       }}
       {...(renderColumnHeader && { renderColumnHeader: renderColumnHeader })}
-      renderCard={(column, card, dragging,index) => {
-        if (renderCard) return renderCard(card, { column, dragging },index);
+      renderCard={(column, card, dragging, index) => {
+        if (renderCard) return renderCard(card, { column, dragging }, index);
         return (
           <DefaultCard
             dragging={dragging}
@@ -228,6 +233,7 @@ function ControlledBoard({
 function BoardContainer(props) {
   const {
     children: board,
+    updateColumns,
     renderCard,
     disableColumnDrag,
     disableCardDrag,
@@ -264,6 +270,7 @@ function BoardContainer(props) {
               index={column?.index ?? index}
               renderCard={renderCard}
               renderCardAdder={renderCardAdder}
+              updateColumns={updateColumns}
               renderColumnHeader={(column) =>
                 renderColumnHeader ? (
                   renderColumnHeader(column)

@@ -1,5 +1,6 @@
 import React, { forwardRef, useState, useEffect } from 'react';
 import { Draggable } from 'react-beautiful-dnd';
+import { Spin } from 'antd';
 import { useKanbanBlockContext } from '../block-provider';
 import Card from './Card';
 import CardAdder from './CardAdder';
@@ -28,6 +29,7 @@ const DroppableColumn = withDroppable(ColumnEmptyPlaceholder);
 function Column({
   children,
   index: columnIndex,
+  updateColumns,
   renderCard,
   renderCardAdder = ({ column, onConfirm }) => <CardAdder column={column} onConfirm={onConfirm} />,
   renderColumnHeader,
@@ -44,8 +46,10 @@ function Column({
   const isAssociationField = isAssocField(groupField);
   const api = useAPIClient();
   useEffect(() => {
-    getColumnDatas();
-  }, [groupField, children.value]);
+    if (updateColumns.length === 0 || updateColumns.includes(children.value)) {
+      getColumnDatas();
+    }
+  }, [groupField, children.value, updateColumns]);
 
   const getColumnDatas = () => {
     if (children.value !== '__unknown__') {
@@ -70,10 +74,13 @@ function Column({
     }
   };
   return (
-    <Draggable draggableId={`column-draggable-${children.value}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
+    <Draggable
+      draggableId={`column-draggable-${children.value}`}
+      index={columnIndex}
+      isDragDisabled={disableColumnDrag}
+    >
       {(columnProvided) => {
         const draggablePropsWithoutStyle = pickPropOut(columnProvided.draggableProps, 'style');
-
         return (
           <div
             ref={columnProvided.innerRef}

@@ -1,9 +1,8 @@
 import { ArrayField } from '@formily/core';
-import { createForm } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useACLRoleContext } from '../acl';
 import { useCollectionManager } from '../collection-manager';
 import { FixedBlockWrapper } from '../schema-component';
@@ -143,9 +142,10 @@ const useDisableCardDrag = () => {
 export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
+  const [updateColumns, setUpdateColumns] = useState([]);
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const columns = ctx.columns
+      const columns = ctx.columns.filter((v) => v.enabled);
       columns.push({
         value: '__unknown__',
         label: 'Unknnwn',
@@ -157,11 +157,12 @@ export const useKanbanBlockProps = () => {
   }, [ctx?.service?.loading]);
 
   return {
+    updateColumns,
     groupField: ctx.groupField,
     disableCardDrag: useDisableCardDrag(),
     async onCardDragEnd({ columns, groupField }, { fromColumnId, fromPosition }, { toColumnId, toPosition }) {
-      const sourceColumn = columns.find((column) => column.id === fromColumnId);
-      const destinationColumn = columns.find((column) => column.id === toColumnId);
+      const sourceColumn = columns.find((column) => column.value === fromColumnId);
+      const destinationColumn = columns.find((column) => column.value === toColumnId);
       const sourceCard = sourceColumn?.cards?.[fromPosition];
       const targetCard = destinationColumn?.cards?.[toPosition];
       const values = {
@@ -176,7 +177,7 @@ export const useKanbanBlockProps = () => {
         };
       }
       await ctx.resource.move(values);
-      ctx.field.updateColumn = [fromColumnId, toColumnId];
+      setUpdateColumns([sourceColumn.value, destinationColumn.value]);
     },
   };
 };

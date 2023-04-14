@@ -9,8 +9,8 @@ function getCoordinates(event, board) {
   }
 
   return {
-    source: { ...columnSource, fromColumnId: getColumn(board, event.source.droppableId).id },
-    destination: { ...columnDestination, toColumnId: getColumn(board, event.destination.droppableId).id },
+    source: { ...columnSource, fromColumnId: getColumn(board, event.source.droppableId).value },
+    destination: { ...columnDestination, toColumnId: getColumn(board, event.destination.droppableId).value },
   }
 }
 
@@ -19,12 +19,14 @@ function isAColumnMove(type) {
 }
 
 function getCard(board, sourceCoordinate) {
-  const column = board.columns.find((column) => column.id === sourceCoordinate.fromColumnId)
+  const column = board.columns.find((column) => column.value === sourceCoordinate.fromColumnId)
+  console.log(column)
   return column.cards[sourceCoordinate.fromPosition]
 }
 
 function getColumn(board, droppableId) {
-  return board.columns.find(({ id }) => String(id) === droppableId)
+  console.log(board,droppableId)
+  return board.columns.find(({ value }) => value === droppableId)
 }
 
 function isMovingAColumnToAnotherPosition(coordinates) {

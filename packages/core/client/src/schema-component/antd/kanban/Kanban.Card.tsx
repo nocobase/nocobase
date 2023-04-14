@@ -16,7 +16,6 @@ export const KanbanCard: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const [visible, setVisible] = useState(false);
   const labelDisabled = fieldSchema['x-label-disabled'];
-
   return (
     <SchemaComponentOptions components={{}} scope={{}}>
       <Card

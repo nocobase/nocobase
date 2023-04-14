@@ -14,8 +14,8 @@ function moveColumn(board, { fromPosition }, { toPosition }) {
 }
 
 function moveCard(board, { fromPosition, fromColumnId }, { toPosition, toColumnId }) {
-  const sourceColumn = board.columns.find((column) => column.id === fromColumnId);
-  const destinationColumn = board.columns.find((column) => column.id === toColumnId);
+  const sourceColumn = board.columns.find((column) => column.value === fromColumnId);
+  const destinationColumn = board.columns.find((column) => column.value === toColumnId);
 
   const reorderColumnsOnBoard = (reorderColumnsMapper) => ({
     ...board,
@@ -24,11 +24,11 @@ function moveCard(board, { fromPosition, fromColumnId }, { toPosition, toColumnI
   const reorderCardsOnSourceColumn = reorderCardsOnColumn.bind(null, sourceColumn);
   const reorderCardsOnDestinationColumn = reorderCardsOnColumn.bind(null, destinationColumn);
 
-  if (sourceColumn.id === destinationColumn.id) {
+  if (sourceColumn.value === destinationColumn.value) {
     const reorderedCardsOnColumn = reorderCardsOnSourceColumn((cards) => {
       return changeElementOfPositionInArray(cards, fromPosition, toPosition);
     });
-    return reorderColumnsOnBoard((column) => (column.id === sourceColumn.id ? reorderedCardsOnColumn : column));
+    return reorderColumnsOnBoard((column) => (column.value === sourceColumn.value ? reorderedCardsOnColumn : column));
   } else {
     const reorderedCardsOnSourceColumn = reorderCardsOnSourceColumn((cards) => {
       return removeFromArrayAtPosition(cards, fromPosition);
@@ -37,8 +37,8 @@ function moveCard(board, { fromPosition, fromColumnId }, { toPosition, toColumnI
       return addInArrayAtPosition(cards, sourceColumn.cards[fromPosition], toPosition);
     });
     return reorderColumnsOnBoard((column) => {
-      if (column.id === sourceColumn.id) return reorderedCardsOnSourceColumn;
-      if (column.id === destinationColumn.id) return reorderedCardsOnDestinationColumn;
+      if (column.value === sourceColumn.value) return reorderedCardsOnSourceColumn;
+      if (column.value === destinationColumn.value) return reorderedCardsOnDestinationColumn;
       return column;
     });
   }
@@ -49,39 +49,39 @@ function addColumn(board, column) {
 }
 
 function removeColumn(board, column) {
-  return { ...board, columns: board.columns.filter(({ id }) => id !== column.id) };
+  return { ...board, columns: board.columns.filter(({ value }) => value !== column.value) };
 }
 
 function changeColumn(board, column, newColumn) {
   const changedColumns = replaceElementOfArray(board.columns)({
-    when: ({ id }) => id === column.id,
+    when: ({ value }) => value === column.value,
     for: (value) => ({ ...value, ...newColumn }),
   });
   return { ...board, columns: changedColumns };
 }
 
 function addCard(board, inColumn, card, { on }: any = {}) {
-  const columnToAdd = board.columns.find(({ id }) => id === inColumn.id);
+  const columnToAdd = board.columns.find(({ value }) => value === inColumn.value);
   const cards = addInArrayAtPosition(columnToAdd.cards, card, on === 'top' ? 0 : columnToAdd.cards.length);
   const columns = replaceElementOfArray(board.columns)({
-    when: ({ id }) => inColumn.id === id,
+    when: ({ value }) => inColumn.value === value,
     for: (value) => ({ ...value, cards }),
   });
   return { ...board, columns };
 }
 
 function removeCard(board, fromColumn, card) {
-  const columnToRemove = board.columns.find(({ id }) => id === fromColumn.id);
-  const filteredCards = columnToRemove.cards.filter(({ id }) => card.id !== id);
+  const columnToRemove = board.columns.find(({ value }) => value === fromColumn.value);
+  const filteredCards = columnToRemove.cards.filter(({ value }) => card.value !== value);
   const columnWithoutCard = { ...columnToRemove, cards: filteredCards };
-  const filteredColumns = board.columns.map((column) => (fromColumn.id === column.id ? columnWithoutCard : column));
+  const filteredColumns = board.columns.map((column) => (fromColumn.value === column.value ? columnWithoutCard : column));
   return { ...board, columns: filteredColumns };
 }
 
 function changeCard(board, cardId, newCard) {
   const changedCards = (cards) =>
     replaceElementOfArray(cards)({
-      when: ({ id }) => id === cardId,
+      when: ({ value }) => value === cardId,
       for: (card) => ({ ...card, ...newCard }),
     });
 
