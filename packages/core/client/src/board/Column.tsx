@@ -45,16 +45,16 @@ function Column({
   const api = useAPIClient();
   useEffect(() => {
     getColumnDatas();
-  }, [groupField, children.id]);
+  }, [groupField, children.value]);
 
   const getColumnDatas = () => {
-    if (children.id !== '__unknown__') {
+    if (children.value !== '__unknown__') {
       const filter = isAssociationField
         ? {
-            $and: [{ [groupField.name]: { id: { $eq: children.id } } }],
+            $and: [{ [groupField.name]: { id: { $eq: children.value } } }],
           }
         : {
-            $and: [{ [groupField.name]: { $eq: children.id } }],
+            $and: [{ [groupField.name]: { $eq: children.value } }],
           };
       api
         .resource(name)
@@ -70,7 +70,7 @@ function Column({
     }
   };
   return (
-    <Draggable draggableId={`column-draggable-${children.id}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
+    <Draggable draggableId={`column-draggable-${children.value}`} index={columnIndex} isDragDisabled={disableColumnDrag}>
       {(columnProvided) => {
         const draggablePropsWithoutStyle = pickPropOut(columnProvided.draggableProps, 'style');
 
@@ -87,7 +87,7 @@ function Column({
               '--column-height': fixedBlock ? `calc(100% - ${headerHeight}px)` : 'inherit',
             }}
             className="react-kanban-column"
-            data-testid={`column-${children.id}`}
+            data-testid={`column-${children.value}`}
           >
             <div
               ref={fixedBlock ? (ref) => setHeaderHeight(Math.ceil(ref?.getBoundingClientRect().height || 0)) : null}
@@ -96,7 +96,7 @@ function Column({
               {renderColumnHeader(children)}
             </div>
             {cardAdderPosition === 'top' && allowAddCard && renderCardAdder({ column: children, onConfirm: onCardNew })}
-            <DroppableColumn droppableId={String(children.id)}>
+            <DroppableColumn droppableId={String(children.value)}>
               {cardData?.length ? (
                 <div
                   className="react-kanban-card-skeleton"

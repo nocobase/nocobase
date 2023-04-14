@@ -244,7 +244,6 @@ function BoardContainer(props) {
     onCardNew,
     allowAddCard,
   } = props;
-
   function handleOnDragEnd(event) {
     const coordinates = getCoordinates(event, board);
     if (!coordinates.source) return;

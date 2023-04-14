@@ -1502,7 +1502,7 @@ export const createGanttBlockSchema = (options) => {
   return schema;
 };
 export const createKanbanBlockSchema = (options) => {
-  const { collection, resource, groupField, ...others } = options;
+  const { collection, resource, groupField,columns, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1512,6 +1512,7 @@ export const createKanbanBlockSchema = (options) => {
       resource: resource || collection,
       action: 'list',
       groupField,
+      columns,
       params: {
         paginate: false,
       },

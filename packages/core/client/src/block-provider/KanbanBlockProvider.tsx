@@ -3,12 +3,10 @@ import { createForm } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import uniq from 'lodash/uniq';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useACLRoleContext } from '../acl';
-import { useRequest } from '../api-client';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollectionManager } from '../collection-manager';
 import { FixedBlockWrapper } from '../schema-component';
-import { toColumns } from '../schema-component/antd/kanban/Kanban';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { isAssocField } from '../filter-provider/utils';
 
@@ -101,23 +99,15 @@ const useAssociationNames = (collection) => {
 };
 
 export const KanbanBlockProvider = (props) => {
+  const { columns, collection } = props;
   const params = { ...props.params };
-  const appends = useAssociationNames(props.collection);
+  const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
   const isAssociationField = isAssocField(groupField);
-  let assocService;
   if (!groupField) {
     return null;
   }
   if (isAssociationField) {
-    const options = {
-      url: `${groupField.target}:list`,
-      params: {
-        paginate: false,
-        sort: ['sort'],
-      },
-    };
-    assocService = useRequest(options);
     params['filter'] = {
       $and: [{ [groupField.name]: { id: { $notExists: true } } }],
     };
@@ -130,8 +120,8 @@ export const KanbanBlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <BlockProvider {...props} params={params} assocService={assocService}>
-      <InternalKanbanBlockProvider {...props} params={params} assocService={assocService} groupField={groupField} />
+    <BlockProvider {...props} params={params}>
+      <InternalKanbanBlockProvider {...props} params={params} groupField={groupField} columns={columns} />
     </BlockProvider>
   );
 };
@@ -154,11 +144,17 @@ export const useKanbanBlockProps = () => {
   const field = useField<ArrayField>();
   const ctx = useKanbanBlockContext();
   useEffect(() => {
-    if (!ctx?.service?.loading && !ctx?.assocService?.loading) {
-      ctx.groupField.dataSource = ctx?.assocService?.data?.data;
-      field.value = toColumns(ctx.groupField, ctx?.service?.data?.data);
+    if (!ctx?.service?.loading) {
+      const columns = ctx.columns
+      columns.push({
+        value: '__unknown__',
+        label: 'Unknnwn',
+        color: 'default',
+        cards: ctx?.service?.data?.data,
+      });
+      field.value = columns;
     }
-  }, [ctx?.service?.loading, ctx?.assocService?.loading]);
+  }, [ctx?.service?.loading]);
 
   return {
     groupField: ctx.groupField,

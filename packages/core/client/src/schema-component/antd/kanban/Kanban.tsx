@@ -24,37 +24,37 @@ const useCreateActionProps = () => {
   };
 };
 
-export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
-  const columns:any = {};
-  if (groupField?.dataSource) {
-    groupField?.dataSource?.forEach((item) => {
-      columns[item.id] = {
-        id: item.id,
-        title: item.id,
-        cards: [],
-      };
-    });
-  } else {
-    groupField.uiSchema.enum?.forEach((item) => {
-      columns[item.value] = {
-        id: item.value,
-        title: item.label,
-        color: item.color,
-        cards: [],
-      };
-    });
-  }
-  columns['__unknown__'] = {
-    id: '__unknown__',
-    title: 'Unknown',
-    color: 'default',
-    cards: dataSource,
-  };
-  if (dataSource.length === 0) {
-    delete columns.__unknown__;
-  }
-  return Object.values(columns);
-};
+// export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
+//   const columns:any = {};
+//   if (groupField?.dataSource) {
+//     groupField?.dataSource?.forEach((item) => {
+//       columns[item.id] = {
+//         id: item.id,
+//         title: item.id,
+//         cards: [],
+//       };
+//     });
+//   } else {
+//     groupField.uiSchema.enum?.forEach((item) => {
+//       columns[item.value] = {
+//         id: item.value,
+//         title: item.label,
+//         color: item.color,
+//         cards: [],
+//       };
+//     });
+//   }
+//   columns['__unknown__'] = {
+//     id: '__unknown__',
+//     title: 'Unknown',
+//     color: 'default',
+//     cards: dataSource,
+//   };
+//   if (dataSource.length === 0) {
+//     delete columns.__unknown__;
+//   }
+//   return Object.values(columns);
+// };
 
 export const Kanban: any = observer((props: any) => {
   const { groupField, onCardDragEnd, ...restProps } = useProps(props);
@@ -108,9 +108,9 @@ export const Kanban: any = observer((props: any) => {
         disableCardDrag={restProps.disableCardDrag || disableCardDrag}
         onCardRemove={handleCardRemove}
         onCardDragEnd={handleCardDragEnd}
-        renderColumnHeader={({ title, color }) => (
+        renderColumnHeader={({ label, color }) => (
           <div className={'react-kanban-column-header'}>
-            <Tag color={color}>{title}</Tag>
+            <Tag color={color}>{label}</Tag>
           </div>
         )}
         renderCard={(card, { column, dragging }, index) => {
