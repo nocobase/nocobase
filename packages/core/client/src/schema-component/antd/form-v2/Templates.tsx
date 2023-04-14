@@ -26,7 +26,11 @@ export const Templates = () => {
   }, []);
 
   useEffect(() => {
-    changeFormValues(form, templateData);
+    if (value === templates.length - 1) {
+      return;
+    }
+    const template = templates.find((item) => item.id === value);
+    changeFormValues(form, templateData, template);
   }, [templateData]);
 
   if (templates) {
@@ -96,12 +100,13 @@ async function fetchTemplateData(api, template: { collection: string; dataId: nu
     });
 }
 
-function changeFormValues(form: Form<any>, data) {
+function changeFormValues(form: Form<any>, data, template: { collection: string; dataId: number; fields: string[] }) {
   if (!data) {
     return;
   }
-  forEach(data, (value, key: string) => {
-    if (key.startsWith('__')) return;
-    _.set(form.values, key, value);
+
+  forEach(template.fields, (field: string) => {
+    const key = field.split('.')[0];
+    _.set(form.values, key, _.get(data, key));
   });
 }
