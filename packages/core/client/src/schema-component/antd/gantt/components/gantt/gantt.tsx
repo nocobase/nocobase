@@ -59,7 +59,7 @@ export const Gantt: any = (props: any) => {
   const {
     headerHeight = currentTheme === 'compact' ? (designable ? 53 : 45) : designable ? 65 : 55,
     listCellWidth = '155px',
-    rowHeight = currentTheme === 'compact' ? 45 : 55.56,
+    rowHeight = currentTheme === 'compact' ? 45 : 55,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
