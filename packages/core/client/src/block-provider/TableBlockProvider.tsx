@@ -109,7 +109,7 @@ export const TableBlockProvider = (props) => {
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
-    if (resourceName.includes('.')) {
+    if (resourceName?.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
         childrenColumnName = f.name;
