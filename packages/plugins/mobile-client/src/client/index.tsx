@@ -1,9 +1,7 @@
 import { SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from './locale';
-import { Configuration } from './configuration';
-
-const ComingSoon = () => <div>Coming Soon</div>;
+import { AppConfiguration, InterfaceConfiguration } from './configuration';
 
 export default React.memo((props) => {
   const { t } = useTranslation();
@@ -13,15 +11,15 @@ export default React.memo((props) => {
       settings={{
         ['mobile-client']: {
           title: t('Mobile Client-side'),
-          icon: 'PhoneOutlined',
+          icon: 'MobileOutlined',
           tabs: {
             'interface-configuration': {
               title: t('Interface Configuration'),
-              component: Configuration,
+              component: InterfaceConfiguration,
             },
             'app-configuration': {
               title: t('App Configuration'),
-              component: ComingSoon,
+              component: AppConfiguration,
             },
           },
         },

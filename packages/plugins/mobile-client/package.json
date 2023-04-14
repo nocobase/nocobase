@@ -4,6 +4,8 @@
   "main": "lib/server/index.js",
   "devDependencies": {
     "@nocobase/server": "0.9.1-alpha.2",
-    "@nocobase/test": "0.9.1-alpha.2"
+    "@nocobase/test": "0.9.1-alpha.2",
+    "classnames": "^2.3.1",
+    "@emotion/css": "^11.7.1"
   }
 }
