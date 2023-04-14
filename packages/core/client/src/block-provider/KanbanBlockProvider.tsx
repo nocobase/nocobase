@@ -14,8 +14,8 @@ export const KanbanBlockContext = createContext<any>({});
 const useGroupField = (props) => {
   const { getCollectionField } = useCollectionManager();
   const { groupField, collection } = props;
-  if (typeof groupField === 'string') {
-    return getCollectionField(`${collection}.${groupField}`);
+  if (typeof groupField === 'object') {
+    return getCollectionField(`${collection}.${groupField[0]}`);
   }
   if (groupField?.name) {
     return getCollectionField(groupField?.name);
@@ -120,7 +120,13 @@ export const KanbanBlockProvider = (props) => {
   }
   return (
     <BlockProvider {...props} params={params}>
-      <InternalKanbanBlockProvider {...props} params={params} groupField={groupField} columns={columns} />
+      <InternalKanbanBlockProvider
+        {...props}
+        params={params}
+        groupField={groupField}
+        associateCollectionField={props.groupField}
+        columns={columns}
+      />
     </BlockProvider>
   );
 };

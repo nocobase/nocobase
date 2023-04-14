@@ -16,6 +16,9 @@ export const KanbanBlockInitializer = (props) => {
   const { getCollectionFields, getCollectionFieldsOptions } = useCollectionManager();
   const options: any = useContext(SchemaOptionsContext);
   const api = useAPIClient();
+  const getAssociateResource = (collectionName) => {
+    return api.resource(collectionName);
+  };
   return (
     <DataBlockInitializer
       {...props}
@@ -29,7 +32,7 @@ export const KanbanBlockInitializer = (props) => {
         const values = await FormDialog(t('Create kanban block'), () => {
           return (
             <SchemaComponentOptions
-              scope={{ ...options.scope, collectionFields }}
+              scope={{ ...options.scope, collectionFields, getAssociateResource }}
               components={{ ...options.components, KanbanOptions }}
             >
               <FormLayout layout={'vertical'}>
@@ -59,7 +62,7 @@ export const KanbanBlockInitializer = (props) => {
                           dependencies: ['groupField'],
                           fulfill: {
                             schema: {
-                              'x-component-props': '{{{collectionFields,...$form.values}}}', //任意层次属性都支持表达式
+                              'x-component-props': '{{{getAssociateResource,collectionFields,...$form.values}}}',
                             },
                           },
                         },
@@ -73,7 +76,7 @@ export const KanbanBlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
-        const groupField=values.groupField?.[0];
+        const groupField = values.groupField?.[0];
         const sortName = `${groupField}_sort`;
         const exists = collectionFields?.find((field) => field.name === sortName);
         if (!exists) {
@@ -88,9 +91,9 @@ export const KanbanBlockInitializer = (props) => {
         }
         insert(
           createKanbanBlockSchema({
-            groupField: groupField,
+            groupField: values.groupField,
             collection: item.name,
-            columns:values.options,
+            columns: values.options,
             params: {
               sort: [sortName],
               paginate: false,

@@ -3,17 +3,20 @@ import { observer } from '@formily/react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
+import { useAPIClient } from '../../api-client';
 
 export const KanbanOptions = observer((props) => {
-  const { groupField, collectionFields } = props;
+  const { groupField, collectionFields, getAssociateResource } = props;
   const [dataSource, setDataSource] = useState([]);
   const { t } = useTranslation();
+  console.log(getAssociateResource);
 
   useEffect(() => {
     if (groupField) {
       const field = collectionFields.find((v) => {
         return v.name === groupField[0];
       });
+      console.log(field);
       if (['select', 'radioGroup'].includes(field.interface)) {
         const data = field.uiSchema.enum.map((v) => {
           return {
@@ -21,6 +24,20 @@ export const KanbanOptions = observer((props) => {
           };
         });
         setDataSource(data);
+      } else {
+        const resource = getAssociateResource(field.target);
+        resource.list({ paginate: false }).then(({ data }) => {
+          const optionsData = data?.data.map((v) => {
+            return {
+              ...v,
+              value: v[groupField[1]],
+              label: v[groupField[1]],
+            };
+          });
+          setDataSource(optionsData);
+        });
+        console.log(collectionFields);
+        console.log(groupField);
       }
     }
   }, [groupField]);

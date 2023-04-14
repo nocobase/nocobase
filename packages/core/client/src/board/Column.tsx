@@ -39,7 +39,7 @@ function Column({
   allowAddCard,
   cardAdderPosition = 'top',
 }) {
-  const { fixedBlock, groupField, field } = useKanbanBlockContext();
+  const { fixedBlock, groupField, associateCollectionField } = useKanbanBlockContext();
   const { name } = useCollection();
   const [headerHeight, setHeaderHeight] = useState(0);
   const [cardData, setCardData] = useState(children.cards);
@@ -55,7 +55,7 @@ function Column({
     if (children.value !== '__unknown__') {
       const filter = isAssociationField
         ? {
-            $and: [{ [groupField.name]: { id: { $eq: children.value } } }],
+            $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: children.value } } }],
           }
         : {
             $and: [{ [groupField.name]: { $eq: children.value } }],
