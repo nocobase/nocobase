@@ -2,6 +2,7 @@ import { useField } from '@formily/react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { TableBlockProvider } from './TableBlockProvider';
+import {useCollection} from '../collection-manager/hooks'
 
 export const GanttBlockContext = createContext<any>({});
 
@@ -11,6 +12,7 @@ const formatData = (
   tasks: any[] = [],
   projectId: any = undefined,
   hideChildren: boolean = false,
+  isDisabled?:boolean
 ) => {
   data.forEach((item: any) => {
     const percent=item[fieldNames.progress] * 100;
@@ -25,8 +27,9 @@ const formatData = (
         hideChildren: hideChildren,
         project: projectId,
         color: item.color,
+        isDisabled
       });
-      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren);
+      formatData(item.children, fieldNames, tasks, item.id + '', hideChildren,isDisabled);
     } else {
       tasks.push({
         start: item[fieldNames.start] ? new Date(item[fieldNames.start]) : undefined,
@@ -37,6 +40,7 @@ const formatData = (
         progress: percent>100?100:percent || 0,
         project: projectId,
         color: item.color,
+        isDisabled
       });
     }
   });
@@ -81,6 +85,8 @@ export const useGanttBlockContext = () => {
 export const useGanttBlockProps = () => {
   const ctx = useGanttBlockContext();
   const [tasks, setTasks] = useState<any>([]);
+  const collection=useCollection();
+  const isDisabled=collection.template==='view';
   const onExpanderClick = (task: any) => {
     const data = ctx.field.data;
     const tasksData = data.map((t: any) => (t.id === task.id ? task : t));
@@ -88,13 +94,13 @@ export const useGanttBlockProps = () => {
     ctx.field.data = tasksData;
   };
   const expandAndCollapseAll = (flag) => {
-    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag);
+    const data = formatData(ctx.service.data?.data, ctx.fieldNames, [], undefined, flag,isDisabled);
     setTasks(data);
     ctx.field.data = data;
   };
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const data = formatData(ctx.service.data?.data, ctx.fieldNames);
+      const data = formatData(ctx.service.data?.data, ctx.fieldNames,[],undefined,false,isDisabled);
       setTasks(data);
       ctx.field.data = data;
     }
