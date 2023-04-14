@@ -14,6 +14,8 @@ export const useCollectionState = (currentCollectionName: string) => {
     if (!collectionName) {
       return [];
     }
+
+    // 过滤掉系统字段
     const exceptInterfaces = [
       'id',
       'sort',
@@ -41,7 +43,7 @@ export const useCollectionState = (currentCollectionName: string) => {
       usePrefix: true,
     });
 
-    // 过滤掉当前集合中不存在的字段
+    // 过滤掉当前表中不存在的字段
     return fieldsOptions.filter((field) => {
       return currentFieldsOptions.some((item) => item.value === field.value);
     });

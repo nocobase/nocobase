@@ -5,6 +5,7 @@ import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
+import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
@@ -15,6 +16,7 @@ export const Templates = () => {
   const [value, setValue] = React.useState(defaultTemplate?.id || templates.length);
   const api = useAPIClient();
   const [templateData, setTemplateData] = React.useState<any>(null);
+  const { getCollectionFields } = useCollectionManager();
   const form = useForm();
 
   useEffect(() => {
@@ -30,7 +32,8 @@ export const Templates = () => {
       return;
     }
     const template = templates.find((item) => item.id === value);
-    changeFormValues(form, templateData, template);
+    const fields = getCollectionFields(template.collection);
+    changeFormValues(form, templateData, template, fields);
   }, [templateData]);
 
   if (templates) {
@@ -100,13 +103,70 @@ async function fetchTemplateData(api, template: { collection: string; dataId: nu
     });
 }
 
-function changeFormValues(form: Form<any>, data, template: { collection: string; dataId: number; fields: string[] }) {
+function changeFormValues(
+  form: Form<any>,
+  data,
+  template: { collection: string; dataId: number; fields: string[] },
+  fields: any[],
+) {
   if (!data) {
     return;
   }
 
+  const deleteSystemFields = (data) => {
+    delete data.id;
+    delete data.sort;
+    delete data.createdById;
+    delete data.createdBy;
+    delete data.createdAt;
+    delete data.updatedById;
+    delete data.updatedBy;
+    delete data.updatedAt;
+  };
+
+  const map = {
+    hasOne(data, fieldData) {
+      deleteSystemFields(data);
+      delete data[fieldData.targetKey];
+      delete data[fieldData.foreignKey];
+      return data;
+    },
+    hasMany(data, fieldData) {
+      return data?.map((item) => {
+        deleteSystemFields(item);
+        delete item[fieldData.targetKey];
+        delete item[fieldData.foreignKey];
+        return item;
+      });
+    },
+    belongsTo(data, fieldData) {
+      deleteSystemFields(data);
+      return data;
+    },
+    belongsToMany(data, fieldData, parentData) {
+      delete parentData[fieldData.sourceKey];
+      return data.map((item) => {
+        deleteSystemFields(item);
+        delete item[fieldData.targetKey];
+        const through = item[fieldData.through];
+        if (through) {
+          deleteSystemFields(through);
+          delete through[fieldData.foreignKey];
+          delete through[fieldData.otherKey];
+        }
+        return item;
+      });
+    },
+  };
+
   forEach(template.fields, (field: string) => {
     const key = field.split('.')[0];
-    _.set(form.values, key, _.get(data, key));
+    const fieldData = fields.find((item) => item.name === key);
+
+    _.set(
+      form.values,
+      key,
+      map[fieldData.type] ? map[fieldData.type](_.get(data, key), fieldData, data) : _.get(data, key),
+    );
   });
 }
