@@ -56,10 +56,11 @@ const GanttRecordViewer = (props) => {
 export const Gantt: any = (props: any) => {
   const { designable } = useDesignable();
   const currentTheme = localStorage.getItem('NOCOBASE_THEME');
+  const tableRowHeight = currentTheme === 'compact' ? 45 : 55.56;
   const {
     headerHeight = currentTheme === 'compact' ? (designable ? 53 : 45) : designable ? 65 : 55,
     listCellWidth = '155px',
-    rowHeight = currentTheme === 'compact' ? 45 : 55,
+    rowHeight = tableRowHeight,
     ganttHeight = 0,
     preStepsCount = 1,
     barFill = 60,
@@ -489,6 +490,9 @@ export const Gantt: any = (props: any) => {
         className={css`
           .ant-table-container::after {
             box-shadow: none !important;
+          }
+          .ant-table-row {
+            height: ${tableRowHeight}px;
           }
         `}
       >
