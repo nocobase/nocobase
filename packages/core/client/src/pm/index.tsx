@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import {
   Layout,
   Menu,
@@ -470,8 +470,21 @@ const SettingsCenter = (props) => {
       };
     });
   return (
-    <div>
-      <Layout>
+    <div
+      className={cx(
+        'nb-setting-center',
+        css`
+          &.nb-setting-center {
+            flex: 1;
+          }
+        `,
+      )}
+    >
+      <Layout
+        className={css`
+          height: 100%;
+        `}
+      >
         <div
           style={
             {
@@ -510,7 +523,12 @@ const SettingsCenter = (props) => {
             items={menuItems as any}
           />
         </Layout.Sider>
-        <Layout.Content>
+        <Layout.Content
+          className={css`
+            display: flex;
+            flex-direction: column;
+          `}
+        >
           {aclPluginTabCheck && (
             <PageHeader
               ghost={false}
@@ -529,7 +547,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div style={{ margin: 'var(--nb-spacing)' }}>
+          <div style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (
