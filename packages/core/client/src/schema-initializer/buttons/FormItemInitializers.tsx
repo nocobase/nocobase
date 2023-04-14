@@ -4,6 +4,7 @@ import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
   gridRowColWrap,
+  removeGridFormItem,
   useAssociatedFormItemInitializerFields,
   useFilterAssociatedFormItemInitializerFields,
   useFilterFormItemInitializerFields,
@@ -61,16 +62,23 @@ export const FormItemInitializers = (props: any) => {
       type: 'divider',
     },
     {
-      type: 'item',
-      title: t('Use templates'),
-      component: 'CollectionFieldInitializer',
-      schema: {
-        type: 'void',
-        'x-editable': false,
-        'x-decorator': 'FormItem',
-        'x-designer': 'FormV2.Templates.Designer',
-        'x-component': 'FormV2.Templates',
-      },
+      type: 'itemGroup',
+      title: t('Display templates select'),
+      children: [
+        {
+          type: 'item',
+          title: t('Use templates'),
+          component: 'CollectionFieldInitializer',
+          remove: removeGridFormItem,
+          schema: {
+            type: 'void',
+            'x-collection-field': 'template',
+            'x-decorator': 'FormItem',
+            'x-designer': 'FormV2.Templates.Designer',
+            'x-component': 'FormV2.Templates',
+          },
+        },
+      ],
     },
   );
 
