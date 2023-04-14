@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../../schema-component';
 import { SchemaInitializer } from '../SchemaInitializer';
 import {
   gridRowColWrap,
@@ -10,7 +11,6 @@ import {
   useFormItemInitializerFields,
   useInheritsFormItemInitializerFields,
 } from '../utils';
-import { useCompile } from '../../schema-component';
 
 // 表单里配置字段
 export const FormItemInitializers = (props: any) => {
@@ -55,6 +55,24 @@ export const FormItemInitializers = (props: any) => {
         children: associationFields,
       },
     );
+
+  fieldItems.push(
+    {
+      type: 'divider',
+    },
+    {
+      type: 'item',
+      title: t('Use templates'),
+      component: 'CollectionFieldInitializer',
+      schema: {
+        type: 'void',
+        'x-editable': false,
+        'x-decorator': 'FormItem',
+        'x-designer': 'FormV2.Templates.Designer',
+        'x-component': 'FormV2.Templates',
+      },
+    },
+  );
 
   fieldItems.push(
     {

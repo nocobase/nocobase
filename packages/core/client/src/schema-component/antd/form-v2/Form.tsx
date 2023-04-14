@@ -1,12 +1,11 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit, onFieldChange } from '@formily/core';
-import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Field, createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
-import { gridRowColWrap } from '../../../schema-initializer';
 import { useProps } from '../../hooks/useProps';
 import { linkageMergeAction } from './utils';
 
@@ -171,23 +170,26 @@ const WithoutForm = (props) => {
   );
 };
 
-export const Form: React.FC<FormProps> & { Designer?: any; FilterDesigner?: any; ReadPrettyDesigner?: any } = observer(
-  (props) => {
-    const field = useField<Field>();
-    const { form, disabled, ...others } = useProps(props);
-    const formDisabled = disabled || field.disabled;
-    return (
-      <ConfigProvider componentDisabled={formDisabled}>
-        <form>
-          <Spin spinning={field.loading || false}>
-            {form ? (
-              <WithForm form={form} {...others} disabled={formDisabled} />
-            ) : (
-              <WithoutForm {...others} disabled={formDisabled} />
-            )}
-          </Spin>
-        </form>
-      </ConfigProvider>
-    );
-  },
-);
+export const Form: React.FC<FormProps> & {
+  Designer?: any;
+  FilterDesigner?: any;
+  ReadPrettyDesigner?: any;
+  Templates?: any;
+} = observer((props) => {
+  const field = useField<Field>();
+  const { form, disabled, ...others } = useProps(props);
+  const formDisabled = disabled || field.disabled;
+  return (
+    <ConfigProvider componentDisabled={formDisabled}>
+      <form>
+        <Spin spinning={field.loading || false}>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
+        </Spin>
+      </form>
+    </ConfigProvider>
+  );
+});
