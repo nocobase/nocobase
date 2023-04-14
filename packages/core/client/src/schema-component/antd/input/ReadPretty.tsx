@@ -58,7 +58,7 @@ ReadPretty.TextArea = (props) => {
     value
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={{ overflowWrap: 'break-word', ...props.style }}>
       {props.addonBefore}
       {props.prefix}
       {content}
@@ -94,7 +94,7 @@ ReadPretty.Html = (props) => {
     </EllipsisWithTooltip>
   );
   return (
-    <div className={cls(prefixCls, props.className)} style={props.style}>
+    <div className={cls(prefixCls, props.className)} style={{ overflowWrap: 'break-word', ...props.style }}>
       {props.addonBefore}
       {props.prefix}
       {content}
