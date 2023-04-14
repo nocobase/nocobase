@@ -59,6 +59,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
 const getLinkageRules = (fieldSchema) => {
   let linkageRules = null;
   fieldSchema.mapProperties((schema) => {
+    console.log(schema);
     if (schema['x-linkage-rules']) {
       linkageRules = schema['x-linkage-rules'];
     }
@@ -70,10 +71,8 @@ const WithForm = (props) => {
   const { form } = props;
   const fieldSchema = useFieldSchema();
   const { setFormValueChanged } = useActionContext();
-  const linkageRules = useMemo(
-    () => (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [],
-    [fieldSchema.properties?.grid?.['x-linkage-rules']],
-  );
+  const linkageRules =
+    (getLinkageRules(fieldSchema) || fieldSchema.parent?.['x-linkage-rules'])?.filter((k) => !k.disabled) || [];
   useEffect(() => {
     const id = uid();
     form.addEffects(id, () => {
@@ -119,7 +118,6 @@ const WithForm = (props) => {
   useEffect(() => {
     const id = uid();
     const linkagefields = [];
-    const formGraph = form.getFormGraph();
     form.addEffects(id, () => {
       return linkageRules.map((v, index) => {
         return v.actions?.map((h) => {
@@ -142,8 +140,6 @@ const WithForm = (props) => {
     });
     return () => {
       form.removeEffects(id);
-      form.clearFormGraph();
-      form.setFormGraph(formGraph);
     };
   }, [linkageRules]);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
