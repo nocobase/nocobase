@@ -115,6 +115,7 @@ function changeFormValues(
   }
 
   const deleteSystemFields = (data) => {
+    if (!data) return;
     delete data.id;
     delete data.sort;
     delete data.createdById;
@@ -127,6 +128,7 @@ function changeFormValues(
 
   const map = {
     hasOne(data, fieldData) {
+      if (!data) return data;
       deleteSystemFields(data);
       delete data[fieldData.targetKey];
       delete data[fieldData.foreignKey];
@@ -134,6 +136,7 @@ function changeFormValues(
     },
     hasMany(data, fieldData) {
       return data?.map((item) => {
+        if (!item) return item;
         deleteSystemFields(item);
         delete item[fieldData.targetKey];
         delete item[fieldData.foreignKey];
@@ -141,12 +144,16 @@ function changeFormValues(
       });
     },
     belongsTo(data, fieldData) {
+      if (!data) return data;
       deleteSystemFields(data);
       return data;
     },
     belongsToMany(data, fieldData, parentData) {
-      delete parentData[fieldData.sourceKey];
+      if (parentData) {
+        delete parentData[fieldData.sourceKey];
+      }
       return data.map((item) => {
+        if (!item) return item;
         deleteSystemFields(item);
         delete item[fieldData.targetKey];
         const through = item[fieldData.through];
