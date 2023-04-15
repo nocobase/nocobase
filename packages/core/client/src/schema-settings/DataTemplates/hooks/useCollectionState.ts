@@ -17,7 +17,7 @@ export const useCollectionState = (currentCollectionName: string) => {
 
     // 过滤掉系统字段
     const exceptInterfaces = [
-      'id',
+      // 'id',
       'sort',
       'createdById',
       'createdBy',
@@ -31,6 +31,7 @@ export const useCollectionState = (currentCollectionName: string) => {
       allowAllTypes: true,
       exceptInterfaces,
       usePrefix: true,
+      maxDepth: 2,
     });
     if (currentCollectionName === collectionName) {
       return currentFieldsOptions;
