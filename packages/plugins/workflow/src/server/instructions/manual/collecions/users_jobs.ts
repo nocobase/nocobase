@@ -46,5 +46,9 @@ export default {
       type: 'jsonb',
       name: 'result',
     },
+    {
+      type: 'json',
+      name: 'meta',
+    },
   ],
 } as CollectionOptions;

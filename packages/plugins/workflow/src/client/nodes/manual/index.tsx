@@ -70,12 +70,13 @@ export default {
         schema: {
           type: 'object',
           'x-component': 'SchemaConfig',
+          default: null
         },
       }
     },
-    actions: {
-      type: 'array',
-      default: [JOB_STATUS.RESOLVED]
+    forms: {
+      type: 'object',
+      default: {}
     }
   },
   view: {

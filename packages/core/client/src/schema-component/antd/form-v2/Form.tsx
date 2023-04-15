@@ -59,7 +59,6 @@ const FormDecorator: React.FC<FormProps> = (props) => {
 const getLinkageRules = (fieldSchema) => {
   let linkageRules = null;
   fieldSchema.mapProperties((schema) => {
-    console.log(schema);
     if (schema['x-linkage-rules']) {
       linkageRules = schema['x-linkage-rules'];
     }

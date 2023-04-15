@@ -1,6 +1,6 @@
 import React, { useContext, createContext, useMemo, useEffect, useState } from "react";
 import { createForm } from '@formily/core';
-import { observer, useForm, useField, useFieldSchema } from '@formily/react';
+import { observer, useForm, useField, useFieldSchema, FormContext } from '@formily/react';
 import { Tag } from 'antd';
 import parse from 'json-templates';
 import { css } from "@emotion/css";
@@ -327,32 +327,68 @@ export function WorkflowTodo() {
   )
 }
 
-const ManualActionStatusContext = createContext<number | null>(null);
+function ActionBarProvider(props) {
+  // * status is done:
+  //   1. form is this form: show action button, and emphasis used status button
+  //   2. form is not this form: hide action bar
+  // * status is not done:
+  //   1. current user: show action bar
+  //   2. not current user: disabled action bar
 
-function useManualActionStatusContext() {
-  return useContext(ManualActionStatusContext);
+  const { data: user } = useCurrentUserContext();
+  const { status, meta, userId } = useRecord();
+  const buttonSchema = useFieldSchema();
+  const { name } = buttonSchema.parent.toJSON();
+
+  let { children: content } = props;
+  if (status) {
+    if (name !== meta?.form) {
+      content = null;
+    }
+  } else {
+    if (user?.data?.id !== userId) {
+      content = null;
+    }
+  }
+
+  return content;
 }
 
+const ManualActionStatusContext = createContext<number | null>(null);
+
 function ManualActionStatusProvider({ value, children }) {
+  const { status } = useRecord();
+  const button = useField();
+
+  useEffect(() => {
+    if (status) {
+      button.disabled = true;
+      button.visible = status === value;
+    }
+  }, [status, value]);
+
   return (
     <ManualActionStatusContext.Provider value={value}>
       {children}
     </ManualActionStatusContext.Provider>
-  )
+  );
 }
 
 function useSubmit() {
   const api = useAPIClient();
   const { setVisible } = useActionContext();
   const { values, submit } = useForm();
-  const nextStatus = useManualActionStatusContext();
+  const buttonSchema = useFieldSchema();
+  const nextStatus = useContext(ManualActionStatusContext);
   const { service } = useTableBlockContext();
   const { id } = useRecord();
   return {
     async run() {
       await submit();
+      const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
         filterByTk: id,
+        form: name,
         values: {
           status: nextStatus,
           result: values
@@ -362,6 +398,22 @@ function useSubmit() {
       service.refresh();
     }
   }
+}
+
+function useFormBlockProps() {
+  const { status, result, meta, userId } = useRecord();
+  const { data: user } = useCurrentUserContext();
+  const { name } = useFieldSchema();
+
+  const pattern = Boolean(status)
+    ? (name === meta?.form ? 'readPretty' : 'disabled')
+    : (user?.data?.id !== userId ? 'disabled' : 'editable');
+  const form = useMemo(() => createForm({
+    pattern,
+    initialValues: name === meta?.form ? result : {}
+  }), [result, name, meta]);
+
+  return { form };
 }
 
 function useFlowRecordFromBlock(opts) {
@@ -422,24 +474,12 @@ function FlowContextProvider(props) {
 
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status, result, updatedAt, userId } = useRecord();
-  const { data: user } = useCurrentUserContext();
+  const { id, node, workflow, status, updatedAt } = useRecord();
 
-  const disabled = Boolean(status) || user?.data?.id !== userId;
-  const form = useMemo(() => createForm({
-    readPretty: disabled,
-    disabled,
-    initialValues: result
-  }), [result]);
-
-  const { blocks, collection, actions } = node.config.schema ?? {};
-  const availableActions = Object.keys(actions).reduce((buttons, key) => ({ ...buttons, [key]: {
-    ...actions[key],
-    'x-disabled': disabled
-  } }), {});
+  const { schema } = node.config ?? {};
 
   const statusOption = JobStatusOptionsMap[status];
-  const actionSchema = status
+  const footerSchema = status
     ? {
       date: {
         type: 'void',
@@ -461,49 +501,46 @@ WorkflowTodo.Drawer = function () {
         'x-content': statusOption.label
       }
     }
-    : availableActions;
+    : null;
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-      <CollectionProvider collection={collection}>
-        <SchemaComponent
-          components={{
-            Tag,
-            ManualActionStatusProvider,
-            FlowContextProvider
-          }}
-          schema={{
-            type: 'void',
-            name: `drawer-${id}-${status}`,
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              form,
+      <SchemaComponent
+        components={{
+          Tag,
+          FormCollectionProvider: CollectionProvider,
+          ActionBarProvider,
+          ManualActionStatusProvider,
+          FlowContextProvider
+        }}
+        schema={{
+          type: 'void',
+          name: `drawer-${id}-${status}`,
+          'x-component': 'Action.Drawer',
+          'x-component-props': {
+            className: 'nb-action-popup',
+          },
+          title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
+          properties: {
+            tabs: {
+              type: 'void',
+              'x-decorator': 'FlowContextProvider',
+              'x-component': 'Tabs',
+              properties: schema,
             },
-            'x-component': 'Action.Drawer',
-            'x-component-props': {
-              className: 'nb-action-popup',
-            },
-            title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
-            properties: {
-              tabs: {
-                type: 'void',
-                'x-decorator': 'FlowContextProvider',
-                'x-component': 'Tabs',
-                properties: blocks,
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Drawer.Footer',
-                properties: actionSchema
-              }
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
+              properties: footerSchema
             }
-          }}
-          scope={{
-            useSubmit,
-            useFlowRecordFromBlock
-          }}
-        />
-      </CollectionProvider>
+          }
+        }}
+        scope={{
+          useSubmit,
+          useFormBlockProps,
+          useFlowRecordFromBlock
+        }}
+      />
     </SchemaComponentContext.Provider>
   )
 }
