@@ -18,7 +18,7 @@ export const FormDataTemplates = observer((props: any) => {
       properties: {
         templates: {
           type: 'array',
-          default: defaultValues,
+          default: defaultValues?.templates,
           'x-component': 'ArrayCollapse',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -147,6 +147,21 @@ export const FormDataTemplates = observer((props: any) => {
               type: 'void',
               title: '{{ t("Add a template") }}',
               'x-component': 'ArrayCollapse.Addition',
+            },
+          },
+        },
+        // @ts-ignore
+        checkbox: {
+          type: 'void',
+          'x-component': 'FormLayout',
+          properties: {
+            // @ts-ignore
+            display: {
+              type: 'boolean',
+              title: '{{ t("Display data template selector") }}',
+              default: defaultValues?.display === undefined ? true : defaultValues?.display,
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
             },
           },
         },

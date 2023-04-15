@@ -1003,9 +1003,9 @@ SchemaSettings.LinkageRules = (props) => {
 
 export const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
-  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   return {
-    templates: gridSchema?.['x-data-templates'] || fieldSchema?.['x-data-templates'],
+    templateData: formSchema?.['x-template-data'],
   };
 };
 
@@ -1015,7 +1015,7 @@ SchemaSettings.DataTemplates = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
-  const { templates } = useDataTemplates();
+  const { templateData } = useDataTemplates();
 
   return (
     <SchemaSettings.ModalItem
@@ -1032,7 +1032,7 @@ SchemaSettings.DataTemplates = (props) => {
               'x-component-props': {
                 useProps: () => {
                   return {
-                    defaultValues: templates,
+                    defaultValues: templateData,
                     collectionName,
                   };
                 },
@@ -1045,7 +1045,7 @@ SchemaSettings.DataTemplates = (props) => {
         const uid = formSchema['x-uid'];
         const schema = {
           ['x-uid']: uid,
-          ['x-data-templates']: v.fieldReaction.templates || [],
+          ['x-template-data']: v.fieldReaction || {},
         };
 
         dn.emit('patch', {

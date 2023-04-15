@@ -9,18 +9,22 @@ import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 
 interface ITemplate {
-  id?: number;
-  title: string;
-  collection: string;
-  dataId: number;
-  fields: string[];
-  notUseTemplate?: boolean;
-  default?: boolean;
+  templates: {
+    id?: number;
+    title: string;
+    collection: string;
+    dataId: number;
+    fields: string[];
+    notUseTemplate?: boolean;
+    default?: boolean;
+  }[];
+  /** 是否在 Form 区块显示模板选择器 */
+  display: boolean;
 }
 
 export const Templates = ({ style = {}, form }) => {
   const fieldSchema = useFieldSchema();
-  const templates = findDataTemplates(fieldSchema);
+  const { templates = [], display = true } = findDataTemplates(fieldSchema);
   const defaultTemplate = templates.find((item) => item.default);
   const [value, setValue] = React.useState(defaultTemplate?.id === undefined ? templates.length : defaultTemplate?.id);
   const api = useAPIClient();
@@ -46,7 +50,7 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, [templateData]);
 
-  if (!templates.length) {
+  if (!templates.length || !display) {
     return null;
   }
 
@@ -73,12 +77,12 @@ export const Templates = ({ style = {}, form }) => {
   );
 };
 
-function findDataTemplates(fieldSchema): ITemplate[] {
+function findDataTemplates(fieldSchema): ITemplate {
   const formSchema = findFormBlock(fieldSchema);
   if (formSchema) {
-    return _.cloneDeep(formSchema['x-data-templates']) || [];
+    return _.cloneDeep(formSchema['x-template-data']) || {};
   }
-  return [];
+  return {} as ITemplate;
 }
 
 async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }) {
@@ -168,7 +172,7 @@ function changeFormValues(
   });
 }
 
-function addId(templates: ITemplate[]) {
+function addId(templates: ITemplate['templates']) {
   templates.forEach((item, index) => {
     item.id = index;
     item.notUseTemplate = false;
@@ -177,5 +181,5 @@ function addId(templates: ITemplate[]) {
     title: '不使用模板',
     id: templates.length,
     notUseTemplate: true,
-  } as ITemplate);
+  } as ITemplate['templates'][0]);
 }
