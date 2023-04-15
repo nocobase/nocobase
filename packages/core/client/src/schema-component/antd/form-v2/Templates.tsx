@@ -173,13 +173,12 @@ function changeFormValues(
 }
 
 function addId(templates: ITemplate['templates']) {
+  templates.unshift({
+    title: '不使用模板',
+    notUseTemplate: true,
+  } as ITemplate['templates'][0]);
   templates.forEach((item, index) => {
     item.id = index;
     item.notUseTemplate = false;
   });
-  templates.push({
-    title: '不使用模板',
-    id: templates.length,
-    notUseTemplate: true,
-  } as ITemplate['templates'][0]);
 }
