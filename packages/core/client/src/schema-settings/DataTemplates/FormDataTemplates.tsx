@@ -1,5 +1,5 @@
 import { Schema, observer } from '@formily/react';
-import { TreeSelect } from 'antd';
+import { Tag, TreeSelect } from 'antd';
 import React, { useMemo } from 'react';
 import { AssociationSelect, SchemaComponent } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -118,6 +118,7 @@ export const FormDataTemplates = observer((props: any) => {
                             disabled: '{{ !$deps[0] }}',
                             componentProps: {
                               treeData: '{{ getEnableFieldTree($deps[0]) }}',
+                              tagRender: '{{ getTagRender(getEnableFieldTree($deps[0])) }}',
                             },
                           },
                         },
@@ -172,5 +173,29 @@ export const FormDataTemplates = observer((props: any) => {
     [collectionList],
   );
 
-  return <SchemaComponent components={components} scope={{ getEnableFieldTree }} schema={schema} />;
+  return <SchemaComponent components={components} scope={{ getEnableFieldTree, getTagRender }} schema={schema} />;
 });
+
+function getTagRender(treeData: any) {
+  return (props: any) => {
+    const { value, onClose, disabled, closable } = props;
+    const label = findLabel(value, treeData);
+    return (
+      <Tag closable={closable && !disabled} onClose={onClose}>
+        {label}
+      </Tag>
+    );
+  };
+}
+
+function findLabel(field: string, treeData: any) {
+  const list = field?.split('.') || [];
+
+  return list
+    .map((value, index) => {
+      const data = treeData?.find((item: any) => item.value === list.slice(0, index + 1).join('.'));
+      treeData = data?.children || [];
+      return data?.label;
+    })
+    .join(' / ');
+}
