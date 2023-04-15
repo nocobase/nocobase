@@ -24,13 +24,14 @@ export const FormDesigner = () => {
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.LinkageRules collectionName={name} />
+      {_.isEmpty(record) ? <SchemaSettings.DataTemplates collectionName={name} /> : null}
+      <SchemaSettings.Divider />
       <SchemaSettings.FormItemTemplate
         componentName={'FormItem'}
         collectionName={name}
         resourceName={defaultResource}
       />
-      <SchemaSettings.LinkageRules collectionName={name} />
-      {_.isEmpty(record) ? <SchemaSettings.DataTemplates collectionName={name} /> : null}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

@@ -376,7 +376,7 @@ SchemaSettings.FormItemTemplate = (props) => {
         });
       }}
     >
-      {t('Save as template')}
+      {t('Save as block template')}
     </SchemaSettings.Item>
   );
 };
@@ -1019,13 +1019,13 @@ SchemaSettings.DataTemplates = (props) => {
 
   return (
     <SchemaSettings.ModalItem
-      title={t('Select existing data as template')}
+      title={t('Form data templates')}
       components={{ ArrayCollapse, FormLayout }}
       width={770}
       schema={
         {
           type: 'object',
-          title: t('Select existing data as template'),
+          title: t('Form data templates'),
           properties: {
             fieldReaction: {
               'x-component': FormDataTemplates,
