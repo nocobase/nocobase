@@ -2,6 +2,7 @@ import { useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 
@@ -19,12 +20,31 @@ interface ITemplate {
   display: boolean;
 }
 
-export const Templates = ({ style = {}, form }) => {
+const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
+  const { t } = useTranslation();
   const { templates = [], display = true } = findDataTemplates(fieldSchema);
-  const defaultTemplate = templates.find((item) => item.default);
-  const [value, setValue] = React.useState(defaultTemplate?.id === undefined ? templates.length : defaultTemplate?.id);
+  const items: any = [
+    {
+      id: -1,
+      title: t('None'),
+      notUseTemplate: true,
+    },
+  ].concat(templates.map<any>((t, i) => ({ ...t, id: i })));
+  const defaultTemplate = items.find((item) => item.default);
+  return {
+    templates: items,
+    display,
+    defaultTemplate,
+    enabled: templates.length > 0,
+  };
+};
+
+export const Templates = ({ style = {}, form }) => {
+  const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const [value, setValue] = React.useState(defaultTemplate?.id);
   const api = useAPIClient();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (defaultTemplate) {
@@ -35,8 +55,6 @@ export const Templates = ({ style = {}, form }) => {
       });
     }
   }, []);
-
-  addId(templates);
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
@@ -49,13 +67,15 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, []);
 
-  if (!templates.length || !display) {
+  if (!enabled || !display) {
     return null;
   }
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em', ...style }}>
-      <label style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap' }}>数据模板：</label>
+      <label style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap', marginRight: 8 }}>
+        {t('Data template')}:{' '}
+      </label>
       <Select
         style={{ width: '8em' }}
         options={templates}
@@ -86,14 +106,4 @@ async function fetchTemplateData(api, template: { collection: string; dataId: nu
     .then((data) => {
       return data.data?.data;
     });
-}
-
-function addId(templates: ITemplate['templates']) {
-  templates.unshift({
-    title: '不使用模板',
-    notUseTemplate: true,
-  } as ITemplate['templates'][0]);
-  templates.forEach((item, index) => {
-    item.id = index;
-  });
 }

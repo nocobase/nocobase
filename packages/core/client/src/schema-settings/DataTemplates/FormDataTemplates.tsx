@@ -72,7 +72,7 @@ export const FormDataTemplates = observer((props: any) => {
                       mapOptions: (item) => {
                         // TODO: 应该使用 item.title 字段的值作为 label
                         return {
-                          label: `#${item.id} 表名`,
+                          label: item.id,
                           value: item.id,
                         };
                       },
