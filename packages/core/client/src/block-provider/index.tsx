@@ -9,5 +9,6 @@ export * from './TableBlockProvider';
 export * from './TableFieldProvider';
 export * from './TableSelectorProvider';
 export * from './FormFieldProvider';
-export * from './GanttBlockProvider'
+export * from './GanttBlockProvider';
 export * from './SharedFilterProvider';
+export * from './KanbanV2BlockProvider';

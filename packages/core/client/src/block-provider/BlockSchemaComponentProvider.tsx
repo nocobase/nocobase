@@ -7,6 +7,8 @@ import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
 import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
+import { KanbanV2BlockProvider, useKanbanV2BlockProps } from './KanbanV2BlockProvider';
+
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
@@ -27,6 +29,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         FormFieldProvider,
         DetailsBlockProvider,
         KanbanBlockProvider,
+        KanbanV2BlockProvider,
         RecordLink,
       }}
       scope={{
@@ -42,6 +45,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableBlockProps,
         useTableSelectorProps,
         useKanbanBlockProps,
+        useKanbanV2BlockProps,
         useGanttBlockProps,
       }}
     >
