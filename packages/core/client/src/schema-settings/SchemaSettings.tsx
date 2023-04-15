@@ -32,6 +32,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   createDesignable,
+  findFormBlock,
   useAPIClient,
   useCollection,
   useCollectionFilterOptions,
@@ -1013,8 +1014,7 @@ SchemaSettings.DataTemplates = (props) => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const { getTemplateById } = useSchemaTemplateManager();
-  const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
+  const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   const { templates } = useDataTemplates();
 
   return (
@@ -1042,18 +1042,12 @@ SchemaSettings.DataTemplates = (props) => {
         } as ISchema
       }
       onSubmit={(v) => {
-        const templates = [];
-        for (const template of v.fieldReaction.templates) {
-          templates.push(_.pickBy(template, _.identity));
-        }
-        const templateId = gridSchema['x-component'] === 'BlockTemplate' && gridSchema['x-component-props'].templateId;
-        const uid = (templateId && getTemplateById(templateId).uid) || gridSchema['x-uid'];
+        const uid = formSchema['x-uid'];
         const schema = {
           ['x-uid']: uid,
+          ['x-data-templates']: v.fieldReaction.templates || [],
         };
 
-        gridSchema['x-data-templates'] = templates;
-        schema['x-data-templates'] = templates;
         dn.emit('patch', {
           schema,
         });

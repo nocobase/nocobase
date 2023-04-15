@@ -1,15 +1,24 @@
 import { Form } from '@formily/core';
-import { useFieldSchema, useForm } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
+import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useSchemaTemplate } from '../../../schema-templates';
 
-export const Templates = () => {
+interface ITemplate {
+  id?: number;
+  title: string;
+  collection: string;
+  dataId: number;
+  fields: string[];
+  notUseTemplate?: boolean;
+  default?: boolean;
+}
+
+export const Templates = ({ style = {}, form }) => {
   const fieldSchema = useFieldSchema();
   const templates = findDataTemplates(fieldSchema);
   const defaultTemplate = templates.find((item) => item.default);
@@ -17,7 +26,6 @@ export const Templates = () => {
   const api = useAPIClient();
   const [templateData, setTemplateData] = React.useState<any>(null);
   const { getCollectionFields } = useCollectionManager();
-  const form = useForm();
 
   useEffect(() => {
     if (defaultTemplate) {
@@ -28,31 +36,31 @@ export const Templates = () => {
   }, []);
 
   useEffect(() => {
-    if (templates[value].noTemplate) {
+    if (templates[value]?.notUseTemplate) {
       return;
     }
     const template = templates.find((item) => item.id === value);
-    const fields = getCollectionFields(template.collection);
-    changeFormValues(form, templateData, template, fields);
+    if (template && form) {
+      const fields = getCollectionFields(template.collection);
+      changeFormValues(form, templateData, template, fields);
+    }
   }, [templateData]);
 
-  if (templates) {
-    templates.push({
-      title: '不使用模板',
-      id: templates.length,
-      noTemplate: true,
-    });
+  if (!templates.length) {
+    return null;
   }
+
+  addId(templates);
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
-    if (!option.noTemplate) {
+    if (!option.notUseTemplate) {
       setTemplateData(await fetchTemplateData(api, option));
     }
   }, []);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em' }}>
+    <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em', ...style }}>
       <label style={{ fontSize: 14, fontWeight: 'bold', whiteSpace: 'nowrap' }}>数据模板：</label>
       <Select
         style={{ width: '8em' }}
@@ -65,29 +73,10 @@ export const Templates = () => {
   );
 };
 
-Templates.Designer = () => {
-  const template = useSchemaTemplate();
-
-  return (
-    <GeneralSchemaDesigner template={template}>
-      <SchemaSettings.Remove />
-    </GeneralSchemaDesigner>
-  );
-};
-
-function findDataTemplates(fieldSchema) {
-  while (fieldSchema) {
-    if (fieldSchema['x-component'] === 'Grid' || fieldSchema['x-data-templates']) {
-      return (
-        fieldSchema['x-data-templates']?.map((item, i) => {
-          return {
-            id: i,
-            ...item,
-          };
-        }) || []
-      );
-    }
-    fieldSchema = fieldSchema.parent;
+function findDataTemplates(fieldSchema): ITemplate[] {
+  const formSchema = findFormBlock(fieldSchema);
+  if (formSchema) {
+    return _.cloneDeep(formSchema['x-data-templates']) || [];
   }
   return [];
 }
@@ -177,4 +166,16 @@ function changeFormValues(
       map[fieldData.type] ? map[fieldData.type](_.get(data, key), fieldData, data) : _.get(data, key),
     );
   });
+}
+
+function addId(templates: ITemplate[]) {
+  templates.forEach((item, index) => {
+    item.id = index;
+    item.notUseTemplate = false;
+  });
+  templates.push({
+    title: '不使用模板',
+    id: templates.length,
+    notUseTemplate: true,
+  } as ITemplate);
 }
