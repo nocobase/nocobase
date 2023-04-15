@@ -181,7 +181,14 @@ function getTagRender(treeData: any) {
     const { value, onClose, disabled, closable } = props;
     const label = findLabel(value, treeData);
     return (
-      <Tag closable={closable && !disabled} onClose={onClose}>
+      <Tag
+        closable={closable && !disabled}
+        onClose={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onClose(e);
+        }}
+      >
         {label}
       </Tag>
     );

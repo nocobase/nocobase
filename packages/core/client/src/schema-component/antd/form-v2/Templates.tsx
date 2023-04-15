@@ -50,10 +50,6 @@ export const Templates = ({ style = {}, form }) => {
     }
   }, [templateData]);
 
-  if (!templates.length || !display) {
-    return null;
-  }
-
   addId(templates);
 
   const handleChange = useCallback(async (value, option) => {
@@ -64,6 +60,10 @@ export const Templates = ({ style = {}, form }) => {
       form?.reset();
     }
   }, []);
+
+  if (!templates.length || !display) {
+    return null;
+  }
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#f8f8f8', padding: '1em', ...style }}>

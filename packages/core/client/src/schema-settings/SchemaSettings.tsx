@@ -1005,7 +1005,7 @@ export const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   return {
-    templateData: formSchema?.['x-template-data'],
+    templateData: _.cloneDeep(formSchema?.['x-template-data']),
   };
 };
 
@@ -1043,11 +1043,12 @@ SchemaSettings.DataTemplates = (props) => {
       }
       onSubmit={(v) => {
         const uid = formSchema['x-uid'];
+        const data = v.fieldReaction || {};
         const schema = {
           ['x-uid']: uid,
-          ['x-template-data']: v.fieldReaction || {},
+          ['x-template-data']: data,
         };
-
+        formSchema['x-template-data'] = data;
         dn.emit('patch', {
           schema,
         });
