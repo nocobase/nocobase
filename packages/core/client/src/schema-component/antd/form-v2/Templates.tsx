@@ -42,7 +42,7 @@ const useDataTemplates = () => {
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const [value, setValue] = React.useState(defaultTemplate?.id);
+  const [value, setValue] = React.useState(defaultTemplate?.id || -1);
   const api = useAPIClient();
   const { t } = useTranslation();
 
