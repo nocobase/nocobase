@@ -3,9 +3,9 @@ import { message } from 'antd';
 import omit from 'lodash/omit';
 import { useEffect } from 'react';
 import { useCollection, useCollectionManager } from '.';
+import { useCompile } from '..';
 import { useRequest } from '../api-client';
 import { useRecord } from '../record-provider';
-import { useCompile } from '..';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
@@ -377,10 +377,10 @@ export const useDestroyActionAndRefreshCM = () => {
   };
 };
 
-export const useDeleteButtonVisible = () => {
+export const useDeleteButtonDisabled = () => {
   const { interface: i, deletable = true } = useRecord();
 
-  return deletable && i !== 'id';
+  return !deletable || i === 'id';
 };
 
 export const useBulkDestroyActionAndRefreshCM = () => {
