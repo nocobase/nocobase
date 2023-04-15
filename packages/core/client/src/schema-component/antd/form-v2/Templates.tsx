@@ -60,6 +60,8 @@ export const Templates = ({ style = {}, form }) => {
     setValue(value);
     if (!option.notUseTemplate) {
       setTemplateData(await fetchTemplateData(api, option));
+    } else {
+      form?.reset();
     }
   }, []);
 
@@ -179,6 +181,5 @@ function addId(templates: ITemplate['templates']) {
   } as ITemplate['templates'][0]);
   templates.forEach((item, index) => {
     item.id = index;
-    item.notUseTemplate = false;
   });
 }
