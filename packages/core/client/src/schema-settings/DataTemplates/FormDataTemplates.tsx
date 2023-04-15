@@ -108,7 +108,8 @@ export const FormDataTemplates = observer((props: any) => {
                     'x-component-props': {
                       treeData: [],
                       treeCheckable: true,
-                      showCheckedStrategy: TreeSelect.SHOW_PARENT,
+                      allowClear: true,
+                      showCheckedStrategy: TreeSelect.SHOW_ALL,
                     },
                     'x-reactions': [
                       {
@@ -179,9 +180,10 @@ export const FormDataTemplates = observer((props: any) => {
 function getTagRender(treeData: any) {
   return (props: any) => {
     const { value, onClose, disabled, closable } = props;
-    const label = findLabel(value, treeData);
+    const node = findLabel(value, treeData);
     return (
       <Tag
+        color={node.color}
         closable={closable && !disabled}
         onClose={(e) => {
           e.preventDefault();
@@ -189,7 +191,7 @@ function getTagRender(treeData: any) {
           onClose(e);
         }}
       >
-        {label}
+        {node.label}
       </Tag>
     );
   };
@@ -197,12 +199,22 @@ function getTagRender(treeData: any) {
 
 function findLabel(field: string, treeData: any) {
   const list = field?.split('.') || [];
+  const nodes = list.map((value, index) => {
+    const data = treeData?.find((item: any) => item.value === list.slice(0, index + 1).join('.'));
+    treeData = data?.children || [];
+    return data;
+  });
 
-  return list
-    .map((value, index) => {
-      const data = treeData?.find((item: any) => item.value === list.slice(0, index + 1).join('.'));
-      treeData = data?.children || [];
-      return data?.label;
-    })
-    .join(' / ');
+  const type = nodes[nodes.length - 1].type;
+  const colors = {
+    reference: 'blue',
+    duplicate: 'green',
+    preloading: 'cyan',
+  };
+
+  return {
+    type,
+    label: nodes.map((d) => d.tag).join('/'),
+    color: colors[type],
+  };
 }

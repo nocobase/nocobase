@@ -1,9 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
+import { useCompile } from '../../../schema-component';
+import { TreeNode } from '../TreeLabel';
 
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getAllCollectionsInheritChain, getCollection, getCollectionFieldsOptions } = useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getCollectionFieldsOptions } =
+    useCollectionManager();
   const [collectionList] = useState(getCollectionList);
+  const compile = useCompile();
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
@@ -14,9 +18,8 @@ export const useCollectionState = (currentCollectionName: string) => {
     if (!collectionName) {
       return [];
     }
-
     // 过滤掉系统字段
-    const exceptInterfaces = [
+    const systemKeys = [
       // 'id',
       'sort',
       'createdById',
@@ -26,28 +29,77 @@ export const useCollectionState = (currentCollectionName: string) => {
       'updatedBy',
       'updatedAt',
     ];
-    const currentFieldsOptions = getCollectionFieldsOptions(currentCollectionName, undefined, {
-      association: true,
-      allowAllTypes: true,
-      exceptInterfaces,
-      usePrefix: true,
-      maxDepth: 2,
-    });
-    if (currentCollectionName === collectionName) {
-      return currentFieldsOptions;
-    }
-
-    const fieldsOptions = getCollectionFieldsOptions(collectionName, undefined, {
-      association: true,
-      allowAllTypes: true,
-      exceptInterfaces,
-      usePrefix: true,
-    });
-
-    // 过滤掉当前表中不存在的字段
-    return fieldsOptions.filter((field) => {
-      return currentFieldsOptions.some((item) => item.value === field.value);
-    });
+    const traverseAssociations = (collectionName, { prefix, maxDepth, depth, exclude = [] }) => {
+      if (depth > maxDepth) {
+        return [];
+      }
+      return getCollectionFields(collectionName)
+        .map((field) => {
+          if (!field.target || !field.interface) {
+            return;
+          }
+          if (exclude.includes(field.name)) {
+            return;
+          }
+          const option = {
+            type: 'preloading',
+            tag: compile(field.uiSchema?.title) || field.name,
+          };
+          return {
+            ...option,
+            label: React.createElement(TreeNode, option),
+            value: `${prefix}.${field.name}`,
+            children: traverseAssociations(getCollectionFields(field.target), {
+              prefix,
+              depth: depth + 1,
+              maxDepth,
+              exclude,
+            }),
+          };
+        })
+        .filter(Boolean);
+    };
+    const traverseFields = (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }) => {
+      return getCollectionFields(collectionName)
+        .map((field) => {
+          if (exclude.includes(field.name)) {
+            return;
+          }
+          if (!field.interface) {
+            return;
+          }
+          const node = {
+            type: 'duplicate',
+            tag: compile(field.uiSchema?.title) || field.name,
+          };
+          const option = {
+            ...node,
+            label: React.createElement(TreeNode, node),
+            value: prefix ? `${prefix}.${field.name}` : field.name,
+          };
+          // 多对多的只展示关系字段
+          if (['belongsTo', 'belongsToMany'].includes(field.type)) {
+            option['type'] = 'reference';
+            option['label'] = React.createElement(TreeNode, { ...node, type: 'reference' });
+            option['children'] = traverseAssociations(field.target, {
+              depth: depth + 1,
+              maxDepth,
+              prefix: field.name,
+              exclude: systemKeys,
+            });
+          } else if (['hasOne', 'hasMany'].includes(field.type)) {
+            option['children'] = traverseFields(field.target, {
+              depth: depth + 1,
+              maxDepth,
+              prefix: field.name,
+              exclude: ['id', ...systemKeys],
+            });
+          }
+          return option;
+        })
+        .filter(Boolean);
+    };
+    return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });;
   };
 
   return {
