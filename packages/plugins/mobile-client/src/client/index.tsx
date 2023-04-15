@@ -2,6 +2,8 @@ import { SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client
 import React from 'react';
 import { useTranslation } from './locale';
 import { AppConfiguration, InterfaceConfiguration } from './configuration';
+import { MobileRouteSwitchProvider } from './routes/RouterSwitch';
+import { MobileCore } from './core';
 
 export default React.memo((props) => {
   const { t } = useTranslation();
@@ -13,11 +15,11 @@ export default React.memo((props) => {
           title: t('Mobile Client-side'),
           icon: 'MobileOutlined',
           tabs: {
-            'interface-configuration': {
+            interface: {
               title: t('Interface Configuration'),
               component: InterfaceConfiguration,
             },
-            'app-configuration': {
+            app: {
               title: t('App Configuration'),
               component: AppConfiguration,
             },
@@ -25,7 +27,9 @@ export default React.memo((props) => {
         },
       }}
     >
-      <SchemaComponentOptions components={{}}>{props.children}</SchemaComponentOptions>
+      <MobileRouteSwitchProvider>
+        <MobileCore>{props.children}</MobileCore>
+      </MobileRouteSwitchProvider>
     </SettingsCenterProvider>
   );
 });

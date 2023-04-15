@@ -6,6 +6,12 @@
     "@nocobase/server": "0.9.1-alpha.2",
     "@nocobase/test": "0.9.1-alpha.2",
     "classnames": "^2.3.1",
-    "@emotion/css": "^11.7.1"
+    "@emotion/css": "^11.7.1",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "react": "17.x",
+    "react-dom": "17.x",
+    "react-router-dom": "^5.2.0",
+    "@formily/react": "2.0.20"
   }
 }

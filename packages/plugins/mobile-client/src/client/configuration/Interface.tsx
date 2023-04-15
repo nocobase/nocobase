@@ -1,6 +1,11 @@
 import React from 'react';
-import { MobileCenter } from '../core';
+import { InterfaceRouter } from '../routes/InterfaceRouter';
+import { MobileDevice } from '../devices';
 
 export const InterfaceConfiguration = () => {
-  return <MobileCenter></MobileCenter>;
+  return (
+    <MobileDevice>
+      <InterfaceRouter></InterfaceRouter>
+    </MobileDevice>
+  );
 };
