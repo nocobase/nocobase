@@ -45,6 +45,8 @@ export const FormDataTemplates = observer((props: any) => {
                     title: '{{ t("Collection") }}',
                     required: true,
                     description: '当前表有继承关系时，可选择继承链路上的表作为模板来源',
+                    default: collectionName,
+                    'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
                     'x-decorator': 'FormItem',
                     'x-component': 'Select',
                     'x-component-props': {
