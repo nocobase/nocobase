@@ -7,13 +7,12 @@ import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 
 interface ITemplate {
-  templates: {
-    id?: number;
+  items: {
+    key: string;
     title: string;
     collection: string;
     dataId: number;
     fields: string[];
-    notUseTemplate?: boolean;
     default?: boolean;
   }[];
   /** 是否在 Form 区块显示模板选择器 */
@@ -23,26 +22,25 @@ interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { templates = [], display = true } = findDataTemplates(fieldSchema);
-  const items: any = [
+  const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const templates: any = [
     {
-      id: -1,
+      key: 'none',
       title: t('None'),
-      notUseTemplate: true,
     },
-  ].concat(templates.map<any>((t, i) => ({ ...t, id: i })));
+  ].concat(items.map<any>((t, i) => ({ key: i, ...t })));
   const defaultTemplate = items.find((item) => item.default);
   return {
-    templates: items,
+    templates,
     display,
     defaultTemplate,
-    enabled: templates.length > 0,
+    enabled: items.length > 0,
   };
 };
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const [value, setValue] = React.useState(defaultTemplate?.id || -1);
+  const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
 
@@ -58,7 +56,7 @@ export const Templates = ({ style = {}, form }) => {
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
-    if (!option.notUseTemplate) {
+    if (option.key !== 'none') {
       if (form) {
         form.values = await fetchTemplateData(api, option);
       }
@@ -77,9 +75,9 @@ export const Templates = ({ style = {}, form }) => {
         {t('Data template')}:{' '}
       </label>
       <Select
-        style={{ width: '8em' }}
+        // style={{ width: '8em' }}
         options={templates}
-        fieldNames={{ label: 'title', value: 'id' }}
+        fieldNames={{ label: 'title', value: 'key' }}
         value={value}
         onChange={handleChange}
       />
@@ -90,7 +88,7 @@ export const Templates = ({ style = {}, form }) => {
 function findDataTemplates(fieldSchema): ITemplate {
   const formSchema = findFormBlock(fieldSchema);
   if (formSchema) {
-    return _.cloneDeep(formSchema['x-template-data']) || {};
+    return _.cloneDeep(formSchema['x-data-templates']) || {};
   }
   return {} as ITemplate;
 }

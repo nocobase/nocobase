@@ -2,7 +2,7 @@ import { CopyOutlined } from '@ant-design/icons';
 import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { toArr } from '@formily/shared';
+import { toArr, uid } from '@formily/shared';
 import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input } from 'antd';
 import cls from 'classnames';
 import { clone } from 'lodash';
@@ -14,6 +14,14 @@ const DataTemplateTitle = (props) => {
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
   const value = array?.field?.value[index];
+  useEffect(() => {
+    if (!value.key) {
+      value.key = uid();
+    }
+    if (!value.title) {
+      value.title = `${t('Template name')} ${array?.field?.value?.length}`;
+    }
+  }, []);
   return (
     <Input.TextArea
       value={value.title}
