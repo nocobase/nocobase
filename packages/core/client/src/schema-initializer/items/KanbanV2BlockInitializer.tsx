@@ -96,7 +96,6 @@ export const KanbanV2BlockInitializer = (props) => {
             columns: values.options,
             params: {
               sort: [sortName],
-              paginate: false,
             },
           }),
         );

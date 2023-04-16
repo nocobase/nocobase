@@ -1609,7 +1609,7 @@ export const createKanbanBlockSchema = (options) => {
 };
 
 export const createKanbanV2BlockSchema = (options) => {
-  const { collection, resource, groupField, ...others } = options;
+  const { collection, resource, groupField, params,...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1620,7 +1620,8 @@ export const createKanbanV2BlockSchema = (options) => {
       action: 'list',
       groupField,
       params: {
-        paginate: false,
+        pageSize: 10,
+        ...params,
       },
       ...others,
     },

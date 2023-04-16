@@ -4,11 +4,14 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Tag } from 'antd';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+import InfiniteScroll from 'react-infinite-scroll-component';
+
 import { Column } from './Column';
 import { useKanbanV2BlockContext, useCollection, useBlockRequestContext } from '../../../../';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
+import {loadMoreButton} from '../style';
 
 const reorder = (list, startIndex, endIndex) => {
   const result = Array.from(list);
@@ -79,13 +82,13 @@ const ColumnHeader = ({ color, label }) => {
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { columns, groupField } = useProps();
-  const field = useField();
   const { associateCollectionField } = useKanbanV2BlockContext();
   const [columnData, setColumnData] = useState(columns);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
   const { resource, service } = useBlockRequestContext();
+ 
   useEffect(() => {
     columns.map((v, index) => {
       getColumnDatas(v, index);
@@ -118,6 +121,11 @@ export const KanbanV2: any = (props) => {
         });
     }
   };
+
+  const loadMoreData = () => {
+    
+  };
+
   const onDragEnd = (result) => {
     const { source, destination } = result;
     if (!destination) {
@@ -151,7 +159,7 @@ export const KanbanV2: any = (props) => {
       const dIndex = columnData.findIndex((v) => v.value === dInd);
       newState[sIndex] = { ...sColumns, cards: result[sInd] };
       newState[dIndex] = { ...dColumns, cards: result[dInd] };
-      setColumnData(newState.filter((group) => group.cards.length));
+      setColumnData(newState);
       handleCardDragEndSave(
         { fromColumnId: source.droppableId, fromPosition: source.index },
         { toColumnId: destination.droppableId, toPosition: destination.index },
@@ -165,7 +173,7 @@ export const KanbanV2: any = (props) => {
     const sourceCard = sourceColumn?.cards?.[fromPosition];
     const targetCard = destinationColumn?.cards?.[toPosition];
     const values = {
-      sourceId: sourceCard.id,
+      sourceId: sourceCard?.id,
       sortField: `${groupField.name}_sort`,
     };
     if (targetCard) {
@@ -177,14 +185,18 @@ export const KanbanV2: any = (props) => {
     }
     await resource.move(values);
   };
+  const handleQueryMoreCards = (data, index) => {
+    console.log(data, index);
+  };
   return (
     <div>
       <div style={{ display: 'flex' }}>
         <DragDropContext onDragEnd={onDragEnd}>
           {columnData.map((el, ind) => (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column',minHeight:400,background:'#f9f9f9',marginRight:'10px' }}>
               <ColumnHeader {...el} />
               {el.cards && <Column key={ind} data={el} ind={ind} />}
+              {el.cards?.length >= 10 && <a className={cx(loadMoreButton)} onClick={() => handleQueryMoreCards(el, ind)}>加载更多</a>}
             </div>
           ))}
           <KanbanRecordViewer visible={visible} setVisible={setVisible} record={record} />

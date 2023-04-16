@@ -13,16 +13,19 @@ const getItemStyle = (isDragging, draggableStyle) => ({
   userSelect: 'none',
   padding: grid * 2,
   margin: `0 0 ${grid}px 0`,
-  background: isDragging ? '#f1f1f1' : 'white',
+  background: 'white',
   ...draggableStyle,
 });
-const getListStyle = (isDraggingOver) => ({
-  background: isDraggingOver ? '#f1f1f1' : '#f9f9f9',
+const getListStyle = () => ({
+  background: '#f9f9f9',
   padding: grid,
   margin: 5,
   width: 300,
   marginTop: 0,
   paddingTop: 0,
+  height: '100%',
+  maxHeight: 600,
+  overflowY: 'auto',
 });
 
 const FormComponent: React.FC<any> = (props) => {
@@ -60,6 +63,9 @@ export const Column = memo((props: any) => {
               .ant-formily-item-label {
                 display: none;
               }
+              .ant-formily-item {
+                margin: 0;
+              }
             `}
           >
             <FormComponent form={form} {...others} />
@@ -72,7 +78,7 @@ export const Column = memo((props: any) => {
   return (
     <Droppable key={ind} droppableId={`${data.value}`}>
       {(provided, snapshot) => (
-        <div ref={provided.innerRef} style={getListStyle(snapshot.isDraggingOver)} {...provided.droppableProps}>
+        <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps}>
           {data?.cards?.map((item, index) => (
             <Draggable key={item.id} draggableId={`item-${item.id}`} index={index}>
               {(provided, snapshot) => (

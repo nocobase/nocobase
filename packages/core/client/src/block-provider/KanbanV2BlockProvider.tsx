@@ -117,7 +117,7 @@ export const KanbanV2BlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <BlockProvider {...props}>
+    <BlockProvider {...props} params={params}>
       <InternalKanbanV2BlockProvider
         {...props}
         params={params}
@@ -135,16 +135,23 @@ export const useKanbanV2BlockContext = () => {
 
 export const useKanbanV2BlockProps = () => {
   const ctx = useKanbanV2BlockContext();
+  const { columns } = ctx;
   useEffect(() => {
     if (!ctx.service.loading) {
+      columns.push({
+        value: '__unknown__',
+        label: 'Unknnwn',
+        color: 'default',
+        cards: ctx?.service?.data?.data,
+      });
       ctx.form.reset().then(() => {
         ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
       });
     }
   }, [ctx.service.loading]);
   return {
-    columns: ctx.columns,
-    groupField:ctx.groupField,
+    columns: columns,
+    groupField: ctx.groupField,
     form: ctx.form,
   };
 };
