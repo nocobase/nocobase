@@ -20,7 +20,7 @@ export const FormDataTemplates = observer((props: any) => {
         properties: {
           items: {
             type: 'array',
-            default: defaultValues?.templates,
+            default: defaultValues?.items,
             'x-component': 'ArrayCollapse',
             'x-decorator': 'FormItem',
             'x-component-props': {
