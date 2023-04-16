@@ -16,7 +16,12 @@ export const MobileDevice: React.FC = (props) => {
         `,
       )}
     >
-      <Device {...props}></Device>
+      <Device
+        className={css`
+          box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+        `}
+        {...props}
+      ></Device>
     </div>
   );
 };

@@ -1,11 +1,11 @@
 import React from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
+import { Redirect, Route, Switch, useRouteMatch } from 'react-router-dom';
 import { RouteContext } from './context';
 import { useRouteComponent } from './hooks';
 import { RouteSwitchProps } from './types';
 
 export function RouteSwitch(props: RouteSwitchProps) {
-  const { routes = [] } = props;
+  const { routes = [], base = '/' } = props;
   if (!routes.length) {
     return null;
   }
@@ -28,10 +28,15 @@ export function RouteSwitch(props: RouteSwitchProps) {
         if (!route.path && Array.isArray(route.routes)) {
           route.path = route.routes.map((r) => r.path) as any;
         }
+        const nextPath =
+          typeof route.path === 'string' && route.path.includes('/')
+            ? route.path
+            : `${base.endsWith('/') ? base : base + '/'}${route.path}`;
+
         return (
           <Route
             key={index}
-            path={route.path}
+            path={nextPath}
             exact={route.exact}
             strict={route.strict}
             sensitive={route.sensitive}
@@ -51,9 +56,10 @@ export function RouteSwitch(props: RouteSwitchProps) {
 
 function ComponentRenderer(props) {
   const Component = useRouteComponent(props?.route?.component);
+  const { path } = useRouteMatch();
   return (
     <Component {...props}>
-      <RouteSwitch routes={props.route.routes} />
+      <RouteSwitch base={path} routes={props.route.routes} />
     </Component>
   );
 }

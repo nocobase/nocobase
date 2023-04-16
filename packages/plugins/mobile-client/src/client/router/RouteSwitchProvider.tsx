@@ -1,15 +1,15 @@
 import { RouteSwitchProvider, useRouteSwitchContext } from '@nocobase/client';
 import React from 'react';
-import MobileApplication from './MobileApplication';
+import MApplication from './MApplication';
 
-export const MobileRouteSwitchProvider = (props) => {
+export const RouterSwitchProvider = (props) => {
   const { routes, components } = useRouteSwitchContext();
   return (
     <RouteSwitchProvider
       routes={routes}
       components={{
         ...components,
-        MobileApplication,
+        MApplication,
       }}
     >
       {props.children}

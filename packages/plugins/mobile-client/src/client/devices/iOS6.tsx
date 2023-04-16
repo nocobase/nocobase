@@ -1,17 +1,19 @@
 import { css, cx } from '@emotion/css';
 import React from 'react';
 
-const iOS6: React.FC = (props) => {
+const iOS6: React.FC<{
+  className: string;
+}> = (props) => {
   return (
     <div
       className={cx(
         'nb-mobile-device-ios6',
         css(`
           display: flex;
-          background-color: #fff;
           width: 375px;
           height: 667px;
       `),
+        props.className,
       )}
     >
       {props.children}

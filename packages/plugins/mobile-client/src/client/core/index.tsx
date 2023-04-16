@@ -1,7 +1,17 @@
-import { SchemaComponentOptions, SortableContext, SortableItem } from '@nocobase/client';
+import { SchemaComponentOptions, SchemaInitializerProvider } from '@nocobase/client';
 import React from 'react';
-import MobileCenter from './MobileCenter';
+import { MBlockInitializers, MMenuBlockInitializer, MGrid, MMenu, MContainer } from './schema';
 
 export const MobileCore: React.FC = (props) => {
-  return <SchemaComponentOptions components={{ MobileCenter }}>{props.children}</SchemaComponentOptions>;
+  return (
+    <SchemaInitializerProvider
+      initializers={{
+        MBlockInitializers,
+      }}
+    >
+      <SchemaComponentOptions components={{ MMenuBlockInitializer, MContainer, MGrid, MMenu }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </SchemaInitializerProvider>
+  );
 };

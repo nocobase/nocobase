@@ -105,6 +105,24 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
         }
       });
   };
+
+  const buttonDom = (
+    <Button
+      type={'dashed'}
+      style={{
+        borderColor: '#f18b62',
+        color: '#f18b62',
+        ...style,
+      }}
+      {...others}
+      icon={<Icon type={icon as string} />}
+    >
+      {compile(props.children || props.title)}
+    </Button>
+  );
+  if (!items.length) {
+    return buttonDom;
+  }
   const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
   if (!designable && props.designable !== true) {
     return null;
@@ -130,22 +148,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
         {...dropdown}
         overlay={menu}
       >
-        {component ? (
-          component
-        ) : (
-          <Button
-            type={'dashed'}
-            style={{
-              borderColor: '#f18b62',
-              color: '#f18b62',
-              ...style,
-            }}
-            {...others}
-            icon={<Icon type={icon as string} />}
-          >
-            {compile(props.children || props.title)}
-          </Button>
-        )}
+        {component ? component : buttonDom}
       </Dropdown>
     </SchemaInitializerButtonContext.Provider>
   );

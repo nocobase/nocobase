@@ -1,16 +1,15 @@
 import React from 'react';
 import { css, cx } from '@emotion/css';
-import classNames from 'classnames';
-import { MobileCenterDesigner } from './MobileCenter.Designer';
+import { ContainerDesigner } from './Container.Designer';
 import { SortableItem, useDesigner } from '@nocobase/client';
-import { useField } from '@formily/react';
 
 const designerCss = css`
   position: relative;
+  background: #f0f2f5;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  width: calc(100% + 40px);
+  flex-direction: column;
+  width: 100%;
+  width: 100%;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -32,7 +31,6 @@ const designerCss = css`
     left: 0;
     right: 0;
     display: none;
-    background: rgba(241, 139, 98, 0.06);
     border: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
@@ -52,33 +50,18 @@ const designerCss = css`
   }
 `;
 
-const InternalMobileCenter: React.FC = (props) => {
+const InternalContainer: React.FC = (props) => {
   const Designer = useDesigner();
-  const field = useField();
-  console.log('🚀 ~ file: MobileCenter.tsx:11 ~ field:', field);
   return (
-    <div
-      className={cx(
-        'nb-mobile-center',
-        css`
-          display: flex;
-          width: 100%;
-          height: 100%;
-        `,
-      )}
-    >
+    <SortableItem className={cx('nb-mobile-container', designerCss)}>
       {props.children}
-      <SortableItem className={designerCss}>
-        <Designer></Designer>
-      </SortableItem>
-    </div>
+      <Designer></Designer>
+    </SortableItem>
   );
 };
 
-export const MobileCenter = InternalMobileCenter as unknown as typeof InternalMobileCenter & {
-  Designer: typeof MobileCenterDesigner;
+export const MContainer = InternalContainer as unknown as typeof InternalContainer & {
+  Designer: typeof ContainerDesigner;
 };
-MobileCenter.Designer = MobileCenterDesigner;
-MobileCenter.displayName = 'MobileCenter';
-
-export default MobileCenter;
+MContainer.Designer = ContainerDesigner;
+MContainer.displayName = 'MContainer';

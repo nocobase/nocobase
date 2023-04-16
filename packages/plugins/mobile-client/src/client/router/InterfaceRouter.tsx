@@ -8,10 +8,11 @@ export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
   const routes = useMemo(
     () =>
       allRoutes.reduce((nextRoutes, item) => {
-        if (item['component'] === 'MobileApplication') {
-          nextRoutes.push({
-            ...item,
-            path: '/',
+        if (item['component'] === 'MApplication') {
+          nextRoutes.push(item, {
+            type: 'redirect',
+            to: '/mobile',
+            exact: true,
           });
         }
         return nextRoutes;

@@ -1,8 +1,8 @@
-import { SchemaComponentOptions, SettingsCenterProvider } from '@nocobase/client';
+import { SettingsCenterProvider } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from './locale';
 import { AppConfiguration, InterfaceConfiguration } from './configuration';
-import { MobileRouteSwitchProvider } from './routes/RouterSwitch';
+import { RouterSwitchProvider } from './router';
 import { MobileCore } from './core';
 
 export default React.memo((props) => {
@@ -27,9 +27,9 @@ export default React.memo((props) => {
         },
       }}
     >
-      <MobileRouteSwitchProvider>
+      <RouterSwitchProvider>
         <MobileCore>{props.children}</MobileCore>
-      </MobileRouteSwitchProvider>
+      </RouterSwitchProvider>
     </SettingsCenterProvider>
   );
 });
