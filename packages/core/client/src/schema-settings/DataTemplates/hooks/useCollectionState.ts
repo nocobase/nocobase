@@ -71,6 +71,9 @@ export const useCollectionState = (currentCollectionName: string) => {
           if (!field.interface) {
             return;
           }
+          if (['sort', 'password', 'sequence'].includes(field.type)) {
+            return;
+          }
           const node = {
             type: 'duplicate',
             tag: compile(field.uiSchema?.title) || field.name,
