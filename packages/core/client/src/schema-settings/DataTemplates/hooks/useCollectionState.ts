@@ -47,9 +47,8 @@ export const useCollectionState = (currentCollectionName: string) => {
           };
           const value = prefix ? `${prefix}.${field.name}` : field.name;
           return {
-            ...option,
-            label: React.createElement(TreeNode, option),
-            value,
+            title: React.createElement(TreeNode, option),
+            key: value,
             children: traverseAssociations(getCollectionFields(field.target), {
               prefix: value,
               depth: depth + 1,
@@ -74,9 +73,8 @@ export const useCollectionState = (currentCollectionName: string) => {
             tag: compile(field.uiSchema?.title) || field.name,
           };
           const option = {
-            ...node,
-            label: React.createElement(TreeNode, node),
-            value: prefix ? `${prefix}.${field.name}` : field.name,
+            title: React.createElement(TreeNode, node),
+            key: prefix ? `${prefix}.${field.name}` : field.name,
           };
           // 多对多的只展示关系字段
           if (['belongsTo', 'belongsToMany'].includes(field.type)) {
@@ -85,14 +83,14 @@ export const useCollectionState = (currentCollectionName: string) => {
             option['children'] = traverseAssociations(field.target, {
               depth: depth + 1,
               maxDepth,
-              prefix: option.value,
+              prefix: option.key,
               exclude: systemKeys,
             });
           } else if (['hasOne', 'hasMany'].includes(field.type)) {
             option['children'] = traverseFields(field.target, {
               depth: depth + 1,
               maxDepth,
-              prefix: option.value,
+              prefix: option.key,
               exclude: ['id', ...systemKeys],
             });
           }

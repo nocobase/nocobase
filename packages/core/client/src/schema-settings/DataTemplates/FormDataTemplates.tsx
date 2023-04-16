@@ -1,10 +1,19 @@
-import { observer } from '@formily/react';
-import { Tag, TreeSelect } from 'antd';
+import { connect, mapProps, observer } from '@formily/react';
+import { Tree as AntdTree } from 'antd';
 import React from 'react';
 import { AssociationSelect, SchemaComponent } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { useCollectionState } from './hooks/useCollectionState';
+
+const Tree = connect(
+  AntdTree,
+  mapProps({
+    value: 'checkedKeys',
+    dataSource: 'treeData',
+    onInput: 'onCheck',
+  }),
+);
 
 export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
@@ -14,7 +23,7 @@ export const FormDataTemplates = observer((props: any) => {
   return (
     <SchemaComponent
       components={{ ArrayCollapse }}
-      scope={{ getEnableFieldTree, getTagRender }}
+      scope={{ getEnableFieldTree }}
       schema={{
         type: 'object',
         properties: {
@@ -103,12 +112,19 @@ export const FormDataTemplates = observer((props: any) => {
                       required: true,
                       description: '仅选择的字段才会作为表单的初始化数据',
                       'x-decorator': 'FormItem',
-                      'x-component': 'TreeSelect',
+                      'x-component': Tree,
                       'x-component-props': {
                         treeData: [],
-                        treeCheckable: true,
-                        allowClear: true,
-                        showCheckedStrategy: TreeSelect.SHOW_ALL,
+                        checkable: true,
+                        selectable: false,
+                        rootStyle: {
+                          padding: '8px 0',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '2px',
+                          maxHeight: '30vh',
+                          overflow: 'auto',
+                          margin: '2px 0',
+                        },
                       },
                       'x-reactions': [
                         {
@@ -118,7 +134,6 @@ export const FormDataTemplates = observer((props: any) => {
                               disabled: '{{ !$deps[0] }}',
                               componentProps: {
                                 treeData: '{{ getEnableFieldTree($deps[0]) }}',
-                                tagRender: '{{ getTagRender(getEnableFieldTree($deps[0])) }}',
                               },
                             },
                           },
@@ -161,45 +176,3 @@ export const FormDataTemplates = observer((props: any) => {
     />
   );
 });
-
-function getTagRender(treeData: any) {
-  return (props: any) => {
-    const { value, onClose, disabled, closable } = props;
-    const node = findLabel(value, treeData);
-    return (
-      <Tag
-        color={node.color}
-        closable={closable && !disabled}
-        onClose={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onClose(e);
-        }}
-      >
-        {node.label}
-      </Tag>
-    );
-  };
-}
-
-function findLabel(field: string, treeData: any) {
-  const list = field?.split('.') || [];
-  const nodes = list.map((value, index) => {
-    const data = treeData?.find((item: any) => item.value === list.slice(0, index + 1).join('.'));
-    treeData = data?.children || [];
-    return data;
-  });
-
-  const type = nodes[nodes.length - 1].type;
-  const colors = {
-    reference: 'blue',
-    duplicate: 'green',
-    preloading: 'cyan',
-  };
-
-  return {
-    type,
-    label: nodes.map((d) => d.tag).join('/'),
-    color: colors[type],
-  };
-}
