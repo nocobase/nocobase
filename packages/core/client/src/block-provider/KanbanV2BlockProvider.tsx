@@ -79,7 +79,6 @@ const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
-  console.log(kanbanSchema)
   const gridSchema: any = kanbanSchema?.properties?.grid;
   const appends = [];
   if (gridSchema) {
@@ -102,8 +101,6 @@ export const KanbanV2BlockProvider = (props) => {
   const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
   const isAssociationField = isAssocField(groupField);
-  console.log(props);
-  console.log(groupField);
   if (!groupField) {
     return null;
   }
@@ -147,6 +144,7 @@ export const useKanbanV2BlockProps = () => {
   }, [ctx.service.loading]);
   return {
     columns: ctx.columns,
+    groupField:ctx.groupField,
     form: ctx.form,
   };
 };
