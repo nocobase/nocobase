@@ -146,6 +146,11 @@ export class OptionsParser {
     }
 
     if (this.options?.fields) {
+      attributes = [];
+      if (this.collection.isParent()) {
+        this.inheritFromSubQuery(attributes);
+      }
+
       // 将fields拆分为 attributes 和 appends
       for (const field of this.options.fields) {
         if (this.isAssociationPath(field)) {
@@ -153,13 +158,6 @@ export class OptionsParser {
           appends.push(field);
         } else {
           // field is model attribute, change attributes to array type
-          if (!Array.isArray(attributes)) {
-            attributes = [];
-            if (this.collection.isParent()) {
-              this.inheritFromSubQuery(attributes);
-            }
-          }
-
           attributes.push(field);
         }
       }
