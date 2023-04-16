@@ -45,12 +45,13 @@ export const useCollectionState = (currentCollectionName: string) => {
             type: 'preloading',
             tag: compile(field.uiSchema?.title) || field.name,
           };
+          const value = prefix ? `${prefix}.${field.name}` : field.name;
           return {
             ...option,
             label: React.createElement(TreeNode, option),
-            value: `${prefix}.${field.name}`,
+            value,
             children: traverseAssociations(getCollectionFields(field.target), {
-              prefix,
+              prefix: value,
               depth: depth + 1,
               maxDepth,
               exclude,
@@ -84,14 +85,14 @@ export const useCollectionState = (currentCollectionName: string) => {
             option['children'] = traverseAssociations(field.target, {
               depth: depth + 1,
               maxDepth,
-              prefix: field.name,
+              prefix: option.value,
               exclude: systemKeys,
             });
           } else if (['hasOne', 'hasMany'].includes(field.type)) {
             option['children'] = traverseFields(field.target, {
               depth: depth + 1,
               maxDepth,
-              prefix: field.name,
+              prefix: option.value,
               exclude: ['id', ...systemKeys],
             });
           }
@@ -99,7 +100,7 @@ export const useCollectionState = (currentCollectionName: string) => {
         })
         .filter(Boolean);
     };
-    return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });;
+    return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });
   };
 
   return {
