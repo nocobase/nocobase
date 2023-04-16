@@ -1,12 +1,11 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { SelectProps } from 'antd';
-import Item from 'antd/lib/list/Item';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCompile } from '../../hooks';
-import { defaultFieldNames, Select } from '../select';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -15,12 +14,22 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   target: string;
   wait?: number;
   manual?: boolean;
+  mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   service: ResourceActionOptions<P>;
 };
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, manual = true, ...others } = props;
+    const {
+      fieldNames = {},
+      service = {},
+      wait = 300,
+      value,
+      objectValue,
+      manual = true,
+      mapOptions,
+      ...others
+    } = props;
     const compile = useCompile();
     const firstRun = useRef(false);
 
@@ -73,6 +82,9 @@ const InternalRemoteSelect = connect(
 
     const getOptionsByFieldNames = useCallback(
       (item) => {
+        if (mapOptions) {
+          return mapOptions(item);
+        }
         return Object.keys(fieldNames).reduce((obj, key) => {
           const value = item[fieldNames[key]];
           if (value) {

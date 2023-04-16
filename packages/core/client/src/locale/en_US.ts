@@ -454,6 +454,7 @@ export default {
   "Turn pages": "Turn pages",
   "Others": "Others",
   "Save as template": "Save as template",
+  "Save as block template": "Save as block template",
   "Block templates": "Block templates",
   "Convert reference to duplicate": "Convert reference to duplicate",
   "Template name": "Template name",

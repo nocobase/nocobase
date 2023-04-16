@@ -1,10 +1,12 @@
 import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
+import { useRecord } from '../../../record-provider';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
@@ -16,17 +18,20 @@ export const FormDesigner = () => {
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const record = useRecord();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.LinkageRules collectionName={name} />
+      {_.isEmpty(record) ? <SchemaSettings.DataTemplates collectionName={name} /> : null}
+      <SchemaSettings.Divider />
       <SchemaSettings.FormItemTemplate
         componentName={'FormItem'}
         collectionName={name}
         resourceName={defaultResource}
       />
-      <SchemaSettings.LinkageRules collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

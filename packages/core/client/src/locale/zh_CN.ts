@@ -490,6 +490,7 @@ export default {
   "Turn pages": "翻页",
   "Others": "其他",
   "Save as template": "保存为模板",
+  "Save as block template": "保存为区块模板",
   "Block templates": "区块模板",
   "Convert reference to duplicate": "模板引用转为复制",
   "Template name": "模板名称",
