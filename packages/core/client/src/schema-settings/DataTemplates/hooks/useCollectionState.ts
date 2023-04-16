@@ -60,6 +60,9 @@ export const useCollectionState = (currentCollectionName: string) => {
         .filter(Boolean);
     };
     const traverseFields = (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }) => {
+      if (depth > maxDepth) {
+        return [];
+      }
       return getCollectionFields(collectionName)
         .map((field) => {
           if (exclude.includes(field.name)) {
@@ -98,7 +101,12 @@ export const useCollectionState = (currentCollectionName: string) => {
         })
         .filter(Boolean);
     };
-    return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });
+    try {
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
   };
 
   return {
