@@ -17,6 +17,54 @@ describe('string field', () => {
     await db.close();
   });
 
+  it('should support association field as scope key', async () => {
+    const Group = db.collection({
+      name: 'groups',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'group',
+          target: 'groups',
+          foreignKey: 'group_id',
+        },
+        {
+          type: 'sort',
+          name: 'sort',
+          scopeKey: 'groups.name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g1',
+          users: [{ name: 'g1u1' }, { name: 'g1u2' }],
+        },
+      ],
+    });
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g2',
+          users: [{ name: 'g2u1' }, { name: 'g2u2' }],
+        },
+      ],
+    });
+  });
+
   it('should init sorted value with thousand records', async () => {
     const Test = db.collection({
       name: 'tests',
