@@ -383,6 +383,7 @@ export default {
   "Turn pages": "ページをめくる",
   "Others": "Others",
   "Save as template": "テンプレートとして保存",
+  "Save as block template": "ブロックテンプレートとして保存",
   "Block templates": "ブロックテンプレート",
   "Convert reference to duplicate": "参照を複製に変換",
   "Template name": "テンプレート名",
