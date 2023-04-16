@@ -76,13 +76,15 @@ export const useCollectionState = (currentCollectionName: string) => {
             tag: compile(field.uiSchema?.title) || field.name,
           };
           const option = {
+            ...node,
             title: React.createElement(TreeNode, node),
             key: prefix ? `${prefix}.${field.name}` : field.name,
           };
           // 多对多的只展示关系字段
           if (['belongsTo', 'belongsToMany'].includes(field.type)) {
+            node['type'] = 'reference';
             option['type'] = 'reference';
-            option['label'] = React.createElement(TreeNode, { ...node, type: 'reference' });
+            option['title'] = React.createElement(TreeNode, { ...node, type: 'reference' });
             option['children'] = traverseAssociations(field.target, {
               depth: depth + 1,
               maxDepth,
