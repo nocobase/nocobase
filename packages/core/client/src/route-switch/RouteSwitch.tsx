@@ -28,10 +28,10 @@ export function RouteSwitch(props: RouteSwitchProps) {
         if (!route.path && Array.isArray(route.routes)) {
           route.path = route.routes.map((r) => r.path) as any;
         }
-        const nextPath =
-          typeof route.path === 'string' && route.path.includes('/')
-            ? route.path
-            : `${base.endsWith('/') ? base : base + '/'}${route.path}`;
+        let nextPath = route.path;
+        if (route.path && typeof route.path === 'string' && !route.path.startsWith('/')) {
+          nextPath = `${base.endsWith('/') ? base : base + '/'}${route.path}`;
+        }
 
         return (
           <Route
