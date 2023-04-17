@@ -19,6 +19,49 @@ describe('sort field', () => {
     await db.close();
   });
 
+  it('should support belongs to many field as scope key', async () => {
+    const UserProfile = db.collection({
+      name: 'user_profile',
+      fields: [],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [{ type: 'integer', name: 'age' }],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profile',
+          target: 'profiles',
+          through: 'user_profile',
+          foreignKey: 'user_id',
+          otherKey: 'profile_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: [{ age: 18 }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u2',
+        profile: [{ age: 20 }],
+      },
+    });
+  });
+
   it('should support association field as scope key', async () => {
     const Group = db.collection({
       name: 'groups',
