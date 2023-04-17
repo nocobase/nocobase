@@ -3,7 +3,7 @@ import { useBoolean } from 'ahooks';
 import { Button, Card, Form, Input, message, Tabs } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { MapTypes } from '../constants';
-import { MapConfigurationResourceKey, useMapConfiguration } from '../hooks';
+import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 
 const AMapConfiguration = ({ type }) => {
@@ -30,6 +30,7 @@ const AMapConfiguration = ({ type }) => {
         type,
       })
       .then((res) => {
+        sessionStorage.removeItem(getSSKey(type));
         message.success(t('Saved successfully'));
       })
       .catch((err) => {
