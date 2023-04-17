@@ -71,9 +71,10 @@ const InternalGanttBlockProvider = (props) => {
 };
 
 export const GanttBlockProvider = (props) => {
+  const params = { filter: props.params.filter, tree: true, paginate: false, sort: props.fieldNames.start };
   return (
-    <BlockProvider {...props} params={{ tree: true, paginate: false, sort: props.fieldNames.start }}>
-      <TableBlockProvider {...props} params={{ tree: true, paginate: false, sort: props.fieldNames.start }}>
+    <BlockProvider {...props} params={params}>
+      <TableBlockProvider {...props} params={params}>
         <InternalGanttBlockProvider {...props} />
       </TableBlockProvider>
     </BlockProvider>
