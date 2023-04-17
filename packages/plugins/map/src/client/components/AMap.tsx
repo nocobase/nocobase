@@ -19,6 +19,10 @@ export interface AMapComponentProps {
   onChange?: (value: number[]) => void;
   disabled?: boolean;
   mapType: string;
+  /**
+   * only ReadPretty
+   */
+  readonly: string;
   zoom: number;
   type: MapEditorType;
   style?: React.CSSProperties;
@@ -80,7 +84,7 @@ export interface AMapForwardedRefProps {
 
 const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, block = false, disabled = block, zoom = 13, overlayCommonOptions } = props;
+  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
   const { t } = useMapTranslation();
   const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
@@ -252,7 +256,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
   // 编辑时
   useEffect(() => {
     if (!aMap.current) return;
-    if (!value || overlay.current) {
+    if (!value || (!readonly && overlay.current)) {
       return;
     }
 
@@ -260,10 +264,11 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     // 聚焦在编辑的位置
     map.current.setFitView([nextOverlay]);
     overlay.current = nextOverlay;
-
-    createEditor();
-    setTarget();
-  }, [value, needUpdateFlag, type, commonOptions]);
+    if (!disabled) {
+      createEditor();
+      setTarget();
+    }
+  }, [value, needUpdateFlag, type, commonOptions, disabled, readonly]);
 
   // 当在编辑时，关闭 mouseTool
   useEffect(() => {
@@ -285,6 +290,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     createEditor();
   }, [disabled, needUpdateFlag, type]);
 
+  // 当值变更时，toggle mouseTool
   useEffect(() => {
     if (!mouseTool.current || !editor.current) return;
     const target = editor.current.getTarget();
@@ -310,7 +316,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
-        setTimeout(() => {
+        requestIdleCallback(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -318,7 +324,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
           aMap.current = amap;
           setErrMessage('');
           forceUpdate([]);
-        }, Math.random() * 300);
+        });
       })
       .catch((err) => {
         if (err.includes('多个不一致的 key')) {
