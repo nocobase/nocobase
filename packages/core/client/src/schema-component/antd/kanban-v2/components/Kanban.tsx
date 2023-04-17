@@ -4,14 +4,12 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Tag } from 'antd';
 import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
-import InfiniteScroll from 'react-infinite-scroll-component';
-
 import { Column } from './Column';
 import { useKanbanV2BlockContext, useCollection, useBlockRequestContext } from '../../../../';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
-import {loadMoreButton} from '../style';
+import { loadMoreButton } from '../style';
 
 const reorder = (list, startIndex, endIndex) => {
   const result = Array.from(list);
@@ -39,13 +37,10 @@ const move = (source, destination, droppableSource, droppableDestination) => {
 };
 const KanbanRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  const form = useMemo(() => createForm(), [record]);
+  // const form = useMemo(() => createForm(), [record]);
   const field = useField();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.cardViewer;
-  const close = useCallback(() => {
-    setVisible(false);
-  }, []);
 
   return (
     eventSchema && (
@@ -58,11 +53,7 @@ const KanbanRecordViewer = (props) => {
         }}
       >
         <RecordProvider record={record}>
-          <RecursionField
-            basePath={field.address}
-            schema={fieldSchema.properties.cardViewerSchema}
-            onlyRenderProperties
-          />
+          <RecursionField basePath={field.address} schema={eventSchema} onlyRenderProperties />
         </RecordProvider>
       </ActionContext.Provider>
     )
@@ -88,14 +79,22 @@ export const KanbanV2: any = (props) => {
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
   const { resource, service } = useBlockRequestContext();
- 
+  const params = service?.params?.[0] || {};
+
   useEffect(() => {
     columns.map((v, index) => {
-      getColumnDatas(v, index);
+      getColumnDatas(v, index, params);
     });
-  }, [groupField]);
+    return () => {
+      setColumnData(
+        columnData.map((v) => {
+          return { ...v, cards: [] };
+        }),
+      );
+    };
+  }, [groupField, params]);
 
-  const getColumnDatas = (el, index) => {
+  const getColumnDatas = React.useCallback((el, index, params) => {
     if (el.value !== '__unknown__') {
       const filter = isAssociationField
         ? {
@@ -107,24 +106,22 @@ export const KanbanV2: any = (props) => {
 
       resource
         .list({
-          ...service.params?.[0],
+          ...params,
+          page: el?.meta?.page + 1 || 1,
           filter: filter,
         })
         .then(({ data }) => {
           if (data) {
             const newState: any = [...columnData];
             const newColumn = columnData.find((v) => v.value === el.value);
-            newColumn.cards = data.data;
+            newColumn.cards = [...(newColumn?.cards || []), ...data.data];
+            newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
             newState[index] = newColumn;
             setColumnData(newState);
           }
         });
     }
-  };
-
-  const loadMoreData = () => {
-    
-  };
+  }, []);
 
   const onDragEnd = (result) => {
     const { source, destination } = result;
@@ -185,18 +182,40 @@ export const KanbanV2: any = (props) => {
     }
     await resource.move(values);
   };
-  const handleQueryMoreCards = (data, index) => {
-    console.log(data, index);
-  };
+  const handleCardClick = React.useCallback((data) => {
+    setVisible(true);
+    setRecord(data);
+  }, []);
   return (
     <div>
       <div style={{ display: 'flex' }}>
         <DragDropContext onDragEnd={onDragEnd}>
           {columnData.map((el, ind) => (
-            <div style={{ display: 'flex', flexDirection: 'column',minHeight:400,background:'#f9f9f9',marginRight:'10px' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 400,
+                background: '#f9f9f9',
+                marginRight: '10px',
+              }}
+            >
               <ColumnHeader {...el} />
-              {el.cards && <Column key={ind} data={el} ind={ind} />}
-              {el.cards?.length >= 10 && <a className={cx(loadMoreButton)} onClick={() => handleQueryMoreCards(el, ind)}>加载更多</a>}
+              {el.cards && (
+                <Column
+                  key={ind}
+                  data={el}
+                  ind={ind}
+                  cards={el.cards}
+                  onCardClick={handleCardClick}
+                  getColumnDatas={getColumnDatas}
+                />
+              )}
+              {el?.cards?.length < el?.meta?.count && (
+                <a className={cx(loadMoreButton)} onClick={() => getColumnDatas(el, ind, params)}>
+                  加载更多
+                </a>
+              )}
             </div>
           ))}
           <KanbanRecordViewer visible={visible} setVisible={setVisible} record={record} />

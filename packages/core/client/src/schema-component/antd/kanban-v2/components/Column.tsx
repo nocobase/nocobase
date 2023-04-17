@@ -1,12 +1,13 @@
 import React, { memo } from 'react';
 import { FormLayout } from '@formily/antd';
-import { Spin } from 'antd';
+import { Spin, Skeleton, Divider } from 'antd';
 import { css } from '@emotion/css';
+import { createForm } from '@formily/core';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { useCollection } from '../../../../';
 import { useProps } from '../../../hooks/useProps';
-import { createForm } from '@formily/core';
+import { useBlockRequestContext } from '../../../../';
 
 const grid = 8;
 const getItemStyle = (isDragging, draggableStyle) => ({
@@ -48,59 +49,80 @@ const FormComponent: React.FC<any> = (props) => {
   );
 };
 
+const List = (props) => {
+  const field: any = useField();
+  const { onCardClick } = props;
+  const { form, disabled, ...others } = useProps(props);
+  return (
+    <form>
+      <Spin spinning={field.loading || false}>
+        <div
+          onClick={() => {
+            onCardClick(props.item);
+          }}
+          className={css`
+            width: 250px;
+            .ant-formily-item-label {
+              display: none;
+            }
+            .ant-formily-item {
+              margin: 0;
+            }
+          `}
+        >
+          <FormComponent form={form} {...others} />
+        </div>
+      </Spin>
+    </form>
+  );
+};
 export const Column = memo((props: any) => {
-  const { ind, data } = props;
+  const { ind, data, cards, getColumnDatas } = props;
+  const { service } = useBlockRequestContext();
+  const params = service?.params?.[0] || {};
   console.log('ind', ind);
-  const List = (props) => {
-    const field: any = useField();
-    const { form, disabled, ...others } = useProps(props);
-    return (
-      <form>
-        <Spin spinning={field.loading || false}>
-          <div
-            className={css`
-              width: 250px;
-              .ant-formily-item-label {
-                display: none;
-              }
-              .ant-formily-item {
-                margin: 0;
-              }
-            `}
-          >
-            <FormComponent form={form} {...others} />
-          </div>
-        </Spin>
-      </form>
-    );
+
+  const loadMoreData = (el, index) => {
+    getColumnDatas(el, index, params);
   };
 
   return (
     <Droppable key={ind} droppableId={`${data.value}`}>
       {(provided, snapshot) => (
-        <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps}>
-          {data?.cards?.map((item, index) => (
-            <Draggable key={item.id} draggableId={`item-${item.id}`} index={index}>
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                  style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-around',
-                    }}
-                  >
-                    <List {...props} item={item} />
-                  </div>
-                </div>
-              )}
-            </Draggable>
-          ))}
-          {provided.placeholder}
+        <div>
+          <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps} id="scrollableDiv">
+            <InfiniteScroll
+              dataLength={cards.length}
+              next={() => loadMoreData(data, ind)}
+              hasMore={cards.length < data?.meta?.count}
+              loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
+              endMessage={<Divider plain>It is all, nothing more 🤐</Divider>}
+              scrollableTarget="scrollableDiv"
+            >
+              {cards?.map((item, index) => (
+                <Draggable key={item.id} draggableId={`item-${item.id}`} index={index}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-around',
+                        }}
+                      >
+                        <List {...props} item={item} />
+                      </div>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </InfiniteScroll>
+          </div>
         </div>
       )}
     </Droppable>

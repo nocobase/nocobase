@@ -2,7 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useDesignable } from '../..';
-import { useGanttBlockContext } from '../../../block-provider';
+import { useKanbanV2BlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -27,7 +27,7 @@ export const KanabanDesigner = () => {
   const fieldSchema = useFieldSchema();
   const { name, title, fields } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useGanttBlockContext();
+  const { service } = useKanbanV2BlockContext();
   const { dn } = useDesignable();
   const compile = useCompile();
   const { t } = useTranslation();
@@ -76,7 +76,7 @@ export const KanabanDesigner = () => {
       />
       <SchemaSettings.SelectItem
         title={t('Records per page')}
-        value={field.decoratorProps?.params?.pageSize || 20}
+        value={field.decoratorProps?.params?.pageSize || 10}
         options={[
           { label: '10', value: 10 },
           { label: '20', value: 20 },

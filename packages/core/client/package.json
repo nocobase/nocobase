@@ -44,7 +44,8 @@
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.10.0",
     "solarlunar-es": "^1.0.9",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "react-infinite-scroll-component": "^6.1.0"
   },
   "peerDependencies": {
     "@types/react": ">=16.8.0 || >=17.0.0",
