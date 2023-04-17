@@ -35,7 +35,7 @@ import {
   findFormBlock,
   useAPIClient,
   useCollection,
-  useCollectionFilterOptions,
+  useLinkageCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
@@ -965,9 +965,7 @@ SchemaSettings.LinkageRules = (props) => {
               'x-component': FormLinkageRules,
               'x-component-props': {
                 useProps: () => {
-                  const options = useCollectionFilterOptions(collectionName).filter(
-                    (v) => !['o2m', 'm2m'].includes(v.interface),
-                  );
+                  const options = useLinkageCollectionFilterOptions(collectionName);
                   return {
                     options,
                     defaultValues: gridSchema?.['x-linkage-rules'] || fieldSchema?.['x-linkage-rules'],
@@ -1062,7 +1060,6 @@ SchemaSettings.DataTemplates = (props) => {
 SchemaSettings.EnableChildCollections = (props) => {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
-  console.log(fieldSchema);
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];

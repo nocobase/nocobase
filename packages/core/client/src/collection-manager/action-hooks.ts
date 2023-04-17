@@ -200,6 +200,60 @@ export const useCollectionFilterOptions = (collectionName: string) => {
   return options;
 };
 
+export const useLinkageCollectionFilterOptions = (collectionName: string) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const fields = getCollectionFields(collectionName).filter((v)=>!['o2m', 'm2m'].includes(v.interface))
+  const field2option = (field, depth) => {
+    if (!field.interface) {
+      return;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface?.filterable) {
+      return;
+    }
+    const { nested, children, operators } = fieldInterface.filterable;
+    const option = {
+      name: field.name,
+      title: field?.uiSchema?.title || field.name,
+      schema: field?.uiSchema,
+      operators:
+        operators?.filter?.((operator) => {
+          return !operator?.visible || operator.visible(field);
+        }) || [],
+      interface: field.interface,
+    };
+    if (field.target && depth > 2) {
+      return;
+    }
+    if (depth > 2) {
+      return option;
+    }
+    if (children?.length) {
+      option['children'] = children;
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target).filter((v)=>!['o2m', 'm2m'].includes(v.interface))
+      const options = getOptions(targetFields, depth + 1).filter(Boolean);
+      option['children'] = option['children'] || [];
+      option['children'].push(...options);
+    }
+    return option;
+  };
+  const getOptions = (fields, depth) => {
+    const options = [];
+    fields.forEach((field) => {
+      const option = field2option(field, depth);
+      if (option) {
+        options.push(option);
+      }
+    });
+    return options;
+  };
+  const options = getOptions(fields, 1);
+  return options;
+};
+
+
 export const useFilterDataSource = (options) => {
   const { name } = useCollection();
   const data = useCollectionFilterOptions(name);
