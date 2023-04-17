@@ -1,6 +1,5 @@
-import React, { useContext, createContext, useMemo, useEffect, useState } from "react";
-import { createForm } from '@formily/core';
-import { observer, useForm, useField, useFieldSchema, FormContext } from '@formily/react';
+import React, { useContext, createContext, useEffect, useState } from "react";
+import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
 import parse from 'json-templates';
 import { css } from "@emotion/css";
@@ -14,6 +13,7 @@ import { NAMESPACE } from "../../locale";
 import { FlowContext, useFlowContext } from "../../FlowContext";
 import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from "../../utils";
+import customForm from "./forms/customForm";
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -399,22 +399,6 @@ function useSubmit() {
   }
 }
 
-function useFormBlockProps() {
-  const { status, result, userId } = useRecord();
-  const { data: user } = useCurrentUserContext();
-  const { name } = useFieldSchema();
-
-  const pattern = Boolean(status)
-    ? (result?.[name] ? 'readPretty' : 'disabled')
-    : (user?.data?.id !== userId ? 'disabled' : 'editable');
-  const form = useMemo(() => createForm({
-    pattern,
-    initialValues: result?.[name] ?? {}
-  }), [result, name]);
-
-  return { form };
-}
-
 function useFlowRecordFromBlock(opts) {
   const { ['x-context-datasource']: dataSource } = useFieldSchema();
   const { execution } = useFlowContext();
@@ -536,8 +520,8 @@ WorkflowTodo.Drawer = function () {
         }}
         scope={{
           useSubmit,
-          useFormBlockProps,
-          useFlowRecordFromBlock
+          useFlowRecordFromBlock,
+          ...customForm.scope,
         }}
       />
     </SchemaComponentContext.Provider>
