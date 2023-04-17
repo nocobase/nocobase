@@ -136,15 +136,19 @@ const useSyncFromDatabase = () => {
       await form.submit();
       field.data = field.data || {};
       field.data.loading = true;
-      await api.resource(`collections`).setFields({
-        filterByTk,
-        values: form.values,
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
-      await refreshCM();
+      try {
+        await api.resource(`collections`).setFields({
+          filterByTk,
+          values: form.values,
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
+      }
     },
   };
 };
