@@ -100,6 +100,19 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       if (!a || typeof a.indexOf === 'undefined') return false;
       return !(a.indexOf(b) !== -1);
     },
+    $anyOf: function (a, b) {
+      console.log(a, b);
+      if (a.length === 0) {
+        return false;
+      }
+      return b.every((item) => a.includes(item));
+    },
+    $noneOf: function (a, b) {
+      if (a.length === 0) {
+        return true;
+      }
+      return b.some((item) => !a.includes(item));
+    },
     $isTruly: function (a) {
       return a === true || a === 1;
     },
