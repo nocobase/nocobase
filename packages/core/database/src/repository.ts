@@ -1,4 +1,4 @@
-import lodash, { omit } from 'lodash';
+import lodash, {omit} from 'lodash';
 import {
   Association,
   BulkCreateOptions,
@@ -13,24 +13,24 @@ import {
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
 } from 'sequelize';
-import { Collection } from './collection';
-import { Database } from './database';
+import {Collection} from './collection';
+import {Database} from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
-import { transactionWrapperBuilder } from './decorators/transaction-decorator';
-import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import {transactionWrapperBuilder} from './decorators/transaction-decorator';
+import {ArrayFieldRepository} from './field-repository/array-field-repository';
+import {ArrayField, RelationField} from './fields';
 import FilterParser from './filter-parser';
-import { Model } from './model';
+import {Model} from './model';
 import operators from './operators';
-import { OptionsParser } from './options-parser';
-import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
-import { BelongsToRepository } from './relation-repository/belongs-to-repository';
-import { HasManyRepository } from './relation-repository/hasmany-repository';
-import { HasOneRepository } from './relation-repository/hasone-repository';
-import { RelationRepository } from './relation-repository/relation-repository';
-import { updateAssociations, updateModelByValues } from './update-associations';
-import { UpdateGuard } from './update-guard';
-import { handleAppendsQuery } from './utils';
+import {OptionsParser} from './options-parser';
+import {BelongsToManyRepository} from './relation-repository/belongs-to-many-repository';
+import {BelongsToRepository} from './relation-repository/belongs-to-repository';
+import {HasManyRepository} from './relation-repository/hasmany-repository';
+import {HasOneRepository} from './relation-repository/hasone-repository';
+import {RelationRepository} from './relation-repository/relation-repository';
+import {updateAssociations, updateModelByValues} from './update-associations';
+import {UpdateGuard} from './update-guard';
+import {handleAppendsQuery} from './utils';
 
 const debug = require('debug')('noco-database');
 
@@ -477,7 +477,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = guard.sanitize(options.values);
-
+    
     const queryOptions = this.buildQueryOptions(options);
 
     const instances = await this.find({
