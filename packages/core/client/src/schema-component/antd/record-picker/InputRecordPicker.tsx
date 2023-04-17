@@ -71,11 +71,11 @@ const useTableSelectorProps = () => {
 
 const usePickActionProps = () => {
   const { setVisible } = useActionContext();
-  const { multiple, selectedRows, onChange, options } = useContext(RecordPickerContext);
+  const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
   return {
     onClick() {
       if (multiple) {
-        onChange(selectedRows);
+        onChange(unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
       } else {
         onChange(selectedRows?.[0] || null);
       }
@@ -245,7 +245,9 @@ const Drawer: React.FunctionComponent<{
   };
 
   return (
-    <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows, options }}>
+    <RecordPickerContext.Provider
+      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
+    >
       <CollectionProvider allowNull name={collectionField?.target}>
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <FormProvider>
