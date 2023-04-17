@@ -42,6 +42,10 @@ export class SortField extends Field {
   };
 
   initRecordsSortValue = async ({ transaction }) => {
+    const db = this.collection.db;
+
+    const queryInterface = db.sequelize.getQueryInterface();
+
     const orderField = (() => {
       const model = this.collection.model;
       if (model.primaryKeyAttribute) {
@@ -54,31 +58,28 @@ export class SortField extends Field {
       throw new Error(`can not find order key for collection ${this.collection.name}`);
     })();
 
-    const needInit = async (scopeKey = null, scopeValue = null) => {
-      const filter = {};
-      if (scopeKey && scopeValue) {
-        filter[scopeKey] = scopeValue;
+    const needInit = async (scopeKey) => {
+      const SQL = `
+        select count(*) >
+               count(
+                 CASE
+                   WHEN ${queryInterface.quoteIdentifier(this.columnName())} IS NULL THEN 1
+                   ELSE NULL
+                   END
+                 ) AND count(*) > 0 as need_init
+          ${scopeKey ? `, ${queryInterface.quoteIdentifier(scopeKey)}  as scope_key` : ''}
+        from ${this.collection.quotedTableName()} ${
+        scopeKey ? `group by ${queryInterface.quoteIdentifier(scopeKey)}` : ''
       }
+      `;
 
-      const totalCount = await this.collection.repository.count({
-        filter,
+      return await db.sequelize.query(SQL, {
+        type: 'SELECT',
         transaction,
       });
-
-      const emptyCount = await this.collection.repository.count({
-        filter: {
-          [this.name]: null,
-          ...filter,
-        },
-        transaction,
-      });
-
-      return emptyCount === totalCount && emptyCount > 0;
     };
 
     const doInit = async (scopeKey = null, scopeValue = null) => {
-      const queryInterface = this.collection.db.sequelize.getQueryInterface();
-
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
       const sql = `
@@ -122,26 +123,16 @@ export class SortField extends Field {
 
     const scopeKey = this.options.scopeKey;
 
+    const needInitResults = await needInit(scopeKey);
+
     if (scopeKey) {
-      const scopeValues = await this.collection.repository.find({
-        attributes: [scopeKey],
-        group: [scopeKey],
-        raw: true,
-        transaction,
-      });
-
-      const needInitGroups = [];
-
-      for (const scopeValue of scopeValues) {
-        if (await needInit(scopeKey, scopeValue[scopeKey])) {
-          needInitGroups.push(scopeValue[scopeKey]);
-        }
+      if (needInitResults.length > 0) {
+        await doInit(
+          scopeKey,
+          needInitResults.map((r) => r['scope_key']),
+        );
       }
-
-      if (needInitGroups.length > 0) {
-        await doInit(scopeKey, needInitGroups);
-      }
-    } else if (await needInit()) {
+    } else if (needInitResults[0]['need_init']) {
       await doInit();
     }
   };
