@@ -23,6 +23,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  APIClientProvider,
   ActionContext,
   CollectionManagerContext,
   Designable,
@@ -31,6 +32,7 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   createDesignable,
+  findFormBlock,
   useAPIClient,
   useCollection,
   useCollectionFilterOptions,
@@ -43,6 +45,7 @@ import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
+import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
@@ -373,7 +376,7 @@ SchemaSettings.FormItemTemplate = (props) => {
         });
       }}
     >
-      {t('Save as template')}
+      {t('Save as block template')}
     </SchemaSettings.Item>
   );
 };
@@ -779,6 +782,7 @@ SchemaSettings.ModalItem = (props) => {
   } = props;
   const options = useContext(SchemaOptionsContext);
   const cm = useContext(CollectionManagerContext);
+  const apiClient = useAPIClient();
   if (hidden) {
     return null;
   }
@@ -792,7 +796,9 @@ SchemaSettings.ModalItem = (props) => {
             <CollectionManagerContext.Provider value={cm}>
               <SchemaComponentOptions scope={options.scope} components={options.components}>
                 <FormLayout layout={'vertical'} style={{ minWidth: 520 }}>
-                  <SchemaComponent components={components} scope={scope} schema={schema} />
+                  <APIClientProvider apiClient={apiClient}>
+                    <SchemaComponent components={components} scope={scope} schema={schema} />
+                  </APIClientProvider>
                 </FormLayout>
               </SchemaComponentOptions>
             </CollectionManagerContext.Provider>
@@ -988,6 +994,62 @@ SchemaSettings.LinkageRules = (props) => {
 
         gridSchema['x-linkage-rules'] = rules;
         schema['x-linkage-rules'] = rules;
+        dn.emit('patch', {
+          schema,
+        });
+        dn.refresh();
+      }}
+    />
+  );
+};
+
+export const useDataTemplates = () => {
+  const fieldSchema = useFieldSchema();
+  const formSchema = findFormBlock(fieldSchema) || fieldSchema;
+  return {
+    templateData: _.cloneDeep(formSchema?.['x-data-templates']),
+  };
+};
+
+SchemaSettings.DataTemplates = (props) => {
+  const { collectionName } = props;
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const { t } = useTranslation();
+  const formSchema = findFormBlock(fieldSchema) || fieldSchema;
+  const { templateData } = useDataTemplates();
+
+  return (
+    <SchemaSettings.ModalItem
+      title={t('Form data templates')}
+      components={{ ArrayCollapse, FormLayout }}
+      width={770}
+      schema={
+        {
+          type: 'object',
+          title: t('Form data templates'),
+          properties: {
+            fieldReaction: {
+              'x-component': FormDataTemplates,
+              'x-component-props': {
+                useProps: () => {
+                  return {
+                    defaultValues: templateData,
+                    collectionName,
+                  };
+                },
+              },
+            },
+          },
+        } as ISchema
+      }
+      onSubmit={(v) => {
+        const data = v.fieldReaction || {};
+        const schema = {
+          ['x-uid']: formSchema['x-uid'],
+          ['x-data-templates']: data,
+        };
+        formSchema['x-data-templates'] = data;
         dn.emit('patch', {
           schema,
         });

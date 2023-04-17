@@ -416,6 +416,7 @@ export default {
   "Turn pages": "Virar páginas",
   "Others": "Outros",
   "Save as template": "Salvar como modelo",
+  "Save as block template": "Salvar como modelo de bloco",
   "Block templates": "Modelos de bloco",
   "Convert reference to duplicate": "Converter referência em duplicado",
   "Template name": "Nome do modelo",

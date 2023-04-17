@@ -65,10 +65,16 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     $lte: function (a, b, c) {
       return c === undefined ? a <= b : a <= b && b <= c;
     },
+    $exists: function (a) {
+      return jsonLogic.truthy(a);
+    },
     $notEmpty: function (a) {
       return jsonLogic.truthy(a);
     },
     $empty: function (a) {
+      return !jsonLogic.truthy(a);
+    },
+    $notExists: function (a) {
       return !jsonLogic.truthy(a);
     },
     '%': function (a, b) {

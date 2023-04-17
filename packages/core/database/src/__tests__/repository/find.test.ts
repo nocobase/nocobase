@@ -9,6 +9,7 @@ describe('repository find', () => {
   let Post: Collection;
   let Comment: Collection;
   let Tag: Collection;
+  let Profile: Collection;
 
   let A1: Collection;
   let A2: Collection;
@@ -26,6 +27,7 @@ describe('repository find', () => {
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
+        { type: 'hasOne', name: 'profile' },
         { type: 'belongsToMany', name: 'a1' },
         { type: 'belongsToMany', name: 'a2' },
       ],
@@ -39,6 +41,15 @@ describe('repository find', () => {
     A2 = db.collection({
       name: 'a2',
       fields: [{ type: 'string', name: 'name' }],
+    });
+
+    Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'salary' },
+        { type: 'belongsTo', name: 'user' },
+        { type: 'string', name: 'description' },
+      ],
     });
 
     Post = db.collection({
@@ -90,6 +101,7 @@ describe('repository find', () => {
           posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }], abc1: [{ name: 't1' }] }],
           a1: [{ name: 'u1a11' }, { name: 'u1a12' }],
           a2: [{ name: 'u1a21' }, { name: 'u1a22' }],
+          profile: { salary: 1000 },
         },
         {
           name: 'u2',
@@ -97,14 +109,35 @@ describe('repository find', () => {
           posts: [{ title: 'u2t1', comments: [{ content: 'u2t1c1' }] }],
           a1: [{ name: 'u2a11' }, { name: 'u2a12' }],
           a2: [{ name: 'u2a21' }, { name: 'u2a22' }],
+          profile: { salary: 2000 },
         },
         {
           name: 'u3',
           age: 30,
           posts: [{ title: 'u3t1', comments: [{ content: 'u3t1c1' }] }],
+          profile: { salary: 3000 },
         },
       ],
     });
+  });
+
+  it('should only output filed in fields args', async () => {
+    const resp = await User.model.findOne({
+      attributes: [],
+      include: [
+        {
+          association: 'profile',
+          attributes: ['salary'],
+        },
+      ],
+    });
+
+    const users = await User.repository.find({
+      fields: ['profile', 'profile.salary', 'profile.id'],
+    });
+
+    const firstUser = users[0].toJSON();
+    expect(Object.keys(firstUser)).toEqual(['profile']);
   });
 
   it('append with associations', async () => {

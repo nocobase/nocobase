@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Cascader, Button, Tag } from 'antd';
+import { Input } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import * as sanitizeHTML from 'sanitize-html';
 
 import { EllipsisWithTooltip, useCompile } from '../..';
-import { useRecord } from '../../../record-provider';
+import { VariableSelect } from './VariableSelect';
 
 type RangeIndexes = [number, number, number, number];
 
@@ -341,19 +341,6 @@ export function TextArea(props) {
             }
           }
         }
-
-        .x-button{
-          .ant-select.ant-cascader{
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            min-width: auto;
-            width: calc(100% + 2px);
-            height: calc(100% + 2px);
-            overflow: hidden;
-            opacity: 0;
-          }
-        }
       `}
     >
       <div
@@ -382,63 +369,7 @@ export function TextArea(props) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {!disabled
-        ? (
-          <Button className={cx('x-button', css`
-            position: relative;
-          `)}>
-            <span
-              className={css`
-                font-style: italic;
-                font-family: "New York", "Times New Roman", Times, serif;
-              `}
-            >x</span>
-            <Cascader
-              placeholder={t('Select a variable')}
-              value={[]}
-              options={options}
-              onChange={(keyPaths = [], selectedOptions = []) => {
-                setSelectedVar(keyPaths as string[]);
-                if (!keyPaths.length) {
-                  return;
-                }
-                const option = selectedOptions[selectedOptions.length - 1];
-                if (!option?.children?.length) {
-                  onInsert(keyPaths);
-                }
-              }}
-              changeOnSelect
-              onClick={(e: any) => {
-                if (e.detail !== 2) {
-                  return;
-                }
-                for (let n = e.target; n && n !== e.currentTarget; n = n.parentNode) {
-                  if (Array.from(n.classList ?? []).includes('ant-cascader-menu-item')) {
-                    onInsert(selectedVar);
-                  }
-                }
-              }}
-              dropdownClassName={css`
-                .ant-cascader-menu{
-                  margin-bottom: 0;
-                }
-              `}
-              dropdownRender={(menu) => (
-                <>
-                  {menu}
-                  <div
-                    className={css`
-                      padding: .5em;
-                      border-top: 1px solid rgba(0, 0, 0, .06);
-                      color: rgba(0, 0, 0, .45);
-                    `}
-                  >
-                    {t('Double click to choose entire object')}
-                  </div>
-                </>
-              )}
-            />
-          </Button>
-        )
+        ? <VariableSelect options={options} onInsert={onInsert} />
         : null
       }
     </Input.Group>
