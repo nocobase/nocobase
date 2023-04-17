@@ -2,11 +2,13 @@ import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { SortField } from '../../fields';
 
-describe('string field', () => {
+describe('sort field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({
+      tablePrefix: '',
+    });
     await db.clean({ drop: true });
     db.registerFieldTypes({
       sort: SortField,

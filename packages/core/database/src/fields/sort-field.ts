@@ -82,41 +82,36 @@ export class SortField extends Field {
       const quotedOrderField = queryInterface.quoteIdentifier(orderField);
 
       const sql = `
-        WITH ordered_table AS (
-          SELECT *, ROW_NUMBER() OVER (${
-            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-          } ORDER BY ${quotedOrderField}) AS new_sequence_number
-          FROM ${this.collection.quotedTableName()}
-          ${(() => {
-            if (scopeKey && scopeValue) {
-              const hasNull = scopeValue.includes(null);
+        WITH ordered_table AS (SELECT *, ROW_NUMBER() OVER (${
+          scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+        } ORDER BY ${quotedOrderField}) AS new_sequence_number
+                               FROM ${this.collection.quotedTableName()} ${(() => {
+        if (scopeKey && scopeValue) {
+          const hasNull = scopeValue.includes(null);
 
-              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-                .filter((v) => v !== null)
-                .map((v) => `'${v}'`)
-                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
-            }
-
-            return '';
-          })()}
-
-        )
-        ${
-          this.collection.db.inDialect('mysql')
-            ? `
-             UPDATE ${this.collection.quotedTableName()}, ordered_table
-             SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
-             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-            `
-            : `
-          UPDATE ${this.collection.quotedTableName()}
-        SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
-        FROM ordered_table
-        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-                'ordered_table',
-              )}.${quotedOrderField};
-        `
+          return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+            .filter((v) => v !== null)
+            .map((v) => `'${v}'`)
+            .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
         }
+
+        return '';
+      })()})
+          ${
+            this.collection.db.inDialect('mysql')
+              ? `
+                UPDATE ${this.collection.quotedTableName()}, ordered_table
+                SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
+                WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
+              `
+              : `
+                UPDATE ${this.collection.quotedTableName()}
+                SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number FROM ordered_table
+                WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
+                  'ordered_table',
+                )}.${quotedOrderField};
+              `
+          }
 
       `;
 
@@ -128,7 +123,7 @@ export class SortField extends Field {
     const scopeKey = this.options.scopeKey;
 
     if (scopeKey) {
-      const groups = await this.collection.repository.find({
+      const scopeValues = await this.collection.repository.find({
         attributes: [scopeKey],
         group: [scopeKey],
         raw: true,
@@ -136,9 +131,10 @@ export class SortField extends Field {
       });
 
       const needInitGroups = [];
-      for (const group of groups) {
-        if (await needInit(scopeKey, group[scopeKey])) {
-          needInitGroups.push(group[scopeKey]);
+
+      for (const scopeValue of scopeValues) {
+        if (await needInit(scopeKey, scopeValue[scopeKey])) {
+          needInitGroups.push(scopeValue[scopeKey]);
         }
       }
 
@@ -152,16 +148,12 @@ export class SortField extends Field {
 
   bind() {
     super.bind();
-    this.on('afterSync', this.initRecordsSortValue);
-    this.on('beforeUpdate', this.onScopeChange);
-    this.on('beforeCreate', this.setSortValue);
-  }
 
-  unbind() {
-    super.unbind();
-    this.off('beforeUpdate', this.onScopeChange);
-    this.off('beforeCreate', this.setSortValue);
-    this.off('afterSync', this.initRecordsSortValue);
+    this.setListeners({
+      afterSync: this.initRecordsSortValue,
+      beforeUpdate: this.onScopeChange,
+      beforeCreate: this.setSortValue,
+    });
   }
 }
 
