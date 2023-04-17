@@ -30,7 +30,6 @@ export const ContainerDesigner = () => {
         title={t('Enable TabBar')}
         onChange={async (v) => {
           if (v) {
-            const key = uid();
             const gridSchema = findGridSchema(fieldSchema);
             await dn.remove(gridSchema);
             await dn.insertBeforeEnd({
@@ -39,20 +38,16 @@ export const ContainerDesigner = () => {
               'x-component-props': {},
               name: 'tabBar',
               properties: {
-                [key]: {
+                [uid()]: {
                   type: 'void',
                   'x-component': 'MTabBar.Item',
                   'x-designer': 'MTabBar.Item.Designer',
                   'x-component-props': {
                     icon: 'HomeOutlined',
                     title: t('Home'),
-                    key,
                   },
                   properties: {
                     grid: gridSchema,
-                    test: {
-                      type: 'void',
-                    },
                   },
                 },
               },

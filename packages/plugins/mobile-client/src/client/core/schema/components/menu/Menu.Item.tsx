@@ -18,6 +18,11 @@ import { useSchemaPatch } from '../../hooks';
 const designerCss = css`
   position: relative;
   width: 100%;
+  background: var(--adm-color-background);
+
+  > .adm-list-item {
+    background: inherit;
+  }
   &:hover {
     > .general-schema-designer {
       display: block;

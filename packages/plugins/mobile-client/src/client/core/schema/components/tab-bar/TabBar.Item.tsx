@@ -1,18 +1,30 @@
 import React, { useEffect, useMemo } from 'react';
 import { TabBar, TabBarItemProps } from 'antd-mobile';
-import { GeneralSchemaDesigner, SchemaSettings, useDesigner } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings, SortableItem, useDesigner } from '@nocobase/client';
 import { useTranslation } from '../../../../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { useSchemaPatch } from '../../hooks';
+import { css, cx } from '@emotion/css';
 
 const InternalItem: React.FC<TabBarItemProps> = (props) => {
   // NOTE: nothing to do
   // return <TabBar.Item {...props}></TabBar.Item>;
   const Designer = useDesigner();
   return (
-    <>
+    <SortableItem
+      className={cx(
+        'nb-mobile-tab-bar-item',
+        css`
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+        `,
+      )}
+    >
       <Designer />
-    </>
+    </SortableItem>
   );
 };
 

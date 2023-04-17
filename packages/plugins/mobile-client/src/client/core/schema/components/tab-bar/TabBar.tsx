@@ -3,6 +3,7 @@ import { TabBarItem } from './TabBar.Item';
 import React, { useContext } from 'react';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import {
+  DndContext,
   Icon,
   SchemaComponent,
   SchemaComponentOptions,
@@ -56,14 +57,14 @@ export const InternalTabBar: React.FC = (props) => {
   const { designable } = useDesignable();
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const { insertBeforeEnd } = useDesignable();
+  const { insertBeforeEnd, dn } = useDesignable();
   const history = useHistory();
   const params = useParams<{ name: string }>();
 
   const onAddTab = () => {
     FormDialog({ title: t('Add tab') }, () => {
       return (
-        <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+        <SchemaComponentOptions scope={options.scope} components={options.components}>
           <FormLayout layout={'vertical'}>
             <SchemaComponent
               schema={{
@@ -90,16 +91,14 @@ export const InternalTabBar: React.FC = (props) => {
       );
     })
       .open({})
-      .then((values) => {
-        const key = uid();
-        insertBeforeEnd({
+      .then(async (values) => {
+        await insertBeforeEnd({
           type: 'void',
           'x-component': 'MTabBar.Item',
-          'x-component-props': { ...values, key },
+          'x-component-props': values,
           'x-designer': 'MTabBar.Item.Designer',
-          name: key,
           properties: {
-            grid: {
+            [uid()]: {
               type: 'void',
               'x-component': 'MGrid',
               'x-initializer': 'MBlockInitializers',
@@ -107,6 +106,7 @@ export const InternalTabBar: React.FC = (props) => {
             },
           },
         });
+        dn.refresh();
       });
   };
   return (
@@ -121,43 +121,45 @@ export const InternalTabBar: React.FC = (props) => {
         `,
       )}
     >
-      <TabBar
-        activeKey={params.name}
-        onChange={(key) => {
-          history.push(key);
-        }}
-        safeArea
-        className={cx(
-          css`
-            width: 100%;
-          `,
-        )}
-      >
-        {fieldSchema.mapProperties((schema) => {
-          const cp = schema['x-component-props'];
-          return (
-            <TabBar.Item
-              {...cp}
-              key={`tab_${schema['x-uid']}`}
-              className={cx(designerCss)}
-              title={
-                <>
-                  {cp.title}
-                  <SchemaComponent
-                    schema={{
-                      properties: {
-                        [schema['name']]: schema,
-                      },
-                    }}
-                  />
-                </>
-              }
-              icon={cp.icon ? <Icon type={cp.icon} /> : undefined}
-            ></TabBar.Item>
-          );
-        })}
-      </TabBar>
-      {designable ? <SchemaInitializer.Button onClick={onAddTab} icon={<PlusOutlined />} /> : null}
+      <DndContext>
+        <TabBar
+          activeKey={params.name}
+          onChange={(key) => {
+            history.push(key);
+          }}
+          safeArea
+          className={cx(
+            css`
+              width: 100%;
+            `,
+          )}
+        >
+          {fieldSchema.mapProperties((schema) => {
+            const cp = schema['x-component-props'];
+            return (
+              <TabBar.Item
+                {...cp}
+                key={`tab_${schema['x-uid']}`}
+                className={cx(designerCss)}
+                title={
+                  <>
+                    {cp.title}
+                    <SchemaComponent
+                      schema={{
+                        properties: {
+                          [schema['name']]: schema,
+                        },
+                      }}
+                    />
+                  </>
+                }
+                icon={cp.icon ? <Icon type={cp.icon} /> : undefined}
+              ></TabBar.Item>
+            );
+          })}
+        </TabBar>
+        {designable ? <SchemaInitializer.Button onClick={onAddTab} icon={<PlusOutlined />} /> : null}
+      </DndContext>
     </SortableItem>
   );
 };

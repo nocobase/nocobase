@@ -77,7 +77,7 @@ const TabContentComponent = () => {
   const fieldSchema = useFieldSchema();
   if (!name) return;
   const gridSchema = findGrid(fieldSchema, name.replace('tab_', ''));
-  return <SchemaComponent key={name} schema={gridSchema} />;
+  return <SchemaComponent schema={gridSchema} />;
 };
 
 const InternalContainer: React.FC = (props) => {
@@ -123,7 +123,7 @@ const InternalContainer: React.FC = (props) => {
             return schema['x-component'] !== 'MTabBar';
           }}
           schema={fieldSchema}
-        ></SchemaComponent>
+        />
       )}
       <Designer></Designer>
       <div
