@@ -1,14 +1,15 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
-  useCollection,
-  useCollectionFilterOptions,
-  useDesignable,
-  useSchemaTemplate,
+  FilterBlockType,
   FixedBlockDesignerItem,
   GeneralSchemaDesigner,
   SchemaSettings,
   mergeFilter,
+  useCollection,
+  useCollectionFilterOptions,
   useCollectionManager,
+  useDesignable,
+  useSchemaTemplate,
 } from '@nocobase/client';
 import set from 'lodash/set';
 import React from 'react';
@@ -145,6 +146,7 @@ export const MapBlockDesigner = () => {
           });
         }}
       />
+      <SchemaSettings.ConnectDataBlocks type={FilterBlockType.TABLE} emptyDescription={t('No blocks to connect')} />
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'Map'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />

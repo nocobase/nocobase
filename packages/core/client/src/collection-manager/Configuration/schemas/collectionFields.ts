@@ -194,7 +194,7 @@ export const collectionFieldSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-visible': '{{cm.useDeleteButtonVisible()}}',
+                  'x-disabled': '{{cm.useDeleteButtonDisabled()}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     confirm: {
