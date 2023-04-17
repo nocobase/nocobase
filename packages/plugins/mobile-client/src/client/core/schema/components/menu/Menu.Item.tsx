@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   Icon,
@@ -11,7 +11,7 @@ import {
 } from '@nocobase/client';
 import { List, ListItemProps } from 'antd-mobile';
 import React from 'react';
-import { useHistory, useRouteMatch } from 'react-router-dom';
+import { useHistory, useParams, useRouteMatch } from 'react-router-dom';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
 
@@ -69,10 +69,11 @@ const InternalMenuItem: React.FC<MMenuItemProps> = (props) => {
   const history = useHistory();
   const fieldSchema = useFieldSchema();
   const compile = useCompile();
-  const routeMatch = useRouteMatch();
+  const match = useRouteMatch();
+  const params = useParams<{ name: string }>();
 
   const onToPage = () => {
-    history.push(`${routeMatch.url}/${fieldSchema['x-uid']}`);
+    history.push(params.name ? fieldSchema['x-uid'] : `${match.url}/${fieldSchema['x-uid']}`);
   };
   return (
     <SortableItem className={cx('nb-mobile-menu-item', designerCss)}>
@@ -87,11 +88,13 @@ const InternalMenuItem: React.FC<MMenuItemProps> = (props) => {
 const MenuItemDesigner: React.FC = () => {
   const { t } = useTranslation();
   const { onUpdateComponentProps } = useSchemaPatch();
+  const field = useField();
 
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
         title={t('Edit menu info')}
+        initialValues={field.componentProps}
         schema={{
           properties: {
             name: {
@@ -102,6 +105,7 @@ const MenuItemDesigner: React.FC = () => {
               'x-decorator': 'FormItem',
             },
             icon: {
+              required: true,
               'x-decorator': 'FormItem',
               'x-component': 'IconPicker',
               title: t('Icon'),

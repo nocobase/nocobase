@@ -1,6 +1,6 @@
 import { SchemaComponentOptions, SchemaInitializerProvider } from '@nocobase/client';
 import React from 'react';
-import { MBlockInitializers, MMenuBlockInitializer, MGrid, MMenu, MContainer } from './schema';
+import { MBlockInitializers, MMenuBlockInitializer, MGrid, MMenu, MContainer, MTabBar } from './schema';
 
 export const MobileCore: React.FC = (props) => {
   return (
@@ -9,7 +9,7 @@ export const MobileCore: React.FC = (props) => {
         MBlockInitializers,
       }}
     >
-      <SchemaComponentOptions components={{ MMenuBlockInitializer, MContainer, MGrid, MMenu }}>
+      <SchemaComponentOptions components={{ MMenuBlockInitializer, MContainer, MGrid, MMenu, MTabBar }}>
         {props.children}
       </SchemaComponentOptions>
     </SchemaInitializerProvider>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { RemoteSchemaComponent, useRoute } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
@@ -18,10 +18,12 @@ const MApplication: React.FC = (props) => {
         `,
       )}
     >
-      {params.name ? (
+      {params.name && !params.name.startsWith('tab_') ? (
         props.children
       ) : (
-        <RemoteSchemaComponent uid={route.uiSchemaUid}>{props.children}</RemoteSchemaComponent>
+        <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
+          {props.children}
+        </RemoteSchemaComponent>
       )}
     </div>
   );

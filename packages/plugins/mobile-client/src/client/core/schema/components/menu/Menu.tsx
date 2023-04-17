@@ -63,7 +63,7 @@ const InternalMenu: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const options = useContext(SchemaOptionsContext);
-  let { insertBeforeEnd } = useDesignable();
+  const { insertBeforeEnd } = useDesignable();
 
   const { t } = useTranslation();
 

@@ -115,7 +115,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
         ...style,
       }}
       {...others}
-      icon={<Icon type={icon as string} />}
+      icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
     >
       {compile(props.children || props.title)}
     </Button>

@@ -1,5 +1,5 @@
 import { RouteSwitchProvider, useRouteSwitchContext } from '@nocobase/client';
-import React from 'react';
+import React, { useEffect } from 'react';
 import MApplication from './MApplication';
 
 export const RouterSwitchProvider = (props) => {
