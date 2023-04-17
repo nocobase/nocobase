@@ -428,7 +428,7 @@ export async function updateMultipleAssociation(
     // associate targets in lists1
     await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
-    const list3 = [];
+    const newItems = [];
 
     for (const item of objectItems) {
       const pk = association.target.primaryKeyAttribute;
@@ -456,7 +456,7 @@ export async function updateMultipleAssociation(
           associationContext: association,
           updateAssociationValues: keys,
         });
-        list3.push(instance);
+        newItems.push(instance);
       } else {
         // set & update record
         const instance = await association.target.findByPk<any>(item[pk], {
@@ -481,11 +481,11 @@ export async function updateMultipleAssociation(
           associationContext: association,
           updateAssociationValues: keys,
         });
-        list3.push(instance);
+        newItems.push(instance);
       }
     }
 
-    model.setDataValue(key, setItems.concat(list3));
+    model.setDataValue(key, setItems.concat(newItems));
   } catch (error) {
     throw error;
   }
