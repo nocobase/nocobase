@@ -101,7 +101,6 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return !(a.indexOf(b) !== -1);
     },
     $anyOf: function (a, b) {
-      console.log(a, b);
       if (a.length === 0) {
         return false;
       }
