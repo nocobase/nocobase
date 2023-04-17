@@ -27,9 +27,5 @@ export default {
       type: 'json',
       name: 'result',
     },
-    {
-      type: 'json',
-      name: 'meta',
-    },
   ],
 } as CollectionOptions;

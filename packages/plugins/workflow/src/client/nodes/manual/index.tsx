@@ -91,14 +91,31 @@ export default {
     AssigneesSelect
   },
   getOptions(config, types) {
-    const fields = (config.schema?.collection?.fields ?? []).map(field => ({
-      key: field.name,
-      value: field.name,
-      label: field.uiSchema.title,
-      title: field.uiSchema.title
-    }));
-    const filteredFields = filterTypedFields(fields, types);
-    return filteredFields.length ? filteredFields : null;
+    const formKeys = Object.keys(config.forms ?? {});
+    if (!formKeys.length) {
+      return null;
+    }
+
+    return formKeys.map(formKey => {
+      const form = config.forms[formKey];
+
+      const fields = (form.collection?.fields ?? []).map(field => ({
+        key: field.name,
+        value: field.name,
+        label: field.uiSchema.title,
+        title: field.uiSchema.title
+      }));
+      const filteredFields = filterTypedFields(fields, types);
+      return filteredFields.length
+        ? {
+          key: formKey,
+          value: formKey,
+          label: form.title || formKey,
+          title: form.title || formKey,
+          children: filteredFields
+        }
+        : null;
+    }).filter(Boolean);
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.schema?.collection?.fields?.length

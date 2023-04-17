@@ -1,3 +1,5 @@
+import { cloneDeep } from 'lodash';
+
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 
@@ -88,6 +90,12 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
     'x-decorator': 'FormCollectionProvider',
     'x-decorator-props': {
       collection
+    },
+    'x-component-props': {
+      title: '{{t("Form")}}',
+    },
+    'x-designer-props': {
+      type: 'customForm',
     }
   });
 
@@ -98,22 +106,26 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
       type: 'void',
       'x-component': 'FormV2',
       'x-component-props': {
-        useProps: '{{ useFormProps }}'
+        useProps: '{{ useFormBlockProps }}'
       },
       properties: {
         grid: Object.assign(formBlock.properties.grid, {
           'x-initializer': 'AddCustomFormField'
         }),
         // 7.
-        actions: Object.assign(schema.actions, {
+        actions: {
+          type: 'void',
           'x-decorator': 'ActionBarProvider',
+          'x-component': 'ActionBar',
           'x-component-props': {
             layout: 'one-column',
             style: {
               marginTop: '1.5em',
             },
-          }
-        })
+          },
+          'x-initializer': 'AddActionButton',
+          properties: schema.actions
+        }
       }
     }
   };
@@ -125,12 +137,30 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
     forms: {
       [formId]: {
         type: 'custom',
-        actions
+        title: '{{t("Form")}}',
+        actions,
+        collection
       }
     }
   };
 }
 
+function migrateUsedConfig(config, manualForms) {
+  Object.keys(config).forEach(key => {
+    const valueType = typeof config[key];
+    if (valueType === 'string') {
+      config[key] = config[key].replace(/{{\s*\$jobsMapByNodeId\.(\d+)(\.[^}]+)?\s*}}/g, (matched, id, path) => {
+        if (!manualForms[id]) {
+          return matched;
+        }
+        return `{{$jobsMapByNodeId.${id}.${manualForms[id]}${path || ''}}}`;
+      });
+    } else if (valueType === 'object') {
+      migrateUsedConfig(config[key], manualForms);
+    }
+  });
+  return config;
+}
 
 
 export default class extends Migration {
@@ -141,6 +171,7 @@ export default class extends Migration {
     }
     const { db } = this.context;
     const NodeRepo = db.getRepository('flow_nodes');
+    const UserJobRepo = db.getRepository('users_jobs');
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
@@ -151,19 +182,75 @@ export default class extends Migration {
       console.log('%d nodes need to be migrated.', nodes.length);
 
       await nodes.reduce((promise, node) => promise.then(() => {
-        const { schema, actions, ...config } = node.config;
+        const { forms, schema, actions, ...config } = node.config;
+        if (forms) {
+          return;
+        }
         return node.update({
           config: {
             ...config,
             ...migrateConfig({ schema, actions })
           }
         }, {
+          silent: true,
+          transaction
+        });
+      }), Promise.resolve());
+
+      const usersJobs = await UserJobRepo.find({
+        filter: {
+          nodeId: nodes.map(item => item.id)
+        },
+        appends: ['job', 'node']
+      });
+      // update all results
+      await usersJobs.reduce((promise, userJob) => promise.then(async () => {
+        const { result, job, node } = userJob;
+        const { forms } = node.config;
+        const [formId] = Object.keys(forms);
+        if (result) {
+          await userJob.update({
+            result: { [formId]: result }
+          }, {
+            silent: true,
+            transaction
+          });
+        }
+        if (job.result) {
+          await job.update({
+            result: { [formId]: result }
+          }, {
+            silent: true,
+            transaction
+          });
+        }
+      }), Promise.resolve());
+
+      const usedNodes = await NodeRepo.find({
+        filter: {
+          type: {
+            $notIn: ['delay', 'parallel']
+          }
+        },
+        transaction
+      });
+
+      const nodeForms = {};
+      nodes.forEach(node => {
+        const [form] = Object.keys(node.config.forms);
+        if (form) {
+          nodeForms[node.id] = form;
+        }
+      });
+
+      await usedNodes.reduce((promise, node) => promise.then(async () => {
+        await node.update({
+          config: migrateUsedConfig(cloneDeep(node.config), nodeForms)
+        }, {
+          silent: true,
           transaction
         });
       }), Promise.resolve());
     });
   }
 }
-
-
-// find fields in nodes which has { "x-initializer": "AddCustomFormField" }

@@ -6,7 +6,7 @@ import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
-  const { filterByTk, values, form } = context.action.params;
+  const { filterByTk, values } = context.action.params;
   const { currentUser } = context.state;
 
   if (!currentUser) {
@@ -31,6 +31,7 @@ export async function submit(context: Context, next) {
     }
 
     const { forms = {} } = instance.node.config;
+    const [form] = Object.keys(values.result ?? {});
 
     // NOTE: validate status
     if (instance.status !== JOB_STATUS.PENDING
@@ -55,7 +56,6 @@ export async function submit(context: Context, next) {
 
     // NOTE: validate assignee
     await instance.update({
-      meta: { form },
       status: values.status,
       result: values.result
     }, {

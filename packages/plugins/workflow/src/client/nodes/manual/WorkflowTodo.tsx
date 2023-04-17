@@ -336,13 +336,13 @@ function ActionBarProvider(props) {
   //   2. not current user: disabled action bar
 
   const { data: user } = useCurrentUserContext();
-  const { status, meta, userId } = useRecord();
+  const { status, result, userId } = useRecord();
   const buttonSchema = useFieldSchema();
   const { name } = buttonSchema.parent.toJSON();
 
   let { children: content } = props;
   if (status) {
-    if (name !== meta?.form) {
+    if (!result[name]) {
       content = null;
     }
   } else {
@@ -388,10 +388,9 @@ function useSubmit() {
       const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
         filterByTk: id,
-        form: name,
         values: {
           status: nextStatus,
-          result: values
+          result: { [name]: values }
         }
       });
       setVisible(false);
@@ -401,17 +400,17 @@ function useSubmit() {
 }
 
 function useFormBlockProps() {
-  const { status, result, meta, userId } = useRecord();
+  const { status, result, userId } = useRecord();
   const { data: user } = useCurrentUserContext();
   const { name } = useFieldSchema();
 
   const pattern = Boolean(status)
-    ? (name === meta?.form ? 'readPretty' : 'disabled')
+    ? (result?.[name] ? 'readPretty' : 'disabled')
     : (user?.data?.id !== userId ? 'disabled' : 'editable');
   const form = useMemo(() => createForm({
     pattern,
-    initialValues: name === meta?.form ? result : {}
-  }), [result, name, meta]);
+    initialValues: result?.[name] ?? {}
+  }), [result, name]);
 
   return { form };
 }

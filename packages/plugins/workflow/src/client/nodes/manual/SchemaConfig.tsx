@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { Field } from '@formily/core';
-import { useForm, Schema } from '@formily/react';
+import { useForm, Schema, useFieldSchema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 import { cloneDeep, get, set } from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,8 @@ import {
   ActionContext,
   CollectionContext,
   GeneralSchemaDesigner,
-  SchemaSettings
+  SchemaSettings,
+  useCompile
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
@@ -36,10 +37,17 @@ function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   return trigger.useInitializers? trigger.useInitializers(workflow.config) : null;
 };
 
+const blockTypeNames = {
+  'customForm': `{{t("Custom Form", { ns: "${NAMESPACE}" })}}`,
+  'record': `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
+};
+
 function SimpleDesigner() {
-  const { t } = useTranslation();
+  const schema = useFieldSchema();
+  const title = blockTypeNames[schema['x-designer-props']?.type] ?? '{{t("Block")}}';
+  const compile = useCompile();
   return (
-    <GeneralSchemaDesigner title={t('Form')}>
+    <GeneralSchemaDesigner title={compile(title)}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -86,7 +94,13 @@ function CustomFormBlockInitializer({ insert, ...props }) {
             }
           },
           'x-component': 'CardItem',
+          'x-component-props': {
+            title: '{{t("Form")}}',
+          },
           'x-designer': 'SimpleDesigner',
+          'x-designer-props': {
+            type: 'customForm'
+          },
           properties: {
             [uid()]: {
               type: 'void',
@@ -583,17 +597,19 @@ export function SchemaConfig({ value, onChange }) {
           onRefresh={() => {
             const forms = {};
             const { tabs } = get(schema.toJSON(), 'properties.drawer.properties');
-            const collections: any[] = findSchema(tabs, item => item['x-decorator'] === 'FormCollectionProvider');
-            collections.forEach(collection => {
-              const [formKey] = Object.keys(collection.properties);
-              const formSchema = collection.properties[formKey];
+            const formBlocks: any[] = findSchema(tabs, item => item['x-decorator'] === 'FormCollectionProvider');
+            formBlocks.forEach(formBlock => {
+              const [formKey] = Object.keys(formBlock.properties);
+              const formSchema = formBlock.properties[formKey];
+              const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
+              formBlock['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
               forms[formKey] = {
                 type: 'custom',
+                title: formBlock['x-component-props']?.title || formKey,
                 actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-                  .map(item => item['x-decorator-props'].value)
+                  .map(item => item['x-decorator-props'].value),
+                collection: formBlock['x-decorator-props'].collection
               };
-              const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
-              collection['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
             });
 
             form.setValuesIn('forms', forms);

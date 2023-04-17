@@ -24,6 +24,9 @@ export function CollectionBlockInitializer({ insert, collection, dataSource, ...
             // title: props.title
           },
           'x-designer': 'SimpleDesigner',
+          'x-designer-props': {
+            type: 'record'
+          },
           properties: {
             grid: {
               type: 'void',
