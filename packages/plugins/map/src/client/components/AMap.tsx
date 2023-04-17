@@ -399,17 +399,23 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
               icon={<SyncOutlined />}
             ></Button>
           </div>
-          <div
-            className={css`
-              position: absolute;
-              bottom: 20px;
-              left: 10px;
-              z-index: 2;
-              pointer-events: none;
-            `}
-          >
-            <Alert message={t('Click to select the starting point and double-click to end the drawing')} type="info" />
-          </div>
+          {type !== 'point' ? (
+            <div
+              className={css`
+                position: absolute;
+                bottom: 20px;
+                left: 10px;
+                z-index: 2;
+                pointer-events: none;
+              `}
+            >
+              <Alert
+                message={t('Click to select the starting point and double-click to end the drawing')}
+                type="info"
+              />
+            </div>
+          ) : null}
+
           <div
             className={css`
               position: absolute;
