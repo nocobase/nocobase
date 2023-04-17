@@ -118,19 +118,31 @@ export default {
     }).filter(Boolean);
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
-    if (!node.config.schema?.collection?.fields?.length
-      || node.config.mode
-    ) {
+    const formKeys = Object.keys(node.config.forms ?? {});
+    if (!formKeys.length || node.config.mode) {
       return null;
     }
 
-    return {
-      type: 'item',
-      title: node.title ?? `#${node.id}`,
-      component: CollectionBlockInitializer,
-      collection: node.config.schema.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
-    }
+    const forms = formKeys.map(formKey => {
+      const form = node.config.forms[formKey];
+
+      return form.collection?.fields?.length
+        ? {
+          type: 'item',
+          title: form.title ?? formKey,
+          component: CollectionBlockInitializer,
+          collection: form.collection,
+          dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`
+        } as SchemaInitializerItemOptions
+        : null;
+    }).filter(Boolean);
+
+    return forms.length ? {
+      key: 'forms',
+      type: 'subMenu',
+      title: node.title,
+      children: forms
+    } : null;
   },
   initializers: {
     CollectionFieldInitializers
