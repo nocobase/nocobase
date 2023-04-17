@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 
-import { useForm, Schema, useFieldSchema } from '@formily/react';
+import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
 import { get } from 'lodash';
 
 import {
@@ -308,7 +308,7 @@ export function SchemaConfig({ value, onChange }) {
         <SchemaComponentRefreshProvider
           onRefresh={() => {
             const forms = {};
-            const { tabs } = get(schema.toJSON(), 'properties.drawer.properties');
+            const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
             const formBlocks: any[] = findSchema(tabs, item => item['x-decorator'] === 'FormCollectionProvider');
             formBlocks.forEach(formBlock => {
               const [formKey] = Object.keys(formBlock.properties);
