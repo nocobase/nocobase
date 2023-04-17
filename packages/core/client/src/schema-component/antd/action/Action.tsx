@@ -98,48 +98,53 @@ export const Action: ComposedAction = observer((props: any) => {
     field.linkageProperty = {};
     linkageRules
       .filter((k) => !k.disabled)
-      .map((v) => {
+      .forEach((v) => {
         return v.actions?.map((h) => {
           linkageAction(h.operator, field, v.condition, values);
         });
       });
-  }, [linkageRules, values]);
-  const renderButton = () => (
-    <SortableItem
-      {...others}
-      loading={field?.data?.loading}
-      icon={<Icon type={icon} />}
-      disabled={disabled}
-      style={{
-        display: !designable && field?.data?.hidden && 'none',
-        opacity: designable && field?.data?.hidden && 0.1,
-      }}
-      onClick={(e: React.MouseEvent) => {
-        if (!disabled) {
-          e.preventDefault();
-          e.stopPropagation();
-          const onOk = () => {
-            onClick?.(e);
-            setVisible(true);
-            run();
-          };
-          if (confirm) {
-            Modal.confirm({
-              ...confirm,
-              onOk,
-            });
-          } else {
-            onOk();
+  }, [linkageRules, values, designable]);
+
+  const renderButton = () => {
+    if (!designable && field?.data?.hidden) {
+      return null;
+    }
+    return (
+      <SortableItem
+        {...others}
+        loading={field?.data?.loading}
+        icon={<Icon type={icon} />}
+        disabled={disabled}
+        style={{
+          opacity: designable && field?.data?.hidden && 0.1,
+        }}
+        onClick={(e: React.MouseEvent) => {
+          if (!disabled) {
+            e.preventDefault();
+            e.stopPropagation();
+            const onOk = () => {
+              onClick?.(e);
+              setVisible(true);
+              run();
+            };
+            if (confirm) {
+              Modal.confirm({
+                ...confirm,
+                onOk,
+              });
+            } else {
+              onOk();
+            }
           }
-        }
-      }}
-      component={tarComponent || Button}
-      className={classnames(className, actionDesignerCss)}
-    >
-      {title || compile(fieldSchema.title)}
-      <Designer {...designerProps} />
-    </SortableItem>
-  );
+        }}
+        component={tarComponent || Button}
+        className={classnames(className, actionDesignerCss)}
+      >
+        {title || compile(fieldSchema.title)}
+        <Designer {...designerProps} />
+      </SortableItem>
+    );
+  };
 
   return (
     <ActionContext.Provider
