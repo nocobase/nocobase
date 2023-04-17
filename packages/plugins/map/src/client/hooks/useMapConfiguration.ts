@@ -1,4 +1,5 @@
 import { useRequest } from '@nocobase/client';
+import { useMemo } from 'react';
 
 export const MapConfigurationResourceKey = 'map-configuration';
 export const getSSKey = (type) => {
@@ -7,10 +8,16 @@ export const getSSKey = (type) => {
 
 export const useMapConfiguration = (type: string) => {
   // cache
-  const config = sessionStorage.getItem(getSSKey(type));
-  if (config) {
-    return JSON.parse(config);
-  }
+  const config = useMemo(() => {
+    const d = sessionStorage.getItem(getSSKey(type));
+    if (d) {
+      return JSON.parse(d);
+    }
+    return d;
+  }, [type]);
+
+  if (config) return config;
+
   return useRequest(
     {
       resource: MapConfigurationResourceKey,
