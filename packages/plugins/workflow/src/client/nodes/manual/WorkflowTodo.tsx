@@ -5,7 +5,7 @@ import parse from 'json-templates';
 import { css } from "@emotion/css";
 import moment from 'moment';
 
-import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useCurrentUserContext, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
+import { CollectionManagerProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useCurrentUserContext, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
 import { uid } from "@nocobase/utils/client";
 
 import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from "../../constants";
@@ -491,10 +491,10 @@ WorkflowTodo.Drawer = function () {
       <SchemaComponent
         components={{
           Tag,
-          FormCollectionProvider: CollectionProvider,
           ActionBarProvider,
           ManualActionStatusProvider,
-          FlowContextProvider
+          FlowContextProvider,
+          ...customForm.block.components
         }}
         schema={{
           type: 'void',
@@ -521,7 +521,7 @@ WorkflowTodo.Drawer = function () {
         scope={{
           useSubmit,
           useFlowRecordFromBlock,
-          ...customForm.scope,
+          ...customForm.block.scope,
         }}
       />
     </SchemaComponentContext.Provider>

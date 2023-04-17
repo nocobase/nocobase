@@ -318,19 +318,26 @@ function useFormBlockProps() {
 
 export default {
   title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-  initializer: {
-    key: 'customForm',
-    type: 'item',
-    title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-    component: CustomFormBlockInitializer
+  config: {
+    initializer: {
+      key: 'customForm',
+      type: 'item',
+      title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
+      component: CustomFormBlockInitializer
+    },
+    initializers: {
+      AddCustomFormField
+    },
+    components: {
+      FormCollectionProvider
+    }
   },
-  initializers: {
-    AddCustomFormField
-  },
-  scope: {
-    useFormBlockProps
-  },
-  components: {
-    FormCollectionProvider
+  block: {
+    scope: {
+      useFormBlockProps
+    },
+    components: {
+      FormCollectionProvider: CollectionProvider
+    }
   }
 };

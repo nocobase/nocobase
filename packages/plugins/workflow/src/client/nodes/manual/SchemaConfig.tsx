@@ -4,7 +4,6 @@ import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
 import { get } from 'lodash';
 
 import {
-  CollectionProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
@@ -13,9 +12,7 @@ import {
   SchemaInitializerProvider,
   useSchemaComponentContext,
   gridRowColWrap,
-  useCollectionManager,
   ActionContext,
-  CollectionContext,
   GeneralSchemaDesigner,
   SchemaSettings,
   useCompile
@@ -86,7 +83,7 @@ function AddBlockButton(props: any) {
       type: 'itemGroup',
       title: '{{t("Form")}}',
       children: [
-        customForm.initializer,
+        customForm.config.initializer,
         // {
         //   key: 'createForm',
         //   type: 'item',
@@ -302,7 +299,7 @@ export function SchemaConfig({ value, onChange }) {
           AddActionButton,
           ...trigger.initializers,
           ...nodeInitializers,
-          ...customForm.initializers,
+          ...customForm.config.initializers,
         }}
       >
         <SchemaComponentRefreshProvider
@@ -333,7 +330,7 @@ export function SchemaConfig({ value, onChange }) {
             schema={schema}
             components={{
               ...nodeComponents,
-              ...customForm.components,
+              ...customForm.config.components,
               // NOTE: fake provider component
               ManualActionStatusProvider(props) {
                 return props.children;
