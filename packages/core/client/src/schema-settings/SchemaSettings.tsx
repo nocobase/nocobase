@@ -496,6 +496,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
               targets.push({ uid: block.uid });
             } else {
               targets = targets.filter((target) => target.uid !== block.uid);
+              block.clearFilter(uid);
             }
 
             updateFilterTargets(fieldSchema, targets);
@@ -537,6 +538,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
         onChange={(value) => {
           if (value === '') {
             targets = targets.filter((target) => target.uid !== block.uid);
+            block.clearFilter(uid);
           } else {
             targets = targets.filter((target) => target.uid !== block.uid);
             targets.push({ uid: block.uid, field: value });

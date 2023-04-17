@@ -1,6 +1,11 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { isPlainObject, isEmpty } from '@nocobase/utils/client';
+import { isEmpty, isPlainObject } from '@nocobase/utils/client';
+import _ from 'lodash';
+import { useCallback, useEffect, useState } from 'react';
+import { mergeFilter } from '../block-provider';
+import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
 import { Collection, FieldOptions, useCollection } from '../collection-manager';
+import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
@@ -86,4 +91,79 @@ export const isAssocField = (field?: FieldOptions) => {
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {
   return c1.name === c2.name;
+};
+
+export const useFilterAPI = () => {
+  const fieldSchema = useFieldSchema();
+  const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const dataBlocks = getDataBlocks();
+  const [isConnected, setIsConnected] = useState(() => {
+    return targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid));
+  });
+  const targetsKeys = Object.keys(targets || {});
+
+  useEffect(() => {
+    setIsConnected(targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid)));
+  }, [targetsKeys.length, dataBlocks]);
+
+  const doFilter = useCallback(
+    (
+      value,
+      field: string | ((target: FilterTarget['targets'][0]) => string) = 'id',
+      operator: string | ((target: FilterTarget['targets'][0]) => string) = '$eq',
+    ) => {
+      dataBlocks.forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (_.isFunction(field)) {
+          field = field(target);
+        }
+        if (_.isFunction(operator)) {
+          operator = operator(target);
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        if (value !== undefined) {
+          storedFilter[uid] = {
+            $and: [
+              {
+                [field]: {
+                  [operator]: value,
+                },
+              },
+            ],
+          };
+        } else {
+          delete storedFilter[uid];
+        }
+
+        const mergedFilter = mergeFilter([
+          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+          block.defaultFilter,
+        ]);
+
+        block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+    },
+    [dataBlocks],
+  );
+
+  return {
+    /** 当前区块是否已连接其它区块 */
+    isConnected,
+    /** 调用该方法进行过滤 */
+    doFilter,
+  };
 };
