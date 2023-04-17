@@ -201,19 +201,20 @@ const useCreateCollection = (schema?: any) => {
     async run() {
       field.data = field.data || {};
       field.data.loading = true;
-      await form.submit();
-      const values = cloneDeep(form.values);
-      if (schema?.events?.beforeSubmit) {
-        schema.events.beforeSubmit(values);
-      }
-      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.id;
-      delete values.autoCreateReverseField;
       try {
+        await form.submit();
+        const values = cloneDeep(form.values);
+        if (schema?.events?.beforeSubmit) {
+          schema.events.beforeSubmit(values);
+        }
+        const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
+        if (values.autoCreateReverseField) {
+        } else {
+          delete values.reverseField;
+        }
+        delete values.id;
+        delete values.autoCreateReverseField;
+
         await resource.create({
           values: {
             logging: true,
