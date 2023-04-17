@@ -327,6 +327,7 @@ export default {
   "Turn pages": "Перелистывать страницы",
   "Others": "Другие",
   "Save as template": "Сохранить как шаблон",
+  "Save as block template": "Сохранить как шаблон Блока",
   "Block templates": "Шаблоны Блока",
   "Convert reference to duplicate": "Преобразовать ссылку в дубликат",
   "Template name": "Имя Шаблона",

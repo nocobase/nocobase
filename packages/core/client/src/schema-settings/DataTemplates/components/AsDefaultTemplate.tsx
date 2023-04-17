@@ -1,9 +1,9 @@
-import React from 'react';
-import { Switch } from 'antd';
 import { ArrayBase } from '@formily/antd';
+import { Switch } from 'antd';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const EnableLinkage = React.forwardRef((props: any, ref) => {
+export const AsDefaultTemplate = React.forwardRef((props: any) => {
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
@@ -11,10 +11,9 @@ export const EnableLinkage = React.forwardRef((props: any, ref) => {
   return (
     <Switch
       {...props}
-      checkedChildren={t('On')}
-      unCheckedChildren={t('Off')}
-      checked={!array?.field?.value[index].disabled}
-      size={'small'}
+      checkedChildren={t('Default')}
+      unCheckedChildren={t('Default')}
+      checked={array?.field?.value[index].default}
       style={{
         transition: 'all 0.25s ease-in-out',
         color: 'rgba(0, 0, 0, 0.8)',
@@ -24,7 +23,12 @@ export const EnableLinkage = React.forwardRef((props: any, ref) => {
       }}
       onChange={(checked, e) => {
         e.stopPropagation();
-        array.field.value.splice(index, 1, { ...array?.field?.value[index], disabled: !checked });
+        array.field.value.splice(index, 1, { ...array?.field?.value[index], default: checked });
+        array.field.value.forEach((item, i) => {
+          if (i !== index) {
+            array.field.value.splice(i, 1, { ...array?.field?.value[i], default: false });
+          }
+        });
       }}
       onClick={(checked, e) => {
         e.stopPropagation();

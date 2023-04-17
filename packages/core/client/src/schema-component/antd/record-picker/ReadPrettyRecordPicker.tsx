@@ -56,10 +56,8 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
-            {snapshot ? (
+            {snapshot || isTagsMode ? (
               text
-            ) : isTagsMode ? (
-              <Typography.Text underline>{text}</Typography.Text>
             ) : (
               <a
                 onClick={(e) => {
