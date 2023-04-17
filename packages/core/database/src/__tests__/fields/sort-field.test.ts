@@ -84,7 +84,7 @@ describe('sort field', () => {
         {
           type: 'sort',
           name: 'sort',
-          scopeKey: 'groups.name',
+          scopeKey: 'group.name',
         },
       ],
     });

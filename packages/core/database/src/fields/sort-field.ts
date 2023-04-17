@@ -44,10 +44,14 @@ export class SortField extends Field {
   initRecordsSortValue = async ({ transaction }) => {
     const db = this.collection.db;
 
-    const queryInterface = db.sequelize.getQueryInterface();
+    const sequelizeQueryInterface = db.sequelize.getQueryInterface();
+    const q = sequelizeQueryInterface.quoteIdentifier.bind(sequelizeQueryInterface);
+
+    const queryInterface = db.queryInterface;
 
     const orderField = (() => {
       const model = this.collection.model;
+
       if (model.primaryKeyAttribute) {
         return model.primaryKeyAttribute;
       }
@@ -58,19 +62,23 @@ export class SortField extends Field {
       throw new Error(`can not find order key for collection ${this.collection.name}`);
     })();
 
+    const isAssociatedScopeKey = (scopeKey) => {
+      return scopeKey.includes('.');
+    };
+
     const needInit = async (scopeKey) => {
       const SQL = `
         select count(*) >
                count(
                  CASE
-                   WHEN ${queryInterface.quoteIdentifier(this.columnName())} IS NULL THEN 1
+                   WHEN ${q(this.columnName())} IS NULL THEN 1
                    ELSE NULL
                    END
                  ) AND count(*) > 0 as need_init
-          ${scopeKey ? `, ${queryInterface.quoteIdentifier(scopeKey)}  as scope_key` : ''}
+          ${scopeKey ? `, ${q(scopeKey)}  as scope_key` : ''}
         from ${this.collection.quotedTableName()} ${
-        scopeKey ? `group by ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-      }
+        isAssociatedScopeKey(scopeKey) ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''
+      } ${scopeKey ? `group by ${q(scopeKey)}` : ''}
       `;
 
       return await db.sequelize.query(SQL, {
@@ -80,20 +88,20 @@ export class SortField extends Field {
     };
 
     const doInit = async (scopeKey = null, scopeValue = null) => {
-      const quotedOrderField = queryInterface.quoteIdentifier(orderField);
+      const quotedOrderField = q(orderField);
 
       const sql = `
         WITH ordered_table AS (SELECT *, ROW_NUMBER() OVER (${
-          scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
+          scopeKey ? `PARTITION BY ${q(scopeKey)}` : ''
         } ORDER BY ${quotedOrderField}) AS new_sequence_number
                                FROM ${this.collection.quotedTableName()} ${(() => {
         if (scopeKey && scopeValue) {
           const hasNull = scopeValue.includes(null);
 
-          return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
+          return `WHERE ${q(scopeKey)} IN (${scopeValue
             .filter((v) => v !== null)
             .map((v) => `'${v}'`)
-            .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
+            .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
         }
 
         return '';
@@ -107,8 +115,10 @@ export class SortField extends Field {
               `
               : `
                 UPDATE ${this.collection.quotedTableName()}
-                SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number FROM ordered_table
-                WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
+                SET ${sequelizeQueryInterface.quoteIdentifier(
+                  this.name,
+                )} = ordered_table.new_sequence_number FROM ordered_table
+                WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${sequelizeQueryInterface.quoteIdentifier(
                   'ordered_table',
                 )}.${quotedOrderField};
               `

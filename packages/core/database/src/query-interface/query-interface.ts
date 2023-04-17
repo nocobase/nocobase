@@ -40,4 +40,39 @@ export default abstract class QueryInterface {
 
     await this.db.sequelize.getQueryInterface().dropAllTables(options);
   }
+
+  createJoinSQL(collection: Collection, associationPath: string) {
+    const associations = collection.model.associations;
+    const associationName = associationPath.split('.')[0];
+
+    const queryInterface = this.db.sequelize.getQueryInterface();
+
+    const q = queryInterface.quoteIdentifier.bind(queryInterface);
+    const qs = queryInterface.quoteIdentifiers.bind(queryInterface);
+
+    const association = associations[associationName] as any;
+
+    if (!association) {
+      throw new Error(`createJoinSQL: association ${associationName} not found`);
+    }
+
+    const associationModel = association.target;
+    const targetCollection = this.db.modelCollection.get(associationModel);
+
+    let joinSQL = 'LEFT JOIN ';
+
+    if (association.associationType === 'HasOne') {
+      joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${collection.quotedTableName()}.${q(
+        association.sourceKeyField,
+      )} = ${q(association.as)}.${q(association.identifierField)}`;
+    }
+
+    if (association.associationType === 'BelongsTo') {
+      joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${collection.quotedTableName()}.${q(
+        association.identifierField,
+      )} = ${q(association.as)}.${q(association.sourceKeyField)}`;
+    }
+
+    return joinSQL;
+  }
 }
