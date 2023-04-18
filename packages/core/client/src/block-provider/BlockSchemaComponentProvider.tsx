@@ -5,17 +5,19 @@ import { CalendarBlockProvider, useCalendarBlockProps } from './CalendarBlockPro
 import { DetailsBlockProvider, useDetailsBlockProps } from './DetailsBlockProvider';
 import { FilterFormBlockProvider } from './FilterFormBlockProvider';
 import { FormBlockProvider, useFormBlockProps } from './FormBlockProvider';
-import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import * as bp from './hooks';
 import { KanbanBlockProvider, useKanbanBlockProps } from './KanbanBlockProvider';
 import { TableBlockProvider, useTableBlockProps } from './TableBlockProvider';
 import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
+import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
+import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
     <SchemaComponentOptions
       components={{
+        GanttBlockProvider,
         CalendarBlockProvider,
         TableFieldProvider,
         TableBlockProvider,
@@ -40,6 +42,7 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableBlockProps,
         useTableSelectorProps,
         useKanbanBlockProps,
+        useGanttBlockProps,
       }}
     >
       {props.children}

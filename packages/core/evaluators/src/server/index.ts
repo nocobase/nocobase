@@ -6,7 +6,7 @@ import formulajs from "../utils/formulajs";
 
 
 
-export { Evaluator } from '../utils';
+export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
 

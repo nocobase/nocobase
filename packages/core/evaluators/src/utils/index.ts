@@ -6,7 +6,7 @@ export type Scope = { [key: string]: any };
 
 export type Evaluator = (expression: string, scope?: Scope) => any;
 
-function appendArrayColumn(scope, key) {
+export function appendArrayColumn(scope, key) {
   const paths = key.split('.');
   let data = scope;
   for (let p = 0; p < paths.length && data != null; p++) {

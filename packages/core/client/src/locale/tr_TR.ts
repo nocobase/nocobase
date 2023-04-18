@@ -326,6 +326,7 @@ export default {
   "Turn pages": "Sayfaları çevir",
   "Others": "Diğerleri",
   "Save as template": "Şablon olarak kaydet",
+  "Save as block template": "Blok şablonu olarak kaydet",
   "Block templates": "Blok şablonları",
   "Convert reference to duplicate": "Referansı kopyaya dönüştür",
   "Template name": "Şablon adı",

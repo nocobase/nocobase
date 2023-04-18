@@ -203,11 +203,11 @@ export const useCreateActionProps = () => {
   };
 };
 
-interface FilterTarget {
+export interface FilterTarget {
   targets?: {
     /** field uid */
     uid: string;
-    /** associated fields */
+    /** associated field */
     field?: string;
   }[];
   uid?: string;
@@ -718,7 +718,17 @@ export const useDestroyActionProps = () => {
       await resource.destroy({
         filterByTk,
       });
-      service?.refresh?.();
+
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      } else {
+        service?.refresh?.();
+      }
+
       if (block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
@@ -774,6 +784,8 @@ export const useRefreshActionProps = () => {
     },
   };
 };
+
+
 
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();

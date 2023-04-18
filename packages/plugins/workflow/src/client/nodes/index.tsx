@@ -30,7 +30,7 @@ import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
 import request from "./request";
-import { VariableOption } from '../variable';
+import { VariableOptions } from '../variable';
 
 export interface Instruction {
   title: string;
@@ -43,7 +43,7 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): VariableOption[] | null;
+  getOptions?(config, types?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 };
@@ -423,7 +423,6 @@ export function NodeDefaultView(props) {
                       'x-component': 'fieldset',
                       'x-component-props': {
                         className: css`
-                          .ant-input,
                           .ant-select,
                           .ant-cascader-picker,
                           .ant-picker,
@@ -432,6 +431,15 @@ export function NodeDefaultView(props) {
                             &:not(.full-width){
                               width: auto;
                               min-width: 6em;
+                            }
+                          }
+
+                          .ant-input-affix-wrapper{
+                            &:not(.full-width){
+                              .ant-input{
+                                width: auto;
+                                min-width: 6em;
+                              }
                             }
                           }
                         `

@@ -1,8 +1,23 @@
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Avatar, Card, Layout, Menu, message, Modal, PageHeader, Popconfirm, Result, Spin, Switch, Tabs } from 'antd';
+import {
+  Layout,
+  Menu,
+  message,
+  Modal,
+  PageHeader,
+  Popconfirm,
+  Result,
+  Space,
+  Spin,
+  Table,
+  TableProps,
+  Tabs,
+  TabsProps,
+  Tag,
+  Typography,
+} from 'antd';
 import { sortBy } from 'lodash';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
@@ -12,179 +27,287 @@ import { CollectionManagerPane } from '../collection-manager';
 import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
-import { useCompile } from '../schema-component';
+import { useCompile, useTableSize } from '../schema-component';
+import { useParseMarkdown } from '../schema-component/antd/markdown/util';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
-
+const { Link } = Typography;
 export const SettingsCenterContext = createContext<any>({});
 
-const PluginCard = (props) => {
-  const history = useHistory<any>();
-  const { data = {} } = props;
-  const api = useAPIClient();
-  const { t } = useTranslation();
+interface PluginTableProps {
+  filter: any;
+  builtIn?: boolean;
+}
+
+interface PluginDocumentProps {
+  path: string;
+  name: string;
+}
+const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
+  const { data, loading, error } = useRequest(
+    {
+      url: '/plugins:getTabInfo',
+      params: {
+        filterByTk: props.name,
+        path: props.path,
+      },
+    },
+    {
+      refreshDeps: [props.name, props.path],
+    },
+  );
+  const { html, loading: parseLoading } = useParseMarkdown(data?.data?.content);
+
   return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      actions={[
-        data.enabled ? (
-          <SettingOutlined
-            onClick={() => {
-              history.push(`/admin/settings/${data.name}`);
-            }}
-          />
-        ) : null,
-        <Popconfirm
-          title={t('Are you sure to delete this plugin?')}
-          onConfirm={async () => {
-            await api.request({
-              url: `pm:remove/${data.name}`,
-            });
-            message.success(t('插件删除成功'));
-            window.location.reload();
-          }}
-          onCancel={() => {}}
-          okText={t('Yes')}
-          cancelText={t('No')}
-        >
-          <DeleteOutlined />
-        </Popconfirm>,
-        <Switch
-          size={'small'}
-          onChange={async (checked) => {
-            Modal.warn({
-              title: checked ? t('Plugin staring') : t('Plugin stopping'),
-              content: t('The application is reloading, please do not close the page.'),
-              okButtonProps: {
-                style: {
-                  display: 'none',
-                },
-              },
-            });
-            await api.request({
-              url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
-            });
-            window.location.reload();
-            // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
-          }}
-          defaultChecked={data.enabled}
-        ></Switch>,
-      ].filter(Boolean)}
+    <div
+      className={css`
+        background: #ffffff;
+        padding: var(--nb-spacing);
+        height: 60vh;
+        overflow-y: auto;
+      `}
     >
-      <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
-        avatar={<Avatar />}
-        description={data.description}
-        title={
-          <span>
-            {data.name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {data.version}
-            </span>
-          </span>
-        }
-      />
-    </Card>
+      {loading || parseLoading ? (
+        <Spin />
+      ) : (
+        <div className="nb-markdown" dangerouslySetInnerHTML={{ __html: error ? '' : html }}></div>
+      )}
+    </div>
   );
 };
 
-const BuiltInPluginCard = (props) => {
-  const { data } = props;
+const PluginTable: React.FC<PluginTableProps> = (props) => {
+  const { builtIn } = props;
+  const history = useHistory<any>();
+  const api = useAPIClient();
+  const [plugin, setPlugin] = useState<any>(null);
+  const { t, i18n } = useTranslation();
+  const settingItems = useContext(SettingsCenterContext);
+  const { data, loading } = useRequest({
+    url: 'applicationPlugins:list',
+    params: {
+      filter: props.filter,
+      sort: 'name',
+      paginate: false,
+    },
+  });
+
+  const { data: tabsData, run } = useRequest(
+    {
+      url: '/plugins:getTabs',
+    },
+    {
+      manual: true,
+    },
+  );
+
+  const columns = useMemo<TableProps<any>['columns']>(() => {
+    return [
+      {
+        title: t('Plugin name'),
+        dataIndex: 'displayName',
+        width: 300,
+        render: (displayName, record) => displayName || record.name,
+      },
+      {
+        title: t('Description'),
+        dataIndex: 'description',
+        ellipsis: true,
+      },
+      {
+        title: t('Version'),
+        dataIndex: 'version',
+        width: 300,
+      },
+      // {
+      //   title: t('Author'),
+      //   dataIndex: 'author',
+      //   width: 200,
+      // },
+      {
+        title: t('Actions'),
+        width: 300,
+        render(data) {
+          return (
+            <Space>
+              <Link
+                onClick={() => {
+                  setPlugin(data);
+                  run({
+                    params: {
+                      filterByTk: data.name,
+                    },
+                  });
+                }}
+              >
+                {t('View')}
+              </Link>
+              {data.enabled && settingItems[data.name] ? (
+                <Link
+                  onClick={() => {
+                    history.push(`/admin/settings/${data.name}`);
+                  }}
+                >
+                  {t('Setting')}
+                </Link>
+              ) : null}
+              {!builtIn ? (
+                <>
+                  <Link
+                    onClick={async () => {
+                      const checked = !data.enabled;
+                      Modal.warn({
+                        title: checked ? t('Plugin staring') : t('Plugin stopping'),
+                        content: t('The application is reloading, please do not close the page.'),
+                        okButtonProps: {
+                          style: {
+                            display: 'none',
+                          },
+                        },
+                      });
+                      await api.request({
+                        url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
+                      });
+                      window.location.reload();
+                      // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
+                    }}
+                  >
+                    {t(data.enabled ? 'Disable' : 'Enable')}
+                  </Link>
+                  <Popconfirm
+                    title={t('Are you sure to delete this plugin?')}
+                    onConfirm={async () => {
+                      await api.request({
+                        url: `pm:remove/${data.name}`,
+                      });
+                      message.success(t('插件删除成功'));
+                      window.location.reload();
+                    }}
+                    onCancel={() => {}}
+                    okText={t('Yes')}
+                    cancelText={t('No')}
+                  >
+                    <Link>{t('Delete')}</Link>
+                  </Popconfirm>
+                </>
+              ) : null}
+            </Space>
+          );
+        },
+      },
+    ];
+  }, [t, builtIn]);
+
+  const items = useMemo<TabsProps['items']>(() => {
+    return tabsData?.data?.tabs.map((item) => {
+      return {
+        label: item.title,
+        key: item.path,
+        children: React.createElement(PluginDocument, {
+          name: tabsData?.data.filterByTk,
+          path: item.path,
+        }),
+      };
+    });
+  }, [tabsData?.data]);
+
+  const { height, tableSizeRefCallback } = useTableSize();
+
   return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
+    <div
+      className={css`
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        padding: var(--nb-spacing);
+      `}
     >
-      <Card.Meta
+      <Modal
+        footer={false}
         className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
+          .ant-modal-header {
+            background: #f0f2f5;
+            padding-bottom: 8px;
+          }
+
+          .ant-modal-body {
+            padding-top: 0;
+          }
+
+          .ant-modal-body {
+            background: #f0f2f5;
+            .plugin-desc {
+              padding-bottom: 8px;
             }
           }
         `}
-        avatar={<Avatar />}
-        description={data.description}
+        width="70%"
         title={
-          <span>
-            {data.name}
-            <span
+          <Typography.Title level={2} style={{ margin: 0 }}>
+            {plugin?.displayName || plugin?.name}
+            <Tag
               className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
+                vertical-align: middle;
+                margin-top: -3px;
+                margin-left: 8px;
               `}
             >
-              {data.version}
-            </span>
-          </span>
+              v{plugin?.version}
+            </Tag>
+          </Typography.Title>
         }
+        open={!!plugin}
+        onCancel={() => setPlugin(null)}
+      >
+        {plugin?.description && <div className={'plugin-desc'}>{plugin?.description}</div>}
+        <Tabs items={items}></Tabs>
+      </Modal>
+      <Table
+        ref={tableSizeRefCallback}
+        pagination={false}
+        className={css`
+          .ant-spin-nested-loading {
+            height: 100%;
+            .ant-spin-container {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+              .ant-table {
+                flex: 1;
+              }
+            }
+          }
+          height: 100%;
+        `}
+        scroll={{
+          y: height,
+        }}
+        dataSource={data?.data || []}
+        loading={loading}
+        columns={columns}
       />
-    </Card>
+    </div>
   );
 };
 
 const LocalPlugins = () => {
-  const { data, loading } = useRequest({
-    url: 'applicationPlugins:list',
-    params: {
-      filter: {
-        'builtIn.$isFalsy': true,
-      },
-      sort: 'name',
-    },
-  });
-  if (loading) {
-    return <Spin />;
-  }
   return (
-    <>
-      {data?.data?.map((item) => {
-        return <PluginCard data={item} />;
-      })}
-    </>
+    <PluginTable
+      filter={{
+        'builtIn.$isFalsy': true,
+      }}
+    ></PluginTable>
   );
 };
 
 const BuiltinPlugins = () => {
-  const { data, loading } = useRequest({
-    url: 'applicationPlugins:list',
-    params: {
-      filter: {
-        'builtIn.$isTruly': true,
-      },
-      sort: 'name',
-    },
-  });
-  if (loading) {
-    return <Spin />;
-  }
   return (
-    <>
-      {data?.data?.map((item) => {
-        return <BuiltInPluginCard data={item} />;
-      })}
-    </>
+    <PluginTable
+      builtIn
+      filter={{
+        'builtIn.$isTruly': true,
+      }}
+    ></PluginTable>
   );
 };
 
@@ -202,7 +325,14 @@ const PluginList = (props) => {
   const { snippets = [] } = useACLRoleContext();
 
   return snippets.includes('pm') ? (
-    <div>
+    <div
+      className={css`
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        display: flex;
+      `}
+    >
       <PageHeader
         ghost={false}
         title={t('Plugin manager')}
@@ -219,7 +349,7 @@ const PluginList = (props) => {
           </Tabs>
         }
       />
-      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
+      <div style={{ margin: 'var(--nb-spacing)', flex: 1, display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -399,7 +529,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div style={{ margin: 'var(--nb-spacing)' }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

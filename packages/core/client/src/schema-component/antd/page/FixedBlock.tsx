@@ -8,7 +8,7 @@ import { useRecord } from '../../../record-provider';
 
 const FixedBlockContext = React.createContext<{
   setFixedBlock: (value: string | false) => void;
-  height: number;
+  height: number | string;
   fixedBlockUID: boolean | string;
   fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
 }>({
@@ -55,7 +55,7 @@ export const FixedBlockWrapper: React.FC = (props) => {
     <div
       className="nb-fixed-block"
       style={{
-        height: fixedBlockUID ? `calc(100vh - ${height}px)` : undefined,
+        height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
       }}
     >
       {props.children}
@@ -95,7 +95,7 @@ export const FixedBlockDesignerItem = () => {
 };
 
 interface FixedBlockProps {
-  height: number;
+  height: number | string;
 }
 
 const fixedBlockCss = css`
@@ -131,7 +131,7 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
       <div
         className={fixedBlockUID ? fixedBlockCss : ''}
         style={{
-          height: fixedBlockUID ? `calc(100vh - ${height}px)` : undefined,
+          height: fixedBlockUID ? `calc(100vh - ${height})` : undefined,
         }}
       >
         {props.children}

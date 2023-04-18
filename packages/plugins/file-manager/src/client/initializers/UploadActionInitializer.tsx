@@ -12,7 +12,7 @@ export const UploadActionInitializer = (props) => {
     'x-component': 'Action',
     'x-decorator': 'ACLActionProvider',
     'x-component-props': {
-      openMode: 'modal',
+      openMode: 'drawer',
       type: 'primary',
       icon: 'UploadOutlined',
     },
@@ -27,10 +27,11 @@ export const UploadActionInitializer = (props) => {
             title: '{{ t("Upload files") }}',
             'x-component': 'Upload.DraggerV2',
             'x-component-props': {
-              height: '60vh',
+              height: '50vh',
               action: `${collection.name}:create`,
               useProps: '{{useUploadFiles}}',
               multiple: true,
+              listType: 'picture',
             },
           },
         },

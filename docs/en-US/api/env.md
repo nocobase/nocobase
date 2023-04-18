@@ -159,9 +159,9 @@ Log transport, default is `console,dailyRotateFile`, options include
 - `console`
 - `dailyRotateFile`
 
-### DAILY_ROTATE_FILE_DIRNAME
+### LOGGER_BASE_PATH
 
-Path to save `dailyRotateFile` logs, default is `storage/logs`
+Base path to save file based logs, default is `storage/logs`
 
 ## Temporary Environment Variables
 

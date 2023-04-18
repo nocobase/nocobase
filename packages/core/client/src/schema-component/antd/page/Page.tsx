@@ -26,10 +26,10 @@ const designerCss = css`
   }
   &.nb-action-link {
     > .general-schema-designer {
-      top: -10px;
-      bottom: -10px;
-      left: -10px;
-      right: -10px;
+      top: var(--nb-designer-offset);
+      bottom: var(--nb-designer-offset);
+      right: var(--nb-designer-offset);
+      left: var(--nb-designer-offset);
     }
   }
   > .general-schema-designer {
@@ -42,10 +42,6 @@ const designerCss = css`
     display: none;
     background: rgba(241, 139, 98, 0.06);
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;
@@ -67,7 +63,9 @@ const designerCss = css`
 const pageDesignerCss = css`
   position: relative;
   z-index: 20;
-  padding-top: 1px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     > .general-schema-designer {
@@ -88,10 +86,6 @@ const pageDesignerCss = css`
     display: none;
     /* background: rgba(241, 139, 98, 0.06); */
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       z-index: 9999;
@@ -112,8 +106,9 @@ const pageDesignerCss = css`
 `;
 
 const pageWithFixedBlockCss = classNames([
-  'nb-page',
+  'nb-page-content',
   css`
+    height: 100%;
     > .nb-grid:not(:last-child) {
       > .nb-schema-initializer-button {
         display: none;
@@ -264,7 +259,7 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className={'m24'} style={{ margin: 24 }}>
+        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
           {loading ? (
             <Spin />
           ) : !disablePageHeader && enablePageTabs ? (
@@ -274,8 +269,8 @@ export const Page = (props) => {
                 <FixedBlock
                   key={schema.name}
                   height={
-                    // header 46 margin 48
-                    height + 46 + 48
+                    // header 46 margin --nb-spacing * 2
+                    `calc(${height}px + 46px + var(--nb-spacing) * 2)`
                   }
                 >
                   <SchemaComponent
@@ -293,8 +288,8 @@ export const Page = (props) => {
           ) : (
             <FixedBlock
               height={
-                // header 46 margin 48
-                height + 46 + 48
+                // header 46 margin --nb-spacing * 2
+                `calc(${height}px + 46px + var(--nb-spacing) * 2)`
               }
             >
               <div className={pageWithFixedBlockCss}>{props.children}</div>

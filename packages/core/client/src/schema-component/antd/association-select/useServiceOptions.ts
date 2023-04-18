@@ -1,6 +1,5 @@
 import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
-import { useFormBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';

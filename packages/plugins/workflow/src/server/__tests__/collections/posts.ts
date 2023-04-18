@@ -28,6 +28,15 @@ export default {
     {
       type: 'belongsToMany',
       name: 'tags'
+    },
+    {
+      type: 'integer',
+      name: 'read',
+      defaultValue: 0
+    },
+    {
+      type: 'expression',
+      name: 'dexp'
     }
   ]
 } as CollectionOptions;

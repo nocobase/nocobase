@@ -7,6 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useCompile } from '../..';
+import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -95,6 +96,19 @@ const ConstantTypes = {
   },
 };
 
+
+
+function getTypedConstantOption(type, props) {
+  const { t } = useTranslation();
+
+  return {
+    value: '',
+    label: t('Constant'),
+    children: Object.values(ConstantTypes),
+    content: ConstantTypes[type]?.component({ value: props.value, onChange: props.onChange })
+  };
+}
+
 type VariableOptions = {
   value: string;
   label?: string;
@@ -102,17 +116,28 @@ type VariableOptions = {
 };
 
 export function Input(props) {
-  const { value = '', scope, onChange, children, button } = props;
+  const { value = '', scope, onChange, children, button, useTypedConstant } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const ConstantComponent = ConstantTypes[type]?.component;
-  const constantOptions = Object.values(ConstantTypes);
   const compile = useCompile();
-  const { t } = useTranslation();
+  const { content, ...constantOption }: VariableOptions & { content: React.ReactNode } = children
+    ? {
+      value: '',
+      label: '{{t("Constant")}}',
+      content: children
+    }
+    : (useTypedConstant
+      ? getTypedConstantOption(type, props)
+      : {
+        value: '',
+        label: '{{t("Null")}}',
+        content: ConstantTypes.null.component()
+      }
+    );
   const options: VariableOptions[] = compile([
-    { value: '', label: t('Constant'), children: children ? null : constantOptions },
+    constantOption,
     ...(typeof scope === 'function' ? scope() : scope ?? []),
   ]);
 
@@ -222,21 +247,16 @@ export function Input(props) {
             </span>
           ) : null}
         </div>
-      ) : (
-        children ?? <ConstantComponent value={value} onChange={onChange} />
-      )}
+      ) : content}
       {options.length > 1 ? (
-        <Cascader value={variable ?? ['', ...(children ? [] : [type])]} options={options} onChange={onSwitch}>
+        <Cascader
+          options={options}
+          value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
+          onChange={onSwitch}
+          changeOnSelect
+        >
           {button ?? (
-            <Button
-              type={variable ? 'primary' : 'default'}
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
+            <XButton type={variable ? 'primary' : 'default'} />
           )}
         </Cascader>
       ) : null}

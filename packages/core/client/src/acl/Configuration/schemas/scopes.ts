@@ -314,7 +314,6 @@ export const scopesSchema: ISchema = {
                               'x-action': 'destroy',
                               'x-decorator': 'ACLActionProvider',
                               'x-component': 'Action.Link',
-                              'x-designer': 'Action.Designer',
                               'x-component-props': {
                                 icon: 'DeleteOutlined',
                                 confirm: {
@@ -345,7 +344,6 @@ export const scopesSchema: ISchema = {
                       title: '{{ t("Submit") }}',
                       'x-action': 'submit',
                       'x-component': 'Action',
-                      'x-designer': 'Action.Designer',
                       'x-component-props': {
                         type: 'primary',
                         htmlType: 'submit',
