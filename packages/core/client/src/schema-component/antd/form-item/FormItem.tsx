@@ -396,7 +396,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {form && !form?.readPretty && collectionField?.uiSchema?.type && (
+      {form && !form?.readPretty && (
         <SchemaSettings.ModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}
@@ -406,10 +406,17 @@ FormItem.Designer = function Designer() {
               title: t('Set default value'),
               properties: {
                 default: {
-                  ...collectionField?.uiSchema,
+                  ...(fieldSchema || {}),
+                  'x-decorator': 'FormItem',
+                  'x-component-props': {
+                    ...fieldSchema['x-component-props'],
+                    component: collectionField?.target ? 'AssociationSelect' : undefined,
+                    service: {
+                      resource: collectionField?.target,
+                    },
+                  },
                   name: 'default',
                   title: t('Default value'),
-                  'x-decorator': 'FormItem',
                   default: getFieldDefaultValue(fieldSchema, collectionField),
                 },
               },
