@@ -161,6 +161,7 @@ interface RelatedQueryOptions {
 
 interface MaxOptions extends Transactionable {
   field: string;
+  filter?: Filter;
 }
 
 const transaction = transactionWrapperBuilder(function () {
@@ -753,7 +754,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   @transaction()
-  async max(options: MaxOptions) {
+  async max(options: MaxOptions): Promise<number | undefined> {
     const transaction = await this.getTransaction(options);
     const queryOptions = this.buildQueryOptions(options);
 
