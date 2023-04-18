@@ -34,12 +34,12 @@ export const KanabanDesigner = () => {
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
-        title={t('Group field')}
+        title={t('Grouping field')}
         scope={{ collectionFields, getAssociateResource, options }}
         schema={
           {
             type: 'object',
-            title: t('Group field'),
+            title: t('Grouping field'),
             properties: {
               groupField: {
                 title: t('Grouping field'),
