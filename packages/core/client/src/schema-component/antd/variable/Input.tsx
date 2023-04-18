@@ -98,14 +98,12 @@ const ConstantTypes = {
 
 
 
-function getTypedConstantOption(type, props) {
-  const { t } = useTranslation();
-
+function getTypedConstantOption(type) {
   return {
     value: '',
-    label: t('Constant'),
+    label: '{{t("Constant")}}',
     children: Object.values(ConstantTypes),
-    content: ConstantTypes[type]?.component({ value: props.value, onChange: props.onChange })
+    component: ConstantTypes[type]?.component
   };
 }
 
@@ -116,32 +114,33 @@ type VariableOptions = {
 };
 
 export function Input(props) {
+  const compile = useCompile();
+  const form = useForm();
+
   const { value = '', scope, onChange, children, button, useTypedConstant } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const compile = useCompile();
-  const { content, ...constantOption }: VariableOptions & { content: React.ReactNode } = children
+  const varialbeOptions = typeof scope === 'function' ? scope() : scope ?? [];
+
+  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
     ? {
       value: '',
-      label: '{{t("Constant")}}',
-      content: children
+      label: '{{t("Constant")}}'
     }
     : (useTypedConstant
-      ? getTypedConstantOption(type, props)
+      ? getTypedConstantOption(type)
       : {
         value: '',
         label: '{{t("Null")}}',
-        content: ConstantTypes.null.component()
+        component: ConstantTypes.null.component
       }
     );
   const options: VariableOptions[] = compile([
     constantOption,
-    ...(typeof scope === 'function' ? scope() : scope ?? []),
+    ...varialbeOptions,
   ]);
-
-  const form = useForm();
 
   function onSwitch(next) {
     if (next[0] === '') {
@@ -247,7 +246,7 @@ export function Input(props) {
             </span>
           ) : null}
         </div>
-      ) : content}
+      ) : children ?? <ConstantComponent value={value} onChange={onChange} />}
       {options.length > 1 ? (
         <Cascader
           options={options}
