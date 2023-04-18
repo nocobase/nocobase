@@ -6,8 +6,39 @@ import { useCollectionManager } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
+import { mergeFilter } from './SharedFilterProvider';
+
+type Params = {
+  filter?: any;
+  pageSize?: number;
+  page?: number;
+  sort?: any;
+};
 
 export const TableSelectorContext = createContext<any>({});
+const TableSelectorParamsContext = createContext<Params>({}); // 用于传递参数
+
+type TableSelectorProviderProps = {
+  params: Record<string, any>;
+  collection?: string;
+  dragSort?: boolean;
+  children?: any;
+};
+
+const useTableSelectorParams = () => {
+  return useContext(TableSelectorParamsContext);
+};
+
+export const TableSelectorParamsProvider = ({ params, children }: { params: Params; children: any }) => {
+  const parentParams = useTableSelectorParams();
+  try {
+    params.filter = mergeFilter([parentParams.filter, params.filter]);
+    params = { ...parentParams, ...params };
+  } catch (err) {
+    console.error(err);
+  }
+  return <TableSelectorParamsContext.Provider value={params}>{children}</TableSelectorParamsContext.Provider>;
+};
 
 const InternalTableSelectorProvider = (props) => {
   const { params, rowKey, extraFilter } = props;
@@ -102,7 +133,8 @@ const useAssociationNames = (collection) => {
   );
 };
 
-export const TableSelectorProvider = (props) => {
+export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
+  const parentParams = useTableSelectorParams();
   const fieldSchema = useFieldSchema();
   const { getCollectionJoinField, getCollectionFields } = useCollectionManager();
   const record = useRecord();
@@ -111,12 +143,12 @@ export const TableSelectorProvider = (props) => {
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
   const collectionFieldSchema = recursiveParent(fieldSchema, 'CollectionField');
   const collectionField = getCollectionJoinField(collectionFieldSchema?.['x-collection-field']);
-  const params = { ...props.params };
   const appends = useAssociationNames(props.collection);
+  let params = { ...props.params };
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
-  if (collection.tree && treeTable !== false) {
+  if (collection?.tree && treeTable !== false) {
     params['tree'] = true;
     if (collectionFieldSchema.name === 'parent') {
       params.filter = {
@@ -195,6 +227,14 @@ export const TableSelectorProvider = (props) => {
       params['filter'] = extraFilter;
     }
   }
+
+  try {
+    params.filter = mergeFilter([parentParams.filter, params.filter]);
+    params = { ...parentParams, ...params };
+  } catch (err) {
+    console.error(err);
+  }
+
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <BlockProvider {...props} params={params}>
