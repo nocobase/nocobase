@@ -13,8 +13,8 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
-import { templateOptions } from './templates';
 import { TemplateSummay } from './components/TemplateSummay';
+import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {

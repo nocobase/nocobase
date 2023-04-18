@@ -1,16 +1,19 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
+import { Collection, CollectionFieldOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
+import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
+import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
@@ -33,15 +36,20 @@ const divWrap = (schema: ISchema) => {
 export const FormItem: any = observer((props: any) => {
   useEnsureOperatorsValid();
 
-  const field = useField();
+  const field = useField<Field>();
   const ctx = useContext(BlockRequestContext);
   const schema = useFieldSchema();
+  const variablesCtx = useVariablesCtx();
 
   useEffect(() => {
     if (ctx?.block === 'form') {
       ctx.field.data = ctx.field.data || {};
       ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
       ctx.field.data.activeFields.add(schema.name);
+      // 如果默认值是一个变量，则需要解析之后再显示出来
+      if (isVariable(schema?.default)) {
+        field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+      }
     }
   }, []);
   return (
@@ -81,6 +89,8 @@ FormItem.Designer = function Designer() {
   const { t } = useTranslation();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
+  const variablesCtx = useVariablesCtx();
+
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -399,26 +409,57 @@ FormItem.Designer = function Designer() {
       {form && !form?.readPretty && (
         <SchemaSettings.ModalItem
           title={t('Set default value')}
-          components={{ ArrayCollapse, FormLayout }}
+          components={{ ArrayCollapse, FormLayout, VariableInput }}
           schema={
             {
               type: 'object',
               title: t('Set default value'),
               properties: {
-                default: {
-                  ...(fieldSchema || {}),
-                  'x-decorator': 'FormItem',
-                  'x-component-props': {
-                    ...fieldSchema['x-component-props'],
-                    component: collectionField?.target ? 'AssociationSelect' : undefined,
-                    service: {
-                      resource: collectionField?.target,
+                // 非关系字段支持设置变量
+                default: collectionField?.target
+                  ? {
+                      ...(fieldSchema || {}),
+                      'x-decorator': 'FormItem',
+                      'x-component-props': {
+                        ...fieldSchema['x-component-props'],
+                        component: collectionField?.target ? 'AssociationSelect' : undefined,
+                        service: {
+                          resource: collectionField?.target,
+                        },
+                      },
+                      name: 'default',
+                      title: t('Default value'),
+                      default: getFieldDefaultValue(fieldSchema, collectionField),
+                    }
+                  : {
+                      ...(fieldSchema || {}),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'VariableInput',
+                      'x-component-props': {
+                        ...fieldSchema['x-component-props'],
+                        collectionName: collectionField?.collectionName,
+                        renderSchemaComponent: (props) => {
+                          const schema = _.cloneDeep(fieldSchema) || ({} as Schema);
+                          schema.title = '';
+                          return (
+                            <SchemaComponent
+                              schema={{
+                                ...(schema || {}),
+                                'x-decorator': 'FormItem',
+                                'x-component-props': {
+                                  ...fieldSchema['x-component-props'],
+                                  ...props,
+                                  defaultValue: getFieldDefaultValue(fieldSchema, collectionField),
+                                },
+                              }}
+                            />
+                          );
+                        },
+                      },
+                      name: 'default',
+                      title: t('Default value'),
+                      default: getFieldDefaultValue(fieldSchema, collectionField),
                     },
-                  },
-                  name: 'default',
-                  title: t('Default value'),
-                  default: getFieldDefaultValue(fieldSchema, collectionField),
-                },
               },
             } as ISchema
           }
@@ -427,7 +468,7 @@ FormItem.Designer = function Designer() {
               ['x-uid']: fieldSchema['x-uid'],
             };
             if (field.value !== v.default) {
-              field.value = v.default;
+              field.value = parseVariables(v.default, variablesCtx);
             }
             fieldSchema.default = v.default;
             schema.default = v.default;
@@ -628,6 +669,6 @@ function isFileCollection(collection: Collection) {
 
 FormItem.FilterFormDesigner = FilterFormDesigner;
 
-export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionField) {
+export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   return fieldSchema?.default || collectionField?.defaultValue;
 }

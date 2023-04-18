@@ -2,7 +2,14 @@ import React from 'react';
 import { Variable } from '../../schema-component';
 import { useVariableOptions } from './Variables';
 
-export function FilterDynamicComponent(props) {
+type Props = {
+  value: any;
+  onChange: (value: any) => void;
+  renderSchemaComponent: () => React.ReactNode;
+  collectionName: string;
+};
+
+export function FilterDynamicComponent(props: Props) {
   const { value, onChange, renderSchemaComponent, collectionName } = props;
   const scope = useVariableOptions(collectionName);
   return (

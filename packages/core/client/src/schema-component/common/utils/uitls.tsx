@@ -1,6 +1,50 @@
-import { every, some, findIndex } from 'lodash';
+import { useForm } from '@formily/react';
 import flat from 'flat';
+import _, { every, findIndex, some } from 'lodash';
+import moment from 'moment';
+import { useCollection } from '../../../collection-manager';
+import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
+
+type VariablesCtx = {
+  /** 当前登录的用户 */
+  $user: Record<string, any>;
+  $system: Record<string, any>;
+};
+
+export const useVariablesCtx = (): VariablesCtx => {
+  const { data } = useCurrentUserContext() || {};
+  const { name } = useCollection();
+  const form = useForm();
+
+  return {
+    $user: data?.data || {},
+    $system: {
+      now: () => moment().toISOString(),
+    },
+    [name]: form.values,
+  };
+};
+
+export const isVariable = (str: unknown) => {
+  if (typeof str !== 'string') {
+    return false;
+  }
+  const regex = /{{(.*?)}}/;
+  const matches = str?.match?.(regex);
+  return matches ? true : false;
+};
+
+export const parseVariables = (str: string, ctx: VariablesCtx) => {
+  const regex = /{{(.*?)}}/;
+  const matches = str?.match?.(regex);
+  if (matches) {
+    const result = _.get(ctx, matches[1]);
+    return _.isFunction(result) ? result() : result;
+  } else {
+    return str;
+  }
+};
 
 function getInnermostKeyAndValue(obj) {
   if (typeof obj !== 'object' || obj === null) {
@@ -17,7 +61,8 @@ function getInnermostKeyAndValue(obj) {
   }
   return null;
 }
-const getValue = (str, values) => {
+
+const getValue = (str: string, values) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
