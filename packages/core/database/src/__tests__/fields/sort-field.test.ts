@@ -62,7 +62,73 @@ describe('sort field', () => {
     });
   });
 
-  it('should support association field as scope key', async () => {
+  it('should support association field as scope key in init records sort value ', async () => {
+    const Group = db.collection({
+      name: 'groups',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'users',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'group',
+          target: 'groups',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g1',
+          users: [{ name: 'g1u1' }, { name: 'g1u2' }],
+        },
+      ],
+    });
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g2',
+          users: [{ name: 'g2u1' }, { name: 'g2u2' }],
+        },
+      ],
+    });
+
+    // add sort field
+    User.setField('sort', { type: 'sort', scopeKey: 'group.name' });
+    await db.sync();
+
+    const users = await User.repository.find({});
+
+    const assertUserSort = (userName, sort) => {
+      const user = users.find((u) => u.name === userName);
+      expect(user.sort).toBe(sort);
+    };
+
+    assertUserSort('g1u1', 1);
+    assertUserSort('g1u2', 2);
+    assertUserSort('g2u1', 1);
+    assertUserSort('g2u2', 2);
+  });
+
+  it('should support association field as scope key in set sort value', async () => {
     const Group = db.collection({
       name: 'groups',
       fields: [
