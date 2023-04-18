@@ -5,22 +5,30 @@ import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
 export const KanbanOptions = observer((props: any) => {
-  const { groupField, collectionFields, getAssociateResource,options } = props;
-  const [dataSource, setDataSource] = useState(options||[]);
+  const { groupField, collectionFields, getAssociateResource, options } = props;
+  const [dataSource, setDataSource] = useState([]);
   const { t } = useTranslation();
-
   useEffect(() => {
     if (groupField) {
       const field = collectionFields.find((v) => {
         return v.name === groupField[0];
       });
-      if (['select', 'radioGroup'].includes(field.interface)&&!options) {
+      if (['select', 'radioGroup'].includes(field.interface)) {
         const data = field.uiSchema.enum.map((v) => {
           return {
             ...v,
           };
         });
-        setDataSource(data);
+        const result = data.map((v) => {
+          const option = options?.find((k) => k.value === v.value);
+          if (option) {
+            return { ...option };
+          } else {
+            return v;
+          }
+        });
+        console.log(result);
+        setDataSource(result);
       } else {
         const resource = getAssociateResource(field.target);
         resource.list({ paginate: false }).then(({ data }) => {
