@@ -44,7 +44,7 @@ export class SortField extends Field {
       });
 
       const newValue = (max || 0) + 1;
-      instance.set(name, newValue);
+      await instance.update({ [name]: newValue }, { transaction });
     });
   };
 

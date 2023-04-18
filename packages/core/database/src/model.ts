@@ -4,7 +4,6 @@ import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import { SyncRunner } from './sync-runner';
-import { isArr } from '@formily/shared';
 
 const _ = lodash;
 
