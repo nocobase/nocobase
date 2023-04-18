@@ -52,7 +52,7 @@ export const transformToFilter = (
 ) => {
   const { operators } = findFilterOperators(fieldSchema);
 
-  return {
+  const result = {
     $and: Object.keys(values)
       .map((key) => {
         const collectionField = getField(key);
@@ -62,7 +62,7 @@ export const transformToFilter = (
 
         const value = getValuesByPath(values, key);
 
-        if (!value) {
+        if (!value || value.length === 0) {
           return null;
         }
 
@@ -74,6 +74,8 @@ export const transformToFilter = (
       })
       .filter(Boolean),
   };
+
+  return result;
 };
 
 export const useAssociatedFields = () => {
