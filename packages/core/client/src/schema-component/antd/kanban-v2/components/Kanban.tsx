@@ -6,9 +6,11 @@ import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useStat
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { Column } from './Column';
 import { useKanbanV2BlockContext, useCollection, useBlockRequestContext } from '../../../../';
+import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
+import { diffObjects } from '../utitls';
 import { loadMoreButton } from '../style';
 
 const reorder = (list, startIndex, endIndex) => {
@@ -73,30 +75,40 @@ const ColumnHeader = ({ color, label }) => {
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { columns, groupField } = useProps();
-  const { associateCollectionField } = useKanbanV2BlockContext();
+  const {
+    associateCollectionField,
+    params: { appends },
+  } = useKanbanV2BlockContext();
   const [columnData, setColumnData] = useState(columns);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
   const { resource, service } = useBlockRequestContext();
+  const fieldSchema = useFieldSchema();
+  const field: any = useField();
   const params = service?.params?.[0] || {};
-
   useEffect(() => {
     columns.map((v, index) => {
-      getColumnDatas(v, index, params);
+      getColumnDatas(v, index, params, appends);
     });
-    return () => {
-      setColumnData(
-        columnData.map((v) => {
-          return { ...v, cards: [] };
-        }),
-      );
-    };
-  }, [groupField, params]);
+  }, [groupField, params, appends]);
 
-  const getColumnDatas = React.useCallback((el, index, params) => {
+  useEffect(() => {
+    if (field.value) {
+      const newState: any = [...columnData];
+      const newColumn = columnData.find((v) => v.value === '__unknown__');
+      newColumn.cards = field.value;
+      newState[newColumn.length - 1] = newColumn;
+    }
+  }, [field.value]);
+
+  const getColumnDatas = React.useCallback((el, index, params, appends?, currentPage?) => {
+    const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
+    const newState: any = [...columnData];
+    const newColumn = columnData.find((v) => v.value === el.value);
     if (el.value !== '__unknown__') {
-      const filter = isAssociationField
+      const page = currentPage || 1;
+      const defaultfilter = isAssociationField
         ? {
             $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: el.value } } }],
           }
@@ -107,17 +119,23 @@ export const KanbanV2: any = (props) => {
       resource
         .list({
           ...params,
-          page: el?.meta?.page + 1 || 1,
-          filter: filter,
+          appends,
+          page: page,
+          filter: mergeFilter([defaultfilter, fieldSchema.parent['x-decorator-props']?.params?.filter, filter]),
         })
         .then(({ data }) => {
           if (data) {
-            const newState: any = [...columnData];
-            const newColumn = columnData.find((v) => v.value === el.value);
-            newColumn.cards = [...(newColumn?.cards || []), ...data.data];
-            newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
-            newState[index] = newColumn;
-            setColumnData(newState);
+            if (page !== 1) {
+              newColumn.cards = [...(newColumn?.cards || []), ...data.data];
+              newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
+              newState[index] = newColumn;
+              setColumnData(newState);
+            } else {
+              newColumn.cards = data.data;
+              newColumn.meta = data.meta;
+              newState[index] = newColumn;
+              setColumnData(newState);
+            }
           }
         });
     }
@@ -131,7 +149,6 @@ export const KanbanV2: any = (props) => {
     const sInd = source.droppableId;
     const dInd = destination.droppableId;
     if (sInd === dInd) {
-      // same column
       const items = reorder(columnData.find((v) => v.value === sInd).cards, source.index, destination.index);
       const newColumn = columnData.find((v) => v.value === sInd);
       const index = columnData.findIndex((v) => v.value === sInd);
@@ -192,6 +209,7 @@ export const KanbanV2: any = (props) => {
         <DragDropContext onDragEnd={onDragEnd}>
           {columnData.map((el, ind) => (
             <div
+              key={`column_${ind}`}
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -203,7 +221,7 @@ export const KanbanV2: any = (props) => {
               <ColumnHeader {...el} />
               {el.cards && (
                 <Column
-                  key={ind}
+                  // key={ind}
                   data={el}
                   ind={ind}
                   cards={el.cards}
@@ -212,7 +230,10 @@ export const KanbanV2: any = (props) => {
                 />
               )}
               {el?.cards?.length < el?.meta?.count && (
-                <a className={cx(loadMoreButton)} onClick={() => getColumnDatas(el, ind, params)}>
+                <a
+                  className={cx(loadMoreButton)}
+                  onClick={() => getColumnDatas(el, ind, params, appends, el?.meta?.page + 1)}
+                >
                   加载更多
                 </a>
               )}

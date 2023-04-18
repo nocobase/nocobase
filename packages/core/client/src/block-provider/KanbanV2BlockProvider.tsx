@@ -5,6 +5,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import { useCollection, useCollectionManager } from '../collection-manager';
 import { RecordProvider } from '../record-provider';
+import { mergeFilter } from '../block-provider/SharedFilterProvider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { isAssocField } from '../filter-provider/utils';
 
@@ -104,18 +105,27 @@ export const KanbanV2BlockProvider = (props) => {
   if (!groupField) {
     return null;
   }
+  let filter = {};
   if (isAssociationField) {
-    params['filter'] = {
+    filter = {
       $and: [{ [groupField.name]: { id: { $notExists: true } } }],
     };
   } else {
-    params['filter'] = {
+    filter = {
       $and: [{ [groupField.name]: { $empty: true } }],
     };
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+  const mergedFilters = mergeFilter([filter, props.params.filter]);
+  columns.push({
+    value: '__unknown__',
+    label: 'Unknnwn',
+    color: 'default',
+    cards: [],
+  });
+  params['filter'] = mergedFilters;
   return (
     <BlockProvider {...props} params={params}>
       <InternalKanbanV2BlockProvider
@@ -135,15 +145,11 @@ export const useKanbanV2BlockContext = () => {
 
 export const useKanbanV2BlockProps = () => {
   const ctx = useKanbanV2BlockContext();
+  const field: any = useField();
   const { columns } = ctx;
   useEffect(() => {
     if (!ctx.service.loading) {
-      columns.push({
-        value: '__unknown__',
-        label: 'Unknnwn',
-        color: 'default',
-        cards: ctx?.service?.data?.data,
-      });
+      field.value = ctx?.service?.data?.data;
       ctx.form.reset().then(() => {
         ctx.form.setValues(ctx.service?.data?.data?.[0] || {});
       });

@@ -8,19 +8,7 @@ import { useCollectionFilterOptions } from '../../../collection-manager/action-h
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
 
-const useOptions = (type = 'string') => {
-  const compile = useCompile();
-  const { fields } = useCollection();
-  const options = fields
-    ?.filter((field) => field.type === type)
-    ?.map((field) => {
-      return {
-        value: field.name,
-        label: compile(field?.uiSchema?.title),
-      };
-    });
-  return options;
-};
+
 
 export const KanabanDesigner = () => {
   const field = useField();
@@ -29,12 +17,12 @@ export const KanabanDesigner = () => {
   const dataSource = useCollectionFilterOptions(name);
   const { service } = useKanbanV2BlockContext();
   const { dn } = useDesignable();
-  const compile = useCompile();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const displayLable = fieldSchema['x-label-disabled'] === undefined ? true : fieldSchema['x-label-disabled'];
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -137,6 +125,20 @@ export const KanabanDesigner = () => {
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'KanbanV2'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
+      <SchemaSettings.SwitchItem
+        title={t('Display field title')}
+        checked={displayLable}
+        onChange={(disabled) => {
+          fieldSchema['x-label-disabled'] = disabled;
+          dn.emit('patch', {
+            schema: {
+              'x-uid': fieldSchema['x-uid'],
+              'x-label-disabled': disabled,
+            },
+          });
+          dn.refresh();
+        }}
+      />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{
