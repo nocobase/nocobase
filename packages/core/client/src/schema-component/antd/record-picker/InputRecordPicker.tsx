@@ -3,7 +3,10 @@ import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
+import {
+  TableSelectorParamsProvider,
+  useTableSelectorProps as useTsp,
+} from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
@@ -47,7 +50,6 @@ const useTableSelectorProps = () => {
         .filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
         .map((item) => item[rowKey]),
     },
-    dataSource: field.value?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey])),
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
         const scopeRows = flatData(field.value) || [];
@@ -69,11 +71,11 @@ const useTableSelectorProps = () => {
 
 const usePickActionProps = () => {
   const { setVisible } = useActionContext();
-  const { multiple, selectedRows, onChange, options } = useContext(RecordPickerContext);
+  const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
   return {
     onClick() {
       if (multiple) {
-        onChange([...options, ...selectedRows]);
+        onChange(unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
       } else {
         onChange(selectedRows?.[0] || null);
       }
@@ -182,10 +184,10 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           allowClear
           onChange={(changed: any) => {
             if (!changed) {
-              onChange(null);
+              onChange([]);
               setSelectedRows([]);
             } else if (!changed?.length) {
-              onChange(null);
+              onChange([]);
               setSelectedRows([]);
             } else if (Array.isArray(changed)) {
               const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
@@ -234,20 +236,32 @@ const Drawer: React.FunctionComponent<{
   fieldSchema,
   options,
 }) => {
+  console.log('collectionField', options);
+  const getFilter = () => {
+    const targetKey = collectionField.targetKey || 'id';
+    const list = options.map((option) => option[targetKey]);
+    const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
+    return filter;
+  };
+
   return (
-    <RecordPickerContext.Provider value={{ multiple, onChange, selectedRows, setSelectedRows, options }}>
+    <RecordPickerContext.Provider
+      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
+    >
       <CollectionProvider allowNull name={collectionField?.target}>
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <FormProvider>
-            <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
-              <RecursionField
-                schema={fieldSchema}
-                onlyRenderProperties
-                filterProperties={(s) => {
-                  return s['x-component'] === 'RecordPicker.Selector';
-                }}
-              />
-            </SchemaComponentOptions>
+            <TableSelectorParamsProvider params={{ filter: getFilter() }}>
+              <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
+                <RecursionField
+                  schema={fieldSchema}
+                  onlyRenderProperties
+                  filterProperties={(s) => {
+                    return s['x-component'] === 'RecordPicker.Selector';
+                  }}
+                />
+              </SchemaComponentOptions>
+            </TableSelectorParamsProvider>
           </FormProvider>
         </ActionContext.Provider>
       </CollectionProvider>
