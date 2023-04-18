@@ -24,7 +24,7 @@ export class SortField extends Field {
       return;
     }
 
-    const where = {};
+    const filter = {};
 
     if (scopeKey) {
       const value = this.isAssociatedScopeKey()
@@ -32,13 +32,17 @@ export class SortField extends Field {
         : instance.get(scopeKey);
 
       if (value !== undefined && value !== null) {
-        where[scopeKey] = value;
+        filter[scopeKey] = value;
       }
     }
 
-    console.log(where);
     await sortFieldMutex.runExclusive(async () => {
-      const max = await model.max<number, any>(name, { ...options, where });
+      const max = await this.context.collection.repository.max({
+        field: name,
+        filter,
+        transaction,
+      });
+
       const newValue = (max || 0) + 1;
       instance.set(name, newValue);
     });
