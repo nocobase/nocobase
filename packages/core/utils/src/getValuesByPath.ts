@@ -19,6 +19,10 @@ export const getValuesByPath = (obj: object, path: string, defaultValue?: any) =
 
     currentValue = currentValue[key] === undefined ? defaultValue : currentValue[key];
 
+    if (currentValue === undefined) {
+      break;
+    }
+
     if (i === keys.length - 1) {
       result.push(currentValue);
     }

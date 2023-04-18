@@ -280,6 +280,7 @@ export const useFilterBlockActionProps = () => {
         );
         actionField.data.loading = false;
       } catch (error) {
+        console.error(error);
         actionField.data.loading = false;
       }
     },

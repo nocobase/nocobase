@@ -32,7 +32,7 @@ describe('getValuesByPath', () => {
       a: { b: 1 },
     };
     const result = getValuesByPath(obj, '');
-    expect(result).toBe(undefined);
+    expect(result).toEqual([]);
   });
 
   it('when path is not found', () => {
@@ -40,7 +40,7 @@ describe('getValuesByPath', () => {
       a: { b: 1 },
     };
     const result = getValuesByPath(obj, 'a.c');
-    expect(result).toBe(undefined);
+    expect(result).toEqual([]);
   });
 
   it('when path is not found in nested array', () => {
@@ -48,7 +48,7 @@ describe('getValuesByPath', () => {
       a: [{ b: 1 }, { b: 2 }],
     };
     const result = getValuesByPath(obj, 'a.c');
-    expect(result).toEqual([undefined, undefined]);
+    expect(result).toEqual([]);
   });
 
   it('when path is not found in nested array with empty string', () => {
@@ -56,7 +56,7 @@ describe('getValuesByPath', () => {
       a: [{ b: 1 }, { b: 2 }],
     };
     const result = getValuesByPath(obj, 'a.');
-    expect(result).toEqual([undefined, undefined]);
+    expect(result).toEqual([]);
   });
 
   it('when obj is null', () => {
@@ -71,5 +71,13 @@ describe('getValuesByPath', () => {
     };
     const result = getValuesByPath(obj, 'a.c', null);
     expect(result).toBe(null);
+  });
+
+  it('should return empty array when obj key value is undefined', () => {
+    const obj = {
+      a: undefined,
+    };
+    const result = getValuesByPath(obj, 'a.b');
+    expect(result).toEqual([]);
   });
 });
