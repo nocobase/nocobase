@@ -69,8 +69,8 @@ export default abstract class QueryInterface {
 
     if (association.associationType === 'BelongsTo') {
       joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${collection.quotedTableName()}.${q(
-        association.identifierField,
-      )} = ${q(association.as)}.${q(association.sourceKeyField)}`;
+        association.identifier,
+      )} = ${q(association.as)}.${q(association.targetIdentifier)}`;
     }
 
     return joinSQL;
