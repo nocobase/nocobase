@@ -70,6 +70,7 @@ describe('sort field', () => {
         {
           type: 'hasMany',
           name: 'users',
+          foreignKey: 'group_id',
         },
       ],
     });
@@ -114,6 +115,18 @@ describe('sort field', () => {
         },
       ],
     });
+
+    const users = await User.repository.find({});
+
+    const assertUserSort = (userName, sort) => {
+      const user = users.find((u) => u.name === userName);
+      expect(user.sort).toBe(sort);
+    };
+
+    assertUserSort('g1u1', 1);
+    assertUserSort('g1u2', 2);
+    assertUserSort('g2u1', 1);
+    assertUserSort('g2u2', 2);
   });
 
   it('should init sorted value with thousand records', async () => {

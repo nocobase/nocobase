@@ -157,6 +157,10 @@ interface RelatedQueryOptions {
   };
 }
 
+interface MaxOptions extends Transactionable {
+  field: string;
+}
+
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
@@ -617,6 +621,17 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         transaction,
       });
     }
+  }
+
+  @transaction()
+  async max(options: MaxOptions) {
+    const transaction = await this.getTransaction(options);
+    const queryOptions = this.buildQueryOptions(options);
+
+    return await this.model.max(options.field, {
+      ...queryOptions,
+      transaction,
+    });
   }
 
   /**
