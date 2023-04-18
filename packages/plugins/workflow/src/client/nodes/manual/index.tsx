@@ -96,7 +96,7 @@ export default {
       return null;
     }
 
-    return formKeys.map(formKey => {
+    const options = formKeys.map(formKey => {
       const form = config.forms[formKey];
 
       const fields = (form.collection?.fields ?? []).map(field => ({
@@ -116,6 +116,8 @@ export default {
         }
         : null;
     }).filter(Boolean);
+
+    return options.length ? options : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     const formKeys = Object.keys(node.config.forms ?? {});
