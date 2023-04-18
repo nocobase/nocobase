@@ -2,6 +2,121 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
 
+describe('max', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase();
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('can get max value', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'integer',
+          name: 'age',
+        },
+        {
+          type: 'string',
+          name: 'group',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        { name: 'user1', age: 10, group: 'A' },
+        { name: 'user2', age: 20, group: 'A' },
+        { name: 'user3', age: 30, group: 'B' },
+        { name: 'user4', age: 40, group: 'B' },
+      ],
+    });
+
+    expect(await User.repository.max({ field: 'age' })).toEqual(40);
+    expect(await User.repository.max({ field: 'age', filter: { group: 'A' } })).toEqual(20);
+    expect(await User.repository.max({ field: 'age', filter: { group: 'D' } })).toBeFalsy();
+  });
+
+  it('can get max value with filter', async () => {
+    const Tag = db.collection({
+      name: 'tags',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { name: 'name', type: 'string' },
+        { name: 'age', type: 'integer' },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
+      ],
+    });
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'integer',
+          name: 'age',
+        },
+        {
+          type: 'belongsTo',
+          name: 'profile',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          age: 10,
+          profile: {
+            name: 'pu1',
+            tags: [{ name: 't1' }],
+          },
+        },
+        {
+          name: 'u2',
+          age: 20,
+          profile: {
+            name: 'pu2',
+            tags: [{ name: 't2' }],
+          },
+        },
+        {
+          name: 'u3',
+          age: 30,
+          profile: {
+            name: 'pu3',
+            tags: [{ name: 't1' }],
+          },
+        },
+      ],
+    });
+
+    expect(await User.repository.max({ field: 'age', filter: { 'profile.tags.name': 't1' } })).toEqual(30);
+  });
+});
 describe('find by targetKey', function () {
   let db: Database;
 
