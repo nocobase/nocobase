@@ -1,28 +1,23 @@
-import { useForm } from '@formily/react';
 import flat from 'flat';
 import _, { every, findIndex, some } from 'lodash';
 import moment from 'moment';
-import { useCollection } from '../../../collection-manager';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
   $user: Record<string, any>;
-  $system: Record<string, any>;
+  $date: Record<string, any>;
 };
 
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
-  const { name } = useCollection();
-  const form = useForm();
 
   return {
     $user: data?.data || {},
-    $system: {
+    $date: {
       now: () => moment().toISOString(),
     },
-    [name]: form.values,
   };
 };
 

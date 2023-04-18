@@ -1,6 +1,6 @@
-import React from 'react';
-import { Variable } from '../../schema-component';
-import { useVariableOptions } from '../LinkageRules/Variables';
+import React, { useMemo } from 'react';
+import { Variable, useCompile } from '../../schema-component';
+import { useUserVariable } from './hooks/useUserVariable';
 
 type Props = {
   value: any;
@@ -8,13 +8,34 @@ type Props = {
   collectionName: string;
   renderSchemaComponent?: (props: any) => React.ReactNode;
   style: React.CSSProperties;
+  schema: any;
+  operator: any;
   children: any;
 };
 
 export const VariableInput = (props: Props) => {
-  const { value, onChange, collectionName, renderSchemaComponent, style } = props;
+  const { value, onChange, renderSchemaComponent, style, schema } = props;
+  const compile = useCompile();
+  const userVariable = useUserVariable({ schema, level: 1 });
+  const scope = useMemo(() => {
+    return [
+      userVariable,
+      compile({
+        label: `{{t("Date variables")}}`,
+        value: '$date',
+        key: '$date',
+        disabled: schema['x-component'] !== 'DatePicker',
+        children: [
+          {
+            key: 'now',
+            value: 'now',
+            label: `{{t("Now")}}`,
+          },
+        ],
+      }),
+    ];
+  }, []);
 
-  const scope = useVariableOptions(collectionName);
   return (
     <Variable.Input value={value} onChange={onChange} scope={scope} style={style}>
       {renderSchemaComponent?.({ value, onChange })}

@@ -1,18 +1,20 @@
-import { useCompile, useFilterOptions } from '../../../schema-component';
+import { useMemo } from 'react';
+import { useCompile, useGetFilterOptions } from '../../../schema-component';
 
 interface GetOptionsParams {
   schema: any;
-  operator: string;
+  operator?: string;
   maxDepth: number;
   count?: number;
+  getFilterOptions: (collectionName: string) => any[];
 }
 
-const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
+const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, getFilterOptions }: GetOptionsParams) => {
   if (count > maxDepth) {
     return [];
   }
 
-  const result = useFilterOptions(collectionName).map((option) => {
+  const result = options.map((option) => {
     if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
       return {
         key: option.name,
@@ -24,11 +26,12 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
     }
 
     const children =
-      useOptions(option.target, {
+      getChildren(getFilterOptions(option.target), {
         schema,
         operator,
         maxDepth,
         count: count + 1,
+        getFilterOptions,
       }) || [];
 
     return {
@@ -43,15 +46,22 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
   return result;
 };
 
-export const useUserVariable = ({ operator, schema }) => {
+export const useUserVariable = ({ operator, schema, level }: { operator?: any; schema: any; level?: number }) => {
   const compile = useCompile();
-  const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
+  const getFilterOptions = useGetFilterOptions();
 
-  return compile({
-    label: `{{t("Current user")}}`,
-    value: '$user',
-    key: '$user',
-    disabled: options.every((option) => option.disabled),
-    children: options,
-  });
+  const children = useMemo(
+    () => getChildren(getFilterOptions('users'), { schema, operator, maxDepth: level || 3, getFilterOptions }) || [],
+    [operator, schema],
+  );
+
+  return useMemo(() => {
+    return compile({
+      label: `{{t("Current user")}}`,
+      value: '$user',
+      key: '$user',
+      disabled: children.every((option) => option.disabled),
+      children: children,
+    });
+  }, [children]);
 };

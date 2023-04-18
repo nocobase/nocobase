@@ -415,7 +415,7 @@ FormItem.Designer = function Designer() {
               type: 'object',
               title: t('Set default value'),
               properties: {
-                // 非关系字段支持设置变量
+                // 关系字段不支持设置变量
                 default: collectionField?.target
                   ? {
                       ...(fieldSchema || {}),
@@ -438,6 +438,7 @@ FormItem.Designer = function Designer() {
                       'x-component-props': {
                         ...fieldSchema['x-component-props'],
                         collectionName: collectionField?.collectionName,
+                        schema: collectionField?.uiSchema,
                         renderSchemaComponent: (props) => {
                           const schema = _.cloneDeep(fieldSchema) || ({} as Schema);
                           schema.title = '';

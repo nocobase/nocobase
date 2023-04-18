@@ -22,7 +22,9 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
-  const { options } = useContext(FilterContext);
+  const logic = useContext(FilterLogicContext);
+  const { options } = useContext(FilterContext) || {};
+
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -32,7 +34,7 @@ export const useValues = () => {
     field.data = field.data || {};
     const values = flat(field.value);
     const path = Object.keys(values).shift() || '';
-    if (!path) {
+    if (!path || !options) {
       return;
     }
     const [fieldPath = '', otherPath = ''] = path.split('.$');
@@ -50,7 +52,7 @@ export const useValues = () => {
   useEffect(value2data, [field.path.entire]);
   return {
     fields: options,
-    ...field.data,
+    ...(field?.data || {}),
     setDataIndex(dataIndex) {
       const option = findOption(dataIndex, options);
       const operator = option?.operators?.[0];
