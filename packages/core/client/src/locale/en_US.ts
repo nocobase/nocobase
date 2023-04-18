@@ -680,5 +680,7 @@ export default {
   "UpdatedAt": "Recording a row's last updated user",
   "Column width": "Column width",
   "Sortable": "Sortable",
-  "Enable link": "Enable link"
+  "Enable link": "Enable link",
+  "All loaded, nothing more":"All loaded, nothing more",
+  "Load more":"Load more"
 };

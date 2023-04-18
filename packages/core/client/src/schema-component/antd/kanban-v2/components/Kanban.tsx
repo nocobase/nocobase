@@ -3,6 +3,7 @@ import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react
 import { Tag } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
+import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
 import { useKanbanV2BlockContext, useBlockRequestContext } from '../../../../';
 import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
@@ -79,6 +80,7 @@ export const KanbanV2: any = (props) => {
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
   const { resource, service } = useBlockRequestContext();
+  const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field: any = useField();
   const params = service?.params?.[0] || {};
@@ -229,7 +231,7 @@ export const KanbanV2: any = (props) => {
                   className={cx(loadMoreButton)}
                   onClick={() => getColumnDatas(el, ind, params, appends, el?.meta?.page + 1)}
                 >
-                  加载更多
+                  {t('Load more')}
                 </a>
               )}
             </div>

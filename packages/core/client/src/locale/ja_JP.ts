@@ -592,4 +592,6 @@ export default {
 
   'Click or drag file to this area to upload': 'クリックまたはドラッグしてファイルをアップロード',
   'Support for a single or bulk upload, file size should not exceed': '単一または複数のファイルをアップロードできます。ファイルサイズは',
+  "All loaded, nothing more":"すべてロード完了",
+  "Load more":"追加のロード"
 }

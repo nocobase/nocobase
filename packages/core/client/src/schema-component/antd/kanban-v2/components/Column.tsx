@@ -121,9 +121,11 @@ export const Column = memo((props: any) => {
             loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
             scrollableTarget={`scrollableDiv${ind}`}
             endMessage={
-              <Divider plain style={{ color: '#908d8d' }}>
-                {t('All loaded, nothing more')}
-              </Divider>
+              cards.length > 0 && (
+                <Divider plain style={{ color: '#908d8d' }}>
+                  {t('All loaded, nothing more')}
+                </Divider>
+              )
             }
           >
             {cards?.map((item, index) => (
