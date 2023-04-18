@@ -8,7 +8,6 @@ export const loadMoreButton = css`
   text-align: center;
   text-decoration: none;
   display: inline-block;
-  margin: 10px;
   border-radius: 5px;
   cursor: pointer;
 `;
