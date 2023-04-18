@@ -56,8 +56,8 @@ export const transformToFilter = (
     $and: Object.keys(values)
       .map((key) => {
         const collectionField = getField(key);
-        if (collectionField.targetKey) {
-          key = `${key}.${collectionField.targetKey}`;
+        if (collectionField.target) {
+          key = `${key}.${collectionField.targetKey || 'id'}`;
         }
 
         const value = getValuesByPath(values, key);
@@ -167,4 +167,9 @@ export const useFilterAPI = () => {
     /** 调用该方法进行过滤 */
     doFilter,
   };
+};
+
+export const isInFilterBlock = (schema: Schema) => {
+  const { targets } = findFilterTargets(schema);
+  return !!targets;
 };

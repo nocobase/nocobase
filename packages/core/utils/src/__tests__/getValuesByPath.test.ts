@@ -70,7 +70,7 @@ describe('getValuesByPath', () => {
       a: { b: 1 },
     };
     const result = getValuesByPath(obj, 'a.c', null);
-    expect(result).toBe(null);
+    expect(result).toEqual([]);
   });
 
   it('should return empty array when obj key value is undefined', () => {
