@@ -41,6 +41,9 @@ const InternalField: React.FC = (props: Props) => {
     if (!uiSchema) {
       return;
     }
+    setFieldProps('content', uiSchema['x-content']);
+    setFieldProps('title', uiSchema.title);
+    setFieldProps('description', uiSchema.description);
     if (ctx?.form) {
       setFieldProps('initialValue', fieldSchema.default || defaultValue);
     }
