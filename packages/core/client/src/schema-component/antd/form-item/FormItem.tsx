@@ -483,6 +483,29 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
+      {form && !form?.readPretty && ['o2m', 'm2m'].includes(collectionField.interface) && (
+        <SchemaSettings.SwitchItem
+          key="multiple"
+          title={t('Multiple')}
+          checked={!!fieldSchema['x-component-props']?.multiple}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            field.componentProps = field.componentProps || {};
+
+            fieldSchema['x-component-props'].multiple = value;
+            field.componentProps.multiple = value;
+
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      )}
       {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SwitchItem
           title={t('Enable link')}
