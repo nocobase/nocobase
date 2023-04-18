@@ -1,5 +1,6 @@
 import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
+import { Registry } from '@nocobase/utils';
 
 import Plugin from '../..';
 import { JOB_STATUS } from "../../constants";
@@ -8,6 +9,7 @@ import jobsCollection from './collecions/jobs';
 import usersCollection from './collecions/users';
 import usersJobsCollection from './collecions/users_jobs';
 import { submit } from './actions';
+import initFormTypes, { FormHandler } from './forms';
 
 
 type FormType = {
@@ -87,6 +89,8 @@ function getMode(mode) {
 }
 
 export default class implements Instruction {
+  formTypes = new Registry<FormHandler>();
+
   constructor(protected plugin: Plugin) {
     plugin.db.collection(usersJobsCollection);
     plugin.db.extendCollection(usersCollection);
@@ -114,6 +118,8 @@ export default class implements Instruction {
         submit
       }
     });
+
+    initFormTypes(this);
   }
 
   async run(node, prevJob, processor) {

@@ -137,6 +137,8 @@ export default {
   'Field name existed in form': '表单中已有对应标识的字段',
   'Custom form': '自定义表单',
   'Data record': '数据记录',
+  'Create record form': '新增数据表单',
+  'Update record form': '更新数据表单',
 
   'Create record': '新增数据',
   'Update record': '更新数据',

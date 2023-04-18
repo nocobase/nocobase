@@ -10,6 +10,7 @@ import { merge, uid } from '@nocobase/utils/client';
 
 import { JOB_STATUS } from '../../../constants';
 import { lang, NAMESPACE } from '../../../locale';
+import { findSchema } from '../SchemaConfig';
 
 const FormCollectionContext = React.createContext<any>(null);
 
@@ -300,22 +301,6 @@ function CustomFormFieldInitializer(props) {
   );
 };
 
-function useFormBlockProps() {
-  const { status, result, userId } = useRecord();
-  const { data: user } = useCurrentUserContext();
-  const { name } = useFieldSchema();
-
-  const pattern = Boolean(status)
-    ? (result?.[name] ? 'readPretty' : 'disabled')
-    : (user?.data?.id !== userId ? 'disabled' : 'editable');
-  const form = useMemo(() => createForm({
-    pattern,
-    initialValues: result?.[name] ?? {}
-  }), [result, name]);
-
-  return { form };
-}
-
 export default {
   title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
   config: {
@@ -330,11 +315,28 @@ export default {
     },
     components: {
       FormCollectionProvider
+    },
+    parseFormOptions(root) {
+      const forms = {};
+      const formBlocks: any[] = findSchema(root, item => item['x-decorator'] === 'FormCollectionProvider');
+      formBlocks.forEach(formBlock => {
+        const [formKey] = Object.keys(formBlock.properties);
+        const formSchema = formBlock.properties[formKey];
+        const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
+        formBlock['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
+        forms[formKey] = {
+          type: 'custom',
+          title: formBlock['x-component-props']?.title || formKey,
+          actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
+            .map(item => item['x-decorator-props'].value),
+          collection: formBlock['x-decorator-props'].collection
+        };
+      });
+      return forms;
     }
   },
   block: {
     scope: {
-      useFormBlockProps
     },
     components: {
       FormCollectionProvider: CollectionProvider

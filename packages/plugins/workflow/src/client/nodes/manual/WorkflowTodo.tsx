@@ -1,4 +1,5 @@
-import React, { useContext, createContext, useEffect, useState } from "react";
+import React, { useContext, createContext, useEffect, useState, useMemo } from "react";
+import { createForm } from '@formily/core';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
 import parse from 'json-templates';
@@ -455,6 +456,22 @@ function FlowContextProvider(props) {
   );
 }
 
+function useFormBlockProps() {
+  const { status, result, userId } = useRecord();
+  const { data: user } = useCurrentUserContext();
+  const { name } = useFieldSchema();
+
+  const pattern = Boolean(status)
+    ? (result?.[name] ? 'readPretty' : 'disabled')
+    : (user?.data?.id !== userId ? 'disabled' : 'editable');
+  const form = useMemo(() => createForm({
+    pattern,
+    initialValues: result?.[name] ?? {}
+  }), [status, result, name]);
+
+  return { form };
+}
+
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
   const { id, node, workflow, status, updatedAt } = useRecord();
@@ -521,6 +538,7 @@ WorkflowTodo.Drawer = function () {
         scope={{
           useSubmit,
           useFlowRecordFromBlock,
+          useFormBlockProps,
           ...customForm.block.scope,
         }}
       />

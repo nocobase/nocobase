@@ -1,4 +1,4 @@
-import { BlockInitializers, SchemaInitializerItemOptions } from '@nocobase/client';
+import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
@@ -120,6 +120,7 @@ export default {
     return options.length ? options : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
+    const { getCollection } = useCollectionManager();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
       return null;
@@ -127,8 +128,9 @@ export default {
 
     const forms = formKeys.map(formKey => {
       const form = node.config.forms[formKey];
+      const { fields = [] } = getCollection(form.collection);
 
-      return form.collection?.fields?.length
+      return fields.length
         ? {
           type: 'item',
           title: form.title ?? formKey,

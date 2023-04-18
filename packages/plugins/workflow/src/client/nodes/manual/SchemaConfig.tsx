@@ -23,6 +23,7 @@ import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
 import customForm from './forms/customForm';
+import createForm from './forms/createRecordForm';
 
 
 
@@ -84,12 +85,7 @@ function AddBlockButton(props: any) {
       title: '{{t("Form")}}',
       children: [
         customForm.config.initializer,
-        // {
-        //   key: 'createForm',
-        //   type: 'item',
-        //   title: '{{t("Create record form")}}',
-        //   component: CustomFormBlockInitializer,
-        // },
+        createForm.config.initializer,
         // {
         //   key: 'updateForm',
         //   type: 'item',
@@ -121,7 +117,7 @@ function AddBlockButton(props: any) {
   );
 };
 
-function findSchema(schema, filter, onlyLeaf = false) {
+export function findSchema(schema, filter, onlyLeaf = false) {
   const result = [];
 
   if (!schema) {
@@ -300,27 +296,17 @@ export function SchemaConfig({ value, onChange }) {
           ...trigger.initializers,
           ...nodeInitializers,
           ...customForm.config.initializers,
+          ...createForm.config.initializers
         }}
       >
         <SchemaComponentRefreshProvider
           onRefresh={() => {
-            const forms = {};
             const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
-            const formBlocks: any[] = findSchema(tabs, item => item['x-decorator'] === 'FormCollectionProvider');
-            formBlocks.forEach(formBlock => {
-              const [formKey] = Object.keys(formBlock.properties);
-              const formSchema = formBlock.properties[formKey];
-              const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
-              formBlock['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
-              forms[formKey] = {
-                type: 'custom',
-                title: formBlock['x-component-props']?.title || formKey,
-                actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-                  .map(item => item['x-decorator-props'].value),
-                collection: formBlock['x-decorator-props'].collection
-              };
-            });
 
+            const forms = {
+              ...customForm.config.parseFormOptions(tabs),
+              ...createForm.config.parseFormOptions(tabs),
+            };
             form.setValuesIn('forms', forms);
 
             onChange(tabs.properties);
@@ -331,6 +317,7 @@ export function SchemaConfig({ value, onChange }) {
             components={{
               ...nodeComponents,
               ...customForm.config.components,
+              ...createForm.config.components,
               // NOTE: fake provider component
               ManualActionStatusProvider(props) {
                 return props.children;
