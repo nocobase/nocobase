@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { FormLayout } from '@formily/antd';
 import { Spin, Skeleton, Divider } from 'antd';
 import { css } from '@emotion/css';
@@ -31,12 +31,16 @@ const getListStyle = () => ({
 });
 
 const FormComponent: React.FC<any> = (props) => {
-  const { children, ...others } = props;
+  const { children, setDisableCardDrag, ...others } = props;
   const field = useField();
-  const form = createForm({
-    readPretty: true,
-    initialValues: props.item,
-  });
+  const form = useMemo(
+    () =>
+      createForm({
+        readPretty: true,
+        initialValues: props.item,
+      }),
+    [],
+  );
   const fieldSchema = useFieldSchema();
   const f = form.createVoidField({ ...field.props, basePath: '' });
   return (
@@ -87,55 +91,67 @@ export const Column = memo((props: any) => {
   const params = service?.params?.[0] || {};
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-
+  const [disabledCardDrag, setDisableCardDrag] = useState(false);
   console.log('ind', ind);
   const displayLable = fieldSchema.parent['x-label-disabled'];
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
   };
-
+  fieldSchema.properties.grid['x-component-props'] = {
+    dndContext: {
+      onDragStart: () => {
+        setDisableCardDrag(true);
+      },
+      onDragEnd: () => {
+        setDisableCardDrag(false);
+      },
+    },
+  };
   return (
     <Droppable key={ind} droppableId={`${data.value}`}>
       {(provided, snapshot) => (
-        <div>
-          <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps} id={`scrollableDiv${ind}`}>
-            <InfiniteScroll
-              key={ind}
-              dataLength={cards.length}
-              next={() => loadMoreData(data, ind)}
-              hasMore={cards.length < data?.meta?.count}
-              loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
-              scrollableTarget={`scrollableDiv${ind}`}
-              endMessage={
-                <Divider plain style={{ color: '#908d8d' }}>
-                  {t('All loaded, nothing more')}
-                </Divider>
-              }
-            >
-              {cards?.map((item, index) => (
-                <Draggable key={item.id} draggableId={`item-${item.id}`} index={index}>
-                  {(provided, snapshot) => (
+        <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps} id={`scrollableDiv${ind}`}>
+          <InfiniteScroll
+            key={ind}
+            dataLength={cards.length}
+            next={() => loadMoreData(data, ind)}
+            hasMore={cards.length < data?.meta?.count}
+            loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
+            scrollableTarget={`scrollableDiv${ind}`}
+            endMessage={
+              <Divider plain style={{ color: '#908d8d' }}>
+                {t('All loaded, nothing more')}
+              </Divider>
+            }
+          >
+            {cards?.map((item, index) => (
+              <Draggable key={item.id} draggableId={`item-${item.id}`} index={index} isDragDisabled={disabledCardDrag}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.draggableProps}
+                    {...provided.dragHandleProps}
+                    style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+                  >
                     <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-around',
+                      }}
                     >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-around',
-                        }}
-                      >
-                        <List {...props} item={item} displayLable={displayLable} />
-                      </div>
+                      <List
+                        {...props}
+                        item={item}
+                        displayLable={displayLable}
+                        setDisableCardDrag={setDisableCardDrag}
+                      />
                     </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </InfiniteScroll>
-          </div>
+                  </div>
+                )}
+              </Draggable>
+            ))}
+            {provided.placeholder}
+          </InfiniteScroll>
         </div>
       )}
     </Droppable>

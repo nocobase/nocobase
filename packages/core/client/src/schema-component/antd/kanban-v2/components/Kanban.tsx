@@ -1,11 +1,10 @@
-import { css, cx } from '@emotion/css';
-import { createForm } from '@formily/core';
+import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+import React, { useEffect, useState } from 'react';
+import { DragDropContext } from 'react-beautiful-dnd';
 import { Column } from './Column';
-import { useKanbanV2BlockContext, useCollection, useBlockRequestContext } from '../../../../';
+import { useKanbanV2BlockContext, useBlockRequestContext } from '../../../../';
 import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
@@ -28,18 +27,14 @@ const move = (source, destination, droppableSource, droppableDestination) => {
   const sourceClone = Array.from(source);
   const destClone = Array.from(destination);
   const [removed] = sourceClone.splice(droppableSource.index, 1);
-
   destClone.splice(droppableDestination.index, 0, removed);
-
   const result = {};
   result[droppableSource.droppableId] = sourceClone;
   result[droppableDestination.droppableId] = destClone;
-
   return result;
 };
 const KanbanRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
-  // const form = useMemo(() => createForm(), [record]);
   const field = useField();
   const fieldSchema = useFieldSchema();
   const eventSchema: Schema = fieldSchema.properties.cardViewer;

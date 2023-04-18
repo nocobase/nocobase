@@ -1609,7 +1609,7 @@ export const createKanbanBlockSchema = (options) => {
 };
 
 export const createKanbanV2BlockSchema = (options) => {
-  const { collection, resource, groupField, params,...others } = options;
+  const { collection, resource, groupField, params, ...others } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1647,30 +1647,12 @@ export const createKanbanV2BlockSchema = (options) => {
           useProps: '{{ useKanbanV2BlockProps }}',
         },
         properties: {
-          grid:  {
+          grid: {
             type: 'void',
             'x-component': 'Grid',
             'x-initializer': 'ReadPrettyFormItemInitializers',
             properties: {},
           },
-          // card: {
-          //   type: 'void',
-          //   'x-read-pretty': true,
-          //   'x-label-disabled': true,
-          //   'x-decorator': 'BlockItem',
-          //   'x-component': 'Kanban.Card',
-          //   'x-component-props': {
-          //     openMode: 'drawer',
-          //   },
-          //   'x-designer': 'Kanban.Card.Designer',
-          //   properties: {
-          //     grid: {
-          //       type: 'void',
-          //       'x-component': 'Grid',
-          //       'x-component-props': { dndContext: false },
-          //     },
-          //   },
-          // },
           cardViewer: {
             type: 'void',
             title: '{{ t("View") }}',
