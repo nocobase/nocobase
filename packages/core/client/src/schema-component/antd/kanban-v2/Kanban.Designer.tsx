@@ -1,65 +1,92 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile, useDesignable } from '../..';
+import { useDesignable } from '../..';
 import { useKanbanV2BlockContext } from '../../../block-provider';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
-
-
 
 export const KanabanDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name, title, fields } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useKanbanV2BlockContext();
+  const { resource, service } = useKanbanV2BlockContext();
+  const { getCollectionFields, getCollectionFieldsOptions } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const template = useSchemaTemplate();
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
-  const fieldNames = fieldSchema?.['x-decorator-props']?.['fieldNames'] || {};
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const displayLable = fieldSchema['x-label-disabled'] === undefined ? true : fieldSchema['x-label-disabled'];
+  const collectionFields = getCollectionFields(name);
+  const groupFieldsOptions = getCollectionFieldsOptions(name, 'string', {
+    association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho'],
+  }).filter((v) => v.children || ['select', 'radioGroup'].includes(v.interface));
+  const groupField = fieldSchema['x-decorator-props']?.groupField || [];
+  const options = fieldSchema['x-decorator-props']?.columns;
+  const getAssociateResource = (collectionName) => {
+    return resource;
+  };
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Group field')}
+        scope={{ collectionFields, getAssociateResource, options }}
         schema={
           {
             type: 'object',
             title: t('Group field'),
             properties: {
-              filter: {
-                default: defaultFilter,
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {},
+              groupField: {
+                title: t('Grouping field'),
+                enum: groupFieldsOptions,
+                required: true,
+                default: groupField,
+                'x-disabled': true,
+                description: '{{t("Single select and radio fields can be used as the grouping field")}}',
+                'x-component': 'Cascader',
+                'x-component-props': {
+                  objectValue: true,
+                  fieldNames: { label: 'label', value: 'value' },
+                },
+                'x-decorator': 'FormItem',
+              },
+              options: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'KanbanOptions',
+                'x-component-props': {
+                  name,
+                },
+                'x-reactions': {
+                  dependencies: ['groupField'],
+                  fulfill: {
+                    schema: {
+                      'x-component-props': '{{{getAssociateResource,options,collectionFields,...$form.values}}}',
+                    },
+                  },
+                },
               },
             },
           } as ISchema
         }
-        initialValues={
-          {
-            // title: field.title,
-            // icon: field.componentProps.icon,
-          }
-        }
-        onSubmit={({ filter }) => {
-          const params = field.decoratorProps.params || {};
-          params.filter = filter;
-          field.decoratorProps.params = params;
-          fieldSchema['x-decorator-props']['params'] = params;
-          service.run({ ...service?.params?.[0], filter });
+        initialValues={{}}
+        onSubmit={async (values) => {
+          const decoratorProps = field.decoratorProps || {};
+          decoratorProps.columns = values.options;
+          field.decoratorProps = decoratorProps;
+          fieldSchema['x-decorator-props']['columns'] = values.options;
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
               'x-decorator-props': field.decoratorProps,
             },
           });
+          dn.refresh();
         }}
       />
       <SchemaSettings.SelectItem

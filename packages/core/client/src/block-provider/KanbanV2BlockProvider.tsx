@@ -119,7 +119,8 @@ export const KanbanV2BlockProvider = (props) => {
     params['appends'] = appends;
   }
   const mergedFilters = mergeFilter([filter, props.params.filter]);
-  columns.push({
+  const kanbanColumns = columns.filter((v) => v.enabled);
+  kanbanColumns.push({
     value: '__unknown__',
     label: 'Unknnwn',
     color: 'default',
@@ -133,7 +134,7 @@ export const KanbanV2BlockProvider = (props) => {
         params={params}
         groupField={groupField}
         associateCollectionField={props.groupField}
-        columns={columns}
+        columns={kanbanColumns}
       />
     </BlockProvider>
   );

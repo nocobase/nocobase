@@ -1,7 +1,7 @@
 import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -70,8 +70,9 @@ const ColumnHeader = ({ color, label }) => {
 };
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
-  const { columns, groupField } = useProps();
+  const { groupField } = useProps();
   const {
+    columns,
     associateCollectionField,
     params: { appends },
   } = useKanbanV2BlockContext();
@@ -84,8 +85,9 @@ export const KanbanV2: any = (props) => {
   const fieldSchema = useFieldSchema();
   const field: any = useField();
   const params = service?.params?.[0] || {};
+
   useEffect(() => {
-    columns.map((v, index) => {
+    columnData.map((v, index) => {
       getColumnDatas(v, index, params, appends);
     });
   }, [groupField, params, appends]);
@@ -102,7 +104,8 @@ export const KanbanV2: any = (props) => {
   const getColumnDatas = React.useCallback((el, index, params, appends?, currentPage?) => {
     const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
     const newState: any = [...columnData];
-    const newColumn = columnData.find((v) => v.value === el.value);
+    const newColumn = columnData.find((v) => v.value === el.value) || {};
+
     if (el.value !== '__unknown__') {
       const page = currentPage || 1;
       const defaultfilter = isAssociationField
@@ -202,7 +205,7 @@ export const KanbanV2: any = (props) => {
   }, []);
   return (
     <div>
-      <div style={{ display: 'flex' }}>
+      <div style={{ display: 'flex', overflowX: 'auto' }}>
         <DragDropContext onDragEnd={onDragEnd}>
           {columnData.map((el, ind) => (
             <div

@@ -33,7 +33,6 @@ const getListStyle = () => ({
 const FormComponent: React.FC<any> = (props) => {
   const { children, setDisableCardDrag, ...others } = props;
   const field = useField();
-  console.log(props.item);
   const form = useMemo(
     () =>
       createForm({
@@ -94,7 +93,7 @@ export const Column = memo((props: any) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
-  console.log('ind', ind, groupField);
+  console.log('ind', ind);
   const displayLable = fieldSchema.parent['x-label-disabled'];
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);

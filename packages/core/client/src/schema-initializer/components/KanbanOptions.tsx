@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
 export const KanbanOptions = observer((props: any) => {
-  const { groupField, collectionFields, getAssociateResource } = props;
-  const [dataSource, setDataSource] = useState([]);
+  const { groupField, collectionFields, getAssociateResource,options } = props;
+  const [dataSource, setDataSource] = useState(options||[]);
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -14,8 +14,7 @@ export const KanbanOptions = observer((props: any) => {
       const field = collectionFields.find((v) => {
         return v.name === groupField[0];
       });
-      console.log(field);
-      if (['select', 'radioGroup'].includes(field.interface)) {
+      if (['select', 'radioGroup'].includes(field.interface)&&!options) {
         const data = field.uiSchema.enum.map((v) => {
           return {
             ...v,
@@ -34,8 +33,6 @@ export const KanbanOptions = observer((props: any) => {
           });
           setDataSource(optionsData);
         });
-        console.log(collectionFields);
-        console.log(groupField);
       }
     }
   }, [groupField]);
