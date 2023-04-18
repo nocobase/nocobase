@@ -1,9 +1,10 @@
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelStatic } from 'sequelize';
+import { Model as SequelizeModel, ModelStatic, Transactionable } from 'sequelize';
 import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import { SyncRunner } from './sync-runner';
+import { isArr } from '@formily/shared';
 
 const _ = lodash;
 
@@ -119,6 +120,35 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     };
 
     return traverseJSON(super.toJSON(), opts);
+  }
+  public async lazyLoadGet(key: string, options: Transactionable = {}) {
+    const { transaction } = options;
+
+    const path = key.split('.');
+    const associations = path.slice(0, -1);
+    const field = path[path.length - 1];
+
+    let target = this;
+
+    for (const associationName of associations) {
+      // @ts-ignore
+      const association = target.constructor.associations[associationName];
+
+      if (!association) {
+        throw new Error(`Association ${associationName} not found`);
+      }
+
+      const getAccessor = association.accessors.get;
+      console.log('start get association');
+      target = await target[getAccessor]({ transaction });
+
+      // treat belongsToMany and hasMany as single association
+      if (Array.isArray(target)) {
+        target = target[0];
+      }
+    }
+
+    return target.get(field);
   }
 
   private hiddenObjKey(obj, options: JSONTransformerOptions) {

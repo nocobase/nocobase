@@ -10,8 +10,14 @@ export class SortField extends Field {
     return DataTypes.BIGINT;
   }
 
+  isAssociatedScopeKey() {
+    return this.options.scopeKey && this.options.scopeKey.includes('.');
+  }
+
   setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
+    const { transaction } = options;
+
     const { model } = this.context.collection;
 
     if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
@@ -21,12 +27,16 @@ export class SortField extends Field {
     const where = {};
 
     if (scopeKey) {
-      const value = instance.get(scopeKey);
+      const value = this.isAssociatedScopeKey()
+        ? await instance.lazyLoadGet(scopeKey, { transaction })
+        : instance.get(scopeKey);
+
       if (value !== undefined && value !== null) {
         where[scopeKey] = value;
       }
     }
 
+    console.log(where);
     await sortFieldMutex.runExclusive(async () => {
       const max = await model.max<number, any>(name, { ...options, where });
       const newValue = (max || 0) + 1;
