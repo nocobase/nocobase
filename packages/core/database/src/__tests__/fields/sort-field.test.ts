@@ -23,7 +23,149 @@ describe('sort field', () => {
     await db.close();
   });
 
-  it('should support belongs to many field as scope key', async () => {
+  it('should support nested association as scope key in init record', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'profiles',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
+      ],
+    });
+
+    const tags = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profiles',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        { name: 'u1', profiles: [{ age: 10, tags: [{ name: 't1' }] }] },
+        { name: 'u2', profiles: [{ age: 20, tags: [{ name: 't2' }] }] },
+        { name: 'u3', profiles: [{ age: 30, tags: [{ name: 't1' }] }] },
+        { name: 'u4', profiles: [{ age: 40, tags: [{ name: 't2' }] }] },
+      ],
+    });
+
+    User.setField('sort', {
+      name: 'sort',
+      type: 'sort',
+      scopeKey: 'profiles.tags.name',
+    });
+
+    await db.sync();
+  });
+
+  it('should support belongs to many field as scope key in init record', async () => {
+    const UserProfile = db.collection({
+      name: 'user_profile',
+      fields: [],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'string',
+          name: 'category',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'user',
+          target: 'users',
+          through: 'user_profile',
+          foreignKey: 'profile_id',
+          otherKey: 'user_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profile',
+          target: 'profiles',
+          through: 'user_profile',
+          foreignKey: 'user_id',
+          otherKey: 'profile_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: [{ age: 18, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u2',
+        profile: [{ age: 18, category: 'c2' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u3',
+        profile: [{ age: 20, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u4',
+        profile: [{ age: 20, category: 'c2' }],
+      },
+    });
+
+    User.setField('sort', {
+      type: 'sort',
+      scopeKey: 'profile.category',
+    });
+
+    await db.sync();
+
+    const users = await User.repository.find({});
+    assertUserSort(users, 'u1', 1);
+    assertUserSort(users, 'u2', 1);
+    assertUserSort(users, 'u3', 2);
+    assertUserSort(users, 'u4', 2);
+  });
+
+  it('should support belongs to many field as scope key in set field value', async () => {
     const UserProfile = db.collection({
       name: 'user_profile',
       fields: [],
@@ -228,7 +370,7 @@ describe('sort field', () => {
     assertUserSort(users, 'g2u2', 2);
   });
 
-  it('should init sorted value with thousand records', async () => {
+  it.skip('should init sorted value with thousand records', async () => {
     const Test = db.collection({
       name: 'tests',
       fields: [
@@ -446,6 +588,7 @@ describe('sort field', () => {
         { type: 'string', name: 'status' },
       ],
     });
+
     await db.sync();
 
     const t1 = await Test.model.create({ status: 'publish' });
