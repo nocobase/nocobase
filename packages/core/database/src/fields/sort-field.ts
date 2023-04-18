@@ -46,6 +46,7 @@ export class SortField extends Field {
 
     const sequelizeQueryInterface = db.sequelize.getQueryInterface();
     const q = sequelizeQueryInterface.quoteIdentifier.bind(sequelizeQueryInterface);
+    const qs = sequelizeQueryInterface.quoteIdentifiers.bind(sequelizeQueryInterface);
 
     const queryInterface = db.queryInterface;
 
@@ -75,10 +76,10 @@ export class SortField extends Field {
                    ELSE NULL
                    END
                  ) AND count(*) > 0 as need_init
-          ${scopeKey ? `, ${q(scopeKey)}  as scope_key` : ''}
+          ${scopeKey ? `, ${qs(scopeKey)}  as scope_key` : ''}
         from ${this.collection.quotedTableName()} ${
         isAssociatedScopeKey(scopeKey) ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''
-      } ${scopeKey ? `group by ${q(scopeKey)}` : ''}
+      } ${scopeKey ? `group by ${qs(scopeKey)}` : ''}
       `;
 
       return await db.sequelize.query(SQL, {

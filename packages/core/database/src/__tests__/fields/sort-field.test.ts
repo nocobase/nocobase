@@ -65,7 +65,13 @@ describe('sort field', () => {
   it('should support association field as scope key', async () => {
     const Group = db.collection({
       name: 'groups',
-      fields: [{ type: 'string', name: 'name' }],
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'users',
+        },
+      ],
     });
 
     const User = db.collection({
