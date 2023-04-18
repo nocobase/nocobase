@@ -753,9 +753,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
   }
 
-  @transaction()
   async max(options: MaxOptions): Promise<number | undefined> {
     const transaction = await this.getTransaction(options);
+
     const queryOptions = this.buildQueryOptions({
       ...options,
       fields: [],

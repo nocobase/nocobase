@@ -138,13 +138,15 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
 
       const getAccessor = association.accessors.get;
-      console.log(`start get association ${path}`);
       target = await target[getAccessor]({ transaction });
 
       // treat belongsToMany and hasMany as single association
       if (Array.isArray(target)) {
         target = target[0];
       }
+    }
+    if (!target) {
+      throw new Error(`Association ${key} not found`);
     }
 
     return target.get(field);
