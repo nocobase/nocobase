@@ -37,6 +37,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - run: yarn build
+    timeout-minutes: 15
 
   postgres-test:
     strategy:
@@ -80,3 +81,4 @@ jobs:
           DB_UNDERSCORED: true
           DB_SCHEMA: nocobase
           COLLECTION_MANAGER_SCHEMA: user_schema
+    timeout-minutes: 30
