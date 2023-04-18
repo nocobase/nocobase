@@ -4,6 +4,10 @@ import { SortField } from '../../fields';
 
 describe('sort field', () => {
   let db: Database;
+  const assertUserSort = (users, userName, sort) => {
+    const user = users.find((u) => u.name === userName);
+    expect(user.sort).toBe(sort);
+  };
 
   beforeEach(async () => {
     db = mockDatabase({
@@ -27,7 +31,21 @@ describe('sort field', () => {
 
     const Profile = db.collection({
       name: 'profiles',
-      fields: [{ type: 'integer', name: 'age' }],
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'string',
+          name: 'category',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'user',
+          target: 'users',
+          through: 'user_profile',
+          foreignKey: 'profile_id',
+          otherKey: 'user_id',
+        },
+      ],
     });
 
     const User = db.collection({
@@ -42,6 +60,11 @@ describe('sort field', () => {
           foreignKey: 'user_id',
           otherKey: 'profile_id',
         },
+        {
+          type: 'sort',
+          name: 'sort',
+          scopeKey: 'profile.category',
+        },
       ],
     });
 
@@ -50,16 +73,36 @@ describe('sort field', () => {
     await User.repository.create({
       values: {
         name: 'u1',
-        profile: [{ age: 18 }],
+        profile: [{ age: 18, category: 'c1' }],
       },
     });
 
     await User.repository.create({
       values: {
         name: 'u2',
-        profile: [{ age: 20 }],
+        profile: [{ age: 18, category: 'c2' }],
       },
     });
+
+    await User.repository.create({
+      values: {
+        name: 'u3',
+        profile: [{ age: 20, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u4',
+        profile: [{ age: 20, category: 'c2' }],
+      },
+    });
+
+    const users = await User.repository.find({});
+    assertUserSort(users, 'u1', 1);
+    assertUserSort(users, 'u2', 1);
+    assertUserSort(users, 'u3', 2);
+    assertUserSort(users, 'u4', 2);
   });
 
   it('should support association field as scope key in init records sort value ', async () => {
@@ -117,15 +160,10 @@ describe('sort field', () => {
 
     const users = await User.repository.find({});
 
-    const assertUserSort = (userName, sort) => {
-      const user = users.find((u) => u.name === userName);
-      expect(user.sort).toBe(sort);
-    };
-
-    assertUserSort('g1u1', 1);
-    assertUserSort('g1u2', 2);
-    assertUserSort('g2u1', 1);
-    assertUserSort('g2u2', 2);
+    assertUserSort(users, 'g1u1', 1);
+    assertUserSort(users, 'g1u2', 2);
+    assertUserSort(users, 'g2u1', 1);
+    assertUserSort(users, 'g2u2', 2);
   });
 
   it('should support association field as scope key in set sort value', async () => {
@@ -184,15 +222,10 @@ describe('sort field', () => {
 
     const users = await User.repository.find({});
 
-    const assertUserSort = (userName, sort) => {
-      const user = users.find((u) => u.name === userName);
-      expect(user.sort).toBe(sort);
-    };
-
-    assertUserSort('g1u1', 1);
-    assertUserSort('g1u2', 2);
-    assertUserSort('g2u1', 1);
-    assertUserSort('g2u2', 2);
+    assertUserSort(users, 'g1u1', 1);
+    assertUserSort(users, 'g1u2', 2);
+    assertUserSort(users, 'g2u1', 1);
+    assertUserSort(users, 'g2u2', 2);
   });
 
   it('should init sorted value with thousand records', async () => {

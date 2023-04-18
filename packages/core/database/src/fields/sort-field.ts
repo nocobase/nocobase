@@ -120,24 +120,19 @@ export class SortField extends Field {
         scopeKey ? `PARTITION BY ${qs(scopeKey)}` : ''
       }
         ORDER BY ${orderFieldWithTableName}) AS new_sequence_number
-                               FROM ${this.collection.quotedTableName()}
-                                   ${
-                                     isAssociatedScopeKey(scopeKey)
-                                       ? queryInterface.createJoinSQL(this.collection, scopeKey)
-                                       : ''
-                                   }
-                                   ${(() => {
-                                     if (scopeKey && scopeValue) {
-                                       const hasNull = scopeValue.includes(null);
+        FROM ${this.collection.quotedTableName()}
+        ${isAssociatedScopeKey(scopeKey) ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''}
+        ${(() => {
+          if (scopeKey && scopeValue) {
+            const hasNull = scopeValue.includes(null);
 
-                                       return `WHERE ${qs(scopeKey)} IN (${scopeValue
-                                         .filter((v) => v !== null)
-                                         .map((v) => `'${v}'`)
-                                         .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
-                                     }
-
-                                     return '';
-                                   })()})
+            return `WHERE ${qs(scopeKey)} IN (${scopeValue
+              .filter((v) => v !== null)
+              .map((v) => `'${v}'`)
+              .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
+          }
+          return '';
+        })()})
 
           ${
             this.collection.db.inDialect('mysql')
@@ -183,7 +178,7 @@ export class SortField extends Field {
     this.setListeners({
       afterSync: this.initRecordsSortValue,
       beforeUpdate: this.onScopeChange,
-      beforeCreate: this.setSortValue,
+      afterCreateWithAssociations: this.setSortValue,
     });
   }
 }

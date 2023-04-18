@@ -73,6 +73,20 @@ export default abstract class QueryInterface {
       )} = ${q(association.as)}.${q(association.targetIdentifier)}`;
     }
 
+    if (association.associationType === 'BelongsToMany') {
+      const throughModel = association.through.model;
+      const throughCollection = this.db.modelCollection.get(throughModel);
+
+      joinSQL += `${throughCollection.quotedTableName()} as ${q(
+        throughModel.name,
+      )} ON ${collection.quotedTableName()}.${q(association.sourceKeyField)} = ${q(throughModel.name)}.${q(
+        association.foreignKey,
+      )}`;
+
+      joinSQL += ` LEFT JOIN ${targetCollection.quotedTableName()} as ${q(association.as)} ON ${q(association.as)}.${q(
+        association.targetKeyField,
+      )} = ${q(throughModel.name)}.${q(association.otherKey)}`;
+    }
     return joinSQL;
   }
 }

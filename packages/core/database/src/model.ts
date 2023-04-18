@@ -139,7 +139,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
 
       const getAccessor = association.accessors.get;
-      console.log('start get association');
+      console.log(`start get association ${path}`);
       target = await target[getAccessor]({ transaction });
 
       // treat belongsToMany and hasMany as single association

@@ -168,10 +168,16 @@ export default class FilterParser {
 
         if (!existInclude) {
           // set sequelize include option
-          _.set(include, firstKey, {
+          const includeAttr = {
             association: firstKey,
             attributes: [], // out put empty fields by default
-          });
+          };
+
+          if (associations[firstKey].associationType === 'BelongsToMany') {
+            includeAttr['through'] = { attributes: [] };
+          }
+
+          _.set(include, firstKey, includeAttr);
         }
 
         // association target model
@@ -198,6 +204,15 @@ export default class FilterParser {
 
             const existInclude = _.get(include, assoc);
             if (!existInclude) {
+              const includeAttr = {
+                association: attr,
+                attributes: [],
+              };
+
+              if (target.associations[attr].associationType === 'BelongsToMany') {
+                includeAttr['through'] = { attributes: [] };
+              }
+
               _.set(include, assoc, {
                 association: attr,
                 attributes: [],
