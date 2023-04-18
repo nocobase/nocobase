@@ -165,7 +165,7 @@ function migrateUsedConfig(config, manualForms) {
 
 export default class extends Migration {
   async up() {
-    const match = await this.app.version.satisfies('<=0.9.1-alpha.2');
+    const match = await this.app.version.satisfies('<0.9.1-alpha.3');
     if (!match) {
       return;
     }
@@ -201,7 +201,8 @@ export default class extends Migration {
         filter: {
           nodeId: nodes.map(item => item.id)
         },
-        appends: ['job', 'node']
+        appends: ['job', 'node'],
+        transaction
       });
       // update all results
       await usersJobs.reduce((promise, userJob) => promise.then(async () => {
