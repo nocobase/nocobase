@@ -2,7 +2,7 @@ import { useFieldSchema } from '@formily/react';
 import { useCallback, useMemo } from 'react';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { isInFilterBlock } from '../../../filter-provider';
+import { isInFilterFormBlock } from '../../../filter-provider';
 import { useRecord } from '../../../record-provider';
 
 export default function useServiceOptions(props) {
@@ -44,7 +44,7 @@ export default function useServiceOptions(props) {
     return mergeFilter(
       [
         mergeFilter([
-          isOToAny && !isInFilterBlock(fieldSchema)
+          isOToAny && !isInFilterFormBlock(fieldSchema)
             ? {
                 [collectionField.foreignKey]: {
                   $is: null,
@@ -53,7 +53,7 @@ export default function useServiceOptions(props) {
             : null,
           params?.filter,
         ]),
-        isOToAny && sourceValue !== undefined && sourceValue !== null && !isInFilterBlock(fieldSchema)
+        isOToAny && sourceValue !== undefined && sourceValue !== null && !isInFilterFormBlock(fieldSchema)
           ? {
               [collectionField.foreignKey]: {
                 $eq: sourceValue,

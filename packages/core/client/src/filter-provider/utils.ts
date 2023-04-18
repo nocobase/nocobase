@@ -169,7 +169,12 @@ export const useFilterAPI = () => {
   };
 };
 
-export const isInFilterBlock = (schema: Schema) => {
-  const { targets } = findFilterTargets(schema);
-  return !!targets;
+export const isInFilterFormBlock = (fieldSchema: Schema) => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      return fieldSchema['x-decorator'] === 'FilterFormBlockProvider';
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+  return false;
 };
