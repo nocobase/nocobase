@@ -105,14 +105,32 @@ const InternalMenu: React.FC = (props) => {
       .then((values) => {
         insertBeforeEnd({
           type: 'void',
+          title: values.name,
           'x-component': 'MMenu.Item',
           'x-component-props': values,
           'x-designer': 'MMenu.Item.Designer',
           properties: {
             page: {
+              type: 'void',
               'x-component': 'MPage',
               'x-designer': 'MPage.Designer',
               'x-component-props': {},
+              properties: {
+                header: {
+                  type: 'void',
+                  'x-component': 'MHeader',
+                  'x-designer': 'MHeader.Designer',
+                  'x-component-props': {
+                    title: values.name,
+                    showBack: true,
+                  },
+                },
+                grid: {
+                  type: 'void',
+                  'x-component': 'MGrid',
+                  'x-initializer': 'BlockInitializers',
+                },
+              },
             },
           },
         });
