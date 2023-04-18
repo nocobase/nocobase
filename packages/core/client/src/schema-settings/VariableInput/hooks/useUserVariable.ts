@@ -1,4 +1,4 @@
-import { useFilterOptions } from '../../filter';
+import { useCompile, useFilterOptions } from '../../../schema-component';
 
 interface GetOptionsParams {
   schema: any;
@@ -43,14 +43,15 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
   return result;
 };
 
-export const useUserVariable = ({ schema, operator }) => {
+export const useUserVariable = ({ operator, schema }) => {
+  const compile = useCompile();
   const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
 
-  return {
+  return compile({
     label: `{{t("Current user")}}`,
     value: '$user',
     key: '$user',
     disabled: options.every((option) => option.disabled),
     children: options,
-  };
+  });
 };
