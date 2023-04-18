@@ -33,6 +33,7 @@ const getListStyle = () => ({
 const FormComponent: React.FC<any> = (props) => {
   const { children, setDisableCardDrag, ...others } = props;
   const field = useField();
+  console.log(props.item);
   const form = useMemo(
     () =>
       createForm({
@@ -86,13 +87,14 @@ export const Column = memo((props: any) => {
   const { ind, data, cards, getColumnDatas } = props;
   const { service } = useBlockRequestContext();
   const {
+    groupField,
     params: { appends },
   } = useKanbanV2BlockContext();
   const params = service?.params?.[0] || {};
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
-  console.log('ind', ind);
+  console.log('ind', ind, groupField);
   const displayLable = fieldSchema.parent['x-label-disabled'];
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
@@ -141,7 +143,7 @@ export const Column = memo((props: any) => {
                     >
                       <List
                         {...props}
-                        item={item}
+                        item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
                         displayLable={displayLable}
                         setDisableCardDrag={setDisableCardDrag}
                       />
