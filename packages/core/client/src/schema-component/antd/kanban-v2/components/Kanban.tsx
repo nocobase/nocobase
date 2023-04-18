@@ -97,6 +97,7 @@ export const KanbanV2: any = (props) => {
       const newState: any = [...columnData];
       const newColumn = columnData.find((v) => v.value === '__unknown__');
       newColumn.cards = field.value;
+      newColumn.meta = service?.data?.meta;
       newState[newColumn.length - 1] = newColumn;
     }
   }, [field.value]);
@@ -105,9 +106,9 @@ export const KanbanV2: any = (props) => {
     const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
     const newState: any = [...columnData];
     const newColumn = columnData.find((v) => v.value === el.value) || {};
+    const page = currentPage || 1;
 
     if (el.value !== '__unknown__') {
-      const page = currentPage || 1;
       const defaultfilter = isAssociationField
         ? {
             $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: el.value } } }],
@@ -138,6 +139,22 @@ export const KanbanV2: any = (props) => {
             }
           }
         });
+    } else {
+      resource.list({ page: currentPage, ...params }).then(({ data }) => {
+        if (data) {
+          if (page !== 1) {
+            newColumn.cards = [...(newColumn?.cards || []), ...data.data];
+            newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
+            newState[index] = newColumn;
+            setColumnData(newState);
+          } else {
+            newColumn.cards = data.data;
+            newColumn.meta = data.meta;
+            newState[index] = newColumn;
+            setColumnData(newState);
+          }
+        }
+      });
     }
   }, []);
 

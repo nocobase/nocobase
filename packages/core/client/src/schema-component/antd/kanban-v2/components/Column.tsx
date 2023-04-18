@@ -22,7 +22,7 @@ const getListStyle = () => ({
   background: '#f9f9f9',
   padding: grid,
   margin: 5,
-  width: 300,
+  width: 330,
   marginTop: 0,
   paddingTop: 0,
   height: '100%',
