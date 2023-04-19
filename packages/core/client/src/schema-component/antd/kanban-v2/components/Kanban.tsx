@@ -1,7 +1,8 @@
 import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import { cloneDeep } from 'lodash';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -70,13 +71,12 @@ const ColumnHeader = ({ color, label }) => {
 };
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
-  const { groupField } = useProps();
+  const { groupField, columns } = useProps();
   const {
-    columns,
     associateCollectionField,
     params: { appends },
   } = useKanbanV2BlockContext();
-  const [columnData, setColumnData] = useState(columns);
+  const [columnData, setColumnData] = useState(cloneDeep(columns));
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
@@ -88,7 +88,7 @@ export const KanbanV2: any = (props) => {
 
   useEffect(() => {
     columnData.map((v, index) => {
-      getColumnDatas(v, index, params, appends);
+      getColumnDatas(v, index, params, appends, 1);
     });
   }, [groupField, params, appends]);
 
@@ -98,14 +98,15 @@ export const KanbanV2: any = (props) => {
       const newColumn = columnData.find((v) => v.value === '__unknown__');
       newColumn.cards = field.value;
       newColumn.meta = service?.data?.meta;
-      newState[newColumn.length - 1] = newColumn;
+      newState[columnData.length - 1] = newColumn;
+      setColumnData(newState);
     }
   }, [field.value]);
 
   const getColumnDatas = React.useCallback((el, index, params, appends?, currentPage?) => {
     const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
     const newState: any = [...columnData];
-    const newColumn = columnData.find((v) => v.value === el.value) || {};
+    const newColumn = columnData.find((v) => v.value === el.value) || { ...el };
     const page = currentPage || 1;
 
     if (el.value !== '__unknown__') {
@@ -199,8 +200,8 @@ export const KanbanV2: any = (props) => {
   };
 
   const handleCardDragEndSave = async ({ fromColumnId, fromPosition }, { toColumnId, toPosition }) => {
-    const sourceColumn = columns.find((column) => column.value === fromColumnId);
-    const destinationColumn = columns.find((column) => column.value === toColumnId);
+    const sourceColumn = columnData.find((column) => column.value === fromColumnId);
+    const destinationColumn = columnData.find((column) => column.value === toColumnId);
     const sourceCard = sourceColumn?.cards?.[fromPosition];
     const targetCard = destinationColumn?.cards?.[toPosition];
     const values = {

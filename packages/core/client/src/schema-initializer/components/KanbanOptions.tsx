@@ -27,7 +27,6 @@ export const KanbanOptions = observer((props: any) => {
             return v;
           }
         });
-        console.log(result);
         setDataSource(result);
       } else {
         const resource = getAssociateResource(field.target);
