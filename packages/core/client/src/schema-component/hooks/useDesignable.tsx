@@ -135,10 +135,10 @@ export class Designable {
     this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, wrapped, removed }) => {
       let schemas = [];
       if (wrapped?.['x-component'] === 'Grid.Col') {
-        schemas = updateColumnSize(wrapped.parent);
+        schemas = schemas.concat(updateColumnSize(wrapped.parent));
       }
       if (removed?.['x-component'] === 'Grid.Col') {
-        schemas = updateColumnSize(removed.parent);
+        schemas = schemas.concat(updateColumnSize(removed.parent));
       }
       refresh();
       if (!current['x-uid']) {
