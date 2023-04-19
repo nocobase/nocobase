@@ -285,7 +285,9 @@ export class Collection<
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');
       const sourceCollection = this.db.collections.get(sourceCollectionName);
       if (!sourceCollection) {
-        throw new Error(`source collection "${sourceCollectionName}" not found`);
+        throw new Error(
+          `source collection "${sourceCollectionName}" not found for field "${name}" at collection "${this.name}"`,
+        );
       }
       const sourceField = sourceCollection.fields.get(sourceFieldName);
       options = { ...sourceField.options, ...options };

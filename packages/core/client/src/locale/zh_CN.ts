@@ -115,6 +115,7 @@ export default {
   "Submit": "提交",
   "Close": "关闭",
   "Set the data scope": "设置数据范围",
+  "Block": "区块",
   "Data blocks": "数据区块",
   "Filter blocks": "筛选区块",
   "Table": "表格",

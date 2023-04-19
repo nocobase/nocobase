@@ -16,6 +16,7 @@ describe('belongsToMany', () => {
     await Collection.repository.create({
       values: {
         name: 'posts',
+        fields: [{ type: 'string', name: 'title' }],
       },
       context: {},
     });
@@ -23,6 +24,7 @@ describe('belongsToMany', () => {
     await Collection.repository.create({
       values: {
         name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
       },
       context: {},
     });
@@ -75,5 +77,48 @@ describe('belongsToMany', () => {
       expect(await tableExists(tableName, collectionManagerSchema)).toBe(true);
       expect(await tableExists(tableName, mainSchema)).toBe(false);
     }
+  });
+
+  it('should belongs to many fields after through collection destroyed', async () => {
+    await Field.repository.create({
+      values: {
+        name: 'tags',
+        type: 'belongsToMany',
+        collectionName: 'posts',
+        interface: 'm2m',
+        through: 'post_tags',
+      },
+      context: {},
+    });
+
+    const throughCollection = await Collection.repository.findOne({
+      filter: {
+        name: 'post_tags',
+      },
+    });
+
+    await db.getRepository('posts').create({
+      values: [
+        {
+          title: 'p1',
+          tags: [{ name: 't1' }],
+        },
+        {
+          title: 'p2',
+          tags: [{ name: 't2' }],
+        },
+      ],
+    });
+
+    await throughCollection.destroy();
+
+    expect(
+      await Field.repository.count({
+        filter: {
+          name: 'tags',
+          collectionName: 'posts',
+        },
+      }),
+    ).toEqual(0);
   });
 });

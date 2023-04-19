@@ -117,14 +117,17 @@ export default observer(({ value, disabled, onChange }: any) => {
             {unassignedFields.length
               ? (
                 <Dropdown overlay={
-                  <Menu onClick={({ key }) => onChange({ ...value, [key]: null })} className={css`
-                    max-height: 300px;
-                    overflow-y: auto;
-                  `}>
-                    {unassignedFields.map(field => (
-                      <Menu.Item key={field.name}>{compile(field.uiSchema?.title ?? field.name)}</Menu.Item>
-                    ))}
-                  </Menu>
+                  <Menu
+                    items={unassignedFields.map(field => ({
+                      key: field.name,
+                      label: compile(field.uiSchema?.title ?? field.name),
+                    }))}
+                    onClick={({ key }) => onChange({ ...value, [key]: null })}
+                    className={css`
+                      max-height: 300px;
+                      overflow-y: auto;
+                    `}
+                  />
                 }>
                   <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
                 </Dropdown>
