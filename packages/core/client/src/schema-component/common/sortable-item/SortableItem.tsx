@@ -57,7 +57,7 @@ const useSortableItemId = (props) => {
   return field.address.toString();
 };
 
-export const SortableItem: React.FC<HTMLAttributes<HTMLDivElement> & { schema: Schema }> = observer((props) => {
+export const SortableItem: React.FC<HTMLAttributes<HTMLDivElement> & { schema?: Schema }> = observer((props) => {
   const { schema, id, ...others } = useSortableItemProps(props);
   return (
     <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema }}>
