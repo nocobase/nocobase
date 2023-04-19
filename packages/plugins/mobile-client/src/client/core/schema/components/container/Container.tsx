@@ -14,12 +14,12 @@ import { Schema, useFieldSchema } from '@formily/react';
 import { RouteProps, useParams, useRouteMatch } from 'react-router-dom';
 
 const designerCss = css`
-  position: relative;
   background: #f0f2f5;
   display: flex;
   flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow-y: scroll;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -112,19 +112,28 @@ const InternalContainer: React.FC = (props) => {
 
   return (
     <SortableItem className={cx('nb-mobile-container', designerCss)}>
-      {tabRoutes.length ? (
-        <RouteSwitch routes={tabRoutes as any} />
-      ) : (
-        <SchemaComponent
-          mapProperties={(schema) => {
-            return schema.reduceProperties((s, next) => s || next) as Schema;
-          }}
-          filterProperties={(schema) => {
-            return schema['x-component'] !== 'MTabBar';
-          }}
-          schema={fieldSchema}
-        />
-      )}
+      <div
+        className={cx(
+          'nb-mobile-container-content',
+          css`
+            padding-bottom: var(--nb-spacing);
+          `,
+        )}
+      >
+        {tabRoutes.length ? (
+          <RouteSwitch routes={tabRoutes as any} />
+        ) : (
+          <SchemaComponent
+            mapProperties={(schema) => {
+              return schema.reduceProperties((s, next) => s || next) as Schema;
+            }}
+            filterProperties={(schema) => {
+              return schema['x-component'] !== 'MTabBar';
+            }}
+            schema={fieldSchema}
+          />
+        )}
+      </div>
       <Designer></Designer>
       <div
         className={cx(
@@ -135,6 +144,7 @@ const InternalContainer: React.FC = (props) => {
             width: 100%;
             bottom: 0;
             left: 0;
+            z-index: 1000;
           `,
         )}
       >

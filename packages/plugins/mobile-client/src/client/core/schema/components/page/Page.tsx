@@ -11,6 +11,7 @@ const designerCss = css`
   flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow-y: auto;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -36,8 +37,8 @@ const designerCss = css`
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;
-      right: -10px;
-      top: -10px;
+      right: 2px;
+      top: 2px;
       line-height: 16px;
       pointer-events: all;
       .ant-space-item {
@@ -62,6 +63,7 @@ const InternalPage: React.FC = (props) => {
           'nb-mobile-page-header',
           css`
             background: #ffffff;
+            margin-bottom: var(--nb-spacing);
           `,
         )}
       >

@@ -63,7 +63,7 @@ const InternalMenu: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const options = useContext(SchemaOptionsContext);
-  const { insertBeforeEnd } = useDesignable();
+  const { insertBeforeEnd, designable } = useDesignable();
 
   const { t } = useTranslation();
 
@@ -143,7 +143,9 @@ const InternalMenu: React.FC = (props) => {
       <List>
         <SchemaComponent onlyRenderProperties schema={fieldSchema}></SchemaComponent>
       </List>
-      <SchemaInitializer.Button onClick={onAddMenuItem}>{t('Add menu item')}</SchemaInitializer.Button>
+      {designable ? (
+        <SchemaInitializer.Button onClick={onAddMenuItem}>{t('Add menu item')}</SchemaInitializer.Button>
+      ) : null}
     </SortableItem>
   );
 };
