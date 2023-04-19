@@ -429,6 +429,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     if (options.hooks !== false) {
+      console.log('afterCreateWithAssociations');
       await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, instance, {
         ...options,
         transaction,

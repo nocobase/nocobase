@@ -28,11 +28,16 @@ export class SortField extends Field {
 
   setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
+
     if (instance.get(name) && !options.reset) return;
 
     const { transaction } = options;
 
-    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+    if (
+      !options.reset &&
+      isNumber(instance.get(name)) &&
+      instance._previousDataValues[scopeKey] == instance[scopeKey]
+    ) {
       return;
     }
 
@@ -49,12 +54,14 @@ export class SortField extends Field {
         }
       } catch (e) {
         if (e.message.includes('not found')) {
+          console.log(e.message);
           return;
         }
         throw e;
       }
     }
 
+    console.log('runExclusive');
     await sortFieldMutex.runExclusive(async () => {
       const max = await this.context.collection.repository.max({
         field: name,
@@ -69,12 +76,22 @@ export class SortField extends Field {
 
   onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
+
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
       await this.setSortValue(instance, {
         ...options,
         reset: true,
       });
     }
+  };
+
+  afterChangeScope = async (instance, options) => {
+    console.log('afterChangeScope');
+
+    await this.setSortValue(instance, {
+      ...options,
+      reset: true,
+    });
   };
 
   initRecordsSortValue = async ({ transaction }) => {
@@ -196,6 +213,7 @@ export class SortField extends Field {
     this.setListeners({
       afterSync: this.initRecordsSortValue,
       afterUpdate: this.onScopeChange,
+      afterChangeScope: this.afterChangeScope,
       afterCreateWithAssociations: this.setSortValue,
       afterCreate: this.setSortValue,
     });

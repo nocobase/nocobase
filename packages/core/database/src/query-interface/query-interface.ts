@@ -1,6 +1,7 @@
 import Database from '../database';
 import { Collection } from '../collection';
 import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequelize';
+import preview from '@nocobase/client/es/schema-component/antd/preview/Preview';
 
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
@@ -47,6 +48,8 @@ export default abstract class QueryInterface {
     const q = queryInterface.quoteIdentifier.bind(queryInterface);
 
     let joinSQL = '';
+    let preAs = collection.quotedTableName();
+
     let model = collection.model;
 
     const associationPaths = associationPath.split('.');
@@ -69,19 +72,15 @@ export default abstract class QueryInterface {
       const targetCollection = this.db.modelCollection.get(associationModel);
 
       if (association.associationType === 'HasOne' || association.associationType === 'HasMany') {
-        joinSQL += `${targetCollection.quotedTableName()} as ${q(
-          association.as,
-        )} ON ${collection.quotedTableName()}.${q(association.sourceKeyField)} = ${q(association.as)}.${q(
-          association.identifierField,
-        )}`;
+        joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${preAs}.${q(
+          association.sourceKeyField,
+        )} = ${q(association.as)}.${q(association.identifierField)}`;
       }
 
       if (association.associationType === 'BelongsTo') {
-        joinSQL += `${targetCollection.quotedTableName()} as ${q(
-          association.as,
-        )} ON ${collection.quotedTableName()}.${q(association.identifier)} = ${q(association.as)}.${q(
-          association.targetIdentifier,
-        )}`;
+        joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${preAs}.${q(
+          association.identifier,
+        )} = ${q(association.as)}.${q(association.targetIdentifier)}`;
       }
 
       if (association.associationType === 'BelongsToMany') {
@@ -99,6 +98,7 @@ export default abstract class QueryInterface {
 
       collection = targetCollection;
       model = targetCollection.model;
+      preAs = q(association.as);
     }
 
     return joinSQL;

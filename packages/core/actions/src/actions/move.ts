@@ -74,18 +74,31 @@ export class SortAbleCollection {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetScopeValue = targetScope[this.scopeKey];
 
-    if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
-      await sourceInstance.update(
-        {
-          [this.scopeKey]: targetScopeValue,
-        },
-        {
-          silent: false,
-        },
-      );
+    const isAssociatedScope = this.scopeKey.includes('.');
+
+    const currentScopeValue = isAssociatedScope
+      ? await sourceInstance.lazyLoadGet(this.scopeKey)
+      : sourceInstance.get(this.scopeKey);
+
+    if (targetScopeValue && currentScopeValue !== targetScopeValue) {
+      if (isAssociatedScope) {
+        await sourceInstance.lazyLoadSet(this.scopeKey, targetScopeValue);
+      } else {
+        await sourceInstance.update(
+          {
+            [this.scopeKey]: targetScopeValue,
+          },
+          {
+            hooks: false,
+          },
+        );
+      }
 
       if (method === 'prepend') {
         await this.sticky(sourceInstanceId);
+      } else {
+        // reset sort
+        await this.collection.context.database.emitAsync(`${this.collection.name}.afterChangeScope`, sourceInstance);
       }
     }
   }

@@ -1,9 +1,126 @@
-import { mockServer, MockServer } from './index';
+import { mockServer, MockServer } from '@nocobase/test';
 import { registerActions } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 describe('sort action', () => {
+  describe('sort with association scope key', function () {
+    let api: MockServer;
+
+    let db: Database;
+    beforeEach(async () => {
+      api = mockServer({
+        database: {
+          tablePrefix: '',
+        },
+      });
+
+      registerActions(api);
+      db = api.db;
+
+      await db.clean({ drop: true });
+
+      db.collection({
+        name: 'ageProfiles',
+        fields: [
+          { type: 'integer', name: 'age' },
+          {
+            type: 'string',
+            name: 'grade',
+          },
+        ],
+      });
+
+      db.collection({
+        name: 'profiles',
+        fields: [
+          {
+            type: 'hasOne',
+            name: 'ageProfile',
+            target: 'ageProfiles',
+          },
+        ],
+      });
+
+      db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasOne', name: 'profile', target: 'profiles' },
+          { type: 'sort', name: 'sort', scopeKey: 'profile.ageProfile.grade' },
+        ],
+      });
+
+      await api.db.sync();
+    });
+
+    afterEach(async () => {
+      await api.destroy();
+    });
+
+    it('should move', async () => {
+      const User = await db.getCollection('users');
+
+      await User.repository.create({
+        values: [
+          {
+            name: 'u1',
+            profile: {
+              ageProfile: {
+                age: 10,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u2',
+            profile: {
+              ageProfile: {
+                age: 20,
+                grade: 'B',
+              },
+            },
+          },
+          {
+            name: 'u3',
+            profile: {
+              ageProfile: {
+                age: 30,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u4',
+            profile: {
+              ageProfile: {
+                age: 40,
+                grade: 'B',
+              },
+            },
+          },
+        ],
+      });
+
+      const users = await User.repository.find({});
+      const u1 = users.find((user) => user.get('name') === 'u1');
+
+      await api
+        .agent()
+        .resource('users')
+        .move({
+          sourceId: u1.get('id'),
+          targetScope: {
+            'profile.ageProfile.grade': 'B',
+          },
+        });
+
+      await u1.reload();
+
+      expect(u1.get('sort')).toEqual(3);
+    });
+  });
+
   describe('same scope', () => {
     let api: MockServer;
 
