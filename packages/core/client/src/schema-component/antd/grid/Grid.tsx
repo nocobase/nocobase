@@ -6,7 +6,6 @@ import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
-import _ from 'lodash';
 
 const GridRowContext = createContext<any>({});
 const GridColContext = createContext<any>({});
