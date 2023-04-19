@@ -122,7 +122,7 @@ export const KanbanV2BlockProvider = (props) => {
   const kanbanColumns = columns.filter((v) => v.enabled);
   kanbanColumns.push({
     value: '__unknown__',
-    label: 'Unknnwn',
+    label: 'Unknown',
     color: 'default',
     cards: [],
   });

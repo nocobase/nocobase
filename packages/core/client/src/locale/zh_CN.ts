@@ -740,5 +740,5 @@ export default {
   'Click or drag file to this area to upload': '点击或拖拽文件到此区域上传',
   'Support for a single or bulk upload, file size should not exceed': '支持单个或批量上传，文件大小不能超过',
   "All loaded, nothing more":"已加载所有数据",
-  "Load more":"加载更多"
+  "Loading more":"加载更多"
 }

@@ -682,5 +682,5 @@ export default {
   "Sortable": "Sortable",
   "Enable link": "Enable link",
   "All loaded, nothing more":"All loaded, nothing more",
-  "Load more":"Load more"
+  "Loading more":"Loading more"
 };
