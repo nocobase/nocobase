@@ -753,7 +753,7 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
-  const { collections } = useCollectionManager();
+  const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const [selected, setSelected] = useState([]);
   const [value, onChange] = useState(null);
@@ -775,7 +775,9 @@ export const useCollectionDataSourceItems = (componentName) => {
           const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
-          } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
+          }
+          const fields = getCollectionFields(item.name);
+          if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
             return false;
           } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
             return false;
