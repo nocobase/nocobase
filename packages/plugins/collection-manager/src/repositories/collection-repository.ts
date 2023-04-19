@@ -16,11 +16,13 @@ export class CollectionRepository extends Repository {
     const inheritedGraph = [];
     const throughModels = [];
     const generalModels = [];
+    const viewModels = [];
 
     const nameMap = {};
 
     for (const instance of instances) {
       nameMap[instance.get('name')] = instance;
+
       // @ts-ignore
       const fields = await instance.getFields();
       for (const field of fields) {
@@ -40,11 +42,20 @@ export class CollectionRepository extends Repository {
       } else {
         generalModels.push(instance.get('name'));
       }
+
+      if (instance.get('view')) {
+        viewModels.push(instance.get('name'));
+      }
     }
 
     const sortedNames = [...toposort(inheritedGraph), ...lodash.difference(generalModels, throughModels)];
 
-    for (const instanceName of lodash.uniq(sortedNames)) {
+    for (const instanceName of lodash.uniq(sortedNames).filter((name) => !viewModels.includes(name))) {
+      if (!nameMap[instanceName]) continue;
+      await nameMap[instanceName].load({ skipExist });
+    }
+
+    for (const instanceName of lodash.uniq(viewModels)) {
       if (!nameMap[instanceName]) continue;
       await nameMap[instanceName].load({ skipExist });
     }
