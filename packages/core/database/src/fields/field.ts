@@ -246,11 +246,13 @@ export abstract class Field {
       this.context.collection.removeIndex([this.name]);
     }
 
-    // off event listeners
-    for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
-      for (const listener of lodash.castArray(listeners)) {
-        // @ts-ignore
-        this.off(eventName, listener);
+    if (lodash.isPlainObject(this.fieldEventListeners)) {
+      // off event listeners
+      for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
+        for (const listener of lodash.castArray(listeners)) {
+          // @ts-ignore
+          this.off(eventName, listener);
+        }
       }
     }
   }
