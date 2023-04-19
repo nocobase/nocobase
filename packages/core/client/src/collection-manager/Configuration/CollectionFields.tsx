@@ -4,11 +4,13 @@ import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Button, Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { useAsyncData } from '../../async-data-provider';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { useAttach, useCompile } from '../../schema-component';
+import { Action, useAttach, useCompile } from '../../schema-component';
 import { ResourceActionProvider } from '../ResourceActionProvider';
+import { useDeleteButtonDisabled, useDestroyActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { EditCollectionField } from './EditFieldAction';
 import { collection } from './schemas/collectionFields';
@@ -32,6 +34,7 @@ const useDef = (options, props) => {
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
+  const { t } = useTranslation();
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -60,11 +63,21 @@ const CurrentFields = (props) => {
       title: 'Actions',
       width: CELL_WIDTH,
       render: (_, record) => {
+        const deleteProps = {
+          confirm: {
+            title: t('Delete record'),
+            content: t('Are you sure you want to delete it?'),
+          },
+          useAction: useDestroyActionAndRefreshCM,
+          disabled: useDeleteButtonDisabled(record),
+          title: t('Delete'),
+        };
+
         return (
           <RecordProvider record={record}>
             <Space>
               <EditCollectionField type="primary" />
-              <a>Delete</a>
+              <Action.Link {...deleteProps} />
             </Space>
           </RecordProvider>
         );
