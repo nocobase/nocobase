@@ -30,14 +30,15 @@ export async function submit(context: Context, next) {
       return context.throw(404);
     }
 
-    const { actions = [] } = instance.node.config;
+    const { forms = {} } = instance.node.config;
+    const [form] = Object.keys(values.result ?? {});
 
     // NOTE: validate status
     if (instance.status !== JOB_STATUS.PENDING
       || instance.job.status !== JOB_STATUS.PENDING
       || instance.execution.status !== EXECUTION_STATUS.STARTED
       || !instance.workflow.enabled
-      || !actions.includes(values.status)
+      || !forms[form]?.actions?.includes(values.status)
     ) {
       return context.throw(400);
     }
