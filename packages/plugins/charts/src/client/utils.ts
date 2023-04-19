@@ -1,5 +1,9 @@
 import JSON5 from 'json5';
 import { uid } from '@formily/shared';
+import isObject from 'lodash/isObject';
+import type { Schema } from '@formily/react';
+
+const SCHEMA_EXPRESSION_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/
 
 const validateArray = (value) => {
   try {
@@ -35,5 +39,33 @@ const parseDataSetString = (str) => {
   }
   return dataSetDataArray;
 };
+
+export function compileWithKeys(compiler: typeof Schema['compile']) {
+  function compile (...params: Parameters<typeof Schema['compile']>) {
+    const result = compiler(...params);
+
+    compileKeys(result, params[1]);
+
+    return result;
+  }
+
+  function compileKeys(source: Record<string, any>, scope: any) {
+    const keys = Object.keys(source);
+
+    keys.forEach((key) => {
+      if (key.match(SCHEMA_EXPRESSION_RE)) {
+        const compiledKey = compiler(key, scope);
+        source[compiledKey] = source[key];
+        delete source[key];
+      } else if (isObject(source[key])) {
+        compileKeys(source[key], scope);
+      } else {
+        // pass
+      }
+    });
+  }
+
+  return compile;
+}
 
 export { validateArray, parseDataSetString };

@@ -87,6 +87,14 @@ const AreaChart = () => (
   </svg>
 );
 
+const HeatmapChart = () => (
+  <svg width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false" viewBox="0 0 1024 1024">
+    <path d="M854.5 514.5c-126.1-128.8-113.3-177.9-94.7-229.3S733.3 7.5 566.2 95.5 448.9 301.3 329.7 296C210.5 290.8 64 354.8 151.4 590.7c34.2 92.2 99.1 181.6 199.6 194.5 100.5 12.9 265.6-20 366.1 30C817.6 865.3 980.6 643.3 854.5 514.5zM690 756c-84.8-39.5-223.6-16.3-308.8-25.7C296 720.9 230.3 661.4 202.3 587c-71.7-190.4 66.9-244.2 168.1-241.2 101.1 3 58.2-114.8 200.9-187.8s151.8 116 135.5 157.9c-18.9 48.4-17.2 94.2 93.2 201.9C905.7 621 774.8 795.5 690 756z"></path>
+    <path d="M266.1 470.8c-45.9 39.5-6.5 133 52.6 152.2 59.2 19.2 117.7-1.9 163.6-42 45.9-40.1 39.8-178-36.5-142.2S359.7 390.2 266.1 470.8z"></path>
+    <path d="M599 205.5c-54.8 14.1-106.4 106.1-84.3 147 22.1 40.8 69.8 113.4 54.2 166-15.6 52.5-4 116.2 48.3 135.1s164 12.6 165.4-42.5S650.7 497.4 646.9 407.4C643.2 317.4 688 182.6 599 205.5z"></path>
+  </svg>
+)
+
 Icon.register({
   'icon-area': (props) => <Icon component={AreaChart} {...props} />,
   'icon-pie': (props) => <Icon component={PieChart} {...props} />,
@@ -96,4 +104,5 @@ Icon.register({
   'icon-bar': (props) => <Icon component={BarChart} {...props} />,
   'icon-column': (props) => <Icon component={ColumnChart} {...props} />,
   'icon-scatter': (props) => <Icon component={ScatterChart} {...props} />,
+  'icon-heatmap': (props) => <Icon component={HeatmapChart} {...props} />,
 });

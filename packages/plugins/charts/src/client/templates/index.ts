@@ -7,6 +7,7 @@ import { tableTemplate } from './TableTemplate';
 import { scatterTemplate } from './ScatterTemplate';
 import { radarTemplate } from './RadarTemplate';
 import { funnelTemplate } from './FunnelTemplate';
+import { heatmapTemplate } from './HeatmapTemplate'
 
 export const templates = new Map();
 
@@ -18,4 +19,5 @@ templates.set('Column', columnTemplate);
 templates.set('Scatter', scatterTemplate);
 templates.set('Radar', radarTemplate);
 templates.set('Funnel', funnelTemplate);
+templates.set('Heatmap', heatmapTemplate);
 // templates.set('DataSetPreviewTable', tableTemplate);

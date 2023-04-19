@@ -6,6 +6,7 @@ import { ChartBlockEngineDesigner } from './ChartBlockEngineDesigner';
 import chartRenderComponentsMap from './chartRenderComponents';
 import { lang } from './locale';
 import { templates } from './templates';
+import { compileWithKeys } from './utils';
 
 export interface IQueryConfig {
   id: number;
@@ -64,7 +65,7 @@ const ChartRenderComponent = ({
       } catch (e) {
         template = {};
       }
-      const config = compile(
+      const config = compileWithKeys(compile)(
         {
           ...finalChartOptions,
           ...template,
@@ -72,6 +73,7 @@ const ChartRenderComponent = ({
         },
         { ...chartConfig, category: chartConfig?.category ?? '' },
       );
+
       if (config && chartConfig) {
         const { dimension, metric, category } = chartConfig;
         if (!metric || !dimension) {
