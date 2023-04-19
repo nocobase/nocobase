@@ -1,5 +1,5 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { Schema, observer, useField, useFieldSchema } from '@formily/react';
 import React, { HTMLAttributes, createContext, useContext } from 'react';
 
 export const DraggableContext = createContext(null);
@@ -57,7 +57,7 @@ const useSortableItemId = (props) => {
   return field.address.toString();
 };
 
-export const SortableItem: React.FC<HTMLAttributes<HTMLDivElement>> = observer((props) => {
+export const SortableItem: React.FC<HTMLAttributes<HTMLDivElement> & { schema: Schema }> = observer((props) => {
   const { schema, id, ...others } = useSortableItemProps(props);
   return (
     <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema }}>

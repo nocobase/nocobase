@@ -19,6 +19,8 @@ export const MobileDevice: React.FC = (props) => {
       <Device
         className={css`
           box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+          overflow-x: auto;
+          overflow-y: scroll;
         `}
         {...props}
       ></Device>

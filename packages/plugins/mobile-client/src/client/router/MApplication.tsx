@@ -1,13 +1,18 @@
-import React, { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { RemoteSchemaComponent, useRoute } from '@nocobase/client';
+import React, { useEffect, useMemo } from 'react';
+import { useHistory, useParams } from 'react-router-dom';
+import { AdminProvider, RemoteSchemaComponent, useRoute } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
+import { useInterfaceContext } from './InterfaceProvider';
 
 const MApplication: React.FC = (props) => {
   const route = useRoute();
   const params = useParams<{ name: string }>();
-
+  const interfaceContext =useInterfaceContext()
+  const Provider = useMemo(() => {
+    return interfaceContext ?React.Fragment : AdminProvider
+  }, [!!interfaceContext])
   return (
+    <Provider >
     <div
       className={cx(
         'nb-mobile-application',
@@ -15,6 +20,7 @@ const MApplication: React.FC = (props) => {
           display: flex;
           flex-direction: column;
           width: 100%;
+          height: 100%;
         `,
       )}
     >
@@ -26,6 +32,7 @@ const MApplication: React.FC = (props) => {
         </RemoteSchemaComponent>
       )}
     </div>
+    </Provider>
   );
 };
 

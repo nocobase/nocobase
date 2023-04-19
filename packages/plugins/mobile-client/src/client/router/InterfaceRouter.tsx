@@ -1,6 +1,7 @@
 import { RouteSwitch, useRoutes } from '@nocobase/client';
 import React, { useEffect, useMemo } from 'react';
 import { HashRouter } from 'react-router-dom';
+import { InterfaceProvider } from './InterfaceProvider';
 
 interface InterfaceRouterProps {}
 export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
@@ -21,8 +22,10 @@ export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
   );
 
   return (
+    <InterfaceProvider>
     <HashRouter>
       <RouteSwitch routes={routes}></RouteSwitch>
     </HashRouter>
+    </InterfaceProvider>
   );
 };

@@ -128,7 +128,7 @@ const InternalMenu: React.FC = (props) => {
                 grid: {
                   type: 'void',
                   'x-component': 'MGrid',
-                  'x-initializer': 'BlockInitializers',
+                  'x-initializer': 'MBlockInitializers',
                 },
               },
             },

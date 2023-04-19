@@ -239,7 +239,7 @@ export const Page = (props) => {
                           <Tabs.TabPane
                             tab={
                               <SortableItem
-                                id={schema.name}
+                                id={schema.name as string}
                                 schema={schema}
                                 className={classNames('nb-action-link', designerCss, props.className)}
                               >

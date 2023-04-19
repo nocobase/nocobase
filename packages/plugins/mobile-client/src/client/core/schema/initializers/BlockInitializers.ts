@@ -12,33 +12,36 @@ export const MBlockInitializers = {
       title: '{{t("Data blocks")}}',
       children: [
         {
-          key: 'list',
+          key: 'form',
           type: 'item',
-          title: '{{t("List")}}',
-          component: 'MListBlockInitializer',
-          sort: 100,
-        },
-        {
-          key: 'list',
-          type: 'item',
-          title: '{{t("List")}}',
-          component: 'MListBlockInitializer',
-          sort: 100,
+          title: '{{t("Form")}}',
+          component: 'FormBlockInitializer',
         },
         {
           key: 'details',
           type: 'item',
           title: '{{t("Details")}}',
-          component: 'MDetailsBlockInitializer',
-          sort: 200,
+          component: 'DetailsBlockInitializer',
         },
         {
-          key: 'form',
+          key: 'calendar',
           type: 'item',
-          title: '{{t("Form")}}',
-          component: 'MFormBlockInitializer',
-          sort: 300,
+          title: '{{t("Calendar")}}',
+          component: 'CalendarBlockInitializer',
         },
+        {
+          key: 'kanban',
+          type: 'item',
+          title: '{{t("Kanban")}}',
+          component: 'KanbanBlockInitializer',
+        },
+        {
+          key: 'Gantt',
+          type: 'item',
+          title: '{{t("Gantt")}}',
+          component: 'GanttBlockInitializer',
+        },
+
       ],
     },
     {
