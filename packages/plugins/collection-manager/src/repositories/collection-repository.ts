@@ -18,8 +18,13 @@ export class CollectionRepository extends Repository {
 
     const nameMap = {};
 
+    const viewCollections = [];
+
     for (const instance of instances) {
       graph.setNode(instance.get('name'));
+      if (instance.get('view')) {
+        viewCollections.push(instance.get('name'));
+      }
     }
 
     for (const instance of instances) {
@@ -33,30 +38,36 @@ export class CollectionRepository extends Repository {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
           if (throughName) {
-            graph.setEdge(collectionName, throughName);
-            graph.setEdge(field.options.target, throughName);
+            graph.setEdge(throughName, collectionName);
+            graph.setEdge(throughName, field.options.target);
           }
         }
       }
 
       if (instance.get('inherits')) {
         for (const parent of instance.get('inherits')) {
-          graph.setEdge(collectionName, parent);
-        }
-      }
-
-      if (instance.get('view') && instance.get('sources')) {
-        for (const source of instance.get('sources')) {
-          graph.setEdge(collectionName, source);
+          graph.setEdge(parent, collectionName);
         }
       }
     }
 
-    const sortedNames = graphlib.alg.preorder(graph);
+    if (graph.nodeCount() === 0) return;
+
+    if (!graphlib.alg.isAcyclic(graph)) {
+      const cycles = graphlib.alg.findCycles(graph);
+      throw new Error(`Cyclic dependencies: ${cycles.map((cycle) => cycle.join(' -> ')).join(', ')}`);
+    }
+
+    const sortedNames = graphlib.alg.topsort(graph);
 
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist });
+      await nameMap[instanceName].load({ skipExist, skipField: viewCollections.includes(instanceName) });
+    }
+
+    // load view fields
+    for (const viewCollectionName of viewCollections) {
+      await nameMap[viewCollectionName].loadFields({});
     }
   }
 
