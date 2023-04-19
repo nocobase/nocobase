@@ -1,11 +1,33 @@
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
+import { Field, createForm } from '@formily/core';
+import { FieldContext, FormContext, useField } from '@formily/react';
 import { Button, Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
-import React from 'react';
-import { useRecord } from '../../record-provider';
-import { useCompile } from '../../schema-component';
+import React, { useMemo } from 'react';
+import { useRequest } from '../../api-client';
+import { useAsyncData } from '../../async-data-provider';
+import { RecordProvider, useRecord } from '../../record-provider';
+import { useAttach, useCompile } from '../../schema-component';
+import { ResourceActionProvider } from '../ResourceActionProvider';
 import { useCollectionManager } from '../hooks/useCollectionManager';
+import { EditCollectionField } from './EditFieldAction';
+import { collection } from './schemas/collectionFields';
 const CELL_WIDTH = 200;
+
+const useDefSelectedRowKeys = () => {
+  const result = useAsyncData();
+  return [result?.state?.selectedRowKeys, (selectedRowKeys) => result?.setState?.({ selectedRowKeys })];
+};
+const useDef = (options, props) => {
+  const { request, dataSource } = props;
+  if (request) {
+    return useRequest(request(props), options);
+  } else {
+    return Promise.resolve({
+      data: dataSource,
+    });
+  }
+};
 
 const CurrentFields = (props) => {
   const compile = useCompile();
@@ -37,12 +59,14 @@ const CurrentFields = (props) => {
       dataIndex: 'actions',
       title: 'Actions',
       width: CELL_WIDTH,
-      render: () => {
+      render: (_, record) => {
         return (
-          <Space>
-            <a>Edit</a>
-            <a>Delete</a>
-          </Space>
+          <RecordProvider record={record}>
+            <Space>
+              <EditCollectionField type="primary" />
+              <a>Delete</a>
+            </Space>
+          </RecordProvider>
         );
       },
     },
@@ -111,9 +135,12 @@ const InheritFields = (props) => {
 
 export const CollectionFields = (props) => {
   const compile = useCompile();
+  const field = useField<Field>();
   const { name } = useRecord();
-  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields, getInheritedFields } =
-    useCollectionManager();
+  const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
+  const form = useMemo(() => createForm(), []);
+  const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
+
   const inherits = getInheritCollections(name);
 
   const columns: TableColumnProps<any>[] = [
@@ -214,32 +241,55 @@ export const CollectionFields = (props) => {
     }),
   );
 
+  const resourceActionProps = {
+    association: {
+      sourceKey: 'name',
+      targetKey: 'name',
+    },
+    collection,
+    request: {
+      resource: 'collections.fields',
+      action: 'list',
+      params: {
+        paginate: false,
+        filter: {
+          $or: [{ 'interface.$not': null }, { 'options.source.$notEmpty': true }],
+        },
+        sort: ['sort'],
+      },
+    },
+  };
+
   return (
-    <div>
-      <Space
-        align={'end'}
-        className={css`
-          justify-content: flex-end;
-          display: flex;
-          margin-bottom: 16px;
-        `}
-      >
-        <Button icon={<DeleteOutlined />}>Delete</Button>
-        <Button type={'primary'} icon={<PlusOutlined />}>
-          Add field
-        </Button>
-      </Space>
-      <Table
-        rowKey={'key'}
-        columns={columns}
-        dataSource={dataSource.filter((d) => d.fields.length)}
-        pagination={false}
-        expandable={{
-          defaultExpandAllRows: true,
-          expandedRowRender: (record) =>
-            record.inherit ? <InheritFields fields={record.fields} /> : <CurrentFields fields={record.fields} />,
-        }}
-      />
-    </div>
+    <ResourceActionProvider {...resourceActionProps}>
+      <FormContext.Provider value={form}>
+        <FieldContext.Provider value={f}>
+          <Space
+            align={'end'}
+            className={css`
+              justify-content: flex-end;
+              display: flex;
+              margin-bottom: 16px;
+            `}
+          >
+            <Button icon={<DeleteOutlined />}>Delete</Button>
+            <Button type={'primary'} icon={<PlusOutlined />}>
+              Add field
+            </Button>
+          </Space>
+          <Table
+            rowKey={'key'}
+            columns={columns}
+            dataSource={dataSource.filter((d) => d.fields.length)}
+            pagination={false}
+            expandable={{
+              defaultExpandAllRows: true,
+              expandedRowRender: (record) =>
+                record.inherit ? <InheritFields fields={record.fields} /> : <CurrentFields fields={record.fields} />,
+            }}
+          />
+        </FieldContext.Provider>
+      </FormContext.Provider>
+    </ResourceActionProvider>
   );
 };
