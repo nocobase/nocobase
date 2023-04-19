@@ -1,5 +1,5 @@
-import { Schema, SchemaKey, useFieldSchema } from '@formily/react';
-import { getValuesByPath } from '@nocobase/utils/client';
+import { Schema, useFieldSchema } from '@formily/react';
+import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { mergeFilter } from '../block-provider';
@@ -48,19 +48,37 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
 export const transformToFilter = (
   values: Record<string, any>,
   fieldSchema: Schema,
-  getField: (name: SchemaKey) => CollectionFieldOptions,
+  getCollectionJoinField: (name: string) => CollectionFieldOptions,
+  collectionName: string,
 ) => {
   const { operators } = findFilterOperators(fieldSchema);
+
+  values = flatten(values, {
+    breakOn({ value, path }) {
+      const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
+      if (collectionField?.target) {
+        if (Array.isArray(value)) {
+          return true;
+        }
+        const targetKey = collectionField.targetKey || 'id';
+        if (value && value[targetKey] != null) {
+          return true;
+        }
+      }
+      return false;
+    },
+  });
 
   const result = {
     $and: Object.keys(values)
       .map((key) => {
-        const collectionField = getField(key);
-        if (collectionField.target) {
+        let value = _.get(values, key);
+        const collectionField = getCollectionJoinField(`${collectionName}.${key}`);
+
+        if (collectionField?.target) {
+          value = getValuesByPath(value, collectionField.targetKey || 'id');
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
-
-        const value = getValuesByPath(values, key);
 
         if (!value || value.length === 0) {
           return null;

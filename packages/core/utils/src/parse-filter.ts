@@ -12,7 +12,7 @@ function keyIdentity(key) {
   return key;
 }
 
-function flatten(target, opts?: any) {
+export function flatten(target, opts?: any) {
   opts = opts || {};
 
   const delimiter = opts.delimiter || '.';
@@ -32,7 +32,7 @@ function flatten(target, opts?: any) {
 
       const newKey = prev ? prev + delimiter + transformKey(key) : transformKey(key);
 
-      if (opts.breakOn({ key })) {
+      if (opts.breakOn?.({ key, value, path: newKey })) {
         output[newKey] = transformValue(value, newKey);
         return;
       }

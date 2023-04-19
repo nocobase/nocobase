@@ -80,4 +80,10 @@ describe('getValuesByPath', () => {
     const result = getValuesByPath(obj, 'a.b');
     expect(result).toEqual([]);
   });
+
+  it('the initial value is an array', () => {
+    const arr = [{ b: 1 }, { b: 2 }];
+    const result = getValuesByPath(arr, 'b', []);
+    expect(result).toEqual([1, 2]);
+  });
 });
