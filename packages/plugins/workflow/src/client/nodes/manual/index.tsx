@@ -70,12 +70,13 @@ export default {
         schema: {
           type: 'object',
           'x-component': 'SchemaConfig',
+          default: null
         },
       }
     },
-    actions: {
-      type: 'array',
-      default: [JOB_STATUS.RESOLVED]
+    forms: {
+      type: 'object',
+      default: {}
     }
   },
   view: {
@@ -90,29 +91,60 @@ export default {
     AssigneesSelect
   },
   getOptions(config, types) {
-    const fields = (config.schema?.collection?.fields ?? []).map(field => ({
-      key: field.name,
-      value: field.name,
-      label: field.uiSchema.title,
-      title: field.uiSchema.title
-    }));
-    const filteredFields = filterTypedFields(fields, types);
-    return filteredFields.length ? filteredFields : null;
-  },
-  useInitializers(node): SchemaInitializerItemOptions | null {
-    if (!node.config.schema?.collection?.fields?.length
-      || node.config.mode
-    ) {
+    const formKeys = Object.keys(config.forms ?? {});
+    if (!formKeys.length) {
       return null;
     }
 
-    return {
-      type: 'item',
-      title: node.title ?? `#${node.id}`,
-      component: CollectionBlockInitializer,
-      collection: node.config.schema.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+    const options = formKeys.map(formKey => {
+      const form = config.forms[formKey];
+
+      const fields = (form.collection?.fields ?? []).map(field => ({
+        key: field.name,
+        value: field.name,
+        label: field.uiSchema.title,
+        title: field.uiSchema.title
+      }));
+      const filteredFields = filterTypedFields(fields, types);
+      return filteredFields.length
+        ? {
+          key: formKey,
+          value: formKey,
+          label: form.title || formKey,
+          title: form.title || formKey,
+          children: filteredFields
+        }
+        : null;
+    }).filter(Boolean);
+
+    return options.length ? options : null;
+  },
+  useInitializers(node): SchemaInitializerItemOptions | null {
+    const formKeys = Object.keys(node.config.forms ?? {});
+    if (!formKeys.length || node.config.mode) {
+      return null;
     }
+
+    const forms = formKeys.map(formKey => {
+      const form = node.config.forms[formKey];
+
+      return form.collection?.fields?.length
+        ? {
+          type: 'item',
+          title: form.title ?? formKey,
+          component: CollectionBlockInitializer,
+          collection: form.collection,
+          dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`
+        } as SchemaInitializerItemOptions
+        : null;
+    }).filter(Boolean);
+
+    return forms.length ? {
+      key: 'forms',
+      type: 'subMenu',
+      title: node.title,
+      children: forms
+    } : null;
   },
   initializers: {
     CollectionFieldInitializers

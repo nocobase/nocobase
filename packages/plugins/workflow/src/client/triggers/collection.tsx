@@ -160,6 +160,7 @@ export default {
 
     return {
       type: 'item',
+      key: 'triggerData',
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collection: config.collection,
