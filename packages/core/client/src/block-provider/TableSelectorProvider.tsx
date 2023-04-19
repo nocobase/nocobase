@@ -3,6 +3,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
+import { isInFilterFormBlock } from '../filter-provider';
 import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
@@ -164,7 +165,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
   }
   let extraFilter;
   if (collectionField) {
-    if (['oho', 'o2m'].includes(collectionField.interface)) {
+    if (['oho', 'o2m'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
       if (record?.[collectionField.sourceKey]) {
         extraFilter = {
           $or: [
@@ -188,7 +189,7 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
         };
       }
     }
-    if (['obo'].includes(collectionField.interface)) {
+    if (['obo'].includes(collectionField.interface) && !isInFilterFormBlock(fieldSchema)) {
       const fields = getCollectionFields(collectionField.target);
       const targetField = fields.find((f) => f.foreignKey && f.foreignKey === collectionField.foreignKey);
       if (targetField) {
