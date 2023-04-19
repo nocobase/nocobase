@@ -5,12 +5,13 @@ import {
   ForeignKeyOptions,
   HasManyOptions,
   HasManyOptions as SequelizeHasManyOptions,
-  Utils
+  Utils,
 } from 'sequelize';
 import { Collection } from '../collection';
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { MultipleRelationFieldOptions, RelationField } from './relation-field';
+import { BelongsToField } from './belongs-to-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**
@@ -166,7 +167,7 @@ export class HasManyField extends RelationField {
         if (field.name === foreignKey) {
           return true;
         }
-        return field.type === 'belongsTo' && field.foreignKey === foreignKey;
+        return field.type === 'belongsTo' && (field as BelongsToField).foreignKey === foreignKey;
       });
       if (!field) {
         tcoll.model.removeAttribute(foreignKey);

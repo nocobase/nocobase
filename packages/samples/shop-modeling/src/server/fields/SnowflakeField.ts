@@ -15,6 +15,8 @@ export class SnowflakeField extends Field {
     return DataTypes.BIGINT;
   }
 
+  generator: Snowflake;
+
   constructor(options: SnowflakeFieldOptions, context) {
     super(options, context);
 
@@ -22,6 +24,7 @@ export class SnowflakeField extends Field {
       epoch: custom_epoch,
       instanceId: instance_id = process.env.INSTANCE_ID ? Number.parseInt(process.env.INSTANCE_ID) : 0,
     } = options;
+
     this.generator = new Snowflake({ custom_epoch, instance_id });
   }
 

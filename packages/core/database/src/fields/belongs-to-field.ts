@@ -3,7 +3,7 @@ import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize'
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
-import { HasManyField } from '@nocobase/database';
+import { HasManyField } from './has-many-field';
 
 export class BelongsToField extends RelationField {
   get dataType() {

@@ -497,7 +497,8 @@ export class PluginACL extends Plugin {
         let collection: Collection;
         if (resourceName.includes('.')) {
           const [collectionName, associationName] = resourceName.split('.');
-          const field = ctx.db.getCollection(collectionName)?.getField?.(associationName);
+          const field = ctx.db.getCollection(collectionName)?.getField?.(associationName) as any;
+
           if (field.target) {
             collection = ctx.db.getCollection(field.target);
           }

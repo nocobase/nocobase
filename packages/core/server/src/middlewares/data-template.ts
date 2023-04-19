@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { Collection } from '@nocobase/database';
+import { Collection, HasOneField } from '@nocobase/database';
 
 export const dateTemplate = async (ctx: Context, next) => {
   const { resourceName, actionName } = ctx.action;
@@ -73,7 +73,7 @@ const traverseJSON = (data, options: TraverseOptions) => {
     if (['createdAt', 'updatedAt', 'createdBy', 'createdById', 'updatedById', 'updatedBy'].includes(key)) {
       continue;
     }
-    const field = collection.getField(key);
+    const field = collection.getField(key) as any;
     if (!field) {
       result[key] = data[key];
       continue;

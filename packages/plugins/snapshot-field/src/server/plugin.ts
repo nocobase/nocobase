@@ -68,7 +68,8 @@ export class SnapshotFieldPlugin extends Plugin {
     if (!collection) {
       return;
     }
-    const field = collection.getField(targetField);
+    const field = collection.getField(targetField) as any;
+
     if (field?.target) {
       model.set('targetCollection', field.target);
     }
