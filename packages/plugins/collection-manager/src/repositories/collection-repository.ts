@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
-import toposort from 'toposort';
-import lodash from 'lodash';
+import { CollectionsGraph } from '@nocobase/utils';
 
 interface LoadOptions {
   filter?: any;
@@ -13,15 +12,20 @@ export class CollectionRepository extends Repository {
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter })) as CollectionModel[];
 
-    const inheritedGraph = [];
-    const throughModels = [];
-    const generalModels = [];
-    const viewModels = [];
+    const graphlib = CollectionsGraph.graphlib();
+
+    const graph = new graphlib.Graph();
 
     const nameMap = {};
 
     for (const instance of instances) {
-      nameMap[instance.get('name')] = instance;
+      graph.setNode(instance.get('name'));
+    }
+
+    for (const instance of instances) {
+      const collectionName = instance.get('name');
+
+      nameMap[collectionName] = instance;
 
       // @ts-ignore
       const fields = await instance.getFields();
@@ -29,33 +33,28 @@ export class CollectionRepository extends Repository {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
           if (throughName) {
-            inheritedGraph.push([throughName, field.options.target]);
-            inheritedGraph.push([throughName, instance.get('name')]);
+            graph.setEdge(collectionName, throughName);
+            graph.setEdge(field.options.target, throughName);
           }
         }
       }
 
       if (instance.get('inherits')) {
         for (const parent of instance.get('inherits')) {
-          inheritedGraph.push([parent, instance.get('name')]);
+          graph.setEdge(collectionName, parent);
         }
-      } else {
-        generalModels.push(instance.get('name'));
       }
 
-      if (instance.get('view')) {
-        viewModels.push(instance.get('name'));
+      if (instance.get('view') && instance.get('sources')) {
+        for (const source of instance.get('sources')) {
+          graph.setEdge(collectionName, source);
+        }
       }
     }
 
-    const sortedNames = [...toposort(inheritedGraph), ...lodash.difference(generalModels, throughModels)];
+    const sortedNames = graphlib.alg.preorder(graph);
 
-    for (const instanceName of lodash.uniq(sortedNames).filter((name) => !viewModels.includes(name))) {
-      if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist });
-    }
-
-    for (const instanceName of lodash.uniq(viewModels)) {
+    for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
       await nameMap[instanceName].load({ skipExist });
     }
