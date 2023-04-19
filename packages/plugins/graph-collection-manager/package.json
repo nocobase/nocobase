@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-graph-collection-manager",
   "version": "0.9.1-alpha.2",
-  "description": "",
+  "displayName": "Graphical collection interface",
+  "displayName.zh-CN": "数据表图形化界面",
+  "description": "Graphical interfaces that intuitively show the relationships between collections",
+  "description.zh-CN": "图形化数据表，可以直观的看出各个表之间的关系",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
