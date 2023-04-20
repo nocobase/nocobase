@@ -1,6 +1,6 @@
 import { ArrayTable } from '@formily/antd';
 import { observer } from '@formily/react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
@@ -8,7 +8,6 @@ export const KanbanOptions = observer((props: any) => {
   const { groupField, collectionFields, getAssociateResource, columns } = props;
   const [dataSource, setDataSource] = useState([]);
   const { t } = useTranslation();
-  console.log(columns);
   useEffect(() => {
     if (groupField) {
       const field = collectionFields.find((v) => {
@@ -39,7 +38,6 @@ export const KanbanOptions = observer((props: any) => {
               label: v[groupField[1]],
             };
           });
-
           const result = optionsData.map((v) => {
             const option = columns?.find((k) => k.value === v.value);
             if (option) {

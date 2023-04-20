@@ -62,7 +62,7 @@ export const KanbanV2BlockInitializer = (props) => {
                           dependencies: ['groupField'],
                           fulfill: {
                             schema: {
-                              'x-component-props': '{{{getAssociateResource,collectionFields,...$form.values}}}',
+                              'x-component-props': '{{{getAssociateResource,collectionFields,groupField:$deps[0]}}}',
                             },
                           },
                         },
@@ -76,7 +76,6 @@ export const KanbanV2BlockInitializer = (props) => {
         }).open({
           initialValues: {},
         });
-        console.log(values.groupField)
         const groupField =
           values.groupField.length > 1 ? `${values.groupField?.[0]}.${values.groupField?.[1]}` : values.groupField?.[0];
         const sortName = `${groupField}_sort`;
