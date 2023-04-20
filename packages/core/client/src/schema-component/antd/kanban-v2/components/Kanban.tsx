@@ -83,7 +83,6 @@ export const KanbanV2: any = (props) => {
   const { resource, service } = useBlockRequestContext();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const field: any = useField();
   const params = service?.params?.[0] || {};
 
   useEffect(() => {
@@ -92,56 +91,30 @@ export const KanbanV2: any = (props) => {
     });
   }, [groupField, params, appends]);
 
-  // useEffect(() => {
-  //   if (field.value) {
-  //     const newState: any = [...columnData];
-  //     const newColumn = columnData.find((v) => v.value === '__unknown__');
-  //     newColumn.cards = field.value;
-  //     newColumn.meta = service?.data?.meta;
-  //     newState[columnData.length - 1] = newColumn;
-  //     setColumnData(newState);
-  //   }
-  // }, [field.value]);
-
-  const getColumnDatas = React.useCallback((el, index, params, appends?, currentPage?) => {
+  const getColumnDatas = React.useCallback(async (el, index, params, appends?, currentPage?) => {
     const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
     const newState: any = [...columnData];
     const newColumn = columnData.find((v) => v.value === el.value) || { ...el };
     const page = currentPage || 1;
+    const defaultfilter = isAssociationField
+      ? {
+          $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: el.value } } }],
+        }
+      : {
+          $and: [{ [groupField.name]: { $eq: el.value } }],
+        };
 
-    if (el.value !== '__unknown__') {
-      const defaultfilter = isAssociationField
-        ? {
-            $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: el.value } } }],
-          }
-        : {
-            $and: [{ [groupField.name]: { $eq: el.value } }],
-          };
-
-      resource
-        .list({
-          ...params,
-          appends,
-          page: page,
-          filter: mergeFilter([defaultfilter, fieldSchema.parent['x-decorator-props']?.params?.filter, filter]),
-        })
-        .then(({ data }) => {
-          if (data) {
-            if (page !== 1) {
-              newColumn.cards = [...(newColumn?.cards || []), ...data.data];
-              newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
-              newState[index] = newColumn;
-              setColumnData(newState);
-            } else {
-              newColumn.cards = data.data;
-              newColumn.meta = data.meta;
-              newState[index] = newColumn;
-              setColumnData(newState);
-            }
-          }
-        });
-    } else {
-      resource.list({ page: currentPage, ...params }).then(({ data }) => {
+    resource
+      .list({
+        ...params,
+        appends,
+        page: page,
+        filter:
+          el.value !== '__unknown__'
+            ? mergeFilter([defaultfilter, fieldSchema.parent['x-decorator-props']?.params?.filter, filter])
+            : params.filter,
+      })
+      .then(({ data }) => {
         if (data) {
           if (page !== 1) {
             newColumn.cards = [...(newColumn?.cards || []), ...data.data];
@@ -156,7 +129,6 @@ export const KanbanV2: any = (props) => {
           }
         }
       });
-    }
   }, []);
 
   const onDragEnd = (result) => {
@@ -204,7 +176,7 @@ export const KanbanV2: any = (props) => {
     const destinationColumn = columnData.find((column) => column.value === toColumnId);
     const sourceCard = sourceColumn?.cards?.[fromPosition];
     const targetCard = destinationColumn?.cards?.[toPosition];
-    console.log(toColumnId)
+    console.log(toColumnId);
     const values = {
       sourceId: sourceCard?.id,
       sortField: `${groupField.name}_sort`,
