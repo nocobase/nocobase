@@ -1,13 +1,13 @@
-import { Op, Model } from 'sequelize';
+import { Model, Op } from 'sequelize';
 
 import { Context } from '..';
-import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
+import { Collection, Repository, SortField, TargetKey } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
+  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params.values || ctx.action.params;
 
   if (repository instanceof Repository) {
     const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
@@ -74,15 +74,25 @@ export class SortAbleCollection {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetScopeValue = targetScope[this.scopeKey];
 
-    if (targetScopeValue && sourceInstance.get(this.scopeKey) !== targetScopeValue) {
-      await sourceInstance.update(
-        {
-          [this.scopeKey]: targetScopeValue,
-        },
-        {
-          silent: false,
-        },
-      );
+    const isAssociatedScope = this.scopeKey.includes('.');
+
+    const currentScopeValue = isAssociatedScope
+      ? await sourceInstance.lazyLoadGet(this.scopeKey)
+      : sourceInstance.get(this.scopeKey);
+
+    if (currentScopeValue !== targetScopeValue) {
+      if (isAssociatedScope) {
+        await sourceInstance.lazyLoadSet(this.scopeKey, targetScopeValue);
+      } else {
+        await sourceInstance.update(
+          {
+            [this.scopeKey]: targetScopeValue,
+          },
+          {
+            hooks: false,
+          },
+        );
+      }
 
       if (method === 'prepend') {
         await this.sticky(sourceInstanceId);

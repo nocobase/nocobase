@@ -23,6 +23,43 @@ describe('sort field', () => {
     await db.close();
   });
 
+  it('should set association scope key on data has no associations', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'profiles',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        { type: 'string', name: 'level' },
+      ],
+    });
+
+    await db.sync();
+
+    const u1 = await User.repository.create({
+      values: {
+        name: 'u1',
+      },
+    });
+
+    User.setField('sort', {
+      name: 'sort',
+      type: 'sort',
+      scopeKey: 'profiles.level',
+    });
+
+    await db.sync();
+  });
+
   it('should support nested association as scope key in init record', async () => {
     const User = db.collection({
       name: 'users',

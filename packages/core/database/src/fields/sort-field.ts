@@ -37,16 +37,13 @@ export class SortField extends Field {
     }
 
     const filter = {};
+    filter['id.$ne'] = instance.id;
 
     if (scopeKey) {
       try {
-        const value = this.isAssociatedScopeKey()
+        filter[scopeKey] = this.isAssociatedScopeKey()
           ? await instance.lazyLoadGet(scopeKey, { transaction })
           : instance.get(scopeKey);
-
-        if (value !== undefined && value !== null) {
-          filter[scopeKey] = value;
-        }
       } catch (e) {
         if (e.message.includes('not found')) {
           return;
@@ -76,6 +73,13 @@ export class SortField extends Field {
         reset: true,
       });
     }
+  };
+
+  afterChangeScope = async (instance, options) => {
+    await this.setSortValue(instance, {
+      ...options,
+      reset: true,
+    });
   };
 
   initRecordsSortValue = async ({ transaction }) => {
@@ -134,25 +138,25 @@ export class SortField extends Field {
       const orderFieldWithTableName = `${this.collection.quotedTableName()}.${quotedOrderField}`;
 
       const sql = `
-        WITH ordered_table AS (
-        SELECT ${orderFieldWithTableName} as ${quotedOrderField}, ROW_NUMBER() OVER (${
-        scopeKey ? `PARTITION BY ${qs(this.scopeKeyAsField())}` : ''
-      }
+        WITH ordered_table AS (SELECT ${orderFieldWithTableName} as ${quotedOrderField},
+                                      ROW_NUMBER()                  OVER (${
+                                        scopeKey ? `PARTITION BY ${qs(this.scopeKeyAsField())}` : ''
+                                      }
         ORDER BY ${orderFieldWithTableName}) AS new_sequence_number
-        FROM ${this.collection.quotedTableName()}
-        ${this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''}
-        ${(() => {
-          if (scopeKey && scopeValue) {
-            const hasNull = scopeValue.includes(null);
+                               FROM ${this.collection.quotedTableName()} ${
+        this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''
+      }
+          ${(() => {
+            if (scopeKey && scopeValue) {
+              const hasNull = scopeValue.includes(null);
 
-            return `WHERE ${qs(this.scopeKeyAsField())} IN (${scopeValue
-              .filter((v) => v !== null)
-              .map((v) => `'${v}'`)
-              .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
-          }
-          return '';
-        })()})
-
+              return `WHERE ${qs(this.scopeKeyAsField())} IN (${scopeValue
+                .filter((v) => v !== null)
+                .map((v) => `'${v}'`)
+                .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
+            }
+            return '';
+          })()})
           ${
             this.collection.db.inDialect('mysql')
               ? `

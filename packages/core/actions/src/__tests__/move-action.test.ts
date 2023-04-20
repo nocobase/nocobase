@@ -3,7 +3,210 @@ import { registerActions } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+<<<<<<< HEAD
 describe('sort action', () => {
+=======
+describe('move action', () => {
+  describe('sort with association scope key', function () {
+    let api: MockServer;
+
+    let db: Database;
+    beforeEach(async () => {
+      api = mockServer({
+        database: {
+          tablePrefix: '',
+        },
+      });
+
+      registerActions(api);
+      db = api.db;
+
+      await db.clean({ drop: true });
+
+      db.collection({
+        name: 'ageProfiles',
+        fields: [
+          { type: 'integer', name: 'age' },
+          {
+            type: 'string',
+            name: 'grade',
+          },
+        ],
+      });
+
+      db.collection({
+        name: 'profiles',
+        fields: [
+          {
+            type: 'hasOne',
+            name: 'ageProfile',
+            target: 'ageProfiles',
+          },
+        ],
+      });
+
+      db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasOne', name: 'profile', target: 'profiles' },
+          { type: 'sort', name: 'sort', scopeKey: 'profile.ageProfile.grade' },
+        ],
+      });
+
+      await api.db.sync();
+
+      const User = await db.getCollection('users');
+
+      await User.repository.create({
+        values: [
+          {
+            name: 'u1',
+            profile: {
+              ageProfile: {
+                age: 10,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u2',
+            profile: {
+              ageProfile: {
+                age: 20,
+                grade: 'B',
+              },
+            },
+          },
+          {
+            name: 'u3',
+            profile: {
+              ageProfile: {
+                age: 30,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u4',
+            profile: {
+              ageProfile: {
+                age: 40,
+                grade: 'B',
+              },
+            },
+          },
+        ],
+      });
+    });
+
+    afterEach(async () => {
+      await api.destroy();
+    });
+
+    it('should move into null scope', async () => {
+      const u5 = await db.getRepository('users').create({
+        values: {
+          name: 'u5',
+          profile: {
+            ageProfile: {
+              age: 50,
+              grade: 'A',
+            },
+          },
+        },
+      });
+
+      await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u5.get('id'),
+          targetScope: {
+            'profile.ageProfile.grade': null,
+          },
+        });
+
+      await u5.reload();
+
+      expect(await u5.lazyLoadGet('profile.ageProfile.grade')).toEqual(null);
+      expect(await u5.get('sort')).toEqual(1);
+    });
+
+    it('should move into same scope', async () => {
+      await db.getRepository('users').create({
+        values: [
+          {
+            name: 'u5',
+            profile: {
+              ageProfile: {
+                age: 50,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u6',
+            profile: {
+              ageProfile: {
+                age: 60,
+                grade: 'A',
+              },
+            },
+          },
+        ],
+      });
+
+      // change u1 to u5
+
+      const users = await db.getCollection('users').repository.find({});
+      const u1 = users.find((user) => user.get('name') === 'u1');
+      const u5 = users.find((user) => user.get('name') === 'u5');
+      const u2 = users.find((user) => user.get('name') === 'u2');
+      const u4 = users.find((user) => user.get('name') === 'u4');
+
+      expect(u2.get('sort')).toEqual(1);
+      expect(u4.get('sort')).toEqual(2);
+      await api
+        .agent()
+        .resource('users')
+        .move({
+          sourceId: u1.get('id'),
+          targetId: u5.get('id'),
+        });
+
+      await u1.reload();
+      await u5.reload();
+      expect(u1.get('sort')).toEqual(3);
+      expect(u5.get('sort')).toEqual(2);
+
+      await u2.reload();
+      await u4.reload();
+
+      expect(u2.get('sort')).toEqual(1);
+      expect(u4.get('sort')).toEqual(2);
+    });
+
+    it('should move into difference scope', async () => {
+      const users = await db.getCollection('users').repository.find({});
+      const u1 = users.find((user) => user.get('name') === 'u1');
+      await api
+        .agent()
+        .resource('users')
+        .move({
+          sourceId: u1.get('id'),
+          targetScope: {
+            'profile.ageProfile.grade': 'B',
+          },
+        });
+
+      await u1.reload();
+
+      expect(u1.get('sort')).toEqual(3);
+    });
+  });
+
+>>>>>>> d9d0e8063 (fix: move into null scope)
   describe('same scope', () => {
     let api: MockServer;
 
