@@ -1,17 +1,22 @@
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Button, Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
+import { Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
 import { ResourceActionProvider } from '../ResourceActionProvider';
-import { useDeleteButtonDisabled, useDestroyActionAndRefreshCM } from '../action-hooks';
+import {
+  useBulkDestroyActionAndRefreshCM,
+  useDeleteButtonDisabled,
+  useDestroyActionAndRefreshCM,
+} from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
+import { AddCollectionField } from './AddFieldAction';
 import { EditCollectionField } from './EditFieldAction';
 import { OverridingCollectionField } from './OverridingCollectionField';
+import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
 import { collection } from './schemas/collectionFields';
 const CELL_WIDTH = 200;
@@ -166,6 +171,7 @@ export const CollectionFields = (props) => {
   const { getInterface, getInheritCollections, getCollection, getCurrentCollectionFields } = useCollectionManager();
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
+  const { t } = useTranslation();
 
   const inherits = getInheritCollections(name);
 
@@ -286,6 +292,21 @@ export const CollectionFields = (props) => {
     },
   };
 
+  const deleteProps = useMemo(
+    () => ({
+      useAction: useBulkDestroyActionAndRefreshCM,
+      title: t('Delete'),
+      icon: 'DeleteOutlined',
+      confirm: {
+        title: t('Delete record'),
+        content: t('Are you sure you want to delete it?'),
+      },
+    }),
+    [t],
+  );
+  const addProps = { type: 'primary' };
+  const syncProps = { type: 'primary' };
+
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>
@@ -298,10 +319,9 @@ export const CollectionFields = (props) => {
               margin-bottom: 16px;
             `}
           >
-            <Button icon={<DeleteOutlined />}>Delete</Button>
-            <Button type={'primary'} icon={<PlusOutlined />}>
-              Add field
-            </Button>
+            <Action {...deleteProps} />
+            <SyncFieldsAction {...syncProps} />
+            <AddCollectionField {...addProps} />
           </Space>
           <Table
             rowKey={'key'}
