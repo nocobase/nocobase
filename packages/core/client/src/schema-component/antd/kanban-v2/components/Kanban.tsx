@@ -92,16 +92,16 @@ export const KanbanV2: any = (props) => {
     });
   }, [groupField, params, appends]);
 
-  useEffect(() => {
-    if (field.value) {
-      const newState: any = [...columnData];
-      const newColumn = columnData.find((v) => v.value === '__unknown__');
-      newColumn.cards = field.value;
-      newColumn.meta = service?.data?.meta;
-      newState[columnData.length - 1] = newColumn;
-      setColumnData(newState);
-    }
-  }, [field.value]);
+  // useEffect(() => {
+  //   if (field.value) {
+  //     const newState: any = [...columnData];
+  //     const newColumn = columnData.find((v) => v.value === '__unknown__');
+  //     newColumn.cards = field.value;
+  //     newColumn.meta = service?.data?.meta;
+  //     newState[columnData.length - 1] = newColumn;
+  //     setColumnData(newState);
+  //   }
+  // }, [field.value]);
 
   const getColumnDatas = React.useCallback((el, index, params, appends?, currentPage?) => {
     const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);

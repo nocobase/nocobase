@@ -39,7 +39,7 @@ const FormComponent: React.FC<any> = (props) => {
         readPretty: true,
         initialValues: props.item,
       }),
-    [],
+    [props.item],
   );
   const fieldSchema = useFieldSchema();
   const f = form.createVoidField({ ...field.props, basePath: '' });
@@ -60,7 +60,7 @@ const List = (props) => {
   const { form, disabled, ...others } = useProps(props);
   const display = displayLable !== false ? 'flex' : 'none';
   return (
-    <form>
+    <form >
       <Spin spinning={field.loading || false}>
         <div
           onClick={() => {
@@ -82,6 +82,7 @@ const List = (props) => {
     </form>
   );
 };
+
 export const Column = memo((props: any) => {
   const { ind, data, cards, getColumnDatas } = props;
   const { service } = useBlockRequestContext();
