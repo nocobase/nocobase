@@ -1,12 +1,11 @@
 import { Context } from '..';
 import { Collection, TargetKey, Repository, SortField, Model } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
-import lodash from 'lodash';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params.values || ctx.action.params;
+  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
 
   if (repository instanceof Repository) {
     const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
@@ -18,7 +17,7 @@ export async function move(ctx: Context, next) {
     }
 
     // change scope
-    if (sourceId && targetScope !== undefined) {
+    if (sourceId && targetScope) {
       await sortAbleCollection.changeScope(sourceId, targetScope, method);
     }
 
@@ -55,37 +54,25 @@ export class SortAbleCollection {
     this.scopeKey = this.field.get('scopeKey');
   }
 
-  private async getInstanceScopeValue(instance) {
-    const isAssociatedScope = this.scopeKey.includes('.');
-
-    if (isAssociatedScope) {
-      try {
-        return await instance.lazyLoadGet(this.scopeKey);
-      } catch (e) {
-        if (e.message.includes('not found')) {
-          return null;
-        }
-      }
-    }
-
-    return instance.get(this.scopeKey);
-  }
-
   // insert source position to target position
   async move(sourceInstanceId: TargetKey, targetInstanceId: TargetKey, options: MoveOptions = {}) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
     const targetInstance = await this.collection.repository.findById(targetInstanceId);
 
     if (this.scopeKey) {
-      const currentScopeValue = await this.getInstanceScopeValue(sourceInstance);
-      const newScopeValue = await this.getInstanceScopeValue(targetInstance);
+      const isAssociatedScope = this.scopeKey.includes('.');
+
+      const currentScopeValue = isAssociatedScope
+        ? await sourceInstance.lazyLoadGet(this.scopeKey)
+        : sourceInstance.get(this.scopeKey);
+      const newScopeValue = isAssociatedScope
+        ? await targetInstance.lazyLoadGet(this.scopeKey)
+        : targetInstance.get(this.scopeKey);
 
       if (currentScopeValue !== newScopeValue) {
         await this.changeScope(sourceInstanceId, {
           [this.scopeKey]: newScopeValue,
         });
-
-        await sourceInstance.reload();
       }
     }
 
@@ -94,15 +81,16 @@ export class SortAbleCollection {
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
-    const targetScopeValue = lodash.isPlainObject(targetScope) ? targetScope[this.scopeKey] : targetScope;
+    const targetScopeValue = targetScope[this.scopeKey];
 
     const isAssociatedScope = this.scopeKey.includes('.');
 
-    const currentScopeValue = await this.getInstanceScopeValue(sourceInstance);
+    const currentScopeValue = isAssociatedScope
+      ? await sourceInstance.lazyLoadGet(this.scopeKey)
+      : sourceInstance.get(this.scopeKey);
 
-    if (currentScopeValue !== targetScopeValue) {
+    if (targetScopeValue && currentScopeValue !== targetScopeValue) {
       if (isAssociatedScope) {
-        console.log(`update associated scope from ${currentScopeValue} to ${targetScopeValue}`);
         await sourceInstance.lazyLoadSet(this.scopeKey, targetScopeValue);
       } else {
         await sourceInstance.update(
@@ -119,7 +107,6 @@ export class SortAbleCollection {
         await this.sticky(sourceInstanceId);
       } else {
         // reset sort
-        console.log('reset sort', this.collection.name, sourceInstance.get('id'));
         await this.collection.context.database.emitAsync(`${this.collection.name}.afterChangeScope`, sourceInstance);
       }
     }
@@ -147,7 +134,18 @@ export class SortAbleCollection {
       targetSort = targetSort + 1;
     }
 
-    let scopeValue = await this.getInstanceScopeValue(sourceInstance);
+    let scopeValue = await (async () => {
+      const scopeKey = this.scopeKey;
+      if (!scopeKey) {
+        return null;
+      }
+
+      if (scopeKey.includes('.')) {
+        return await sourceInstance.lazyLoadGet(scopeKey);
+      }
+
+      return sourceInstance.get(scopeKey);
+    })();
 
     let updateCondition;
     let change;

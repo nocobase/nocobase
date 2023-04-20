@@ -164,6 +164,12 @@ interface MaxOptions extends Transactionable {
   filter?: Filter;
 }
 
+interface IncrOptions extends Omit<UpdateOptions, 'values'> {
+  field: string;
+  filter?: Filter;
+  value?: number;
+}
+
 const transaction = transactionWrapperBuilder(function () {
   return (<Repository>this).collection.model.sequelize.transaction();
 });
