@@ -102,7 +102,9 @@ export const InternalTabBar: React.FC = (props) => {
               type: 'void',
               'x-component': 'Grid',
               'x-initializer': 'MBlockInitializers',
-              properties: {},
+              'x-component-props': {
+                showDivider: false,
+              },
             },
           },
         });

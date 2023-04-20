@@ -8,7 +8,7 @@ import { useHistory } from 'react-router-dom';
 
 const findGridSchema = (schema: Schema) => {
   const gridSchema = schema.reduceProperties(
-    (schema, next) => schema || (next['x-component'] === 'MGrid' && next),
+    (schema, next) => schema || (next['x-component'] === 'Grid' && next),
   ) as Schema;
   return gridSchema;
 };
