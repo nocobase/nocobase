@@ -97,7 +97,7 @@ export const KanbanV2: any = (props) => {
         return mergeFilter([
           defaultFilter,
           fieldSchema.parent['x-decorator-props']?.params?.filter,
-          params.filter?.$and[0],
+          params.filter?.$and?.[0],
         ]);
       } else {
         const defaultfilter = isAssociationField
@@ -110,7 +110,7 @@ export const KanbanV2: any = (props) => {
         return mergeFilter([
           defaultfilter,
           fieldSchema.parent['x-decorator-props']?.params?.filter,
-          params.filter?.$and[0],
+          params.filter?.$and?.[0],
         ]);
       }
     };
