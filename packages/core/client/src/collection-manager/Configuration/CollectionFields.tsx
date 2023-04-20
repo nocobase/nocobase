@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag } from 'antd';
+import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';
@@ -36,6 +36,8 @@ const rowStyle = css`
     background-color: white;
   }
 `;
+
+const titlePrompt = 'Default title for each record';
 
 const CurrentFields = (props) => {
   const compile = useCompile();
@@ -83,12 +85,14 @@ const CurrentFields = (props) => {
         };
 
         return (
-          <Switch
-            size="small"
-            loading={record.name === loadingRecord?.name}
-            checked={record.name === (titleField || 'id')}
-            onChange={handleChange}
-          />
+          <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
+            <Switch
+              size="small"
+              loading={record.name === loadingRecord?.name}
+              checked={record.name === (titleField || 'id')}
+              onChange={handleChange}
+            />
+          </Tooltip>
         );
       },
     },
@@ -148,6 +152,7 @@ const InheritFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
+  const { t } = useTranslation();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -186,12 +191,14 @@ const InheritFields = (props) => {
         };
 
         return (
-          <Switch
-            size="small"
-            loading={record.name === loadingRecord?.name}
-            checked={record.name === (titleField || 'id')}
-            onChange={handleChange}
-          />
+          <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
+            <Switch
+              size="small"
+              loading={record.name === loadingRecord?.name}
+              checked={record.name === (titleField || 'id')}
+              onChange={handleChange}
+            />
+          </Tooltip>
         );
       },
     },

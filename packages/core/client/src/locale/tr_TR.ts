@@ -501,4 +501,5 @@ export default {
 
   'Click or drag file to this area to upload': "Dosyayı yüklemek için buraya tıklayın veya sürükleyin",
   'Support for a single or bulk upload, file size should not exceed': "Tek veya toplu yükleme destekler, dosya boyutu aşmamalıdır",
+  'Default title for each record': "Her kayıt için varsayılan başlık",
 }

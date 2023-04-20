@@ -647,4 +647,5 @@ export default {
 
   'Click or drag file to this area to upload': 'Clique ou arraste o arquivo para esta área para fazer o upload',
   'Support for a single or bulk upload, file size should not exceed': 'Suporte para upload único ou em massa, o tamanho do arquivo não deve exceder',
+  'Default title for each record': 'Título padrão para cada registro',
 };
