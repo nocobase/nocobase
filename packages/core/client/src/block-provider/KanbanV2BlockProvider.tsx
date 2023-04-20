@@ -149,7 +149,7 @@ export const KanbanV2BlockProvider = (props) => {
     params['appends'] = appends;
   }
   const mergedFilters = mergeFilter([filter, props.params.filter]);
-  const kanbanColumns = columns.filter((v) => v.enabled);
+  const kanbanColumns = columns?.filter((v) => v.enabled)||[];
   kanbanColumns.push({
     value: '__unknown__',
     label: 'Unknown',
