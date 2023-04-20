@@ -131,6 +131,21 @@ describe('move action', () => {
 
       expect(await u5.lazyLoadGet('profile.ageProfile.grade')).toEqual(null);
       expect(await u5.get('sort')).toEqual(1);
+
+      await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u5.get('id'),
+          targetScope: {
+            'profile.ageProfile.grade': 'A',
+          },
+        });
+
+      await u5.reload();
+
+      expect(await u5.lazyLoadGet('profile.ageProfile.grade')).toEqual('A');
+      expect(await u5.get('sort')).toEqual(3);
     });
 
     it('should move into same scope', async () => {
