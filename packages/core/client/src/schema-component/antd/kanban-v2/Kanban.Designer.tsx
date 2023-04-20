@@ -26,7 +26,7 @@ export const KanabanDesigner = () => {
     association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho'],
   }).filter((v) => v.children || ['select', 'radioGroup'].includes(v.interface));
   const groupField = fieldSchema['x-decorator-props']?.groupField || [];
-  const options = fieldSchema['x-decorator-props']?.columns;
+  const columns = fieldSchema['x-decorator-props']?.columns;
   const getAssociateResource = (collectionName) => {
     return resource;
   };
@@ -35,7 +35,7 @@ export const KanabanDesigner = () => {
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Grouping field')}
-        scope={{ collectionFields, getAssociateResource, options }}
+        scope={{ collectionFields, getAssociateResource, columns }}
         schema={
           {
             type: 'object',
@@ -66,7 +66,7 @@ export const KanabanDesigner = () => {
                   dependencies: ['groupField'],
                   fulfill: {
                     schema: {
-                      'x-component-props': '{{{getAssociateResource,options,collectionFields,...$form.values}}}',
+                      'x-component-props': '{{{getAssociateResource,columns,collectionFields,...$form.values}}}',
                     },
                   },
                 },

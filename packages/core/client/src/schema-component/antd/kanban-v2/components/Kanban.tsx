@@ -204,6 +204,7 @@ export const KanbanV2: any = (props) => {
     const destinationColumn = columnData.find((column) => column.value === toColumnId);
     const sourceCard = sourceColumn?.cards?.[fromPosition];
     const targetCard = destinationColumn?.cards?.[toPosition];
+    console.log(toColumnId)
     const values = {
       sourceId: sourceCard?.id,
       sortField: `${groupField.name}_sort`,

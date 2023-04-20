@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
 export const KanbanOptions = observer((props: any) => {
-  const { groupField, collectionFields, getAssociateResource, options } = props;
+  const { groupField, collectionFields, getAssociateResource, columns } = props;
   const [dataSource, setDataSource] = useState([]);
   const { t } = useTranslation();
+  console.log(columns);
   useEffect(() => {
     if (groupField) {
       const field = collectionFields.find((v) => {
@@ -20,7 +21,7 @@ export const KanbanOptions = observer((props: any) => {
           };
         });
         const result = data.map((v) => {
-          const option = options?.find((k) => k.value === v.value);
+          const option = columns?.find((k) => k.value === v.value);
           if (option) {
             return { ...option };
           } else {
@@ -38,7 +39,16 @@ export const KanbanOptions = observer((props: any) => {
               label: v[groupField[1]],
             };
           });
-          setDataSource(optionsData);
+
+          const result = optionsData.map((v) => {
+            const option = columns?.find((k) => k.value === v.value);
+            if (option) {
+              return { ...option };
+            } else {
+              return v;
+            }
+          });
+          setDataSource(result);
         });
       }
     }
