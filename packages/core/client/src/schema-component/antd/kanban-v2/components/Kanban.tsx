@@ -183,7 +183,7 @@ export const KanbanV2: any = (props) => {
           ? `${associateCollectionField[0]}_${associateCollectionField[1]}_sort`
           : `${groupField.name}_sort`,
     };
-    values['targetId'] = targetCard.id;
+    values['targetId'] = targetCard?.id;
     associateCollectionField.length > 1
       ? (values['targetScope'] = {
           [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId !== '__unknown__' ? toColumnId : null,
