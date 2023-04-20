@@ -431,7 +431,8 @@ export const useDestroyActionAndRefreshCM = () => {
 };
 
 export const useDeleteButtonDisabled = (record?: any) => {
-  const { interface: i, deletable = true } = record || useRecord();
+  const recordFromProvider = useRecord();
+  const { interface: i, deletable = true } = record || recordFromProvider;
 
   return !deletable || i === 'id';
 };

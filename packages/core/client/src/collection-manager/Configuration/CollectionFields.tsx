@@ -5,14 +5,14 @@ import { FieldContext, FormContext, useField } from '@formily/react';
 import { Button, Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useRequest } from '../../api-client';
-import { useAsyncData } from '../../async-data-provider';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
 import { ResourceActionProvider } from '../ResourceActionProvider';
 import { useDeleteButtonDisabled, useDestroyActionAndRefreshCM } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { EditCollectionField } from './EditFieldAction';
+import { OverridingCollectionField } from './OverridingCollectionField';
+import { ViewCollectionField } from './ViewInheritedField';
 import { collection } from './schemas/collectionFields';
 const CELL_WIDTH = 200;
 
@@ -21,21 +21,6 @@ const indentStyle = css`
     margin-left: -7px !important;
   }
 `;
-
-const useDefSelectedRowKeys = () => {
-  const result = useAsyncData();
-  return [result?.state?.selectedRowKeys, (selectedRowKeys) => result?.setState?.({ selectedRowKeys })];
-};
-const useDef = (options, props) => {
-  const { request, dataSource } = props;
-  if (request) {
-    return useRequest(request(props), options);
-  } else {
-    return Promise.resolve({
-      data: dataSource,
-    });
-  }
-};
 
 const CurrentFields = (props) => {
   const compile = useCompile();
@@ -75,6 +60,7 @@ const CurrentFields = (props) => {
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
+          // eslint-disable-next-line react-hooks/rules-of-hooks
           disabled: useDeleteButtonDisabled(record),
           title: t('Delete'),
         };
@@ -108,6 +94,8 @@ const CurrentFields = (props) => {
 const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
+  const { t } = useTranslation();
+
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -135,12 +123,23 @@ const InheritFields = (props) => {
       dataIndex: 'actions',
       title: 'Actions',
       width: CELL_WIDTH,
-      render: () => {
+      render: function Render(_, record) {
+        const recordFromProvider = useRecord();
+        const overrideProps = {
+          type: 'primary',
+          currentCollection: recordFromProvider.name,
+        };
+        const viewCollectionProps = {
+          type: 'primary',
+        };
+
         return (
-          <Space>
-            <a>Override</a>
-            <a>View</a>
-          </Space>
+          <RecordProvider record={record}>
+            <Space>
+              <OverridingCollectionField {...overrideProps} />
+              <ViewCollectionField {...viewCollectionProps} />
+            </Space>
+          </RecordProvider>
         );
       },
     },
@@ -154,7 +153,7 @@ const InheritFields = (props) => {
       columns={columns}
       showHeader={false}
       pagination={false}
-      dataSource={props.fields}
+      dataSource={props.fields.filter((field) => field.interface)}
       className={indentStyle}
     />
   );
