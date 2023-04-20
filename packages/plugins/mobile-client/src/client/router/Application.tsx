@@ -7,7 +7,7 @@ import { DrawerProps, ModalProps } from 'antd';
 
 const drawerProps: DrawerProps = {
   getContainer: '.nb-mobile-application',
-  width: '100%',
+  width: '90%',
   style: {
     position: 'absolute',
   },

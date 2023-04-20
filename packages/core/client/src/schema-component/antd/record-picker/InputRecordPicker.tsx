@@ -249,7 +249,7 @@ const Drawer: React.FunctionComponent<{
       value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
     >
       <CollectionProvider allowNull name={collectionField?.target}>
-        <ActionContextProvider openMode="modal" visible={visible} setVisible={setVisible}>
+        <ActionContextProvider openMode="drawer" visible={visible} setVisible={setVisible}>
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
               <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
