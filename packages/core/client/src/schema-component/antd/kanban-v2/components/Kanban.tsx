@@ -186,7 +186,7 @@ export const KanbanV2: any = (props) => {
     values['targetId'] = targetCard.id;
     associateCollectionField.length > 1
       ? (values['targetScope'] = {
-          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
+          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId !== '__unknown__' ? toColumnId : null,
         })
       : (values['targetScope'] = {
           state: toColumnId !== '__unknown__' ? toColumnId : null,
