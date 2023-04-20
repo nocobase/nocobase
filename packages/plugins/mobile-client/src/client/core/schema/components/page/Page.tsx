@@ -11,7 +11,9 @@ const designerCss = css`
   flex-direction: column;
   width: 100%;
   height: 100%;
+  overflow-x: hidden;
   overflow-y: auto;
+  padding-bottom: var(--nb-spacing);
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -62,6 +64,7 @@ const InternalPage: React.FC = (props) => {
         className={cx(
           'nb-mobile-page-header',
           css`
+            display: flex;
             background: #ffffff;
             margin-bottom: var(--nb-spacing);
           `,

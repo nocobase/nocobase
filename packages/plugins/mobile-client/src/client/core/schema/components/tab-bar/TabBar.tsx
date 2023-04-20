@@ -100,7 +100,7 @@ export const InternalTabBar: React.FC = (props) => {
           properties: {
             [uid()]: {
               type: 'void',
-              'x-component': 'MGrid',
+              'x-component': 'Grid',
               'x-initializer': 'MBlockInitializers',
               properties: {},
             },

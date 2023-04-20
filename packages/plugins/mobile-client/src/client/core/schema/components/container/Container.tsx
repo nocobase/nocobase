@@ -113,12 +113,10 @@ const InternalContainer: React.FC = (props) => {
   return (
     <SortableItem className={cx('nb-mobile-container', designerCss)}>
       <div
-        className={cx(
-          'nb-mobile-container-content',
-          css`
-            padding-bottom: var(--nb-spacing);
-          `,
-        )}
+        style={{
+          paddingBottom: `calc(var(--nb-spacing) + ${tabRoutes.length ? '49px' : '0px'})`,
+        }}
+        className={cx('nb-mobile-container-content')}
       >
         {tabRoutes.length ? (
           <RouteSwitch routes={tabRoutes as any} />

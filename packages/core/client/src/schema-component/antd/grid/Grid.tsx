@@ -105,8 +105,14 @@ const ColDivider = (props) => {
       prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
       nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
       const dividerWidth = (el.clientWidth * (props.cols.length + 1)) / props.cols.length;
-      const preWidth = ((100 * (prev.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
-      const nextWidth = ((100 * (next.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
+      const preWidth = (
+        (100 * (prev.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
+      const nextWidth = (
+        (100 * (next.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
 
       prevSchema['x-component-props']['width'] = preWidth;
       nextSchema['x-component-props']['width'] = nextWidth;
@@ -321,6 +327,7 @@ export const useGridRowContext = () => {
 };
 
 export const Grid: any = observer((props: any) => {
+  const { showDivider = true } = props;
   const gridRef = useRef(null);
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -333,35 +340,39 @@ export const Grid: any = observer((props: any) => {
     gridRef.current && setPrintContent?.(gridRef.current);
   }, [gridRef.current]);
   return (
-    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render }}>
+    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, showDivider }}>
       <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>
         <DndWrapper dndContext={props.dndContext}>
-          <RowDivider
-            rows={rows}
-            first
-            id={`${addr}_0`}
-            data={{
-              breakRemoveOn: breakRemoveOnGrid,
-              wrapSchema: wrapRowSchema,
-              insertAdjacent: 'afterBegin',
-              schema: fieldSchema,
-            }}
-          />
+          {showDivider ? (
+            <RowDivider
+              rows={rows}
+              first
+              id={`${addr}_0`}
+              data={{
+                breakRemoveOn: breakRemoveOnGrid,
+                wrapSchema: wrapRowSchema,
+                insertAdjacent: 'afterBegin',
+                schema: fieldSchema,
+              }}
+            />
+          ) : null}
           {rows.map((schema, index) => {
             return (
               <React.Fragment key={schema.name}>
                 <RecursionField name={schema.name} schema={schema} />
-                <RowDivider
-                  rows={rows}
-                  index={index}
-                  id={`${addr}_${index + 1}`}
-                  data={{
-                    breakRemoveOn: breakRemoveOnGrid,
-                    wrapSchema: wrapRowSchema,
-                    insertAdjacent: 'afterEnd',
-                    schema,
-                  }}
-                />
+                {showDivider ? (
+                  <RowDivider
+                    rows={rows}
+                    index={index}
+                    id={`${addr}_${index + 1}`}
+                    data={{
+                      breakRemoveOn: breakRemoveOnGrid,
+                      wrapSchema: wrapRowSchema,
+                      insertAdjacent: 'afterEnd',
+                      schema,
+                    }}
+                  />
+                ) : null}
               </React.Fragment>
             );
           })}
@@ -377,6 +388,7 @@ Grid.Row = observer(() => {
   const fieldSchema = useFieldSchema();
   const addr = field.address.toString();
   const cols = useColProperties();
+  const { showDivider } = useGridContext();
 
   return (
     <GridRowContext.Provider value={{ schema: fieldSchema, cols }}>
@@ -385,40 +397,46 @@ Grid.Row = observer(() => {
           'nb-grid-row',
           css`
             overflow-x: hidden;
-            margin: 0 calc(-1 * var(--nb-spacing));
             display: flex;
             position: relative;
             /* z-index: 0; */
           `,
         )}
+        style={{
+          margin: showDivider ? '0 calc(-1 * var(--nb-spacing))' : null,
+        }}
       >
-        <ColDivider
-          cols={cols}
-          first
-          id={`${addr}_0`}
-          data={{
-            breakRemoveOn: breakRemoveOnRow,
-            wrapSchema: wrapColSchema,
-            insertAdjacent: 'afterBegin',
-            schema: fieldSchema,
-          }}
-        />
+        {showDivider && (
+          <ColDivider
+            cols={cols}
+            first
+            id={`${addr}_0`}
+            data={{
+              breakRemoveOn: breakRemoveOnRow,
+              wrapSchema: wrapColSchema,
+              insertAdjacent: 'afterBegin',
+              schema: fieldSchema,
+            }}
+          />
+        )}
         {cols.map((schema, index) => {
           return (
             <React.Fragment key={schema.name}>
               <RecursionField name={schema.name} schema={schema} />
-              <ColDivider
-                cols={cols}
-                index={index}
-                last={index === cols.length - 1}
-                id={`${addr}_${index + 1}`}
-                data={{
-                  breakRemoveOn: breakRemoveOnRow,
-                  wrapSchema: wrapColSchema,
-                  insertAdjacent: 'afterEnd',
-                  schema,
-                }}
-              />
+              {showDivider && (
+                <ColDivider
+                  cols={cols}
+                  index={index}
+                  last={index === cols.length - 1}
+                  id={`${addr}_${index + 1}`}
+                  data={{
+                    breakRemoveOn: breakRemoveOnRow,
+                    wrapSchema: wrapColSchema,
+                    insertAdjacent: 'afterEnd',
+                    schema,
+                  }}
+                />
+              )}
             </React.Fragment>
           );
         })}
@@ -429,12 +447,13 @@ Grid.Row = observer(() => {
 
 Grid.Col = observer((props: any) => {
   const { cols = [] } = useContext(GridRowContext);
+  const { showDivider } = useGridContext();
   const schema = useFieldSchema();
   const field = useField();
   let width = '';
   if (cols?.length) {
     const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-    width = `calc(${w}% - var(--nb-spacing) *  ${(cols.length + 1) / cols.length})`;
+    width = `calc(${w}% - var(--nb-spacing) *  ${(showDivider ? cols.length + 1 : 0) / cols.length})`;
   }
   const { setNodeRef } = useDroppable({
     id: field.address.toString(),

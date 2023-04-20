@@ -17,7 +17,7 @@ const openSizeWidthMap = new Map<OpenSize, string>([
 export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
   const { t } = useTranslation();
-  const { visible, setVisible, openSize = 'middle' } = useActionContext();
+  const { visible, setVisible, openSize = 'middle', drawerProps } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
   const footerSchema = schema.reduceProperties((buf, s) => {
@@ -26,90 +26,86 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
     }
     return buf;
   });
+
   return (
-    <>
-      {createPortal(
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          <Drawer
-            width={openSizeWidthMap.get(openSize)}
-            title={field.title}
-            {...others}
-            destroyOnClose
-            visible={visible}
-            onClose={() => setVisible(false, true)}
-            className={classNames(
-              others.className,
-              css`
-                &.nb-action-popup {
-                  .ant-drawer-header {
-                    display: none;
-                  }
-
-                  .ant-drawer-body {
-                    padding-top: 14px;
-                  }
-
-                  .ant-drawer-content {
-                    background: #f0f2f5;
-                  }
-                }
-
-                &.nb-record-picker-selector {
-                  .nb-block-item {
-                    margin-bottom: 24px;
-
-                    .general-schema-designer {
-                      top: -8px;
-                      bottom: -8px;
-                      left: -8px;
-                      right: -8px;
-                    }
-                  }
-                }
-              `,
-            )}
-            footer={
-              footerSchema && (
-                <div
-                  className={css`
-                    display: flex;
-                    justify-content: flex-end;
-                    width: 100%;
-
-                    .ant-btn {
-                      margin-right: 8px;
-                    }
-                  `}
-                >
-                  <RecursionField
-                    basePath={field.address}
-                    schema={schema}
-                    onlyRenderProperties
-                    filterProperties={(s) => {
-                      return s['x-component'] === footerNodeName;
-                    }}
-                  />
-                </div>
-              )
+    <Drawer
+      width={openSizeWidthMap.get(openSize)}
+      title={field.title}
+      {...others}
+      {...drawerProps}
+      style={{
+        ...drawerProps?.style,
+        ...others?.style,
+      }}
+      destroyOnClose
+      open={visible}
+      onClose={() => setVisible(false, true)}
+      className={classNames(
+        drawerProps?.className,
+        others.className,
+        css`
+          &.nb-action-popup {
+            .ant-drawer-header {
+              display: none;
             }
+
+            .ant-drawer-body {
+              padding-top: 14px;
+            }
+
+            .ant-drawer-content {
+              background: #f0f2f5;
+            }
+          }
+
+          &.nb-record-picker-selector {
+            .nb-block-item {
+              margin-bottom: 24px;
+
+              .general-schema-designer {
+                top: -8px;
+                bottom: -8px;
+                left: -8px;
+                right: -8px;
+              }
+            }
+          }
+        `,
+      )}
+      footer={
+        footerSchema && (
+          <div
+            className={css`
+              display: flex;
+              justify-content: flex-end;
+              width: 100%;
+
+              .ant-btn {
+                margin-right: 8px;
+              }
+            `}
           >
             <RecursionField
               basePath={field.address}
               schema={schema}
               onlyRenderProperties
               filterProperties={(s) => {
-                return s['x-component'] !== footerNodeName;
+                return s['x-component'] === footerNodeName;
               }}
             />
-          </Drawer>
-        </div>,
-        document.body,
-      )}
-    </>
+          </div>
+        )
+      }
+    >
+      <RecursionField
+        basePath={field.address}
+        schema={schema}
+        onlyRenderProperties
+        filterProperties={(s) => {
+          return s['x-component'] !== footerNodeName;
+        }}
+      />
+    </Drawer>
   );
 });
 

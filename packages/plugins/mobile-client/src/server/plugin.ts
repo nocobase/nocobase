@@ -19,7 +19,7 @@ export class MobileClientPlugin extends Plugin {
           properties: {
             grid: {
               type: 'void',
-              'x-component': 'MGrid',
+              'x-component': 'Grid',
               'x-initializer': 'MBlockInitializers',
               properties: {},
             },

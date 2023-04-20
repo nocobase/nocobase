@@ -127,7 +127,10 @@ const InternalMenu: React.FC = (props) => {
                 },
                 grid: {
                   type: 'void',
-                  'x-component': 'MGrid',
+                  'x-component': 'Grid',
+                  'x-component-props': {
+                    showDivider: false,
+                  },
                   'x-initializer': 'MBlockInitializers',
                 },
               },

@@ -1,10 +1,10 @@
-import { gridItemWrap } from '../helpers';
+import { gridRowColWrap } from '@nocobase/client';
 
 // 页面里添加区块
 export const MBlockInitializers = {
   title: '{{t("Add block")}}',
   icon: 'PlusOutlined',
-  wrap: gridItemWrap,
+  wrap: gridRowColWrap,
   items: [
     {
       key: 'dataBlocks',
@@ -29,19 +29,6 @@ export const MBlockInitializers = {
           title: '{{t("Calendar")}}',
           component: 'CalendarBlockInitializer',
         },
-        {
-          key: 'kanban',
-          type: 'item',
-          title: '{{t("Kanban")}}',
-          component: 'KanbanBlockInitializer',
-        },
-        {
-          key: 'Gantt',
-          type: 'item',
-          title: '{{t("Gantt")}}',
-          component: 'GanttBlockInitializer',
-        },
-
       ],
     },
     {
@@ -55,6 +42,12 @@ export const MBlockInitializers = {
           title: '{{t("Menu")}}',
           component: 'MMenuBlockInitializer',
           sort: 100,
+        },
+        {
+          key: 'markdown',
+          type: 'item',
+          title: '{{t("Markdown")}}',
+          component: 'MarkdownBlockInitializer',
         },
       ],
     },

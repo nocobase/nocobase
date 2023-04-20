@@ -10,7 +10,7 @@ import {
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
@@ -249,7 +249,7 @@ const Drawer: React.FunctionComponent<{
       value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
     >
       <CollectionProvider allowNull name={collectionField?.target}>
-        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+        <ActionContextProvider openMode="modal" visible={visible} setVisible={setVisible}>
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
               <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
@@ -263,7 +263,7 @@ const Drawer: React.FunctionComponent<{
               </SchemaComponentOptions>
             </TableSelectorParamsProvider>
           </FormProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </CollectionProvider>
     </RecordPickerContext.Provider>
   );

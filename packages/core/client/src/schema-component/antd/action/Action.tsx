@@ -16,7 +16,7 @@ import { ActionDrawer } from './Action.Drawer';
 import { ActionLink } from './Action.Link';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
-import { ActionContext } from './context';
+import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
@@ -147,23 +147,21 @@ export const Action: ComposedAction = observer((props: any) => {
   };
 
   return (
-    <ActionContext.Provider
-      value={{
-        button: renderButton(),
-        visible,
-        setVisible,
-        formValueChanged,
-        setFormValueChanged,
-        openMode,
-        openSize,
-        containerRefKey,
-        fieldSchema,
-      }}
+    <ActionContextProvider
+      button={renderButton()}
+      visible={visible}
+      setVisible={setVisible}
+      formValueChanged={formValueChanged}
+      setFormValueChanged={setFormValueChanged}
+      openMode={openMode}
+      openSize={openSize}
+      containerRefKey={containerRefKey}
+      fieldSchema={fieldSchema}
     >
       {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
       {!popover && renderButton()}
       {!popover && props.children}
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 });
 

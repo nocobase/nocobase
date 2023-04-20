@@ -7,7 +7,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../../.
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { Preview } from '../preview';
 import { isShowFilePicker } from './InputRecordPicker';
@@ -110,11 +110,11 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
           <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>
-          <ActionContext.Provider
+          <ActionContextProvider
             value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
           >
             {renderRecordProvider()}
-          </ActionContext.Provider>
+          </ActionContextProvider>
         </CollectionProvider>
       </BlockAssociationContext.Provider>
     </div>
