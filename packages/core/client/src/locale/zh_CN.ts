@@ -745,4 +745,13 @@ export default {
   'Click or drag file to this area to upload': '点击或拖拽文件到此区域上传',
   'Support for a single or bulk upload, file size should not exceed': '支持单个或批量上传，文件大小不能超过',
   'Default title for each record': '用作数据的默认标题',
+
+  'If collection inherits, choose inherited collections as templates': '当前表有继承关系时，可选择继承链路上的表作为模板来源',
+  'Select an existing piece of data as the initialization data for the form': '选择一条已有的数据作为表单的初始化数据',
+  'Only the selected fields will be used as the initialization data for the form': '仅选择的字段才会作为表单的初始化数据',
+  'Template Data': '模板数据',
+  'Data fields': '数据字段',
+  'Add template': '添加模板',
+  'Display data template selector': '显示数据模板选择框',
+  'Form data templates': '表单数据模板',
 }

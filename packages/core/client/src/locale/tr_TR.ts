@@ -503,4 +503,13 @@ export default {
   'Click or drag file to this area to upload': "Dosyayı yüklemek için buraya tıklayın veya sürükleyin",
   'Support for a single or bulk upload, file size should not exceed': "Tek veya toplu yükleme destekler, dosya boyutu aşmamalıdır",
   'Default title for each record': "Her kayıt için varsayılan başlık",
+
+  'If collection inherits, choose inherited collections as templates': "Koleksiyon miras alırsa, kalıtılan koleksiyonları şablon olarak seçin",
+  'Select an existing piece of data as the initialization data for the form': 'Formun başlangıç ​​verileri olarak mevcut bir veri parçasını seçin',
+  'Only the selected fields will be used as the initialization data for the form': 'Yalnızca seçilen alanlar, formun başlangıç ​​verileri olarak kullanılacaktır',
+  'Template Data': 'Şablon Verisi',
+  'Data fields': 'Veri alanları',
+  'Add template': 'Şablon ekle',
+  'Display data template selector': 'Veri şablonu seçicisini görüntüle',
+  'Form data templates': 'Form veri şablonları',
 }
