@@ -88,11 +88,13 @@ export default abstract class QueryInterface {
 
         joinSQL += `${throughCollection.quotedTableName()} as ${q(throughModel.name)} ON ${q(collection.name)}.${q(
           association.sourceKeyField,
-        )} = ${q(throughModel.name)}.${q(association.foreignKey)}`;
+        )} = ${q(throughModel.name)}.${q(throughModel.rawAttributes[association.foreignKey].field)}`;
 
         joinSQL += ` LEFT JOIN ${targetCollection.quotedTableName()} as ${q(association.as)} ON ${q(
           association.as,
-        )}.${q(association.targetKeyField)} = ${q(throughModel.name)}.${q(association.otherKey)}`;
+        )}.${q(association.targetKeyField)} = ${q(throughModel.name)}.${q(
+          throughModel.rawAttributes[association.otherKey].field,
+        )}`;
       }
 
       collection = targetCollection;
