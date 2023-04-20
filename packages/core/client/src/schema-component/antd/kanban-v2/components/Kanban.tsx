@@ -183,22 +183,17 @@ export const KanbanV2: any = (props) => {
           ? `${associateCollectionField[0]}_${associateCollectionField[1]}_sort`
           : `${groupField.name}_sort`,
     };
-    if (targetCard) {
-      values['targetId'] = targetCard.id;
-      associateCollectionField.length > 1
-        ? (values['targetScope'] = {
-            [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
-          })
-        : (values['targetScope'] = {
-            state: toColumnId !== '__unknown__' ? toColumnId : null,
-          });
-    } else {
-      values['targetScope'] = {
-        state: toColumnId !== '__unknown__' ? toColumnId : null,
-      };
-    }
+    values['targetId'] = targetCard.id;
+    associateCollectionField.length > 1
+      ? (values['targetScope'] = {
+          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
+        })
+      : (values['targetScope'] = {
+          state: toColumnId !== '__unknown__' ? toColumnId : null,
+        });
+
     try {
-      console.log(values)
+      console.log(values);
       await resource.move(values);
       message.success(t('Saved successfully'));
     } catch (error) {}
