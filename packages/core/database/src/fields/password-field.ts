@@ -44,32 +44,30 @@ export class PasswordField extends Field {
     });
   }
 
-  listener = async (model) => {
-    if (!model.changed(name as any)) {
-      return;
-    }
-    const value = model.get(name) as string;
-    if (value) {
-      const hash = await this.hash(value);
-      model.set(name, hash);
-    } else {
-      model.set(name, null);
-    }
-  };
+  listener;
 
   init() {
     const { name } = this.options;
+
+    this.listener = async (model) => {
+      if (!model.changed(name as any)) {
+        return;
+      }
+      const value = model.get(name) as string;
+      if (value) {
+        const hash = await this.hash(value);
+        model.set(name, hash);
+      } else {
+        model.set(name, null);
+      }
+    };
   }
 
   bind() {
     super.bind();
-    this.on('beforeCreate', this.listener);
-    this.on('beforeUpdate', this.listener);
-  }
-
-  unbind() {
-    super.unbind();
-    this.off('beforeCreate', this.listener);
-    this.off('beforeUpdate', this.listener);
+    this.setListeners({
+      beforeCreate: this.listener,
+      beforeUpdate: this.listener,
+    });
   }
 }
