@@ -2,11 +2,16 @@ import { css } from '@emotion/css';
 import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Space, Switch, Table, TableColumnProps, Tag } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
-import { ResourceActionProvider, useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
+import {
+  ResourceActionContext,
+  ResourceActionProvider,
+  useResourceActionContext,
+  useResourceContext,
+} from '../ResourceActionProvider';
 import {
   isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
@@ -39,7 +44,6 @@ const CurrentFields = (props) => {
   const { setState } = useResourceActionContext();
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
-  const { refreshCM } = useCollectionManager();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
 
   const columns: TableColumnProps<any>[] = [
@@ -69,7 +73,7 @@ const CurrentFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              await refreshCM();
+              await props.refreshAsync();
               setLoadingRecord(null);
             })
             .catch((err) => {
@@ -143,7 +147,6 @@ const InheritFields = (props) => {
   const { getInterface } = useCollectionManager();
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
-  const { refreshCM } = useCollectionManager();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
 
   const columns: TableColumnProps<any>[] = [
@@ -173,7 +176,7 @@ const InheritFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              await refreshCM();
+              await props.refreshAsync();
               setLoadingRecord(null);
             })
             .catch((err) => {
@@ -236,6 +239,7 @@ export const CollectionFields = (props) => {
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
   const collectionResource = useResourceContext();
+  const { refreshAsync } = useContext(ResourceActionContext);
 
   const inherits = getInheritCollections(name);
 
@@ -397,9 +401,17 @@ export const CollectionFields = (props) => {
               expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (
-                  <InheritFields fields={record.fields} collectionResource={collectionResource} />
+                  <InheritFields
+                    fields={record.fields}
+                    collectionResource={collectionResource}
+                    refreshAsync={refreshAsync}
+                  />
                 ) : (
-                  <CurrentFields fields={record.fields} collectionResource={collectionResource} />
+                  <CurrentFields
+                    fields={record.fields}
+                    collectionResource={collectionResource}
+                    refreshAsync={refreshAsync}
+                  />
                 ),
             }}
           />

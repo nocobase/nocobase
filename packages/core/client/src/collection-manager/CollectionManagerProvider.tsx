@@ -1,6 +1,6 @@
 import { Spin } from 'antd';
 import { keyBy } from 'lodash';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { templateOptions } from '../collection-manager/Configuration/templates';
 import { useCollectionHistory } from './CollectionHistoryProvider';
@@ -101,13 +101,4 @@ export const CollectionCategroriesProvider = (props) => {
       {props.children}
     </CollectionCategroriesContext.Provider>
   );
-};
-
-export const useDataSourceFromCollectionManager = (options: any) => {
-  const { collections } = useContext(CollectionManagerContext);
-
-  useEffect(() => {
-    options?.onSuccess({ data: collections });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collections]);
 };
