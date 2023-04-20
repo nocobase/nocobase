@@ -174,6 +174,7 @@ export default {
   "Field display name": "Alan görünen adı",
   "Field type": "Alan türü",
   "Field interface": "Alan arayüzü",
+  "Title field": "Başlık alanı",
   "Date format": "Tarih formatı",
   "Year/Month/Day": "Yıl/Ay/Gün",
   "Year-Month-Day": "Yıl-Ay-Gün",

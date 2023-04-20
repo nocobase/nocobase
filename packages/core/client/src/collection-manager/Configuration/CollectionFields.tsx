@@ -54,23 +54,23 @@ const CurrentFields = (props) => {
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
-      title: 'Field display name',
+      title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 7 }}>{compile(value)}</div>,
     },
     {
       dataIndex: 'name',
-      title: 'Field name',
+      title: t('Field name'),
       width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
-      title: 'Field interface',
+      title: t('Field interface'),
       width: CELL_WIDTH,
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
-      title: 'Title field',
+      title: t('Title field'),
       width: CELL_WIDTH,
       render: function Render(_, record) {
         const handleChange = (checked) => {
@@ -101,7 +101,7 @@ const CurrentFields = (props) => {
     },
     {
       dataIndex: 'actions',
-      title: 'Actions',
+      title: t('Actions'),
       width: CELL_WIDTH,
       render: (_, record) => {
         const deleteProps = {
@@ -160,23 +160,23 @@ const InheritFields = (props) => {
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
-      title: 'Field display name',
+      title: t('Field display name'),
       render: (value) => <div style={{ marginLeft: 1 }}>{compile(value)}</div>,
     },
     {
       dataIndex: 'name',
-      title: 'Field name',
+      title: t('Field name'),
       width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
-      title: 'Field interface',
+      title: t('Field interface'),
       width: CELL_WIDTH,
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
-      title: 'Title field',
+      title: t('Title field'),
       width: CELL_WIDTH,
       render(_, record) {
         const handleChange = (checked) => {
@@ -207,7 +207,7 @@ const InheritFields = (props) => {
     },
     {
       dataIndex: 'actions',
-      title: 'Actions',
+      title: t('Actions'),
       width: CELL_WIDTH,
       render: function Render(_, record) {
         const overrideProps = {
@@ -256,7 +256,7 @@ export const CollectionFields = (props) => {
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: 'title',
-      title: 'Field display name',
+      title: t('Field display name'),
       render: (value) => (
         <div
           className={css`
@@ -272,22 +272,22 @@ export const CollectionFields = (props) => {
     },
     {
       dataIndex: 'name',
-      title: 'Field name',
+      title: t('Field name'),
       width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
-      title: 'Field interface',
+      title: t('Field interface'),
       width: CELL_WIDTH,
     },
     {
       dataIndex: 'titleField',
-      title: 'Title field',
+      title: t('Title field'),
       width: CELL_WIDTH,
     },
     {
       dataIndex: 'actions',
-      title: 'Actions',
+      title: t('Actions'),
       width: CELL_WIDTH,
     },
   ];
@@ -319,22 +319,22 @@ export const CollectionFields = (props) => {
   const dataSource = [
     {
       key: 'pf',
-      title: 'PK & FK fields',
+      title: t('PK & FK fields'),
       fields: groups.pf,
     },
     {
       key: 'association',
-      title: 'Association fields',
+      title: t('Association fields'),
       fields: groups.association,
     },
     {
       key: 'general',
-      title: 'General fields',
+      title: t('General fields'),
       fields: groups.general,
     },
     {
       key: 'system',
-      title: 'System fields',
+      title: t('System fields'),
       fields: groups.system,
     },
   ];
@@ -344,7 +344,7 @@ export const CollectionFields = (props) => {
       const collection = getCollection(key);
       return {
         key,
-        title: 'Inherited fields - ' + compile(collection.title),
+        title: `${t('Inherited fields')} - ` + compile(collection.title),
         inherit: true,
         fields: collection.fields,
       };
