@@ -45,7 +45,7 @@ describe('sort field', () => {
 
     await db.sync();
 
-    await User.repository.create({
+    const u1 = await User.repository.create({
       values: {
         name: 'u1',
       },

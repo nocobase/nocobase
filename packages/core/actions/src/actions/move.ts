@@ -5,7 +5,7 @@ import { getRepositoryFromParams } from '../utils';
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
 
-  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params;
+  const { sourceId, targetId, sortField, targetScope, sticky, method } = ctx.action.params.values || ctx.action.params;
 
   if (repository instanceof Repository) {
     const sortAbleCollection = new SortAbleCollection(repository.collection, sortField);
@@ -91,7 +91,7 @@ export class SortAbleCollection {
       ? await sourceInstance.lazyLoadGet(this.scopeKey)
       : sourceInstance.get(this.scopeKey);
 
-    if (targetScopeValue && currentScopeValue !== targetScopeValue) {
+    if (currentScopeValue !== targetScopeValue) {
       if (isAssociatedScope) {
         await sourceInstance.lazyLoadSet(this.scopeKey, targetScopeValue);
       } else {

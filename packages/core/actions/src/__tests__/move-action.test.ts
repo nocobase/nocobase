@@ -101,6 +101,35 @@ describe('move action', () => {
       await api.destroy();
     });
 
+    it('should move into null scope', async () => {
+      const u5 = await db.getRepository('users').create({
+        values: {
+          name: 'u5',
+          profile: {
+            ageProfile: {
+              age: 50,
+              grade: 'A',
+            },
+          },
+        },
+      });
+
+      await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u5.get('id'),
+          targetScope: {
+            'profile.ageProfile.grade': null,
+          },
+        });
+
+      await u5.reload();
+
+      expect(await u5.lazyLoadGet('profile.ageProfile.grade')).toEqual(null);
+      expect(await u5.get('sort')).toEqual(1);
+    });
+
     it('should move into same scope', async () => {
       await db.getRepository('users').create({
         values: [

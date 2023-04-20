@@ -42,16 +42,13 @@ export class SortField extends Field {
     }
 
     const filter = {};
+    filter['id.$ne'] = instance.id;
 
     if (scopeKey) {
       try {
-        const value = this.isAssociatedScopeKey()
+        filter[scopeKey] = this.isAssociatedScopeKey()
           ? await instance.lazyLoadGet(scopeKey, { transaction })
           : instance.get(scopeKey);
-
-        if (value !== undefined && value !== null) {
-          filter[scopeKey] = value;
-        }
       } catch (e) {
         if (e.message.includes('not found')) {
           console.log(e.message);
@@ -85,8 +82,6 @@ export class SortField extends Field {
   };
 
   afterChangeScope = async (instance, options) => {
-    console.log('afterChangeScope');
-
     await this.setSortValue(instance, {
       ...options,
       reset: true,
