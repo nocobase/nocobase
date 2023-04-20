@@ -82,7 +82,6 @@ export const FormDataTemplates = observer((props: any) => {
                         objectValue: false,
                         manual: false,
                         mapOptions: (item) => {
-                          // TODO: 应该使用 item.title 字段的值作为 label
                           return {
                             ...item,
                             [collection.titleField || 'label']: `#${item.id} ${item[collection.titleField] || ''}`,

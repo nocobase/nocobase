@@ -10,7 +10,7 @@ import * as defaultInterfaces from './interfaces';
 import { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
-  const { service, interfaces, collections = [], refreshCM, templates } = props;
+  const { service, interfaces, collections = [], refreshCM, updateCollection, templates } = props;
   const defaultTemplates = keyBy(templateOptions(), (item) => item.name);
   const ctx = useContext(CollectionManagerContext);
   return (
@@ -22,6 +22,7 @@ export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (pr
         templates: { ...defaultTemplates, ...templates },
         collections: [...ctx.collections, ...collections],
         refreshCM,
+        updateCollection,
       }}
     >
       <CollectionManagerSchemaComponentProvider>{props.children}</CollectionManagerSchemaComponentProvider>
@@ -76,12 +77,17 @@ export const RemoteCollectionManagerProvider = (props: any) => {
     return data?.data || [];
   };
 
+  const updateCollection = (collection) => {
+    service.mutate({ data: collection });
+  };
+
   return (
     <CollectionCategroriesProvider service={{ ...result }} refreshCategory={refreshCategory}>
       <CollectionManagerProvider
         service={{ ...service, contentLoading, setContentLoading }}
         collections={service?.data?.data}
         refreshCM={refreshCM}
+        updateCollection={updateCollection}
         {...props}
       />
     </CollectionCategroriesProvider>
