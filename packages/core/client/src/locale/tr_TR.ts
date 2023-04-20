@@ -274,7 +274,6 @@ export default {
   "Allow linking to multiple records": "Birden çok kayda bağlanmaya izin ver",
   "Allow uploading multiple files": "Birden çok dosya yüklemeye izin ver",
   "Configure calendar": "Takvimi yapılandır",
-  "Title field": "Başlık alanı",
   "Start date field": "Başlangıç tarihi alanı",
   "End date field": "Bitiş tarihi alanı",
   "Navigate": "Navigate",
