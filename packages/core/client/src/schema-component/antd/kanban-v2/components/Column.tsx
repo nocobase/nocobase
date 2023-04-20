@@ -1,14 +1,18 @@
-import React, { memo, useState, useMemo } from 'react';
+import React, { memo, useState, useContext } from 'react';
 import { FormLayout } from '@formily/antd';
 import { Spin, Skeleton, Divider } from 'antd';
 import { css } from '@emotion/css';
-import { createForm } from '@formily/core';
 import { useTranslation } from 'react-i18next';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { FieldContext, FormContext, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useProps } from '../../../hooks/useProps';
-import { useBlockRequestContext, useKanbanV2BlockContext } from '../../../../';
+import {
+  useBlockRequestContext,
+  useKanbanV2BlockContext,
+  KanbanCardBlockProvider,
+  KanbanCardContext,
+} from '../../../../';
 
 const grid = 8;
 const getItemStyle = (isDragging, draggableStyle) => ({
@@ -33,14 +37,7 @@ const getListStyle = () => ({
 const FormComponent: React.FC<any> = (props) => {
   const { children, setDisableCardDrag, ...others } = props;
   const field = useField();
-  const form = useMemo(
-    () =>
-      createForm({
-        readPretty: true,
-        initialValues: props.item,
-      }),
-    [props.item],
-  );
+  const { form } = useContext(KanbanCardContext);
   const fieldSchema = useFieldSchema();
   const f = form.createVoidField({ ...field.props, basePath: '' });
   return (
@@ -56,11 +53,11 @@ const FormComponent: React.FC<any> = (props) => {
 
 const List = (props) => {
   const field: any = useField();
-  const { onCardClick, displayLable } = props;
-  const { form, disabled, ...others } = useProps(props);
+  const { onCardClick, displayLable, form } = props;
+  const { disabled, ...others } = useProps(props);
   const display = displayLable !== false ? 'flex' : 'none';
   return (
-    <form >
+    <form>
       <Spin spinning={field.loading || false}>
         <div
           onClick={() => {
@@ -89,6 +86,7 @@ export const Column = memo((props: any) => {
   const {
     groupField,
     params: { appends },
+    form,
   } = useKanbanV2BlockContext();
   const params = service?.params?.[0] || {};
   const fieldSchema = useFieldSchema();
@@ -137,19 +135,22 @@ export const Column = memo((props: any) => {
                     {...provided.dragHandleProps}
                     style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-around',
-                      }}
-                    >
-                      <List
-                        {...props}
-                        item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
-                        displayLable={displayLable}
-                        setDisableCardDrag={setDisableCardDrag}
-                      />
-                    </div>
+                    <KanbanCardBlockProvider item={item}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-around',
+                        }}
+                      >
+                        <List
+                          {...props}
+                          form={form}
+                          item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
+                          displayLable={displayLable}
+                          setDisableCardDrag={setDisableCardDrag}
+                        />
+                      </div>
+                    </KanbanCardBlockProvider>
                   </div>
                 )}
               </Draggable>

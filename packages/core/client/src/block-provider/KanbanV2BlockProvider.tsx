@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import { useCollection, useCollectionManager } from '../collection-manager';
+import { useRequest, useAPIClient } from '../api-client';
+
 import { RecordProvider } from '../record-provider';
 import { mergeFilter } from '../block-provider/SharedFilterProvider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -39,6 +41,34 @@ const InternalKanbanV2BlockProvider = (props) => {
     >
       <RecordProvider record={service?.data?.data?.[0] || {}}>{props.children}</RecordProvider>
     </KanbanV2BlockContext.Provider>
+  );
+};
+
+export const KanbanCardContext = createContext<any>({});
+
+export const KanbanCardBlockProvider = (props) => {
+  const { item } = props;
+  const field = useField<any>();
+  const form = useMemo(
+    () =>
+      createForm({
+        readPretty: true,
+        initialValues: item,
+      }),
+    [item],
+  );
+
+  field.loaded = true;
+  return (
+    <KanbanCardContext.Provider
+      value={{
+        ...props,
+        form,
+        field,
+      }}
+    >
+      <RecordProvider record={item || {}}>{props.children}</RecordProvider>
+    </KanbanCardContext.Provider>
   );
 };
 
