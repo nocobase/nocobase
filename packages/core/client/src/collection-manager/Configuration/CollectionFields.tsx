@@ -40,6 +40,7 @@ const rowStyle = css`
 const titlePrompt = 'Default title for each record';
 // 只有下面类型的字段才可以设置为标题字段
 const expectTypes = ['string', 'integer', 'bigInt', 'float', 'double', 'decimal', 'date', 'dateonly', 'time'];
+const excludeInterfaces = ['icon'];
 
 const CurrentFields = (props) => {
   const compile = useCompile();
@@ -86,7 +87,7 @@ const CurrentFields = (props) => {
             });
         };
 
-        return expectTypes.includes(record.type) ? (
+        return expectTypes.includes(record.type) && !excludeInterfaces.includes(record.interface) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
@@ -192,7 +193,7 @@ const InheritFields = (props) => {
             });
         };
 
-        return expectTypes.includes(record.type) ? (
+        return expectTypes.includes(record.type) && !excludeInterfaces.includes(record.interface) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
