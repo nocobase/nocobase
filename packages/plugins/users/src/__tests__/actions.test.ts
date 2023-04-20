@@ -13,11 +13,13 @@ describe('actions', () => {
   let pluginUser;
 
   beforeEach(async () => {
-    app = mockServer();
-    await app.cleanDb();
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
+
+    app = mockServer();
+    await app.cleanDb();
+
     app.plugin(PluginUsers, userPluginConfig);
     app.plugin(AuthPlugin);
     await app.loadAndInstall();
