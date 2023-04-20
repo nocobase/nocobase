@@ -2,11 +2,12 @@ import { css } from '@emotion/css';
 import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
 import { Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
-import { ResourceActionProvider } from '../ResourceActionProvider';
+import { ResourceActionProvider, useResourceActionContext } from '../ResourceActionProvider';
 import {
   useBulkDestroyActionAndRefreshCM,
   useDeleteButtonDisabled,
@@ -31,6 +32,8 @@ const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
   const { t } = useTranslation();
+  const { setState } = useResourceActionContext();
+
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -90,6 +93,15 @@ const CurrentFields = (props) => {
       dataSource={props.fields}
       rowSelection={{
         type: 'checkbox',
+        onChange: (selectedRowKeys) => {
+          setState((state) => {
+            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
+            return {
+              ...state,
+              selectedRowKeys: result,
+            };
+          });
+        },
       }}
       className={indentStyle}
     />
@@ -100,6 +112,7 @@ const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
   const { t } = useTranslation();
+  const { setState } = useResourceActionContext();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -154,6 +167,15 @@ const InheritFields = (props) => {
       rowKey={'name'}
       rowSelection={{
         type: 'checkbox',
+        onChange: (selectedRowKeys) => {
+          setState((state) => {
+            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
+            return {
+              ...state,
+              selectedRowKeys: _.uniq(result),
+            };
+          });
+        },
       }}
       columns={columns}
       showHeader={false}

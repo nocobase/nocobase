@@ -377,7 +377,7 @@ export const useDestroyAction = () => {
 
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { resource } = useResourceContext();
   return {
     async run() {
       await resource.destroy({
