@@ -1,16 +1,15 @@
 import { css } from '@emotion/css';
 import { Field, createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Checkbox, Space, Table, TableColumnProps, Tag } from 'antd';
-import _ from 'lodash';
+import { Space, Switch, Table, TableColumnProps, Tag } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { Action, useAttach, useCompile } from '../../schema-component';
-import { ResourceActionProvider, useResourceActionContext } from '../ResourceActionProvider';
+import { ResourceActionProvider, useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import {
+  isDeleteButtonDisabled,
   useBulkDestroyActionAndRefreshCM,
-  useDeleteButtonDisabled,
   useDestroyActionAndRefreshCM,
 } from '../action-hooks';
 import { useCollectionManager } from '../hooks/useCollectionManager';
@@ -27,12 +26,21 @@ const indentStyle = css`
     margin-left: -7px !important;
   }
 `;
+const rowStyle = css`
+  .ant-table-cell {
+    background-color: white;
+  }
+`;
 
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
+  const { resource, targetKey } = props.collectionResource || {};
+  const { [targetKey]: filterByTk, titleField } = useRecord();
+  const { refreshCM } = useCollectionManager();
+  const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -55,7 +63,30 @@ const CurrentFields = (props) => {
       dataIndex: 'titleField',
       title: 'Title field',
       width: CELL_WIDTH,
-      render: () => <Checkbox />,
+      render: function Render(_, record) {
+        const handleChange = (checked) => {
+          setLoadingRecord(record);
+          resource
+            .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
+            .then(async () => {
+              await refreshCM();
+              setLoadingRecord(null);
+            })
+            .catch((err) => {
+              setLoadingRecord(null);
+              console.error(err);
+            });
+        };
+
+        return (
+          <Switch
+            size="small"
+            loading={record.name === loadingRecord?.name}
+            checked={record.name === titleField}
+            onChange={handleChange}
+          />
+        );
+      },
     },
     {
       dataIndex: 'actions',
@@ -68,8 +99,7 @@ const CurrentFields = (props) => {
             content: t('Are you sure you want to delete it?'),
           },
           useAction: useDestroyActionAndRefreshCM,
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          disabled: useDeleteButtonDisabled(record),
+          disabled: isDeleteButtonDisabled(record),
           title: t('Delete'),
         };
 
@@ -111,8 +141,10 @@ const CurrentFields = (props) => {
 const InheritFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
-  const { t } = useTranslation();
-  const { setState } = useResourceActionContext();
+  const { resource, targetKey } = props.collectionResource || {};
+  const { [targetKey]: filterByTk, titleField, name } = useRecord();
+  const { refreshCM } = useCollectionManager();
+  const [loadingRecord, setLoadingRecord] = React.useState(null);
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -135,17 +167,39 @@ const InheritFields = (props) => {
       dataIndex: 'titleField',
       title: 'Title field',
       width: CELL_WIDTH,
-      render: () => <Checkbox />,
+      render(_, record) {
+        const handleChange = (checked) => {
+          setLoadingRecord(record);
+          resource
+            .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
+            .then(async () => {
+              await refreshCM();
+              setLoadingRecord(null);
+            })
+            .catch((err) => {
+              setLoadingRecord(null);
+              console.error(err);
+            });
+        };
+
+        return (
+          <Switch
+            size="small"
+            loading={record.name === loadingRecord?.name}
+            checked={record.name === titleField}
+            onChange={handleChange}
+          />
+        );
+      },
     },
     {
       dataIndex: 'actions',
       title: 'Actions',
       width: CELL_WIDTH,
       render: function Render(_, record) {
-        const recordFromProvider = useRecord();
         const overrideProps = {
           type: 'primary',
-          currentCollection: recordFromProvider.name,
+          currentCollection: name,
         };
         const viewCollectionProps = {
           type: 'primary',
@@ -165,23 +219,10 @@ const InheritFields = (props) => {
   return (
     <Table
       rowKey={'name'}
-      rowSelection={{
-        type: 'checkbox',
-        onChange: (selectedRowKeys) => {
-          setState((state) => {
-            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
-            return {
-              ...state,
-              selectedRowKeys: _.uniq(result),
-            };
-          });
-        },
-      }}
       columns={columns}
       showHeader={false}
       pagination={false}
       dataSource={props.fields.filter((field) => field.interface)}
-      className={indentStyle}
     />
   );
 };
@@ -194,6 +235,7 @@ export const CollectionFields = (props) => {
   const form = useMemo(() => createForm(), []);
   const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
   const { t } = useTranslation();
+  const collectionResource = useResourceContext();
 
   const inherits = getInheritCollections(name);
 
@@ -352,8 +394,13 @@ export const CollectionFields = (props) => {
             pagination={false}
             expandable={{
               defaultExpandAllRows: true,
+              expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
-                record.inherit ? <InheritFields fields={record.fields} /> : <CurrentFields fields={record.fields} />,
+                record.inherit ? (
+                  <InheritFields fields={record.fields} collectionResource={collectionResource} />
+                ) : (
+                  <CurrentFields fields={record.fields} collectionResource={collectionResource} />
+                ),
             }}
           />
         </FieldContext.Provider>

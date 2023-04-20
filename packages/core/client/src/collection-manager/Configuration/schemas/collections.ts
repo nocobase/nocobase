@@ -4,6 +4,7 @@ import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
+import { useDataSourceFromCollectionManager } from '../../CollectionManagerProvider';
 import { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
@@ -166,7 +167,7 @@ export const collectionTableSchema: ISchema = {
         rowSelection: {
           type: 'checkbox',
         },
-        useDataSource: '{{ cm.useDataSourceFromRAC }}',
+        useDataSource: useDataSourceFromCollectionManager,
         useAction() {
           const api = useAPIClient();
           const { t } = useTranslation();
