@@ -148,6 +148,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       if (Array.isArray(target)) {
         target = target[0];
       }
+
+      if (!target) {
+        throw new Error(`Association ${key} not found`);
+      }
     }
 
     return target;
