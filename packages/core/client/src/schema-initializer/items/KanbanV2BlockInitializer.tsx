@@ -27,7 +27,7 @@ export const KanbanV2BlockInitializer = (props) => {
       onCreateBlockSchema={async ({ item }) => {
         const collectionFields = getCollectionFields(item.name);
         const groupFieldsOptions = getCollectionFieldsOptions(item.name, 'string', {
-          association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho'],
+          association: ['linkTo', 'm2m', 'm2o', 'o2m', 'o2o', 'oho', 'obo'],
         }).filter((v) => v.children || ['select', 'radioGroup'].includes(v.interface));
         const values = await FormDialog(t('Create kanban block'), () => {
           return (
