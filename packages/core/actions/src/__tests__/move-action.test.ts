@@ -52,13 +52,7 @@ describe('sort action', () => {
       });
 
       await api.db.sync();
-    });
 
-    afterEach(async () => {
-      await api.destroy();
-    });
-
-    it('should move', async () => {
       const User = await db.getCollection('users');
 
       await User.repository.create({
@@ -101,10 +95,69 @@ describe('sort action', () => {
           },
         ],
       });
+    });
 
-      const users = await User.repository.find({});
+    afterEach(async () => {
+      await api.destroy();
+    });
+
+    it('should move into same scope', async () => {
+      await db.getRepository('users').create({
+        values: [
+          {
+            name: 'u5',
+            profile: {
+              ageProfile: {
+                age: 50,
+                grade: 'A',
+              },
+            },
+          },
+          {
+            name: 'u6',
+            profile: {
+              ageProfile: {
+                age: 60,
+                grade: 'A',
+              },
+            },
+          },
+        ],
+      });
+
+      // change u1 to u5
+
+      const users = await db.getCollection('users').repository.find({});
       const u1 = users.find((user) => user.get('name') === 'u1');
+      const u5 = users.find((user) => user.get('name') === 'u5');
+      const u2 = users.find((user) => user.get('name') === 'u2');
+      const u4 = users.find((user) => user.get('name') === 'u4');
 
+      expect(u2.get('sort')).toEqual(1);
+      expect(u4.get('sort')).toEqual(2);
+      await api
+        .agent()
+        .resource('users')
+        .move({
+          sourceId: u1.get('id'),
+          targetId: u5.get('id'),
+        });
+
+      await u1.reload();
+      await u5.reload();
+      expect(u1.get('sort')).toEqual(3);
+      expect(u5.get('sort')).toEqual(2);
+
+      await u2.reload();
+      await u4.reload();
+
+      expect(u2.get('sort')).toEqual(1);
+      expect(u4.get('sort')).toEqual(2);
+    });
+
+    it('should move into difference scope', async () => {
+      const users = await db.getCollection('users').repository.find({});
+      const u1 = users.find((user) => user.get('name') === 'u1');
       await api
         .agent()
         .resource('users')
