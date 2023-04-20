@@ -78,7 +78,10 @@ export const KanbanV2BlockInitializer = (props) => {
         });
         const groupField =
           values.groupField.length > 1 ? `${values.groupField?.[0]}.${values.groupField?.[1]}` : values.groupField?.[0];
-        const sortName = `${groupField}_sort`;
+        const sortName =
+          values.groupField.length > 1
+            ? `${values.groupField?.[0]}_${values.groupField?.[1]}_sort`
+            : `${groupField}_sort`;
         const exists = collectionFields?.find((field) => field.name === sortName);
         if (!exists) {
           await api.resource('collections.fields', item.name).create({
