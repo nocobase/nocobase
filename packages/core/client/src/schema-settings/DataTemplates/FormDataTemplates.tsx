@@ -1,6 +1,7 @@
 import { connect, mapProps, observer } from '@formily/react';
 import { Tree as AntdTree } from 'antd';
 import React from 'react';
+import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
@@ -19,6 +20,8 @@ export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
   const { collectionList, getEnableFieldTree } = useCollectionState(collectionName);
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(collectionName);
 
   return (
     <SchemaComponent
@@ -81,12 +84,13 @@ export const FormDataTemplates = observer((props: any) => {
                         mapOptions: (item) => {
                           // TODO: 应该使用 item.title 字段的值作为 label
                           return {
-                            label: item.id,
+                            ...item,
+                            [collection.titleField || 'label']: `#${item.id} ${item[collection.titleField] || ''}`,
                             value: item.id,
                           };
                         },
                         fieldNames: {
-                          label: 'label',
+                          label: collection.titleField || 'label',
                           value: 'value',
                         },
                       },
