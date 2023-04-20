@@ -1,4 +1,4 @@
-import React, { memo, useState, useContext } from 'react';
+import React, { memo, useState, useContext, useEffect } from 'react';
 import { FormLayout } from '@formily/antd';
 import { Spin, Skeleton, Divider } from 'antd';
 import { css } from '@emotion/css';
@@ -92,11 +92,18 @@ export const Column = memo((props: any) => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
+  const [loading, setLoading] = useState(false);
   console.log('ind', ind);
   const displayLable = fieldSchema.parent['x-label-disabled'];
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
   };
+  useEffect(() => {
+    setLoading(true);
+    getColumnDatas(data, ind, params, appends, 1).then(() => {
+      setLoading(false);
+    });
+  }, [appends.length, params]);
   fieldSchema.properties.grid['x-component-props'] = {
     dndContext: {
       onDragStart: () => {
@@ -113,48 +120,55 @@ export const Column = memo((props: any) => {
         <div ref={provided.innerRef} style={getListStyle()} {...provided.droppableProps} id={`scrollableDiv${ind}`}>
           <InfiniteScroll
             key={ind}
-            dataLength={cards.length}
+            dataLength={cards?.length || 0}
             next={() => loadMoreData(data, ind)}
-            hasMore={cards.length < data?.meta?.count}
+            hasMore={cards?.length < data?.meta?.count}
             loader={<Skeleton avatar paragraph={{ rows: 1 }} active />}
             scrollableTarget={`scrollableDiv${ind}`}
             endMessage={
-              cards.length > 0 && (
+              cards?.length > 0 && (
                 <Divider plain style={{ color: '#908d8d' }}>
                   {t('All loaded, nothing more')}
                 </Divider>
               )
             }
           >
-            {cards?.map((item, index) => (
-              <Draggable key={item.id} draggableId={`item-${item.id}`} index={index} isDragDisabled={disabledCardDrag}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
-                  >
-                    <KanbanCardBlockProvider item={item}>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-around',
-                        }}
-                      >
-                        <List
-                          {...props}
-                          form={form}
-                          item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
-                          displayLable={displayLable}
-                          setDisableCardDrag={setDisableCardDrag}
-                        />
-                      </div>
-                    </KanbanCardBlockProvider>
-                  </div>
-                )}
-              </Draggable>
-            ))}
+            <Spin spinning={loading || false}>
+              {cards?.map((item, index) => (
+                <Draggable
+                  key={item.id}
+                  draggableId={`item-${item.id}`}
+                  index={index}
+                  isDragDisabled={disabledCardDrag}
+                >
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+                    >
+                      <KanbanCardBlockProvider item={item}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-around',
+                          }}
+                        >
+                          <List
+                            {...props}
+                            form={form}
+                            item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
+                            displayLable={displayLable}
+                            setDisableCardDrag={setDisableCardDrag}
+                          />
+                        </div>
+                      </KanbanCardBlockProvider>
+                    </div>
+                  )}
+                </Draggable>
+              ))}
+            </Spin>
             {provided.placeholder}
           </InfiniteScroll>
         </div>

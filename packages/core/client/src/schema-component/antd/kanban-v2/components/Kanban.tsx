@@ -11,7 +11,6 @@ import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
-import { diffObjects } from '../utitls';
 import { loadMoreButton } from '../style';
 
 const reorder = (list, startIndex, endIndex) => {
@@ -85,50 +84,62 @@ export const KanbanV2: any = (props) => {
   const fieldSchema = useFieldSchema();
   const params = service?.params?.[0] || {};
 
-  useEffect(() => {
-    columnData.map((v, index) => {
-      getColumnDatas(v, index, params, appends, 1);
-    });
-  }, [groupField, params, appends]);
-
   const getColumnDatas = React.useCallback(async (el, index, params, appends?, currentPage?) => {
-    const filter = diffObjects(params.filter['$and'][0], service.params[0].filter['$and'][0]);
+    const parseFilter = (value) => {
+      if (value === '__unknown__') {
+        const defaultFilter = isAssociationField
+          ? {
+              $and: [{ [groupField.name]: { id: { $notExists: true } } }],
+            }
+          : {
+              $and: [{ [groupField.name]: { $empty: true } }],
+            };
+        return mergeFilter([
+          defaultFilter,
+          fieldSchema.parent['x-decorator-props']?.params?.filter,
+          params.filter?.$and[0],
+        ]);
+      } else {
+        const defaultfilter = isAssociationField
+          ? {
+              $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: value } } }],
+            }
+          : {
+              $and: [{ [groupField.name]: { $eq: value } }],
+            };
+        return mergeFilter([
+          defaultfilter,
+          fieldSchema.parent['x-decorator-props']?.params?.filter,
+          params.filter?.$and[0],
+        ]);
+      }
+    };
+    const filter = parseFilter(el.value);
     const newState: any = [...columnData];
     const newColumn = columnData.find((v) => v.value === el.value) || { ...el };
     const page = currentPage || 1;
-    const defaultfilter = isAssociationField
-      ? {
-          $and: [{ [groupField.name]: { [associateCollectionField[1]]: { $eq: el.value } } }],
+    const result = resource.list({
+      ...params,
+      appends,
+      page: page,
+      filter,
+    });
+    result.then(({ data }) => {
+      if (data) {
+        if (page !== 1) {
+          newColumn.cards = [...(newColumn?.cards || []), ...data.data];
+          newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
+          newState[index] = newColumn;
+          setColumnData(newState);
+        } else {
+          newColumn.cards = data.data;
+          newColumn.meta = data.meta;
+          newState[index] = newColumn;
+          setColumnData(newState);
         }
-      : {
-          $and: [{ [groupField.name]: { $eq: el.value } }],
-        };
-
-    resource
-      .list({
-        ...params,
-        appends,
-        page: page,
-        filter:
-          el.value !== '__unknown__'
-            ? mergeFilter([defaultfilter, fieldSchema.parent['x-decorator-props']?.params?.filter, filter])
-            : params.filter,
-      })
-      .then(({ data }) => {
-        if (data) {
-          if (page !== 1) {
-            newColumn.cards = [...(newColumn?.cards || []), ...data.data];
-            newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
-            newState[index] = newColumn;
-            setColumnData(newState);
-          } else {
-            newColumn.cards = data.data;
-            newColumn.meta = data.meta;
-            newState[index] = newColumn;
-            setColumnData(newState);
-          }
-        }
-      });
+      }
+    });
+    return result;
   }, []);
 
   const onDragEnd = (result) => {
@@ -183,18 +194,22 @@ export const KanbanV2: any = (props) => {
           ? `${associateCollectionField[0]}_${associateCollectionField[1]}_sort`
           : `${groupField.name}_sort`,
     };
-    values['targetId'] = targetCard?.id;
+    if (targetCard) {
+      values['targetId'] = targetCard?.id;
+    }
     associateCollectionField.length > 1
       ? (values['targetScope'] = {
-          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId !== '__unknown__' ? toColumnId : null,
+          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]:
+            toColumnId !== '__unknown__' ? toColumnId : null,
         })
       : (values['targetScope'] = {
           state: toColumnId !== '__unknown__' ? toColumnId : null,
         });
 
     try {
-      console.log(values);
-      await resource.move(values);
+      await resource.move({
+        values: values,
+      });
       message.success(t('Saved successfully'));
     } catch (error) {}
   };
@@ -218,16 +233,15 @@ export const KanbanV2: any = (props) => {
               }}
             >
               <ColumnHeader {...el} />
-              {el.cards && (
-                <Column
-                  // key={ind}
-                  data={el}
-                  ind={ind}
-                  cards={el.cards}
-                  onCardClick={handleCardClick}
-                  getColumnDatas={getColumnDatas}
-                />
-              )}
+              {/* {el.cards && ( */}
+              <Column
+                data={el}
+                ind={ind}
+                cards={el?.cards}
+                onCardClick={handleCardClick}
+                getColumnDatas={getColumnDatas}
+              />
+              {/* )} */}
               {el?.cards?.length < el?.meta?.count && (
                 <a
                   className={cx(loadMoreButton)}

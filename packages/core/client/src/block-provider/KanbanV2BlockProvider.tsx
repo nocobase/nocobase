@@ -3,13 +3,9 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
-import { useCollection, useCollectionManager } from '../collection-manager';
-import { useRequest, useAPIClient } from '../api-client';
-
+import { useCollectionManager } from '../collection-manager';
 import { RecordProvider } from '../record-provider';
-import { mergeFilter } from '../block-provider/SharedFilterProvider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { isAssocField } from '../filter-provider/utils';
 
 export const KanbanV2BlockContext = createContext<any>({});
 
@@ -131,32 +127,20 @@ export const KanbanV2BlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
-  const isAssociationField = isAssocField(groupField);
   if (!groupField) {
     return null;
-  }
-  let filter = {};
-  if (isAssociationField) {
-    filter = {
-      $and: [{ [groupField.name]: { id: { $notExists: true } } }],
-    };
-  } else {
-    filter = {
-      $and: [{ [groupField.name]: { $empty: true } }],
-    };
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
-  const mergedFilters = mergeFilter([filter, props.params.filter]);
-  const kanbanColumns = columns?.filter((v) => v.enabled)||[];
+  const kanbanColumns = columns?.filter((v) => v.enabled) || [];
   kanbanColumns.push({
     value: '__unknown__',
     label: 'Unknown',
     color: 'default',
     cards: [],
   });
-  params['filter'] = mergedFilters;
+  params['filter'] = props.params.filter;
   return (
     <BlockProvider {...props} params={params}>
       <InternalKanbanV2BlockProvider
