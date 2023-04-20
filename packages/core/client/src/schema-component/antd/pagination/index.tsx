@@ -16,7 +16,7 @@ export const Pagination = observer((props: any) => {
 
   return (
     <div onKeyPress={onKeypress}>
-      <AntdPagination {...others} />;
+      <AntdPagination {...others} />
     </div>
   );
 });
