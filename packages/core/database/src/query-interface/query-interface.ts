@@ -1,7 +1,6 @@
 import Database from '../database';
 import { Collection } from '../collection';
 import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequelize';
-import preview from '@nocobase/client/es/schema-component/antd/preview/Preview';
 
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;
