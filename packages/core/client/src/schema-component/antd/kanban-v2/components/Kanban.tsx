@@ -1,6 +1,6 @@
 import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Tag } from 'antd';
+import { Tag, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
@@ -185,15 +185,22 @@ export const KanbanV2: any = (props) => {
     };
     if (targetCard) {
       values['targetId'] = targetCard.id;
-      // values['targetScope'] = {
-      //   [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
-      // };
+      associateCollectionField.length > 1
+        ? (values['targetScope'] = {
+            [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
+          })
+        : (values['targetScope'] = {
+            state: toColumnId !== '__unknown__' ? toColumnId : undefined,
+          });
     } else {
       values['targetScope'] = {
-        [groupField.name]: toColumnId,
+        state: toColumnId !== '__unknown__' ? toColumnId : undefined,
       };
     }
-    await resource.move(values);
+    try {
+      await resource.move(values);
+      message.success(t('Saved successfully'));
+    } catch (error) {}
   };
   const handleCardClick = React.useCallback((data) => {
     setVisible(true);
