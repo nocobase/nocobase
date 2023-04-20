@@ -16,6 +16,12 @@ import { EditCollectionField } from './EditFieldAction';
 import { collection } from './schemas/collectionFields';
 const CELL_WIDTH = 200;
 
+const indentStyle = css`
+  .ant-table {
+    margin-left: -7px !important;
+  }
+`;
+
 const useDefSelectedRowKeys = () => {
   const result = useAsyncData();
   return [result?.state?.selectedRowKeys, (selectedRowKeys) => result?.setState?.({ selectedRowKeys })];
@@ -94,11 +100,7 @@ const CurrentFields = (props) => {
       rowSelection={{
         type: 'checkbox',
       }}
-      className={css`
-        .ant-table {
-          margin-left: -7px !important;
-        }
-      `}
+      className={indentStyle}
     />
   );
 };
@@ -143,7 +145,19 @@ const InheritFields = (props) => {
       },
     },
   ];
-  return <Table rowKey={'name'} columns={columns} showHeader={false} pagination={false} dataSource={props.fields} />;
+  return (
+    <Table
+      rowKey={'name'}
+      rowSelection={{
+        type: 'checkbox',
+      }}
+      columns={columns}
+      showHeader={false}
+      pagination={false}
+      dataSource={props.fields}
+      className={indentStyle}
+    />
+  );
 };
 
 export const CollectionFields = (props) => {
