@@ -190,14 +190,15 @@ export const KanbanV2: any = (props) => {
             [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
           })
         : (values['targetScope'] = {
-            state: toColumnId !== '__unknown__' ? toColumnId : undefined,
+            state: toColumnId !== '__unknown__' ? toColumnId : null,
           });
     } else {
       values['targetScope'] = {
-        state: toColumnId !== '__unknown__' ? toColumnId : undefined,
+        state: toColumnId !== '__unknown__' ? toColumnId : null,
       };
     }
     try {
+      console.log(values)
       await resource.move(values);
       message.success(t('Saved successfully'));
     } catch (error) {}
