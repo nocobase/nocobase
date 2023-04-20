@@ -108,5 +108,6 @@ export const useDataSourceFromCollectionManager = (options: any) => {
 
   useEffect(() => {
     options?.onSuccess({ data: collections });
-  }, [collections, options]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collections]);
 };

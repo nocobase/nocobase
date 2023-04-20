@@ -82,7 +82,7 @@ const CurrentFields = (props) => {
           <Switch
             size="small"
             loading={record.name === loadingRecord?.name}
-            checked={record.name === titleField}
+            checked={record.name === (titleField || 'id')}
             onChange={handleChange}
           />
         );
@@ -186,7 +186,7 @@ const InheritFields = (props) => {
           <Switch
             size="small"
             loading={record.name === loadingRecord?.name}
-            checked={record.name === titleField}
+            checked={record.name === (titleField || 'id')}
             onChange={handleChange}
           />
         );

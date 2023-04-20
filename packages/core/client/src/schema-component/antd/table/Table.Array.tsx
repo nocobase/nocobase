@@ -35,7 +35,7 @@ const useTableColumns = () => {
       if (isColumnComponent(s) && useScope(s['x-visible'])) {
         return buf.concat([s]);
       }
-      return buf
+      return buf;
     }, [])
     .map((s: Schema) => {
       return {
