@@ -1,6 +1,6 @@
-import { Collection, Model } from "@nocobase/database";
-import { Trigger } from "..";
-import WorkflowModel from "../models/Workflow";
+import { BelongsToField, Collection, Model } from '@nocobase/database';
+import { Trigger } from '..';
+import WorkflowModel from '../models/Workflow';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -12,15 +12,13 @@ export interface CollectionChangeTriggerConfig {
 const MODE_BITMAP = {
   CREATE: 1,
   UPDATE: 2,
-  DESTROY: 4
+  DESTROY: 4,
 };
 
 const MODE_BITMAP_EVENTS = new Map();
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreateWithAssociations');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.UPDATE, 'afterUpdateWithAssociations');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.DESTROY, 'afterDestroy');
-
-
 
 function getHookId(workflow, type) {
   return `${type}#${workflow.id}`;
@@ -29,7 +27,7 @@ function getHookId(workflow, type) {
 function getFieldRawName(collection: Collection, name: string) {
   const field = collection.getField(name);
   if (field && field.type === 'belongsTo') {
-    return field.foreignKey;
+    return (field as BelongsToField).foreignKey;
   }
   return name;
 }
@@ -42,11 +40,12 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   const { repository, model } = collection;
 
   // NOTE: if no configured fields changed, do not trigger
-  if (changed
-    && changed.length
-    && changed
-      .filter(name => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
-      .every(name => !data.changedWithAssociations(getFieldRawName(collection, name)))
+  if (
+    changed &&
+    changed.length &&
+    changed
+      .filter((name) => !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collection.getField(name).type))
+      .every((name) => !data.changedWithAssociations(getFieldRawName(collection, name)))
   ) {
     return;
   }
@@ -56,13 +55,10 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
     // const calculation = toCalculation(condition);
     const count = await repository.count({
       filter: {
-        $and: [
-          condition,
-          { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }
-        ]
+        $and: [condition, { [model.primaryKeyAttribute]: data[model.primaryKeyAttribute] }],
       },
       context,
-      transaction
+      transaction,
     });
 
     if (!count) {
@@ -71,21 +67,27 @@ async function handler(this: CollectionTrigger, workflow: WorkflowModel, data: M
   }
 
   if (appends?.length && !(mode & MODE_BITMAP.DESTROY)) {
-    const includeFields = appends.filter(field => !data.get(field) || !data[field]);
+    const includeFields = appends.filter((field) => !data.get(field) || !data[field]);
     const included = await model.findByPk(data[model.primaryKeyAttribute], {
       attributes: [model.primaryKeyAttribute],
       include: includeFields,
-      transaction
+      transaction,
     });
-    includeFields.forEach(field => {
+    includeFields.forEach((field) => {
       const value = included!.get(field);
-      data.set(field, Array.isArray(value) ? value.map(item => item.toJSON()) : (value ? value.toJSON() : null), { raw: true });
+      data.set(field, Array.isArray(value) ? value.map((item) => item.toJSON()) : value ? value.toJSON() : null, {
+        raw: true,
+      });
     });
   }
 
-  this.plugin.trigger(workflow, { data: data.toJSON() }, {
-    context
-  });
+  this.plugin.trigger(
+    workflow,
+    { data: data.toJSON() },
+    {
+      context,
+    },
+  );
 }
 
 export default class CollectionTrigger extends Trigger {

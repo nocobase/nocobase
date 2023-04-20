@@ -44,8 +44,11 @@ export class PasswordField extends Field {
     });
   }
 
+  listener;
+
   init() {
     const { name } = this.options;
+
     this.listener = async (model) => {
       if (!model.changed(name as any)) {
         return;
@@ -62,13 +65,9 @@ export class PasswordField extends Field {
 
   bind() {
     super.bind();
-    this.on('beforeCreate', this.listener);
-    this.on('beforeUpdate', this.listener);
-  }
-
-  unbind() {
-    super.unbind();
-    this.off('beforeCreate', this.listener);
-    this.off('beforeUpdate', this.listener);
+    this.setListeners({
+      beforeCreate: this.listener,
+      beforeUpdate: this.listener,
+    });
   }
 }

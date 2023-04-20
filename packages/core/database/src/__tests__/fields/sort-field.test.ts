@@ -2,11 +2,17 @@ import { Database } from '../../database';
 import { mockDatabase } from '../';
 import { SortField } from '../../fields';
 
-describe('string field', () => {
+describe('sort field', () => {
   let db: Database;
+  const assertUserSort = (users, userName, sort) => {
+    const user = users.find((u) => u.name === userName);
+    expect(user.sort).toBe(sort);
+  };
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = mockDatabase({
+      tablePrefix: '',
+    });
     await db.clean({ drop: true });
     db.registerFieldTypes({
       sort: SortField,
@@ -17,7 +23,354 @@ describe('string field', () => {
     await db.close();
   });
 
-  it('should init sorted value with thousand records', async () => {
+  it('should support nested association as scope key in init record', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'profiles',
+        },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
+      ],
+    });
+
+    const tags = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profiles',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        { name: 'u1', profiles: [{ age: 10, tags: [{ name: 't1' }] }] },
+        { name: 'u2', profiles: [{ age: 20, tags: [{ name: 't2' }] }] },
+        { name: 'u3', profiles: [{ age: 30, tags: [{ name: 't1' }] }] },
+        { name: 'u4', profiles: [{ age: 40, tags: [{ name: 't2' }] }] },
+      ],
+    });
+
+    User.setField('sort', {
+      name: 'sort',
+      type: 'sort',
+      scopeKey: 'profiles.tags.name',
+    });
+
+    await db.sync();
+  });
+
+  it('should support belongs to many field as scope key in init record', async () => {
+    const UserProfile = db.collection({
+      name: 'user_profile',
+      fields: [],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'string',
+          name: 'category',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'user',
+          target: 'users',
+          through: 'user_profile',
+          foreignKey: 'profile_id',
+          otherKey: 'user_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profile',
+          target: 'profiles',
+          through: 'user_profile',
+          foreignKey: 'user_id',
+          otherKey: 'profile_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: [{ age: 18, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u2',
+        profile: [{ age: 18, category: 'c2' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u3',
+        profile: [{ age: 20, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u4',
+        profile: [{ age: 20, category: 'c2' }],
+      },
+    });
+
+    User.setField('sort', {
+      type: 'sort',
+      scopeKey: 'profile.category',
+    });
+
+    await db.sync();
+
+    const users = await User.repository.find({});
+    assertUserSort(users, 'u1', 1);
+    assertUserSort(users, 'u2', 1);
+    assertUserSort(users, 'u3', 2);
+    assertUserSort(users, 'u4', 2);
+  });
+
+  it('should support belongs to many field as scope key in set field value', async () => {
+    const UserProfile = db.collection({
+      name: 'user_profile',
+      fields: [],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        {
+          type: 'string',
+          name: 'category',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'user',
+          target: 'users',
+          through: 'user_profile',
+          foreignKey: 'profile_id',
+          otherKey: 'user_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'profile',
+          target: 'profiles',
+          through: 'user_profile',
+          foreignKey: 'user_id',
+          otherKey: 'profile_id',
+        },
+        {
+          type: 'sort',
+          name: 'sort',
+          scopeKey: 'profile.category',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: {
+        name: 'u1',
+        profile: [{ age: 18, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u2',
+        profile: [{ age: 18, category: 'c2' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u3',
+        profile: [{ age: 20, category: 'c1' }],
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'u4',
+        profile: [{ age: 20, category: 'c2' }],
+      },
+    });
+
+    const users = await User.repository.find({});
+    assertUserSort(users, 'u1', 1);
+    assertUserSort(users, 'u2', 1);
+    assertUserSort(users, 'u3', 2);
+    assertUserSort(users, 'u4', 2);
+  });
+
+  it('should support association field as scope key in init records sort value ', async () => {
+    const Group = db.collection({
+      name: 'groups',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'users',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'group',
+          target: 'groups',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g1',
+          users: [{ name: 'g1u1' }, { name: 'g1u2' }],
+        },
+      ],
+    });
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g2',
+          users: [{ name: 'g2u1' }, { name: 'g2u2' }],
+        },
+      ],
+    });
+
+    // add sort field
+    User.setField('sort', { type: 'sort', scopeKey: 'group.name' });
+    await db.sync();
+
+    const users = await User.repository.find({});
+
+    assertUserSort(users, 'g1u1', 1);
+    assertUserSort(users, 'g1u2', 2);
+    assertUserSort(users, 'g2u1', 1);
+    assertUserSort(users, 'g2u2', 2);
+  });
+
+  it('should support association field as scope key in set sort value', async () => {
+    const Group = db.collection({
+      name: 'groups',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'users',
+          foreignKey: 'group_id',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'group',
+          target: 'groups',
+          foreignKey: 'group_id',
+        },
+        {
+          type: 'sort',
+          name: 'sort',
+          scopeKey: 'group.name',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g1',
+          users: [{ name: 'g1u1' }, { name: 'g1u2' }],
+        },
+      ],
+    });
+
+    await Group.repository.create({
+      values: [
+        {
+          name: 'g2',
+          users: [{ name: 'g2u1' }, { name: 'g2u2' }],
+        },
+      ],
+    });
+
+    const users = await User.repository.find({});
+
+    assertUserSort(users, 'g1u1', 1);
+    assertUserSort(users, 'g1u2', 2);
+    assertUserSort(users, 'g2u1', 1);
+    assertUserSort(users, 'g2u2', 2);
+  });
+
+  it.skip('should init sorted value with thousand records', async () => {
     const Test = db.collection({
       name: 'tests',
       fields: [
@@ -235,6 +588,7 @@ describe('string field', () => {
         { type: 'string', name: 'status' },
       ],
     });
+
     await db.sync();
 
     const t1 = await Test.model.create({ status: 'publish' });

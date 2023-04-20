@@ -10,40 +10,101 @@ export class SortField extends Field {
     return DataTypes.BIGINT;
   }
 
+  isAssociatedScopeKey() {
+    return this.options.scopeKey && this.options.scopeKey.includes('.');
+  }
+
+  scopeKeyAsField = () => {
+    const scopeKey = this.options.scopeKey;
+
+    if (!scopeKey) return null;
+
+    if (!this.isAssociatedScopeKey()) return scopeKey;
+
+    // get last two parts of scopeKey
+    const parts = scopeKey.split('.');
+    return parts[parts.length - 2] + '.' + parts[parts.length - 1];
+  };
+
   setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
-    const { model } = this.context.collection;
 
-    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+    if (instance.get(name) && !options.reset) return;
+
+    const { transaction } = options;
+
+    if (
+      !options.reset &&
+      isNumber(instance.get(name)) &&
+      instance._previousDataValues[scopeKey] == instance[scopeKey]
+    ) {
       return;
     }
 
-    const where = {};
+    const filter = {};
 
     if (scopeKey) {
-      const value = instance.get(scopeKey);
-      if (value !== undefined && value !== null) {
-        where[scopeKey] = value;
+      try {
+        const value = this.isAssociatedScopeKey()
+          ? await instance.lazyLoadGet(scopeKey, { transaction })
+          : instance.get(scopeKey);
+
+        if (value !== undefined && value !== null) {
+          filter[scopeKey] = value;
+        }
+      } catch (e) {
+        if (e.message.includes('not found')) {
+          console.log(e.message);
+          return;
+        }
+        throw e;
       }
     }
 
     await sortFieldMutex.runExclusive(async () => {
-      const max = await model.max<number, any>(name, { ...options, where });
+      const max = await this.context.collection.repository.max({
+        field: name,
+        filter,
+        transaction,
+      });
+
       const newValue = (max || 0) + 1;
-      instance.set(name, newValue);
+      await instance.update({ [name]: newValue }, { transaction, hooks: false, silent: true });
     });
   };
 
   onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
+
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
-      await this.setSortValue(instance, options);
+      await this.setSortValue(instance, {
+        ...options,
+        reset: true,
+      });
     }
   };
 
+  afterChangeScope = async (instance, options) => {
+    console.log('afterChangeScope');
+
+    await this.setSortValue(instance, {
+      ...options,
+      reset: true,
+    });
+  };
+
   initRecordsSortValue = async ({ transaction }) => {
+    const db = this.collection.db;
+
+    const sequelizeQueryInterface = db.sequelize.getQueryInterface();
+    const q = sequelizeQueryInterface.quoteIdentifier.bind(sequelizeQueryInterface);
+    const qs = sequelizeQueryInterface.quoteIdentifiers.bind(sequelizeQueryInterface);
+
+    const queryInterface = db.queryInterface;
+
     const orderField = (() => {
       const model = this.collection.model;
+
       if (model.primaryKeyAttribute) {
         return model.primaryKeyAttribute;
       }
@@ -54,69 +115,72 @@ export class SortField extends Field {
       throw new Error(`can not find order key for collection ${this.collection.name}`);
     })();
 
-    const needInit = async (scopeKey = null, scopeValue = null) => {
-      const filter = {};
-      if (scopeKey && scopeValue) {
-        filter[scopeKey] = scopeValue;
-      }
+    const needInit = async (
+      scopeKey,
+    ): Promise<
+      Array<{
+        need_init: boolean;
+        scope_key?: string;
+      }>
+    > => {
+      const SQL = `
+        select count(*) =
+               count(
+                 CASE
+                   WHEN ${q(this.columnName())} IS NULL THEN 1
+                   ELSE NULL
+                   END
+                 ) AND count(*) > 0 as need_init
+          ${scopeKey ? `, ${qs(this.scopeKeyAsField())}  as scope_key` : ''}
+        from ${this.collection.quotedTableName()} ${
+        this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''
+      } ${scopeKey ? `group by ${qs(this.scopeKeyAsField())}` : ''}
+      `;
 
-      const totalCount = await this.collection.repository.count({
-        filter,
+      // @ts-ignore
+      return await db.sequelize.query(SQL, {
+        type: 'SELECT',
         transaction,
       });
-
-      const emptyCount = await this.collection.repository.count({
-        filter: {
-          [this.name]: null,
-          ...filter,
-        },
-        transaction,
-      });
-
-      return emptyCount === totalCount && emptyCount > 0;
     };
 
     const doInit = async (scopeKey = null, scopeValue = null) => {
-      const queryInterface = this.collection.db.sequelize.getQueryInterface();
-
-      const quotedOrderField = queryInterface.quoteIdentifier(orderField);
+      const quotedOrderField = `${q(orderField)}`;
+      const orderFieldWithTableName = `${this.collection.quotedTableName()}.${quotedOrderField}`;
 
       const sql = `
         WITH ordered_table AS (
-          SELECT *, ROW_NUMBER() OVER (${
-            scopeKey ? `PARTITION BY ${queryInterface.quoteIdentifier(scopeKey)}` : ''
-          } ORDER BY ${quotedOrderField}) AS new_sequence_number
-          FROM ${this.collection.quotedTableName()}
-          ${(() => {
-            if (scopeKey && scopeValue) {
-              const hasNull = scopeValue.includes(null);
+        SELECT ${orderFieldWithTableName} as ${quotedOrderField}, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${qs(this.scopeKeyAsField())}` : ''
+      }
+        ORDER BY ${orderFieldWithTableName}) AS new_sequence_number
+        FROM ${this.collection.quotedTableName()}
+        ${this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''}
+        ${(() => {
+          if (scopeKey && scopeValue) {
+            const hasNull = scopeValue.includes(null);
 
-              return `WHERE ${queryInterface.quoteIdentifier(scopeKey)} IN (${scopeValue
-                .filter((v) => v !== null)
-                .map((v) => `'${v}'`)
-                .join(',')}) ${hasNull ? `OR ${queryInterface.quoteIdentifier(scopeKey)} IS NULL` : ''} `;
-            }
+            return `WHERE ${qs(this.scopeKeyAsField())} IN (${scopeValue
+              .filter((v) => v !== null)
+              .map((v) => `'${v}'`)
+              .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
+          }
+          return '';
+        })()})
 
-            return '';
-          })()}
-
-        )
-        ${
-          this.collection.db.inDialect('mysql')
-            ? `
-             UPDATE ${this.collection.quotedTableName()}, ordered_table
-             SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
-             WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ordered_table.${quotedOrderField}
-            `
-            : `
-          UPDATE ${this.collection.quotedTableName()}
-        SET ${queryInterface.quoteIdentifier(this.name)} = ordered_table.new_sequence_number
-        FROM ordered_table
-        WHERE ${this.collection.quotedTableName()}.${quotedOrderField} = ${queryInterface.quoteIdentifier(
-                'ordered_table',
-              )}.${quotedOrderField};
-        `
-        }
+          ${
+            this.collection.db.inDialect('mysql')
+              ? `
+                UPDATE ${this.collection.quotedTableName()}, ordered_table
+                SET ${this.collection.quotedTableName()}.${this.name} = ordered_table.new_sequence_number
+                WHERE ${orderFieldWithTableName} = ${q('ordered_table')}.${quotedOrderField}
+              `
+              : `
+                UPDATE ${this.collection.quotedTableName()}
+                SET ${q(this.name)} = ordered_table.new_sequence_number FROM ordered_table
+                WHERE ${orderFieldWithTableName} = ${q('ordered_table')}.${quotedOrderField};
+              `
+          }
 
       `;
 
@@ -126,41 +190,32 @@ export class SortField extends Field {
     };
 
     const scopeKey = this.options.scopeKey;
+
+    let needInitResults = await needInit(scopeKey);
+
     if (scopeKey) {
-      const groups = await this.collection.repository.find({
-        attributes: [scopeKey],
-        group: [scopeKey],
-        raw: true,
-        transaction,
-      });
-
-      const needInitGroups = [];
-      for (const group of groups) {
-        if (await needInit(scopeKey, group[scopeKey])) {
-          needInitGroups.push(group[scopeKey]);
-        }
+      needInitResults = needInitResults.filter((r) => r['need_init']);
+      if (needInitResults.length > 0) {
+        await doInit(
+          scopeKey,
+          needInitResults.map((r) => r['scope_key']),
+        );
       }
-
-      if (needInitGroups.length > 0) {
-        await doInit(scopeKey, needInitGroups);
-      }
-    } else if (await needInit()) {
+    } else if (needInitResults[0]['need_init']) {
       await doInit();
     }
   };
 
   bind() {
     super.bind();
-    this.on('afterSync', this.initRecordsSortValue);
-    this.on('beforeUpdate', this.onScopeChange);
-    this.on('beforeCreate', this.setSortValue);
-  }
 
-  unbind() {
-    super.unbind();
-    this.off('beforeUpdate', this.onScopeChange);
-    this.off('beforeCreate', this.setSortValue);
-    this.off('afterSync', this.initRecordsSortValue);
+    this.setListeners({
+      afterSync: this.initRecordsSortValue,
+      afterUpdate: this.onScopeChange,
+      afterChangeScope: this.afterChangeScope,
+      afterCreateWithAssociations: this.setSortValue,
+      afterCreate: this.setSortValue,
+    });
   }
 }
 

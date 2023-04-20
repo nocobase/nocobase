@@ -6,10 +6,12 @@ export class UidField extends Field {
   get dataType() {
     return DataTypes.STRING;
   }
+  listener: any;
 
   init() {
     const { name, prefix = '', pattern } = this.options;
     const re = new RegExp(pattern || '^[A-Za-z0-9][A-Za-z0-9_-]*$');
+
     this.listener = async (instance) => {
       const value = instance.get(name);
       if (!value) {

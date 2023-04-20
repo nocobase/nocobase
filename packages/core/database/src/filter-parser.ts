@@ -165,10 +165,16 @@ export default class FilterParser {
         debug('associationKeys %o', associationKeys);
 
         // set sequelize include option
-        _.set(include, firstKey, {
+        const includeAttr = {
           association: firstKey,
           attributes: [], // out put empty fields by default
-        });
+        };
+
+        if (associations[firstKey].associationType === 'BelongsToMany') {
+          includeAttr['through'] = { attributes: [] };
+        }
+
+        _.set(include, firstKey, includeAttr);
 
         // association target model
         let target = associations[firstKey].target;
@@ -192,10 +198,16 @@ export default class FilterParser {
               assoc.push(associationKey);
             });
 
-            _.set(include, assoc, {
+            const includeAttr = {
               association: attr,
               attributes: [],
-            });
+            };
+
+            if (target.associations[attr].associationType === 'BelongsToMany') {
+              includeAttr['through'] = { attributes: [] };
+            }
+
+            _.set(include, assoc, includeAttr);
             target = target.associations[attr].target;
           } else {
             throw new Error(`${attr} neither ${firstKey}'s association nor ${firstKey}'s attribute`);

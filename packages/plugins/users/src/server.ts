@@ -139,11 +139,13 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
   getInstallingData(options: any = {}) {
     const { INIT_ROOT_NICKNAME, INIT_ROOT_PASSWORD, INIT_ROOT_EMAIL } = process.env;
+
     const {
       rootEmail = INIT_ROOT_EMAIL,
       rootPassword = INIT_ROOT_PASSWORD,
       rootNickname = INIT_ROOT_NICKNAME || 'Super Admin',
     } = options.users || options?.cliArgs?.[0] || {};
+
     return {
       rootEmail,
       rootPassword,
@@ -153,6 +155,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
 
   async install(options) {
     const { rootNickname, rootPassword, rootEmail } = this.getInstallingData(options);
+
     const User = this.db.getCollection('users');
     if (await User.repository.findOne({ filter: { email: rootEmail } })) {
       return;

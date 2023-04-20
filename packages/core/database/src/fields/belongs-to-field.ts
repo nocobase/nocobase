@@ -3,6 +3,7 @@ import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize'
 import { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import { HasManyField } from './has-many-field';
 
 export class BelongsToField extends RelationField {
   get dataType() {
@@ -94,7 +95,7 @@ export class BelongsToField extends RelationField {
 
     const field2 = tcoll
       ? tcoll.findField((field) => {
-          return field.type === 'hasMany' && field.foreignKey === foreignKey;
+          return field.type === 'hasMany' && (field as HasManyField).foreignKey === foreignKey;
         })
       : null;
 

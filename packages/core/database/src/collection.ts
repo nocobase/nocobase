@@ -260,8 +260,8 @@ export class Collection<
       if (f.name === name) {
         return false;
       }
-      if (f.field) {
-        return f.field === fieldName;
+      if (f.options.field) {
+        return f.options.field === fieldName;
       }
       return snakeCase(f.name) === fieldName;
     });
