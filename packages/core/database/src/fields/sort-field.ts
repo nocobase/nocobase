@@ -160,11 +160,19 @@ export class SortField extends Field {
           if (scopeKey && scopeValue) {
             const hasNull = scopeValue.includes(null);
 
-            return `WHERE ${qs(this.scopeKeyAsField())} IN (${scopeValue
-              .filter((v) => v !== null)
-              .map((v) => `'${v}'`)
-              .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
+            const notNullValues = scopeValue.filter((v) => v !== null);
+
+            const conditions = [];
+            if (notNullValues.length) {
+              conditions.push(`${qs(this.scopeKeyAsField())} IN (${notNullValues.map((v) => `'${v}'`).join(',')})`);
+            }
+            if (hasNull) {
+              conditions.push(`${qs(scopeKey)} IS NULL`);
+            }
+
+            return `WHERE ${conditions.join(' OR ')}`;
           }
+
           return '';
         })()})
 
