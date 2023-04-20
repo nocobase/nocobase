@@ -2,6 +2,7 @@ import { createForm } from '@formily/core';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { FormProvider, SchemaComponent } from '../../schema-component';
 import { scopesSchema } from './schemas/scopes';
+import { FilterDynamicComponent } from './FilterDynamicComponent'
 
 const RolesResourcesScopesSelectedRowKeysContext = createContext(null);
 
@@ -31,7 +32,7 @@ export const ScopeSelect = (props) => {
   return (
     <FormProvider form={form}>
       <SchemaComponent
-        components={{ RolesResourcesScopesSelectedRowKeysProvider }}
+        components={{ RolesResourcesScopesSelectedRowKeysProvider, FilterDynamicComponent }}
         scope={{
           onChange(value) {
             props?.onChange?.(value);

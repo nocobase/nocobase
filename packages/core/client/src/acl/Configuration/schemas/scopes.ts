@@ -144,9 +144,10 @@ export const scopesSchema: ISchema = {
                                           const options = useFilterOptions(ctx.name);
                                           console.log('ctx.name', ctx.name, options);
                                           return {
-                                            options,
+                                            options
                                           };
                                         },
+                                        dynamicComponent: 'FilterDynamicComponent'
                                       },
                                     },
                                     actions: {
@@ -274,6 +275,7 @@ export const scopesSchema: ISchema = {
                                                     options,
                                                   };
                                                 },
+                                                dynamicComponent: 'FilterDynamicComponent'
                                               },
                                             },
                                             actions: {
