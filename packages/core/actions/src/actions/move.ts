@@ -73,6 +73,8 @@ export class SortAbleCollection {
         await this.changeScope(sourceInstanceId, {
           [this.scopeKey]: newScopeValue,
         });
+
+        await sourceInstance.reload();
       }
     }
 
