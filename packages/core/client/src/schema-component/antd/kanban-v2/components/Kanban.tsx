@@ -176,13 +176,18 @@ export const KanbanV2: any = (props) => {
     const destinationColumn = columnData.find((column) => column.value === toColumnId);
     const sourceCard = sourceColumn?.cards?.[fromPosition];
     const targetCard = destinationColumn?.cards?.[toPosition];
-    console.log(toColumnId);
     const values = {
       sourceId: sourceCard?.id,
-      sortField: `${groupField.name}_sort`,
+      sortField:
+        associateCollectionField.length > 1
+          ? `${associateCollectionField[0]}_${associateCollectionField[1]}_sort`
+          : `${groupField.name}_sort`,
     };
     if (targetCard) {
       values['targetId'] = targetCard.id;
+      // values['targetScope'] = {
+      //   [`${associateCollectionField[0]}.${associateCollectionField[1]}`]: toColumnId,
+      // };
     } else {
       values['targetScope'] = {
         [groupField.name]: toColumnId,
