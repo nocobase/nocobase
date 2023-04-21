@@ -52,6 +52,10 @@ export class SortField extends Field {
         filter[scopeKey] = this.isAssociatedScopeKey()
           ? await instance.lazyLoadGet(scopeKey, { transaction })
           : instance.get(scopeKey);
+
+        if (filter[scopeKey] === undefined) {
+          filter[scopeKey] = null;
+        }
       } catch (e) {
         if (e.message.includes('not found')) {
           console.log(e.message);
