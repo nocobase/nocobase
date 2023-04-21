@@ -502,4 +502,14 @@ export default {
 
   'Click or drag file to this area to upload': "Нажмите или перетащите файл в эту область, чтобы загрузить",
   'Support for a single or bulk upload, file size should not exceed': "Поддержка одиночной или массовой загрузки, размер файла не должен превышать",
+  'Default title for each record': "Заголовок по умолчанию для каждой записи",
+
+  'If collection inherits, choose inherited collections as templates': "Если коллекция наследуется, выберите наследуемые коллекции в качестве шаблонов",
+  'Select an existing piece of data as the initialization data for the form': "Выберите существующие данные в качестве исходных данных для формы",
+  'Only the selected fields will be used as the initialization data for the form': "Только выбранные поля будут использоваться в качестве исходных данных для формы",
+  'Template Data': "Шаблон данных",
+  'Data fields': "Поля данных",
+  'Add template': "Добавить шаблон",
+  'Display data template selector': "Отображать селектор шаблона данных",
+  'Form data templates': "Шаблоны данных формы",
 }

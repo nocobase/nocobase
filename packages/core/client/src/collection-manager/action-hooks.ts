@@ -202,7 +202,7 @@ export const useCollectionFilterOptions = (collectionName: string) => {
 
 export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName).filter((v)=>!['o2m', 'm2m'].includes(v.interface))
+  const fields = getCollectionFields(collectionName).filter((v) => !['o2m', 'm2m'].includes(v.interface));
   const field2option = (field, depth) => {
     if (!field.interface) {
       return;
@@ -232,7 +232,7 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target).filter((v)=>!['o2m', 'm2m'].includes(v.interface))
+      const targetFields = getCollectionFields(field.target).filter((v) => !['o2m', 'm2m'].includes(v.interface));
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -252,7 +252,6 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const options = getOptions(fields, 1);
   return options;
 };
-
 
 export const useFilterDataSource = (options) => {
   const { name } = useCollection();
@@ -378,7 +377,7 @@ export const useDestroyAction = () => {
 
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
-  const { resource, targetKey } = useResourceContext();
+  const { resource } = useResourceContext();
   return {
     async run() {
       await resource.destroy({
@@ -431,8 +430,13 @@ export const useDestroyActionAndRefreshCM = () => {
   };
 };
 
-export const useDeleteButtonDisabled = () => {
-  const { interface: i, deletable = true } = useRecord();
+export const useDeleteButtonDisabled = (record?: any) => {
+  const recordFromProvider = useRecord();
+  return isDeleteButtonDisabled(record || recordFromProvider);
+};
+
+export const isDeleteButtonDisabled = (record?: any) => {
+  const { interface: i, deletable = true } = record || {};
 
   return !deletable || i === 'id';
 };
