@@ -58,14 +58,15 @@ export class SortField extends Field {
         }
       } catch (e) {
         if (e.message.includes('not found')) {
-          console.log(e.message);
-          return;
+          filter[scopeKey] = null;
+        } else {
+          throw e;
         }
-        throw e;
       }
     }
 
     await sortFieldMutex.runExclusive(async () => {
+      console.log({ filter });
       const max = await this.context.collection.repository.max({
         field: name,
         filter,

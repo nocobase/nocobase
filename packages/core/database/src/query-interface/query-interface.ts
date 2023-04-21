@@ -78,7 +78,7 @@ export default abstract class QueryInterface {
 
       if (association.associationType === 'BelongsTo') {
         joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${preAs}.${q(
-          association.identifier,
+          association.source.rawAttributes[association.foreignKey].field,
         )} = ${q(association.as)}.${q(association.targetIdentifier)}`;
       }
 

@@ -4,6 +4,135 @@ import { Database } from '@nocobase/database';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 describe('move action', () => {
+  describe('sort with belongs to association key', () => {
+    let api: MockServer;
+
+    let db: Database;
+    beforeEach(async () => {
+      api = mockServer({
+        database: {
+          tablePrefix: '',
+        },
+      });
+
+      registerActions(api);
+      db = api.db;
+
+      await db.clean({ drop: true });
+    });
+
+    afterEach(async () => {
+      await api.destroy();
+    });
+
+    it('should move into null scope with hasOne association', async () => {
+      db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'tag',
+          },
+          {
+            type: 'sort',
+            name: 'sort',
+            scopeKey: 'tag.name',
+          },
+        ],
+      });
+    });
+
+    it('should move into null scope with belongsTo association', async () => {
+      db.collection({
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      db.collection({
+        name: 'users',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'belongsTo',
+            name: 'tag',
+          },
+          {
+            type: 'sort',
+            name: 'sort',
+            scopeKey: 'tag.name',
+          },
+        ],
+      });
+
+      await db.sync();
+
+      // at null scope, position 1
+      const u2 = await db.getRepository('users').create({
+        values: {
+          name: 'u2',
+        },
+      });
+
+      expect(u2.get('sort')).toEqual(1);
+
+      const u1 = await db.getRepository('users').create({
+        values: {
+          name: 'u1',
+          tag: {
+            name: 't1',
+          },
+        },
+      });
+
+      const u3 = await db.getRepository('users').create({
+        values: {
+          name: 'u3',
+          tag: {
+            name: 't1',
+          },
+        },
+      });
+
+      // move u1 into null scope
+      const response = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u1.get('id'),
+          targetScope: null,
+        });
+
+      expect(response.statusCode).toBe(200);
+
+      await u1.reload();
+
+      expect(u1.get('sort')).toBe(2);
+
+      // move u1 back into t1 scope
+      const response2 = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u1.get('id'),
+          targetScope: 't1',
+        });
+
+      expect(response2.statusCode).toBe(200);
+
+      await u1.reload();
+      expect(u1.get('sort')).toBe(3);
+
+      expect((await u1.getTag()).name).toBe('t1');
+    });
+  });
+
   describe('sort with association scope key', function () {
     let api: MockServer;
 
