@@ -139,6 +139,7 @@ export default {
   'Data record': '数据记录',
   'Create record form': '新增数据表单',
   'Update record form': '更新数据表单',
+  'Filter settings': '筛选设置',
 
   'Create record': '新增数据',
   'Update record': '更新数据',

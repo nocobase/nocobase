@@ -14,7 +14,7 @@ import { NAMESPACE } from "../../locale";
 import { FlowContext, useFlowContext } from "../../FlowContext";
 import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from "../../utils";
-import customForm from "./forms/customForm";
+import customForm from "./forms/custom";
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,

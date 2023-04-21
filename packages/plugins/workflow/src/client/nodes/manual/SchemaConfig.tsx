@@ -22,8 +22,9 @@ import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
-import customForm from './forms/customForm';
-import createForm from './forms/createRecordForm';
+import customForm from './forms/custom';
+import createForm from './forms/create';
+import updateForm from './forms/update';
 
 
 
@@ -86,12 +87,7 @@ function AddBlockButton(props: any) {
       children: [
         customForm.config.initializer,
         createForm.config.initializer,
-        // {
-        //   key: 'updateForm',
-        //   type: 'item',
-        //   title: '{{t("Update record form")}}',
-        //   component: CustomFormBlockInitializer,
-        // }
+        updateForm.config.initializer,
       ],
     },
     {
@@ -296,7 +292,8 @@ export function SchemaConfig({ value, onChange }) {
           ...trigger.initializers,
           ...nodeInitializers,
           ...customForm.config.initializers,
-          ...createForm.config.initializers
+          ...createForm.config.initializers,
+          ...updateForm.config.initializers,
         }}
       >
         <SchemaComponentRefreshProvider
@@ -306,6 +303,7 @@ export function SchemaConfig({ value, onChange }) {
             const forms = {
               ...customForm.config.parseFormOptions(tabs),
               ...createForm.config.parseFormOptions(tabs),
+              ...updateForm.config.parseFormOptions(tabs),
             };
             form.setValuesIn('forms', forms);
 
@@ -318,6 +316,7 @@ export function SchemaConfig({ value, onChange }) {
               ...nodeComponents,
               ...customForm.config.components,
               ...createForm.config.components,
+              ...updateForm.config.components,
               // NOTE: fake provider component
               ManualActionStatusProvider(props) {
                 return props.children;

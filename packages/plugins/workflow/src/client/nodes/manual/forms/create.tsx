@@ -105,7 +105,7 @@ function CreateFormBlockInitializer({ insert, ...props }) {
 
 
 export default {
-  title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
+  title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
     initializer: {
       key: 'createRecordForm',
