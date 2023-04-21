@@ -19,7 +19,8 @@ export class SortField extends Field {
 
     if (!scopeKey) return null;
 
-    if (!this.isAssociatedScopeKey()) return scopeKey;
+    const model = this.collection.model;
+    if (!this.isAssociatedScopeKey()) return model.rawAttributes[scopeKey].field;
 
     // get last two parts of scopeKey
     const parts = scopeKey.split('.');
@@ -37,7 +38,9 @@ export class SortField extends Field {
     }
 
     const filter = {};
-    filter['id.$ne'] = instance.id;
+    const primaryKey = instance.constructor.primaryKeyAttribute;
+
+    filter[`${primaryKey}.$ne`] = instance.get(primaryKey);
 
     if (scopeKey) {
       try {
