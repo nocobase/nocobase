@@ -5,13 +5,13 @@ import { ArrayField } from '@nocobase/database';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 
-export const ListBlockContext = createContext<any>({});
+export const DetailsListBlockContext = createContext<any>({});
 
-const InternalListBlockProvider = (props) => {
+const InternalDetailsListBlockProvider = (props) => {
   const field = useField<any>();
   const { resource, service } = useBlockRequestContext();
   return (
-    <ListBlockContext.Provider
+    <DetailsListBlockContext.Provider
       value={{
         field,
         service,
@@ -19,20 +19,20 @@ const InternalListBlockProvider = (props) => {
       }}
     >
       {props.children}
-    </ListBlockContext.Provider>
+    </DetailsListBlockContext.Provider>
   );
 };
 
-export const ListBlockProvider = (props) => {
+export const DetailsListBlockProvider = (props) => {
   return (
     <BlockProvider {...props}>
-      <InternalListBlockProvider {...props} />
+      <InternalDetailsListBlockProvider {...props} />
     </BlockProvider>
   );
 };
 
-export const useListBlockContext = () => {
-  return useContext(ListBlockContext);
+export const useDetailsListBlockContext = () => {
+  return useContext(DetailsListBlockContext);
 };
 
 export const useListItemBlockProps = () => {
@@ -54,6 +54,6 @@ export const useListItemBlockProps = () => {
   };
 };
 
-export const useListBlockProps = () => {
+export const useDetailsListBlockProps = () => {
   return {};
 };

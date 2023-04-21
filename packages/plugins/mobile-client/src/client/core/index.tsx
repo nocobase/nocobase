@@ -3,16 +3,16 @@ import React from 'react';
 import {
   MBlockInitializers,
   MMenuBlockInitializer,
-  MListBlockInitializer,
-  MListActionInitializers,
+  DetailsListBlockInitializer,
+  DetailsListActionInitializers,
   MGrid,
   MMenu,
   MContainer,
   MTabBar,
   MPage,
   MHeader,
-  MList,
-  useListBlockProps,
+  DetailsList,
+  useDetailsListBlockProps,
   useListItemBlockProps,
   useListItemActionProps,
 } from './schema';
@@ -22,23 +22,23 @@ export const MobileCore: React.FC = (props) => {
     <SchemaInitializerProvider
       initializers={{
         MBlockInitializers,
-        MListActionInitializers,
+        DetailsListActionInitializers,
       }}
     >
       <SchemaComponentOptions
         components={{
           MMenuBlockInitializer,
-          MListBlockInitializer,
+          DetailsListBlockInitializer,
           MContainer,
           MGrid,
           MMenu,
           MTabBar,
           MPage,
           MHeader,
-          MList,
+          DetailsList,
         }}
         scope={{
-          useListBlockProps,
+          useDetailsListBlockProps,
           useListItemBlockProps,
           useListItemActionProps,
         }}

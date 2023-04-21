@@ -13,7 +13,7 @@ import {
 import React from 'react';
 import { ArrayItems } from '@formily/antd';
 import { useTranslation } from '../../../../locale';
-import { useListBlockContext } from './List.Decorator';
+import { useDetailsListBlockContext } from './DetailsList.Decorator';
 import _ from 'lodash';
 
 export const ListDesigner = () => {
@@ -23,7 +23,7 @@ export const ListDesigner = () => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useListBlockContext();
+  const { service } = useDetailsListBlockContext();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};

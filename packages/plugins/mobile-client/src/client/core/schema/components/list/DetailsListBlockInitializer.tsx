@@ -3,12 +3,11 @@ import { TableOutlined } from '@ant-design/icons';
 import { DataBlockInitializer, useCollectionManager } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { css } from '@emotion/css';
 
-export const createListBlockSchema = (options) => {
+export const createDetailsListBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'MListActionInitializers',
+    actionInitializers = 'DetailsListActionInitializers',
     collection,
     association,
     resource,
@@ -19,7 +18,7 @@ export const createListBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'array',
     'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'MList.Decorator',
+    'x-decorator': 'DetailsList.Decorator',
     'x-decorator-props': {
       resource: resourceName,
       collection,
@@ -35,10 +34,10 @@ export const createListBlockSchema = (options) => {
       // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'MList.Designer',
-    'x-component': 'MList',
+    'x-designer': 'DetailsList.Designer',
+    'x-component': 'DetailsList',
     'x-component-props': {
-      useProps: '{{ useListBlockProps }}',
+      useProps: '{{ useDetailsListBlockProps }}',
     },
     properties: {
       [uid()]: {
@@ -47,7 +46,7 @@ export const createListBlockSchema = (options) => {
         properties: {
           [uid()]: {
             type: 'object',
-            'x-component': 'MList.Item',
+            'x-component': 'DetailsList.Item',
             'x-read-pretty': true,
             'x-component-props': {
               useProps: '{{ useListItemBlockProps }}',
@@ -77,7 +76,7 @@ export const createListBlockSchema = (options) => {
   console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
-export const MListBlockInitializer = (props) => {
+export const DetailsListBlockInitializer = (props) => {
   const { insert } = props;
   const { getCollection } = useCollectionManager();
   return (
@@ -87,7 +86,7 @@ export const MListBlockInitializer = (props) => {
       componentType={'List'}
       onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name);
-        const schema = createListBlockSchema({
+        const schema = createDetailsListBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
           actionInitializers: collection.template !== 'view' && 'DetailsActionInitializers',

@@ -12,7 +12,7 @@ export const useListItemActionProps = () => {
 };
 
 // 表单的操作配置
-export const MListActionInitializers = {
+export const DetailsListActionInitializers = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {

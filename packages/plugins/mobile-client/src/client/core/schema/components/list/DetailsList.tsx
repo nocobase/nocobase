@@ -9,8 +9,8 @@ import {
   useDesigner,
   useProps,
 } from '@nocobase/client';
-import { ListDesigner } from './List.Designer';
-import { ListBlockProvider, useListBlockContext } from './List.Decorator';
+import { ListDesigner } from './DetailsList.Designer';
+import { DetailsListBlockProvider, useDetailsListBlockContext } from './DetailsList.Decorator';
 import React, { RefCallback, useCallback, useContext, useRef } from 'react';
 import { useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
@@ -64,7 +64,7 @@ const designerCss = css`
 
 const InternalList = (props) => {
   const {} = useProps(props);
-  const { service } = useListBlockContext();
+  const { service } = useDetailsListBlockContext();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const Designer = useDesigner();
@@ -138,12 +138,12 @@ const InternalList = (props) => {
   );
 };
 
-export const MList = InternalList as typeof InternalList & {
+export const DetailsList = InternalList as typeof InternalList & {
   Item: typeof FormV2;
   Designer: typeof ListDesigner;
-  Decorator: typeof ListBlockProvider;
+  Decorator: typeof DetailsListBlockProvider;
 };
 
-MList.Item = FormV2;
-MList.Designer = ListDesigner;
-MList.Decorator = ListBlockProvider;
+DetailsList.Item = FormV2;
+DetailsList.Designer = ListDesigner;
+DetailsList.Decorator = DetailsListBlockProvider;
