@@ -51,7 +51,12 @@ export const o2m: IField = {
     },
   },
   availableTypes: ['hasMany'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'TableField') {
         const association = `${field.collectionName}.${field.name}`;
