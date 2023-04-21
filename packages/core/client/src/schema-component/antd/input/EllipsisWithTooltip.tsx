@@ -37,7 +37,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
   }
   const { popoverContent } = props;
 
-  const useIsOverflowTooltip = () => {
+  const isOverflowTooltip = () => {
     const contentWidth = getContentWidth(elRef.current);
     const offsetWidth = elRef.current?.offsetWidth;
     return contentWidth > offsetWidth;
@@ -65,7 +65,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
         style={{ ...ellipsisDefaultStyle }}
         onMouseEnter={(e) => {
           const el = e.target as any;
-          const isShowTooltips = useIsOverflowTooltip();
+          const isShowTooltips = isOverflowTooltip();
           if (isShowTooltips) {
             setEllipsis(el.scrollWidth >= el.clientWidth);
           }
