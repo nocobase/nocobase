@@ -115,6 +115,7 @@ export default {
   "Submit": "提交",
   "Close": "关闭",
   "Set the data scope": "设置数据范围",
+  "Block": "区块",
   "Data blocks": "数据区块",
   "Filter blocks": "筛选区块",
   "Table": "表格",
@@ -226,6 +227,7 @@ export default {
   "Optional fields": "可选字段",
   "System fields": "系统字段",
   "General fields": "普通字段",
+  "Inherited fields": "继承字段",
   "Parent collection fields": "父表字段",
   "Basic": "基本类型",
   "Single line text": "单行文本",
@@ -742,6 +744,16 @@ export default {
 
   'Click or drag file to this area to upload': '点击或拖拽文件到此区域上传',
   'Support for a single or bulk upload, file size should not exceed': '支持单个或批量上传，文件大小不能超过',
+  'Default title for each record': '用作数据的默认标题',
+
+  'If collection inherits, choose inherited collections as templates': '当前表有继承关系时，可选择继承链路上的表作为模板来源',
+  'Select an existing piece of data as the initialization data for the form': '选择一条已有的数据作为表单的初始化数据',
+  'Only the selected fields will be used as the initialization data for the form': '仅选择的字段才会作为表单的初始化数据',
+  'Template Data': '模板数据',
+  'Data fields': '数据字段',
+  'Add template': '添加模板',
+  'Display data template selector': '显示数据模板选择框',
+  'Form data templates': '表单数据模板',
   "All loaded, nothing more":"已加载所有数据",
   "Loading more":"加载更多"
 }

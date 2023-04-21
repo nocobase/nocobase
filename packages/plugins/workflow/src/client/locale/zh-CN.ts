@@ -135,6 +135,8 @@ export default {
   'Any pass': '任意通过',
   'Anyone pass': '任何一人通过即通过',
   'Field name existed in form': '表单中已有对应标识的字段',
+  'Custom form': '自定义表单',
+  'Data record': '数据记录',
 
   'Create record': '新增数据',
   'Update record': '更新数据',

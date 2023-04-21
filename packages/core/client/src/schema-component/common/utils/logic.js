@@ -100,6 +100,30 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       if (!a || typeof a.indexOf === 'undefined') return false;
       return !(a.indexOf(b) !== -1);
     },
+    $anyOf: function (a, b) {
+      if (a.length === 0) {
+        return false;
+      }
+      return b.every((item) => a.includes(item));
+    },
+    $noneOf: function (a, b) {
+      if (a.length === 0) {
+        return true;
+      }
+      return b.some((item) => !a.includes(item));
+    },
+    $notMatch:function(a,b){
+      if (a.length !== b.length) {
+        return true;
+      }
+    
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) {
+          return true;
+        }
+      }
+      return false;
+    },
     $isTruly: function (a) {
       return a === true || a === 1;
     },

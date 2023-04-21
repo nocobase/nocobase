@@ -108,7 +108,7 @@ export function filterTypedFields(fields, types, depth = 1) {
     return fields;
   }
   return fields.filter((field) => {
-    if (isAssociationField(field) && depth && filterTypedFields(useNormallizedFields(field.target), types, depth - 1).length) {
+    if (isAssociationField(field) && depth && filterTypedFields(useNormalizedFields(field.target), types, depth - 1).length) {
       return true;
     }
     return types.some((type) => matchFieldType(field, type));
@@ -130,7 +130,7 @@ export function useWorkflowVariableOptions(types?) {
   return options;
 }
 
-function useNormallizedFields(collectionName) {
+function useNormalizedFields(collectionName) {
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(collectionName);
@@ -153,6 +153,7 @@ function useNormallizedFields(collectionName) {
       const foreignKeyField = foreignKeyFields.find(f => f.name === field.foreignKey);
       if (foreignKeyField) {
         otherFields.splice(i, 0, {
+          ...field,
           ...foreignKeyField,
           uiSchema: {
             ...field.uiSchema,
@@ -192,7 +193,7 @@ function useNormallizedFields(collectionName) {
 export function useCollectionFieldOptions(options): VariableOption[] {
   const { fields, collection, types, depth = 1 } = options;
   const compile = useCompile();
-  const normalizedFields = fields ?? useNormallizedFields(collection);
+  const normalizedFields = fields ?? useNormalizedFields(collection);
   const result: VariableOption[] = filterTypedFields(normalizedFields, types, depth)
     .filter(field => !isAssociationField(field) || depth)
     .map(field => {

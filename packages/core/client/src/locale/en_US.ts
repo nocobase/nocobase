@@ -213,6 +213,7 @@ export default {
   "Optional fields": "Optional fields",
   "System fields": "System fields",
   "General fields": "General fields",
+  "Inherited fields": "Inherited fields",
   "Parent collection fields": "Parent collection fields",
   "Basic": "Basic",
   "Single line text": "Single line text",
