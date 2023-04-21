@@ -422,8 +422,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const instance = await this.model.create<any>(values, {
       ...options,
+      withAssociations: true,
       transaction,
-    });
+    } as any);
 
     if (!instance) {
       return;

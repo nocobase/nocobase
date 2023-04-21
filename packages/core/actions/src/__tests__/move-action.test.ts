@@ -25,7 +25,92 @@ describe('move action', () => {
       await api.destroy();
     });
 
+    it('should move into null scope with belongsToMany association', async () => {
+      db.collection({
+        name: 'user_tag',
+      });
+      db.collection({
+        name: 'tags',
+        fields: [{ type: 'string', name: 'name' }],
+      });
+
+      db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'belongsToMany', name: 'tags', through: 'user_tag' },
+          { type: 'sort', name: 'sort', scopeKey: 'tags.name' },
+        ],
+      });
+
+      await db.sync();
+
+      const u1 = await db.getRepository('users').create({
+        values: {
+          name: 'u1',
+        },
+      });
+
+      const u2 = await db.getRepository('users').create({
+        values: {
+          name: 'u2',
+          tags: [
+            {
+              name: 'A',
+            },
+          ],
+        },
+      });
+
+      // move u2 into null scope
+      const response = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u2.get('id'),
+          targetScope: null,
+        });
+
+      expect(response.statusCode).toBe(200);
+
+      await u2.reload();
+      expect(u2.get('sort')).toBe(2);
+
+      // move u2 back into A scope
+      const response2 = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u2.get('id'),
+          targetScope: 'A',
+        });
+
+      expect(response2.statusCode).toBe(200);
+
+      await u2.reload();
+      expect(u2.get('sort')).toBe(1);
+
+      // move u1 new scope
+      const response3 = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u1.get('id'),
+          targetScope: 'A',
+        });
+
+      expect(response3.statusCode).toBe(200);
+
+      await u1.reload();
+      expect(u1.get('sort')).toBe(2);
+    });
+
     it('should move into null scope with hasOne association', async () => {
+      db.collection({
+        name: 'profiles',
+        fields: [{ type: 'string', name: 'level' }],
+      });
+
       db.collection({
         name: 'users',
         fields: [
@@ -34,16 +119,75 @@ describe('move action', () => {
             name: 'name',
           },
           {
-            type: 'belongsTo',
-            name: 'tag',
+            type: 'hasOne',
+            name: 'profile',
           },
           {
             type: 'sort',
             name: 'sort',
-            scopeKey: 'tag.name',
+            scopeKey: 'profile.level',
           },
         ],
       });
+
+      await db.sync();
+
+      const u1 = await db.getRepository('users').create({
+        values: {
+          name: 'u1',
+        },
+      });
+
+      const u2 = await db.getRepository('users').create({
+        values: {
+          name: 'u2',
+          profile: {
+            level: 'A',
+          },
+        },
+      });
+
+      // move u2 into null scope
+      const response = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u2.get('id'),
+          targetScope: null,
+        });
+
+      expect(response.statusCode).toBe(200);
+
+      await u2.reload();
+      expect(u2.get('sort')).toBe(2);
+
+      // move u2 back into A scope
+      const response2 = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u2.get('id'),
+          targetScope: 'A',
+        });
+
+      expect(response2.statusCode).toBe(200);
+
+      await u2.reload();
+      expect(u2.get('sort')).toBe(1);
+
+      // move u1 new scope
+      const response3 = await api
+        .agent()
+        .post('/users:move')
+        .send({
+          sourceId: u1.get('id'),
+          targetScope: 'A',
+        });
+
+      expect(response3.statusCode).toBe(200);
+
+      await u1.reload();
+      expect(u1.get('sort')).toBe(2);
     });
 
     it('should move into null scope with belongsTo association', async () => {
