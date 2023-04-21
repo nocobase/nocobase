@@ -42,36 +42,48 @@ const InternalRemoteSelect = connect(
       fieldNames.label &&
       getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`).uiSchema;
 
-    const mapOptionsToTags = useCallback((options) => {
-      return options.map((option) => {
-        let label = option[fieldNames.label];
+    const mapOptionsToTags = useCallback(
+      (options) => {
+        try {
+          return options.map((option) => {
+            let label = option[fieldNames.label];
 
-        if (uiSchema?.enum) {
-          if (Array.isArray(label)) {
-            label = label
-              .map((item, index) => {
-                const option = uiSchema.enum.find((i) => i.value === item);
-                return (
-                  <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
-                    {option?.label || item}
-                  </Tag>
-                );
-              })
-              .reverse();
-          } else {
-            const item = uiSchema.enum.find((i) => i.value === label);
-            if (item) {
-              label = <Tag color={item.color}>{item.label}</Tag>;
+            if (uiSchema?.enum) {
+              if (Array.isArray(label)) {
+                label = label
+                  .map((item, index) => {
+                    const option = uiSchema.enum.find((i) => i.value === item);
+                    if (option) {
+                      return (
+                        <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                          {option?.label || item}
+                        </Tag>
+                      );
+                    } else {
+                      return <Tag>{item}</Tag>;
+                    }
+                  })
+                  .reverse();
+              } else {
+                const item = uiSchema.enum.find((i) => i.value === label);
+                if (item) {
+                  label = <Tag color={item.color}>{item.label}</Tag>;
+                }
+              }
             }
-          }
-        }
 
-        return {
-          [fieldNames.label]: label,
-          [fieldNames.value]: option[fieldNames.value],
-        };
-      });
-    }, [uiSchema]);
+            return {
+              [fieldNames.label]: label,
+              [fieldNames.value]: option[fieldNames.value],
+            };
+          });
+        } catch (err) {
+          console.error(err);
+          return options;
+        }
+      },
+      [uiSchema],
+    );
 
     const { data, run, loading } = useRequest(
       {
