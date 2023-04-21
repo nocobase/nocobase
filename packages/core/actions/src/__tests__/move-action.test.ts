@@ -216,6 +216,22 @@ describe('move action', () => {
 
       expect(u1.get('sort')).toEqual(3);
     });
+
+    it('should move into difference scope with targetScope as raw value', async () => {
+      const users = await db.getCollection('users').repository.find({});
+      const u1 = users.find((user) => user.get('name') === 'u1');
+      await api
+        .agent()
+        .resource('users')
+        .move({
+          sourceId: u1.get('id'),
+          targetScope: 'B',
+        });
+
+      await u1.reload();
+
+      expect(u1.get('sort')).toEqual(3);
+    });
   });
 
   describe('same scope', () => {

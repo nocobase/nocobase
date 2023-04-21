@@ -1,6 +1,7 @@
 import { Context } from '..';
 import { Collection, TargetKey, Repository, SortField, Model } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
+import lodash from 'lodash';
 
 export async function move(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);
@@ -83,7 +84,7 @@ export class SortAbleCollection {
 
   async changeScope(sourceInstanceId: TargetKey, targetScope: any, method?: string) {
     const sourceInstance = await this.collection.repository.findById(sourceInstanceId);
-    const targetScopeValue = targetScope[this.scopeKey];
+    const targetScopeValue = lodash.isPlainObject(targetScope) ? targetScope[this.scopeKey] : targetScope;
 
     const isAssociatedScope = this.scopeKey.includes('.');
 
