@@ -1,10 +1,10 @@
-import React, { useRef, useState } from 'react';
-import { Button, Cascader, Popover, Input as AntInput } from 'antd';
+import React, { useRef } from 'react';
+import { Button } from 'antd';
 import { css } from "@emotion/css";
 
 import { Input } from "../input";
 import { useTranslation } from 'react-i18next';
-import { XButton } from './XButton';
+import { VariableSelect } from './VariableSelect';
 
 
 
@@ -21,7 +21,6 @@ export function JSONInput(props) {
   const inputRef = useRef<any>(null);
   const { value, space = 2, scope } = props;
   const { t } = useTranslation();
-  const [selectedVar, setSelectedVar] = useState<string[]>([]);
   const options = typeof scope === 'function' ? scope() : (scope ?? []);
 
   function onFormat() {
@@ -72,24 +71,7 @@ export function JSONInput(props) {
         `}
       >
         <Button onClick={onFormat}>{t('Prettify')}</Button>
-        <Popover
-          content={(
-            <AntInput.Group compact>
-              <Cascader
-                placeholder={t('Select a variable')}
-                value={selectedVar}
-                options={options}
-                onChange={(keyPaths) => setSelectedVar(keyPaths as string[])}
-                changeOnSelect
-              />
-              <Button onClick={onInsert}>{t('Insert')}</Button>
-            </AntInput.Group>
-          )}
-          trigger="click"
-          placement="topRight"
-        >
-          <XButton />
-        </Popover>
+        <VariableSelect options={options} onInsert={onInsert} />
       </Button.Group>
     </div>
   );

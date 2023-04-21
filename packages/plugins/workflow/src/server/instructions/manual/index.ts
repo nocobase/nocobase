@@ -10,18 +10,18 @@ import usersJobsCollection from './collecions/users_jobs';
 import { submit } from './actions';
 
 
+type FormType = {
+  type: 'custom' | 'create' | 'update';
+  actions: number[];
+  options: {
+    [key: string]: any;
+  }
+};
 
 export interface ManualConfig {
-  schema: {
-    collection: {
-      name: string;
-      fields: any[];
-    };
-    blocks: { [key: string]: any },
-    actions: { [key: string]: any },
-  };
-  actions: number[];
-  assignees?: number[];
+  schema: { [key: string]: any };
+  forms: { [key: string]: FormType };
+  assignees?: (number | string)[];
   mode?: number;
 }
 

@@ -294,10 +294,10 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
       if (isAssocField(field)) {
         schema = {
           type: 'string',
-          name: field.name,
+          name: `${field.name}`,
           required: false,
-          'x-designer': 'AssociationSelect.FilterDesigner',
-          'x-component': 'AssociationSelect',
+          'x-designer': 'FormItem.FilterFormDesigner',
+          'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
@@ -397,6 +397,9 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
+          // 使用 | 分隔，是为了防止 form.values 中出现 { a: { b: 1 } } 的情况
+          // 使用 | 分隔后，form.values 中会出现 { 'a|b': 1 } 的情况，这种情况下
+          // 就可以知道该字段是一个关系字段中的输入框，进而特殊处理
           getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
@@ -753,7 +756,7 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
-  const { collections } = useCollectionManager();
+  const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const [selected, setSelected] = useState([]);
   const [value, onChange] = useState(null);
@@ -775,7 +778,9 @@ export const useCollectionDataSourceItems = (componentName) => {
           const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
-          } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
+          }
+          const fields = getCollectionFields(item.name);
+          if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
             return false;
           } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
             return false;
@@ -989,7 +994,6 @@ export const createFormBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 

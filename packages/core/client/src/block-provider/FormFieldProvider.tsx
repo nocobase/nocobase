@@ -1,6 +1,6 @@
-import { createForm, onFieldReact, onFormInputChange, onFormValuesChange } from '@formily/core';
-import { ArrayField, Field, ObjectField } from '@formily/core';
-import { useField, useFieldSchema } from '@formily/react';
+import { createForm, onFormValuesChange } from '@formily/core';
+import { useField } from '@formily/react';
+import { autorun } from '@formily/reactive';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { RecordProvider } from '../record-provider';
@@ -32,6 +32,15 @@ const InternalFormFieldProvider = (props) => {
     [],
   );
 
+  // 当使用数据模板时，会 formBlockCtx.form.values 会被整体赋值，这时候需要同步到 form.values
+  useEffect(() => {
+    const dispose = autorun(() => {
+      form.values = formBlockCtx?.form?.values[fieldName] || form.values;
+    });
+
+    return dispose;
+  }, []);
+
   const { resource, service } = useBlockRequestContext();
   if (service.loading) {
     return <Spin />;
@@ -52,9 +61,8 @@ const InternalFormFieldProvider = (props) => {
         {props.children}
       </FormFieldContext.Provider>
     </RecordProvider>
-
   );
-}
+};
 
 export const WithoutFormFieldResource = createContext(null);
 
@@ -65,8 +73,8 @@ export const FormFieldProvider = (props) => {
         <InternalFormFieldProvider {...props} />
       </BlockProvider>
     </WithoutFormFieldResource.Provider>
-  )
-}
+  );
+};
 
 export const useFormFieldContext = () => {
   return useContext(FormFieldContext);
@@ -80,5 +88,4 @@ export const useFormFieldProps = () => {
   return {
     form: ctx.form,
   };
-
-}
+};

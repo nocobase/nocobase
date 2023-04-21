@@ -81,12 +81,12 @@ FormItem.Designer = () => {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const targetCollection = getCollection(collectionField.target);
+  const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
   const targetFields = collectionField?.target
-    ? getCollectionFields(collectionField.target)
+    ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssociationField = field.address.segments.includes('__form_grid');
@@ -402,11 +402,11 @@ FormItem.Designer = () => {
               title: t('Set default value'),
               properties: {
                 default: {
-                  ...collectionField.uiSchema,
+                  ...collectionField?.uiSchema,
                   name: 'default',
                   title: t('Default value'),
                   'x-decorator': 'FormItem',
-                  default: fieldSchema.default || collectionField.defaultValue,
+                  default: fieldSchema.default || collectionField?.defaultValue,
                 },
               },
             } as ISchema
@@ -434,7 +434,7 @@ FormItem.Designer = () => {
           value={fieldSchema['x-component']}
           onChange={(type) => {
             const schema: ISchema = {
-              name: collectionField.name,
+              name: collectionField?.name,
               type: 'void',
               required: fieldSchema['required'],
               description: fieldSchema['description'],
