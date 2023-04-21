@@ -17,6 +17,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   wait?: number;
   manual?: boolean;
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
+  targetField?: any;
   service: ResourceActionOptions<P>;
 };
 
@@ -30,6 +31,7 @@ const InternalRemoteSelect = connect(
       objectValue,
       manual = true,
       mapOptions,
+      targetField: _targetField,
       ...others
     } = props;
     const compile = useCompile();
@@ -39,9 +41,10 @@ const InternalRemoteSelect = connect(
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
-      collectionField.target &&
-      fieldNames.label &&
-      getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`);
+      _targetField ||
+      (collectionField?.target &&
+        fieldNames?.label &&
+        getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
 
     const mapOptionsToTags = useCallback(
       (options) => {
@@ -73,10 +76,16 @@ const InternalRemoteSelect = connect(
               }
             }
 
-            if (targetField.type === 'date') {
+            if (targetField?.type === 'date') {
               label = moment(label).format('YYYY-MM-DD');
             }
 
+            if (mapOptions) {
+              return mapOptions({
+                [fieldNames.label]: label,
+                [fieldNames.value]: option[fieldNames.value],
+              });
+            }
             return {
               [fieldNames.label]: label,
               [fieldNames.value]: option[fieldNames.value],
@@ -139,9 +148,6 @@ const InternalRemoteSelect = connect(
 
     const getOptionsByFieldNames = useCallback(
       (item) => {
-        if (mapOptions) {
-          return mapOptions(item);
-        }
         return Object.keys(fieldNames).reduce((obj, key) => {
           let value = item[fieldNames[key]];
           if (value) {
