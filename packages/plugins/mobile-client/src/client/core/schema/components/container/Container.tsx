@@ -111,7 +111,7 @@ const InternalContainer: React.FC = (props) => {
   }, [Object.keys(fieldSchema.properties), match.url, params.name]);
 
   return (
-    <SortableItem className={cx('nb-mobile-container', designerCss)}>
+    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-container', designerCss)}>
       <div
         style={{
           paddingBottom: `calc(var(--nb-spacing) + ${tabRoutes.length ? '49px' : '0px'})`,

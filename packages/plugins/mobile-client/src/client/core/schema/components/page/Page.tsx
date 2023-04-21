@@ -58,7 +58,7 @@ const InternalPage: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   return (
-    <SortableItem className={cx('nb-mobile-page', designerCss)}>
+    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-page', designerCss)}>
       <Designer></Designer>
       <div
         className={cx(

@@ -12,6 +12,18 @@ export const MBlockInitializers = {
       title: '{{t("Data blocks")}}',
       children: [
         {
+          key: 'list',
+          type: 'item',
+          title: '{{t("List")}}',
+          component: 'MListBlockInitializer',
+        },
+        {
+          key: 'table',
+          type: 'item',
+          title: '{{t("Table")}}',
+          component: 'TableBlockInitializer',
+        },
+        {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',

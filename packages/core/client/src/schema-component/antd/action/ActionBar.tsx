@@ -4,10 +4,10 @@ import { Space } from 'antd';
 import React from 'react';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
-import { useDesignable } from '../../hooks';
+import { useDesignable, useProps } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
-  const { layout = 'tow-columns', style, ...others } = props;
+  const { layout = 'tow-columns', style, ...others } = useProps(props);
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { designable } = useDesignable();

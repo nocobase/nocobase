@@ -4,7 +4,8 @@ import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import { Col, Row } from 'antd';
 import template from 'lodash/template';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import merge from 'deepmerge';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
@@ -103,7 +104,7 @@ export const useResourceAction = (props, opts = {}) => {
   if (!Object.keys(params).includes('appends') && appends?.length) {
     params['appends'] = appends;
   }
-  const result = useRequest(
+  const result = useRequest<any, any[]>(
     snapshot
       ? async () => ({
           data: record[tableFieldName] ?? [],
@@ -112,10 +113,7 @@ export const useResourceAction = (props, opts = {}) => {
           if (!action) {
             return Promise.resolve({});
           }
-          const actionParams = { ...opts };
-          if (params.appends) {
-            actionParams.appends = params.appends;
-          }
+          const actionParams = { ...params, ...opts };
           return resource[action](actionParams).then((res) => res.data);
         },
     {
@@ -147,15 +145,28 @@ export const MaybeCollectionProvider = (props) => {
 const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
+  const [allowedActions, setAllowedActions] = useState({});
   const service = useResourceAction(
     { ...props, resource },
     {
       ...props.requestOptions,
     },
   );
+
+  // Infinite scroll support
+  const serviceAllowedActions = service?.data?.meta?.allowedActions;
+  useEffect(() => {
+    if (!serviceAllowedActions) return;
+    setAllowedActions((last) => {
+      return merge(last, serviceAllowedActions ?? {});
+    });
+  }, [serviceAllowedActions]);
+
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider
+      value={{ allowedActions, block: props.block, props, field, service, resource, __parent }}
+    >
       {props.children}
     </BlockRequestContext.Provider>
   );
