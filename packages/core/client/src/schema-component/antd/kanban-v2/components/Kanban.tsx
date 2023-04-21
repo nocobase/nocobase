@@ -94,11 +94,7 @@ export const KanbanV2: any = (props) => {
           : {
               $and: [{ [groupField.name]: { $empty: true } }],
             };
-        return mergeFilter([
-          defaultFilter,
-          fieldSchema.parent['x-decorator-props']?.params?.filter,
-          params.filter?.$and?.[0],
-        ]);
+        return mergeFilter([defaultFilter, fieldSchema.parent['x-decorator-props']?.params?.filter, params.filter]);
       } else {
         const defaultfilter = isAssociationField
           ? {
@@ -107,11 +103,7 @@ export const KanbanV2: any = (props) => {
           : {
               $and: [{ [groupField.name]: { $eq: value } }],
             };
-        return mergeFilter([
-          defaultfilter,
-          fieldSchema.parent['x-decorator-props']?.params?.filter,
-          params.filter?.$and?.[0],
-        ]);
+        return mergeFilter([defaultfilter, fieldSchema.parent['x-decorator-props']?.params?.filter, params.filter]);
       }
     };
     const filter = parseFilter(el.value);
@@ -197,15 +189,7 @@ export const KanbanV2: any = (props) => {
     if (targetCard) {
       values['targetId'] = targetCard?.id;
     }
-    associateCollectionField.length > 1
-      ? (values['targetScope'] = {
-          [`${associateCollectionField[0]}.${associateCollectionField[1]}`]:
-            toColumnId !== '__unknown__' ? toColumnId : null,
-        })
-      : (values['targetScope'] = {
-          state: toColumnId !== '__unknown__' ? toColumnId : null,
-        });
-
+    values['targetScope'] = toColumnId !== '__unknown__' ? toColumnId : null;
     try {
       await resource.move({
         values: values,
