@@ -2,7 +2,7 @@ import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -12,28 +12,7 @@ import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
 import { loadMoreButton } from '../style';
-
-const reorder = (list, startIndex, endIndex) => {
-  const result = Array.from(list);
-  const [removed] = result.splice(startIndex, 1);
-  result.splice(endIndex, 0, removed);
-
-  return result;
-};
-
-/**
- * Moves an item from one list to another list.
- */
-const move = (source, destination, droppableSource, droppableDestination) => {
-  const sourceClone = Array.from(source);
-  const destClone = Array.from(destination);
-  const [removed] = sourceClone.splice(droppableSource.index, 1);
-  destClone.splice(droppableDestination.index, 0, removed);
-  const result = {};
-  result[droppableSource.droppableId] = sourceClone;
-  result[droppableDestination.droppableId] = destClone;
-  return result;
-};
+import { move, reorder } from '../utilt';
 const KanbanRecordViewer = (props) => {
   const { visible, setVisible, record } = props;
   const field = useField();
@@ -68,6 +47,7 @@ const ColumnHeader = ({ color, label }) => {
     </div>
   );
 };
+
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { groupField, columns } = useProps();
@@ -217,7 +197,6 @@ export const KanbanV2: any = (props) => {
               }}
             >
               <ColumnHeader {...el} />
-              {/* {el.cards && ( */}
               <Column
                 data={el}
                 ind={ind}
@@ -225,7 +204,6 @@ export const KanbanV2: any = (props) => {
                 onCardClick={handleCardClick}
                 getColumnDatas={getColumnDatas}
               />
-              {/* )} */}
               {el?.cards?.length < el?.meta?.count && (
                 <a
                   className={cx(loadMoreButton)}
