@@ -9,14 +9,15 @@ import {
   useSensor,
   useSensors
 } from '@dnd-kit/core';
-import { observer, RecursionField } from '@formily/react';
+import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Badge, Card, Dropdown, Menu, Modal, Tabs } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { CollectionCategroriesContext } from '../context';
 import { useResourceActionContext } from '../ResourceActionProvider';
+import { CollectionCategroriesContext } from '../context';
+import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 
 function Draggable(props) {
@@ -240,6 +241,7 @@ export const ConfigurationTabs = () => {
             >
               <Card bordered={false}>
                 <SchemaComponentOptions
+                  components={{ CollectionFields }}
                   inherit
                   scope={{ loadCategories, categoryVisible: item.id === 'all', categoryId: item.id }}
                 >

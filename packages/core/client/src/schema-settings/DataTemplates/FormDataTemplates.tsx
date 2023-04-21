@@ -1,6 +1,8 @@
 import { connect, mapProps, observer } from '@formily/react';
 import { Tree as AntdTree } from 'antd';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
@@ -19,6 +21,9 @@ export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
   const { collectionList, getEnableFieldTree } = useCollectionState(collectionName);
+  const { getCollection } = useCollectionManager();
+  const collection = getCollection(collectionName);
+  const { t } = useTranslation();
 
   return (
     <SchemaComponent
@@ -54,7 +59,7 @@ export const FormDataTemplates = observer((props: any) => {
                       type: 'string',
                       title: '{{ t("Collection") }}',
                       required: true,
-                      description: '当前表有继承关系时，可选择继承链路上的表作为模板来源',
+                      description: t('If collection inherits, choose inherited collections as templates'),
                       default: collectionName,
                       'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
                       'x-decorator': 'FormItem',
@@ -67,7 +72,7 @@ export const FormDataTemplates = observer((props: any) => {
                       type: 'number',
                       title: '{{ t("Template Data") }}',
                       required: true,
-                      description: '选择一条已有的数据作为表单的初始化数据',
+                      description: t('Select an existing piece of data as the initialization data for the form'),
                       'x-decorator': 'FormItem',
                       'x-component': AssociationSelect,
                       'x-component-props': {
@@ -79,14 +84,14 @@ export const FormDataTemplates = observer((props: any) => {
                         objectValue: false,
                         manual: false,
                         mapOptions: (item) => {
-                          // TODO: 应该使用 item.title 字段的值作为 label
                           return {
-                            label: item.id,
+                            ...item,
+                            [collection.titleField || 'label']: `#${item.id} ${item[collection.titleField] || ''}`,
                             value: item.id,
                           };
                         },
                         fieldNames: {
-                          label: 'label',
+                          label: collection.titleField || 'label',
                           value: 'value',
                         },
                       },
@@ -110,7 +115,7 @@ export const FormDataTemplates = observer((props: any) => {
                       type: 'array',
                       title: '{{ t("Data fields") }}',
                       required: true,
-                      description: '仅选择的字段才会作为表单的初始化数据',
+                      description: t('Only the selected fields will be used as the initialization data for the form'),
                       'x-decorator': 'FormItem',
                       'x-component': Tree,
                       'x-component-props': {
