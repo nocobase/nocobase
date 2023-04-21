@@ -181,21 +181,19 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
         const setAccessors = firstAssociation['accessors']['set'];
         await this[setAccessors](targetInstance, { transaction });
       }
+    } else {
+      try {
+        const model = await this.lazyLoadModel(key, options);
+        await model.update({ [key.split('.').pop()]: value }, { transaction });
+      } catch (e) {
+        if (e.message.includes('not found')) {
+          const createAccessor = firstAssociation['accessors']['create'];
+          await this[createAccessor]({ [key.split('.').pop()]: value }, { transaction });
+        } else {
+          throw e;
+        }
+      }
     }
-
-    // if (value === null) {
-    // } else {
-    //   try {
-    //     const model = await this.lazyLoadModel(key, options);
-    //
-    //     await model.update({ [key.split('.').pop()]: value }, { transaction });
-    //   } catch (e) {
-    //     if (e.message.includes('not found')) {
-    //       // should associate
-    //     }
-    //     throw e;
-    //   }
-    // }
   }
 
   public async lazyLoadGet(key: string, options: Transactionable = {}) {

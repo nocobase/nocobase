@@ -28,6 +28,8 @@ export class SortField extends Field {
   };
 
   setSortValue = async (instance, options) => {
+    if (options.withAssociations) return;
+
     const { name, scopeKey } = this.options;
 
     if (instance.get(name) && !options.reset) return;
@@ -65,8 +67,8 @@ export class SortField extends Field {
       }
     }
 
+    console.log({ filter });
     await sortFieldMutex.runExclusive(async () => {
-      console.log({ filter });
       const max = await this.context.collection.repository.max({
         field: name,
         filter,
