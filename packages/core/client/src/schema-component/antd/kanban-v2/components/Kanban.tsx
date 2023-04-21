@@ -2,7 +2,7 @@ import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState } from 'react';
+import React, { useState,useCallback } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -64,7 +64,7 @@ export const KanbanV2: any = (props) => {
   const fieldSchema = useFieldSchema();
   const params = service?.params?.[0] || {};
 
-  const getColumnDatas = React.useCallback(async (el, index, params, appends?, currentPage?) => {
+  const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?) => {
     const parseFilter = (value) => {
       if (value === '__unknown__') {
         const defaultFilter = isAssociationField
@@ -88,7 +88,7 @@ export const KanbanV2: any = (props) => {
     };
     const filter = parseFilter(el.value);
     const newState: any = [...columnData];
-    const newColumn = columnData.find((v) => v.value === el.value) || { ...el };
+    const newColumn = columnData.find((v) => v.value === el.value) || el;
     const page = currentPage || 1;
     const result = resource.list({
       ...params,

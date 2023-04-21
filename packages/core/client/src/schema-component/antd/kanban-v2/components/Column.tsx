@@ -93,7 +93,6 @@ export const Column = memo((props: any) => {
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
   const [loading, setLoading] = useState(false);
-  console.log('ind', ind);
   const displayLable = fieldSchema.parent['x-label-disabled'];
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
