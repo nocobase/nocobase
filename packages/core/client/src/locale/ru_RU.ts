@@ -357,6 +357,7 @@ export default {
   "Dialog": "Диалог",
   "Delete action": "Удалить действие",
   "Custom column title": "Пользовательский заголовок колонки",
+  'Column title': 'заголовок столбца',
   "Original title: ": "Заголовок по умолчанию: ",
   "Delete table column": "Удалить колонку таблицы",
   "Skip required validation": "Пропустить обязатеьную проверку",
