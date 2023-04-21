@@ -13,6 +13,7 @@ import {
   useCollectionManager,
   useSortFields,
 } from '../../../collection-manager';
+import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
@@ -91,7 +92,7 @@ interface AssociationSelectInterface {
 
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
-AssociationSelect.Designer = () => {
+AssociationSelect.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField, template } = useCollection();
   const { form } = useFormBlockContext();
@@ -99,7 +100,6 @@ AssociationSelect.Designer = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const tk = useFilterByTk();
-  const {} = useCollection();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -134,7 +134,7 @@ AssociationSelect.Designer = () => {
   }
 
   const options = targetFields
-    .filter((field) => !field?.target && field.type !== 'boolean')
+    .filter((field) => isTitleField(field))
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
