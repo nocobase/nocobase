@@ -1,6 +1,6 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
@@ -597,11 +597,19 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
-  return fields
-    ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
-    })
-    ?.map((field) => {
+  const filterFields = useMemo(
+    () =>
+      fields?.filter((field) => {
+        return (
+          field?.interface &&
+          !field?.uiSchema?.['x-read-pretty'] &&
+          field.interface !== 'snapshot' &&
+          field.type !== 'sequence'
+        );
+      }),
+    [fields],
+  );
+  return filterFields.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const schema = {
         type: 'string',
