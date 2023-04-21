@@ -2,6 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
+import { useAPIClient } from '../../../api-client';
 import { useKanbanV2BlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCollectionFilterOptions } from '../../../collection-manager/action-hooks';
@@ -11,9 +12,10 @@ import { useSchemaTemplate } from '../../../schema-templates';
 export const KanabanDesigner = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name, title, fields } = useCollection();
+  const { name, title } = useCollection();
   const dataSource = useCollectionFilterOptions(name);
-  const { resource, service } = useKanbanV2BlockContext();
+  const { service } = useKanbanV2BlockContext();
+  const api = useAPIClient();
   const { getCollectionFields, getCollectionFieldsOptions } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
@@ -28,7 +30,7 @@ export const KanabanDesigner = () => {
   const groupField = fieldSchema['x-decorator-props']?.groupField || [];
   const columns = fieldSchema['x-decorator-props']?.columns;
   const getAssociateResource = (collectionName) => {
-    return resource;
+    return api.resource(collectionName);
   };
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
