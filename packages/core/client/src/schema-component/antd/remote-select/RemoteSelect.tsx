@@ -87,7 +87,7 @@ const InternalRemoteSelect = connect(
               });
             }
             return {
-              [fieldNames.label]: label,
+              [fieldNames.label]: label || option[fieldNames.value],
               [fieldNames.value]: option[fieldNames.value],
             };
           });
@@ -96,7 +96,7 @@ const InternalRemoteSelect = connect(
           return options;
         }
       },
-      [targetField?.uiSchema],
+      [targetField?.uiSchema, fieldNames],
     );
 
     const { data, run, loading } = useRequest(

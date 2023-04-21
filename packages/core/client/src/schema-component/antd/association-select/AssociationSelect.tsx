@@ -691,7 +691,7 @@ AssociationSelect.Designer = function Designer() {
  * 用于筛选表单区块
  * @returns
  */
-AssociationSelect.FilterDesigner = () => {
+AssociationSelect.FilterDesigner = function FilterDesigner() {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
