@@ -67,7 +67,6 @@ export class SortField extends Field {
       }
     }
 
-    console.log({ filter });
     await sortFieldMutex.runExclusive(async () => {
       const max = await this.context.collection.repository.max({
         field: name,
