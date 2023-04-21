@@ -44,7 +44,7 @@ export class PasswordField extends Field {
     });
   }
 
-  async listener(model) {
+  listener = async (model) => {
     const { name } = this.options;
 
     if (!model.changed(name as any)) {
@@ -57,7 +57,7 @@ export class PasswordField extends Field {
     } else {
       model.set(name, null);
     }
-  }
+  };
 
   bind() {
     super.bind();

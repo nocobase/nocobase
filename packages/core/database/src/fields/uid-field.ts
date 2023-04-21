@@ -7,11 +7,12 @@ export class UidField extends Field {
     return DataTypes.STRING;
   }
 
-  async listener(instance) {
+  listener = async (instance) => {
     const { name, prefix = '', pattern } = this.options;
     const re = new RegExp(pattern || '^[A-Za-z0-9][A-Za-z0-9_-]*$');
 
     const value = instance.get(name);
+
     if (!value) {
       instance.set(name, `${prefix}${uid()}`);
     } else if (re.test(value)) {
@@ -19,7 +20,7 @@ export class UidField extends Field {
     } else {
       throw new Error(`uid '${value}' is invalid`);
     }
-  }
+  };
 
   bind() {
     super.bind();
