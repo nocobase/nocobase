@@ -29,11 +29,16 @@ export class SortField extends Field {
 
   setSortValue = async (instance, options) => {
     const { name, scopeKey } = this.options;
+
     if (instance.get(name) && !options.reset) return;
 
     const { transaction } = options;
 
-    if (isNumber(instance.get(name)) && instance._previousDataValues[scopeKey] == instance[scopeKey]) {
+    if (
+      !options.reset &&
+      isNumber(instance.get(name)) &&
+      instance._previousDataValues[scopeKey] == instance[scopeKey]
+    ) {
       return;
     }
 
@@ -53,14 +58,15 @@ export class SortField extends Field {
         }
       } catch (e) {
         if (e.message.includes('not found')) {
-          return;
+          filter[scopeKey] = null;
+        } else {
+          throw e;
         }
-        throw e;
       }
     }
 
-    console.log('runExclusive');
     await sortFieldMutex.runExclusive(async () => {
+      console.log({ filter });
       const max = await this.context.collection.repository.max({
         field: name,
         filter,
@@ -74,6 +80,7 @@ export class SortField extends Field {
 
   onScopeChange = async (instance, options) => {
     const { scopeKey } = this.options;
+
     if (scopeKey && !instance.isNewRecord && instance._previousDataValues[scopeKey] != instance[scopeKey]) {
       await this.setSortValue(instance, {
         ...options,
@@ -145,25 +152,33 @@ export class SortField extends Field {
       const orderFieldWithTableName = `${this.collection.quotedTableName()}.${quotedOrderField}`;
 
       const sql = `
-        WITH ordered_table AS (SELECT ${orderFieldWithTableName} as ${quotedOrderField},
-                                      ROW_NUMBER()                  OVER (${
-                                        scopeKey ? `PARTITION BY ${qs(this.scopeKeyAsField())}` : ''
-                                      }
-        ORDER BY ${orderFieldWithTableName}) AS new_sequence_number
-                               FROM ${this.collection.quotedTableName()} ${
-        this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''
+        WITH ordered_table AS (
+        SELECT ${orderFieldWithTableName} as ${quotedOrderField}, ROW_NUMBER() OVER (${
+        scopeKey ? `PARTITION BY ${qs(this.scopeKeyAsField())}` : ''
       }
-          ${(() => {
-            if (scopeKey && scopeValue) {
-              const hasNull = scopeValue.includes(null);
+        ORDER BY ${orderFieldWithTableName}) AS new_sequence_number
+        FROM ${this.collection.quotedTableName()}
+        ${this.isAssociatedScopeKey() ? queryInterface.createJoinSQL(this.collection, scopeKey) : ''}
+        ${(() => {
+          if (scopeKey && scopeValue) {
+            const hasNull = scopeValue.includes(null);
 
-              return `WHERE ${qs(this.scopeKeyAsField())} IN (${scopeValue
-                .filter((v) => v !== null)
-                .map((v) => `'${v}'`)
-                .join(',')}) ${hasNull ? `OR ${q(scopeKey)} IS NULL` : ''} `;
+            const notNullValues = scopeValue.filter((v) => v !== null);
+
+            const conditions = [];
+            if (notNullValues.length) {
+              conditions.push(`${qs(this.scopeKeyAsField())} IN (${notNullValues.map((v) => `'${v}'`).join(',')})`);
             }
-            return '';
-          })()})
+            if (hasNull) {
+              conditions.push(`${qs(scopeKey)} IS NULL`);
+            }
+
+            return `WHERE ${conditions.join(' OR ')}`;
+          }
+
+          return '';
+        })()})
+
           ${
             this.collection.db.inDialect('mysql')
               ? `
@@ -208,6 +223,7 @@ export class SortField extends Field {
     this.setListeners({
       afterSync: this.initRecordsSortValue,
       afterUpdate: this.onScopeChange,
+      afterChangeScope: this.afterChangeScope,
       afterCreateWithAssociations: this.setSortValue,
       afterCreate: this.setSortValue,
     });

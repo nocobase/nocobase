@@ -120,16 +120,20 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
 
     return traverseJSON(super.toJSON(), opts);
   }
-  public async lazyLoadGet(key: string, options: Transactionable = {}) {
+
+  public async lazyLoadModel(key, options: Transactionable = {}): Promise<Model> {
     const { transaction } = options;
 
     const path = key.split('.');
     const associations = path.slice(0, -1);
-    const field = path[path.length - 1];
 
     let target = this;
 
     for (const associationName of associations) {
+      if (!target) {
+        throw new Error(`Association ${key} not found`);
+      }
+
       // @ts-ignore
       const association = target.constructor.associations[associationName];
 
@@ -149,11 +153,55 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
         throw new Error(`Association ${key} not found`);
       }
     }
-    if (!target) {
-      throw new Error(`Association ${key} not found`);
+
+    return target;
+  }
+
+  public async lazyLoadSet(key, value, options: Transactionable = {}) {
+    const { transaction } = options;
+    const firstAssociationKey = key.split('.').shift();
+    // @ts-ignore
+    const firstAssociation = this.constructor.associations[firstAssociationKey];
+
+    if (firstAssociation.associationType == 'BelongsTo' || firstAssociation.associationType == 'BelongsToMany') {
+      if (value == null) {
+        // 解除关联
+        const setAccessors = firstAssociation['accessors']['set'];
+        await this[setAccessors](null, { transaction });
+      } else {
+        // @ts-ignore
+        const collection = this.constructor.database.modelCollection.get(firstAssociation.target);
+        const targetInstance = await collection.repository.findOne({
+          filter: {
+            [key.split('.').slice(1).join('.')]: value,
+          },
+          transaction,
+        });
+
+        const setAccessors = firstAssociation['accessors']['set'];
+        await this[setAccessors](targetInstance, { transaction });
+      }
     }
 
-    return target.get(field);
+    // if (value === null) {
+    // } else {
+    //   try {
+    //     const model = await this.lazyLoadModel(key, options);
+    //
+    //     await model.update({ [key.split('.').pop()]: value }, { transaction });
+    //   } catch (e) {
+    //     if (e.message.includes('not found')) {
+    //       // should associate
+    //     }
+    //     throw e;
+    //   }
+    // }
+  }
+
+  public async lazyLoadGet(key: string, options: Transactionable = {}) {
+    const targetModel = await this.lazyLoadModel(key, options);
+
+    return targetModel.get(key.split('.').pop());
   }
 
   private hiddenObjKey(obj, options: JSONTransformerOptions) {

@@ -47,6 +47,8 @@ export default abstract class QueryInterface {
     const q = queryInterface.quoteIdentifier.bind(queryInterface);
 
     let joinSQL = '';
+    let preAs = collection.quotedTableName();
+
     let model = collection.model;
 
     const associationPaths = associationPath.split('.');
@@ -69,19 +71,15 @@ export default abstract class QueryInterface {
       const targetCollection = this.db.modelCollection.get(associationModel);
 
       if (association.associationType === 'HasOne' || association.associationType === 'HasMany') {
-        joinSQL += `${targetCollection.quotedTableName()} as ${q(
-          association.as,
-        )} ON ${collection.quotedTableName()}.${q(association.sourceKeyField)} = ${q(association.as)}.${q(
-          association.identifierField,
-        )}`;
+        joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${preAs}.${q(
+          association.sourceKeyField,
+        )} = ${q(association.as)}.${q(association.identifierField)}`;
       }
 
       if (association.associationType === 'BelongsTo') {
-        joinSQL += `${targetCollection.quotedTableName()} as ${q(
-          association.as,
-        )} ON ${collection.quotedTableName()}.${q(association.identifier)} = ${q(association.as)}.${q(
-          association.targetIdentifier,
-        )}`;
+        joinSQL += `${targetCollection.quotedTableName()} as ${q(association.as)} ON ${preAs}.${q(
+          association.source.rawAttributes[association.foreignKey].field,
+        )} = ${q(association.as)}.${q(association.targetIdentifier)}`;
       }
 
       if (association.associationType === 'BelongsToMany') {
@@ -90,15 +88,18 @@ export default abstract class QueryInterface {
 
         joinSQL += `${throughCollection.quotedTableName()} as ${q(throughModel.name)} ON ${q(collection.name)}.${q(
           association.sourceKeyField,
-        )} = ${q(throughModel.name)}.${q(association.foreignKey)}`;
+        )} = ${q(throughModel.name)}.${q(throughModel.rawAttributes[association.foreignKey].field)}`;
 
         joinSQL += ` LEFT JOIN ${targetCollection.quotedTableName()} as ${q(association.as)} ON ${q(
           association.as,
-        )}.${q(association.targetKeyField)} = ${q(throughModel.name)}.${q(association.otherKey)}`;
+        )}.${q(association.targetKeyField)} = ${q(throughModel.name)}.${q(
+          throughModel.rawAttributes[association.otherKey].field,
+        )}`;
       }
 
       collection = targetCollection;
       model = targetCollection.model;
+      preAs = q(association.as);
     }
 
     return joinSQL;
