@@ -147,7 +147,7 @@ export class SortAbleCollection {
       targetSort = targetSort + 1;
     }
 
-    let scopeValue = await this.getInstanceScopeValue(sourceInstance);
+    let scopeValue = this.scopeKey ? await this.getInstanceScopeValue(sourceInstance) : null;
 
     let updateCondition;
     let change;
