@@ -9,7 +9,6 @@ export default {
   duplicator: 'optional',
   name: 'authenticators',
   title: '{{t("Authenticators")}}',
-  sortable: 'sort',
   model: 'AuthModel',
   createdBy: true,
   updatedBy: true,

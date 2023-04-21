@@ -10,6 +10,6 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nocobase/nocobase.git",
-    "directory": "packages/core/authentication"
+    "directory": "packages/authentication"
   }
 }

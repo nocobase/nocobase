@@ -15,7 +15,6 @@ export default {
   },
   name: 'userAuthInfomation',
   title: '{{t("User Auth Infomation")}}',
-  sortable: 'sort',
   model: 'UserAuthInfoModel',
   createdBy: true,
   updatedBy: true,
