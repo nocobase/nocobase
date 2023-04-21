@@ -6,6 +6,7 @@ import React, { useEffect } from 'react';
 import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
+import { useTranslation } from 'react-i18next';
 
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
@@ -101,6 +102,12 @@ export const InternalFallbackField = () => {
   return <div>{displayText}</div>;
 };
 
+// 当字段被删除时，显示一个提示占位符
+const DeletedField = () => {
+  const { t } = useTranslation()
+  return <div style={{ color: '#ccc' }}>{t('Field deleted')}</div>;
+}
+
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const field = fieldSchema?.['x-component-props']?.['field'];
@@ -109,7 +116,7 @@ export const CollectionField = connect((props) => {
     <CollectionFieldProvider
       name={fieldSchema.name}
       field={field}
-      fallback={snapshot ? <InternalFallbackField /> : null}
+      fallback={snapshot ? <InternalFallbackField /> : <DeletedField />}
     >
       <InternalField {...props} />
     </CollectionFieldProvider>

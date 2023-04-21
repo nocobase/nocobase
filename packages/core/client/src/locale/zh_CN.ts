@@ -534,6 +534,7 @@ export default {
   'Skip required validation': '跳过必填校验',
   'Form values': '表单值',
   'Fields values': '字段值',
+  'Field deleted': '字段已删除',
   'When submitting the following fields, the saved values are': '提交以下字段时，保存的值为',
   'After successful submission': '提交成功后',
   'Then': '然后',
