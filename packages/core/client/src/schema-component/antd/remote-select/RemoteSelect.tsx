@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
+import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -37,10 +38,10 @@ const InternalRemoteSelect = connect(
     const { getField } = useCollection();
     const { getCollectionJoinField } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
-    const uiSchema =
+    const targetField =
       collectionField.target &&
       fieldNames.label &&
-      getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`).uiSchema;
+      getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`);
 
     const mapOptionsToTags = useCallback(
       (options) => {
@@ -48,11 +49,11 @@ const InternalRemoteSelect = connect(
           return options.map((option) => {
             let label = option[fieldNames.label];
 
-            if (uiSchema?.enum) {
+            if (targetField?.uiSchema?.enum) {
               if (Array.isArray(label)) {
                 label = label
                   .map((item, index) => {
-                    const option = uiSchema.enum.find((i) => i.value === item);
+                    const option = targetField.uiSchema.enum.find((i) => i.value === item);
                     if (option) {
                       return (
                         <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
@@ -65,11 +66,15 @@ const InternalRemoteSelect = connect(
                   })
                   .reverse();
               } else {
-                const item = uiSchema.enum.find((i) => i.value === label);
+                const item = targetField.uiSchema.enum.find((i) => i.value === label);
                 if (item) {
                   label = <Tag color={item.color}>{item.label}</Tag>;
                 }
               }
+            }
+
+            if (targetField.type === 'date') {
+              label = moment(label).format('YYYY-MM-DD');
             }
 
             return {
@@ -82,7 +87,7 @@ const InternalRemoteSelect = connect(
           return options;
         }
       },
-      [uiSchema],
+      [targetField?.uiSchema],
     );
 
     const { data, run, loading } = useRequest(
