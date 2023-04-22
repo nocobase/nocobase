@@ -1133,3 +1133,9 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions) => {
   return !['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface);
 };
+
+// 是否是系统字段
+export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
+  const i = getInterface?.(collectionField?.interface);
+  return i?.group === 'systemInfo';
+};
