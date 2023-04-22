@@ -21,9 +21,10 @@ export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
   const { collectionList, getEnableFieldTree } = useCollectionState(collectionName);
-  const { getCollection } = useCollectionManager();
+  const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
+  const field = getCollectionField(`${collectionName}.${collection?.titleField || 'id'}`);
 
   return (
     <SchemaComponent
@@ -83,16 +84,24 @@ export const FormDataTemplates = observer((props: any) => {
                         multiple: false,
                         objectValue: false,
                         manual: false,
-                        mapOptions: (item) => {
-                          return {
-                            ...item,
-                            [collection.titleField || 'label']: `#${item.id} ${item[collection.titleField] || ''}`,
-                            value: item.id,
-                          };
+                        targetField: field,
+                        mapOptions(option) {
+                          try {
+                            const label = collection?.titleField || 'id';
+                            option[label] = (
+                              <>
+                                #{option.id} {option[label]}
+                              </>
+                            );
+                            return option;
+                          } catch (error) {
+                            console.error(error);
+                            return option;
+                          }
                         },
                         fieldNames: {
-                          label: collection.titleField || 'label',
-                          value: 'value',
+                          label: collection?.titleField || 'id',
+                          value: 'id',
                         },
                       },
                       'x-reactions': [
