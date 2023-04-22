@@ -10,7 +10,7 @@ import { merge, uid } from '@nocobase/utils/client';
 
 import { JOB_STATUS } from '../../../constants';
 import { lang, NAMESPACE } from '../../../locale';
-import { findSchema } from '../SchemaConfig';
+import { findSchema, ManualFormType } from '../SchemaConfig';
 
 const FormCollectionContext = React.createContext<any>(null);
 
@@ -304,11 +304,13 @@ function CustomFormFieldInitializer(props) {
 export default {
   title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    initializer: {
-      key: 'customForm',
-      type: 'item',
-      title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-      component: CustomFormBlockInitializer
+    useInitializer() {
+      return {
+        key: 'customForm',
+        type: 'item',
+        title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
+        component: CustomFormBlockInitializer
+      };
     },
     initializers: {
       AddCustomFormField
@@ -342,4 +344,4 @@ export default {
       FormCollectionProvider: CollectionProvider
     }
   }
-};
+} as ManualFormType;

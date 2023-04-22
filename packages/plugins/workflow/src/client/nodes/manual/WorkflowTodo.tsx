@@ -186,7 +186,7 @@ const UserColumn = observer(() => {
   return field?.value?.nickname ?? field.value?.id;
 });
 
-export function WorkflowTodo() {
+export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } = () => {
   return (
     <SchemaComponent
       components={{
@@ -440,20 +440,16 @@ function FlowContextProvider(props) {
       });
   }, [id]);
 
-  if (!flowContext) {
-    return null;
-  }
-
-  const upstreams = useAvailableUpstreams(flowContext.nodes.find(item => item.id === node.id));
+  const upstreams = useAvailableUpstreams(flowContext?.nodes.find(item => item.id === node.id));
   const nodeComponents = upstreams.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
 
-  return (
+  return flowContext ? (
     <FlowContext.Provider value={flowContext}>
       <SchemaComponentOptions components={{ ...nodeComponents }}>
         {props.children}
       </SchemaComponentOptions>
     </FlowContext.Provider>
-  );
+  ) : null;
 }
 
 function useFormBlockProps() {
@@ -472,7 +468,7 @@ function useFormBlockProps() {
   return { form };
 }
 
-WorkflowTodo.Drawer = function () {
+function Drawer() {
   const ctx = useContext(SchemaComponentContext);
   const { id, node, workflow, status, updatedAt } = useRecord();
 
@@ -546,7 +542,7 @@ WorkflowTodo.Drawer = function () {
   )
 }
 
-WorkflowTodo.Decorator = function ({ children }) {
+function Decorator({ children }) {
   const { collections, ...cm } = useCollectionManager();
   const blockProps = {
     collection: 'users_jobs',
@@ -569,3 +565,6 @@ WorkflowTodo.Decorator = function ({ children }) {
     </CollectionManagerProvider>
   );
 }
+
+WorkflowTodo.Drawer = Drawer;
+WorkflowTodo.Decorator = Decorator;

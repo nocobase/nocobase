@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useForm, useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,6 +10,7 @@ import {
   RecordProvider,
   SchemaComponent,
   SchemaInitializer,
+  SchemaInitializerButtonContext,
   SchemaSettings,
   useCollection,
   useCollectionFilterOptions,
@@ -21,7 +22,7 @@ import {
 
 import { NAMESPACE } from "../../../locale";
 import { JOB_STATUS } from '../../../constants';
-import { findSchema } from '../SchemaConfig';
+import { findSchema, ManualFormType } from '../SchemaConfig';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
 
 
@@ -88,19 +89,11 @@ function UpdateFormBlockProvider({ collection, children }) {
   );
 }
 
-function UpdateFormBlockInitializer({ insert, ...props }) {
-  const compile = useCompile();
-  const { collections } = useCollectionManager();
-  const [visible, setVisible] = useState(false);
-
-  function onOpen() {
-    setVisible(true);
-  }
-
-  function onConfirm(config) {
+function UpdateFormBlockInitializer({ insert, collection, ...props }) {
+  function onConfirm() {
     const schema = createFormBlockSchema({
       title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-      collection: config?.collection,
+      collection,
       actionInitializers: 'AddActionButton',
       action: 'get',
       actions: {
@@ -123,100 +116,18 @@ function UpdateFormBlockInitializer({ insert, ...props }) {
     });
     Object.assign(schema, {
       'x-decorator': 'UpdateFormBlockProvider',
-      'x-decorator-props': config,
+      'x-decorator-props': { collection },
       'x-designer': 'UpdateFormDesigner',
     });
 
     insert(schema);
-    setVisible(false);
   }
 
   return (
-    <>
-      <SchemaInitializer.Item
-        {...props}
-        onClick={onOpen}
-      />
-      <ActionContext.Provider value={{ visible, setVisible, openSize: 'small' }}>
-        <SchemaComponent
-          schema={{
-            type: 'void',
-            name: 'drawer',
-            title: `{{t("Select collection and data scope", { ns: "${NAMESPACE}" })}}`,
-            'x-decorator': 'Form',
-            'x-component': 'Action.Modal',
-            properties: {
-              collection: {
-                type: 'string',
-                title: `{{t("Collection")}}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Select',
-                enum: collections.map(item => ({
-                  label: compile(item.title),
-                  value: item.name,
-                }))
-              },
-              filter: {
-                type: 'object',
-                title: `{{t("Filter")}}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Filter',
-                'x-component-props': {
-                  useProps() {
-                    const { values } = useForm();
-                    const options = useCollectionFilterOptions(values?.collection);
-                    return {
-                      options,
-                    };
-                  },
-                  dynamicComponent: 'FilterDynamicComponent'
-                },
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Modal.Footer',
-                properties: {
-                  cancel: {
-                    type: 'void',
-                    title: `{{t("Cancel")}}`,
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      useAction() {
-                        const form = useForm();
-                        return {
-                          async run() {
-                            setVisible(false);
-                            form.reset();
-                          },
-                        };
-                      }
-                    }
-                  },
-                  submit: {
-                    type: 'void',
-                    title: `{{t("Confirm")}}`,
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction() {
-                        const form = useForm();
-                        return {
-                          async run() {
-                            onConfirm(form.values);
-                            setVisible(false);
-                            form.reset();
-                          },
-                        };
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }}
-        />
-      </ActionContext.Provider>
-    </>
+    <SchemaInitializer.Item
+      {...props}
+      onClick={onConfirm}
+    />
   );
 }
 
@@ -225,11 +136,20 @@ function UpdateFormBlockInitializer({ insert, ...props }) {
 export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    initializer: {
-      key: 'updateRecordForm',
-      type: 'item',
-      title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-      component: UpdateFormBlockInitializer,
+    useInitializer() {
+      const { collections } = useCollectionManager();
+      return {
+        key: 'updateRecordForm',
+        type: 'subMenu',
+        title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
+        children: collections.map(item => ({
+          key: item.name,
+          type: 'item',
+          title: item.title,
+          collection: item.name,
+          component: UpdateFormBlockInitializer
+        })),
+      }
     },
     initializers: {
       // AddCustomFormField
@@ -264,4 +184,4 @@ export default {
       UpdateFormBlockProvider
     }
   }
-};
+} as ManualFormType;

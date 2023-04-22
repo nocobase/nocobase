@@ -16,7 +16,7 @@ import {
 
 import { NAMESPACE } from "../../../locale";
 import { JOB_STATUS } from '../../../constants';
-import { findSchema } from '../SchemaConfig';
+import { findSchema, ManualFormType } from '../SchemaConfig';
 
 function CreateFormBlockProvider(props) {
   const record = useRecord() ?? {};
@@ -30,25 +30,11 @@ function CreateFormBlockProvider(props) {
   );
 }
 
-function CreateFormBlockInitializer({ insert, ...props }) {
-  const compile = useCompile();
-  const { t } = useTranslation();
-  const { collections } = useCollectionManager();
-  const [visible, setVisible] = useState(false);
-  const [selectedCollection, setSelectCollection] = useState(null);
-
-  function onOpen(options) {
-    setVisible(true);
-  }
-
-  function onCollectionChange(value) {
-    setSelectCollection(value);
-  }
-
-  function onSelectCollection() {
+function CreateFormBlockInitializer({ insert, collection, ...props }) {
+  function onConfirm() {
     const schema = createFormBlockSchema({
       title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-      collection: selectedCollection,
+      collection,
       actionInitializers: 'AddActionButton',
       actions: {
         resolve: {
@@ -69,36 +55,14 @@ function CreateFormBlockInitializer({ insert, ...props }) {
       }
     });
     schema['x-decorator'] = 'CreateFormBlockProvider';
-    // console.log(schema);
     insert(schema);
-    setVisible(false);
   }
 
   return (
-    <>
-      <SchemaInitializer.Item
-        {...props}
-        onClick={onOpen}
-      />
-      <Modal
-        title={t('Select collection')}
-        visible={visible}
-        onCancel={() => setVisible(false)}
-        onOk={onSelectCollection}
-      >
-        <Select
-          value={selectedCollection}
-          onChange={onCollectionChange}
-          options={collections.map(item => ({
-            label: compile(item.title),
-            value: item.name,
-          }))}
-          className={css`
-            width: 100%;
-          `}
-        />
-      </Modal>
-    </>
+    <SchemaInitializer.Item
+      {...props}
+      onClick={onConfirm}
+    />
   );
 }
 
@@ -107,11 +71,20 @@ function CreateFormBlockInitializer({ insert, ...props }) {
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
   config: {
-    initializer: {
-      key: 'createRecordForm',
-      type: 'item',
-      title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-      component: CreateFormBlockInitializer,
+    useInitializer() {
+      const { collections } = useCollectionManager();
+      return {
+        key: 'createRecordForm',
+        type: 'subMenu',
+        title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
+        children: collections.map(item => ({
+          key: item.name,
+          type: 'item',
+          title: item.title,
+          collection: item.name,
+          component: CreateFormBlockInitializer
+        }))
+      };
     },
     initializers: {
       // AddCustomFormField
@@ -144,4 +117,4 @@ export default {
       CreateFormBlockProvider
     }
   }
-};
+} as ManualFormType;
