@@ -7,7 +7,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { SchemaSettings } from '../../../schema-settings';
+import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
 
@@ -448,10 +448,7 @@ export const EditPattern = () => {
     readOnlyMode = 'read-pretty';
   }
 
-  return form &&
-    !form?.readPretty &&
-    collectionField?.interface !== 'o2m' &&
-    fieldSchema?.['x-component-props']?.['pattern-disable'] != true ? (
+  return form && !form?.readPretty && collectionField?.interface !== 'o2m' && !isPatternDisabled(fieldSchema) ? (
     <SchemaSettings.SelectItem
       key="pattern"
       title={t('Pattern')}

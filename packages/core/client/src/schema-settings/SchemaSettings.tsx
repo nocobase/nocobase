@@ -1141,3 +1141,7 @@ export const isSystemField = (collectionField: CollectionFieldOptions, getInterf
   const i = getInterface?.(collectionField?.interface);
   return i?.group === 'systemInfo';
 };
+
+export const isPatternDisabled = (fieldSchema: Schema) => {
+  return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
+};
