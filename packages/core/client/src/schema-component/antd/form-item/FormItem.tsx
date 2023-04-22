@@ -439,7 +439,7 @@ FormItem.Designer = function Designer() {
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
-                          ...fieldSchema['x-component-props'],
+                          ...(fieldSchema?.['x-component-props'] || {}),
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
                           renderSchemaComponent: (props) => {
@@ -454,6 +454,9 @@ FormItem.Designer = function Designer() {
                                     ...fieldSchema['x-component-props'],
                                     ...props,
                                     defaultValue: getFieldDefaultValue(fieldSchema, collectionField),
+                                    style: {
+                                      width: '100%',
+                                    },
                                   },
                                 }}
                               />
