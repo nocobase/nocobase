@@ -22,7 +22,6 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
-  const logic = useContext(FilterLogicContext);
   const { options } = useContext(FilterContext) || {};
 
   const data2value = () => {
