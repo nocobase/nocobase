@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { Collection, useCollection, useCollectionManager } from '../../../collection-manager';
+import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
@@ -70,7 +71,7 @@ export const FormItem: any = observer((props: any) => {
   );
 });
 
-FormItem.Designer = () => {
+FormItem.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const tk = useFilterByTk();
@@ -97,11 +98,14 @@ FormItem.Designer = () => {
     initialValue['required'] = field.required;
   }
   const options = targetFields
-    .filter((field) => !field?.target && field.type !== 'boolean')
+    .filter((field) => {
+      return isTitleField(field);
+    })
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';

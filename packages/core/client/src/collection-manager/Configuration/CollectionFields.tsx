@@ -42,6 +42,12 @@ const titlePrompt = 'Default title for each record';
 const expectTypes = ['string', 'integer', 'bigInt', 'float', 'double', 'decimal', 'date', 'dateonly', 'time'];
 const excludeInterfaces = ['icon'];
 
+// 是否可以作为标题字段
+export const isTitleField = (field) => {
+  if (!field) return false;
+  return !field.isForeignKey && expectTypes.includes(field.type) && !excludeInterfaces.includes(field.interface);
+};
+
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager();
@@ -91,7 +97,7 @@ const CurrentFields = (props) => {
             });
         };
 
-        return expectTypes.includes(record.type) && !excludeInterfaces.includes(record.interface) ? (
+        return isTitleField(record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
@@ -201,7 +207,7 @@ const InheritFields = (props) => {
             });
         };
 
-        return expectTypes.includes(record.type) && !excludeInterfaces.includes(record.interface) ? (
+        return isTitleField(record) ? (
           <Tooltip title={t(titlePrompt)} placement="right" overlayInnerStyle={{ textAlign: 'center' }}>
             <Switch
               size="small"
