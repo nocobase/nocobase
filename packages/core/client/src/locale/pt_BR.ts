@@ -173,6 +173,7 @@ export default {
   "Optional fields": "Campos opcionais",
   "System fields": "Campos do sistema",
   "General fields": "Campos gerais",
+  "Inherited fields": "Campos herdados",
   "Parent collection fields": "Campos da coleção pai",
   "Basic": "Básico",
   "Single line text": "Texto de uma linha",
@@ -647,4 +648,14 @@ export default {
 
   'Click or drag file to this area to upload': 'Clique ou arraste o arquivo para esta área para fazer o upload',
   'Support for a single or bulk upload, file size should not exceed': 'Suporte para upload único ou em massa, o tamanho do arquivo não deve exceder',
+  'Default title for each record': 'Título padrão para cada registro',
+
+  'If collection inherits, choose inherited collections as templates': 'Se a coleção herda, escolha as coleções herdadas como modelos',
+  'Select an existing piece of data as the initialization data for the form': 'Selecione um pedaço de dados existente como os dados de inicialização para o formulário',
+  'Only the selected fields will be used as the initialization data for the form': 'Somente os campos selecionados serão usados como dados de inicialização para o formulário',
+  'Template Data': 'Dados do modelo',
+  'Data fields': 'Campos de dados',
+  'Add template': 'Adicionar modelo',
+  'Display data template selector': 'Exibir seletor de modelo de dados',
+  'Form data templates': 'Modelos de dados do formulário',
 };

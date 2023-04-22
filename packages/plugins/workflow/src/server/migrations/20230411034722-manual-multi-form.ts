@@ -155,7 +155,7 @@ function migrateUsedConfig(config, manualForms) {
         }
         return `{{$jobsMapByNodeId.${id}.${manualForms[id]}${path || ''}}}`;
       });
-    } else if (valueType === 'object') {
+    } else if (valueType === 'object' && config[key]) {
       migrateUsedConfig(config[key], manualForms);
     }
   });
@@ -246,7 +246,7 @@ export default class extends Migration {
 
       await usedNodes.reduce((promise, node) => promise.then(async () => {
         await node.update({
-          config: migrateUsedConfig(cloneDeep(node.config), nodeForms)
+          config: migrateUsedConfig(cloneDeep(node.config ?? {}), nodeForms)
         }, {
           silent: true,
           transaction

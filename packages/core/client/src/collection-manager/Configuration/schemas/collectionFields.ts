@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
 import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
 
-const collection: CollectionOptions = {
+export const collection: CollectionOptions = {
   name: 'fields',
   fields: [
     {

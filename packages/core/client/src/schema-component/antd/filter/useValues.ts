@@ -4,13 +4,13 @@ import flat from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
-import { FilterContext, FilterLogicContext } from './context';
+import { FilterContext } from './context';
 
 // import { useValues } from './useValues';
 const findOption = (dataIndex = [], options) => {
   let items = options;
   let option;
-  dataIndex?.forEach?.((name, index) => {
+  dataIndex?.forEach?.((name) => {
     const item = items.find((item) => item.name === name);
     if (item) {
       option = item;
@@ -22,7 +22,6 @@ const findOption = (dataIndex = [], options) => {
 
 export const useValues = () => {
   const field = useField<any>();
-  const logic = useContext(FilterLogicContext);
   const { options } = useContext(FilterContext);
   const data2value = () => {
     field.value = flat.unflatten({
@@ -48,7 +47,7 @@ export const useValues = () => {
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(value2data, [logic]);
+  useEffect(value2data, [field.path.entire]);
   return {
     fields: options,
     ...field.data,

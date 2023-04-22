@@ -14,7 +14,7 @@ import {
   useCompile,
   useRecord,
   useRequest,
-  useSchemaInitializer
+  useSchemaInitializer,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -192,10 +192,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
     });
   };
 
-
-  const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    if(!props.loading){
-      const columns = useTableColumns();
+  const ExpandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
+    const columns = useTableColumns();
+    if (!props.loading) {
       if (inherits.includes(record.key)) {
         columns.pop();
         columns.push({
@@ -244,7 +243,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         />
       );
     }
-
   };
   return (
     <div
@@ -262,7 +260,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         dataSource={categorizeData}
         pagination={false}
         expandable={{
-          expandedRowRender,
+          expandedRowRender: ExpandedRowRender,
           expandedRowKeys: expandedKeys,
         }}
         onExpand={(expanded, record) => {

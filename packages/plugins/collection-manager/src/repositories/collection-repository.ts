@@ -1,7 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
-import toposort from 'toposort';
-import lodash from 'lodash';
+import { CollectionsGraph } from '@nocobase/utils';
 
 interface LoadOptions {
   filter?: any;
@@ -13,40 +12,62 @@ export class CollectionRepository extends Repository {
     const { filter, skipExist } = options;
     const instances = (await this.find({ filter })) as CollectionModel[];
 
-    const inheritedGraph = [];
-    const throughModels = [];
-    const generalModels = [];
+    const graphlib = CollectionsGraph.graphlib();
+
+    const graph = new graphlib.Graph();
 
     const nameMap = {};
 
+    const viewCollections = [];
+
     for (const instance of instances) {
-      nameMap[instance.get('name')] = instance;
+      graph.setNode(instance.get('name'));
+      if (instance.get('view')) {
+        viewCollections.push(instance.get('name'));
+      }
+    }
+
+    for (const instance of instances) {
+      const collectionName = instance.get('name');
+
+      nameMap[collectionName] = instance;
+
       // @ts-ignore
       const fields = await instance.getFields();
       for (const field of fields) {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
           if (throughName) {
-            inheritedGraph.push([throughName, field.options.target]);
-            inheritedGraph.push([throughName, instance.get('name')]);
+            graph.setEdge(throughName, collectionName);
+            graph.setEdge(throughName, field.options.target);
           }
         }
       }
 
       if (instance.get('inherits')) {
         for (const parent of instance.get('inherits')) {
-          inheritedGraph.push([parent, instance.get('name')]);
+          graph.setEdge(parent, collectionName);
         }
-      } else {
-        generalModels.push(instance.get('name'));
       }
     }
 
-    const sortedNames = [...toposort(inheritedGraph), ...lodash.difference(generalModels, throughModels)];
+    if (graph.nodeCount() === 0) return;
 
-    for (const instanceName of lodash.uniq(sortedNames)) {
+    if (!graphlib.alg.isAcyclic(graph)) {
+      const cycles = graphlib.alg.findCycles(graph);
+      throw new Error(`Cyclic dependencies: ${cycles.map((cycle) => cycle.join(' -> ')).join(', ')}`);
+    }
+
+    const sortedNames = graphlib.alg.topsort(graph);
+
+    for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist });
+      await nameMap[instanceName].load({ skipExist, skipField: viewCollections.includes(instanceName) });
+    }
+
+    // load view fields
+    for (const viewCollectionName of viewCollections) {
+      await nameMap[viewCollectionName].loadFields({});
     }
   }
 

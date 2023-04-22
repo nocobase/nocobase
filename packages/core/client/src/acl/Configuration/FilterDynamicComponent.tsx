@@ -1,4 +1,8 @@
-import { useFilterOptions } from '../../filter';
+import React from 'react';
+import { useCompile } from '../../schema-component';
+import { useFilterOptions } from '../../schema-component/antd/filter';
+import { useValues } from '../../schema-component/antd/filter/useValues';
+import { Variable } from '../../schema-component/antd/variable';
 
 interface GetOptionsParams {
   schema: any;
@@ -19,7 +23,7 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
         value: option.name,
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+        disabled: schema?.['x-component'] !== option.schema['x-component'],
       };
     }
 
@@ -43,8 +47,8 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
   return result;
 };
 
-export const useUserVariable = ({ schema, operator }) => {
-  const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
+const useUserVariable = ({ schema, operator }) => {
+  const options = useOptions('users', { schema, operator, maxDepth: 1 }) || [];
 
   return {
     label: `{{t("Current user")}}`,
@@ -54,3 +58,25 @@ export const useUserVariable = ({ schema, operator }) => {
     children: options,
   };
 };
+
+const useVariableOptions = () => {
+  const { operator, schema } = useValues();
+  const userVariable = useUserVariable({ schema, operator });
+
+  if (!operator || !schema) return [];
+
+  return [userVariable];
+};
+
+export function FilterDynamicComponent(props) {
+  const { value, onChange, renderSchemaComponent } = props;
+  const options = useVariableOptions();
+  const compile = useCompile();
+  const scope = compile(options);
+
+  return (
+    <Variable.Input value={value} onChange={onChange} scope={scope}>
+      {renderSchemaComponent()}
+    </Variable.Input>
+  );
+}

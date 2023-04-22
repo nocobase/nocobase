@@ -1,6 +1,6 @@
 import { observer } from '@formily/react';
 import { Pagination as AntdPagination } from 'antd';
-import React from 'react';
+import React, { KeyboardEventHandler } from 'react';
 import { useProps } from '../../hooks/useProps';
 
 export const Pagination = observer((props: any) => {
@@ -8,5 +8,15 @@ export const Pagination = observer((props: any) => {
   if (hidden) {
     return null;
   }
-  return <AntdPagination {...others} />;
+  const onKeypress: KeyboardEventHandler<HTMLDivElement> = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  };
+
+  return (
+    <div onKeyPress={onKeypress}>
+      <AntdPagination {...others} />
+    </div>
+  );
 });

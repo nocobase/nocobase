@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection } from '../../collection-manager';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
@@ -241,6 +241,8 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { name } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
 
   actionField.data = actionField.data || {};
 
@@ -260,7 +262,9 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
+            storedFilter[uid] = removeNullCondition(
+              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
+            );
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
@@ -279,6 +283,7 @@ export const useFilterBlockActionProps = () => {
         );
         actionField.data.loading = false;
       } catch (error) {
+        console.error(error);
         actionField.data.loading = false;
       }
     },
@@ -784,8 +789,6 @@ export const useRefreshActionProps = () => {
     },
   };
 };
-
-
 
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
