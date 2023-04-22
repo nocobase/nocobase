@@ -38,13 +38,20 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const { getField } = useCollection();
-    const { getCollectionJoinField } = useCollectionManager();
+    const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
       _targetField ||
       (collectionField?.target &&
         fieldNames?.label &&
         getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
+
+    const operator = useMemo(() => {
+      if (targetField?.interface) {
+        return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+      }
+      return '$includes';
+    }, [targetField]);
 
     const mapOptionsToTags = useCallback(
       (options) => {
@@ -138,7 +145,7 @@ const InternalRemoteSelect = connect(
         filter: mergeFilter([
           {
             [fieldNames.label]: {
-              $includes: search,
+              [operator]: search,
             },
           },
           service?.params?.filter,
