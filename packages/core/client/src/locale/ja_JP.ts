@@ -595,4 +595,14 @@ export default {
 
   'Click or drag file to this area to upload': 'クリックまたはドラッグしてファイルをアップロード',
   'Support for a single or bulk upload, file size should not exceed': '単一または複数のファイルをアップロードできます。ファイルサイズは',
+  'Default title for each record': '各レコードのデフォルトタイトル',
+
+  'If collection inherits, choose inherited collections as templates': 'コレクションが継承されている場合、継承されたコレクションをテンプレートとして選択してください',
+  'Select an existing piece of data as the initialization data for the form': '既存のデータを選択して、フォームの初期化データとして使用します',
+  'Only the selected fields will be used as the initialization data for the form': '選択したフィールドのみがフォームの初期化データとして使用されます',
+  'Template Data': 'テンプレートデータ',
+  'Data fields': 'データフィールド',
+  'Add template': 'テンプレートを追加',
+  'Display data template selector': 'データテンプレートセレクターを表示',
+  'Form data templates': 'フォームデータテンプレート',
 }

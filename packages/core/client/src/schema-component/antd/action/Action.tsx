@@ -89,7 +89,7 @@ export const Action: ComposedAction = observer((props: any) => {
   const values = useRecord();
   const designerProps = fieldSchema['x-designer-props'];
   const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-  const disabled = form.disabled || field.disabled;
+  const disabled = form.disabled || field.disabled || props.disabled;
   const openSize = fieldSchema?.['x-component-props']?.['openSize'];
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
   const { designable } = useDesignable();

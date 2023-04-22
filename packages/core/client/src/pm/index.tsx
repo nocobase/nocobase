@@ -157,7 +157,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
                     onClick={async () => {
                       const checked = !data.enabled;
                       Modal.warn({
-                        title: checked ? t('Plugin staring') : t('Plugin stopping'),
+                        title: checked ? t('Plugin starting') : t('Plugin stopping'),
                         content: t('The application is reloading, please do not close the page.'),
                         okButtonProps: {
                           style: {
