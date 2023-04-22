@@ -172,15 +172,13 @@ export function WorkflowCanvas() {
             unCheckedChildren={lang('Off')}
           />
           <Dropdown
-            overlay={
-              <Menu
-                items={[
-                  { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
-                  { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
-                ]}
-                onClick={onMenuCommand}
-              />
-            }
+            menu={{
+              items: [
+                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
+                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
+              ],
+              onClick: onMenuCommand
+            }}
           >
             <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
