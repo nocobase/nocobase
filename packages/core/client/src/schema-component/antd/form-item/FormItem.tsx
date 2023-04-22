@@ -425,7 +425,10 @@ FormItem.Designer = function Designer() {
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
-                          component: collectionField?.target ? 'AssociationSelect' : undefined,
+                          component:
+                            collectionField?.target && collectionField.interface !== 'chinaRegion'
+                              ? 'AssociationSelect'
+                              : undefined,
                           service: {
                             resource: collectionField?.target,
                           },
