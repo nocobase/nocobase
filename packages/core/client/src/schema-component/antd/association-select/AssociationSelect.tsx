@@ -14,7 +14,7 @@ import {
   useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -94,7 +94,7 @@ export const AssociationSelect = InternalAssociationSelect as unknown as Associa
 
 AssociationSelect.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
-  const { getField, template } = useCollection();
+  const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -390,7 +390,7 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {form && !form?.readPretty && (
+      {form && !form?.readPretty && isShowDefaultValue(collectionField) && (
         <SchemaSettings.ModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}

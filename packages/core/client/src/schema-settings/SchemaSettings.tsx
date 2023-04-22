@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
   ActionContext,
+  CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
   FormProvider,
@@ -35,10 +36,10 @@ import {
   findFormBlock,
   useAPIClient,
   useCollection,
-  useLinkageCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
+  useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
@@ -1126,4 +1127,9 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
       }}
     />
   );
+};
+
+// 是否显示默认值配置项
+export const isShowDefaultValue = (collectionField: CollectionFieldOptions) => {
+  return !['o2o', 'oho', 'obo', 'o2m'].includes(collectionField?.interface);
 };

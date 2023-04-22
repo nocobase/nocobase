@@ -10,7 +10,7 @@ import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { Collection, CollectionFieldOptions, useCollection, useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isShowDefaultValue } from '../../../schema-settings';
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
@@ -406,7 +406,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {form && !form?.readPretty && (
+      {form && !form?.readPretty && isShowDefaultValue(collectionField) && (
         <SchemaSettings.ModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout, VariableInput }}
