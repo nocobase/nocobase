@@ -394,6 +394,7 @@ AssociationSelect.Designer = function Designer() {
         <SchemaSettings.ModalItem
           title={t('Set default value')}
           components={{ ArrayCollapse, FormLayout }}
+          width={800}
           schema={
             {
               type: 'object',
