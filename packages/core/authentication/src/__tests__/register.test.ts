@@ -6,7 +6,7 @@ import UsersPlugin from '@nocobase/plugin-users';
 const testPluginName = 'test-auth-plugin';
 let errorSpy;
 
-describe('register', () => {
+describe('authentication.register', () => {
   let api: MockServer;
   let db: Database;
   let auth: Authentication;
@@ -54,7 +54,9 @@ describe('register', () => {
         name: testPluginName,
       } as Plugin,
       authType: 'test',
-      authMiddleware: () => {},
+      authMiddleware: (ctx, next) => {
+        return next();
+      },
     });
 
     const [_, count] = await authenticatorsRepo.findAndCount({
@@ -74,7 +76,9 @@ describe('register', () => {
         name: 'not-exists',
       } as Plugin,
       authType: 'test',
-      authMiddleware: () => {},
+      authMiddleware: (ctx, next) => {
+        return next();
+      },
     });
     expect(errorSpy.mock.calls[0][0].message).toBe('plugin not-exists not exists.');
   });
@@ -92,7 +96,9 @@ describe('register', () => {
         name: testPluginName,
       } as Plugin,
       authType: 'test',
-      authMiddleware: () => {},
+      authMiddleware: (ctx, next) => {
+        return next();
+      },
     });
     expect(errorSpy.mock.calls[0][0].message).toBe('authenticator test already exists in plugin test-auth-plugin.');
   });

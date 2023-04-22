@@ -95,12 +95,12 @@ export default {
     {
       interface: 'input',
       type: 'string',
-      name: 'username',
+      name: 'nickname',
       allowNull: false,
       defaultValue: '',
       uiSchema: {
         type: 'string',
-        title: '{{t("Username")}}',
+        title: '{{t("Nickname")}}',
         'x-component': 'Input',
       },
     },

@@ -1,15 +1,35 @@
+import { Context, Next } from '@nocobase/actions';
 import { Application, Plugin } from '@nocobase/server';
+import { Registry } from '@nocobase/utils';
 
 interface RegisterOptions {
   plugin: Plugin;
   authType: string;
-  authMiddleware: Function;
+  authMiddleware: (ctx: Context, next: Next) => Promise<any>;
   description?: string;
+}
+
+export interface RawUserInfo {
+  // The unique id of the user.
+  uuid: string;
+  nickname: string;
+  email?: string;
+  avatar?: string;
+  // Roles name from the authentication method.
+  roles?: string | string[];
+  // Metadata, some other information of the authentication method.
+  meta?: {
+    [key: string]: any;
+  };
 }
 
 export class Authentication {
   app: Application;
-  authenticators: Map<string, Function> = new Map();
+  authenticators: Registry<{
+    plugin: Plugin;
+    authType: string;
+    authMiddleware: (ctx: Context, next: Next) => Promise<any>;
+  }> = new Registry();
 
   constructor(app: Application) {
     this.app = app;
@@ -79,7 +99,11 @@ export class Authentication {
         },
       });
 
-      this.authenticators.set(authenticator.id, authMiddleware);
+      this.authenticators.register(authenticator.id, {
+        plugin,
+        authMiddleware,
+        authType,
+      });
       return authenticator;
     } catch (error) {
       this.error('register', `unexpected error: ${error.message}`);
@@ -87,7 +111,58 @@ export class Authentication {
     }
   }
 
-  async use(authenticatorId) {
-    const auth = this.authenticators.get(authenticatorId);
+  async mapRoles(roles: string | string[]) {}
+
+  /**
+   * use
+   * Use the authenticator by id.
+   *
+   * @param {string} authenticatorId - The id of the authenticator.
+   */
+  use(authenticatorId) {
+    const authencator = this.authenticators.get(authenticatorId);
+    return async (ctx: Context, next: Next) => {
+      if (!authencator) {
+        ctx.throw(404, ctx.t('Please use correct authencation method'));
+      }
+      const { authMiddleware, plugin, authType } = authencator;
+      return authMiddleware(ctx, async () => {
+        // If the user information is needed to be processed after authentication,
+        // it is requied to be put into ctx.state.rawUser.
+        if (!ctx.state.rawUser) {
+          return next();
+        }
+        const raw: RawUserInfo = ctx.state.rawUser;
+        const { uuid, nickname, email, avatar, roles, meta } = raw;
+        const userAuthRepo = ctx.db.getRepository('userAuthInfomation');
+        // Check if the user has already existed.
+        const userAuth = await userAuthRepo.findOne({
+          filter: { uuid, type: authType, plugin: plugin.name },
+        });
+        const user = await userAuth?.getUser();
+        if (user) {
+          ctx.state.currentUser = user;
+          return next();
+        }
+        // Create user authenication information and new user.
+        await userAuthRepo.create({
+          values: {
+            uuid,
+            nickname,
+            email,
+            avatar,
+            meta,
+            type: authType,
+            plugin: plugin.name,
+            user: {
+              nickname,
+            },
+          },
+        });
+
+        await this.mapRoles(roles);
+        return next();
+      });
+    };
   }
 }

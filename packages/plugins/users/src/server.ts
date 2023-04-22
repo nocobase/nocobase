@@ -10,6 +10,7 @@ import initAuthenticators from './authenticators';
 import { JwtOptions, JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
+import password from './authenticators/password';
 
 export interface UserPluginConfig {
   name?: string;
@@ -169,6 +170,13 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     if (repo) {
       await repo.db2cm('users');
     }
+
+    // register default authenticator
+    await this.app.authentication.register({
+      plugin: this,
+      authType: 'password',
+      authMiddleware: password,
+    });
   }
 
   // TODO(module): should move to preset or dynamic configuration panel
