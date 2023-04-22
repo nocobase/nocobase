@@ -390,49 +390,52 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {form && !form?.readPretty && isShowDefaultValue(collectionField, getInterface) && (
-        <SchemaSettings.ModalItem
-          title={t('Set default value')}
-          components={{ ArrayCollapse, FormLayout }}
-          width={800}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default value'),
-              properties: {
-                default: {
-                  ...(fieldSchema || {}),
-                  'x-decorator': 'FormItem',
-                  'x-component-props': {
-                    ...fieldSchema['x-component-props'],
-                    component: collectionField?.target ? 'AssociationSelect' : undefined,
-                    service: {
-                      resource: collectionField?.target,
+      {form &&
+        !form?.readPretty &&
+        isShowDefaultValue(collectionField, getInterface) &&
+        !isPatternDisabled(fieldSchema) && (
+          <SchemaSettings.ModalItem
+            title={t('Set default value')}
+            components={{ ArrayCollapse, FormLayout }}
+            width={800}
+            schema={
+              {
+                type: 'object',
+                title: t('Set default value'),
+                properties: {
+                  default: {
+                    ...(fieldSchema || {}),
+                    'x-decorator': 'FormItem',
+                    'x-component-props': {
+                      ...fieldSchema['x-component-props'],
+                      component: collectionField?.target ? 'AssociationSelect' : undefined,
+                      service: {
+                        resource: collectionField?.target,
+                      },
                     },
+                    name: 'default',
+                    title: t('Default value'),
+                    default: fieldSchema.default || collectionField.defaultValue,
                   },
-                  name: 'default',
-                  title: t('Default value'),
-                  default: fieldSchema.default || collectionField.defaultValue,
                 },
-              },
-            } as ISchema
-          }
-          onSubmit={(v) => {
-            const schema: ISchema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            if (field.value !== v.default) {
-              field.value = v.default;
+              } as ISchema
             }
-            fieldSchema.default = v.default;
-            schema.default = v.default;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
+            onSubmit={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              if (field.value !== v.default) {
+                field.value = v.default;
+              }
+              fieldSchema.default = v.default;
+              schema.default = v.default;
+              dn.emit('patch', {
+                schema,
+              });
+              refresh();
+            }}
+          />
+        )}
       {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
