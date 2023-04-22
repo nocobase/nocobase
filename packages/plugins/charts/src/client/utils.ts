@@ -1,6 +1,6 @@
 import JSON5 from 'json5';
 import { uid } from '@formily/shared';
-import isObject from 'lodash/isObject';
+import isPlainObject from 'lodash/isPlainObject';
 import type { Schema } from '@formily/react';
 
 const SCHEMA_EXPRESSION_RE = /^\s*\{\{([\s\S]*)\}\}\s*$/
@@ -49,7 +49,7 @@ export function compileWithKeys(compiler: typeof Schema['compile']) {
     return result;
   }
 
-  function compileKeys(source: Record<string, any>, scope: any) {
+  function compileKeys(source: any, scope: any) {
     const keys = Object.keys(source);
 
     keys.forEach((key) => {
@@ -57,7 +57,11 @@ export function compileWithKeys(compiler: typeof Schema['compile']) {
         const compiledKey = compiler(key, scope);
         source[compiledKey] = source[key];
         delete source[key];
-      } else if (isObject(source[key])) {
+      } else if (Array.isArray(source[key])) {
+        source[key].forEach((item) => {
+          compileKeys(item, scope);
+        });
+      } else if (isPlainObject(source[key])) {
         compileKeys(source[key], scope);
       } else {
         // pass
