@@ -670,6 +670,52 @@ describe('workflow > instructions > manual', () => {
     });
 
     describe('update', () => {
+      it('update as configured', async () => {
+        const n1 = await workflow.createNode({
+          type: 'manual',
+          config: {
+            assignees: [users[0].id],
+            forms: {
+              f1: {
+                type: 'update',
+                actions: [JOB_STATUS.RESOLVED],
+                collection: 'posts',
+              }
+            }
+          }
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const UserJobModel = db.getModel('users_jobs');
+        const pendingJobs = await UserJobModel.findAll({
+          order: [[ 'userId', 'ASC' ]]
+        });
+        expect(pendingJobs.length).toBe(1);
+
+        const res1 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.RESOLVED,
+            result: { f1: { title: 't2' } }
+          }
+        });
+        expect(res1.status).toBe(202);
+
+        await sleep(1000);
+
+        const [e2] = await workflow.getExecutions();
+        expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j1] = await e2.getJobs();
+        expect(j1.status).toBe(JOB_STATUS.RESOLVED);
+        expect(j1.result).toMatchObject({ f1: { title: 't2' } });
+
+        const postsAfter = await PostRepo.find();
+        expect(postsAfter.length).toBe(1);
+        expect(postsAfter[0]).toMatchObject({ title: 't2' });
+      });
     });
   });
 });
