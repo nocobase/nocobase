@@ -2,6 +2,7 @@ import { Database } from '@nocobase/database';
 import { CollectionModel } from '../models';
 import { CollectionsGraph, inflection } from '@nocobase/utils';
 import lodash from 'lodash';
+import * as process from 'process';
 
 export function afterUpdateForRenameCollection(db: Database) {
   return async (model: CollectionModel, { context, transaction }) => {
@@ -233,6 +234,12 @@ export function afterUpdateForRenameCollection(db: Database) {
           from: prevCollectionTableName,
         },
       });
+
+      if (typeof jest === 'undefined') {
+        process.nextTick(() => {
+          process.exit(100);
+        });
+      }
     }
   };
 }
