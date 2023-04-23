@@ -1,5 +1,5 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -11,13 +11,15 @@ export const PluginManagerLink = () => {
   const { t } = useTranslation();
   const history = useHistory();
   return (
-    <Button
-      icon={<ApiOutlined />}
-      title={t('Plugin manager')}
-      onClick={() => {
-        history.push('/admin/pm/list');
-      }}
-    />
+    <Tooltip title={t('Plugin manager')}>
+      <Button
+        icon={<ApiOutlined />}
+        title={t('Plugin manager')}
+        onClick={() => {
+          history.push('/admin/pm/list');
+        }}
+      />
+    </Tooltip>
   );
 };
 
