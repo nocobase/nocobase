@@ -495,7 +495,7 @@ AssociationSelect.Designer = function Designer() {
             checked={
               fieldSchema['x-component-props']?.multiple === undefined
                 ? true
-                : fieldSchema['x-component-props']?.multiple
+                : fieldSchema['x-component-props'].multiple
             }
             onChange={(value) => {
               const schema = {
