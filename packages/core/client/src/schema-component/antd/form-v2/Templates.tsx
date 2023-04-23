@@ -1,10 +1,12 @@
 import { useFieldSchema } from '@formily/react';
+import { forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
+import { useCollectionManager } from '../../../collection-manager';
 
 interface ITemplate {
   items: {
@@ -40,26 +42,41 @@ const useDataTemplates = () => {
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const { getCollectionField } = useCollectionManager();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
 
   useEffect(() => {
     if (defaultTemplate) {
-      fetchTemplateData(api, defaultTemplate).then((data) => {
-        if (form) {
-          form.values = data;
-        }
-      });
+      fetchTemplateData(api, defaultTemplate)
+        .then((data) => {
+          if (form) {
+            forEach(data, (value, key) => {
+              if (value) {
+                form.values[key] = value;
+              }
+            });
+          }
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     }
   }, []);
 
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
     if (option.key !== 'none') {
-      if (form) {
-        form.values = await fetchTemplateData(api, option);
-      }
+      fetchTemplateData(api, option).then((data) => {
+        if (form) {
+          forEach(data, (value, key) => {
+            if (value) {
+              form.values[key] = value;
+            }
+          });
+        }
+      });
     } else {
       form?.reset();
     }
