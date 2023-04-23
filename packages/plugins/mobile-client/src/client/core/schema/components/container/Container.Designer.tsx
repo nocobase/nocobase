@@ -61,7 +61,6 @@ export const ContainerDesigner = () => {
               },
             });
           }
-          dn.refresh();
         }}
       />
     </GeneralSchemaDesigner>

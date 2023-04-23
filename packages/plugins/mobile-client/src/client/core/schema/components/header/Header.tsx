@@ -1,17 +1,14 @@
 import { css, cx } from '@emotion/css';
-import { useField } from '@formily/react';
-import { Switch } from '@formily/antd';
-import { GeneralSchemaDesigner, SchemaSettings, SortableItem, useCompile, useDesigner } from '@nocobase/client';
+import { SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
-import {} from 'antd-mobile';
 import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useSchemaPatch } from '../../hooks';
-import { useTranslation } from '../../../../locale';
+import { HeaderDesigner } from './Header.Designer';
 
 const designerCss = css`
   position: relative;
   width: 100%;
+  background: #fff;
   &:hover {
     > .general-schema-designer {
       display: block;
@@ -51,39 +48,6 @@ const designerCss = css`
     }
   }
 `;
-
-const HeaderDesigner = () => {
-  const field = useField();
-  const { onUpdateComponentProps } = useSchemaPatch();
-  const { t } = useTranslation();
-  return (
-    <GeneralSchemaDesigner draggable={false}>
-      <SchemaSettings.ModalItem
-        title={t('Edit header info')}
-        components={{ Switch }}
-        initialValues={field.componentProps}
-        schema={{
-          properties: {
-            title: {
-              type: 'string',
-              title: t('Menu header title'),
-              required: true,
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-            showBack: {
-              type: 'boolean',
-              title: t('Show back button'),
-              'x-component': 'Switch',
-              'x-decorator': 'FormItem',
-            },
-          },
-        }}
-        onSubmit={onUpdateComponentProps}
-      />
-    </GeneralSchemaDesigner>
-  );
-};
 
 export interface HeaderProps extends NavBarProps {
   title?: string;

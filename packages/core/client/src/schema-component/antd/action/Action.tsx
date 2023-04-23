@@ -116,6 +116,7 @@ export const Action: ComposedAction = observer((props: any) => {
         icon={<Icon type={icon} />}
         disabled={disabled}
         style={{
+          ...others.style,
           opacity: designable && field?.data?.hidden && 0.1,
         }}
         onClick={(e: React.MouseEvent) => {

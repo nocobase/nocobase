@@ -57,32 +57,43 @@ const designerCss = css`
 const InternalPage: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
+  const tabsSchema = fieldSchema.properties?.['tabs'];
+
   return (
     <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-page', designerCss)}>
       <Designer></Designer>
       <div
+        style={{
+          marginBottom: tabsSchema ? null : 'var(--nb-spacing)',
+        }}
         className={cx(
           'nb-mobile-page-header',
           css`
+            & > .ant-tabs > .ant-tabs-nav {
+              background: #fff;
+              padding: 0 var(--nb-spacing);
+            }
             display: flex;
-            background: #ffffff;
-            margin-bottom: var(--nb-spacing);
+            flex-direction: column;
           `,
         )}
       >
         <SchemaComponent
           schema={fieldSchema}
           filterProperties={(s) => {
-            return s['x-component'] === 'MHeader';
+            return ['MHeader', 'Tabs'].includes(s['x-component']);
           }}
         ></SchemaComponent>
       </div>
-      <SchemaComponent
-        schema={fieldSchema}
-        filterProperties={(s) => {
-          return s['x-component'] !== 'MHeader';
-        }}
-      ></SchemaComponent>
+
+      {!tabsSchema && (
+        <SchemaComponent
+          schema={fieldSchema}
+          filterProperties={(s) => {
+            return s['x-component'] !== 'MHeader';
+          }}
+        ></SchemaComponent>
+      )}
     </SortableItem>
   );
 };

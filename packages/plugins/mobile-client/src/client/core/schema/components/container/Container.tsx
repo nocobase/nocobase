@@ -122,9 +122,6 @@ const InternalContainer: React.FC = (props) => {
           <RouteSwitch routes={tabRoutes as any} />
         ) : (
           <SchemaComponent
-            mapProperties={(schema) => {
-              return schema.reduceProperties((s, next) => s || next) as Schema;
-            }}
             filterProperties={(schema) => {
               return schema['x-component'] !== 'MTabBar';
             }}
