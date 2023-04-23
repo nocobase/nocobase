@@ -1,7 +1,7 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Button, Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -117,7 +117,7 @@ export function Input(props) {
   const compile = useCompile();
   const form = useForm();
 
-  const { value = '', scope, onChange, children, button, useTypedConstant } = props;
+  const { value = '', scope, onChange, children, button, useTypedConstant, style } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
@@ -171,6 +171,7 @@ export function Input(props) {
   return (
     <AntInput.Group
       compact
+      style={style}
       className={css`
         width: auto;
         display: flex !important;
@@ -186,67 +187,71 @@ export function Input(props) {
         }
       `}
     >
-      {variable ? (
-        <div
-          className={css`
-            position: relative;
-            line-height: 0;
-
-            &:hover {
-              .ant-select-clear {
-                opacity: 0.8;
-              }
-            }
-
-            .ant-input {
-              overflow: auto;
-              white-space: nowrap;
-              ${disabled ? '' : 'padding-right: 28px;'}
-
-              .ant-tag {
-                display: inline;
-                line-height: 19px;
-                margin: 0;
-                padding: 2px 7px;
-                border-radius: 10px;
-              }
-            }
-          `}
-        >
+      <div style={{ flex: 1 }}>
+        {variable ? (
           <div
-            onInput={(e) => e.preventDefault()}
-            onKeyDown={(e) => {
-              if (e.key !== 'Backspace') {
-                e.preventDefault();
-                return;
+            className={css`
+              position: relative;
+              line-height: 0;
+
+              &:hover {
+                .ant-select-clear {
+                  opacity: 0.8;
+                }
               }
-              onChange(null);
-            }}
-            className={cx('ant-input', { 'ant-input-disabled': disabled })}
-            contentEditable={!disabled}
-            suppressContentEditableWarning
+
+              .ant-input {
+                overflow: auto;
+                white-space: nowrap;
+                ${disabled ? '' : 'padding-right: 28px;'}
+
+                .ant-tag {
+                  display: inline;
+                  line-height: 19px;
+                  margin: 0;
+                  padding: 2px 7px;
+                  border-radius: 10px;
+                }
+              }
+            `}
           >
-            <Tag contentEditable={false} color="blue">
-              {variableText}
-            </Tag>
-          </div>
-          {!disabled ? (
-            <span
-              className={cx(
-                'ant-select-clear',
-                css`
-                  user-select: 'none';
-                `,
-              )}
-              unselectable="on"
-              aria-hidden
-              onClick={() => onChange(null)}
+            <div
+              onInput={(e) => e.preventDefault()}
+              onKeyDown={(e) => {
+                if (e.key !== 'Backspace') {
+                  e.preventDefault();
+                  return;
+                }
+                onChange(null);
+              }}
+              className={cx('ant-input', { 'ant-input-disabled': disabled })}
+              contentEditable={!disabled}
+              suppressContentEditableWarning
             >
-              <CloseCircleFilled />
-            </span>
-          ) : null}
-        </div>
-      ) : children ?? <ConstantComponent value={value} onChange={onChange} />}
+              <Tag contentEditable={false} color="blue">
+                {variableText}
+              </Tag>
+            </div>
+            {!disabled ? (
+              <span
+                className={cx(
+                  'ant-select-clear',
+                  css`
+                    user-select: 'none';
+                  `,
+                )}
+                unselectable="on"
+                aria-hidden
+                onClick={() => onChange(null)}
+              >
+                <CloseCircleFilled />
+              </span>
+            ) : null}
+          </div>
+        ) : (
+          children ?? <ConstantComponent value={value} onChange={onChange} />
+        )}
+      </div>
       {options.length > 1 ? (
         <Cascader
           options={options}
@@ -254,9 +259,7 @@ export function Input(props) {
           onChange={onSwitch}
           changeOnSelect
         >
-          {button ?? (
-            <XButton type={variable ? 'primary' : 'default'} />
-          )}
+          {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
     </AntInput.Group>

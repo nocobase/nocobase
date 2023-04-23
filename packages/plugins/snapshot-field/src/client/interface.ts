@@ -26,7 +26,7 @@ const onTargetFieldChange = (field: Field) => {
   !targetField.getState().disabled && targetField.setValue([]);
 };
 
-function makeFieldsPathOptions(fields, appends = []) {
+function MakeFieldsPathOptions(fields, appends = []) {
   const { getCollection } = useCollectionManager();
   const options = [];
   fields.forEach((field) => {
@@ -41,7 +41,7 @@ function makeFieldsPathOptions(fields, appends = []) {
         options.push({
           label: field.uiSchema?.title ?? field.name,
           value: field.name,
-          children: makeFieldsPathOptions(nextCollection.fields, nextAppends),
+          children: MakeFieldsPathOptions(nextCollection.fields, nextAppends),
         });
       }
     } else {
@@ -120,7 +120,7 @@ export const snapshot: IField = {
     const { getCollection } = useCollectionManager();
     const { fields } = getCollection(targetCollection);
 
-    const result = makeFieldsPathOptions(fields, appends);
+    const result = MakeFieldsPathOptions(fields, appends);
 
     return [
       {

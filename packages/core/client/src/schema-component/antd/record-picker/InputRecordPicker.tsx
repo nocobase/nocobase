@@ -236,7 +236,6 @@ const Drawer: React.FunctionComponent<{
   fieldSchema,
   options,
 }) => {
-  console.log('collectionField', options);
   const getFilter = () => {
     const targetKey = collectionField.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
