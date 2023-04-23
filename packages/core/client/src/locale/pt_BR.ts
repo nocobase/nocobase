@@ -452,6 +452,7 @@ export default {
   "Dialog": "Diálogo",
   "Delete action": "Excluir ação",
   "Custom column title": "Título da coluna personalizado",
+  'Column title': 'cabeçalho da coluna',
   "Original title: ": "Título original: ",
   "Delete table column": "Excluir coluna da tabela",
   "Skip required validation": "Ignorar validação obrigatória",
