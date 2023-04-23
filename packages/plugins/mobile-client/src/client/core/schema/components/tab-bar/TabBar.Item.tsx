@@ -6,7 +6,7 @@ import { Schema, useField, useFieldSchema } from '@formily/react';
 import { useSchemaPatch } from '../../hooks';
 import { css, cx } from '@emotion/css';
 
-const InternalItem: React.FC<TabBarItemProps> = (props) => {
+const InternalItem: React.FC<TabBarItemProps> = () => {
   // NOTE: nothing to do
   // return <TabBar.Item {...props}></TabBar.Item>;
   const Designer = useDesigner();
@@ -15,7 +15,7 @@ const InternalItem: React.FC<TabBarItemProps> = (props) => {
       className={cx(
         'nb-mobile-tab-bar-item',
         css`
-          position: absolute;
+          position: absolute !important;
           width: 100%;
           height: 100%;
           top: 0;

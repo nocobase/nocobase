@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import { ISchema, Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 export const gridItemWrap = (schema: ISchema) => {
   return {
@@ -8,4 +8,11 @@ export const gridItemWrap = (schema: ISchema) => {
       [schema.name || uid()]: schema,
     },
   };
+};
+
+export const findGridSchema = (schema: Schema) => {
+  const gridSchema = schema.reduceProperties(
+    (schema, next) => schema || (next['x-component'] === 'Grid' && next),
+  ) as Schema;
+  return gridSchema;
 };

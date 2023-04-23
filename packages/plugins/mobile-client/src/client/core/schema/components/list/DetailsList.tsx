@@ -81,7 +81,6 @@ const InternalList = (props) => {
           css`
             display: flex;
             flex-direction: column;
-            gap-y: var(--nb-spacing);
             padding: 0 var(--nb-spacing);
             width: 100%;
             // max-height: 100vh;

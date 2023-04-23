@@ -67,9 +67,11 @@ const InternalContainer: React.FC = (props) => {
           width: 100%;
           height: 100%;
           overflow-y: scroll;
+          position: initial !important;
         `,
       )}
     >
+      <Designer></Designer>
       <div
         style={{
           paddingBottom: `calc(var(--nb-spacing) + ${tabRoutes.length ? '49px' : '0px'})`,
@@ -87,7 +89,6 @@ const InternalContainer: React.FC = (props) => {
           />
         )}
       </div>
-      <Designer></Designer>
       <div
         className={cx(
           'nb-mobile-container-tab-bar',

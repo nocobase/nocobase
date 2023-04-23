@@ -102,7 +102,7 @@ export const InternalTabBar: React.FC = (props) => {
             `,
           )}
         >
-          {fieldSchema.mapProperties((schema) => {
+          {fieldSchema.mapProperties((schema, name) => {
             const cp = schema['x-component-props'];
             return (
               <TabBar.Item
@@ -111,13 +111,7 @@ export const InternalTabBar: React.FC = (props) => {
                 title={
                   <>
                     {cp.title}
-                    <SchemaComponent
-                      schema={{
-                        properties: {
-                          [schema['name']]: schema,
-                        },
-                      }}
-                    />
+                    <SchemaComponent schema={schema} name={name} />
                   </>
                 }
                 icon={cp.icon ? <Icon type={cp.icon} /> : undefined}
