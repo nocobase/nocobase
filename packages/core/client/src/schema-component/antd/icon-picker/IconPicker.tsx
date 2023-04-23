@@ -5,7 +5,7 @@ import { isValid } from '@formily/shared';
 import { Button, Input, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { hasIcon, Icon, icons } from '../../../icon';
+import { Icon, hasIcon, icons } from '../../../icon';
 
 function IconField(props: any) {
   const layout = useFormLayout();

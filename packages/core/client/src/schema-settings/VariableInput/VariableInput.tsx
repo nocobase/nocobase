@@ -38,7 +38,7 @@ export const VariableInput = (props: Props) => {
 
   return (
     <Variable.Input value={value} onChange={onChange} scope={scope} style={style}>
-      <RenderSchemaComponent onChange={onChange} />
+      <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
   );
 };

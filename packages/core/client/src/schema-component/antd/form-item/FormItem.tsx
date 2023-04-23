@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React, { useContext, useEffect, useMemo } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
@@ -446,25 +446,25 @@ FormItem.Designer = function Designer() {
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
                           renderSchemaComponent: function Com(props) {
-                            const schema = useMemo(() => {
-                              const s = _.cloneDeep(fieldSchema) || ({} as Schema);
-                              s.title = '';
+                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            s.title = '';
 
-                              return {
-                                ...(s || {}),
-                                'x-decorator': 'FormItem',
-                                'x-component-props': {
-                                  ...s['x-component-props'],
-                                  onChange: props.onChange,
-                                  defaultValue: getFieldDefaultValue(s, collectionField),
-                                  style: {
-                                    width: '100%',
+                            return (
+                              <SchemaComponent
+                                schema={{
+                                  ...(s || {}),
+                                  'x-component-props': {
+                                    ...s['x-component-props'],
+                                    onChange: props.onChange,
+                                    value: props.value,
+                                    defaultValue: getFieldDefaultValue(s, collectionField),
+                                    style: {
+                                      width: '100%',
+                                    },
                                   },
-                                },
-                              };
-                            }, [fieldSchema, collectionField]);
-
-                            return <SchemaComponent schema={schema} />;
+                                }}
+                              />
+                            );
                           },
                         },
                         name: 'default',
