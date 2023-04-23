@@ -1,7 +1,7 @@
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { Switch } from 'react-router-dom';
+import { Switch } from '@formily/antd';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
 
@@ -9,8 +9,6 @@ export const HeaderDesigner = () => {
   const field = useField();
   const { onUpdateComponentProps } = useSchemaPatch();
   const { t } = useTranslation();
-  const { dn } = useDesignable();
-  const fieldSchema = useFieldSchema();
   return (
     <GeneralSchemaDesigner draggable={false}>
       <SchemaSettings.ModalItem
