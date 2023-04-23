@@ -16,7 +16,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { ArrayField } from '@nocobase/database';
 import { useInfiniteScroll } from 'ahooks';
-import { Divider, Spin } from 'antd';
+import { Divider, Spin, Empty } from 'antd';
 import { useTranslation } from '../../../../locale';
 
 const InternalList = (props) => {
@@ -27,8 +27,6 @@ const InternalList = (props) => {
   const Designer = useDesigner();
   const { getPrimaryKey } = useCollection();
   const { t } = useTranslation();
-
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const { data, loading, loadingMore, noMore } = useInfiniteScroll(
     async (d) => {
@@ -71,11 +69,11 @@ const InternalList = (props) => {
         'nb-mobile-list',
         css`
           width: 100%;
+          margin-bottom: var(--nb-spacing);
         `,
       )}
     >
       <div
-        ref={contentRef}
         className={cx(
           'nb-mobile-list-content',
           css`
@@ -88,14 +86,26 @@ const InternalList = (props) => {
           `,
         )}
       >
-        {data?.list?.map((item) => {
-          return (
-            <RecordProvider key={item[getPrimaryKey()]} record={item}>
-              <SchemaComponent schema={fieldSchema}></SchemaComponent>
-            </RecordProvider>
-          );
-        })}
-        <Divider plain>{endedMessage}</Divider>
+        {data?.list?.length ? (
+          <>
+            {data?.list?.map((item) => {
+              return (
+                <RecordProvider key={item[getPrimaryKey()]} record={item}>
+                  <SchemaComponent schema={fieldSchema}></SchemaComponent>
+                </RecordProvider>
+              );
+            })}
+            <Divider plain>{endedMessage}</Divider>
+          </>
+        ) : (
+          <div
+            className={css`
+              padding: 0 20px;
+            `}
+          >
+            <Empty />
+          </div>
+        )}
       </div>
       <Designer />
     </SortableItem>
