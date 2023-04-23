@@ -413,6 +413,7 @@ FormItem.Designer = function Designer() {
           <SchemaSettings.ModalItem
             title={t('Set default value')}
             components={{ ArrayCollapse, FormLayout, VariableInput }}
+            width={800}
             schema={
               {
                 type: 'object',
