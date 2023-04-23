@@ -5,13 +5,7 @@ import { SSSwitchItem } from '../../settings';
 import { Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useHistory } from 'react-router-dom';
-
-const findGridSchema = (schema: Schema) => {
-  const gridSchema = schema.reduceProperties(
-    (schema, next) => schema || (next['x-component'] === 'Grid' && next),
-  ) as Schema;
-  return gridSchema;
-};
+import { findGridSchema } from '../../helpers';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();

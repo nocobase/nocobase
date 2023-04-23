@@ -21,7 +21,7 @@ const TabContentComponent = () => {
   const { name } = useParams<{ name: string }>();
   const fieldSchema = useFieldSchema();
   if (!name) return;
-  const gridSchema = findGrid(fieldSchema, name.replace('tab_', ''));
+  const gridSchema = findGrid(fieldSchema.properties['tabBar'], name.replace('tab_', ''));
   return <SchemaComponent schema={gridSchema} />;
 };
 
@@ -32,9 +32,7 @@ const InternalContainer: React.FC = (props) => {
   const match = useRouteMatch();
 
   const tabRoutes = useMemo<RouteProps[]>(() => {
-    const tabBarSchema = fieldSchema.reduceProperties(
-      (schema, next) => schema || (next['x-component'] === 'MTabBar' && next),
-    ) as Schema;
+    const tabBarSchema = fieldSchema?.properties?.['tabBar'];
     if (tabBarSchema) {
       return [
         !params.name
@@ -61,6 +59,7 @@ const InternalContainer: React.FC = (props) => {
       className={cx(
         'nb-mobile-container',
         css`
+          padding: var(--nb-spacing) 0;
           background: #f0f2f5;
           display: flex;
           flex-direction: column;
@@ -74,7 +73,7 @@ const InternalContainer: React.FC = (props) => {
       <Designer></Designer>
       <div
         style={{
-          paddingBottom: `calc(var(--nb-spacing) + ${tabRoutes.length ? '49px' : '0px'})`,
+          paddingBottom: tabRoutes.length ? '49px' : '0px',
         }}
         className={cx('nb-mobile-container-content')}
       >
@@ -93,6 +92,9 @@ const InternalContainer: React.FC = (props) => {
         className={cx(
           'nb-mobile-container-tab-bar',
           css`
+            & > .general-schema-designer {
+              --nb-designer-top: 20px;
+            }
             position: absolute;
             background: #ffffff;
             width: 100%;

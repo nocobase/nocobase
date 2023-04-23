@@ -103,6 +103,7 @@ const InternalMenu: React.FC = (props) => {
         css`
           background: #ffffff;
           width: 100%;
+          margin-bottom: var(--nb-spacing);
         `,
       )}
     >
