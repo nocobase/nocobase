@@ -58,24 +58,22 @@ const List = (props) => {
   const display = displayLable !== false ? 'flex' : 'none';
   return (
     <form>
-      <Spin spinning={field.loading || false}>
-        <div
-          onClick={() => {
-            onCardClick(props.item);
-          }}
-          className={css`
-            width: 250px;
-            .ant-formily-item-label {
-              display: ${display};
-            }
-            .ant-formily-item {
-              margin: 0;
-            }
-          `}
-        >
-          <FormComponent form={form} {...others} />
-        </div>
-      </Spin>
+      <div
+        onClick={() => {
+          onCardClick(props.item);
+        }}
+        className={css`
+          width: 250px;
+          .ant-formily-item-label {
+            display: ${display};
+          }
+          .ant-formily-item {
+            margin: 0;
+          }
+        `}
+      >
+        <FormComponent form={form} {...others} />
+      </div>
     </form>
   );
 };

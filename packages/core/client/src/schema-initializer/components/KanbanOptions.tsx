@@ -1,13 +1,14 @@
 import { ArrayTable } from '@formily/antd';
 import { observer } from '@formily/react';
-import React, { useEffect, useState, useMemo } from 'react';
+import { useField } from '@formily/react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
 export const KanbanOptions = observer((props: any) => {
   const { groupField, collectionFields, getAssociateResource, columns } = props;
-  const [dataSource, setDataSource] = useState([]);
   const { t } = useTranslation();
+  const optionField = useField();
   useEffect(() => {
     if (groupField) {
       const field = collectionFields.find((v) => {
@@ -27,7 +28,7 @@ export const KanbanOptions = observer((props: any) => {
             return v;
           }
         });
-        setDataSource(result);
+        optionField.form.setValuesIn('options', result);
       } else {
         const resource = getAssociateResource(field.target);
         resource.list({ paginate: false }).then(({ data }) => {
@@ -43,17 +44,17 @@ export const KanbanOptions = observer((props: any) => {
             if (option) {
               return { ...option };
             } else {
-              return v;
+              return { ...v, enabled: true };
             }
           });
-          setDataSource(result);
+          optionField.form.setValuesIn('options', result);
         });
       }
     }
   }, [groupField]);
   return (
     groupField &&
-    dataSource.length > 0 && (
+    optionField.form.values?.options?.length > 0 && (
       <>
         <div className="ant-formily-item-label">
           <div className="ant-formily-item-label-content">
@@ -70,7 +71,6 @@ export const KanbanOptions = observer((props: any) => {
             properties: {
               options: {
                 type: 'array',
-                default: dataSource,
                 'x-component': 'ArrayTable',
                 'x-decorator': 'FormItem',
                 'x-component-props': {

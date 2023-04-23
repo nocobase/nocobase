@@ -2,7 +2,7 @@ import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useState,useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -204,14 +204,6 @@ export const KanbanV2: any = (props) => {
                 onCardClick={handleCardClick}
                 getColumnDatas={getColumnDatas}
               />
-              {el?.cards?.length < el?.meta?.count && (
-                <a
-                  className={cx(loadMoreButton)}
-                  onClick={() => getColumnDatas(el, ind, params, appends, el?.meta?.page + 1)}
-                >
-                  {t('Load more')}
-                </a>
-              )}
             </div>
           ))}
           <KanbanRecordViewer visible={visible} setVisible={setVisible} record={record} />
