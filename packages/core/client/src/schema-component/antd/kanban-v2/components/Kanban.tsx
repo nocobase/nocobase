@@ -1,7 +1,7 @@
 import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, isFunction } from 'lodash';
 import React, { useState, useCallback } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
@@ -51,20 +51,16 @@ const ColumnHeader = ({ color, label }) => {
 export const KanbanV2: any = (props) => {
   const { useProps } = props;
   const { groupField, columns } = useProps();
-  const {
-    associateCollectionField,
-    params: { appends },
-  } = useKanbanV2BlockContext();
+  const { associateCollectionField } = useKanbanV2BlockContext();
   const [columnData, setColumnData] = useState(cloneDeep(columns));
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});
   const isAssociationField = isAssocField(groupField);
-  const { resource, service } = useBlockRequestContext();
+  const { resource } = useBlockRequestContext();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
-  const params = service?.params?.[0] || {};
 
-  const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?) => {
+  const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?, fun?) => {
     const parseFilter = (value) => {
       if (value === '__unknown__') {
         const defaultFilter = isAssociationField
@@ -90,28 +86,29 @@ export const KanbanV2: any = (props) => {
     const newState: any = [...columnData];
     const newColumn = columnData.find((v) => v.value === el.value) || el;
     const page = currentPage || 1;
-    const result = resource.list({
-      ...params,
-      appends,
-      page: page,
-      filter,
-    });
-    result.then(({ data }) => {
-      if (data) {
-        if (page !== 1) {
-          newColumn.cards = [...(newColumn?.cards || []), ...data.data];
-          newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
-          newState[index] = newColumn;
-          setColumnData(newState);
-        } else {
-          newColumn.cards = data.data;
-          newColumn.meta = data.meta;
-          newState[index] = newColumn;
-          setColumnData(newState);
+    resource
+      .list({
+        ...params,
+        appends,
+        page: page,
+        filter,
+      })
+      .then(({ data }) => {
+        isFunction(fun) && fun();
+        if (data) {
+          if (page !== 1) {
+            newColumn.cards = [...(newColumn?.cards || []), ...data.data];
+            newColumn.meta = { ...(newColumn?.meta || {}), ...data.meta };
+            newState[index] = newColumn;
+            setColumnData(newState);
+          } else {
+            newColumn.cards = data.data;
+            newColumn.meta = data.meta;
+            newState[index] = newColumn;
+            setColumnData(newState);
+          }
         }
-      }
-    });
-    return result;
+      });
   }, []);
 
   const onDragEnd = (result) => {

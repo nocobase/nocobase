@@ -100,7 +100,7 @@ export const Column = memo((props: any) => {
   };
   useEffect(() => {
     setLoading(true);
-    getColumnDatas(data, ind, params, appends, 1).then(() => {
+    getColumnDatas(data, ind, params, appends, 1, () => {
       setLoading(false);
     });
   }, [appends.length, params]);
@@ -133,7 +133,7 @@ export const Column = memo((props: any) => {
               )
             }
           >
-            <Spin spinning={loading || false}>
+            <Spin spinning={loading} style={{ minHeight: 400 }}>
               {cards?.map((item, index) => (
                 <Draggable
                   key={item.id}
