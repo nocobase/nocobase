@@ -1,4 +1,5 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import { cx } from '@emotion/css';
 import { Schema, observer, useField, useFieldSchema } from '@formily/react';
 import React, { HTMLAttributes, createContext, useContext } from 'react';
 
@@ -33,6 +34,7 @@ export const Sortable = (props: any) => {
     component || 'div',
     {
       ...others,
+      className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
       style: droppableStyle,
     },

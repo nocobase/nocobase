@@ -5,6 +5,42 @@ import { css, cx } from '@emotion/css';
 import { useInterfaceContext } from './InterfaceProvider';
 import { DrawerProps, ModalProps } from 'antd';
 
+const commonDesignerCSS = css`
+  --nb-designer-top: 2px;
+  --nb-designer-right: 2px;
+  .nb-sortable-designer:hover {
+    position: relative;
+    > .general-schema-designer {
+      display: block;
+    }
+  }
+  .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    border: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      top: var(--nb-designer-top);
+      right: var(--nb-designer-right);
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: #f18b62;
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+      }
+    }
+  }
+`;
+
 const drawerProps: DrawerProps = {
   getContainer: '.nb-mobile-application',
   width: '90%',
@@ -38,6 +74,7 @@ const MApplication: React.FC = (props) => {
         <div
           className={cx(
             'nb-mobile-application',
+            commonDesignerCSS,
             css`
               display: flex;
               flex-direction: column;

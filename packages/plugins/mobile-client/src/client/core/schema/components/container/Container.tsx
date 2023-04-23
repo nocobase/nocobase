@@ -1,64 +1,9 @@
 import React, { useEffect, useMemo } from 'react';
 import { css, cx } from '@emotion/css';
 import { ContainerDesigner } from './Container.Designer';
-import {
-  RemoteSchemaComponent,
-  RouteSchemaComponent,
-  RouteSwitch,
-  SchemaComponent,
-  SortableItem,
-  useCompile,
-  useDesigner,
-} from '@nocobase/client';
+import { RouteSwitch, SchemaComponent, SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { Schema, useFieldSchema } from '@formily/react';
 import { RouteProps, useParams, useRouteMatch } from 'react-router-dom';
-
-const designerCss = css`
-  background: #f0f2f5;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  overflow-y: scroll;
-  &:hover {
-    > .general-schema-designer {
-      display: block;
-    }
-  }
-  &.nb-action-link {
-    > .general-schema-designer {
-      top: -10px;
-      bottom: -10px;
-      left: -10px;
-      right: -10px;
-    }
-  }
-  > .general-schema-designer {
-    position: absolute;
-    z-index: 999;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: none;
-    border: 0;
-    pointer-events: none;
-    > .general-schema-designer-icons {
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      line-height: 16px;
-      pointer-events: all;
-      .ant-space-item {
-        background-color: #f18b62;
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        padding-left: 1px;
-      }
-    }
-  }
-`;
 
 const findGrid = (schema, uid) => {
   return schema.reduceProperties((final, next) => {
@@ -111,7 +56,20 @@ const InternalContainer: React.FC = (props) => {
   }, [Object.keys(fieldSchema.properties), match.url, params.name]);
 
   return (
-    <SortableItem eid="nb-mobile-scroll-wrapper" className={cx('nb-mobile-container', designerCss)}>
+    <SortableItem
+      eid="nb-mobile-scroll-wrapper"
+      className={cx(
+        'nb-mobile-container',
+        css`
+          background: #f0f2f5;
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          height: 100%;
+          overflow-y: scroll;
+        `,
+      )}
+    >
       <div
         style={{
           paddingBottom: `calc(var(--nb-spacing) + ${tabRoutes.length ? '49px' : '0px'})`,
