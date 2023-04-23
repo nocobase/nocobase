@@ -154,20 +154,6 @@ export const KanabanDesigner = () => {
       <SchemaSettings.Divider />
       <SchemaSettings.Template componentName={'KanbanV2'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
-      <SchemaSettings.SwitchItem
-        title={t('Display field title')}
-        checked={displayLable}
-        onChange={(disabled) => {
-          fieldSchema['x-label-disabled'] = disabled;
-          dn.emit('patch', {
-            schema: {
-              'x-uid': fieldSchema['x-uid'],
-              'x-label-disabled': disabled,
-            },
-          });
-          dn.refresh();
-        }}
-      />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
         breakRemoveOn={{

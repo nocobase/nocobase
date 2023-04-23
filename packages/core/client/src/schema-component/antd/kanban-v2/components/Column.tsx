@@ -12,6 +12,7 @@ import {
   useKanbanV2BlockContext,
   KanbanCardBlockProvider,
   KanbanCardContext,
+  BlockItem,
 } from '../../../../';
 
 const grid = 8;
@@ -55,7 +56,7 @@ const List = (props) => {
   const field: any = useField();
   const { onCardClick, displayLable, form } = props;
   const { disabled, ...others } = useProps(props);
-  const display = displayLable !== false ? 'flex' : 'none';
+  const display = displayLable ? 'none' : 'flex';
   return (
     <form>
       <div
@@ -94,7 +95,8 @@ export const Column = memo((props: any) => {
   const { t } = useTranslation();
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
   const [loading, setLoading] = useState(false);
-  const displayLable = fieldSchema.parent['x-label-disabled'];
+  const displayLable = fieldSchema['x-label-disabled'];
+  console.log(displayLable, fieldSchema);
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
   };
@@ -142,29 +144,31 @@ export const Column = memo((props: any) => {
                   isDragDisabled={disabledCardDrag}
                 >
                   {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
-                    >
-                      <KanbanCardBlockProvider item={item}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-around',
-                          }}
-                        >
-                          <List
-                            {...props}
-                            form={form}
-                            item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
-                            displayLable={displayLable}
-                            setDisableCardDrag={setDisableCardDrag}
-                          />
-                        </div>
-                      </KanbanCardBlockProvider>
-                    </div>
+                    <BlockItem>
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        style={getItemStyle(snapshot.isDragging, provided.draggableProps.style)}
+                      >
+                        <KanbanCardBlockProvider item={item}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-around',
+                            }}
+                          >
+                            <List
+                              {...props}
+                              form={form}
+                              item={{ ...item, [groupField?.name]: data.value !== '__unknown__' ? data.value : null }}
+                              displayLable={displayLable}
+                              setDisableCardDrag={setDisableCardDrag}
+                            />
+                          </div>
+                        </KanbanCardBlockProvider>
+                      </div>
+                    </BlockItem>
                   )}
                 </Draggable>
               ))}

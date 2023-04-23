@@ -1646,6 +1646,7 @@ export const createKanbanV2BlockSchema = (options) => {
       [uid()]: {
         type: 'array',
         'x-component': 'KanbanV2',
+        'x-designer': 'KanbanV2.CardDesigner',
         'x-read-pretty': true,
         'x-component-props': {
           useProps: '{{ useKanbanV2BlockProps }}',
