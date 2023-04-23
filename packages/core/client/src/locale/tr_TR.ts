@@ -356,6 +356,7 @@ export default {
   "Dialog": "Pencere",
   "Delete action": "İşlemi sil",
   "Custom column title": "Özel sütun başlığı",
+  'Column title': 'Sütun başlığı',
   "Original title: ": "Orjinal başlık: ",
   "Delete table column": "Tablo sütununu sil",
   "Skip required validation": "Zorunlu alan kontrollerini atla",

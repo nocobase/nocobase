@@ -529,6 +529,7 @@ export default {
   'Dialog': '对话框',
   'Delete action': '删除操作',
   'Custom column title': '自定义列标题',
+  'Column title': '列标题',
   'Original title: ': '原始标题: ',
   'Delete table column': '删除列',
 
