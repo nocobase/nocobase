@@ -934,10 +934,10 @@ export const createDetailsBlockSchema = (options) => {
   return schema;
 };
 
-export const createDetailsListBlockSchema = (options) => {
+export const createListBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'DetailsListActionInitializers',
+    actionInitializers = 'ListActionInitializers',
     collection,
     association,
     resource,
@@ -948,7 +948,7 @@ export const createDetailsListBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'DetailsList.Decorator',
+    'x-decorator': 'List.Decorator',
     'x-decorator-props': {
       resource: resourceName,
       collection,
@@ -964,10 +964,10 @@ export const createDetailsListBlockSchema = (options) => {
       // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
-    'x-designer': 'DetailsList.Designer',
-    'x-component': 'DetailsList',
+    'x-designer': 'List.Designer',
+    'x-component': 'List',
     'x-component-props': {
-      props: '{{ useDetailsListProps }}',
+      props: '{{ useListBlockProps }}',
     },
     properties: {
       [uid()]: {
@@ -976,10 +976,10 @@ export const createDetailsListBlockSchema = (options) => {
         properties: {
           [uid()]: {
             type: 'object',
-            'x-component': 'DetailsList.Item',
+            'x-component': 'List.Item',
             'x-read-pretty': true,
             'x-component-props': {
-              useProps: '{{ useDetailsListItemBlockProps }}',
+              useProps: '{{ useListItemProps }}',
             },
             properties: {
               grid: template || {
@@ -993,7 +993,7 @@ export const createDetailsListBlockSchema = (options) => {
                 'x-initializer': actionInitializers,
                 'x-component': 'ActionBar',
                 'x-component-props': {
-                  useProps: '{{ useDetailsListActionBarProps }}',
+                  useProps: '{{ useListActionBarProps }}',
                 },
                 properties: {},
               },

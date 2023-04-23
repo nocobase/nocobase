@@ -31,10 +31,10 @@ export const BlockInitializers = {
           component: 'DetailsBlockInitializer',
         },
         {
-          key: 'DetailsList',
+          key: 'List',
           type: 'item',
           title: '{{t("Details List")}}',
-          component: 'DetailsListBlockInitializer',
+          component: 'ListBlockInitializer',
         },
         {
           key: 'calendar',

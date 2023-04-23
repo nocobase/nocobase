@@ -1,15 +1,16 @@
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
-import { BlockProvider, useBlockRequestContext, useRecord } from '@nocobase/client';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
+import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
+import { useRecord } from '../../../record-provider';
 
-export const DetailsListBlockContext = createContext<any>({});
+export const ListBlockContext = createContext<any>({});
 
-const InternalDetailsListBlockProvider = (props) => {
+const InternalListBlockProvider = (props) => {
   const field = useField<any>();
   const { resource, service } = useBlockRequestContext();
   return (
-    <DetailsListBlockContext.Provider
+    <ListBlockContext.Provider
       value={{
         field,
         service,
@@ -17,23 +18,23 @@ const InternalDetailsListBlockProvider = (props) => {
       }}
     >
       {props.children}
-    </DetailsListBlockContext.Provider>
+    </ListBlockContext.Provider>
   );
 };
 
-export const DetailsListBlockProvider = (props) => {
+export const ListBlockProvider = (props) => {
   return (
     <BlockProvider {...props}>
-      <InternalDetailsListBlockProvider {...props} />
+      <InternalListBlockProvider {...props} />
     </BlockProvider>
   );
 };
 
-export const useDetailsListBlockContext = () => {
-  return useContext(DetailsListBlockContext);
+export const useListBlockContext = () => {
+  return useContext(ListBlockContext);
 };
 
-export const useDetailsListItemProps = () => {
+export const useListItemProps = () => {
   const form = useMemo(
     () =>
       createForm({

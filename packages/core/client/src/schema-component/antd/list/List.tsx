@@ -8,18 +8,18 @@ import {
   useDesigner,
   useProps,
 } from '@nocobase/client';
-import { DetailsListDesigner } from './DetailsList.Designer';
-import { DetailsListBlockProvider, useDetailsListBlockContext, useDetailsListItemProps } from './DetailsList.Decorator';
+import { ListDesigner } from './List.Designer';
+import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
 import React from 'react';
 import { useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { useInfiniteScroll } from 'ahooks';
 import { Divider, Spin, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useDetailsListActionBarProps } from './hooks';
+import { useListActionBarProps } from './hooks';
 
-const InternalDetailsList = (props) => {
-  const { service } = useDetailsListBlockContext();
+const InternalList = (props) => {
+  const { service } = useListBlockContext();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const Designer = useDesigner();
@@ -64,8 +64,8 @@ const InternalDetailsList = (props) => {
   return (
     <SchemaComponentOptions
       scope={{
-        useDetailsListItemProps,
-        useDetailsListActionBarProps,
+        useListItemProps,
+        useListActionBarProps,
       }}
     >
       <SortableItem
@@ -117,12 +117,12 @@ const InternalDetailsList = (props) => {
   );
 };
 
-export const DetailsList = InternalDetailsList as typeof InternalDetailsList & {
+export const List = InternalList as typeof InternalList & {
   Item: typeof FormV2;
-  Designer: typeof DetailsListDesigner;
-  Decorator: typeof DetailsListBlockProvider;
+  Designer: typeof ListDesigner;
+  Decorator: typeof ListBlockProvider;
 };
 
-DetailsList.Item = FormV2;
-DetailsList.Designer = DetailsListDesigner;
-DetailsList.Decorator = DetailsListBlockProvider;
+List.Item = FormV2;
+List.Designer = ListDesigner;
+List.Decorator = ListBlockProvider;

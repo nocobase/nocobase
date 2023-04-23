@@ -41,5 +41,5 @@ export * from './tree-select';
 export * from './upload';
 export * from './variable';
 export * from './gantt';
-export * from './details-list';
+export * from './list';
 import './index.less';

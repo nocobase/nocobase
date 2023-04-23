@@ -1,5 +1,5 @@
 // 表单的操作配置
-export const DetailsListActionInitializers = {
+export const ListActionInitializers = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   style: {

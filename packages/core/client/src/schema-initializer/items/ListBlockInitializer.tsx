@@ -1,19 +1,19 @@
 import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
 import { DataBlockInitializer, useCollectionManager } from '@nocobase/client';
-import { createDetailsListBlockSchema } from '../utils';
+import { createListBlockSchema } from '../utils';
 
-export const DetailsListBlockInitializer = (props) => {
+export const ListBlockInitializer = (props) => {
   const { insert } = props;
   const { getCollection } = useCollectionManager();
   return (
     <DataBlockInitializer
       {...props}
       icon={<OrderedListOutlined />}
-      componentType={'DetailsList'}
+      componentType={'List'}
       onCreateBlockSchema={async ({ item }) => {
         const collection = getCollection(item.name);
-        const schema = createDetailsListBlockSchema({
+        const schema = createListBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
           actionInitializers: collection.template !== 'view' && 'DetailsActionInitializers',

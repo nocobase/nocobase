@@ -1,29 +1,24 @@
 import { useFieldSchema, useField, ISchema } from '@formily/react';
-import {
-  useCollection,
-  useSchemaTemplate,
-  useCollectionFilterOptions,
-  useDesignable,
-  useSortFields,
-  GeneralSchemaDesigner,
-  SchemaSettings,
-  removeNullCondition,
-  FilterDynamicComponent,
-} from '@nocobase/client';
 import React from 'react';
 import { ArrayItems } from '@formily/antd';
-import { useDetailsListBlockContext } from './DetailsList.Decorator';
+import { useListBlockContext } from './List.Decorator';
 import _ from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useCollection, useCollectionFilterOptions, useSortFields } from '../../../collection-manager';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { useSchemaTemplate } from '../../../schema-templates';
+import { useDesignable } from '../../hooks';
+import { removeNullCondition } from '../filter';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 
-export const DetailsListDesigner = () => {
+export const ListDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const dataSource = useCollectionFilterOptions(name);
-  const { service } = useDetailsListBlockContext();
+  const { service } = useListBlockContext();
   const { dn } = useDesignable();
   const sortFields = useSortFields(name);
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
