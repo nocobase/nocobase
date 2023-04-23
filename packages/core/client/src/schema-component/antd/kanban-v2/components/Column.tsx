@@ -70,6 +70,9 @@ const List = (props) => {
           .ant-formily-item {
             margin: 0;
           }
+          .nb-grid-row {
+            overflow-x: inherit;
+          }
         `}
       >
         <FormComponent form={form} {...others} />
