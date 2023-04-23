@@ -13,6 +13,7 @@ describe('belongsToMany', () => {
     db = app.db;
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');
+
     await Collection.repository.create({
       values: {
         name: 'posts',

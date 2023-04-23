@@ -26,6 +26,12 @@ describe('collections repository', () => {
         name: 'posts_tags',
         fields: [
           {
+            type: 'bigInt',
+            name: 'id',
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          {
             type: 'string',
             name: 'title',
           },
