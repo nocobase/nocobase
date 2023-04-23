@@ -1,12 +1,11 @@
 import { mockServer, MockServer } from '@nocobase/test';
-import Database, { Repository } from '@nocobase/database';
+import Database from '@nocobase/database';
 import { Authentication, RawUserInfo } from '@nocobase/authentication';
 import { Plugin } from '@nocobase/server';
-import UsersPlugin from '@nocobase/plugin-users';
 import { Context } from '@nocobase/actions';
 const testPluginName = 'test-auth-plugin';
-let errorSpy;
 let testAuthencatorId;
+let ctx;
 
 describe('authentication.use', () => {
   let api: MockServer;
@@ -16,12 +15,10 @@ describe('authentication.use', () => {
   beforeAll(async () => {
     api = mockServer();
     await api.loadAndInstall({ clean: true });
-    await api.pm.add('users');
+    api.pm.add('users');
     await api.loadAndInstall();
     db = api.db;
     auth = api.authentication;
-
-    errorSpy = jest.spyOn(api.logger, 'error');
 
     // Insert test plugin record
     const pluginsRepo = db.getRepository('applicationPlugins');
@@ -54,17 +51,14 @@ describe('authentication.use', () => {
   });
 
   beforeEach(async () => {
-    await auth.use(testAuthencatorId)(
-      {
-        state: {},
-        db: api.db,
-      } as Context,
-      async () => {},
-    );
-  });
-
-  afterEach(() => {
-    errorSpy.mockClear();
+    (ctx = {
+      state: {},
+      db: api.db,
+      t: console.log,
+      throw: console.log,
+      currentUser: null,
+    } as unknown as Context),
+      await auth.use(testAuthencatorId)(ctx, async () => {});
   });
 
   it('should create new user', async () => {
@@ -80,18 +74,12 @@ describe('authentication.use', () => {
     const user = await userAuth.getUser();
     expect(user).not.toBeNull();
     expect(user.get('nickname')).toBe('test-nickname-1');
+    expect(ctx.state.currentUser).toStrictEqual(user);
   });
 
   it('should get exist user', async () => {
-    const ctx = {
-      state: {
-        currentUser: null,
-      },
-      db: api.db,
-    };
-    await auth.use(testAuthencatorId)(ctx as Context, async () => {});
+    await auth.use(testAuthencatorId)(ctx, async () => {});
     expect(ctx.state.currentUser).not.toBeNull();
-    console.log(ctx.state.currentUser);
     expect(ctx.state.currentUser.nickname).toBe('test-nickname-1');
   });
 });

@@ -71,13 +71,28 @@ export default {
       },
     },
     /**
-     * infoMap:
-     * Map of user information fields from the authentication method
+     * settings:
+     * Define some custom settings for the authentication method.
+     * For example:
+     * The map of user information fields from the authentication method
      * and the fields of user collection in Nocobase.
+     * General format:
+     *
+     * {
+     *   "role": {
+     *     "mapping": [{
+     *         source: "admin",
+     *         target: "Admin",
+     *       }
+     *     ],
+     *     "useDefaultRole": false,
+     *     "createIfNotExists": true,
+     *   },
+     * }
      */
     {
       type: 'json',
-      name: 'infoMap',
+      name: 'settings',
       allowNull: false,
       defaultValue: {},
     },

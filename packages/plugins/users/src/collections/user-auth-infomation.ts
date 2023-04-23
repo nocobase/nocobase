@@ -40,6 +40,7 @@ export default {
       target: 'users',
       targetKey: 'id',
       foreignKey: 'userId',
+      onDelete: 'CASCADE',
     },
     /**
      * uuid:

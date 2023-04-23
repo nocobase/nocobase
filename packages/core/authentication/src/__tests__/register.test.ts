@@ -2,7 +2,6 @@ import { mockServer, MockServer } from '@nocobase/test';
 import Database, { Repository } from '@nocobase/database';
 import { Authentication } from '@nocobase/authentication';
 import { Plugin } from '@nocobase/server';
-import UsersPlugin from '@nocobase/plugin-users';
 const testPluginName = 'test-auth-plugin';
 let errorSpy;
 
@@ -15,8 +14,9 @@ describe('authentication.register', () => {
 
   beforeAll(async () => {
     api = mockServer();
-    api.plugin(UsersPlugin);
     await api.loadAndInstall({ clean: true });
+    api.pm.add('users');
+    await api.loadAndInstall();
     db = api.db;
     auth = api.authentication;
     authenticatorsRepo = db.getRepository('authenticators');
