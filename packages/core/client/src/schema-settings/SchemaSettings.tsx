@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
   ActionContext,
+  CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
   FormProvider,
@@ -35,10 +36,10 @@ import {
   findFormBlock,
   useAPIClient,
   useCollection,
-  useLinkageCollectionFilterOptions,
   useCollectionManager,
   useCompile,
   useDesignable,
+  useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
@@ -46,7 +47,6 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
-import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 
@@ -144,7 +144,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   return DropdownMenu;
 };
 
-SchemaSettings.Template = (props) => {
+SchemaSettings.Template = function Template(props) {
   const { componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
@@ -264,7 +264,7 @@ const findBlockTemplateSchema = (fieldSchema) => {
   }, null);
 };
 
-SchemaSettings.FormItemTemplate = (props) => {
+SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
   const { insertAdjacentPosition = 'afterBegin', componentName, collectionName, resourceName } = props;
   const { t } = useTranslation();
   const compile = useCompile();
@@ -381,7 +381,7 @@ SchemaSettings.FormItemTemplate = (props) => {
   );
 };
 
-SchemaSettings.Item = (props) => {
+SchemaSettings.Item = function Item(props) {
   let { eventKey } = props;
   const key = useMemo(() => uid(), []);
   return (
@@ -413,7 +413,7 @@ SchemaSettings.Divider = (props) => {
   return <Menu.Divider {...props} />;
 };
 
-SchemaSettings.Remove = (props: any) => {
+SchemaSettings.Remove = function Remove(props: any) {
   const { confirm, removeParentsIfNoChildren, breakRemoveOn } = props;
   const { dn, template } = useSchemaSettings();
   const { t } = useTranslation();
@@ -453,7 +453,10 @@ SchemaSettings.Remove = (props: any) => {
   );
 };
 
-SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescription?: string }) => {
+SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
+  type: FilterBlockType;
+  emptyDescription?: string;
+}) {
   const { type, emptyDescription } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -574,7 +577,7 @@ SchemaSettings.ConnectDataBlocks = (props: { type: FilterBlockType; emptyDescrip
   );
 };
 
-SchemaSettings.SelectItem = (props) => {
+SchemaSettings.SelectItem = function SelectItem(props) {
   const { title, options, value, onChange, openOnHover, onClick: _onClick, ...others } = props;
   const [open, setOpen] = useState(false);
 
@@ -582,11 +585,12 @@ SchemaSettings.SelectItem = (props) => {
     setOpen(false);
     _onClick?.(...args);
   };
+  const onMouseEnter = useCallback(() => setOpen(true), []);
 
   // 鼠标 hover 时，打开下拉框
   const moreProps = openOnHover
     ? {
-        onMouseEnter: useCallback(() => setOpen(true), []),
+        onMouseEnter,
         open,
       }
     : {};
@@ -633,7 +637,7 @@ interface SwitchItemProps extends Omit<MenuItemProps, 'onChange'> {
   onChange?: (v: boolean) => void;
 }
 
-SchemaSettings.SwitchItem = (props) => {
+SchemaSettings.SwitchItem = function SwitchItem(props) {
   const { title, onChange, ...others } = props;
   const [checked, setChecked] = useState(!!props.checked);
   return (
@@ -652,7 +656,7 @@ SchemaSettings.SwitchItem = (props) => {
   );
 };
 
-SchemaSettings.PopupItem = (props) => {
+SchemaSettings.PopupItem = function PopupItem(props) {
   const { schema, ...others } = props;
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
@@ -766,7 +770,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
   );
 });
 
-SchemaSettings.ModalItem = (props) => {
+SchemaSettings.ModalItem = function ModalItem(props) {
   const {
     hidden,
     title,
@@ -818,7 +822,7 @@ SchemaSettings.ModalItem = (props) => {
   );
 };
 
-SchemaSettings.BlockTitleItem = () => {
+SchemaSettings.BlockTitleItem = function BlockTitleItem() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -859,7 +863,7 @@ SchemaSettings.BlockTitleItem = () => {
   );
 };
 
-SchemaSettings.DefaultSortingRules = (props) => {
+SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
   const { sort, sortFields, onSubmit } = props;
   const { t } = useTranslation();
 
@@ -943,7 +947,7 @@ SchemaSettings.DefaultSortingRules = (props) => {
   );
 };
 
-SchemaSettings.LinkageRules = (props) => {
+SchemaSettings.LinkageRules = function LinkageRules(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1009,7 +1013,7 @@ export const useDataTemplates = () => {
   };
 };
 
-SchemaSettings.DataTemplates = (props) => {
+SchemaSettings.DataTemplates = function DataTemplates(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1057,7 +1061,7 @@ SchemaSettings.DataTemplates = (props) => {
   );
 };
 
-SchemaSettings.EnableChildCollections = (props) => {
+SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1123,4 +1127,22 @@ SchemaSettings.EnableChildCollections = (props) => {
       }}
     />
   );
+};
+
+// 是否显示默认值配置项
+export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
+  return (
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment'].includes(collectionField?.interface) &&
+    !isSystemField(collectionField, getInterface)
+  );
+};
+
+// 是否是系统字段
+export const isSystemField = (collectionField: CollectionFieldOptions, getInterface) => {
+  const i = getInterface?.(collectionField?.interface);
+  return i?.group === 'systemInfo';
+};
+
+export const isPatternDisabled = (fieldSchema: Schema) => {
+  return fieldSchema?.['x-component-props']?.['pattern-disable'] == true;
 };
