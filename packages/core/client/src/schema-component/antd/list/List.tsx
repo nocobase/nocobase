@@ -4,51 +4,61 @@ import React from 'react';
 import { useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { useInfiniteScroll } from 'ahooks';
-import { Divider, Spin, Empty } from 'antd';
+import { Divider, Spin, Empty, List as AntdList, PaginationProps } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { useListActionBarProps } from './hooks';
+import { useListActionBarProps, useService } from './hooks';
 import { useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions, SchemaComponent } from '../../core';
 import { useDesigner } from '../../hooks';
-import { FormV2 } from '../form-v2';
+import { ListItem } from './List.Item';
+
+const designerCss = css`
+  width: 100%;
+  margin-bottom: var(--nb-spacing);
+  &:hover {
+    > .general-schema-designer {
+      display: block;
+    }
+  }
+
+  > .general-schema-designer {
+    position: absolute;
+    z-index: 999;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: none;
+    background: rgba(241, 139, 98, 0.06);
+    border: 0;
+    pointer-events: none;
+    > .general-schema-designer-icons {
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      line-height: 16px;
+      pointer-events: all;
+      .ant-space-item {
+        background-color: #f18b62;
+        color: #fff;
+        line-height: 16px;
+        width: 16px;
+        padding-left: 1px;
+      }
+    }
+  }
+`;
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
   const fieldSchema = useFieldSchema();
-  const field = useField();
   const Designer = useDesigner();
   const { getPrimaryKey } = useCollection();
   const { t } = useTranslation();
 
-  const { data, loading, loadingMore, noMore } = useInfiniteScroll(
-    async (d) => {
-      const data = await service.runAsync({
-        ...service?.params?.[0],
-        page: d ? d.meta.page + 1 : 1,
-      });
-      return {
-        list: data?.data,
-        meta: data?.meta,
-      };
-    },
-    {
-      threshold: 200,
-      target: window.document.querySelector('#nb-mobile-scroll-wrapper'),
-      isNoMore: (d) => {
-        const total = d?.meta?.total;
-        const pageSize = d?.meta?.pageSize;
-        const curSize = d?.list?.length;
-        return curSize !== pageSize || curSize === total;
-      },
-      reloadDeps: [field.decoratorProps?.params],
-    },
-  );
-
-  if (loading) {
-    return <Spin />;
-  }
+  const { noMore, loadingMore, data, meta, loading } = useService();
 
   let endedMessage = 'More data coming soon';
   if (loadingMore) {
@@ -57,6 +67,14 @@ const InternalList = (props) => {
     endedMessage = t('It is all, nothing more 🤐');
   }
 
+  const onPaginationChange: PaginationProps['onChange'] = (page, pageSize) => {
+    service.run({
+      ...service?.params?.[0],
+      page: page,
+      pageSize: pageSize,
+    });
+  };
+
   return (
     <SchemaComponentOptions
       scope={{
@@ -64,49 +82,23 @@ const InternalList = (props) => {
         useListActionBarProps,
       }}
     >
-      <SortableItem
-        className={cx(
-          'nb-mobile-list',
-          css`
-            width: 100%;
-            margin-bottom: var(--nb-spacing);
-          `,
-        )}
-      >
-        <div
-          className={cx(
-            'nb-mobile-list-content',
-            css`
-              display: flex;
-              flex-direction: column;
-              padding: 0 var(--nb-spacing);
-              width: 100%;
-              // max-height: 100vh;
-              overflow-y: auto;
-            `,
-          )}
-        >
-          {data?.list?.length ? (
-            <>
-              {data?.list?.map((item) => {
-                return (
-                  <RecordProvider key={item[getPrimaryKey()]} record={item}>
-                    <SchemaComponent schema={fieldSchema}></SchemaComponent>
-                  </RecordProvider>
-                );
-              })}
-              <Divider plain>{endedMessage}</Divider>
-            </>
-          ) : (
-            <div
-              className={css`
-                padding: 0 20px;
-              `}
-            >
-              <Empty />
-            </div>
-          )}
-        </div>
+      <SortableItem className={cx('nb-list', designerCss)}>
+        <AntdList
+          dataSource={data}
+          pagination={{
+            onChange: onPaginationChange,
+            total: meta?.count || 0,
+            pageSize: meta?.pageSize || 10,
+          }}
+          loading={service.loading ?? loading}
+          renderItem={(item) => {
+            return (
+              <RecordProvider key={item[getPrimaryKey()]} record={item}>
+                <SchemaComponent schema={fieldSchema}></SchemaComponent>
+              </RecordProvider>
+            );
+          }}
+        ></AntdList>
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>
@@ -114,11 +106,11 @@ const InternalList = (props) => {
 };
 
 export const List = InternalList as typeof InternalList & {
-  Item: typeof FormV2;
+  Item: typeof ListItem;
   Designer: typeof ListDesigner;
   Decorator: typeof ListBlockProvider;
 };
 
-List.Item = FormV2;
+List.Item = ListItem;
 List.Designer = ListDesigner;
 List.Decorator = ListBlockProvider;

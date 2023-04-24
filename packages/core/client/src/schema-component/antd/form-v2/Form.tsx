@@ -172,11 +172,11 @@ export const Form: React.FC<FormProps> & {
   Templates?: any;
 } = observer((props) => {
   const field = useField<Field>();
-  const { form, disabled, ...others } = useProps(props);
+  const { form, disabled, className, ...others } = useProps(props);
   const formDisabled = disabled || field.disabled;
   return (
     <ConfigProvider componentDisabled={formDisabled}>
-      <form>
+      <form className={className}>
         <Spin spinning={field.loading || false}>
           {form ? (
             <WithForm form={form} {...others} disabled={formDisabled} />

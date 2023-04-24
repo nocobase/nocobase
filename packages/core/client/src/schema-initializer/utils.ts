@@ -938,6 +938,7 @@ export const createListBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
     actionInitializers = 'ListActionInitializers',
+    itemActionInitializers = 'ListItemActionInitializers',
     collection,
     association,
     resource,
@@ -958,21 +959,28 @@ export const createListBlockSchema = (options) => {
       params: {
         pageSize: 10,
       },
-      requestOptions: {
-        manual: true,
-      },
-      // useParams: '{{ useParamsFromRecord }}',
       ...others,
     },
+    'x-component': 'CardItem',
     'x-designer': 'List.Designer',
-    'x-component': 'List',
-    'x-component-props': {
-      props: '{{ useListBlockProps }}',
-    },
     properties: {
+      actionBar: {
+        type: 'void',
+        'x-initializer': actionInitializers,
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 'var(--nb-spacing)',
+          },
+        },
+        properties: {},
+      },
       [uid()]: {
         type: 'void',
-        'x-component': 'CardItem',
+        'x-component': 'List',
+        'x-component-props': {
+          props: '{{ useListBlockProps }}',
+        },
         properties: {
           [uid()]: {
             type: 'object',
@@ -990,7 +998,8 @@ export const createListBlockSchema = (options) => {
               },
               actionBar: {
                 type: 'void',
-                'x-initializer': actionInitializers,
+                'x-align': 'left',
+                'x-initializer': itemActionInitializers,
                 'x-component': 'ActionBar',
                 'x-component-props': {
                   useProps: '{{ useListActionBarProps }}',
@@ -1233,7 +1242,7 @@ export const createTableBlockSchema = (options) => {
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
-            marginBottom: 16,
+            marginBottom: 'var(--nb-spacing)',
           },
         },
         properties: {},
@@ -1332,7 +1341,7 @@ export const createTableSelectorSchema = (options) => {
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
-            marginBottom: 16,
+            marginBottom: 'var(--nb-spacing)',
           },
         },
         properties: {},
@@ -1602,7 +1611,7 @@ export const createKanbanBlockSchema = (options) => {
         'x-component': 'ActionBar',
         'x-component-props': {
           style: {
-            marginBottom: 16,
+            marginBottom: 'var(--nb-spacing)',
           },
         },
         properties: {},

@@ -17,7 +17,6 @@ export const ListBlockInitializer = (props) => {
         const schema = createListBlockSchema({
           collection: item.name,
           rowKey: collection.filterTargetKey || 'id',
-          actionInitializers: collection.template !== 'view' && 'DetailsActionInitializers',
         });
         insert(schema);
       }}

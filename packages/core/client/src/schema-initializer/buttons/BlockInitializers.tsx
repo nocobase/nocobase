@@ -33,7 +33,7 @@ export const BlockInitializers = {
         {
           key: 'List',
           type: 'item',
-          title: '{{t("Details List")}}',
+          title: '{{t("List")}}',
           component: 'ListBlockInitializer',
         },
         {

@@ -1,20 +1,20 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext } from '../../common';
-import { useDesignable } from '../../hooks';
+import { useDesignable, useProps } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
-  const { layout = 'tow-columns', style, ...others } = props;
+  const { layout = 'tow-columns', style, ...others } = useProps(props);
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { designable } = useDesignable();
   if (layout === 'one-column') {
     return (
       <DndContext>
-        <div style={{ display: 'flex', ...style }} {...others}>
+        <div style={{ display: 'flex', ...style }} {...others} className={cx(others.className, 'nb-action-bar')}>
           {props.children && (
             <div style={{ marginRight: 8 }}>
               <Space>
@@ -45,6 +45,7 @@ export const ActionBar = observer((props: any) => {
             }
       }
       {...others}
+      className={cx(others.className, 'nb-action-bar')}
     >
       <div
         className={css`
