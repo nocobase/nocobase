@@ -325,7 +325,7 @@ export const CollectionFields = (props) => {
       const conf = getInterface(field.interface);
       if (conf.group === 'systemInfo') {
         groups.system.push(field);
-      } else if (['m2m', 'm2o', 'o2b', 'o2m', 'linkTo'].includes(field.interface)) {
+      } else if (conf.group === 'relation') {
         groups.association.push(field);
       } else {
         groups.general.push(field);
