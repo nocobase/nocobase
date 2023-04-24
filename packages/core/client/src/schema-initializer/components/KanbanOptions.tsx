@@ -5,6 +5,14 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponent } from '../../';
 
+function mergeArrays(A, B) {
+  console.log(A);
+  if (!A) {
+    return B;
+  }
+  return [...A, ...B.filter((b) => !A.some((a) => a.value === b.value))];
+}
+
 export const KanbanOptions = observer((props: any) => {
   const { groupField, collectionFields, getAssociateResource, columns } = props;
   const { t } = useTranslation();
@@ -20,15 +28,12 @@ export const KanbanOptions = observer((props: any) => {
             ...v,
           };
         });
-        const result = data.map((v) => {
-          const option = columns?.find((k) => k.value === v.value);
-          if (option) {
-            return { ...option };
-          } else {
-            return { ...v, enabled: true };
-          }
-        });
-        optionField.form.setValuesIn('options', result);
+        const result = mergeArrays(columns, data);
+        if (columns) {
+          optionField.form.setInitialValuesIn('options', result);
+        } else {
+          optionField.form.setValuesIn('options', result);
+        }
       } else {
         const resource = getAssociateResource(field.target);
         resource.list({ paginate: false }).then(({ data }) => {
@@ -39,15 +44,13 @@ export const KanbanOptions = observer((props: any) => {
               label: v[groupField[1]],
             };
           });
-          const result = optionsData.map((v) => {
-            const option = columns?.find((k) => k.value === v.value);
-            if (option) {
-              return { ...option };
-            } else {
-              return { ...v, enabled: true };
-            }
-          });
-          optionField.form.setValuesIn('options', result);
+          const result = mergeArrays(columns, optionsData);
+
+          if (columns) {
+            optionField.form.setInitialValuesIn('options', result);
+          } else {
+            optionField.form.setValuesIn('options', result);
+          }
         });
       }
     }
@@ -93,7 +96,7 @@ export const KanbanOptions = observer((props: any) => {
                     column2: {
                       type: 'void',
                       'x-component': 'ArrayTable.Column',
-                      'x-component-props': { width: 200, title:  t('Title')  },
+                      'x-component-props': { width: 200, title: t('Title') },
                       'x-readOnly': true,
                       properties: {
                         label: {
