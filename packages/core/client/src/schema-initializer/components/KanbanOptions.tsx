@@ -25,7 +25,7 @@ export const KanbanOptions = observer((props: any) => {
           if (option) {
             return { ...option };
           } else {
-            return v;
+            return { ...v, enabled: true };
           }
         });
         optionField.form.setValuesIn('options', result);
