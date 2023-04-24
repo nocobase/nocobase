@@ -742,6 +742,10 @@ export default {
   'Theme': '主题',
   'Default theme': '默认主题',
   'Compact theme': '紧凑主题',
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "这可能是 NocoBase 内部的问题，你可以在<1>这里</1>将该错误反馈给我们，我们会尽快修复",
+  "Render Failed": "渲染失败",
+  "Feedback": "反馈问题",
+  "Try again": "重试一下",
 
   'Click or drag file to this area to upload': '点击或拖拽文件到此区域上传',
   'Support for a single or bulk upload, file size should not exceed': '支持单个或批量上传，文件大小不能超过',
