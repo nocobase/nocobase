@@ -69,6 +69,20 @@ describe('view collection', function () {
 
     expect(inferredFields['group_id'].type).toBe('bigInt');
     expect(inferredFields['group'].type).toBe('belongsTo');
+
+    await collectionRepository.create({
+      values: {
+        name: viewName,
+        view: true,
+        fields: Object.values(inferredFields),
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+      },
+      context: {},
+    });
+
+    const viewCollection = db.getCollection(viewName);
+    const group = viewCollection.getField('group');
+    expect(group.foreignKey).toEqual('group_id');
   });
 
   it('should use view collection as through collection', async () => {

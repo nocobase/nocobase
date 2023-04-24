@@ -100,6 +100,7 @@ export class CollectionManagerPlugin extends Plugin {
     });
 
     this.app.db.on('fields.beforeCreate', async (model, options) => {
+      if (model.get('source')) return;
       const type = model.get('type');
       const fn = beforeInitOptions[type];
       if (fn) {

@@ -105,7 +105,18 @@ export function afterCreateForForeignKeyField(db: Database) {
       return;
     }
 
-    const { type, interface: interfaceType, collectionName, target, through, foreignKey, otherKey } = model.get();
+    const {
+      type,
+      interface: interfaceType,
+      collectionName,
+      target,
+      through,
+      foreignKey,
+      otherKey,
+      source,
+    } = model.get();
+
+    if (source) return;
 
     // foreign key in target collection
     if (['oho', 'o2m'].includes(interfaceType)) {
@@ -178,8 +189,6 @@ export function afterCreateForForeignKeyField(db: Database) {
   return async (model, options) => {
     try {
       await hook(model, options);
-    } catch (error) {
-      
-    }
+    } catch (error) {}
   };
 }

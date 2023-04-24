@@ -297,7 +297,9 @@ export class Collection<
           `source collection "${sourceCollectionName}" not found for field "${name}" at collection "${this.name}"`,
         );
       }
+
       const sourceField = sourceCollection.fields.get(sourceFieldName);
+
       options = { ...sourceField.options, ...options };
     }
 
