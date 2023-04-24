@@ -6,7 +6,7 @@ export default {
   'Create Collection': 'Criar Coleção',
   'All Fields': 'Todos os Campos',
   'Association Fields': 'Campos de Associação',
-  'Optional fields': 'Campos Opcionais',
+  'Choices fields': 'Campos de opções',
   'All relationships': 'Todos os relacionamentos',
   'Entity relationship only': 'Somente relação de Entidade',
   'Inheritance relationship only': 'Somente relação de Herança',

@@ -170,7 +170,7 @@ export default {
   "Association fields filter": "Filtro de campos de associação",
   "PK & FK fields": "Campos PK & FK",
   "Association fields": "Campos de associação",
-  "Optional fields": "Campos opcionais",
+  "Choices fields": "Campos de opções",
   "System fields": "Campos do sistema",
   "General fields": "Campos gerais",
   "Inherited fields": "Campos herdados",
