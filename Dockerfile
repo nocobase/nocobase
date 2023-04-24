@@ -41,7 +41,7 @@ RUN cd /app \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
 
-FROM node:18-bullseye-slim
+FROM node:16.20-bullseye-slim
 RUN apt-get update && apt-get install -y nginx
 
 RUN rm -rf /etc/nginx/sites-enabled/default
