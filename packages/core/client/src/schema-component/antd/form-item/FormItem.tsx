@@ -34,7 +34,7 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const FormItem: any = observer((props: any) => {
-  const { showTitle } = props;
+  const { showTitle = true } = props;
   useEnsureOperatorsValid();
 
   const field = useField<Field>();
@@ -69,7 +69,7 @@ export const FormItem: any = observer((props: any) => {
                 & .ant-formily-item-label {
                   display: none;
                 }
-              `]: !showTitle,
+              `]: showTitle === false,
             },
           )}
           {...props}
