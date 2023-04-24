@@ -426,6 +426,7 @@ export const CollectionFields = (props) => {
             className={tableContainer}
             expandable={{
               defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
               expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (
