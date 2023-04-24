@@ -1,11 +1,14 @@
 import { createForm } from '@formily/core';
 import { Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo } from 'react';
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Schema, useField, useFieldSchema, useForm } from '@formily/react';
 import uniq from 'lodash/uniq';
+import flat from 'flat';
 import { useCollectionManager } from '../collection-manager';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { SchemaComponentOptions } from '../';
+import { useCreateActionProps as useCAP } from '../block-provider/hooks';
 
 export const KanbanV2BlockContext = createContext<any>({});
 
@@ -127,30 +130,65 @@ export const KanbanV2BlockProvider = (props) => {
   const params = { ...props.params };
   const appends = useAssociationNames(collection);
   const groupField: any = useGroupField(props);
+  const [kanbanColumns, setKanbanColumns] = useState(columns);
   if (!groupField) {
     return null;
   }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
-  const kanbanColumns = columns?.filter((v) => v.enabled) || [];
-  kanbanColumns.push({
-    value: '__unknown__',
-    label: 'Unknown',
-    color: 'default',
-    cards: [],
-  });
+  useEffect(() => {
+    const Columns = columns?.filter((v) => v.enabled) || [];
+    Columns.push({
+      value: '__unknown__',
+      label: 'Unknown',
+      color: 'default',
+      cards: [],
+    });
+    setKanbanColumns(Columns);
+  }, []);
+
   params['filter'] = props.params.filter;
+
+  const useCreateActionProps = () => {
+    const form = useForm();
+    const { onClick } = useCAP();
+    const values = flat(form.values);
+    return {
+      async onClick() {
+        await onClick();
+        const targetKey = props.groupField.join('.');
+        const targetColumn = values[targetKey];
+        const index = kanbanColumns.findIndex((v) => {
+          return v.value === targetColumn;
+        });
+        const column = kanbanColumns.find((v) => {
+          return v.value === targetColumn;
+        });
+        const newColumns = [...kanbanColumns];
+        newColumns[index] = { ...column, update: true };
+        setKanbanColumns(newColumns);
+      },
+    };
+  };
   return (
-    <BlockProvider {...props} params={params}>
-      <InternalKanbanV2BlockProvider
+    <SchemaComponentOptions scope={{ useCreateActionProps }}>
+      <BlockProvider
         {...props}
         params={params}
-        groupField={groupField}
-        associateCollectionField={props.groupField}
-        columns={kanbanColumns}
-      />
-    </BlockProvider>
+        refresh={() => {
+          console.log('test');
+        }}
+      >
+        <InternalKanbanV2BlockProvider
+          {...props}
+          params={params}
+          groupField={groupField}
+          associateCollectionField={props.groupField}
+          columns={kanbanColumns}
+        />
+      </BlockProvider>
+    </SchemaComponentOptions>
   );
 };
 

@@ -3,6 +3,7 @@ import { observer } from '@formily/react';
 import { useField } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { uniqBy } from 'lodash';
 import { SchemaComponent } from '../../';
 
 function mergeArrays(A, B) {
@@ -37,7 +38,7 @@ export const KanbanOptions = observer((props: any) => {
       } else {
         const resource = getAssociateResource(field.target);
         resource.list({ paginate: false }).then(({ data }) => {
-          const optionsData = data?.data.map((v) => {
+          const optionsData = uniqBy(data?.data, groupField[1]).map((v:any) => {
             return {
               ...v,
               value: v[groupField[1]],

@@ -1,7 +1,7 @@
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
 import { cloneDeep, isFunction } from 'lodash';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import { useTranslation } from 'react-i18next';
 import { Column } from './Column';
@@ -57,6 +57,20 @@ export const KanbanV2: any = (props) => {
   const { resource } = useBlockRequestContext();
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
+
+  useEffect(() => {
+    const newColumns = columns.map((v) => {
+      const column = columnData.find((h) => {
+        return h.value === v.value;
+      });
+      if (column && !v.update) {
+        return column;
+      } else {
+        return v;
+      }
+    });
+    setColumnData(cloneDeep(newColumns));
+  }, [columns]);
 
   const getColumnDatas = useCallback(async (el, index, params, appends?, currentPage?, fun?) => {
     const parseFilter = (value) => {

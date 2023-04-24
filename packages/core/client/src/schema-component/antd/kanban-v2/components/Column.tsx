@@ -104,7 +104,7 @@ export const Column = memo((props: any) => {
     getColumnDatas(data, ind, params, appends, 1, () => {
       setLoading(false);
     });
-  }, [appends.length, params]);
+  }, [appends.length, params, data?.update]);
   fieldSchema.properties.grid['x-component-props'] = {
     dndContext: {
       onDragStart: () => {
