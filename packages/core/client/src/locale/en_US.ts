@@ -685,5 +685,9 @@ export default {
   "UpdatedAt": "Recording a row's last updated user",
   "Column width": "Column width",
   "Sortable": "Sortable",
-  "Enable link": "Enable link"
+  "Enable link": "Enable link",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>",
+  "Render Failed": "Render Failed",
+  "Feedback": "Feedback",
+  "Try again": "Try again",
 };
