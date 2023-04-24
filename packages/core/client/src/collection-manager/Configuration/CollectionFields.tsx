@@ -359,13 +359,16 @@ export const CollectionFields = (props) => {
   dataSource.push(
     ...inherits.map((key) => {
       const collection = getCollection(key);
+      if (!collection) {
+        return;
+      }
       return {
         key,
         title: `${t('Inherited fields')} - ` + compile(collection?.title),
         inherit: true,
         fields: collection?.fields || [],
       };
-    }),
+    }).filter(Boolean),
   );
 
   const resourceActionProps = {
