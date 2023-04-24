@@ -1,4 +1,4 @@
-import Database, { Repository, ViewCollection } from '@nocobase/database';
+import Database, { Repository, ViewCollection, ViewFieldInference } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '../index';
 import { uid } from '@nocobase/utils';
@@ -26,6 +26,49 @@ describe('view collection', function () {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should create view collection with belongs to association', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'groups',
+        fields: [{ name: 'name', type: 'string' }],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { name: 'name', type: 'string' },
+          { type: 'belongsTo', name: 'group', foreignKey: 'group_id' },
+        ],
+      },
+      context: {},
+    });
+
+    const User = db.getCollection('users');
+
+    const assoc = User.model.associations.group;
+    const foreignKey = assoc.foreignKey;
+    const foreignField = User.model.rawAttributes[foreignKey].field;
+
+    const viewName = `test_view_${uid(6)}`;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+
+    const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM users`;
+
+    await db.sequelize.query(createSQL);
+
+    const inferredFields = await ViewFieldInference.inferFields({
+      db,
+      viewName,
+      viewSchema: 'public',
+    });
+
+    expect(inferredFields['group_id'].type).toBe('bigInt');
+    expect(inferredFields['group'].type).toBe('belongsTo');
   });
 
   it('should use view collection as through collection', async () => {
