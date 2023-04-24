@@ -1,7 +1,8 @@
 import React from 'react';
 import { OrderedListOutlined } from '@ant-design/icons';
-import { DataBlockInitializer, useCollectionManager } from '@nocobase/client';
 import { createListBlockSchema } from '../utils';
+import { DataBlockInitializer } from './DataBlockInitializer';
+import { useCollectionManager } from '../../collection-manager';
 
 export const ListBlockInitializer = (props) => {
   const { insert } = props;

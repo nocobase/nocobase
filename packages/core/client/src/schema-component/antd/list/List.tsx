@@ -1,13 +1,3 @@
-import {
-  FormV2,
-  RecordProvider,
-  SchemaComponent,
-  SchemaComponentOptions,
-  SortableItem,
-  useCollection,
-  useDesigner,
-  useProps,
-} from '@nocobase/client';
 import { ListDesigner } from './List.Designer';
 import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
 import React from 'react';
@@ -17,6 +7,12 @@ import { useInfiniteScroll } from 'ahooks';
 import { Divider, Spin, Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useListActionBarProps } from './hooks';
+import { useCollection } from '../../../collection-manager';
+import { RecordProvider } from '../../../record-provider';
+import { SortableItem } from '../../common';
+import { SchemaComponentOptions, SchemaComponent } from '../../core';
+import { useDesigner } from '../../hooks';
+import { FormV2 } from '../form-v2';
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
