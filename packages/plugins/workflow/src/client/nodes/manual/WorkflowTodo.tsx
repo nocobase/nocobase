@@ -14,7 +14,7 @@ import { NAMESPACE } from "../../locale";
 import { FlowContext, useFlowContext } from "../../FlowContext";
 import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from "../../utils";
-import customForm from "./forms/custom";
+import { manualFormTypes } from "./SchemaConfig";
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -507,7 +507,7 @@ function Drawer() {
           ActionBarProvider,
           ManualActionStatusProvider,
           FlowContextProvider,
-          ...customForm.block.components
+          ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.components), {}))
         }}
         schema={{
           type: 'void',
@@ -535,7 +535,7 @@ function Drawer() {
           useSubmit,
           useFlowRecordFromBlock,
           useFormBlockProps,
-          ...customForm.block.scope,
+          ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.scope), {})),
         }}
       />
     </SchemaComponentContext.Provider>
