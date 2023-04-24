@@ -496,7 +496,7 @@ export default {
   "Skip required validation": "Skip required validation",
   "Form values": "Form values",
   "Fields values": "Fields values",
-  'Field deleted': 'The field has bee deleted',
+  'The field has bee deleted': 'The field has bee deleted',
   "When submitting the following fields, the saved values are": "When submitting the following fields, the saved values are",
   "After successful submission": "After successful submission",
   "Then": "Then",

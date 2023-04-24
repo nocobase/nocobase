@@ -3,10 +3,10 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
-import { useTranslation } from 'react-i18next';
 
 // TODO: 初步适配
 const InternalField: React.FC = (props) => {
@@ -105,7 +105,7 @@ export const InternalFallbackField = () => {
 // 当字段被删除时，显示一个提示占位符
 const DeletedField = () => {
   const { t } = useTranslation()
-  return <div style={{ color: '#ccc' }}>{t('Field deleted')}</div>;
+  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
 }
 
 export const CollectionField = connect((props) => {

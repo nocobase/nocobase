@@ -456,7 +456,7 @@ export default {
   "Skip required validation": "Ignorar validação obrigatória",
   "Form values": "Valores do formulário",
   "Fields values": "campo removido",
-  'Field deleted': 'The field has bee deleted',
+  'The field has bee deleted': 'O campo foi excluído',
   "When submitting the following fields, the saved values are": "Ao enviar os seguintes campos, os valores salvos são",
   "After successful submission": "Depois do envio bem-sucedido",
   "Then": "Então",

@@ -361,7 +361,7 @@ export default {
   "Skip required validation": "Zorunlu alan kontrollerini atla",
   "Form values": "Form değerleri",
   "Fields values": "Alanların değerleri",
-  'Field deleted': 'alan kaldırıldı',
+  'The field has bee deleted': 'Alan silindi',
   "When submitting the following fields, the saved values are": "Aşağıdaki alanlar gönderilirken kaydedilen değerler",
   "After successful submission": "Başarılı gönderimden sonra",
   "Then": "Then",
