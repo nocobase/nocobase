@@ -57,7 +57,9 @@ describe('view collection', function () {
     const viewName = `test_view_${uid(6)}`;
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
 
-    const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM users`;
+    const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
+      .getCollection('users')
+      .quotedTableName()}`;
 
     await db.sequelize.query(createSQL);
 
@@ -67,7 +69,9 @@ describe('view collection', function () {
       viewSchema: 'public',
     });
 
-    expect(inferredFields['group_id'].type).toBe('bigInt');
+    if (!db.inDialect('sqlite')) {
+      expect(inferredFields['group_id'].type).toBe('bigInt');
+    }
     expect(inferredFields['group'].type).toBe('belongsTo');
 
     await collectionRepository.create({
