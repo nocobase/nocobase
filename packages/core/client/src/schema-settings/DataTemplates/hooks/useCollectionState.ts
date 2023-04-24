@@ -11,7 +11,7 @@ export const useCollectionState = (currentCollectionName: string) => {
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
-    return collections.map((name) => ({ label: getCollection(name).title, value: name }));
+    return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
   }
 
   const getEnableFieldTree = (collectionName: string) => {

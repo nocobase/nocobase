@@ -361,9 +361,9 @@ export const CollectionFields = (props) => {
       const collection = getCollection(key);
       return {
         key,
-        title: `${t('Inherited fields')} - ` + compile(collection.title),
+        title: `${t('Inherited fields')} - ` + compile(collection?.title),
         inherit: true,
-        fields: collection.fields,
+        fields: collection?.fields || [],
       };
     }),
   );
