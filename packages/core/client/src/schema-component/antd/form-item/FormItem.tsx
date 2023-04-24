@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -34,6 +34,7 @@ const divWrap = (schema: ISchema) => {
 };
 
 export const FormItem: any = observer((props: any) => {
+  const { showTitle } = props;
   useEnsureOperatorsValid();
 
   const field = useField<Field>();
@@ -52,15 +53,25 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
+
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>
         <Item
-          className={`${css`
-            & .ant-space {
-              flex-wrap: wrap;
-            }
-          `}`}
+          className={cx(
+            css`
+              & .ant-space {
+                flex-wrap: wrap;
+              }
+            `,
+            {
+              [css`
+                & .ant-formily-item-label {
+                  display: none;
+                }
+              `]: !showTitle,
+            },
+          )}
           {...props}
           extra={
             typeof field.description === 'string' ? (
@@ -161,6 +172,23 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
+      <SchemaSettings.SwitchItem
+        checked={field.decoratorProps.showTitle ?? true}
+        title={t('Display title')}
+        onChange={(checked) => {
+          field.decoratorProps.showTitle = checked;
+          dn.emit('patch', {
+            schema: {
+              'x-uid': fieldSchema['x-uid'],
+              'x-decorator-props': {
+                ...fieldSchema['x-decorator-props'],
+                showTitle: checked,
+              },
+            },
+          });
+          dn.refresh();
+        }}
+      ></SchemaSettings.SwitchItem>
       {!field.readPretty && (
         <SchemaSettings.ModalItem
           key="edit-description"
