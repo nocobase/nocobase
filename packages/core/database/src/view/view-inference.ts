@@ -94,7 +94,7 @@ export class ViewFieldInference {
 
         if (collectionField) {
           if (collectionField.options.interface) {
-            inferResult.type = collectionField.options.interface;
+            inferResult.type = collectionField.type;
             inferResult.source = `${collectionField.collection.name}.${collectionField.name}`;
           }
         }
