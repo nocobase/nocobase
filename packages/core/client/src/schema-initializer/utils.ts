@@ -782,7 +782,7 @@ export const useCollectionDataSourceItems = (componentName) => {
           const fields = getCollectionFields(item.name);
           if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
             return false;
-          } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
+          } else if (['Kanban', 'FormItem','KanbanV2'].includes(componentName) && item.template === 'view') {
             return false;
           } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
             return false;
