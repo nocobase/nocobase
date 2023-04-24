@@ -1,4 +1,3 @@
-import { cx } from '@emotion/css';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Tag, message } from 'antd';
 import { cloneDeep, isFunction } from 'lodash';
@@ -11,7 +10,6 @@ import { mergeFilter } from '../../../../block-provider/SharedFilterProvider';
 import { ActionContext } from '../../';
 import { RecordProvider } from '../../../../record-provider';
 import { isAssocField } from '../../../../filter-provider/utils';
-import { loadMoreButton } from '../style';
 import { move, reorder } from '../utilt';
 const KanbanRecordViewer = (props) => {
   const { visible, setVisible, record } = props;

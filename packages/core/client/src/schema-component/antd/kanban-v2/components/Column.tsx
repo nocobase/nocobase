@@ -96,7 +96,6 @@ export const Column = memo((props: any) => {
   const [disabledCardDrag, setDisableCardDrag] = useState(false);
   const [loading, setLoading] = useState(false);
   const displayLable = fieldSchema['x-label-disabled'];
-  console.log(displayLable, fieldSchema);
   const loadMoreData = (el, index) => {
     getColumnDatas(el, index, params, appends, el?.meta?.page + 1);
   };
