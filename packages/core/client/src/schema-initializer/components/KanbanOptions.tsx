@@ -82,7 +82,7 @@ export const KanbanOptions = observer((props: any) => {
                     column1: {
                       type: 'void',
                       'x-component': 'ArrayTable.Column',
-                      'x-component-props': { width: 50, title: 'Sort', align: 'center' },
+                      'x-component-props': { width: 100, title: t('Sort'), align: 'center' },
                       properties: {
                         sort: {
                           type: 'void',
@@ -93,7 +93,7 @@ export const KanbanOptions = observer((props: any) => {
                     column2: {
                       type: 'void',
                       'x-component': 'ArrayTable.Column',
-                      'x-component-props': { width: 200, title: 'Label' },
+                      'x-component-props': { width: 200, title:  t('Title')  },
                       'x-readOnly': true,
                       properties: {
                         label: {
@@ -120,7 +120,7 @@ export const KanbanOptions = observer((props: any) => {
                     column4: {
                       type: 'void',
                       'x-component': 'ArrayTable.Column',
-                      'x-component-props': { width: 200, title: 'Color' },
+                      'x-component-props': { width: 200, title: t('Color') },
                       properties: {
                         color: {
                           type: 'string',
@@ -132,7 +132,7 @@ export const KanbanOptions = observer((props: any) => {
                     column5: {
                       type: 'void',
                       'x-component': 'ArrayTable.Column',
-                      'x-component-props': { width: 200, title: 'Enabled', align: 'center' },
+                      'x-component-props': { width: 200, title: t('Enabled'), align: 'center' },
                       properties: {
                         enabled: {
                           type: 'string',
