@@ -538,7 +538,7 @@ FormItem.Designer = function Designer() {
       )}
       {form &&
         !form?.readPretty &&
-        ['o2m', 'm2m'].includes(collectionField.interface) &&
+        ['o2m', 'm2m'].includes(collectionField?.interface) &&
         fieldSchema['x-component'] !== 'TableField' && (
           <SchemaSettings.SwitchItem
             key="multiple"
