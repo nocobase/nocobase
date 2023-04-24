@@ -1,5 +1,5 @@
 import React from 'react';
-import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
 import { useFieldSchema, useField, ISchema } from '@formily/react';
 import { useDesignable } from '../..';
