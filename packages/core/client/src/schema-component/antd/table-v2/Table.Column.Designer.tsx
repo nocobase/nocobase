@@ -6,11 +6,12 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useCompile, useDesignable } from '../../hooks';
 
 const useLabelFields = (collectionName?: any) => {
+  // 需要在组件顶层调用
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
   if (!collectionName) {
     return [];
   }
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
@@ -44,9 +45,9 @@ export const TableColumnDesigner = (props) => {
             title: t('Custom column title'),
             properties: {
               title: {
-                // title: t('Column title'),
+                title: t('Column title'),
                 default: columnSchema?.title,
-                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
+                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},

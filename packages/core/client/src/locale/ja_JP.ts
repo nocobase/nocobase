@@ -415,6 +415,7 @@ export default {
   "Dialog": "ダイアログ",
   "Delete action": "操作を削除",
   "Custom column title": "カスタムカラムタイトル",
+  'Column title': 'カラムタイトル',
   "Original title: ": "元のタイトル: ",
   "Delete table column": "テーブルのカラムを削除",
   "Skip required validation": "必須のバリデーションをスキップ",

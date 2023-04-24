@@ -492,6 +492,7 @@ export default {
   "Dialog": "Dialog",
   "Delete action": "Delete action",
   "Custom column title": "Custom column title",
+  'Column title': 'column title',
   "Original title: ": "Original title: ",
   "Delete table column": "Delete table column",
   "Skip required validation": "Skip required validation",

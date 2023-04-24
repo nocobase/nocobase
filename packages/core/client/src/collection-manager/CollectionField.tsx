@@ -7,12 +7,18 @@ import { useActionContext, useCompile, useComponent, useFormBlockContext, useRec
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
+type Props = {
+  component: any;
+  children?: React.ReactNode;
+};
+
 // TODO: 初步适配
-const InternalField: React.FC = (props) => {
+const InternalField: React.FC = (props: Props) => {
+  const { component } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema, defaultValue } = useCollectionField();
-  const component = useComponent(uiSchema?.['x-component'] || 'Input');
+  const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
@@ -57,22 +63,12 @@ const InternalField: React.FC = (props) => {
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
-    field.component = [component, componentProps];
-
-    // if (interfaceType === 'input') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'textarea') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'markdown') {
-    //   field.componentProps.ellipsis = true;
-    // } else if (interfaceType === 'attachment') {
-    //   field.componentProps.size = 'small';
-    // }
+    field.component = [Component, componentProps];
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
     return null;
   }
-  return React.createElement(component, props, props.children);
+  return React.createElement(Component, props, props.children);
 };
 
 export const InternalFallbackField = () => {

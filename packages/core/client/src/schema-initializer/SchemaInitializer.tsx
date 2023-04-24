@@ -123,8 +123,8 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             }
           `,
         )}
-        visible={visible}
-        onVisibleChange={(visible) => {
+        open={visible}
+        onOpenChange={(visible) => {
           setVisible(visible);
         }}
         {...dropdown}

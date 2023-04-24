@@ -1,9 +1,11 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { SelectProps } from 'antd';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { SelectProps, Tag } from 'antd';
+import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
@@ -15,6 +17,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   wait?: number;
   manual?: boolean;
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
+  targetField?: any;
   service: ResourceActionOptions<P>;
 };
 
@@ -28,10 +31,80 @@ const InternalRemoteSelect = connect(
       objectValue,
       manual = true,
       mapOptions,
+      targetField: _targetField,
       ...others
     } = props;
     const compile = useCompile();
     const firstRun = useRef(false);
+    const fieldSchema = useFieldSchema();
+    const { getField } = useCollection();
+    const { getCollectionJoinField, getInterface } = useCollectionManager();
+    const collectionField = getField(fieldSchema.name);
+    const targetField =
+      _targetField ||
+      (collectionField?.target &&
+        fieldNames?.label &&
+        getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
+
+    const operator = useMemo(() => {
+      if (targetField?.interface) {
+        return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+      }
+      return '$includes';
+    }, [targetField]);
+
+    const mapOptionsToTags = useCallback(
+      (options) => {
+        try {
+          return options.map((option) => {
+            let label = option[fieldNames.label];
+
+            if (targetField?.uiSchema?.enum) {
+              if (Array.isArray(label)) {
+                label = label
+                  .map((item, index) => {
+                    const option = targetField.uiSchema.enum.find((i) => i.value === item);
+                    if (option) {
+                      return (
+                        <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                          {option?.label || item}
+                        </Tag>
+                      );
+                    } else {
+                      return <Tag>{item}</Tag>;
+                    }
+                  })
+                  .reverse();
+              } else {
+                const item = targetField.uiSchema.enum.find((i) => i.value === label);
+                if (item) {
+                  label = <Tag color={item.color}>{item.label}</Tag>;
+                }
+              }
+            }
+
+            if (targetField?.type === 'date') {
+              label = moment(label).format('YYYY-MM-DD');
+            }
+
+            if (mapOptions) {
+              return mapOptions({
+                [fieldNames.label]: label,
+                [fieldNames.value]: option[fieldNames.value],
+              });
+            }
+            return {
+              [fieldNames.label]: label || option[fieldNames.value],
+              [fieldNames.value]: option[fieldNames.value],
+            };
+          });
+        } catch (err) {
+          console.error(err);
+          return options;
+        }
+      },
+      [targetField?.uiSchema, fieldNames],
+    );
 
     const { data, run, loading } = useRequest(
       {
@@ -72,7 +145,7 @@ const InternalRemoteSelect = connect(
         filter: mergeFilter([
           {
             [fieldNames.label]: {
-              $includes: search,
+              [operator]: search,
             },
           },
           service?.params?.filter,
@@ -82,11 +155,8 @@ const InternalRemoteSelect = connect(
 
     const getOptionsByFieldNames = useCallback(
       (item) => {
-        if (mapOptions) {
-          return mapOptions(item);
-        }
         return Object.keys(fieldNames).reduce((obj, key) => {
-          const value = item[fieldNames[key]];
+          let value = item[fieldNames[key]];
           if (value) {
             // support hidden, disabled, etc.
             obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
@@ -138,7 +208,7 @@ const InternalRemoteSelect = connect(
         value={value}
         {...others}
         loading={loading}
-        options={options}
+        options={mapOptionsToTags(options)}
       />
     );
   },
