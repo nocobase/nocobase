@@ -159,7 +159,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           multiple={multiple}
           quickUpload={quickUpload}
           selectFile={selectFile}
-          action={`${collectionField.target}:create`}
+          action={`${collectionField?.target}:create`}
           onSelect={handleSelect}
           onRemove={handleRemove}
           onChange={(changed) => {
@@ -237,7 +237,7 @@ const Drawer: React.FunctionComponent<{
   options,
 }) => {
   const getFilter = () => {
-    const targetKey = collectionField.targetKey || 'id';
+    const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
     const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
     return filter;
