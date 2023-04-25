@@ -1,14 +1,18 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema, RecursionField, useField, useForm } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection, useCollectionManager, CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { ActionContext } from '../';
+import { RecordProvider, useRecord } from '../../../record-provider';
+import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
+import { SchemaComponentOptions } from '../../../schema-component';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -34,10 +38,14 @@ const InternalRemoteSelect = connect(
       targetField: _targetField,
       ...others
     } = props;
+    const field = useField();
+    const form = useForm();
+    const record = useRecord();
     const compile = useCompile();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const { getField } = useCollection();
+    const [visible, setVisible] = useState(false);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
@@ -52,7 +60,7 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
-
+    const isAllowAddNew = fieldSchema['x-add-new'] !== false;
     const mapOptionsToTags = useCallback(
       (options) => {
         try {
@@ -196,20 +204,49 @@ const InternalRemoteSelect = connect(
       firstRun.current = true;
     };
 
+    const useCreateActionProps = () => {
+      const { onClick } = useCAP();
+      const actionField = useField();
+      return {
+        async onClick() {
+          await onClick();
+          const { data } = actionField.data.data?.data;
+          form.setValuesIn(field.props.name, {
+            [fieldNames.label]: data[fieldNames.label],
+            id: data.id,
+            value: data.id,
+          });
+        },
+      };
+    };
     return (
-      <Select
-        autoClearSearchValue
-        filterOption={false}
-        filterSort={null}
-        fieldNames={fieldNames}
-        onSearch={onSearch}
-        onDropdownVisibleChange={onDropdownVisibleChange}
-        objectValue={objectValue}
-        value={value}
-        {...others}
-        loading={loading}
-        options={mapOptionsToTags(options)}
-      />
+      <div style={{ display: 'flex' }}>
+        <Select
+          autoClearSearchValue
+          filterOption={false}
+          filterSort={null}
+          fieldNames={fieldNames}
+          onSearch={onSearch}
+          onDropdownVisibleChange={onDropdownVisibleChange}
+          objectValue={objectValue}
+          value={value}
+          {...others}
+          loading={loading}
+          options={mapOptionsToTags(options)}
+        />
+
+        {isAllowAddNew && (
+          <ActionContext.Provider value={{ visible, setVisible }}>
+            <RecordProvider record={record}>
+              <CollectionProvider name={props.service.resource}>
+                <SchemaComponentOptions scope={{ useCreateActionProps }}>
+                  <RecursionField schema={fieldSchema.properties?.addNew || ({} as any)} name={'addNew'} />
+                </SchemaComponentOptions>
+              </CollectionProvider>
+            </RecordProvider>
+          </ActionContext.Provider>
+        )}
+      </div>
     );
   },
   mapProps(

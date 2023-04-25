@@ -233,8 +233,57 @@ export const useFormItemInitializerFields = (options?: any) => {
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
         'x-read-pretty': field?.uiSchema?.['x-read-pretty'],
+        properties: {
+          addNew: {
+            type: 'void',
+            'x-action': 'create',
+            title: "{{t('Add new')}}",
+            'x-designer': 'Action.Designer',
+            'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              openMode: 'drawer',
+              type: 'default',
+              component: 'CreateRecordAction',
+            },
+            properties: {
+              drawer: {
+                type: 'void',
+                title: '{{ t("Add record") }}',
+                'x-component': 'Action.Container',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '{{t("Add new")}}',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'CreateFormBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       };
-      // interfaceConfig?.schemaInitialize?.(schema, { field, block: 'Form', readPretty: form.readPretty });
       const resultItem = {
         type: 'item',
         title: field?.uiSchema?.title || field.name,
