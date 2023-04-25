@@ -16,7 +16,10 @@ evaluators.register('math.js', mathjs);
 evaluators.register('formula.js', formulajs);
 
 export function getOptions() {
-  return Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []);
+  return Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(
+    (result: any[], [value, options]) => result.concat({ value, ...options }),
+    [],
+  );
 }
 
 export default evaluators;

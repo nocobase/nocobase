@@ -9,6 +9,6 @@ interface IDefault {
 export interface IField extends ISchema {
   default?: IDefault;
   operators?: any[];
-  filterable?: any,
+  filterable?: any;
   [key: string]: any;
 }

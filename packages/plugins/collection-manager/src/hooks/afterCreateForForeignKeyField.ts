@@ -178,8 +178,6 @@ export function afterCreateForForeignKeyField(db: Database) {
   return async (model, options) => {
     try {
       await hook(model, options);
-    } catch (error) {
-      
-    }
+    } catch (error) {}
   };
 }

@@ -3,8 +3,6 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-
-
 describe('workflow > instructions > query', () => {
   let app: Application;
   let db: Database;
@@ -31,8 +29,8 @@ describe('workflow > instructions > query', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -43,8 +41,8 @@ describe('workflow > instructions > query', () => {
       const n1 = await workflow.createNode({
         type: 'query',
         config: {
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -63,10 +61,10 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: 't1'
-            }
-          }
-        }
+              title: 't1',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -85,10 +83,10 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: 't2'
-            }
-          }
-        }
+              title: 't2',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -107,10 +105,10 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: '{{$context.data.title}}'
-            }
-          }
-        }
+              title: '{{$context.data.title}}',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -124,7 +122,7 @@ describe('workflow > instructions > query', () => {
 
     it('params.filter: value from job of node', async () => {
       const n1 = await workflow.createNode({
-        type: 'echo'
+        type: 'echo',
       });
       const n2 = await workflow.createNode({
         type: 'query',
@@ -132,11 +130,11 @@ describe('workflow > instructions > query', () => {
           collection: 'posts',
           params: {
             filter: {
-              title: `{{$jobsMapByNodeId.${n1.id}.data.title}}`
-            }
-          }
+              title: `{{$jobsMapByNodeId.${n1.id}.data.title}}`,
+            },
+          },
         },
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
       await n1.setDownstream(n2);
 
@@ -156,15 +154,15 @@ describe('workflow > instructions > query', () => {
           collection: 'tags',
           params: {
             filter: {
-              'posts.id': `{{$context.data.id}}`
-            }
-          }
-        }
+              'posts.id': `{{$context.data.id}}`,
+            },
+          },
+        },
       });
 
       const tag = await TagModel.create({ name: 'tag1' });
       const post = await PostRepo.create({
-        values: { title: 't1', tags: [tag.id] }
+        values: { title: 't1', tags: [tag.id] },
       });
 
       await sleep(500);
@@ -180,14 +178,14 @@ describe('workflow > instructions > query', () => {
         config: {
           collection: 'posts',
           params: {
-            appends: ['comments']
-          }
-        }
+            appends: ['comments'],
+          },
+        },
       });
 
       const comment = await CommentRepo.create({});
       const post = await PostRepo.create({
-        values: { title: 't1', comments: [comment.id] }
+        values: { title: 't1', comments: [comment.id] },
       });
 
       await sleep(500);
@@ -204,14 +202,14 @@ describe('workflow > instructions > query', () => {
         config: {
           collection: 'tags',
           params: {
-            appends: ['posts']
-          }
-        }
+            appends: ['posts'],
+          },
+        },
       });
 
       const tag = await TagModel.create({ name: 'tag1' });
       const post = await PostRepo.create({
-        values: { title: 't1', tags: [tag.id] }
+        values: { title: 't1', tags: [tag.id] },
       });
 
       await sleep(500);
@@ -228,9 +226,9 @@ describe('workflow > instructions > query', () => {
         config: {
           collection: 'posts',
           params: {
-            sort: 'id'
-          }
-        }
+            sort: 'id',
+          },
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -255,8 +253,8 @@ describe('workflow > instructions > query', () => {
         type: 'query',
         config: {
           collection: 'posts',
-          multiple: true
-        }
+          multiple: true,
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -277,10 +275,10 @@ describe('workflow > instructions > query', () => {
           multiple: true,
           params: {
             filter: {
-              title: 't1'
-            }
-          }
-        }
+              title: 't1',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -301,10 +299,10 @@ describe('workflow > instructions > query', () => {
           multiple: true,
           params: {
             filter: {
-              title: 't2'
-            }
-          }
-        }
+              title: 't2',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -323,8 +321,8 @@ describe('workflow > instructions > query', () => {
         type: 'query',
         config: {
           collection: 'categories',
-          failOnEmpty: true
-        }
+          failOnEmpty: true,
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -344,8 +342,8 @@ describe('workflow > instructions > query', () => {
         config: {
           collection: 'categories',
           multiple: true,
-          failOnEmpty: true
-        }
+          failOnEmpty: true,
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });

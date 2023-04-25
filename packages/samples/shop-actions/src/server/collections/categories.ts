@@ -3,11 +3,11 @@ export default {
   fields: [
     {
       type: 'string',
-      name: 'title'
+      name: 'title',
     },
     {
       type: 'hasMany',
       name: 'products',
-    }
-  ]
+    },
+  ],
 };

@@ -3,19 +3,19 @@ export default {
   fields: [
     {
       type: 'string',
-      name: 'title'
+      name: 'title',
     },
     {
       type: 'integer',
-      name: 'price'
+      name: 'price',
     },
     {
       type: 'boolean',
-      name: 'enabled'
+      name: 'enabled',
     },
     {
       type: 'integer',
-      name: 'inventory'
-    }
-  ]
+      name: 'inventory',
+    },
+  ],
 };

@@ -64,7 +64,10 @@ describe('utils', () => {
       });
 
       it('appends', async () => {
-        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toMatchObject({ only: ['col1'], appends: ['col2'] });
+        expect(mergeFields({}, { only: ['col1'], appends: ['col2'] })).toMatchObject({
+          only: ['col1'],
+          appends: ['col2'],
+        });
       });
     });
 

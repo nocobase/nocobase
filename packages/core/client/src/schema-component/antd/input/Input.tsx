@@ -12,31 +12,34 @@ type ComposedInput = React.FC<InputProps> & {
   JSON: React.FC<JSONTextAreaProps>;
 };
 
-export const Input: ComposedInput = Object.assign(connect(
-  AntdInput,
-  mapProps((props, field) => {
-    return {
-      ...props,
-      suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
-    };
-  }),
-  mapReadPretty(ReadPretty.Input),
-), {
-  TextArea: connect(
-    AntdInput.TextArea,
+export const Input: ComposedInput = Object.assign(
+  connect(
+    AntdInput,
     mapProps((props, field) => {
       return {
-        autoSize: {
-          maxRows: 10,
-          minRows: 3,
-        },
         ...props,
+        suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,
       };
     }),
-    mapReadPretty(ReadPretty.TextArea),
+    mapReadPretty(ReadPretty.Input),
   ),
-  URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
-  JSON: connect(Json, mapReadPretty(ReadPretty.JSON))
-});
+  {
+    TextArea: connect(
+      AntdInput.TextArea,
+      mapProps((props, field) => {
+        return {
+          autoSize: {
+            maxRows: 10,
+            minRows: 3,
+          },
+          ...props,
+        };
+      }),
+      mapReadPretty(ReadPretty.TextArea),
+    ),
+    URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
+    JSON: connect(Json, mapReadPretty(ReadPretty.JSON)),
+  },
+);
 
 export default Input;

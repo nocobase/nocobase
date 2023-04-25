@@ -5,8 +5,6 @@ import { SchemaComponent } from '@nocobase/client';
 import { workflowPageClass } from './style';
 import { ExecutionCanvas } from './ExecutionCanvas';
 
-
-
 export const ExecutionPage = () => {
   const { params } = useRouteMatch<any>();
 
@@ -34,7 +32,7 @@ export const ExecutionPage = () => {
                   },
                 },
               },
-              'x-component': 'ExecutionCanvas'
+              'x-component': 'ExecutionCanvas',
             },
           },
         }}

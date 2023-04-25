@@ -18,7 +18,7 @@ export const scrollWrapper = css`
   }
   &::-webkit-scrollbar-thumb {
     border: 5px solid transparent;
-    background:  #5c5858cc;
+    background: #5c5858cc;
     border-radius: 10px;
     background-clip: padding-box;
   }

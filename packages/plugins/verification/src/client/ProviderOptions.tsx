@@ -5,7 +5,6 @@ import { observer, RecursionField, Schema, useField, useForm } from '@formily/re
 
 import providerTypes from './providerTypes';
 
-
 export default observer((props) => {
   const form = useForm();
   const field = useField<Field>();

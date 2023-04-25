@@ -1,8 +1,4 @@
-
-import {
-  SchemaInitializerItemOptions,
-  useCollectionDataSource,
-} from '@nocobase/client';
+import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
 
 import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
@@ -38,20 +34,20 @@ export default {
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              value: []
-            }
-          }
+              value: [],
+            },
+          },
         },
         {
           target: 'condition',
           effects: ['onFieldValueChange'],
           fulfill: {
             state: {
-              value: null
-            }
-          }
-        }
-      ]
+              value: null,
+            },
+          },
+        },
+      ],
     },
     mode: {
       type: 'number',
@@ -60,7 +56,7 @@ export default {
       'x-component': 'Select',
       'x-component-props': {
         options: collectionModeOptions,
-        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`
+        placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
       },
       required: true,
       'x-reactions': [
@@ -70,9 +66,9 @@ export default {
             state: {
               visible: '{{!!$deps[0]}}',
             },
-          }
+          },
         },
-      ]
+      ],
     },
     changed: {
       type: 'array',
@@ -85,11 +81,11 @@ export default {
         placeholder: '{{t("Select Field")}}',
         filter(field) {
           return (
-            !field.hidden
-            && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true)
-            && !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+            !field.hidden &&
+            (field.uiSchema ? !field.uiSchema['x-read-pretty'] : true) &&
+            !['linkTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
           );
-        }
+        },
       },
       'x-reactions': [
         {
@@ -98,9 +94,9 @@ export default {
             state: {
               visible: `{{!!$deps[0] && ($deps[1] & ${COLLECTION_TRIGGER_MODE.UPDATED})}}`,
             },
-          }
+          },
         },
-      ]
+      ],
     },
     condition: {
       ...filter,
@@ -112,9 +108,9 @@ export default {
             state: {
               visible: '{{!!$deps[0]}}',
             },
-          }
+          },
         },
-      ]
+      ],
     },
     appends: {
       ...appends,
@@ -126,16 +122,16 @@ export default {
             state: {
               visible: `{{!($deps[0] & ${COLLECTION_TRIGGER_MODE.DELETED})}}`,
             },
-          }
+          },
         },
-      ]
+      ],
     },
   },
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
-    FieldsSelect
+    FieldsSelect,
   },
   getOptions(config, types) {
     const { t } = useWorkflowTranslation();
@@ -146,9 +142,9 @@ export default {
         type: 'hasOne',
         target: config.collection,
         uiSchema: {
-          title: t('Trigger data')
-        }
-      }
+          title: t('Trigger data'),
+        },
+      },
     ];
     const options = useCollectionFieldOptions({ fields: rootFields, types, depth: config.appends?.length ? 2 : 1 });
     return options;
@@ -164,10 +160,10 @@ export default {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}'
+      dataSource: '{{$context.data}}',
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

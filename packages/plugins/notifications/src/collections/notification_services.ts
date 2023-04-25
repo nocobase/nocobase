@@ -21,5 +21,5 @@ export default {
       type: 'json',
       name: 'options',
     },
-  ]
+  ],
 } as CollectionOptions;

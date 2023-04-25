@@ -1,14 +1,14 @@
-import React, { useContext } from "react";
-import { FormDialog, FormLayout } from "@formily/antd";
-import { SchemaOptionsContext } from "@formily/react";
-import { useTranslation } from "react-i18next";
+import React, { useContext } from 'react';
+import { FormDialog, FormLayout } from '@formily/antd';
+import { SchemaOptionsContext } from '@formily/react';
+import { useTranslation } from 'react-i18next';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from "../../collection-manager";
-import { useSchemaTemplateManager } from "../../schema-templates";
-import { SchemaInitializer } from "../SchemaInitializer";
-import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from "../utils";
-import { SchemaComponent, SchemaComponentOptions } from "../../schema-component";
+import { useCollectionManager } from '../../collection-manager';
+import { useSchemaTemplateManager } from '../../schema-templates';
+import { SchemaInitializer } from '../SchemaInitializer';
+import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
+import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 
 export const RecordAssociationCalendarBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

@@ -9,7 +9,7 @@ export default {
     },
     {
       type: 'string',
-      name: 'name'
-    }
+      name: 'name',
+    },
   ],
 } as CollectionOptions;

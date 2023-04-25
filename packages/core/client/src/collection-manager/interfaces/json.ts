@@ -10,10 +10,10 @@ registerValidateRules({
     } catch (error) {
       return {
         type: 'error',
-        message: error.message
+        message: error.message,
       };
     }
-  }
+  },
 });
 
 export const json: IField = {
@@ -36,14 +36,13 @@ export const json: IField = {
           // maxRows: 20,
         },
       },
-      default: null
+      default: null,
     },
   },
-  availableTypes:['json','array'],
+  availableTypes: ['json', 'array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
   },
-  filterable: {
-  }
+  filterable: {},
 };

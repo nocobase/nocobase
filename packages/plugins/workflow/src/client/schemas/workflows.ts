@@ -6,8 +6,6 @@ import { NAMESPACE } from '../locale';
 import { triggers } from '../triggers';
 import { executionSchema } from './executions';
 
-
-
 const collection = {
   name: 'workflows',
   fields: [
@@ -34,7 +32,7 @@ const collection = {
         enum: Array.from(triggers.getEntities()).map(([value, { title }]) => ({
           value,
           label: title,
-          color: 'gold'
+          color: 'gold',
         })),
         required: true,
       } as ISchema,
@@ -62,8 +60,8 @@ const collection = {
         ],
         'x-component': 'Radio.Group',
         'x-decorator': 'FormItem',
-        default: false
-      } as ISchema
+        default: false,
+      } as ISchema,
     },
     {
       type: 'number',
@@ -74,7 +72,7 @@ const collection = {
         type: 'number',
         'x-component': 'InputNumber',
         'x-decorator': 'FormItem',
-      } as ISchema
+      } as ISchema,
     },
   ],
 };
@@ -94,7 +92,7 @@ export const workflowSchema: ISchema = {
           params: {
             pageSize: 20,
             filter: {
-              current: true
+              current: true,
             },
             sort: ['-createdAt'],
             except: ['config'],
@@ -141,8 +139,8 @@ export const workflowSchema: ISchema = {
                   'x-decorator': 'Form',
                   'x-decorator-props': {
                     initialValue: {
-                      current: true
-                    }
+                      current: true,
+                    },
                   },
                   title: '{{t("Add new")}}',
                   properties: {
@@ -183,7 +181,7 @@ export const workflowSchema: ISchema = {
                 },
               },
             },
-          }
+          },
         },
         table: {
           type: 'void',
@@ -206,7 +204,7 @@ export const workflowSchema: ISchema = {
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
             type: {
               type: 'void',
@@ -218,7 +216,7 @@ export const workflowSchema: ISchema = {
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                 },
-              }
+              },
             },
             enabled: {
               type: 'void',
@@ -229,9 +227,9 @@ export const workflowSchema: ISchema = {
                   type: 'boolean',
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
-                  default: false
+                  default: false,
                 },
-              }
+              },
             },
             allExecuted: {
               type: 'void',
@@ -247,10 +245,10 @@ export const workflowSchema: ISchema = {
                   'x-component': 'CollectionField',
                   'x-read-pretty': true,
                   properties: {
-                    drawer: executionSchema
-                  }
+                    drawer: executionSchema,
+                  },
                 },
-              }
+              },
             },
             actions: {
               type: 'void',
@@ -266,7 +264,7 @@ export const workflowSchema: ISchema = {
                   properties: {
                     config: {
                       type: 'void',
-                      'x-component': 'WorkflowLink'
+                      'x-component': 'WorkflowLink',
                     },
                     update: {
                       type: 'void',
@@ -339,9 +337,9 @@ export const workflowSchema: ISchema = {
                               refresh();
                             },
                           };
-                        }
-                      }
-                    }
+                        },
+                      },
+                    },
                     // delete: {
                     //   type: 'void',
                     //   title: '{{ t("Delete") }}',
@@ -354,13 +352,13 @@ export const workflowSchema: ISchema = {
                     //     useAction: '{{ cm.useDestroyActionAndRefreshCM }}',
                     //   },
                     // },
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
