@@ -39,7 +39,7 @@ export const TableColumnDecorator = (props) => {
   }, [uiSchema?.title]);
   return (
     <SortableItem className={designerCss}>
-      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField}/>
+      <Designer fieldSchema={fieldSchema} uiSchema={uiSchema} collectionField={collectionField} />
       {/* <RecursionField name={columnSchema.name} schema={columnSchema}/> */}
       {field.title || compile(uiSchema?.title)}
       {/* <div

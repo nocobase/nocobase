@@ -19,17 +19,15 @@ export default {
           ['x-validator'](value) {
             return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
           },
-        }
-      }
-    }
+        },
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
-    FilterDynamicComponent
-  }
+    FilterDynamicComponent,
+  },
 };

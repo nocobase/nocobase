@@ -1,9 +1,7 @@
 import Application from '../application';
 import Plugin from '../plugin';
 
-class TestPlugin extends Plugin {
-  
-}
+class TestPlugin extends Plugin {}
 
 describe('upgrade test', () => {
   let app: Application;

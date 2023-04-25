@@ -69,7 +69,7 @@ const messages: any = {
   showMore: (count) => i18n.t('{{count}} more items', { count }),
 };
 
-const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof Weeks[number]) => {
+const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof Weeks)[number]) => {
   const { t } = useTranslation();
   return useMemo(() => {
     if (!Array.isArray(dataSource)) return [];
@@ -118,7 +118,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: typeof We
       };
 
       if (cron === 'every_week') {
-        let nextStart = start
+        const nextStart = start
           .clone()
           .year(startDate.year())
           .month(startDate.month())
@@ -193,7 +193,7 @@ const CalendarRecordViewer = (props) => {
 export const Calendar: any = observer((props: any) => {
   const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
   const [date, setDate] = useState<Date>(new Date());
-  const [view, setView] = useState<typeof Weeks[number]>('month');
+  const [view, setView] = useState<(typeof Weeks)[number]>('month');
   const events = useEvents(dataSource, fieldNames, date, view);
   const [visible, setVisible] = useState(false);
   const [record, setRecord] = useState<any>({});

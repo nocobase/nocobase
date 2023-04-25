@@ -1,12 +1,12 @@
-import FlowNodeModel from "../models/FlowNode";
-import JobModel from "../models/Job";
-import Processor from "../Processor";
-import { JOB_STATUS } from "../constants";
+import FlowNodeModel from '../models/FlowNode';
+import JobModel from '../models/Job';
+import Processor from '../Processor';
+import { JOB_STATUS } from '../constants';
 
 export const PARALLEL_MODE = {
   ALL: 'all',
   ANY: 'any',
-  RACE: 'race'
+  RACE: 'race',
 } as const;
 
 const Modes = {
@@ -15,45 +15,45 @@ const Modes = {
       return previous.status >= JOB_STATUS.PENDING;
     },
     getStatus(result) {
-      const failedStatus = result.find(status => status != null && status < JOB_STATUS.PENDING)
+      const failedStatus = result.find((status) => status != null && status < JOB_STATUS.PENDING);
       if (typeof failedStatus !== 'undefined') {
         return failedStatus;
       }
-      if (result.every(status => status != null && status === JOB_STATUS.RESOLVED)) {
+      if (result.every((status) => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
       return JOB_STATUS.PENDING;
-    }
+    },
   },
   [PARALLEL_MODE.ANY]: {
     next(previous) {
       return previous.status <= JOB_STATUS.PENDING;
     },
     getStatus(result) {
-      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
+      if (result.some((status) => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
-      if (result.some(status => status != null ? status === JOB_STATUS.PENDING : true)) {
+      if (result.some((status) => (status != null ? status === JOB_STATUS.PENDING : true))) {
         return JOB_STATUS.PENDING;
       }
       return JOB_STATUS.FAILED;
-    }
+    },
   },
   [PARALLEL_MODE.RACE]: {
     next(previous) {
       return previous.status === JOB_STATUS.PENDING;
     },
     getStatus(result) {
-      if (result.some(status => status != null && status === JOB_STATUS.RESOLVED)) {
+      if (result.some((status) => status != null && status === JOB_STATUS.RESOLVED)) {
         return JOB_STATUS.RESOLVED;
       }
-      const failedStatus = result.find(status => status != null && status < JOB_STATUS.PENDING);
+      const failedStatus = result.find((status) => status != null && status < JOB_STATUS.PENDING);
       if (typeof failedStatus !== 'undefined') {
         return failedStatus;
       }
       return JOB_STATUS.PENDING;
-    }
-  }
+    },
+  },
 };
 
 export default {
@@ -64,7 +64,7 @@ export default {
       status: JOB_STATUS.PENDING,
       result: Array(branches.length).fill(null),
       nodeId: node.id,
-      upstreamId: prevJob?.id ?? null
+      upstreamId: prevJob?.id ?? null,
     });
 
     // NOTE:
@@ -73,13 +73,16 @@ export default {
     // because of the delay is not significant sensible.
     // another benifit of this is, it could handle sequenced branches in future.
     const { mode = PARALLEL_MODE.ALL } = node.config;
-    await branches.reduce((promise: Promise<any>, branch, i) =>
-      promise.then((previous) => {
-        if (i && !Modes[mode].next(previous)) {
-          return Promise.resolve(previous);
-        }
-        return processor.run(branch, job);
-      }), Promise.resolve());
+    await branches.reduce(
+      (promise: Promise<any>, branch, i) =>
+        promise.then((previous) => {
+          if (i && !Modes[mode].next(previous)) {
+            return Promise.resolve(previous);
+          }
+          return processor.run(branch, job);
+        }),
+      Promise.resolve(),
+    );
 
     return processor.end(node, job);
   },
@@ -103,7 +106,7 @@ export default {
     const newResult = [...result.slice(0, branchIndex), branchJob.status, ...result.slice(branchIndex + 1)];
     job.set({
       result: newResult,
-      status: Modes[mode].getStatus(newResult)
+      status: Modes[mode].getStatus(newResult),
     });
 
     if (job.status === JOB_STATUS.PENDING) {
@@ -112,5 +115,5 @@ export default {
     }
 
     return job;
-  }
+  },
 };

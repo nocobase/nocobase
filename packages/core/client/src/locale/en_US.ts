@@ -498,6 +498,7 @@ export default {
   "Skip required validation": "Skip required validation",
   "Form values": "Form values",
   "Fields values": "Fields values",
+  'The field has bee deleted': 'The field has bee deleted',
   "When submitting the following fields, the saved values are": "When submitting the following fields, the saved values are",
   "After successful submission": "After successful submission",
   "Then": "Then",
@@ -685,5 +686,9 @@ export default {
   "UpdatedAt": "Recording a row's last updated user",
   "Column width": "Column width",
   "Sortable": "Sortable",
-  "Enable link": "Enable link"
+  "Enable link": "Enable link",
+  "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>": "This is likely a NocoBase internals bug. Please open an issue at <1>here</1>",
+  "Render Failed": "Render Failed",
+  "Feedback": "Feedback",
+  "Try again": "Try again",
 };

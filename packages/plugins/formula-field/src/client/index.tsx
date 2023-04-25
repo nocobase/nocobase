@@ -10,30 +10,30 @@ import formulaField from './interfaces/formula';
 import { NAMESPACE } from './locale';
 import { Registry } from '@nocobase/utils/client';
 
-
-
 registerField(formulaField.group, 'formula', formulaField);
 
 function renderExpressionDescription(key: string) {
   const engine = (evaluators as Registry<Evaluator>).get(key);
 
-  return engine?.link
-    ? (
-      <>
-        <span className={css`
+  return engine?.link ? (
+    <>
+      <span
+        className={css`
           &:after {
             content: ':';
           }
           & + a {
-            margin-left: .25em;
+            margin-left: 0.25em;
           }
-        `}>
-          {i18n.t('Syntax references', { ns: NAMESPACE })}
-        </span>
-        <a href={engine.link} target="_blank">{engine.label}</a>
-      </>
-    )
-    : null
+        `}
+      >
+        {i18n.t('Syntax references', { ns: NAMESPACE })}
+      </span>
+      <a href={engine.link} target="_blank" rel="noreferrer">
+        {engine.label}
+      </a>
+    </>
+  ) : null;
 }
 
 export default React.memo((props) => {
@@ -45,7 +45,7 @@ export default React.memo((props) => {
         // DynamicExpression
       }}
       scope={{
-        renderExpressionDescription
+        renderExpressionDescription,
       }}
     >
       <CollectionManagerContext.Provider
@@ -55,7 +55,7 @@ export default React.memo((props) => {
             ...ctx.interfaces,
             formula: formulaField,
             // expression: expressionField
-          }
+          },
         }}
       >
         {props.children}

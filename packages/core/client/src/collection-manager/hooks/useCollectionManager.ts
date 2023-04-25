@@ -276,7 +276,7 @@ export const useCollectionManager = () => {
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
     },
-    getTemplate(name: string = 'general') {
+    getTemplate(name = 'general') {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {

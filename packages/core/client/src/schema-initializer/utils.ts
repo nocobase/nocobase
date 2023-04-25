@@ -55,7 +55,7 @@ export const useRemoveGridFormItem = () => {
   };
 };
 
-export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
+export const findTableColumn = (schema: Schema, key: string, action: string, deepth = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;
@@ -448,18 +448,18 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {
-  const { name, template } = useCollection();
+  const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
+  const form = useForm();
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const form = useForm();
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
-      [targetCollection.title]: fields
+      [targetCollection?.title]: fields
         ?.filter((field) => field?.interface && !field?.isForeignKey)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);

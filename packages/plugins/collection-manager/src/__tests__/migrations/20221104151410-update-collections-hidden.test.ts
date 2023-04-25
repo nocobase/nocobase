@@ -47,7 +47,7 @@ describe('migration 20221104151410-update-collections-hidden test', () => {
 
     // > 0.8.0-alpha.9 version up test
     await db.getRepository('applicationVersion').update({
-      filterByTk:1,
+      filterByTk: 1,
       values: {
         value: '0.8.0-alpha.10',
       },
@@ -71,10 +71,9 @@ describe('migration 20221104151410-update-collections-hidden test', () => {
     });
     expect(hiddenResult.length).toBe(0);
 
-
     // <= 0.8.0-alpha.9 version up test
     await db.getRepository('applicationVersion').update({
-      filterByTk:1,
+      filterByTk: 1,
       values: {
         value: '0.8.0-alpha.9',
       },

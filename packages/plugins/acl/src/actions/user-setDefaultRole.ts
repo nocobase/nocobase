@@ -8,7 +8,9 @@ export async function setDefaultRole(ctx: Context, next: Next) {
   const {
     db,
     state: { currentUser },
-    action: { params: { values } }
+    action: {
+      params: { values },
+    },
   } = ctx;
 
   if (values.roleName == 'anonymous') {
@@ -17,7 +19,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
 
   const repository = db.getRepository('rolesUsers');
 
-  await db.sequelize.transaction(async transaction => {
+  await db.sequelize.transaction(async (transaction) => {
     await repository.update({
       filter: {
         userId: currentUser.get('id'),

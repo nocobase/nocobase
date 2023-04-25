@@ -96,14 +96,12 @@ const ConstantTypes = {
   },
 };
 
-
-
 function getTypedConstantOption(type) {
   return {
     value: '',
     label: '{{t("Constant")}}',
     children: Object.values(ConstantTypes),
-    component: ConstantTypes[type]?.component
+    component: ConstantTypes[type]?.component,
   };
 }
 
@@ -126,21 +124,17 @@ export function Input(props) {
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
     ? {
-      value: '',
-      label: '{{t("Constant")}}'
-    }
-    : (useTypedConstant
-      ? getTypedConstantOption(type)
-      : {
+        value: '',
+        label: '{{t("Constant")}}',
+      }
+    : useTypedConstant
+    ? getTypedConstantOption(type)
+    : {
         value: '',
         label: '{{t("Null")}}',
-        component: ConstantTypes.null.component
-      }
-    );
-  const options: VariableOptions[] = compile([
-    constantOption,
-    ...varialbeOptions,
-  ]);
+        component: ConstantTypes.null.component,
+      };
+  const options: VariableOptions[] = compile([constantOption, ...varialbeOptions]);
 
   function onSwitch(next) {
     if (next[0] === '') {

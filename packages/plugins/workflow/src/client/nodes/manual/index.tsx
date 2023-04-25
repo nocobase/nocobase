@@ -9,18 +9,17 @@ import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
 import { JOB_STATUS } from '../../constants';
 
-
 const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
   ALL: Symbol('all'),
   ANY: Symbol('any'),
   ALL_PERCENTAGE: Symbol('all percentage'),
-  ANY_PERCENTAGE: Symbol('any percentage')
+  ANY_PERCENTAGE: Symbol('any percentage'),
 };
 
 // TODO(optimize): change to register way
-const initializerGroup = BlockInitializers.items.find(group => group.key ==='media');
-if (!initializerGroup.children.find(item => item.key === 'workflowTodos')) {
+const initializerGroup = BlockInitializers.items.find((group) => group.key === 'media');
+if (!initializerGroup.children.find((item) => item.key === 'workflowTodos')) {
   initializerGroup.children.push({
     key: 'workflowTodos',
     type: 'item',
@@ -59,7 +58,7 @@ export default {
             visible: '{{$deps[0].length > 1}}',
           },
         },
-      }
+      },
     },
     schema: {
       type: 'void',
@@ -70,25 +69,22 @@ export default {
         schema: {
           type: 'object',
           'x-component': 'SchemaConfig',
-          default: null
+          default: null,
         },
-      }
+      },
     },
     forms: {
       type: 'object',
-      default: {}
-    }
+      default: {},
+    },
   },
-  view: {
-
-  },
-  scope: {
-  },
+  view: {},
+  scope: {},
   components: {
     SchemaConfigButton,
     SchemaConfig,
     ModeConfig,
-    AssigneesSelect
+    AssigneesSelect,
   },
   getOptions(config, types) {
     const formKeys = Object.keys(config.forms ?? {});
@@ -96,26 +92,28 @@ export default {
       return null;
     }
 
-    const options = formKeys.map(formKey => {
-      const form = config.forms[formKey];
+    const options = formKeys
+      .map((formKey) => {
+        const form = config.forms[formKey];
 
-      const fields = (form.collection?.fields ?? []).map(field => ({
-        key: field.name,
-        value: field.name,
-        label: field.uiSchema.title,
-        title: field.uiSchema.title
-      }));
-      const filteredFields = filterTypedFields(fields, types);
-      return filteredFields.length
-        ? {
-          key: formKey,
-          value: formKey,
-          label: form.title || formKey,
-          title: form.title || formKey,
-          children: filteredFields
-        }
-        : null;
-    }).filter(Boolean);
+        const fields = (form.collection?.fields ?? []).map((field) => ({
+          key: field.name,
+          value: field.name,
+          label: field.uiSchema.title,
+          title: field.uiSchema.title,
+        }));
+        const filteredFields = filterTypedFields(fields, types);
+        return filteredFields.length
+          ? {
+              key: formKey,
+              value: formKey,
+              label: form.title || formKey,
+              title: form.title || formKey,
+              children: filteredFields,
+            }
+          : null;
+      })
+      .filter(Boolean);
 
     return options.length ? options : null;
   },
@@ -141,14 +139,16 @@ export default {
         : null;
     }).filter(Boolean);
 
-    return forms.length ? {
-      key: 'forms',
-      type: 'subMenu',
-      title: node.title,
-      children: forms
-    } : null;
+    return forms.length
+      ? {
+          key: 'forms',
+          type: 'subMenu',
+          title: node.title,
+          children: forms,
+        }
+      : null;
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

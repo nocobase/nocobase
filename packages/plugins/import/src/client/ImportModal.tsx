@@ -21,7 +21,7 @@ export const ImportModal = (props: any) => {
   };
   const downloadFailureDataHandler = () => {
     const arrayBuffer = new Int8Array(fileData?.data);
-    let blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
+    const blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
     saveAs(blob, `fail.xlsx`);
   };
   return (

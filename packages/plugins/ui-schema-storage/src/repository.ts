@@ -530,7 +530,7 @@ export class UiSchemaRepository extends Repository {
 
   @transaction()
   async remove(uid: string, options?: Transactionable & removeParentOptions) {
-    let { transaction } = options;
+    const { transaction } = options;
 
     await this.clearXUidPathCache(uid, transaction);
     if (options?.removeParentsIfNoChildren) {

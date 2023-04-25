@@ -4,8 +4,6 @@ import Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 import ManualInstruction from '.';
 
-
-
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values } = context.action.params;

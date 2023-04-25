@@ -11,5 +11,5 @@ export default {
   'Entity relationship only': 'Entity relationship only',
   'Inheritance relationship only': 'Inheritance relationship only',
   'Graphical interface': 'Graphical interface',
-  'Selection': 'Selection',
+  Selection: 'Selection',
 };

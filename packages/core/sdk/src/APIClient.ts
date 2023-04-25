@@ -125,7 +125,7 @@ export class Auth {
     this.api.storage.setItem(this.NOCOBASE_ROLE_KEY, role || '');
   }
 
-  async signIn(values, authenticator: string = 'password'): Promise<AxiosResponse<any>> {
+  async signIn(values, authenticator = 'password'): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
       url: 'users:signin',

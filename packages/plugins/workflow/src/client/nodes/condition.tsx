@@ -1,21 +1,21 @@
-import React from "react";
-import { css, cx } from "@emotion/css";
-import { Button, Select } from "antd";
+import React from 'react';
+import { css, cx } from '@emotion/css';
+import { Button, Select } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { Trans, useTranslation } from "react-i18next";
+import { Trans, useTranslation } from 'react-i18next';
 
-import { Registry } from "@nocobase/utils/client";
-import { Variable, useCompile } from "@nocobase/client";
-import { evaluators } from "@nocobase/evaluators/client";
+import { Registry } from '@nocobase/utils/client';
+import { Variable, useCompile } from '@nocobase/client';
+import { evaluators } from '@nocobase/evaluators/client';
 
-import { NodeDefaultView } from ".";
-import { Branch } from "../Branch";
+import { NodeDefaultView } from '.';
+import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
-import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { lang, NAMESPACE } from "../locale";
-import { useWorkflowVariableOptions } from "../variable";
-import { RadioWithTooltip, RadioWithTooltipOption } from "../components/RadioWithTooltip";
-import { renderEngineReference } from "../components/renderEngineReference";
+import { branchBlockClass, nodeSubtreeClass } from '../style';
+import { lang, NAMESPACE } from '../locale';
+import { useWorkflowVariableOptions } from '../variable';
+import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
+import { renderEngineReference } from '../components/renderEngineReference';
 
 interface Calculator {
   name: string;
@@ -85,37 +85,37 @@ calculators.register('mod', {
 calculators.register('includes', {
   name: '{{t("contains")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('notIncludes', {
   name: '{{t("does not contain")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('startsWith', {
   name: '{{t("starts with")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('notStartsWith', {
   name: '{{t("not starts with")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('endsWith', {
   name: '{{t("ends with")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('notEndsWith', {
   name: '{{t("not ends with")}}',
   type: 'boolean',
-  group: 'string'
+  group: 'string',
 });
 calculators.register('concat', {
   name: `{{t("concat", { ns: "${NAMESPACE}" })}}`,
   type: 'string',
-  group: 'string'
+  group: 'string',
 });
 
 const calculatorGroups = [
@@ -134,52 +134,57 @@ const calculatorGroups = [
   {
     value: 'date',
     title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
-  }
+  },
 ];
 
 function getGroupCalculators(group) {
-  return Array.from(calculators.getEntities()).filter(([key, value]) => value.group  === group);
+  return Array.from(calculators.getEntities()).filter(([key, value]) => value.group === group);
 }
 
 export function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
   const options = useWorkflowVariableOptions();
   return (
-    <fieldset className={css`
-      display: flex;
-      gap: .5em;
-      align-items: center;
-      flex-wrap: wrap;
-    `}>
+    <fieldset
+      className={css`
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+        flex-wrap: wrap;
+      `}
+    >
       <Variable.Input
         value={operands[0]}
-        onChange={(v => onChange({ calculator, operands: [v, operands[1]] }))}
+        onChange={(v) => onChange({ calculator, operands: [v, operands[1]] })}
         scope={options}
         useTypedConstant
       />
       <Select
         value={calculator}
-        onChange={v => onChange({ operands, calculator: v })}
+        onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
       >
-        {calculatorGroups.filter(group => Boolean(getGroupCalculators(group.value).length)).map(group => (
-          <Select.OptGroup key={group.value} label={compile(group.title)}>
-            {getGroupCalculators(group.value).map(([value, { name }]) => (
-              <Select.Option key={value} value={value}>{compile(name)}</Select.Option>
-            ))}
-          </Select.OptGroup>
-        ))}
+        {calculatorGroups
+          .filter((group) => Boolean(getGroupCalculators(group.value).length))
+          .map((group) => (
+            <Select.OptGroup key={group.value} label={compile(group.title)}>
+              {getGroupCalculators(group.value).map(([value, { name }]) => (
+                <Select.Option key={value} value={value}>
+                  {compile(name)}
+                </Select.Option>
+              ))}
+            </Select.OptGroup>
+          ))}
       </Select>
       <Variable.Input
         value={operands[1]}
-        onChange={(v => onChange({ calculator, operands: [operands[0], v] }))}
+        onChange={(v) => onChange({ calculator, operands: [operands[0], v] })}
         scope={options}
         useTypedConstant
       />
     </fieldset>
   );
 }
-
 
 function CalculationItem({ value, onChange, onRemove }) {
   if (!value) {
@@ -189,20 +194,18 @@ function CalculationItem({ value, onChange, onRemove }) {
   const { calculator, operands = [] } = value;
 
   return (
-    <div className={css`
-      display: flex;
-      position: relative;
-      margin: .5em 0;
-    `}>
-      {value.group
-        ? (
-          <CalculationGroup
-            value={value.group}
-            onChange={group => onChange({ ...value, group })}
-          />
-        )
-        : <Calculation operands={operands} calculator={calculator} onChange={onChange} />
-      }
+    <div
+      className={css`
+        display: flex;
+        position: relative;
+        margin: 0.5em 0;
+      `}
+    >
+      {value.group ? (
+        <CalculationGroup value={value.group} onChange={(group) => onChange({ ...value, group })} />
+      ) : (
+        <Calculation operands={operands} calculator={calculator} onChange={onChange} />
+      )}
       <Button onClick={onRemove} type="link" icon={<CloseCircleOutlined />} />
     </div>
   );
@@ -215,14 +218,14 @@ function CalculationGroup({ value, onChange }) {
   function onAddSingle() {
     onChange({
       ...value,
-      calculations: [...calculations, { not: false, calculator: 'equal' }]
+      calculations: [...calculations, { not: false, calculator: 'equal' }],
     });
   }
 
   function onAddGroup() {
     onChange({
       ...value,
-      calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }]
+      calculations: [...calculations, { not: false, group: { type: 'and', calculations: [] } }],
     });
   }
 
@@ -238,30 +241,37 @@ function CalculationGroup({ value, onChange }) {
   }
 
   return (
-    <div className={cx('node-type-condition-group', css`
-      position: relative;
-      width: 100%;
-      .node-type-condition-group{
-        padding: .5em 1em;
-        border: 1px dashed #ddd;
-      }
-      + button{
-        position: absolute;
-        right: 0;
-      }
-    `)}>
-      <div className={css`
-        display: flex;
-        align-items: center;
-        gap: .5em;
-        .ant-select{
-          width: auto;
-          min-width: 6em;
-        }
-      `}>
+    <div
+      className={cx(
+        'node-type-condition-group',
+        css`
+          position: relative;
+          width: 100%;
+          .node-type-condition-group {
+            padding: 0.5em 1em;
+            border: 1px dashed #ddd;
+          }
+          + button {
+            position: absolute;
+            right: 0;
+          }
+        `,
+      )}
+    >
+      <div
+        className={css`
+          display: flex;
+          align-items: center;
+          gap: 0.5em;
+          .ant-select {
+            width: auto;
+            min-width: 6em;
+          }
+        `}
+      >
         <Trans>
           {'Meet '}
-          <Select value={type} onChange={t => onChange({ ...value, type: t })}>
+          <Select value={type} onChange={(t) => onChange({ ...value, type: t })}>
             <Select.Option value="and">All</Select.Option>
             <Select.Option value="or">Any</Select.Option>
           </Select>
@@ -278,28 +288,30 @@ function CalculationGroup({ value, onChange }) {
           />
         ))}
       </div>
-      <div className={css`
-        button{
-          padding: 0;
-          &:not(:last-child){
-            margin-right: 1em;
+      <div
+        className={css`
+          button {
+            padding: 0;
+            &:not(:last-child) {
+              margin-right: 1em;
+            }
           }
-        }
-      `} >
-        <Button type="link" onClick={onAddSingle}>{t('Add condition')}</Button>
-        <Button type="link" onClick={onAddGroup}>{t('Add condition group')}</Button>
+        `}
+      >
+        <Button type="link" onClick={onAddSingle}>
+          {t('Add condition')}
+        </Button>
+        <Button type="link" onClick={onAddGroup}>
+          {t('Add condition group')}
+        </Button>
       </div>
     </div>
   );
 }
 
 function CalculationConfig({ value, onChange }) {
-  const rule = value && Object.keys(value).length
-    ? value
-    : { group: { type: 'and', calculations: [] } };
-  return (
-    <CalculationGroup value={rule.group} onChange={group => onChange({ ...rule, group })} />
-  );
+  const rule = value && Object.keys(value).length ? value : { group: { type: 'and', calculations: [] } };
+  return <CalculationGroup value={rule.group} onChange={(group) => onChange({ ...rule, group })} />;
 }
 
 export default {
@@ -318,12 +330,12 @@ export default {
       enum: [
         {
           value: true,
-          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`
+          label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
         },
         {
           value: false,
-          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`
-        }
+          label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
+        },
       ],
     },
     engine: {
@@ -334,7 +346,7 @@ export default {
       'x-component-props': {
         options: [
           ['basic', { label: `{{t("Basic", { ns: "${NAMESPACE}" })}}` }],
-          ...Array.from(evaluators.getEntities())
+          ...Array.from(evaluators.getEntities()),
         ].reduce((result: RadioWithTooltipOption[], [value, options]: any) => result.concat({ value, ...options }), []),
       },
       required: true,
@@ -349,11 +361,11 @@ export default {
         dependencies: ['engine'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] === "basic"}}'
-          }
-        }
+            visible: '{{$deps[0] === "basic"}}',
+          },
+        },
       },
-      required: true
+      required: true,
     },
     expression: {
       type: 'string',
@@ -361,7 +373,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}'
+        scope: '{{useWorkflowVariableOptions}}',
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
@@ -378,43 +390,55 @@ export default {
         dependencies: ['engine'],
         fulfill: {
           state: {
-            visible: '{{$deps[0] !== "basic"}}'
+            visible: '{{$deps[0] !== "basic"}}',
           },
           schema: {
             description: '{{renderEngineReference($deps[0])}}',
-          }
-        }
+          },
+        },
       },
-      required: true
-    }
+      required: true,
+    },
   },
-  view: {
-
-  },
+  view: {},
   options: [
-    { label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`, key: 'rejectOnFalse', value: { rejectOnFalse: true } },
-    { label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`, key: 'branch', value: { rejectOnFalse: false } }
+    {
+      label: `{{t('Continue when "Yes"', { ns: "${NAMESPACE}" })}}`,
+      key: 'rejectOnFalse',
+      value: { rejectOnFalse: true },
+    },
+    {
+      label: `{{t('Branch into "Yes" and "No"', { ns: "${NAMESPACE}" })}}`,
+      key: 'branch',
+      value: { rejectOnFalse: false },
+    },
   ],
   render(data) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
-    const { id, config: { rejectOnFalse } } = data;
-    const trueEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 1);
-    const falseEntry = nodes.find(item => item.upstreamId === id && item.branchIndex === 0);
+    const {
+      id,
+      config: { rejectOnFalse },
+    } = data;
+    const trueEntry = nodes.find((item) => item.upstreamId === id && item.branchIndex === 1);
+    const falseEntry = nodes.find((item) => item.upstreamId === id && item.branchIndex === 0);
     return (
       <NodeDefaultView data={data}>
         {rejectOnFalse ? null : (
           <div className={cx(nodeSubtreeClass)}>
             <div
-              className={cx(branchBlockClass, css`
-                > * > .workflow-branch-lines{
-                  > button{
-                    display: none;
+              className={cx(
+                branchBlockClass,
+                css`
+                  > * > .workflow-branch-lines {
+                    > button {
+                      display: none;
+                    }
                   }
-                }
-              `)}
+                `,
+              )}
             >
-              <Branch from={data} entry={falseEntry} branchIndex={0}/>
+              <Branch from={data} entry={falseEntry} branchIndex={0} />
               <Branch from={data} entry={trueEntry} branchIndex={1} />
             </div>
             <div
@@ -423,7 +447,7 @@ export default {
                 height: 2em;
                 overflow: visible;
 
-                > span{
+                > span {
                   position: absolute;
                   top: calc(1.5em - 1px);
                   line-height: 1em;
@@ -433,20 +457,32 @@ export default {
                 }
               `}
             >
-              <span className={css`right: 4em;`}>{t('No')}</span>
-              <span className={css`left: 4em;`}>{t('Yes')}</span>
+              <span
+                className={css`
+                  right: 4em;
+                `}
+              >
+                {t('No')}
+              </span>
+              <span
+                className={css`
+                  left: 4em;
+                `}
+              >
+                {t('Yes')}
+              </span>
             </div>
           </div>
         )}
       </NodeDefaultView>
-    )
+    );
   },
   scope: {
     renderEngineReference,
-    useWorkflowVariableOptions
+    useWorkflowVariableOptions,
   },
   components: {
     CalculationConfig,
-    RadioWithTooltip
-  }
+    RadioWithTooltip,
+  },
 };

@@ -86,7 +86,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
   }
   console.log('form.values', form.values);
   return form.values;
-  let values = {};
+  const values = {};
   for (const key in form.values) {
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
@@ -494,7 +494,7 @@ export const useCustomizeBulkEditActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      let values = cloneDeep(form.values);
+      const values = cloneDeep(form.values);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       for (const key in values) {
@@ -668,7 +668,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      let values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {

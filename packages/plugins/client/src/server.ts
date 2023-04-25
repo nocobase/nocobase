@@ -13,7 +13,7 @@ import { getResourceLocale } from './resource';
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
   const dir = resolve(process.cwd(), 'node_modules', packageName);
-  let files = [resolve(dir, `README.${locale}.md`), resolve(dir, `README.md`)];
+  const files = [resolve(dir, `README.${locale}.md`), resolve(dir, `README.md`)];
   const file = files.find((file) => {
     return fs.existsSync(file);
   });
@@ -23,7 +23,7 @@ async function getReadMe(name: string, locale: string) {
 async function getTabs(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
   const dir = resolve(process.cwd(), 'node_modules', packageName);
-  let file = resolve(dir, 'docs', locale, 'tabs.json');
+  const file = resolve(dir, 'docs', locale, 'tabs.json');
   if (!fs.existsSync(file)) {
     // TODO: compatible README, remove it in all plugin has tabs.json
     return [

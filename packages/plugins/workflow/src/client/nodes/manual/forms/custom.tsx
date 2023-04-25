@@ -5,7 +5,18 @@ import { Field, createForm } from '@formily/core';
 import { useForm, useFieldSchema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 
-import { ActionContext, CollectionContext, CollectionProvider, gridRowColWrap, SchemaComponent, SchemaInitializer, SchemaInitializerItemOptions, useCollectionManager, useCurrentUserContext, useRecord } from '@nocobase/client';
+import {
+  ActionContext,
+  CollectionContext,
+  CollectionProvider,
+  gridRowColWrap,
+  SchemaComponent,
+  SchemaInitializer,
+  SchemaInitializerItemOptions,
+  useCollectionManager,
+  useCurrentUserContext,
+  useRecord,
+} from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 
 import { JOB_STATUS } from '../../../constants';
@@ -22,7 +33,7 @@ function FormCollectionProvider(props) {
       <CollectionProvider
         collection={{
           ...props.collection,
-          fields
+          fields,
         }}
       >
         {props.children}
@@ -42,8 +53,8 @@ function CustomFormBlockInitializer({ insert, ...props }) {
           'x-decorator-props': {
             collection: {
               name: uid(),
-              fields: []
-            }
+              fields: [],
+            },
           },
           'x-component': 'CardItem',
           'x-component-props': {
@@ -51,7 +62,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
           },
           'x-designer': 'SimpleDesigner',
           'x-designer-props': {
-            type: 'customForm'
+            type: 'customForm',
           },
           properties: {
             [uid()]: {
@@ -59,7 +70,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
               'x-component': 'FormV2',
               'x-component-props': {
                 // disabled / read-pretty / initialValues
-                useProps: '{{ useFormBlockProps }}'
+                useProps: '{{ useFormBlockProps }}',
               },
               properties: {
                 grid: {
@@ -84,7 +95,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                       title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
                       'x-decorator': 'ManualActionStatusProvider',
                       'x-decorator-props': {
-                        value: JOB_STATUS.RESOLVED
+                        value: JOB_STATUS.RESOLVED,
                       },
                       'x-component': 'Action',
                       'x-component-props': {
@@ -93,12 +104,12 @@ function CustomFormBlockInitializer({ insert, ...props }) {
                       },
                       'x-designer': 'Action.Designer',
                       'x-action': `${JOB_STATUS.RESOLVED}`,
-                    }
-                  }
-                }
-              }
-            }
-          }
+                    },
+                  },
+                },
+              },
+            },
+          },
         });
       }}
     />
@@ -127,7 +138,7 @@ function getOptions(interfaces) {
   });
 
   return Object.keys(GroupLabels)
-    .filter(groupName => ['basic', 'choices', 'datetime', 'media'].includes(groupName))
+    .filter((groupName) => ['basic', 'choices', 'datetime', 'media'].includes(groupName))
     .map((groupName) => ({
       title: GroupLabels[groupName],
       children: Object.keys(fields[groupName] || {})
@@ -148,17 +159,17 @@ function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
   const { interfaces } = useCollectionManager();
   const options = getOptions(interfaces);
 
-  return options.map(group => ({
+  return options.map((group) => ({
     key: group.title,
     type: 'itemGroup',
     title: group.title,
-    children: group.children.map(item => ({
+    children: group.children.map((item) => ({
       key: item.name,
       type: 'item',
       title: item.title,
       component: CustomFormFieldInitializer,
       fieldInterface: item.name,
-    }))
+    })),
   }));
 }
 
@@ -173,17 +184,22 @@ function AddCustomFormField(props) {
   const { setCollectionFields } = useContext(FormCollectionContext);
 
   return (
-    <AddCustomFormFieldButtonContext.Provider value={{
-      onAddField(item) {
-        const { properties: { unique, type, ...properties }, ...options } = cloneDeep(item);
-        delete properties.name['x-disabled'];
-        setInterface({
-          ...options,
-          properties
-        });
-      },
-      setCallback
-    }}>
+    <AddCustomFormFieldButtonContext.Provider
+      value={{
+        onAddField(item) {
+          const {
+            properties: { unique, type, ...properties },
+            ...options
+          } = cloneDeep(item);
+          delete properties.name['x-disabled'];
+          setInterface({
+            ...options,
+            properties,
+          });
+        },
+        setCallback,
+      }}
+    >
       <SchemaInitializer.Button
         wrap={gridRowColWrap}
         insertPosition={insertPosition}
@@ -192,92 +208,90 @@ function AddCustomFormField(props) {
         title="{{t('Configure fields')}}"
       />
       <ActionContext.Provider value={{ visible: Boolean(interfaceOptions) }}>
-        {interfaceOptions
-          ? (
-            <SchemaComponent
-              schema={{
-                type: 'void',
-                name: 'drawer',
-                title: '{{t("Configure field")}}',
-                'x-decorator': 'Form',
-                'x-component': 'Action.Drawer',
-                properties: {
-                  ...interfaceOptions.properties,
-                  footer: {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
-                    properties: {
-                      cancel: {
-                        type: 'void',
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction() {
-                            const form = useForm();
-                            return {
-                              async run() {
-                                setCallback(null);
-                                setInterface(null);
-                                form.reset();
-                              },
-                            };
-                          }
-                        }
+        {interfaceOptions ? (
+          <SchemaComponent
+            schema={{
+              type: 'void',
+              name: 'drawer',
+              title: '{{t("Configure field")}}',
+              'x-decorator': 'Form',
+              'x-component': 'Action.Drawer',
+              properties: {
+                ...interfaceOptions.properties,
+                footer: {
+                  type: 'void',
+                  'x-component': 'Action.Drawer.Footer',
+                  properties: {
+                    cancel: {
+                      type: 'void',
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction() {
+                          const form = useForm();
+                          return {
+                            async run() {
+                              setCallback(null);
+                              setInterface(null);
+                              form.reset();
+                            },
+                          };
+                        },
                       },
-                      submit: {
-                        type: 'void',
-                        title: '{{t("Submit")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction() {
-                            const { values, query } = useForm();
-                            return {
-                              async run() {
-                                const { default: options } = interfaceOptions;
-                                const defaultName = uid();
-                                options.name = values.name ?? defaultName;
-                                options.uiSchema.title = values.uiSchema?.title ?? defaultName;
-                                options.interface = interfaceOptions.name;
-                                const existed = collection.fields?.find(item => item.name === options.name);
-                                if (existed) {
-                                  const field = query('name').take() as Field;
-                                  field.setFeedback({
-                                    type: 'error',
-                                    // code: 'FormulaError',
-                                    messages: [lang('Field name existed in form')],
-                                  });
-                                  return;
-                                }
-                                const newField = merge(options, values) as any;
-                                setCollectionFields([...collection.fields, newField]);
-
-                                insert({
-                                  name: options.name,
-                                  type: options.uiSchema.type,
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'CollectionField',
-                                  'x-interface-options': newField,
-                                  'x-collection-field': `${collection.name}.${options.name}`,
-                                  'x-designer': 'FormItem.Designer',
+                    },
+                    submit: {
+                      type: 'void',
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction() {
+                          const { values, query } = useForm();
+                          return {
+                            async run() {
+                              const { default: options } = interfaceOptions;
+                              const defaultName = uid();
+                              options.name = values.name ?? defaultName;
+                              options.uiSchema.title = values.uiSchema?.title ?? defaultName;
+                              options.interface = interfaceOptions.name;
+                              const existed = collection.fields?.find((item) => item.name === options.name);
+                              if (existed) {
+                                const field = query('name').take() as Field;
+                                field.setFeedback({
+                                  type: 'error',
+                                  // code: 'FormulaError',
+                                  messages: [lang('Field name existed in form')],
                                 });
-                                setCallback(null);
-                                setInterface(null);
+                                return;
                               }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }}
-              components={{
-                ArrayTable
-              }}
-            />
-          )
-          : null}
+                              const newField = merge(options, values) as any;
+                              setCollectionFields([...collection.fields, newField]);
+
+                              insert({
+                                name: options.name,
+                                type: options.uiSchema.type,
+                                'x-decorator': 'FormItem',
+                                'x-component': 'CollectionField',
+                                'x-interface-options': newField,
+                                'x-collection-field': `${collection.name}.${options.name}`,
+                                'x-designer': 'FormItem.Designer',
+                              });
+                              setCallback(null);
+                              setInterface(null);
+                            },
+                          };
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            }}
+            components={{
+              ArrayTable,
+            }}
+          />
+        ) : null}
       </ActionContext.Provider>
     </AddCustomFormFieldButtonContext.Provider>
   );
@@ -299,7 +313,7 @@ function CustomFormFieldInitializer(props) {
       }}
     />
   );
-};
+}
 
 export default {
   title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
@@ -313,7 +327,7 @@ export default {
       };
     },
     initializers: {
-      AddCustomFormField
+      AddCustomFormField,
     },
     components: {
       FormCollectionProvider

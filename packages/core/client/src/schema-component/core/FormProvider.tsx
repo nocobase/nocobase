@@ -2,14 +2,14 @@ import { createForm } from '@formily/core';
 import {
   FormProvider as FormilyFormProvider,
   SchemaExpressionScopeContext,
-  SchemaOptionsContext
+  SchemaOptionsContext,
 } from '@formily/react';
 import React, { useContext, useMemo } from 'react';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 export const FormProvider: React.FC<any> = (props) => {
   const { children, ...others } = props;
-  let options = useContext(SchemaOptionsContext);
+  const options = useContext(SchemaOptionsContext);
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const scope = { ...options?.scope, ...expressionScope };
   const components = { ...options?.components };

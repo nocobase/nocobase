@@ -1,4 +1,3 @@
-
 export interface RegistryOptions {
   override: boolean;
 }

@@ -2,12 +2,7 @@ import React from 'react';
 import { Select } from 'antd';
 import { observer, useForm } from '@formily/react';
 
-import {
-  useCollectionManager,
-  useCompile
-} from '@nocobase/client';
-
-
+import { useCollectionManager, useCompile } from '@nocobase/client';
 
 export const FieldsSelect = observer((props: any) => {
   const { filter = () => true, ...others } = props;
@@ -20,13 +15,10 @@ export const FieldsSelect = observer((props: any) => {
     <Select
       className="full-width"
       {...others}
-      options={fields
-        .filter(filter)
-        .map(field => ({
-          label: compile(field.uiSchema?.title),
-          value: field.name
-        }))
-      }
+      options={fields.filter(filter).map((field) => ({
+        label: compile(field.uiSchema?.title),
+        value: field.name,
+      }))}
     />
   );
 });

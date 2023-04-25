@@ -4,7 +4,7 @@ import React from 'react';
 
 const ReadPretty = (props) => {
   const content = props.value && (
-    <a target={'_blank'} href={`/apps/${props.value}/admin`}>
+    <a target={'_blank'} href={`/apps/${props.value}/admin`} rel="noreferrer">
       {props.value}
     </a>
   );

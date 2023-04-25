@@ -5,7 +5,7 @@ import render from '../renders';
 import { columns2Appends } from '../utils';
 
 export async function exportXlsx(ctx: Context, next: Next) {
-  let { title, filter, sort, fields, except } = ctx.action.params;
+  const { title, filter, sort, fields, except } = ctx.action.params;
   const { resourceName, resourceOf } = ctx.action;
   let columns = ctx.action.params.values?.columns || ctx.action.params?.columns;
   if (typeof columns === 'string') {

@@ -4,8 +4,6 @@ import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-
-
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
   let app: MockServer;
@@ -22,9 +20,7 @@ describe('workflow > instructions > manual', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: [
-        'users'
-      ]
+      plugins: ['users'],
     });
     agent = app.agent();
     db = app.db;
@@ -36,21 +32,26 @@ describe('workflow > instructions > manual', () => {
 
     users = await UserModel.bulkCreate([
       { id: 1, nickname: 'a' },
-      { id: 2, nickname: 'b' }
+      { id: 2, nickname: 'b' },
     ]);
 
     const userPlugin = app.getPlugin('users') as UserPlugin;
-    userAgents = users.map((user) => app.agent().auth(userPlugin.jwtService.sign({
-      userId: user.id,
-    }), { type: 'bearer' }));
+    userAgents = users.map((user) =>
+      app.agent().auth(
+        userPlugin.jwtService.sign({
+          userId: user.id,
+        }),
+        { type: 'bearer' },
+      ),
+    );
 
     workflow = await WorkflowModel.create({
       enabled: true,
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -64,10 +65,10 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id],
           forms: {
             f1: {
-              actions: [JOB_STATUS.RESOLVED]
-            }
-          }
-        }
+              actions: [JOB_STATUS.RESOLVED],
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -87,7 +88,7 @@ describe('workflow > instructions > manual', () => {
 
       const res1 = await agent.resource('users_jobs').submit({
         filterByTk: usersJobs[0].id,
-        values: { status: JOB_STATUS.RESOLVED }
+        values: { status: JOB_STATUS.RESOLVED },
       });
       expect(res1.status).toBe(401);
 
@@ -95,8 +96,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: usersJobs[0].id,
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: {} }
-        }
+          result: { f1: {} },
+        },
       });
       expect(res2.status).toBe(403);
 
@@ -104,8 +105,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: usersJobs[0].id,
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res3.status).toBe(202);
 
@@ -124,8 +125,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: usersJobs[0].id,
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 2 } }
-        }
+          result: { f1: { a: 2 } },
+        },
       });
       expect(res4.status).toBe(400);
     });
@@ -136,9 +137,9 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id, users[1].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -153,11 +154,11 @@ describe('workflow > instructions > manual', () => {
       const usersJobs = await j1.getUsersJobs();
 
       const res1 = await userAgents[1].resource('users_jobs').submit({
-        filterByTk: usersJobs.find(item => item.userId === users[1].id).id,
+        filterByTk: usersJobs.find((item) => item.userId === users[1].id).id,
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -168,11 +169,11 @@ describe('workflow > instructions > manual', () => {
       expect(j2.result).toEqual({ f1: { a: 1 } });
 
       const res2 = await userAgents[0].resource('users_jobs').submit({
-        filterByTk: usersJobs.find(item => item.userId === users[0].id).id,
+        filterByTk: usersJobs.find((item) => item.userId === users[0].id).id,
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res2.status).toBe(400);
     });
@@ -183,9 +184,9 @@ describe('workflow > instructions > manual', () => {
         config: {
           assignees: [users[0].id],
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -202,8 +203,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: usersJobs[0].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res.status).toBe(202);
 
@@ -225,9 +226,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -236,7 +237,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -244,8 +245,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -257,7 +258,7 @@ describe('workflow > instructions > manual', () => {
       expect(j1.status).toBe(JOB_STATUS.PENDING);
       expect(j1.result).toBe(0.5);
       const usersJobs1 = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(usersJobs1.length).toBe(2);
 
@@ -265,8 +266,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 2 } }
-        }
+          result: { f1: { a: 2 } },
+        },
       });
       expect(res2.status).toBe(202);
 
@@ -286,9 +287,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.REJECTED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.REJECTED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -297,7 +298,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -305,8 +306,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -318,7 +319,7 @@ describe('workflow > instructions > manual', () => {
       expect(j1.status).toBe(JOB_STATUS.REJECTED);
       expect(j1.result).toBe(0.5);
       const usersJobs1 = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(usersJobs1.length).toBe(2);
 
@@ -326,8 +327,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res2.status).toBe(400);
     });
@@ -339,9 +340,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: 1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -350,7 +351,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -358,8 +359,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -371,7 +372,7 @@ describe('workflow > instructions > manual', () => {
       expect(j1.status).toBe(JOB_STATUS.PENDING);
       expect(j1.result).toBe(0.5);
       const usersJobs1 = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(usersJobs1.length).toBe(2);
 
@@ -379,8 +380,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res2.status).toBe(202);
 
@@ -402,9 +403,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -413,7 +414,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -421,8 +422,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -438,8 +439,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res2.status).toBe(400);
     });
@@ -451,9 +452,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.REJECTED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -462,7 +463,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -470,8 +471,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -487,8 +488,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { a: 1 } }
-        }
+          result: { f1: { a: 1 } },
+        },
       });
       expect(res2.status).toBe(202);
 
@@ -508,9 +509,9 @@ describe('workflow > instructions > manual', () => {
           assignees: [users[0].id, users[1].id],
           mode: -1,
           forms: {
-            f1: { actions: [JOB_STATUS.REJECTED] }
-          }
-        }
+            f1: { actions: [JOB_STATUS.REJECTED] },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -519,7 +520,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -527,8 +528,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res1.status).toBe(202);
 
@@ -544,8 +545,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[1].get('id'),
         values: {
           status: JOB_STATUS.REJECTED,
-          result: { f1: { a: 0 } }
-        }
+          result: { f1: { a: 0 } },
+        },
       });
       expect(res2.status).toBe(202);
 
@@ -559,13 +560,9 @@ describe('workflow > instructions > manual', () => {
     });
   });
 
-  describe('mode: (0,1) (multiple record, all to percent)', () => {
+  describe('mode: (0,1) (multiple record, all to percent)', () => {});
 
-  });
-
-  describe('mode: (-1,0) (multiple record, any to percent)', () => {
-
-  });
+  describe('mode: (-1,0) (multiple record, any to percent)', () => {});
 
   describe('use result of submitted form in manual node', () => {
     it('result should be available and correct', async () => {
@@ -583,9 +580,9 @@ describe('workflow > instructions > manual', () => {
         type: 'calculation',
         config: {
           engine: 'math.js',
-          expression: `{{$jobsMapByNodeId.${n1.id}.f1.number}} + 1`
+          expression: `{{$jobsMapByNodeId.${n1.id}.f1.number}} + 1`,
         },
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
 
       await n1.setDownstream(n2);
@@ -596,7 +593,7 @@ describe('workflow > instructions > manual', () => {
 
       const UserJobModel = db.getModel('users_jobs');
       const pendingJobs = await UserJobModel.findAll({
-        order: [[ 'userId', 'ASC' ]]
+        order: [['userId', 'ASC']],
       });
       expect(pendingJobs.length).toBe(2);
 
@@ -604,8 +601,8 @@ describe('workflow > instructions > manual', () => {
         filterByTk: pendingJobs[0].get('id'),
         values: {
           status: JOB_STATUS.RESOLVED,
-          result: { f1: { number: 1 } }
-        }
+          result: { f1: { number: 1 } },
+        },
       });
       expect(res1.status).toBe(202);
 

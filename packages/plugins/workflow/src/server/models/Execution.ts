@@ -3,8 +3,6 @@ import { BelongsToGetAssociationMixin, HasManyGetAssociationsMixin } from 'seque
 import WorkflowModel from './Workflow';
 import JobModel from './Job';
 
-
-
 export default class ExecutionModel extends Model {
   declare static readonly database: Database;
 

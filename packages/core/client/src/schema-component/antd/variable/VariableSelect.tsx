@@ -1,7 +1,7 @@
-import { css, cx } from "@emotion/css";
-import { Button, Cascader } from "antd";
-import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { css, cx } from '@emotion/css';
+import { Button, Cascader } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function VariableSelect(props) {
   const { options, onInsert } = props;
@@ -13,26 +13,33 @@ export function VariableSelect(props) {
   }, [options]);
 
   return (
-    <Button className={cx('x-button', css`
-      position: relative;
+    <Button
+      className={cx(
+        'x-button',
+        css`
+          position: relative;
 
-      .ant-select.ant-cascader{
-        position: absolute;
-        top: -1px;
-        left: -1px;
-        min-width: auto;
-        width: calc(100% + 2px);
-        height: calc(100% + 2px);
-        overflow: hidden;
-        opacity: 0;
-      }
-    `)}>
+          .ant-select.ant-cascader {
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            min-width: auto;
+            width: calc(100% + 2px);
+            height: calc(100% + 2px);
+            overflow: hidden;
+            opacity: 0;
+          }
+        `,
+      )}
+    >
       <span
         className={css`
           font-style: italic;
-          font-family: "New York", "Times New Roman", Times, serif;
+          font-family: 'New York', 'Times New Roman', Times, serif;
         `}
-      >x</span>
+      >
+        x
+      </span>
       <Cascader
         placeholder={t('Select a variable')}
         value={[]}
@@ -59,7 +66,7 @@ export function VariableSelect(props) {
           }
         }}
         dropdownClassName={css`
-          .ant-cascader-menu{
+          .ant-cascader-menu {
             margin-bottom: 0;
           }
         `}
@@ -68,9 +75,9 @@ export function VariableSelect(props) {
             {menu}
             <div
               className={css`
-                padding: .5em;
-                border-top: 1px solid rgba(0, 0, 0, .06);
-                color: rgba(0, 0, 0, .45);
+                padding: 0.5em;
+                border-top: 1px solid rgba(0, 0, 0, 0.06);
+                color: rgba(0, 0, 0, 0.45);
               `}
             >
               {t('Double click to choose entire object')}
