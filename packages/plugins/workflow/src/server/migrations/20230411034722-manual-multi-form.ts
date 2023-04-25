@@ -35,7 +35,7 @@ function findParent(root, node) {
 // 5. make collection fields decorator as `FormCollectionProvider` for form block
 // 6. add form component wrapper for form grid
 // 7. move action footer to form block
-function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: number[] }): Object {
+function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: number[] }): object {
   const { blocks, collection } = schema;
   if (!blocks) {
     return {

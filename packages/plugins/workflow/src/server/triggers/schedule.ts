@@ -1,5 +1,5 @@
 import parser from 'cron-parser';
-import { literal, Op, where, fn } from 'sequelize';
+import { Op, fn, literal, where } from 'sequelize';
 import Plugin, { Trigger } from '..';
 import WorkflowModel from '../models/Workflow';
 
@@ -108,7 +108,7 @@ function getOnTimestampWithOffset(on, now: Date) {
   switch (typeof on) {
     case 'string':
       return parseDateWithoutMs(on);
-    case 'object':
+    case 'object': {
       const { field, offset = 0, unit = 1000 } = on;
       if (!field) {
         return null;
@@ -117,6 +117,7 @@ function getOnTimestampWithOffset(on, now: Date) {
       // onDate + offset > now
       // onDate > now - offset
       return timestamp - offset * unit;
+    }
     default:
       return null;
   }
@@ -127,12 +128,14 @@ function getDataOptionTime(data, on, dir = 1) {
     return null;
   }
   switch (typeof on) {
-    case 'string':
+    case 'string': {
       const time = parseDateWithoutMs(on);
       return time ? time : null;
-    case 'object':
+    }
+    case 'object': {
       const { field, offset = 0, unit = 1000 } = on;
       return data.get(field) ? data.get(field).getTime() - offset * unit * dir : null;
+    }
     default:
       return null;
   }
@@ -142,7 +145,7 @@ function getHookId(workflow, type: string) {
   return `${type}#${workflow.id}`;
 }
 
-const DialectTimestampFnMap: { [key: string]: Function } = {
+const DialectTimestampFnMap: { [key: string]: (col: string) => string } = {
   postgres(col) {
     return `CAST(FLOOR(extract(epoch from "${col}")) AS INTEGER)`;
   },
@@ -365,7 +368,7 @@ function matchNext(this: ScheduleTrigger, workflow, now: Date, range: number = t
   currentDate.setMilliseconds(-1);
   const timestamp = now.getTime();
   const interval = parser.parseExpression(repeat, { currentDate });
-  let next = interval.next();
+  const next = interval.next();
 
   // NOTE: cache all workflows will be matched in current cycle
   if (next.getTime() - timestamp <= range) {
@@ -403,9 +406,9 @@ export default class ScheduleTrigger extends Trigger {
   private cache: Map<number | string, any> = new Map();
 
   // running interval, default to 1s
-  interval: number = 1_000;
+  interval = 1_000;
   // caching workflows in range, default to 1min
-  cacheCycle: number = 60_000;
+  cacheCycle = 60_000;
 
   constructor(plugin: Plugin) {
     super(plugin);

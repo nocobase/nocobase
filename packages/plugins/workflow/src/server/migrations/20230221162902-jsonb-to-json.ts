@@ -9,7 +9,9 @@ export default class extends Migration {
       return;
     }
 
-    const { context: { sequelize, queryInterface } } = arguments[0];
+    const sequelize = this.sequelize;
+    const queryInterface = this.queryInterface;
+
     const { db } = this.app;
     await sequelize.transaction(async (transaction) => {
       await queryInterface.changeColumn(db.getCollection('workflows').model.getTableName(), 'config', {

@@ -9,7 +9,7 @@ export type ActionType = string | HandlerType | ActionOptions;
 
 export type DefaultActionType = 'list' | 'create' | 'get' | 'update' | 'destroy' | 'set' | 'add' | 'remove';
 
-export type ActionName = DefaultActionType | Omit<String, DefaultActionType>;
+export type ActionName = DefaultActionType | Omit<string, DefaultActionType>;
 
 export interface ActionContext {
   action?: Action;

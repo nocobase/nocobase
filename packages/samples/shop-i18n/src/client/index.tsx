@@ -1,9 +1,9 @@
-import React, { useContext } from 'react';
-import { useHistory } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { Select } from 'antd';
 import { ShopOutlined } from '@ant-design/icons';
 import { i18n, PluginManager, PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
+import { Select } from 'antd';
+import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useHistory } from 'react-router-dom';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
@@ -30,7 +30,7 @@ function OrderStatusSelect() {
   return (
     <Select style={{ minWidth: '8em' }}>
       {ORDER_STATUS_LIST.map(item => (
-        <Select.Option value={item.value}>{t(item.label)}</Select.Option>
+        <Select.Option key={item.value} value={item.value}>{t(item.label)}</Select.Option>
       ))}
     </Select>
   );
