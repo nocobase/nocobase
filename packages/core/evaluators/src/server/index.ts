@@ -1,10 +1,8 @@
-import { Registry } from "@nocobase/utils";
+import { Registry } from '@nocobase/utils';
 
 import { evaluate, Evaluator } from '../utils';
-import mathjs from "../utils/mathjs";
-import formulajs from "../utils/formulajs";
-
-
+import mathjs from '../utils/mathjs';
+import formulajs from '../utils/formulajs';
 
 export { Evaluator, evaluate, appendArrayColumn } from '../utils';
 

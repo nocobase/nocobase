@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties
+  reverseFieldProperties,
 } from './properties';
 import { IField } from './types';
 
@@ -50,8 +50,13 @@ export const m2o: IField = {
       },
     },
   },
-  availableTypes:['belongsTo'],
+  availableTypes: ['belongsTo'],
   schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+    }
+
     if (targetCollection?.template === 'file') {
       const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
       fieldNames.label = 'preview';

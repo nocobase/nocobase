@@ -3,7 +3,6 @@ import { cloneDeep } from 'lodash';
 import { Migration } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 
-
 function findSchema(root, filter, onlyLeaf = false) {
   const result = [];
 
@@ -17,7 +16,7 @@ function findSchema(root, filter, onlyLeaf = false) {
   }
 
   if (root.properties) {
-    Object.keys(root.properties).forEach(key => {
+    Object.keys(root.properties).forEach((key) => {
       result.push(...findSchema(root.properties[key], filter));
     });
   }
@@ -25,7 +24,7 @@ function findSchema(root, filter, onlyLeaf = false) {
 }
 
 function findParent(root, node) {
-  return findSchema(root, item => item.properties && Object.values(item.properties).includes(node))[0];
+  return findSchema(root, (item) => item.properties && Object.values(item.properties).includes(node))[0];
 }
 
 // 1. all form blocks combine into one, at first form block position
@@ -35,36 +34,41 @@ function findParent(root, node) {
 // 5. make collection fields decorator as `FormCollectionProvider` for form block
 // 6. add form component wrapper for form grid
 // 7. move action footer to form block
-function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: number[] }): Object {
+function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: number[] }): object {
   const { blocks, collection } = schema;
   if (!blocks) {
     return {
-      forms: {}
+      forms: {},
     };
   }
   const root = { properties: blocks };
   const formBlocks = findSchema(root, (item) => {
-    return item['x-component'] === 'CardItem'
-      && item['x-designer'] === 'SimpleDesigner'
-      && item.properties.grid['x-initializer'] === 'AddFormField';
+    return (
+      item['x-component'] === 'CardItem' &&
+      item['x-designer'] === 'SimpleDesigner' &&
+      item.properties.grid['x-initializer'] === 'AddFormField'
+    );
   });
   if (!formBlocks.length) {
     return {
       schema: blocks,
-      forms: {}
+      forms: {},
     };
   }
 
   // 1.
   formBlocks.forEach((formBlock, i) => {
-    const formItems = findSchema(formBlock, (item) => {
-      return item['x-component'] === 'CollectionField'
-        && item['x-decorator'] === 'FormItem';
-    }, true);
+    const formItems = findSchema(
+      formBlock,
+      (item) => {
+        return item['x-component'] === 'CollectionField' && item['x-decorator'] === 'FormItem';
+      },
+      true,
+    );
     // 4.
-    formItems.forEach(item => {
+    formItems.forEach((item) => {
       Object.assign(item, {
-        'x-interface-options': collection.fields.find(field => field.name === item.name)
+        'x-interface-options': collection.fields.find((field) => field.name === item.name),
       });
     });
     // skip first form block
@@ -89,14 +93,14 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
   Object.assign(formBlock, {
     'x-decorator': 'FormCollectionProvider',
     'x-decorator-props': {
-      collection
+      collection,
     },
     'x-component-props': {
       title: '{{t("Form")}}',
     },
     'x-designer-props': {
       type: 'customForm',
-    }
+    },
   });
 
   const formId = uid();
@@ -106,11 +110,11 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
       type: 'void',
       'x-component': 'FormV2',
       'x-component-props': {
-        useProps: '{{ useFormBlockProps }}'
+        useProps: '{{ useFormBlockProps }}',
       },
       properties: {
         grid: Object.assign(formBlock.properties.grid, {
-          'x-initializer': 'AddCustomFormField'
+          'x-initializer': 'AddCustomFormField',
         }),
         // 7.
         actions: {
@@ -124,10 +128,10 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
             },
           },
           'x-initializer': 'AddActionButton',
-          properties: schema.actions
-        }
-      }
-    }
+          properties: schema.actions,
+        },
+      },
+    },
   };
   delete formBlock.properties.grid;
   Object.assign(formBlock.properties, newFormBlock);
@@ -139,14 +143,14 @@ function migrateConfig({ schema = {}, actions = [] }: { schema: any; actions: nu
         type: 'custom',
         title: '{{t("Form")}}',
         actions,
-        collection
-      }
-    }
+        collection,
+      },
+    },
   };
 }
 
 function migrateUsedConfig(config, manualForms) {
-  Object.keys(config).forEach(key => {
+  Object.keys(config).forEach((key) => {
     const valueType = typeof config[key];
     if (valueType === 'string') {
       config[key] = config[key].replace(/{{\s*\$jobsMapByNodeId\.(\d+)(\.[^}]+)?\s*}}/g, (matched, id, path) => {
@@ -155,13 +159,12 @@ function migrateUsedConfig(config, manualForms) {
         }
         return `{{$jobsMapByNodeId.${id}.${manualForms[id]}${path || ''}}}`;
       });
-    } else if (valueType === 'object') {
+    } else if (valueType === 'object' && config[key]) {
       migrateUsedConfig(config[key], manualForms);
     }
   });
   return config;
 }
-
 
 export default class extends Migration {
   async up() {
@@ -175,83 +178,107 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
-          type: 'manual'
+          type: 'manual',
         },
-        transaction
+        transaction,
       });
       console.log('%d nodes need to be migrated.', nodes.length);
 
-      await nodes.reduce((promise, node) => promise.then(() => {
-        const { forms, schema, actions, ...config } = node.config;
-        if (forms) {
-          return;
-        }
-        return node.update({
-          config: {
-            ...config,
-            ...migrateConfig({ schema, actions })
-          }
-        }, {
-          silent: true,
-          transaction
-        });
-      }), Promise.resolve());
+      await nodes.reduce(
+        (promise, node) =>
+          promise.then(() => {
+            const { forms, schema, actions, ...config } = node.config;
+            if (forms) {
+              return;
+            }
+            return node.update(
+              {
+                config: {
+                  ...config,
+                  ...migrateConfig({ schema, actions }),
+                },
+              },
+              {
+                silent: true,
+                transaction,
+              },
+            );
+          }),
+        Promise.resolve(),
+      );
 
       const usersJobs = await UserJobRepo.find({
         filter: {
-          nodeId: nodes.map(item => item.id)
+          nodeId: nodes.map((item) => item.id),
         },
         appends: ['job', 'node'],
-        transaction
+        transaction,
       });
       // update all results
-      await usersJobs.reduce((promise, userJob) => promise.then(async () => {
-        const { result, job, node } = userJob;
-        const { forms } = node.config;
-        const [formId] = Object.keys(forms);
-        if (result) {
-          await userJob.update({
-            result: { [formId]: result }
-          }, {
-            silent: true,
-            transaction
-          });
-        }
-        if (job.result) {
-          await job.update({
-            result: { [formId]: result }
-          }, {
-            silent: true,
-            transaction
-          });
-        }
-      }), Promise.resolve());
+      await usersJobs.reduce(
+        (promise, userJob) =>
+          promise.then(async () => {
+            const { result, job, node } = userJob;
+            const { forms } = node.config;
+            const [formId] = Object.keys(forms);
+            if (result) {
+              await userJob.update(
+                {
+                  result: { [formId]: result },
+                },
+                {
+                  silent: true,
+                  transaction,
+                },
+              );
+            }
+            if (job.result) {
+              await job.update(
+                {
+                  result: { [formId]: result },
+                },
+                {
+                  silent: true,
+                  transaction,
+                },
+              );
+            }
+          }),
+        Promise.resolve(),
+      );
 
       const usedNodes = await NodeRepo.find({
         filter: {
           type: {
-            $notIn: ['delay', 'parallel']
-          }
+            $notIn: ['delay', 'parallel'],
+          },
         },
-        transaction
+        transaction,
       });
 
       const nodeForms = {};
-      nodes.forEach(node => {
+      nodes.forEach((node) => {
         const [form] = Object.keys(node.config.forms);
         if (form) {
           nodeForms[node.id] = form;
         }
       });
 
-      await usedNodes.reduce((promise, node) => promise.then(async () => {
-        await node.update({
-          config: migrateUsedConfig(cloneDeep(node.config), nodeForms)
-        }, {
-          silent: true,
-          transaction
-        });
-      }), Promise.resolve());
+      await usedNodes.reduce(
+        (promise, node) =>
+          promise.then(async () => {
+            await node.update(
+              {
+                config: migrateUsedConfig(cloneDeep(node.config ?? {}), nodeForms),
+              },
+              {
+                silent: true,
+                transaction,
+              },
+            );
+          }),
+        Promise.resolve(),
+      );
     });
   }
 }

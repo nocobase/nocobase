@@ -28,14 +28,17 @@ describe('role resource api', () => {
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['admin']
-      }
+        roles: ['admin'],
+      },
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: admin.get('id'),
-    }), { type: 'bearer' });
+    adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }),
+      { type: 'bearer' },
+    );
   });
 
   it('should grant resource by createRepository', async () => {
@@ -98,14 +101,12 @@ describe('role resource api', () => {
     });
 
     // get collections list
-    let response = await adminAgent
-      .resource('roles.collections', 'admin')
-      .list({
-        filter: {
-          $or: [{ name: 'c1' }, { name: 'c2' }],
-        },
-        sort: ['sort'],
-      });
+    let response = await adminAgent.resource('roles.collections', 'admin').list({
+      filter: {
+        $or: [{ name: 'c1' }, { name: 'c2' }],
+      },
+      sort: ['sort'],
+    });
 
     expect(response.statusCode).toEqual(200);
 
@@ -125,40 +126,34 @@ describe('role resource api', () => {
     ]);
 
     // set resource actions
-    response = await adminAgent
-      .resource('roles.resources', 'admin')
-      .create({
-        values: {
-          name: 'c1',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-            },
-          ],
-        },
-      });
+    response = await adminAgent.resource('roles.resources', 'admin').create({
+      values: {
+        name: 'c1',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+          },
+        ],
+      },
+    });
 
     expect(response.statusCode).toEqual(200);
 
     // get collections list
-    response = await adminAgent
-      .resource('roles.collections')
-      .list({
-        associatedIndex: role.get('name') as string,
-        filter: {
-          name: 'c1',
-        },
-      });
+    response = await adminAgent.resource('roles.collections').list({
+      associatedIndex: role.get('name') as string,
+      filter: {
+        name: 'c1',
+      },
+    });
 
     expect(response.body.data[0]['usingConfig']).toEqual('resourceAction');
 
-    response = await adminAgent
-      .resource('roles.resources')
-      .list({
-        associatedIndex: role.get('name') as string,
-        appends: 'actions',
-      });
+    response = await adminAgent.resource('roles.resources').list({
+      associatedIndex: role.get('name') as string,
+      appends: 'actions',
+    });
 
     expect(response.statusCode).toEqual(200);
     const resources = response.body.data;
@@ -167,20 +162,18 @@ describe('role resource api', () => {
     expect(resourceAction['name']).toEqual('create');
 
     // update resource actions
-    response = await adminAgent
-      .resource('roles.resources')
-      .update({
-        associatedIndex: role.get('name') as string,
-        values: {
-          name: 'c1',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'view',
-            },
-          ],
-        },
-      });
+    response = await adminAgent.resource('roles.resources').update({
+      associatedIndex: role.get('name') as string,
+      values: {
+        name: 'c1',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+          },
+        ],
+      },
+    });
 
     expect(response.statusCode).toEqual(200);
     expect(response.body.data[0]['actions'].length).toEqual(1);

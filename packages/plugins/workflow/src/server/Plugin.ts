@@ -46,7 +46,7 @@ export default class WorkflowPlugin extends Plugin {
         new winston.transports.File({
           filename: getLoggerFilePath('workflows', date, `${workflowId}.log`),
           level: getLoggerLevel(),
-        })
+        }),
       ],
     } as LoggerOptions);
 
@@ -115,7 +115,7 @@ export default class WorkflowPlugin extends Plugin {
       updateAgeOnGet: true,
       dispose(logger) {
         (<Logger>logger).end();
-      }
+      },
     });
 
     this.app.acl.registerSnippet({
@@ -201,7 +201,9 @@ export default class WorkflowPlugin extends Plugin {
 
     this.events.push([workflow, context, options]);
 
-    this.getLogger(workflow.id).debug(`new event triggered, now events: ${this.events.length}`, { data: workflow.config });
+    this.getLogger(workflow.id).debug(`new event triggered, now events: ${this.events.length}`, {
+      data: workflow.config,
+    });
 
     if (this.events.length > 1) {
       return;
@@ -228,20 +230,25 @@ export default class WorkflowPlugin extends Plugin {
       });
 
       if (existed) {
-        this.getLogger(workflow.id).warn(`workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`);
+        this.getLogger(workflow.id).warn(
+          `workflow ${workflow.id} has already been triggered in same execution (${options.context.executionId}), and newly triggering will be skipped.`,
+        );
 
         valid = false;
       }
     }
 
     if (valid) {
-      const execution = await this.db.sequelize.transaction(async transaction => {
-        const execution = await workflow.createExecution({
-          context,
-          key: workflow.key,
-          status: EXECUTION_STATUS.QUEUEING,
-          useTransaction: workflow.useTransaction,
-        }, { transaction });
+      const execution = await this.db.sequelize.transaction(async (transaction) => {
+        const execution = await workflow.createExecution(
+          {
+            context,
+            key: workflow.key,
+            status: EXECUTION_STATUS.QUEUEING,
+            useTransaction: workflow.useTransaction,
+          },
+          { transaction },
+        );
 
         const executed = await workflow.countExecutions({ transaction });
 
@@ -272,7 +279,9 @@ export default class WorkflowPlugin extends Plugin {
         return execution;
       });
 
-      this.getLogger(workflow.id).debug(`execution of workflow ${workflow.id} created as ${execution.id}`, { data: execution.context });
+      this.getLogger(workflow.id).debug(`execution of workflow ${workflow.id} created as ${execution.id}`, {
+        data: execution.context,
+      });
 
       // NOTE: cache first execution for most cases
       if (!this.executing && !this.pending.length) {
@@ -308,7 +317,7 @@ export default class WorkflowPlugin extends Plugin {
     } else {
       const execution = (await this.db.getRepository('executions').findOne({
         filter: {
-          status: EXECUTION_STATUS.QUEUEING
+          status: EXECUTION_STATUS.QUEUEING,
         },
         sort: 'createdAt',
       })) as ExecutionModel;
@@ -334,7 +343,9 @@ export default class WorkflowPlugin extends Plugin {
 
     try {
       await (job ? processor.resume(job) : processor.start());
-      this.getLogger(execution.workflowId).info(`execution (${execution.id}) finished with status: ${execution.status}`);
+      this.getLogger(execution.workflowId).info(
+        `execution (${execution.id}) finished with status: ${execution.status}`,
+      );
     } catch (err) {
       this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
     }

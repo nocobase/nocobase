@@ -21,7 +21,7 @@ const getInterfaceOptions = (data, type) => {
   return interfaceOptions.filter((v) => v.children.length > 0);
 };
 const PreviewCom = (props) => {
-  const { databaseView, viewName,sources, schema } = props;
+  const { databaseView, viewName, sources, schema } = props;
   const { data: fields } = useContext(ResourceActionContext);
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -175,7 +175,7 @@ const PreviewCom = (props) => {
         const item = dataSource[index];
         return (
           <Input
-            defaultValue={record?.uiSchema?.title||text}
+            defaultValue={record?.uiSchema?.title || text}
             onChange={(e) =>
               handleFieldChange({ ...item, uiSchema: { ...item?.uiSchema, title: e.target.value } }, index)
             }

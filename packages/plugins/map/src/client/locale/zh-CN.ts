@@ -36,7 +36,7 @@ const locale = {
   'Delete field': '删除字段',
   Required: '必填',
   Pattern: '模式',
-  "Operator": "运算符",
+  Operator: '运算符',
   Editable: '可编辑',
   Readonly: '只读（禁止编辑）',
   'Easy-reading': '只读（阅读模式）',

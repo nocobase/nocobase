@@ -6,8 +6,8 @@ export enum ActionType {
   None = 'none',
   Hidden = 'hidden',
   Required = 'required',
-  InRequired ='notRequired',
-  Disabled ='disabled',
+  InRequired = 'notRequired',
+  Disabled = 'disabled',
   Value = 'value',
   Active = 'enabled',
 }

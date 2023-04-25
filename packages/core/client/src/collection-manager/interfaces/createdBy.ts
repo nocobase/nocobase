@@ -28,7 +28,7 @@ export const createdBy: IField = {
       'x-read-pretty': true,
     },
   },
-  availableTypes:['belongsTo'],
+  availableTypes: ['belongsTo'],
   properties: {
     ...defaultProps,
   },
@@ -56,9 +56,13 @@ export const createdBy: IField = {
       },
     ],
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { block }) {
     schema['properties'] = {
       viewer: cloneDeep(recordPickerViewer),
     };
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
 };

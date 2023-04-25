@@ -1,6 +1,6 @@
-import { IField, interfacesProperties } from "@nocobase/client";
+import { IField, interfacesProperties } from '@nocobase/client';
 
-import { NAMESPACE } from "../locale";
+import { NAMESPACE } from '../locale';
 
 const { defaultProps } = interfacesProperties;
 

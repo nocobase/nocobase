@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -21,7 +22,7 @@ export const multipleSelect: IField = {
       enum: [],
     },
   },
-  availableTypes:['array'],
+  availableTypes: ['array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -29,5 +30,16 @@ export const multipleSelect: IField = {
   },
   filterable: {
     operators: operators.array,
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
+    props.style = {
+      ...(props.style || {}),
+      width: '100%',
+    };
+
+    if (['Table', 'Kanban'].includes(block)) {
+      props['ellipsis'] = true;
+    }
   },
 };

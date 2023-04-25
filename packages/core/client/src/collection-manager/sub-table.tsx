@@ -8,7 +8,7 @@ import {
   useCollectionManager,
   useRecord,
   useRecordIndex,
-  useRequest
+  useRequest,
 } from '../';
 import { useAPIClient } from '../api-client';
 

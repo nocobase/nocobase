@@ -7,8 +7,6 @@ import { isValidFilter } from '../utils';
 import { NAMESPACE } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 
-
-
 export default {
   title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
   type: 'update',
@@ -25,18 +23,16 @@ export default {
             return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
           },
         },
-        values
-      }
-    }
+        values,
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     FilterDynamicComponent,
-    CollectionFieldset
-  }
+    CollectionFieldset,
+  },
 };

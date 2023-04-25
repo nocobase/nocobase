@@ -9,7 +9,7 @@ export const defaultFieldNames = {
 
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
   function flatData(data) {
-    let newArr = [];
+    const newArr = [];
     for (let i = 0; i < data.length; i++) {
       const children = data[i][fieldNames.options];
       if (Array.isArray(children)) {
@@ -25,7 +25,7 @@ export const getCurrentOptions = (values, dataSource, fieldNames) => {
     .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
   const findOptions = (options: any[]) => {
     if (!options) return [];
-    let current = [];
+    const current = [];
     for (const value of values) {
       const option = options.find((v) => v[fieldNames.value] === value) || { value: value, label: value };
       current.push(option);

@@ -15,6 +15,8 @@ const breakRemoveOnGrid = (s: Schema) => s['x-component'] === 'Grid';
 const breakRemoveOnRow = (s: Schema) => s['x-component'] === 'Grid.Row';
 
 const ColDivider = (props) => {
+  const dragIdRef = useRef<string | null>(null);
+
   const { isOver, setNodeRef } = useDroppable({
     id: props.id,
     data: props.data,
@@ -64,6 +66,7 @@ const ColDivider = (props) => {
       if (!isDragging) {
         return;
       }
+      dragIdRef.current = event.active.id;
       const el = dividerRef.current;
       const prev = el.previousElementSibling as HTMLDivElement;
       const next = el.nextElementSibling as HTMLDivElement;
@@ -73,13 +76,22 @@ const ColDivider = (props) => {
       if (!isDragging) {
         return;
       }
+      if (dragIdRef.current === event.active.id) {
+        dragIdRef.current = dragIdRef.current + '_move';
+      }
       const el = dividerRef.current;
       const prev = el.previousElementSibling as HTMLDivElement;
       const next = el.nextElementSibling as HTMLDivElement;
-      prev.style.width = `calc(${clientWidths[0]}px + ${event.delta.x}px)`;
-      next.style.width = `calc(${clientWidths[1]}px - ${event.delta.x}px)`;
+      prev.style.width = `${clientWidths[0] + event.delta.x}px`;
+      next.style.width = `${clientWidths[1] - event.delta.x}px`;
     },
     onDragEnd(event) {
+      if (!dragIdRef.current) return;
+      if (dragIdRef.current?.startsWith(event.active.id)) {
+        if (!dragIdRef.current.endsWith('_move')) {
+          return;
+        }
+      }
       if (clientWidths[0] <= 0 || clientWidths[1] <= 0) {
         return;
       }
@@ -92,10 +104,18 @@ const ColDivider = (props) => {
       const next = el.nextElementSibling as HTMLDivElement;
       prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
       nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
-      prevSchema['x-component-props']['width'] =
-        (100 * (prev?.clientWidth + 24 + 24 / props.cols.length)) / el.parentElement.clientWidth;
-      nextSchema['x-component-props']['width'] =
-        (100 * (next?.clientWidth + 24 + 24 / props.cols.length)) / el.parentElement.clientWidth;
+      const dividerWidth = (el.clientWidth * (props.cols.length + 1)) / props.cols.length;
+      const preWidth = (
+        (100 * (prev.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
+      const nextWidth = (
+        (100 * (next.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
+
+      prevSchema['x-component-props']['width'] = preWidth;
+      nextSchema['x-component-props']['width'] = nextWidth;
       dn.emit('batchPatch', {
         schemas: [
           {
@@ -126,6 +146,7 @@ const ColDivider = (props) => {
       className={cls(
         'nb-col-divider',
         css`
+          flex-shrink: 0;
           width: var(--nb-spacing);
         `,
       )}
@@ -141,9 +162,8 @@ const ColDivider = (props) => {
             : css`
                 &::before {
                   content: ' ';
-                  width: 12px;
+                  width: 100%;
                   height: 100%;
-                  left: 6px;
                   position: absolute;
                   cursor: col-resize;
                 }
@@ -370,6 +390,7 @@ Grid.Row = observer(() => {
         className={cls(
           'nb-grid-row',
           css`
+            overflow-x: hidden;
             margin: 0 calc(-1 * var(--nb-spacing));
             display: flex;
             position: relative;
@@ -419,7 +440,7 @@ Grid.Col = observer((props: any) => {
   let width = '';
   if (cols?.length) {
     const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-    width = `calc(${w}% - var(--nb-spacing) * 2 / ${cols.length})`;
+    width = `calc(${w}% - var(--nb-spacing) *  ${(cols.length + 1) / cols.length})`;
   }
   const { setNodeRef } = useDroppable({
     id: field.address.toString(),

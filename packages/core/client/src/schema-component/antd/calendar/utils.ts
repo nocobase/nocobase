@@ -21,5 +21,5 @@ export const getLunarDay = (date: moment.MomentInput) => {
 };
 
 export const formatDate = (date: moment.Moment) => {
-  return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
-}
+  return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+};

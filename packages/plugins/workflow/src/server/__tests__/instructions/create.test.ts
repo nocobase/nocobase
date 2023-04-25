@@ -2,8 +2,6 @@ import { Application } from '@nocobase/server';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 
-
-
 describe('workflow > instructions > create', () => {
   let app: Application;
   let db: Database;
@@ -26,8 +24,8 @@ describe('workflow > instructions > create', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -41,10 +39,10 @@ describe('workflow > instructions > create', () => {
           collection: 'comments',
           params: {
             values: {
-              postId: '{{$context.data.id}}'
-            }
-          }
-        }
+              postId: '{{$context.data.id}}',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -65,11 +63,11 @@ describe('workflow > instructions > create', () => {
           collection: 'comments',
           params: {
             values: {
-              replies: replies.map(item => item.id)
+              replies: replies.map((item) => item.id),
             },
-            appends: ['replies']
-          }
-        }
+            appends: ['replies'],
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -88,11 +86,11 @@ describe('workflow > instructions > create', () => {
           collection: 'comments',
           params: {
             values: {
-              postId: '{{$context.data.id}}'
+              postId: '{{$context.data.id}}',
             },
             appends: ['post'],
-          }
-        }
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -111,11 +109,11 @@ describe('workflow > instructions > create', () => {
           collection: 'tags',
           params: {
             values: {
-              posts: ['{{$context.data.id}}']
+              posts: ['{{$context.data.id}}'],
             },
             appends: ['posts'],
-          }
-        }
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });

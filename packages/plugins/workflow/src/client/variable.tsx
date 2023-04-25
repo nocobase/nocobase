@@ -50,22 +50,36 @@ const VariableTypes = [
     value: '$system',
     options(types) {
       return [
-        ...(!types || types.includes('date') ? [
-          {
-            key: 'now',
-            value: 'now',
-            label: `{{t("System time")}}`,
-          }
-        ] : [])
+        ...(!types || types.includes('date')
+          ? [
+              {
+                key: 'now',
+                value: 'now',
+                label: `{{t("System time")}}`,
+              },
+            ]
+          : []),
       ];
-    }
+    },
   },
 ];
 
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
   number: new Set(['number', 'percent']),
-  string: new Set(['input', 'password', 'email', 'phone', 'select', 'radioGroup', 'text', 'markdown', 'richText', 'expression', 'time']),
+  string: new Set([
+    'input',
+    'password',
+    'email',
+    'phone',
+    'select',
+    'radioGroup',
+    'text',
+    'markdown',
+    'richText',
+    'expression',
+    'time',
+  ]),
   date: new Set(['date', 'createdAt', 'updatedAt']),
 };
 
@@ -73,7 +87,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type): Boolean {
+function matchFieldType(field, type): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return Boolean(BaseTypeSets[type]?.has(field.interface));
@@ -81,11 +95,13 @@ function matchFieldType(field, type): Boolean {
 
   if (inputType === 'object' && type.type === 'reference') {
     if (isAssociationField(field)) {
-      return type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*');
+      return (
+        type.options?.entity && (field.collectionName === type.options?.collection || type.options?.collection === '*')
+      );
     } else if (field.isForeignKey) {
       return (
         (field.collectionName === type.options?.collection && field.name === 'id') ||
-        (field.target === type.options?.collection)
+        field.target === type.options?.collection
       );
     } else {
       return false;
@@ -108,7 +124,11 @@ export function filterTypedFields(fields, types, depth = 1) {
     return fields;
   }
   return fields.filter((field) => {
-    if (isAssociationField(field) && depth && filterTypedFields(useNormallizedFields(field.target), types, depth - 1).length) {
+    if (
+      isAssociationField(field) &&
+      depth &&
+      filterTypedFields(useNormalizedFields(field.target), types, depth - 1).length
+    ) {
       return true;
     }
     return types.some((type) => matchFieldType(field, type));
@@ -130,7 +150,7 @@ export function useWorkflowVariableOptions(types?) {
   return options;
 }
 
-function useNormallizedFields(collectionName) {
+function useNormalizedFields(collectionName) {
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
   const collection = getCollection(collectionName);
@@ -140,7 +160,7 @@ function useNormallizedFields(collectionName) {
   const { fields } = collection;
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
-  fields.forEach(field => {
+  fields.forEach((field) => {
     if (field.isForeignKey) {
       foreignKeyFields.push(field);
     } else {
@@ -150,14 +170,15 @@ function useNormallizedFields(collectionName) {
   for (let i = otherFields.length - 1; i >= 0; i--) {
     const field = otherFields[i];
     if (field.type === 'belongsTo') {
-      const foreignKeyField = foreignKeyFields.find(f => f.name === field.foreignKey);
+      const foreignKeyField = foreignKeyFields.find((f) => f.name === field.foreignKey);
       if (foreignKeyField) {
         otherFields.splice(i, 0, {
+          ...field,
           ...foreignKeyField,
           uiSchema: {
             ...field.uiSchema,
             title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : foreignKeyField.name,
-          }
+          },
         });
       } else {
         otherFields.splice(i, 0, {
@@ -169,41 +190,43 @@ function useNormallizedFields(collectionName) {
           uiSchema: {
             ...field.uiSchema,
             title: field.uiSchema?.title ? `${compile(field.uiSchema?.title)} ID` : field.name,
-          }
+          },
         });
       }
     } else if (field.type === 'context' && field.collectionName === 'users') {
-      const belongsToField = otherFields.find(f => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
+      const belongsToField =
+        otherFields.find((f) => f.type === 'belongsTo' && f.target === 'users' && f.foreignKey === field.name) ?? {};
       otherFields.splice(i, 0, {
         ...field,
         type: field.dataType,
         interface: belongsToField.interface,
         uiSchema: {
           ...belongsToField.uiSchema,
-          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name
-        }
+          title: belongsToField.uiSchema?.title ? `${compile(belongsToField.uiSchema?.title)} ID` : field.name,
+        },
       });
     }
   }
 
-  return otherFields.filter(field => field.interface && !field.hidden);
+  return otherFields.filter((field) => field.interface && !field.hidden);
 }
 
 export function useCollectionFieldOptions(options): VariableOption[] {
   const { fields, collection, types, depth = 1 } = options;
   const compile = useCompile();
-  const normalizedFields = fields ?? useNormallizedFields(collection);
+  const normalizedFields = fields ?? useNormalizedFields(collection);
   const result: VariableOption[] = filterTypedFields(normalizedFields, types, depth)
-    .filter(field => !isAssociationField(field) || depth)
-    .map(field => {
+    .filter((field) => !isAssociationField(field) || depth)
+    .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
       return {
         label,
         key: field.name,
         value: field.name,
-        children: isAssociationField(field) && depth
-          ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
-          : null
+        children:
+          isAssociationField(field) && depth
+            ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
+            : null,
       };
     });
 

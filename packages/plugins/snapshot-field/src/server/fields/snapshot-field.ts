@@ -31,12 +31,15 @@ export class SnapshotField extends Field {
       data = data.toJSON();
     }
 
-    await model.update({
-      [name]: {
-        collectionName,
-        data,
+    await model.update(
+      {
+        [name]: {
+          collectionName,
+          data,
+        },
       },
-    }, { transaction });
+      { transaction },
+    );
   };
 
   bind() {

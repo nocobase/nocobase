@@ -3,7 +3,7 @@ export default {
   'Collection List': '数据表列表',
   'Full Screen': '全屏',
   'Collection Search': '表筛选',
-  'Create Collection':'创建数据表',
+  'Create Collection': '创建数据表',
   'All Fields': '全部',
   'Association Fields': '关系字段',
   'Optional fields': '可选字段',
@@ -12,5 +12,5 @@ export default {
   'Inheritance relationship only': '继承关系',
   'Graphical interface': '图形化界面',
   'Auto layout': '自动布局',
-  'Selection': '选择模式',
+  Selection: '选择模式',
 };

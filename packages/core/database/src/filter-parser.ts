@@ -96,7 +96,7 @@ export default class FilterParser {
       }
 
       debug('handle filter key "%s: "%s"', key, value);
-      let keys = key.split('.');
+      const keys = key.split('.');
 
       // paths ?
       const paths = [];
@@ -236,7 +236,7 @@ export default class FilterParser {
   private getFieldNameFromQueryPath(queryPath: string) {
     const paths = queryPath.split('.');
     let fieldName;
-    let fullPaths = [];
+    const fullPaths = [];
     for (const path of paths) {
       if (path.startsWith('$') || !lodash.isNaN(parseInt(path))) {
         continue;

@@ -10,7 +10,7 @@ import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection } from '../../collection-manager';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
@@ -86,7 +86,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
   }
   console.log('form.values', form.values);
   return form.values;
-  let values = {};
+  const values = {};
   for (const key in form.values) {
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
@@ -241,6 +241,8 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { name } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
 
   actionField.data = actionField.data || {};
 
@@ -260,7 +262,9 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
+            storedFilter[uid] = removeNullCondition(
+              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
+            );
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
@@ -279,6 +283,7 @@ export const useFilterBlockActionProps = () => {
         );
         actionField.data.loading = false;
       } catch (error) {
+        console.error(error);
         actionField.data.loading = false;
       }
     },
@@ -489,7 +494,7 @@ export const useCustomizeBulkEditActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      let values = cloneDeep(form.values);
+      const values = cloneDeep(form.values);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       for (const key in values) {
@@ -663,7 +668,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      let values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
@@ -784,8 +789,6 @@ export const useRefreshActionProps = () => {
     },
   };
 };
-
-
 
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();

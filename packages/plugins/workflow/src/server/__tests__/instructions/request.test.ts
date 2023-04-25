@@ -32,7 +32,7 @@ describe('workflow > instructions > request', () => {
         ctx.withoutDataWrapping = true;
         ctx.body = {
           meta: { title: ctx.query.title },
-          data: { title: ctx.request.body.title }
+          data: { title: ctx.request.body.title },
         };
       }
       next();
@@ -71,9 +71,9 @@ describe('workflow > instructions > request', () => {
 
       await sleep(500);
 
-      let [execution] = await workflow.getExecutions();
+      const [execution] = await workflow.getExecutions();
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
-      let [job] = await execution.getJobs();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
     });
 
@@ -91,15 +91,15 @@ describe('workflow > instructions > request', () => {
 
       await sleep(1000);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.FAILED);
 
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
         name: 'AxiosError',
         status: null,
-        message: 'timeout of 250ms exceeded'
+        message: 'timeout of 250ms exceeded',
       });
     });
 
@@ -118,14 +118,14 @@ describe('workflow > instructions > request', () => {
 
       await sleep(1000);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result).toMatchObject({
         code: 'ECONNABORTED',
         name: 'AxiosError',
         status: null,
-        message: 'timeout of 250ms exceeded'
+        message: 'timeout of 250ms exceeded',
       });
     });
 
@@ -143,8 +143,8 @@ describe('workflow > instructions > request', () => {
 
       await sleep(500);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.FAILED);
       expect(job.result.status).toBe(400);
     });
@@ -164,8 +164,8 @@ describe('workflow > instructions > request', () => {
 
       await sleep(500);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.status).toBe(400);
     });
@@ -184,8 +184,8 @@ describe('workflow > instructions > request', () => {
 
       await sleep(500);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ title: 't1' });
     });
@@ -203,13 +203,13 @@ describe('workflow > instructions > request', () => {
 
       const title = 't1\n\nline 2';
       await PostRepo.create({
-        values: { title }
+        values: { title },
       });
 
       await sleep(500);
 
-      let [execution] = await workflow.getExecutions();
-      let [job] = await execution.getJobs();
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
       expect(job.status).toEqual(JOB_STATUS.RESOLVED);
       expect(job.result.data).toEqual({ title });
     });

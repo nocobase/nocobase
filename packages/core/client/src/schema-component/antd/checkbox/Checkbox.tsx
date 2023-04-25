@@ -5,6 +5,7 @@ import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import type { CheckboxGroupProps, CheckboxProps } from 'antd/lib/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
+import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
 type ComposedCheckbox = React.FC<CheckboxProps> & {
   Group?: React.FC<CheckboxGroupProps>;
@@ -18,12 +19,10 @@ export const Checkbox: ComposedCheckbox = connect(
     };
     return <AntdCheckbox {...props} onChange={changeHandler} />;
   },
-  mapProps(
-    {
-      value: 'checked',
-      onInput: 'onChange',
-    },
-  ),
+  mapProps({
+    value: 'checked',
+    onInput: 'onChange',
+  }),
   mapReadPretty((props) => {
     if (props.value) {
       return <CheckOutlined style={{ color: '#52c41a' }} />;
@@ -36,21 +35,18 @@ Checkbox.__ANT_CHECKBOX = true;
 
 Checkbox.Group = connect(
   AntdCheckbox.Group,
-  mapProps(
-    {
-      dataSource: 'options',
-    },
-  ),
+  mapProps({
+    dataSource: 'options',
+  }),
   mapReadPretty((props) => {
     if (!isValid(props.value)) {
       return null;
     }
-    const { options = [] } = props;
     const field = useField<any>();
     const dataSource = field.dataSource || [];
     const value = uniq(field.value ? field.value : []);
     return (
-      <div>
+      <EllipsisWithTooltip ellipsis={props.ellipsis}>
         {dataSource
           .filter((option) => value.includes(option.value))
           .map((option, key) => (
@@ -58,7 +54,7 @@ Checkbox.Group = connect(
               {option.label}
             </Tag>
           ))}
-      </div>
+      </EllipsisWithTooltip>
     );
   }),
 );

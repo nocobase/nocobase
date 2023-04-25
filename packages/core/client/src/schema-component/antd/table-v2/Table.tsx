@@ -4,10 +4,10 @@ import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
-import { useEventListener, useMemoizedFn } from 'ahooks';
+import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
@@ -213,7 +213,7 @@ export const Table: any = observer((props: any) => {
 
   useEffect(() => {
     if (treeTable !== false) {
-      const keys = getIdsWithChildren(field.value?.slice());
+      const keys = getIdsWithChildren(field.value?.slice?.());
       setAllIncludesChildren(keys);
     }
   }, [field.value]);

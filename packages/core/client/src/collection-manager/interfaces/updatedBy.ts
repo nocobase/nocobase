@@ -55,9 +55,13 @@ export const updatedBy: IField = {
       },
     ],
   },
-  schemaInitialize(schema: ISchema, { readPretty }) {
+  schemaInitialize(schema: ISchema, { block }) {
     schema['properties'] = {
       viewer: cloneDeep(recordPickerViewer),
     };
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
 };

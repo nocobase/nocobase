@@ -13,14 +13,12 @@ export const getConfiguration = async (ctx: Context, next) => {
     },
   });
 
-  ctx.body = record
+  ctx.body = record;
   return next();
 };
 
 export const setConfiguration = async (ctx: Context, next) => {
-  const {
-    params: values,
-  } = ctx.action;
+  const { params: values } = ctx.action;
   const repo = ctx.db.getRepository(MapConfigurationCollectionName);
   const record = await repo.findOne({
     filter: {
@@ -33,14 +31,14 @@ export const setConfiguration = async (ctx: Context, next) => {
       values,
       filter: {
         type: values.type,
-      }
+      },
     });
   } else {
     await repo.create({
       values,
-    })
+    });
   }
 
-  ctx.body = 'ok'
+  ctx.body = 'ok';
   return next();
 };

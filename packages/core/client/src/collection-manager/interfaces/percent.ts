@@ -1,4 +1,5 @@
 import { registerValidateRules } from '@formily/core';
+import { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
 import { IField } from './types';
@@ -66,6 +67,13 @@ export const percent: IField = {
         addonAfter: '%',
       },
     },
+  },
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
+    schema['x-component-props'].style = {
+      ...(props.style || {}),
+      width: '100%',
+    };
   },
   availableTypes: ['float'],
   hasDefaultValue: true,

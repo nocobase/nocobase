@@ -7,7 +7,8 @@ import { CollectionManagerContext } from '../context';
 import { CollectionFieldOptions } from '../types';
 
 export const useCollectionManager = () => {
-  const { refreshCM, service, interfaces, collections, templates } = useContext(CollectionManagerContext);
+  const { refreshCM, updateCollection, service, interfaces, collections, templates } =
+    useContext(CollectionManagerContext);
   const compile = useCompile();
   const getInheritedFields = (name) => {
     const inheritKeys = getInheritCollections(name);
@@ -241,6 +242,7 @@ export const useCollectionManager = () => {
     getInheritCollections,
     getChildrenCollections,
     refreshCM: () => refreshCM?.(),
+    updateCollection,
     get(name: string) {
       return collections?.find((collection) => collection.name === name);
     },
@@ -274,7 +276,7 @@ export const useCollectionManager = () => {
     getInterface(name: string) {
       return interfaces[name] ? clone(interfaces[name]) : null;
     },
-    getTemplate(name: string = 'general') {
+    getTemplate(name = 'general') {
       return templates[name] ? clone(templates[name] || templates['general']) : null;
     },
     getParentCollectionFields: (parentCollection, currentCollection) => {
