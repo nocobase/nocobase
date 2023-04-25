@@ -427,7 +427,6 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  // 关系字段不支持设置变量
                   default: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchema || {}),
@@ -440,6 +439,12 @@ FormItem.Designer = function Designer() {
                               : undefined,
                           service: {
                             resource: collectionField?.target,
+                          },
+                          // for DynamicExpression
+                          sourceCollection: form?.values.sourceCollection,
+                          style: {
+                            width: '100%',
+                            verticalAlign: 'top',
                           },
                         },
                         name: 'default',
