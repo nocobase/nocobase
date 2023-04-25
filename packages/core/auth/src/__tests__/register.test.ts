@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import Database, { Repository } from '@nocobase/database';
-import { Authentication } from '@nocobase/authentication';
+import { Authentication } from '@nocobase/auth';
 import { Plugin } from '@nocobase/server';
 const testPluginName = 'test-auth-plugin';
 let errorSpy;

@@ -1,6 +1,6 @@
 import { mockServer, MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
-import { Authentication, RawUserInfo } from '@nocobase/authentication';
+import { Authentication, RawUserInfo } from '@nocobase/auth';
 import { Plugin } from '@nocobase/server';
 import { Context } from '@nocobase/actions';
 const testPluginName = 'test-auth-plugin';

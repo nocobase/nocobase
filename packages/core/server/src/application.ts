@@ -19,7 +19,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { Authentication } from '@nocobase/authentication';
+import { AuthManager } from '@nocobase/auth';
 
 const packageJson = require('../package.json');
 
@@ -165,7 +165,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _appManager: AppManager;
 
-  protected _authentication: Authentication;
+  protected _authManager: AuthManager;
 
   protected _version: ApplicationVersion;
 
@@ -218,8 +218,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this._appManager;
   }
 
-  get authentication() {
-    return this._authentication;
+  get authManager() {
+    return this._authManager;
   }
 
   get logger() {
@@ -288,7 +288,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
     }
 
-    this._authentication = new Authentication(this);
+    this._authManager = new AuthManager(this, {
+      authKey: 'X-Authenticator',
+    });
 
     registerMiddlewares(this, options);
 
