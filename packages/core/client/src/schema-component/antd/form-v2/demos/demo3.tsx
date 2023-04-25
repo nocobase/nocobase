@@ -7,7 +7,7 @@ import {
   CollectionManagerProvider,
   RecordProvider,
   SchemaComponent,
-  SchemaComponentProvider
+  SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';

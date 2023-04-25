@@ -42,8 +42,8 @@ const schema = {
       'x-component-props': {
         ellipsis: true,
         style: {
-          width: '100px'
-        }
+          width: '100px',
+        },
       },
     },
     read3: {

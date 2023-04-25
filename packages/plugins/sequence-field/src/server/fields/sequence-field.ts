@@ -68,18 +68,20 @@ sequencePatterns.register('integer', {
     const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
-    const lastSeq = (await SeqRepo.findOne({
-      filter: {
+    const lastSeq =
+      (await SeqRepo.findOne({
+        filter: {
+          collection: this.collection.name,
+          field: this.name,
+          key,
+        },
+        transaction,
+      })) ||
+      SeqModel.build({
         collection: this.collection.name,
         field: this.name,
         key,
-      },
-      transaction,
-    })) || SeqModel.build({
-      collection: this.collection.name,
-      field: this.name,
-      key,
-    });
+      });
 
     let next = start;
     if (lastSeq.get('current') != null) {
@@ -123,18 +125,20 @@ sequencePatterns.register('integer', {
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
 
     const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
-    const lastSeq = (await SeqRepo.findOne({
-      filter: {
+    const lastSeq =
+      (await SeqRepo.findOne({
+        filter: {
+          collection: this.collection.name,
+          field: this.name,
+          key,
+        },
+        transaction,
+      })) ||
+      SeqModel.build({
         collection: this.collection.name,
         field: this.name,
         key,
-      },
-      transaction,
-    })) || SeqModel.build({
-      collection: this.collection.name,
-      field: this.name,
-      key,
-    });
+      });
 
     instances.forEach((instance, i) => {
       const recordTime = <Date>instance.get('createdAt') ?? new Date();
@@ -364,11 +368,17 @@ export class SequenceField extends Field {
     options.skipIndividualHooks.add(`${this.collection.name}.beforeCreate.${this.name}`);
 
     const { name, patterns, inputable } = this.options;
-    const array = Array(patterns.length).fill(null).map(() => Array(instances.length));
+    const array = Array(patterns.length)
+      .fill(null)
+      .map(() => Array(instances.length));
 
-    await patterns.reduce((promise, p, i) => promise.then(() =>
-      sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options ?? {}, options)),
-      Promise.resolve());
+    await patterns.reduce(
+      (promise, p, i) =>
+        promise.then(() =>
+          sequencePatterns.get(p.type).batchGenerate.call(this, instances, array[i], p.options ?? {}, options),
+        ),
+      Promise.resolve(),
+    );
 
     instances.forEach((instance, i) => {
       const value = instance.get(name);
@@ -380,7 +390,7 @@ export class SequenceField extends Field {
 
   cleanHook = (_, options) => {
     options.skipIndividualHooks.delete(`${this.collection.name}.beforeCreate.${this.name}`);
-  }
+  };
 
   match(value) {
     return typeof value === 'string' ? value.match(this.matcher) : null;

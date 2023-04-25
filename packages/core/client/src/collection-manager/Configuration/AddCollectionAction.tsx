@@ -98,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const useDefaultCollectionFields = (values) => {
-  let defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
     const pk = values.fields.find((f) => f.primaryKey);

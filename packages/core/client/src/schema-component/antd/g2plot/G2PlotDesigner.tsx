@@ -78,7 +78,7 @@ export const G2PlotDesigner = () => {
           if (typeof fn === 'function') {
             const result = fn.bind({ api })();
             if (result?.then) {
-              result.then(data => {
+              result.then((data) => {
                 if (Array.isArray(data)) {
                   field.componentProps.config.data = data;
                 }

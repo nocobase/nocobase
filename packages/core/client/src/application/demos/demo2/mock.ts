@@ -144,7 +144,7 @@ export default (apiClient: APIClient) => {
     const response = {
       data: {
         type: 'void',
-        name:  uid(),
+        name: uid(),
         'x-uid': uid(),
         'x-component': 'Page',
         properties: {

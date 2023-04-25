@@ -2,8 +2,6 @@ import React from 'react';
 
 import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
 
-
-
 export function CollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
   const { getCollection } = useCollectionManager();
   const resovledCollection = getCollection(collection);
@@ -17,7 +15,7 @@ export function CollectionBlockInitializer({ insert, collection, dataSource, ...
           title: resovledCollection.title,
           'x-decorator': 'CollectionProvider',
           'x-decorator-props': {
-            collection
+            collection,
           },
           'x-component': 'CardItem',
           'x-component-props': {
@@ -25,20 +23,20 @@ export function CollectionBlockInitializer({ insert, collection, dataSource, ...
           },
           'x-designer': 'SimpleDesigner',
           'x-designer-props': {
-            type: 'record'
+            type: 'record',
           },
           properties: {
             grid: {
               type: 'void',
               'x-decorator': 'Form',
               'x-decorator-props': {
-                useValues: '{{ useFlowRecordFromBlock }}'
+                useValues: '{{ useFlowRecordFromBlock }}',
               },
               'x-component': 'Grid',
               'x-initializer': 'CollectionFieldInitializers',
-              'x-context-datasource': dataSource
-            }
-          }
+              'x-context-datasource': dataSource,
+            },
+          },
         });
       }}
     />

@@ -55,7 +55,7 @@ export const useRemoveGridFormItem = () => {
   };
 };
 
-export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
+export const findTableColumn = (schema: Schema, key: string, action: string, deepth = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;

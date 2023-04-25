@@ -7,7 +7,7 @@ import {
   SchemaComponentProvider,
   Table,
   useRecord,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import React, { createContext, useContext, useState } from 'react';
 

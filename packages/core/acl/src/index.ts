@@ -5,4 +5,3 @@ export * from './acl-resource';
 export * from './acl-role';
 export * from './no-permission-error';
 export * from './skip-middleware';
-

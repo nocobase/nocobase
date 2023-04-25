@@ -13,4 +13,11 @@ packages/element
 esm
 doc-site
 public
-package
+packages/*/*/client.d.ts
+packages/*/*/server.d.ts
+packages/*/*/client.js
+packages/*/*/server.js
+packages/core/build
+packages/core/dumi-theme-nocobase
+packages/core/devtools
+packages/core/database/src/sql-parser/index.js

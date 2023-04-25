@@ -8,7 +8,7 @@ const AppVisitor = () => {
   const record = useRecord();
   const { t } = usePluginUtils();
   return (
-    <a href={`/apps/${record.name}/admin/`} target={'_blank'}>
+    <a href={`/apps/${record.name}/admin/`} target={'_blank'} rel="noreferrer">
       {t('View', { ns: 'client' })}
     </a>
   );

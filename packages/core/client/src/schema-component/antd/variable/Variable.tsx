@@ -1,10 +1,8 @@
 import { connect, mapReadPretty } from '@formily/react';
 
-import { Input } from "./Input";
-import { TextArea } from "./TextArea";
-import { JSONInput } from "./JSONInput";
-
-
+import { Input } from './Input';
+import { TextArea } from './TextArea';
+import { JSONInput } from './JSONInput';
 
 export function Variable() {
   return null;

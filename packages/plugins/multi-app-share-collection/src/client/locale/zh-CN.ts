@@ -10,4 +10,3 @@ export default {
   'Collection name': '标识',
   'Collection category': '分类',
 };
-

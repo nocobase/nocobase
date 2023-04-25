@@ -35,7 +35,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
   })
   async set(options: TargetKey | SetOption): Promise<void> {
     const transaction = await this.getTransaction(options);
-    let handleKey = lodash.isPlainObject(options) ? (<SetOption>options).tk : options;
+    const handleKey = lodash.isPlainObject(options) ? (<SetOption>options).tk : options;
 
     const sourceModel = await this.getSourceModel(transaction);
 
@@ -91,7 +91,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
   }
 
   @transaction()
-  async destroy(options?: Transactionable): Promise<Boolean> {
+  async destroy(options?: Transactionable): Promise<boolean> {
     const transaction = await this.getTransaction(options);
 
     const target = await this.find({

@@ -309,7 +309,7 @@ export async function updateSingleAssociation(
     }
 
     if (isStringOrNumber(value[dataKey])) {
-      let instance: any = await M.findOne({
+      const instance: any = await M.findOne({
         where: {
           [dataKey]: value[dataKey],
         },

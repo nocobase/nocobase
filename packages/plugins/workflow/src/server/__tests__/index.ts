@@ -9,7 +9,7 @@ import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
 
 export function sleep(ms: number) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
@@ -28,53 +28,53 @@ export async function getApp({ manual, ...options }: MockAppOptions = {}): Promi
         run({ config = {} }: FlowNodeModel, { result }, processor) {
           return {
             status: JOB_STATUS.RESOLVED,
-            result: config.path == null ? result : get(result, config.path)
+            result: config.path == null ? result : get(result, config.path),
           };
-        }
+        },
       },
 
       error: {
         run(node, input, processor) {
           throw new Error('definite error');
-        }
+        },
       },
 
       'prompt->error': {
         run(node, input, processor) {
           return {
-            status: JOB_STATUS.PENDING
+            status: JOB_STATUS.PENDING,
           };
         },
         resume(node, input, processor) {
           throw new Error('input failed');
-        }
+        },
       },
 
       customizedSuccess: {
         run(node, input, processor) {
           return {
-            status: 100
-          }
-        }
+            status: 100,
+          };
+        },
       },
 
       customizedError: {
         run(node, input, processor) {
           return {
-            status: -100
-          }
-        }
+            status: -100,
+          };
+        },
       },
     },
     functions: {
-      no1: () => 1
-    }
+      no1: () => 1,
+    },
   });
 
   await app.load();
 
   await app.db.import({
-    directory: path.resolve(__dirname, './collections')
+    directory: path.resolve(__dirname, './collections'),
   });
 
   try {

@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 export const barWrapper = css`
   cursor: pointer;
   outline: none;
-  .barHandle{
+  .barHandle {
     fill: #ddd;
     cursor: ew-resize;
     opacity: 0;
@@ -15,9 +15,8 @@ export const barWrapper = css`
   }
 `;
 
-
 export const barBackground = css`
   user-select: none;
   stroke-width: 0;
-  opacity: .6;
+  opacity: 0.6;
 `;
