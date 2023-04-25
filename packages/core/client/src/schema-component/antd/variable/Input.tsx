@@ -52,7 +52,7 @@ const ConstantTypes = {
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component({ onChange, value }) {
+    component: function Com({ onChange, value }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -89,7 +89,7 @@ const ConstantTypes = {
   null: {
     label: `{{t("Null")}}`,
     value: 'null',
-    component() {
+    component: function Com() {
       const { t } = useTranslation();
       return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
@@ -121,7 +121,7 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const varialbeOptions = typeof scope === 'function' ? scope() : scope ?? [];
+  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
     ? {
@@ -135,7 +135,7 @@ export function Input(props) {
         label: '{{t("Null")}}',
         component: ConstantTypes.null.component,
       };
-  const options: VariableOptions[] = compile([constantOption, ...varialbeOptions]);
+  const options: VariableOptions[] = compile([constantOption, ...variableOptions]);
 
   function onSwitch(next) {
     if (next[0] === '') {
@@ -237,6 +237,7 @@ export function Input(props) {
                   user-select: 'none';
                 `,
               )}
+              // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
               onClick={() => onChange(null)}
