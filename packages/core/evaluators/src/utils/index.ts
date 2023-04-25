@@ -1,6 +1,4 @@
-import { get, cloneDeep } from "lodash";
-
-
+import { get, cloneDeep } from 'lodash';
 
 export type Scope = { [key: string]: any };
 
@@ -13,7 +11,7 @@ export function appendArrayColumn(scope, key) {
     const path = paths[p];
     const isIndex = path.match(/^\d+$/);
     if (Array.isArray(data) && !isIndex && !data[path]) {
-      data[path] = data.map(item => item[path]);
+      data[path] = data.map((item) => item[path]);
     }
     data = data?.[path];
   }

@@ -57,6 +57,7 @@ export class ShopPlugin extends Plugin {
     this.app.acl.allow('orders', '*');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async install(options: InstallOptions) {
     // TODO
   }

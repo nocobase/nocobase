@@ -77,5 +77,4 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });
-
 }

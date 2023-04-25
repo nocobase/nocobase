@@ -1,8 +1,4 @@
-import {
-  CollectionManagerProvider,
-  SchemaInitializerProvider,
-  TableBlockProvider
-} from '@nocobase/client';
+import { CollectionManagerProvider, SchemaInitializerProvider, TableBlockProvider } from '@nocobase/client';
 import React from 'react';
 import { useAuditChangesCollection, useAuditLogsCollection, useCollectionsCollection } from './collections';
 import { AuditLogsTableActionColumnInitializers } from './initializers/AuditLogsTableActionColumnInitializers';

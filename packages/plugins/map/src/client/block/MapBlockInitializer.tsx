@@ -33,7 +33,7 @@ export const MapBlockInitializer = (props) => {
                         required: true,
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
-                        default: mapFieldOptions[0]?.value
+                        default: mapFieldOptions[0]?.value,
                       },
                       marker: {
                         title: t('Marker field'),
@@ -41,15 +41,18 @@ export const MapBlockInitializer = (props) => {
                         'x-component': 'Select',
                         'x-decorator': 'FormItem',
                         'x-reactions': (field) => {
-                          const value = field.form.values.field
-                          console.log("🚀 ~ file: MapBlockInitializer.tsx:45 ~ values ~ value:", value)
-                          console.log("🚀 ~ file: MapBlockInitializer.tsx:50 ~ values ~ mapFieldOptions:", mapFieldOptions)
+                          const value = field.form.values.field;
+                          console.log('🚀 ~ file: MapBlockInitializer.tsx:45 ~ values ~ value:', value);
+                          console.log(
+                            '🚀 ~ file: MapBlockInitializer.tsx:50 ~ values ~ mapFieldOptions:',
+                            mapFieldOptions,
+                          );
 
                           if (!value) {
-                            return
+                            return;
                           }
-                          const item = mapFieldOptions.find((item) => item.value === value).type
-                          field.hidden = item !== 'point'
+                          const item = mapFieldOptions.find((item) => item.value === value).type;
+                          field.hidden = item !== 'point';
                         },
                       },
                     },

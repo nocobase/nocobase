@@ -4,7 +4,7 @@ import { ISchemaComponentOptionsProps } from '../types';
 
 export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
   const { inherit } = props;
-  let options = useContext(SchemaOptionsContext);
+  const options = useContext(SchemaOptionsContext);
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const scope = { ...options?.scope, ...expressionScope, ...props.scope };
   const components = { ...options?.components, ...props.components };

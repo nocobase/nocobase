@@ -457,7 +457,7 @@ const getRelationship = (relatioship) => {
 };
 
 export const getDiffNode = (newNodes, oldNodes) => {
-  let arr = [];
+  const arr = [];
   const length1 = newNodes.length;
   const length2 = oldNodes.length;
   for (let i = 0; i < length1; i++) {

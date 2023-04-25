@@ -265,7 +265,7 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1, }}>
+        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
           <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
             {loading ? (
               <Spin />

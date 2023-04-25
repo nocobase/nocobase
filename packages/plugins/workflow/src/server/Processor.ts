@@ -1,7 +1,7 @@
 import { Transaction, Transactionable } from 'sequelize';
 import parse from 'json-templates';
 
-import { Model } from "@nocobase/database";
+import { Model } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 
 import Plugin from '.';
@@ -11,13 +11,9 @@ import FlowNodeModel from './models/FlowNode';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
 import { Logger } from '@nocobase/logger';
 
-
-
 export interface ProcessorOptions extends Transactionable {
-  plugin: Plugin
+  plugin: Plugin;
 }
-
-
 
 export default class Processor {
   static StatusMap = {
@@ -111,7 +107,7 @@ export default class Processor {
     }
     await this.prepare();
     if (this.nodes.length) {
-      const head = this.nodes.find(item => !item.upstream);
+      const head = this.nodes.find((item) => !item.upstream);
       await this.run(head, { result: execution.context });
     } else {
       await this.exit(null);
@@ -149,11 +145,15 @@ export default class Processor {
       }
     } catch (err) {
       // for uncaught error, set to error
-      this.logger.error(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `, { error: err });
+      this.logger.error(
+        `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
+        { error: err },
+      );
       job = {
-        result: err instanceof Error
-          ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
-          : err,
+        result:
+          err instanceof Error
+            ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+            : err,
         status: JOB_STATUS.ERROR,
       };
       // if previous job is from resuming
@@ -169,7 +169,9 @@ export default class Processor {
     }
     const savedJob = await this.saveJob(job);
 
-    this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`);
+    this.logger.info(
+      `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`,
+    );
     this.logger.debug(`result of node`, { data: savedJob.result });
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
@@ -219,7 +221,9 @@ export default class Processor {
   }
 
   async exit(job: JobModel | null) {
-    const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status) : EXECUTION_STATUS.RESOLVED;
+    const status = job
+      ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status)
+      : EXECUTION_STATUS.RESOLVED;
     this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
     return null;
@@ -236,15 +240,18 @@ export default class Processor {
       [job] = await model.update(payload, {
         where: { id: payload.id },
         returning: true,
-        transaction: this.transaction
+        transaction: this.transaction,
       });
     } else {
-      job = await model.create({
-        ...payload,
-        executionId: this.execution.id,
-      }, {
-        transaction: this.transaction
-      });
+      job = await model.create(
+        {
+          ...payload,
+          executionId: this.execution.id,
+        },
+        {
+          transaction: this.transaction,
+        },
+      );
     }
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
@@ -254,7 +261,7 @@ export default class Processor {
 
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
-      .filter(item => item.upstream === node && item.branchIndex !== null)
+      .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
   }
 
@@ -297,16 +304,16 @@ export default class Processor {
     const systemFns = {};
     const scope = {
       execution: this.execution,
-      node
+      node,
     };
-    for (let [name, fn] of this.options.plugin.functions.getEntities()) {
+    for (const [name, fn] of this.options.plugin.functions.getEntities()) {
       systemFns[name] = fn.bind(scope);
     }
 
     return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
-      $system: systemFns
+      $system: systemFns,
     };
   }
 

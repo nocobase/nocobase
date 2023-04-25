@@ -58,8 +58,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
   };
 };
 
-
-
 export const ViewCollectionField = (props) => {
   const record = useRecord();
   return <ViewFieldAction item={record} {...props} />;

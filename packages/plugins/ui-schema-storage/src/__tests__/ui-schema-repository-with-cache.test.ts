@@ -289,10 +289,10 @@ describe('ui_schema repository with cache', () => {
 
     await repository.insert(schema);
 
-    let sResult = await repository.getJsonSchema(xUid, { readFromCache: true } as GetJsonSchemaOptions);
+    const sResult = await repository.getJsonSchema(xUid, { readFromCache: true } as GetJsonSchemaOptions);
     expect(await cache.get(`s_${xUid}`)).toMatchObject(sResult);
 
-    let pResult = (await repository.getProperties(xUid, { readFromCache: true } as GetPropertiesOptions)) as any;
+    const pResult = (await repository.getProperties(xUid, { readFromCache: true } as GetPropertiesOptions)) as any;
     expect(await cache.get(`p_${xUid}`)).toMatchObject(pResult);
 
     expect(sResult.title).toEqual(schema.title);

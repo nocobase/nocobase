@@ -61,7 +61,7 @@ export const ValueDynamicComponent = (props) => {
             <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
               {t('Syntax references')}:
             </span>
-            <a href="https://formulajs.info/functions/" target="_blank">
+            <a href="https://formulajs.info/functions/" target="_blank" rel="noreferrer">
               Formula.js
             </a>
           </>

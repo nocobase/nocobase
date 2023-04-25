@@ -1,7 +1,6 @@
-import React from "react";
+import React from 'react';
 import { cx } from '@emotion/css';
 import { calendarTopTick, calendarTopText } from './style';
-
 
 type TopPartOfCalendarProps = {
   value: string;
@@ -22,20 +21,8 @@ export const TopPartOfCalendar: React.FC<TopPartOfCalendarProps> = ({
 }) => {
   return (
     <g className="calendarTop">
-      <line
-        x1={x1Line}
-        y1={y1Line}
-        x2={x1Line}
-        y2={y2Line}
-        className={cx(calendarTopTick)}
-        key={value + "line"}
-      />
-      <text
-        key={value + "text"}
-        y={yText}
-        x={xText}
-        className={cx(calendarTopText)}
-      >
+      <line x1={x1Line} y1={y1Line} x2={x1Line} y2={y2Line} className={cx(calendarTopTick)} key={value + 'line'} />
+      <text key={value + 'text'} y={yText} x={xText} className={cx(calendarTopText)}>
         {value}
       </text>
     </g>

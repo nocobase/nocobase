@@ -18,7 +18,7 @@ import { getLabelFormatValue, useLabelUiSchema } from './util';
 export const RecordPickerContext = createContext(null);
 
 function flatData(data) {
-  let newArr = [];
+  const newArr = [];
   for (let i = 0; i < data.length; i++) {
     const children = data[i]['children'];
     if (Array.isArray(children)) {

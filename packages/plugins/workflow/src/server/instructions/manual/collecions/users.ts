@@ -9,7 +9,7 @@ export default {
     {
       type: 'hasMany',
       name: 'usersJobs',
-      target: 'users_jobs'
-    }
-  ]
+      target: 'users_jobs',
+    },
+  ],
 };

@@ -41,7 +41,7 @@ export const AddCategoryAction = (props) => {
   const { t } = useTranslation();
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
-      <div  onClick={() => setVisible(true)} title={t('Add category')}>
+      <div onClick={() => setVisible(true)} title={t('Add category')}>
         {children || <PlusOutlined />}
       </div>
       <SchemaComponent

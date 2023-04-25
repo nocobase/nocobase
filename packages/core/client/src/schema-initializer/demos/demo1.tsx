@@ -6,7 +6,7 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerProvider,
-  useSchemaInitializer
+  useSchemaInitializer,
 } from '@nocobase/client';
 import React from 'react';
 
