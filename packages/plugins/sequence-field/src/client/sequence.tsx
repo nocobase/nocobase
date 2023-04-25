@@ -6,7 +6,15 @@ import { Button, Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Cron, SchemaComponent, SchemaComponentOptions, useCompile, interfacesProperties, IField, useCollectionField } from '@nocobase/client';
+import {
+  Cron,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useCompile,
+  interfacesProperties,
+  IField,
+  useCollectionField,
+} from '@nocobase/client';
 import { lang, NAMESPACE } from './locale';
 
 function RuleTypeSelect(props) {
@@ -23,8 +31,10 @@ function RuleTypeSelect(props) {
 
   return (
     <Select {...props}>
-      {Object.keys(RuleTypes).map(key => (
-        <Select.Option key={key} value={key}>{compile(RuleTypes[key].title)}</Select.Option>
+      {Object.keys(RuleTypes).map((key) => (
+        <Select.Option key={key} value={key}>
+          {compile(RuleTypes[key].title)}
+        </Select.Option>
       ))}
     </Select>
   );
@@ -35,37 +45,40 @@ function RuleOptions() {
   const ruleType = RuleTypes[type];
   const compile = useCompile();
   return (
-    <div className={css`
-      display: flex;
-      gap: 1em;
-      flex-wrap: wrap;
-    `}>
+    <div
+      className={css`
+        display: flex;
+        gap: 1em;
+        flex-wrap: wrap;
+      `}
+    >
       {Object.keys(options)
-        .filter(key => typeof options[key] !== 'undefined' && ruleType.optionRenders[key])
-        .map(key => {
+        .filter((key) => typeof options[key] !== 'undefined' && ruleType.optionRenders[key])
+        .map((key) => {
           const Component = ruleType.optionRenders[key];
           const { title } = ruleType.fieldset[key];
-          return Component
-            ? (
-              <dl key={key} className={css`
+          return Component ? (
+            <dl
+              key={key}
+              className={css`
                 margin: 0;
                 padding: 0;
-              `}>
-                <dt>
-                  {compile(title)}
-                </dt>
-                <dd className={css`
+              `}
+            >
+              <dt>{compile(title)}</dt>
+              <dd
+                className={css`
                   margin-bottom: 0;
-                `}>
-                  <Component key={key} value={options[key]} />
-                </dd>
-              </dl>
-            )
-            : null;
+                `}
+              >
+                <Component key={key} value={options[key]} />
+              </dd>
+            </dl>
+          ) : null;
         })}
     </div>
   );
-};
+}
 
 const RuleTypes = {
   string: {
@@ -73,35 +86,27 @@ const RuleTypes = {
     optionRenders: {
       value(options = { value: '' }) {
         return <code>{options.value}</code>;
-      }
+      },
     },
     fieldset: {
       value: {
         type: 'string',
         title: `{{t("Text content", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
-        'x-component': 'Input'
-      }
-    }
+        'x-component': 'Input',
+      },
+    },
   },
   integer: {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       digits({ value }) {
         const { t } = useTranslation();
-        return (
-          <span>
-            {t('{{value}} Digits', { ns: NAMESPACE, value })}
-          </span>
-        );
+        return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
       },
       start({ value }) {
         const { t } = useTranslation();
-        return (
-          <span>
-            {t('Starts from {{value}}', { ns: NAMESPACE, value })}
-          </span>
-        );
+        return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
       },
       cycle({ value }) {
         return (
@@ -114,7 +119,7 @@ const RuleTypes = {
             }}
           />
         );
-      }
+      },
     },
     fieldset: {
       digits: {
@@ -124,7 +129,7 @@ const RuleTypes = {
         'x-component': 'InputNumber',
         'x-component-props': {
           min: 1,
-          max: 10
+          max: 10,
         },
         required: true,
         default: 1,
@@ -132,10 +137,10 @@ const RuleTypes = {
           target: 'start',
           fulfill: {
             schema: {
-              'x-component-props.max': '{{ 10 ** $self.value - 1 }}'
-            }
-          }
-        }
+              'x-component-props.max': '{{ 10 ** $self.value - 1 }}',
+            },
+          },
+        },
       },
       start: {
         type: 'number',
@@ -143,7 +148,7 @@ const RuleTypes = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          min: 0
+          min: 0,
         },
         required: true,
         default: 0,
@@ -167,44 +172,39 @@ const RuleTypes = {
             { label: 'Every Monday', value: 2, cron: '0 0 * * 1' },
             { label: 'Monthly', value: 3, cron: '0 0 1 * *' },
             { label: 'Yearly', value: 4, cron: '0 0 1 1 *' },
-            { label: 'Customize', value: 5, cron: '* * * * *' }
+            { label: 'Customize', value: 5, cron: '* * * * *' },
           ];
-          const option = typeof value === 'undefined'
-            ? shortValues[0]
-            : shortValues.find(item => {
-              return item.cron == value
-            }) || shortValues[5]
+          const option =
+            typeof value === 'undefined'
+              ? shortValues[0]
+              : shortValues.find((item) => {
+                  return item.cron == value;
+                }) || shortValues[5];
           return (
             <fieldset>
               <Select value={option.value} onChange={(v) => onChange(shortValues[v].cron)}>
-                {shortValues.map(item => (
-                  <Select.Option key={item.value} value={item.value}>{lang(item.label)}</Select.Option>
+                {shortValues.map((item) => (
+                  <Select.Option key={item.value} value={item.value}>
+                    {lang(item.label)}
+                  </Select.Option>
                 ))}
               </Select>
-              {option.value === 5
-                ? (
-                  <Cron
-                    value={value}
-                    onChange={onChange}
-                    clearButton={false}
-                  />
-                )
-                : null}
+              {option.value === 5 ? <Cron value={value} onChange={onChange} clearButton={false} /> : null}
             </fieldset>
           );
         },
-        default: null
-      }
-    }
+        default: null,
+      },
+    },
   },
   date: {
     title: `{{t("Date", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
       format(options = { value: 'YYYYMMDD' }) {
         return <code>{options.value}</code>;
-      }
-    }
-  }
+      },
+    },
+  },
 };
 
 export function RuleConfigForm() {
@@ -215,51 +215,51 @@ export function RuleConfigForm() {
   const { type, options } = ArrayTable.useRecord();
   const index = ArrayTable.useIndex();
   const ruleType = RuleTypes[type];
-  return ruleType?.fieldset
-    ? (
-      <Button
-        type="link"
-        onClick={() => {
-          FormDrawer(compile(ruleType.title), () => {
-            return (
-              <FormLayout layout="vertical">
-                <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
-                  <SchemaComponent
-                    schema={{
-                      type: 'object',
-                      'x-component': 'fieldset',
-                      properties: ruleType.fieldset
-                    }}
-                  />
-                </SchemaComponentOptions>
-                <FormDrawer.Footer>
-                  <FormButtonGroup className={css`
+  return ruleType?.fieldset ? (
+    <Button
+      type="link"
+      onClick={() => {
+        FormDrawer(compile(ruleType.title), () => {
+          return (
+            <FormLayout layout="vertical">
+              <SchemaComponentOptions scope={schemaOptions.scope} components={schemaOptions.components}>
+                <SchemaComponent
+                  schema={{
+                    type: 'object',
+                    'x-component': 'fieldset',
+                    properties: ruleType.fieldset,
+                  }}
+                />
+              </SchemaComponentOptions>
+              <FormDrawer.Footer>
+                <FormButtonGroup
+                  className={css`
                     justify-content: flex-end;
-                  `}>
-                    <Submit
-                      onSubmit={(values) => {
-                        return values;
-                      }}
-                    >
-                      {t('Submit')}
-                    </Submit>
-                  </FormButtonGroup>
-                </FormDrawer.Footer>
-              </FormLayout>
-            )
+                  `}
+                >
+                  <Submit
+                    onSubmit={(values) => {
+                      return values;
+                    }}
+                  >
+                    {t('Submit')}
+                  </Submit>
+                </FormButtonGroup>
+              </FormDrawer.Footer>
+            </FormLayout>
+          );
+        })
+          .open({
+            initialValues: options,
           })
-            .open({
-              initialValues: options,
-            })
-            .then((values) => {
-              form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
-            })
-        }}
-      >
-        {t('Configure')}
-      </Button>
-    )
-    : null;
+          .then((values) => {
+            form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
+          });
+      }}
+    >
+      {t('Configure')}
+    </Button>
+  ) : null;
 }
 
 export const sequence: IField = {
@@ -274,8 +274,7 @@ export const sequence: IField = {
     uiSchema: {
       type: 'string',
       'x-component': 'Input',
-      'x-component-props': {
-      },
+      'x-component-props': {},
     },
   },
   hasDefaultValue: false,
@@ -321,7 +320,7 @@ export const sequence: IField = {
                 name: 'type',
                 required: true,
                 'x-decorator': 'FormItem',
-                'x-component': RuleTypeSelect
+                'x-component': RuleTypeSelect,
               },
             },
           },
@@ -333,9 +332,9 @@ export const sequence: IField = {
               options: {
                 type: 'object',
                 name: 'options',
-                'x-component': RuleOptions
-              }
-            }
+                'x-component': RuleOptions,
+              },
+            },
           },
           operations: {
             type: 'void',
@@ -345,13 +344,13 @@ export const sequence: IField = {
               dataIndex: 'operations',
               fixed: 'right',
               className: css`
-                > *:not(:last-child){
-                  margin-right: .5em;
+                > *:not(:last-child) {
+                  margin-right: 0.5em;
                 }
-                button{
+                button {
                   padding: 0;
                 }
-              `
+              `,
             },
             properties: {
               config: {
@@ -359,28 +358,28 @@ export const sequence: IField = {
                 properties: {
                   options: {
                     type: 'object',
-                    'x-component': RuleConfigForm
-                  }
-                }
+                    'x-component': RuleConfigForm,
+                  },
+                },
               },
               remove: {
                 type: 'void',
                 'x-component': 'ArrayTable.Remove',
-              }
-            }
-          }
-        }
+              },
+            },
+          },
+        },
       },
       properties: {
         add: {
           type: 'void',
           'x-component': 'ArrayTable.Addition',
           'x-component-props': {
-            defaultValue: { type: 'integer', options: { digits: 1, start: 0 } }
+            defaultValue: { type: 'integer', options: { digits: 1, start: 0 } },
           },
           title: `{{t("Add rule", { ns: "${NAMESPACE}" })}}`,
-        }
-      }
+        },
+      },
     },
     inputable: {
       type: 'boolean',
@@ -402,9 +401,9 @@ export const sequence: IField = {
           },
         },
       },
-    }
+    },
   },
   filterable: {
     operators: interfacesProperties.operators.string,
-  }
+  },
 };

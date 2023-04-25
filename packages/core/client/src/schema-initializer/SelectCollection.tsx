@@ -28,7 +28,7 @@ export const SelectCollection = ({ value, onChange, setSelected }) => {
           onChange(e.target.value);
         }}
       />
-      <Divider style={{ margin: 0 }}/>
+      <Divider style={{ margin: 0 }} />
     </div>
   );
 };

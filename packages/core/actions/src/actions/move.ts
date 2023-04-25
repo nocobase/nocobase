@@ -44,7 +44,7 @@ export class SortAbleCollection {
   field: SortField;
   scopeKey: string;
 
-  constructor(collection: Collection, fieldName: string = 'sort') {
+  constructor(collection: Collection, fieldName = 'sort') {
     this.collection = collection;
     this.field = collection.getField(fieldName);
 

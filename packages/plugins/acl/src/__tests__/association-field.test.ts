@@ -1,8 +1,8 @@
-import {ACL} from '@nocobase/acl';
-import {Database, HasManyRepository} from '@nocobase/database';
+import { ACL } from '@nocobase/acl';
+import { Database, HasManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
-import {MockServer} from '@nocobase/test';
-import {prepareApp} from './prepare';
+import { MockServer } from '@nocobase/test';
+import { prepareApp } from './prepare';
 
 describe('association test', () => {
   let app: MockServer;
@@ -35,7 +35,6 @@ describe('association test', () => {
       },
       context: {},
     });
-
 
     await db.getRepository('collections').create({
       values: {

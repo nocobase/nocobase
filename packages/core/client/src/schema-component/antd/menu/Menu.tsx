@@ -137,7 +137,7 @@ const useSideMenuRef = () => {
 const MenuItemDesignerContext = createContext(null);
 
 export const Menu: ComposedMenu = observer((props) => {
-  let {
+  const {
     onSelect,
     mode,
     selectedUid,

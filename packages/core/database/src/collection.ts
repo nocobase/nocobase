@@ -79,7 +79,7 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
     if (!targetKey && this.model.rawAttributes['id']) {
       return 'id';
     }
@@ -482,7 +482,7 @@ export class Collection<
     }
 
     // collection defined indexes
-    let indexes: any = this.model.options.indexes || [];
+    const indexes: any = this.model.options.indexes || [];
 
     let indexName = [];
     let indexItem;

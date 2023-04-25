@@ -112,11 +112,11 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       }
       return b.some((item) => !a.includes(item));
     },
-    $notMatch:function(a,b){
+    $notMatch: function (a, b) {
       if (a.length !== b.length) {
         return true;
       }
-    
+
       for (let i = 0; i < a.length; i++) {
         if (a[i] !== b[i]) {
           return true;

@@ -36,7 +36,7 @@ function getChildren(taskList: Task[], task: Task) {
   } else {
     tasks = taskList.filter((t) => t.project && t.project === task.id);
   }
-  var taskChildren: Task[] = [];
+  const taskChildren: Task[] = [];
   tasks.forEach((t) => {
     taskChildren.push(...getChildren(taskList, t));
   });

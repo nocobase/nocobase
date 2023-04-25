@@ -1,8 +1,12 @@
-import { PluginManagerContext, RouteSwitchContext, SettingsCenterContext, SettingsCenterProvider } from '@nocobase/client';
+import {
+  PluginManagerContext,
+  RouteSwitchContext,
+  SettingsCenterContext,
+  SettingsCenterProvider,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { GraphCollectionPane, GraphCollectionShortcut } from './GraphCollectionShortcut';
 import { useGCMTranslation } from './utils';
-
 
 export const GraphCollectionProvider = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
@@ -14,14 +18,12 @@ export const GraphCollectionProvider = React.memo((props) => {
   const items = useContext(SettingsCenterContext);
 
   items['collection-manager']['tabs']['graph'] = {
-    title: t("Graphical interface"),
+    title: t('Graphical interface'),
     component: GraphCollectionPane,
-  }
+  };
 
   return (
-    <SettingsCenterProvider
-      settings={items}
-    >
+    <SettingsCenterProvider settings={items}>
       <PluginManagerContext.Provider
         value={{
           components: {

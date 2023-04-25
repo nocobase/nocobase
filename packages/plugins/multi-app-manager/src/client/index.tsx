@@ -3,7 +3,7 @@ import {
   PinnedPluginListProvider,
   SchemaComponentOptions,
   SettingsCenterProvider,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React from 'react';

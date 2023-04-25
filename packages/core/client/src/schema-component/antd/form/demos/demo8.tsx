@@ -6,7 +6,7 @@ import {
   SchemaComponentProvider,
   useActionContext,
   useCloseAction,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Button } from 'antd';
 import React, { useEffect, useState } from 'react';

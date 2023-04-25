@@ -17,9 +17,9 @@ export default class extends Migration {
     await db.sequelize.transaction(async (transaction) => {
       const seqPlugin = await pluginRepo.findOne({
         filter: {
-          name: 'sequence-field',
+          name: 'sequence-field',,
         },
-        transaction,
+        transaction,,
       });
       if (!seqPlugin) {
         await pluginRepo.create({

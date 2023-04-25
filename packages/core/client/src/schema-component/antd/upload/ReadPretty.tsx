@@ -140,7 +140,7 @@ ReadPretty.Upload = (props) => {
   return (field.value || []).map((item) => (
     <div>
       {item.url ? (
-        <a target={'_blank'} href={item.url}>
+        <a target={'_blank'} href={item.url} rel="noreferrer">
           {item.name}
         </a>
       ) : (

@@ -23,7 +23,7 @@ interface IBelongsToManyRepository<M extends Model> {
   update(options?: UpdateOptions): Promise<M>;
 
   // 删除
-  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<boolean>;
 
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
@@ -67,7 +67,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
   })
-  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 

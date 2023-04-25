@@ -115,7 +115,7 @@ export class FieldModel extends MagicAttributeModel {
 
     let existsUniqueConstraint;
 
-    let constraintName = `${tableName}_${field.name}_uk`;
+    const constraintName = `${tableName}_${field.name}_uk`;
 
     if (existUniqueIndex) {
       const existsUniqueConstraints = await queryInterface.showConstraint(

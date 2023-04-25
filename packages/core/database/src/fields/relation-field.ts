@@ -1,6 +1,6 @@
 import { BaseFieldOptions, Field } from './field';
 
-export interface BaseRelationFieldOptions extends BaseFieldOptions {}
+export type BaseRelationFieldOptions = BaseFieldOptions;
 
 export interface MultipleRelationFieldOptions extends BaseRelationFieldOptions {
   sortBy?: string | string[];

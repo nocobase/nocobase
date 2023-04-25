@@ -1,8 +1,5 @@
 import { Form } from '@formily/core';
-import {
-  IRecursionFieldProps,
-  ISchemaFieldProps, SchemaReactComponents
-} from '@formily/react';
+import { IRecursionFieldProps, ISchemaFieldProps, SchemaReactComponents } from '@formily/react';
 import React from 'react';
 
 export interface ISchemaComponentContext {

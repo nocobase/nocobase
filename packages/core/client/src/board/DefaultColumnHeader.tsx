@@ -7,52 +7,58 @@ function ColumnTitle({ allowRenameColumn, onClick, children: title }) {
     </span>
   ) : (
     <span>{title}</span>
-  )
+  );
 }
 
 function useRenameMode(state) {
-  const [renameMode, setRenameMode] = useState(state)
+  const [renameMode, setRenameMode] = useState(state);
 
   function toggleRenameMode() {
-    setRenameMode(!renameMode)
+    setRenameMode(!renameMode);
   }
 
-  return [renameMode, toggleRenameMode]
+  return [renameMode, toggleRenameMode];
 }
 
-function DefaultColumnHeader({ children: column, allowRemoveColumn, onColumnRemove, allowRenameColumn, onColumnRename }) {
-  const [renameMode, toggleRenameMode] = useRenameMode(false)
-  const [titleInput, setTitleInput] = useState('')
+function DefaultColumnHeader({
+  children: column,
+  allowRemoveColumn,
+  onColumnRemove,
+  allowRenameColumn,
+  onColumnRename,
+}) {
+  const [renameMode, toggleRenameMode] = useRenameMode(false);
+  const [titleInput, setTitleInput] = useState('');
 
   function handleRenameColumn(event) {
-    event.preventDefault()
+    event.preventDefault();
 
-    onColumnRename(column, titleInput)
-    toggleRenameMode()
+    onColumnRename(column, titleInput);
+    toggleRenameMode();
   }
 
   function handleRenameMode() {
-    setTitleInput(column.title)
-    toggleRenameMode()
+    setTitleInput(column.title);
+    toggleRenameMode();
   }
 
   return (
-    <div className='react-kanban-column-header'>
+    <div className="react-kanban-column-header">
       {renameMode ? (
         <form onSubmit={handleRenameColumn}>
           <span>
             <input
-              type='text'
+              type="text"
               value={titleInput}
               onChange={({ target: { value } }) => setTitleInput(value)}
               autoFocus
             />
           </span>
           <span>
-            <button className='react-kanban-column-header__button' type='submit'>
+            <button className="react-kanban-column-header__button" type="submit">
               Rename
             </button>
-            <button className='react-kanban-column-header__button' type='button' onClick={handleRenameMode}>
+            <button className="react-kanban-column-header__button" type="button" onClick={handleRenameMode}>
               Cancel
             </button>
           </span>
@@ -66,7 +72,7 @@ function DefaultColumnHeader({ children: column, allowRemoveColumn, onColumnRemo
         </>
       )}
     </div>
-  )
+  );
 }
 
 export default DefaultColumnHeader;

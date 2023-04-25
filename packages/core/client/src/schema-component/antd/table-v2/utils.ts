@@ -21,7 +21,7 @@ export function extractIndex(str) {
 export function getIdsWithChildren(nodes) {
   const ids = [];
   if (nodes) {
-    for (let node of nodes) {
+    for (const node of nodes) {
       if (node.children && node.children.length > 0) {
         ids.push(node.id);
         ids.push(...getIdsWithChildren(node.children));

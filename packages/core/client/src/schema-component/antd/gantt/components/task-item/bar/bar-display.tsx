@@ -1,5 +1,5 @@
 import { cx } from '@emotion/css';
-import React from "react";
+import React from 'react';
 import { barBackground } from './style';
 
 type BarDisplayProps = {

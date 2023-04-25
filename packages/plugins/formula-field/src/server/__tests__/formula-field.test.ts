@@ -402,7 +402,8 @@ describe('formula field', () => {
 
           await db.sync();
 
-          Test.model.create<any>({ a: BigInt(Number.MAX_SAFE_INTEGER) })
+          Test.model
+            .create<any>({ a: BigInt(Number.MAX_SAFE_INTEGER) })
             .then(() => {
               throw Error('should not be called');
             })
@@ -485,7 +486,8 @@ describe('formula field', () => {
 
           await db.sync();
 
-          Test.model.create<any>({ a: now })
+          Test.model
+            .create<any>({ a: now })
             .then(() => {
               throw Error('should not be called');
             })
@@ -860,9 +862,7 @@ describe('formula field', () => {
       });
     });
 
-    describe.skip('decimal', () => {
-
-    });
+    describe.skip('decimal', () => {});
 
     describe('string', () => {
       describe('from boolean', () => {

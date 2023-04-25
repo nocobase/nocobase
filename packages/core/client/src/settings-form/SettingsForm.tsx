@@ -9,7 +9,7 @@ import {
   SchemaOptionsContext,
   useField,
   useFieldSchema,
-  useForm
+  useForm,
 } from '@formily/react';
 import { Dropdown, Menu, Modal, Select, Switch } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';

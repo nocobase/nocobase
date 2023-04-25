@@ -15,7 +15,7 @@ export class ModelHook {
     this.database = database;
   }
 
-  match(event: string | Symbol): keyof SequelizeHooks | null {
+  match(event: string | symbol): keyof SequelizeHooks | null {
     // NOTE: skip Symbol event
     if (!lodash.isString(event)) {
       return null;

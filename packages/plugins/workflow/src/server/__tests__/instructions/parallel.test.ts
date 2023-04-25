@@ -3,8 +3,6 @@ import { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-
-
 describe('workflow > instructions > parallel', () => {
   let app: Application;
   let db: Database;
@@ -26,8 +24,8 @@ describe('workflow > instructions > parallel', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -36,17 +34,17 @@ describe('workflow > instructions > parallel', () => {
   describe('single all', () => {
     it('all resolved', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
       const n2 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -61,17 +59,17 @@ describe('workflow > instructions > parallel', () => {
 
     it('some rejected', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
       const n2 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -86,19 +84,19 @@ describe('workflow > instructions > parallel', () => {
 
     it('first branch rejected', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -117,18 +115,18 @@ describe('workflow > instructions > parallel', () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
         config: {
-          mode: 'any'
-        }
+          mode: 'any',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -145,18 +143,18 @@ describe('workflow > instructions > parallel', () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
         config: {
-          mode: 'any'
-        }
+          mode: 'any',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -173,18 +171,18 @@ describe('workflow > instructions > parallel', () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
         config: {
-          mode: 'any'
-        }
+          mode: 'any',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -203,18 +201,18 @@ describe('workflow > instructions > parallel', () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
         config: {
-          mode: 'race'
-        }
+          mode: 'race',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -231,18 +229,18 @@ describe('workflow > instructions > parallel', () => {
       const n1 = await workflow.createNode({
         type: 'parallel',
         config: {
-          mode: 'race'
-        }
+          mode: 'race',
+        },
       });
       const n2 = await workflow.createNode({
         type: 'error',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
       const n3 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -259,20 +257,20 @@ describe('workflow > instructions > parallel', () => {
   describe('branch and join', () => {
     it('link to single branch', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         title: 'echo1',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
         title: 'echo2',
         type: 'echo',
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
 
       await n1.setDownstream(n3);
@@ -289,27 +287,27 @@ describe('workflow > instructions > parallel', () => {
 
     it('link to multipe branches', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         title: 'echo1',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
         title: 'echo2',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const n4 = await workflow.createNode({
         title: 'echo on end',
         type: 'echo',
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
 
       await n1.setDownstream(n4);
@@ -326,21 +324,21 @@ describe('workflow > instructions > parallel', () => {
 
     it('random branch index', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         title: 'echo1',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 3
+        branchIndex: 3,
       });
 
       const n3 = await workflow.createNode({
         title: 'echo2',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -355,27 +353,27 @@ describe('workflow > instructions > parallel', () => {
 
     it('downstream has manual node', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         title: 'manual',
         type: 'manual',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
         title: 'echo',
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const n4 = await workflow.createNode({
         title: 'echo on end',
         type: 'echo',
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
 
       await n1.setDownstream(n4);
@@ -390,7 +388,7 @@ describe('workflow > instructions > parallel', () => {
       const [pending] = await e1.getJobs({ where: { nodeId: n2.id } });
       pending.set({
         status: JOB_STATUS.RESOLVED,
-        result: 123
+        result: 123,
       });
       pending.execution = e1;
       plugin.resume(pending);
@@ -407,30 +405,30 @@ describe('workflow > instructions > parallel', () => {
   describe('nested', () => {
     it('nested 2 levels', async () => {
       const n1 = await workflow.createNode({
-        type: 'parallel'
+        type: 'parallel',
       });
 
       const n2 = await workflow.createNode({
         type: 'parallel',
         upstreamId: n1.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n3 = await workflow.createNode({
         type: 'echo',
         upstreamId: n1.id,
-        branchIndex: 1
+        branchIndex: 1,
       });
 
       const n4 = await workflow.createNode({
         type: 'echo',
         upstreamId: n2.id,
-        branchIndex: 0
+        branchIndex: 0,
       });
 
       const n5 = await workflow.createNode({
         type: 'echo',
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
       await n1.setDownstream(n5);
 

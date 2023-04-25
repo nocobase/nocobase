@@ -10,11 +10,11 @@ export default {
     {
       type: 'integer',
       name: 'status',
-      defaultValue: 0
+      defaultValue: 0,
     },
     {
       type: 'hasMany',
       name: 'replies',
-    }
+    },
   ],
 } as CollectionOptions;

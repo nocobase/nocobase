@@ -1,6 +1,6 @@
 const map2obj = (map: Map<string, string>) => {
   const obj = {};
-  for (let [key, value] of map) {
+  for (const [key, value] of map) {
     obj[key] = value;
   }
   return obj;

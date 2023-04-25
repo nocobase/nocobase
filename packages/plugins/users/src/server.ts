@@ -56,7 +56,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
     });
 
     this.db.on('afterDefineCollection', (collection: Collection) => {
-      let { createdBy, updatedBy } = collection.options;
+      const { createdBy, updatedBy } = collection.options;
       if (createdBy === true) {
         collection.setField('createdById', {
           type: 'context',

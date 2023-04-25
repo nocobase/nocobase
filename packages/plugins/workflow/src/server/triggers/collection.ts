@@ -101,7 +101,7 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
 
-    for (let [key, type] of MODE_BITMAP_EVENTS.entries()) {
+    for (const [key, type] of MODE_BITMAP_EVENTS.entries()) {
       const event = `${collection}.${type}`;
       const name = getHookId(workflow, event);
       if (mode & key) {
@@ -127,7 +127,7 @@ export default class CollectionTrigger extends Trigger {
     if (!Collection) {
       return;
     }
-    for (let [key, type] of MODE_BITMAP_EVENTS.entries()) {
+    for (const [key, type] of MODE_BITMAP_EVENTS.entries()) {
       const event = `${collection}.${type}`;
       const name = getHookId(workflow, event);
       if (mode & key) {

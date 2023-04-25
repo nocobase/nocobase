@@ -100,24 +100,20 @@ describe('own test', () => {
   });
 
   it('should delete with createdBy', async () => {
-    await adminAgent
-      .resource('roles')
-      .update({
-        filterByTk: 'admin',
-        values: {
-          strategy: {
-            actions: ['view:own', 'create', 'destroy:own'],
-          },
-        }
-      });
+    await adminAgent.resource('roles').update({
+      filterByTk: 'admin',
+      values: {
+        strategy: {
+          actions: ['view:own', 'create', 'destroy:own'],
+        },
+      },
+    });
 
-    let response = await userAgent
-      .resource('posts')
-      .create({
-        values: {
-          title: 't1',
-        }
-      });
+    let response = await userAgent.resource('posts').create({
+      values: {
+        title: 't1',
+      },
+    });
 
     expect(response.statusCode).toEqual(200);
 
@@ -125,7 +121,7 @@ describe('own test', () => {
     const id = data.data['id'];
 
     response = await userAgent.resource('posts').destroy({
-      filterByTk: id
+      filterByTk: id,
     });
     expect(response.statusCode).toEqual(200);
     expect(await db.getRepository('posts').count()).toEqual(0);

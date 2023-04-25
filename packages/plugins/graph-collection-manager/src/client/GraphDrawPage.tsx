@@ -49,7 +49,7 @@ const LINE_HEIGHT = 40;
 const NODE_WIDTH = 250;
 let targetGraph;
 let targetNode;
-let dir = 'TB'; // LR RL TB BT 横排
+const dir = 'TB'; // LR RL TB BT 横排
 
 export enum DirectionType {
   Both = 'both',
@@ -317,7 +317,7 @@ const handelResetLayout = () => {
     const yNodes = nodeWithEdges.filter((v) => {
       return Math.abs(targetGraph.getCellById(v).position().y - maxY) < 50;
     });
-    let referenceNode: any = targetGraph
+    const referenceNode: any = targetGraph
       .getCell(maxBy(yNodes, (k) => targetGraph.getCellById(k).position().x))
       ?.position();
     num = Math.round(maxX / 320) || 1;
@@ -364,7 +364,7 @@ const handelResetLayout = () => {
 };
 
 export const GraphDrawPage = React.memo(() => {
-  let options = useContext(SchemaOptionsContext);
+  const options = useContext(SchemaOptionsContext);
   const ctx = useContext(CollectionManagerContext);
   const api = useAPIClient();
   const compile = useCompile();
@@ -819,7 +819,7 @@ export const GraphDrawPage = React.memo(() => {
     const node = targetGraph.getCellById(key);
     targetGraph.cacheCollection[key] = true;
     const connectedEdges = targetGraph.getConnectedEdges(node);
-    let visibleEdges = connectedEdges.filter((v) => !v.store.data?.connectionType && v.getTargetCellId() === key);
+    const visibleEdges = connectedEdges.filter((v) => !v.store.data?.connectionType && v.getTargetCellId() === key);
     visibleEdges.forEach((v) => {
       if (v.store.data.m2m) {
         v.store.data.m2m.forEach((i) => {

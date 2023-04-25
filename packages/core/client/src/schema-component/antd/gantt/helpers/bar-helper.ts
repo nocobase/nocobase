@@ -167,7 +167,7 @@ const convertToBar = (
   const [progressWidth, progressX] = progressWithByParams(x1, x2, task.progress, rtl);
   const y =
     task.type === 'project'
-      ? taskYCoordinate(index, rowHeight, taskHeight) +8
+      ? taskYCoordinate(index, rowHeight, taskHeight) + 8
       : taskYCoordinate(index, rowHeight, taskHeight);
   const hideChildren = task.type === 'project' ? task.hideChildren : undefined;
 
