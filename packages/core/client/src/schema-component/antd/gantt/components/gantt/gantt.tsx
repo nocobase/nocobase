@@ -403,7 +403,6 @@ export const Gantt: any = (props: any) => {
     await resource.update({
       filterByTk: task.id,
       values: {
-        ...task,
         [fieldNames.progress]: task.progress / 100,
       },
     });
@@ -414,7 +413,6 @@ export const Gantt: any = (props: any) => {
     await resource.update({
       filterByTk: task.id,
       values: {
-        ...task,
         [fieldNames.start]: task.start,
         [fieldNames.end]: task.end,
       },
