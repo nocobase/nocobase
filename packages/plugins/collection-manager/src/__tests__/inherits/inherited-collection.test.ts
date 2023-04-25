@@ -3,7 +3,7 @@ import Application from '@nocobase/server';
 import { createApp } from '..';
 import { pgOnly } from '@nocobase/test';
 
-pgOnly()('Inherited Collection', () => {
+describe('Inherited Collection', () => {
   let db: Database;
   let app: Application;
 
@@ -22,6 +22,56 @@ pgOnly()('Inherited Collection', () => {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should update overridden multiple select field', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'array',
+            name: 'selectors',
+            uiSchema: {
+              enum: [{ value: '123', label: '123' }],
+            },
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            type: 'array',
+            name: 'selectors',
+            uiSchema: {
+              enum: [{ value: '123', label: '123' }],
+            },
+            overriding: true,
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await fieldsRepository.update({
+      filter: {
+        name: 'selectors',
+        collectionName: 'child',
+      },
+      values: {
+        uiSchema: {
+          enum: [{ value: '223', label: '223' }],
+        },
+        defaultValue: [],
+      },
+    });
   });
 
   it("should not delete child's field when parent field delete that inherits from multiple table", async () => {
