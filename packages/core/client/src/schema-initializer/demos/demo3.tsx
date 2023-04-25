@@ -7,7 +7,7 @@ import {
   SchemaInitializer,
   SchemaInitializerItemOptions,
   SchemaInitializerProvider,
-  useSchemaInitializer
+  useSchemaInitializer,
 } from '@nocobase/client';
 import { Input } from 'antd';
 import React from 'react';

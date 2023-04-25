@@ -1,33 +1,33 @@
 import { css } from '@emotion/css';
 
 export const workflowPageClass = css`
-  .workflow-toolbar{
+  .workflow-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 1rem;
     background: #fff;
 
-    header{
+    header {
       display: flex;
       align-items: center;
       min-height: 2rem;
     }
 
-    aside{
+    aside {
       display: flex;
       align-items: center;
-      gap: .5em;
+      gap: 0.5em;
     }
 
-    .workflow-versions{
-      label{
-        margin-right: .5em;
+    .workflow-versions {
+      label {
+        margin-right: 0.5em;
       }
     }
   }
 
-  .workflow-canvas{
+  .workflow-canvas {
     width: min-content;
     min-width: 100%;
     display: flex;
@@ -35,39 +35,39 @@ export const workflowPageClass = css`
     align-items: center;
     padding: 2em;
 
-    .end{
+    .end {
       cursor: default;
 
-      &:hover{
-        box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
+      &:hover {
+        box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
       }
     }
   }
 `;
 
 export const workflowVersionDropdownClass = css`
-  .ant-dropdown-menu-item{
-    .ant-dropdown-menu-title-content{
+  .ant-dropdown-menu-item {
+    .ant-dropdown-menu-title-content {
       text-align: right;
 
-      time{
+      time {
         margin-left: 0.5rem;
         color: #999;
         font-size: 80%;
       }
 
-      strong{
+      strong {
         font-weight: normal;
       }
 
-      > .enabled{
-        strong{
+      > .enabled {
+        strong {
           font-weight: bold;
         }
       }
 
-      > .unexecuted{
-        strong{
+      > .unexecuted {
+        strong {
           font-style: italic;
         }
       }
@@ -79,12 +79,12 @@ export const branchBlockClass = css`
   display: flex;
   position: relative;
 
-  :before{
-    content: "";
+  :before {
+    content: '';
     position: absolute;
     top: 0;
     bottom: 0;
-    left: calc(50% - .5px);
+    left: calc(50% - 0.5px);
     width: 1px;
     background-color: #f0f2f5;
   }
@@ -97,12 +97,12 @@ export const branchClass = css`
   position: relative;
   padding: 0 2em;
 
-  .workflow-node-list{
+  .workflow-node-list {
     flex-grow: 1;
     min-width: 20em;
   }
 
-  .workflow-branch-lines{
+  .workflow-branch-lines {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -110,37 +110,41 @@ export const branchClass = css`
     background-color: #ddd;
   }
 
-  :before,:after{
-    content: "";
+  :before,
+  :after {
+    content: '';
     position: absolute;
     height: 1px;
     background-color: #ddd;
   }
 
-  :before{
+  :before {
     top: 0;
   }
 
-  :after{
+  :after {
     bottom: 0;
   }
 
-  :not(:first-child):not(:last-child){
-    :before,:after{
+  :not(:first-child):not(:last-child) {
+    :before,
+    :after {
       left: 0;
       width: 100%;
     }
   }
 
-  :last-child:not(:first-child){
-    :before,:after{
+  :last-child:not(:first-child) {
+    :before,
+    :after {
       right: 50%;
       width: 50%;
     }
   }
 
-  :first-child:not(:last-child){
-    :before,:after{
+  :first-child:not(:last-child) {
+    :before,
+    :after {
       left: 50%;
       width: 50%;
     }
@@ -168,28 +172,28 @@ export const nodeCardClass = css`
   width: 20em;
   background: #fff;
   padding: 1em;
-  box-shadow: 0 .25em .5em rgba(0, 0, 0, .1);
-  border-radius: .5em;
+  box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.1);
+  border-radius: 0.5em;
   cursor: pointer;
-  transition: box-shadow .3s ease;
+  transition: box-shadow 0.3s ease;
 
-  &.configuring{
-    box-shadow: 0 .25em 1em rgba(0, 100, 200, .25);
+  &.configuring {
+    box-shadow: 0 0.25em 1em rgba(0, 100, 200, 0.25);
   }
 
   .workflow-node-remove-button,
-  .workflow-node-job-button{
+  .workflow-node-job-button {
     position: absolute;
   }
 
-  .workflow-node-remove-button{
-    right: .5em;
-    top: .5em;
+  .workflow-node-remove-button {
+    right: 0.5em;
+    top: 0.5em;
     color: #999;
     opacity: 0;
-    transition: opacity .3s ease;
+    transition: opacity 0.3s ease;
 
-    &[disabled]{
+    &[disabled] {
       display: none;
     }
 
@@ -198,7 +202,7 @@ export const nodeCardClass = css`
     }
   }
 
-  .workflow-node-job-button{
+  .workflow-node-job-button {
     display: flex;
     top: 1em;
     right: 1em;
@@ -210,38 +214,38 @@ export const nodeCardClass = css`
     font-size: 0.8em;
     color: #fff;
 
-    &[type="button"]{
+    &[type='button'] {
       border: none;
     }
   }
 
-  .ant-input{
+  .ant-input {
     font-weight: bold;
 
-    &:not(:focus){
-      transition: background-color .3s ease, border-color .3s ease;
+    &:not(:focus) {
+      transition: background-color 0.3s ease, border-color 0.3s ease;
       border-color: #f7f7f7;
       background-color: #f7f7f7;
 
-      &:not(:disabled):hover{
+      &:not(:disabled):hover {
         border-color: #eee;
         background-color: #eee;
       }
 
-      &:disabled:hover{
+      &:disabled:hover {
         border-color: #f7f7f7;
       }
     }
   }
 
-  .workflow-node-config-button{
+  .workflow-node-config-button {
     padding: 0;
   }
 
-  &:hover{
-    box-shadow: 0 .25em .5em rgba(0, 0, 0, .25);
+  &:hover {
+    box-shadow: 0 0.25em 0.5em rgba(0, 0, 0, 0.25);
 
-    .workflow-node-remove-button{
+    .workflow-node-remove-button {
       opacity: 1;
     }
   }
@@ -252,13 +256,13 @@ export const nodeHeaderClass = css`
 `;
 
 export const nodeMetaClass = css`
-  margin-bottom: .5em;
+  margin-bottom: 0.5em;
 
-  .workflow-node-id{
+  .workflow-node-id {
     color: #999;
 
-    &:before{
-      content: "#"
+    &:before {
+      content: '#';
     }
   }
 `;
@@ -267,7 +271,7 @@ export const nodeTitleClass = css`
   display: flex;
   align-items: center;
   font-weight: normal;
-  .workflow-node-id{
+  .workflow-node-id {
     color: #999;
   }
 `;
@@ -282,8 +286,8 @@ export const addButtonClass = css`
   flex-shrink: 0;
   padding: 2em 0;
 
-  > .ant-btn{
-    &:disabled{
+  > .ant-btn {
+    &:disabled {
       visibility: hidden;
     }
   }

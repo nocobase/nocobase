@@ -103,7 +103,7 @@ class Importer {
 
   async run() {
     return await this.context.db.sequelize.transaction(async (transaction) => {
-      let sort: number = 0;
+      let sort = 0;
       if (this.hasSortField()) {
         sort = await this.repository.model.max<number, any>('sort', { transaction });
       }

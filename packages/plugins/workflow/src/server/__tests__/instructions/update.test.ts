@@ -3,8 +3,6 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import DefinedWorkflowModel from '../../models/Workflow';
 
-
-
 describe('workflow > instructions > update', () => {
   let app: Application;
   let db: Database;
@@ -25,8 +23,8 @@ describe('workflow > instructions > update', () => {
       type: 'collection',
       config: {
         mode: 1,
-        collection: 'posts'
-      }
+        collection: 'posts',
+      },
     });
   });
 
@@ -40,13 +38,13 @@ describe('workflow > instructions > update', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: '{{$context.data.id}}'
+              id: '{{$context.data.id}}',
             },
             values: {
-              published: true
-            }
-          }
-        }
+              published: true,
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -70,10 +68,10 @@ describe('workflow > instructions > update', () => {
         collection: 'posts',
         params: {
           filter: {
-            title: 'test'
-          }
-        }
-      }
+            title: 'test',
+          },
+        },
+      },
     });
 
     const n2 = await workflow.createNode({
@@ -82,14 +80,14 @@ describe('workflow > instructions > update', () => {
         collection: 'posts',
         params: {
           filter: {
-            id: `{{$jobsMapByNodeId.${n1.id}.id}}`
+            id: `{{$jobsMapByNodeId.${n1.id}.id}}`,
           },
           values: {
-            title: 'changed'
-          }
-        }
+            title: 'changed',
+          },
+        },
       },
-      upstreamId: n1.id
+      upstreamId: n1.id,
     });
 
     await n1.setDownstream(n2);

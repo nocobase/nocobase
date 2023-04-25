@@ -6,7 +6,7 @@
     "plugin:react-hooks/recommended",
     "plugin:promise/recommended",
     // "plugin:import/recommended",
-    "prettier"
+    "plugin:prettier/recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "plugins": [

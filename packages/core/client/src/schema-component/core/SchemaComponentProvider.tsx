@@ -8,7 +8,7 @@ import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
-const randomString = (prefix: string = '') => {
+const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
 };
 

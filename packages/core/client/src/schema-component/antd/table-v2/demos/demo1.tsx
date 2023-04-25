@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   useFormBlockContext,
-  useTableBlockContext
+  useTableBlockContext,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 import { range } from 'lodash';

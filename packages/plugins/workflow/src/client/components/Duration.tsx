@@ -1,7 +1,7 @@
-import React from "react";
-import { InputNumber, Select } from "antd";
-import { css } from "@emotion/css";
-import { lang } from "../locale";
+import React from 'react';
+import { InputNumber, Select } from 'antd';
+import { css } from '@emotion/css';
+import { lang } from '../locale';
 
 const UnitOptions = [
   { value: 1_000, label: 'Seconds' },
@@ -12,7 +12,9 @@ const UnitOptions = [
 ];
 
 function getNumberOption(v) {
-  return UnitOptions.slice().reverse().find(item => !(v % item.value));
+  return UnitOptions.slice()
+    .reverse()
+    .find((item) => !(v % item.value));
 }
 
 export default function ({ value = 60000, onChange }) {
@@ -20,14 +22,18 @@ export default function ({ value = 60000, onChange }) {
   const quantity = Math.round(value / option.value);
 
   return (
-    <fieldset className={css`
-      display: flex;
-      gap: .5em;
-    `}>
-      <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))}/>
-      <Select value={option.value} onChange={unit => onChange(Math.round(quantity * unit))}>
-        {UnitOptions.map(item => (
-          <Select.Option key={item.value} value={item.value}>{lang(item.label)}</Select.Option>
+    <fieldset
+      className={css`
+        display: flex;
+        gap: 0.5em;
+      `}
+    >
+      <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))} />
+      <Select value={option.value} onChange={(unit) => onChange(Math.round(quantity * unit))}>
+        {UnitOptions.map((item) => (
+          <Select.Option key={item.value} value={item.value}>
+            {lang(item.label)}
+          </Select.Option>
         ))}
       </Select>
     </fieldset>

@@ -31,7 +31,7 @@ const getParentUids = (tree, func, path = []) => {
   return [];
 };
 const getChildrenUids = (data = [], arr = []) => {
-  for (let item of data) {
+  for (const item of data) {
     arr.push(item.uid);
     if (item.children && item.children.length) getChildrenUids(item.children, arr);
   }
@@ -116,8 +116,8 @@ export const MenuConfigure = () => {
                   refresh();
                   message.success(t('Saved successfully'));
                 }}
-              />
-              {' '}{t('Accessible')}
+              />{' '}
+              {t('Accessible')}
             </>
           ),
           render: (_, schema) => {

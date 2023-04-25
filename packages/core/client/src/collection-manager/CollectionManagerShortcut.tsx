@@ -27,7 +27,7 @@ import {
   EditCategory,
   EditCategoryAction,
   SyncFieldsAction,
-  SyncFieldsActionCom
+  SyncFieldsActionCom,
 } from './Configuration';
 
 import { CollectionCategroriesProvider } from './CollectionManagerProvider';
@@ -61,32 +61,32 @@ const schema2: ISchema = {
 export const CollectionManagerPane = () => {
   return (
     // <Card bordered={false}>
-      <SchemaComponent
-        schema={schema2}
-        components={{
-          CollectionCategroriesProvider,
-          ConfigurationTable,
-          ConfigurationTabs,
-          AddFieldAction,
-          AddCollectionField,
-          AddCollection,
-          AddCollectionAction,
-          AddCategoryAction,
-          AddCategory,
-          EditCollection,
-          EditCollectionAction,
-          EditFieldAction,
-          EditCollectionField,
-          OverridingCollectionField,
-          OverridingFieldAction,
-          ViewCollectionField,
-          ViewFieldAction,
-          EditCategory,
-          EditCategoryAction,
-          SyncFieldsAction,
-          SyncFieldsActionCom
-        }}
-      />
+    <SchemaComponent
+      schema={schema2}
+      components={{
+        CollectionCategroriesProvider,
+        ConfigurationTable,
+        ConfigurationTabs,
+        AddFieldAction,
+        AddCollectionField,
+        AddCollection,
+        AddCollectionAction,
+        AddCategoryAction,
+        AddCategory,
+        EditCollection,
+        EditCollectionAction,
+        EditFieldAction,
+        EditCollectionField,
+        OverridingCollectionField,
+        OverridingFieldAction,
+        ViewCollectionField,
+        ViewFieldAction,
+        EditCategory,
+        EditCategoryAction,
+        SyncFieldsAction,
+        SyncFieldsActionCom,
+      }}
+    />
     // </Card>
   );
 };

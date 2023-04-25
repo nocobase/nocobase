@@ -1,15 +1,15 @@
 export enum ViewMode {
-  Hour = "hour",
-  QuarterDay = "quarterDay",
-  HalfDay = "halfDay",
-  Day = "day",
+  Hour = 'hour',
+  QuarterDay = 'quarterDay',
+  HalfDay = 'halfDay',
+  Day = 'day',
   /** ISO-8601 week */
-  Week = "week",
-  Month = "month",
-  QuarterYear = "quarterYear",
-  Year = "year",
+  Week = 'week',
+  Month = 'month',
+  QuarterYear = 'quarterYear',
+  Year = 'year',
 }
-export type TaskType = "task" | "milestone" | "project";
+export type TaskType = 'task' | 'milestone' | 'project';
 export interface Task {
   id: string;
   type: TaskType;
@@ -53,17 +53,11 @@ export interface EventOption {
   /**
    * Invokes on end and start time change. Chart undoes operation if method return false or error.
    */
-  onDateChange?: (
-    task: Task,
-    children: Task[]
-  ) => void | boolean | Promise<void> | Promise<boolean>;
+  onDateChange?: (task: Task, children: Task[]) => void | boolean | Promise<void> | Promise<boolean>;
   /**
    * Invokes on progress change. Chart undoes operation if method return false or error.
    */
-  onProgressChange?: (
-    task: Task,
-    children: Task[]
-  ) => void | boolean | Promise<void> | Promise<boolean>;
+  onProgressChange?: (task: Task, children: Task[]) => void | boolean | Promise<void> | Promise<boolean>;
   /**
    * Invokes on delete selected task. Chart undoes operation if method return false or error.
    */

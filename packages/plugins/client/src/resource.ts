@@ -9,7 +9,7 @@ const arr2obj = (items: any[]) => {
 };
 
 const getResource = (packageName: string, lang: string) => {
-  let resources = [];
+  const resources = [];
   const prefixes = ['src', 'lib'];
   const localeKeys = ['locale', 'client/locale', 'server/locale'];
   for (const prefix of prefixes) {

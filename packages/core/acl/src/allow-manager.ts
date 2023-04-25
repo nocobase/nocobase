@@ -87,7 +87,7 @@ export class AllowManager {
   aclMiddleware() {
     return async (ctx, next) => {
       const { resourceName, actionName } = ctx.action;
-      let skip = await this.acl.allowManager.isAllowed(resourceName, actionName, ctx);
+      const skip = await this.acl.allowManager.isAllowed(resourceName, actionName, ctx);
 
       if (skip) {
         ctx.permission = {

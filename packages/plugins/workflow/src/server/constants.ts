@@ -22,5 +22,5 @@ export const JOB_STATUS = {
 export const BRANCH_INDEX = {
   DEFAULT: null,
   ON_TRUE: 1,
-  ON_FALSE: 0
+  ON_FALSE: 0,
 };
