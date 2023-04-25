@@ -161,10 +161,9 @@ const CurrentFields = (props) => {
         type: 'checkbox',
         onChange: (selectedRowKeys) => {
           setState((state) => {
-            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
             return {
               ...state,
-              selectedRowKeys: result,
+              selectedRowKeys,
             };
           });
         },
@@ -312,6 +311,7 @@ export const CollectionFields = (props) => {
   ];
 
   const fields = getCurrentCollectionFields(name);
+  console.log(fields);
 
   const groups = {
     pf: [],
@@ -357,7 +357,6 @@ export const CollectionFields = (props) => {
       fields: groups.system,
     },
   ];
-
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -408,7 +407,6 @@ export const CollectionFields = (props) => {
   );
   const addProps = { type: 'primary' };
   const syncProps = { type: 'primary' };
-
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>

@@ -9,6 +9,7 @@ import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
+import { useTranslation } from 'react-i18next';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -378,8 +379,12 @@ export const useDestroyAction = () => {
 export const useBulkDestroyAction = () => {
   const { state, setState, refresh } = useResourceActionContext();
   const { resource } = useResourceContext();
+  const { t } = useTranslation();
   return {
     async run() {
+      if (!state?.selectedRowKeys || !state?.selectedRowKeys.length) {
+        return message.error(t('Please select the fields you want to delete'));
+      }
       await resource.destroy({
         filterByTk: state?.selectedRowKeys || [],
       });
