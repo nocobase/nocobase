@@ -184,12 +184,16 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           allowClear
           onChange={(changed: any) => {
             if (!changed) {
-              onChange([]);
-              setSelectedRows([]);
-            } else if (!changed?.length) {
-              onChange([]);
-              setSelectedRows([]);
+              const value = multiple ? [] : null;
+              onChange(value);
+              setSelectedRows(value);
             } else if (Array.isArray(changed)) {
+              if (!changed.length) {
+                onChange([]);
+                setSelectedRows([]);
+                return;
+              }
+
               const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
               onChange(values);
               setSelectedRows(values);

@@ -163,6 +163,11 @@ export class FieldModel extends MagicAttributeModel {
 
     const field = collection.getField(this.get('name'));
 
+    // overriding field should not sync default value
+    if (field.get('overriding')) {
+      return;
+    }
+
     const queryInterface = collection.db.sequelize.getQueryInterface();
 
     await queryInterface.changeColumn(
