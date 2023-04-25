@@ -4,6 +4,7 @@ import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
+import moment from 'moment';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
@@ -688,5 +689,9 @@ function isFileCollection(collection: Collection) {
 FormItem.FilterFormDesigner = FilterFormDesigner;
 
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
-  return fieldSchema?.default || collectionField?.defaultValue;
+  const result = fieldSchema?.default || collectionField?.defaultValue;
+  if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
+    return moment(result);
+  }
+  return result;
 }
