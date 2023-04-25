@@ -14,6 +14,9 @@ export default async function (this: ManualInstruction, instance, { collection, 
       ...(values as Object ?? {}),
       updatedById: instance.userId
     },
+    context: {
+      executionId: processor.execution.id
+    },
     transaction: processor.transaction
   });
 }
