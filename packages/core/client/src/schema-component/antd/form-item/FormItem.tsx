@@ -21,6 +21,12 @@ import { HTMLEncode } from '../input/shared';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
+const defaultInputStyle = css`
+  & > .nb-form-item {
+    flex: 1;
+  }
+`;
+
 const divWrap = (schema: ISchema) => {
   return {
     type: 'void',
@@ -447,6 +453,7 @@ FormItem.Designer = function Designer() {
                           ...(fieldSchema?.['x-component-props'] || {}),
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
+                          className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
                             const s = _.cloneDeep(fieldSchema) || ({} as Schema);
                             s.title = '';
@@ -464,6 +471,7 @@ FormItem.Designer = function Designer() {
                                     defaultValue: getFieldDefaultValue(s, collectionField),
                                     style: {
                                       width: '100%',
+                                      verticalAlign: 'top',
                                     },
                                   },
                                 }}
