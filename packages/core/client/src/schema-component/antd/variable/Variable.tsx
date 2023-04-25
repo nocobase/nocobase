@@ -1,8 +1,9 @@
 import { connect, mapReadPretty } from '@formily/react';
 
+import { IField } from '../../../collection-manager';
 import { Input } from './Input';
-import { TextArea } from './TextArea';
 import { JSONInput } from './JSONInput';
+import { TextArea } from './TextArea';
 
 export function Variable() {
   return null;
@@ -15,3 +16,7 @@ Variable.TextArea = connect(TextArea, mapReadPretty(TextArea.ReadPretty));
 Variable.JSON = connect(JSONInput);
 
 export default Variable;
+
+export function isInvariable(value: IField) {
+  return !!value?.invariable;
+}

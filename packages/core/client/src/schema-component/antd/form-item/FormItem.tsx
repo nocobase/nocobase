@@ -18,6 +18,7 @@ import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 
@@ -427,7 +428,7 @@ FormItem.Designer = function Designer() {
                 title: t('Set default value'),
                 properties: {
                   // 关系字段不支持设置变量
-                  default: collectionField?.target
+                  default: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchema || {}),
                         'x-decorator': 'FormItem',
