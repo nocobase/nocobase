@@ -449,6 +449,8 @@ FormItem.Designer = function Designer() {
                           renderSchemaComponent: function Com(props) {
                             const s = _.cloneDeep(fieldSchema) || ({} as Schema);
                             s.title = '';
+                            s['x-read-pretty'] = false;
+                            s['x-disabled'] = false;
 
                             return (
                               <SchemaComponent
