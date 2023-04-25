@@ -74,6 +74,8 @@ const InternalAssociationSelect = connect(
       loading: true,
     },
     (props, field) => {
+      console.log({ ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames })
+
       return {
         ...props,
         fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames },
@@ -117,7 +119,6 @@ AssociationSelect.Designer = function Designer() {
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
-
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -692,7 +693,7 @@ AssociationSelect.Designer = function Designer() {
           key="title-field"
           title={t('Title field')}
           options={options}
-          value={field?.componentProps?.fieldNames?.label}
+          value={field?.componentProps?.fieldNames?.label??'id'}
           onChange={(label) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -1168,7 +1169,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
           key="title-field"
           title={t('Title field')}
           options={options}
-          value={field?.componentProps?.fieldNames?.label}
+          value={field?.componentProps?.fieldNames?.label??'id'}
           onChange={(label) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

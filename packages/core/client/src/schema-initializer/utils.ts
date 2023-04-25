@@ -221,10 +221,9 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
-      const component =
-        field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-          ? 'TableField'
-          : 'CollectionField';
+      const component = ['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(field.interface)
+        ? 'AssociationSelect'
+        : 'CollectionField';
       const schema = {
         type: 'string',
         name: field.name,
