@@ -52,7 +52,7 @@ export const ExpandAction = (props) => {
   const ctxBlock = useTableBlockContext()
   const isTableSelector = schema.parent?.parent?.['x-decorator'] === 'TableSelectorProvider';
   const ctx = isTableSelector ? ctxSelector : ctxBlock;
-  const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props']
+  const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
   return (
     <div className={actionDesignerCss}>
       {ctx.params['tree'] && (
