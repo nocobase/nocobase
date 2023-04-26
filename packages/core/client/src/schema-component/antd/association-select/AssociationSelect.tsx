@@ -4,7 +4,7 @@ import { Field } from '@formily/core';
 import { ISchema, connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import {
@@ -117,6 +117,14 @@ AssociationSelect.Designer = function Designer() {
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const defaultFilter = field.componentProps?.service?.params?.filter || {};
   const dataSource = useCollectionFilterOptions(collectionField?.target);
+
+  // TODO: 这里 fieldSchema['x-read-pretty'] 的值为 true，但是 field.readPretty 的值却为 false，不知道什么原因
+  useEffect(() => {
+    // 没有这一步判断会出现禁用状态失效的情况
+    if (field.readPretty !== fieldSchema['x-read-pretty']) {
+      field.readPretty = !!fieldSchema['x-read-pretty'];
+    }
+  }, [fieldSchema['x-read-pretty']]);
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
