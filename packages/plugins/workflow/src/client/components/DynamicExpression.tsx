@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
 import { onFieldInputValueChange, onFormInitialValuesChange } from '@formily/core';
-import { useForm, observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
+import { connect, mapReadPretty, observer, useForm, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useRecord, Variable } from '@nocobase/client';
@@ -10,7 +10,7 @@ import { NAMESPACE } from '../locale';
 import { useCollectionFieldOptions } from '../variable';
 
 const InternalExpression = observer((props: any) => {
-  const { onChange } = props;
+  const { onChange, sourceCollection } = props;
   const { values } = useForm();
   const [collection, setCollection] = useState(values?.sourceCollection);
 
@@ -24,17 +24,18 @@ const InternalExpression = observer((props: any) => {
     });
   });
 
-  const options = useCollectionFieldOptions({ collection });
+  const options = useCollectionFieldOptions({ collection: sourceCollection || collection });
 
   return <Variable.TextArea {...props} scope={options} />;
 });
 
 function Result(props) {
+  const { sourceCollection } = props;
   const { t } = useTranslation();
   const values = useRecord();
   const options = useMemo(
-    () => useCollectionFieldOptions({ collection: values.sourceCollection }),
-    [values.sourceCollection, values.sourceCollection],
+    () => useCollectionFieldOptions({ collection: sourceCollection || values.sourceCollection }),
+    [values.sourceCollection, values.sourceCollection, sourceCollection],
   );
   return props.value ? (
     <Variable.TextArea {...props} scope={options} />
