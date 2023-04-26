@@ -79,6 +79,10 @@ export const ExpandActionDesign = (props) => {
           };
           dn.emit('patch', {
             schema: {
+              'x-uid': fieldSchema['x-uid'],
+              'x-component-props': fieldSchema['x-component-props'],
+              title: fieldSchema.title,
+            }
               ...fieldSchema,
               'x-component-props': {
                 ...fieldSchema['x-component-props'],
