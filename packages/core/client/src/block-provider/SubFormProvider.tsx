@@ -1,7 +1,5 @@
 import { createForm, onFormValuesChange } from '@formily/core';
-import { useField } from '@formily/react';
-import { autorun } from '@formily/reactive';
-import { forEach } from '@nocobase/utils/client';
+import { useField, useForm } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { RecordProvider } from '../record-provider';
@@ -19,12 +17,13 @@ const InternalSubFormProvider = (props) => {
   }
 
   const field = useField();
-
+  const parentForm = useForm();
   const form = useMemo(
     () =>
       createForm({
         effects() {
           onFormValuesChange((form) => {
+            parentForm.setValuesIn(fieldName, form.values);
             formBlockCtx?.form?.setValuesIn(fieldName, form.values);
           });
         },
@@ -32,22 +31,6 @@ const InternalSubFormProvider = (props) => {
       }),
     [],
   );
-
-  // 当使用数据模板时，会 formBlockCtx.form.values 会被整体赋值，这时候需要同步到 form.values
-  useEffect(() => {
-    const dispose = autorun(() => {
-      const data = formBlockCtx?.form?.values[fieldName] || {};
-      // 先清空表单值，再赋值，避免当值为空时，表单未被清空
-      form.reset();
-      forEach(data, (value, key) => {
-        if (value) {
-          form.values[key] = value;
-        }
-      });
-    });
-
-    return dispose;
-  }, []);
 
   const { resource, service } = useBlockRequestContext();
   if (service.loading) {

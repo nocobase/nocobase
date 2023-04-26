@@ -9,7 +9,6 @@ import { useCompile } from '../../hooks';
 
 export const SubForm: any = observer((props: any) => {
   const form = useForm();
-  console.log(form);
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const field = useField();
@@ -21,7 +20,6 @@ export const SubForm: any = observer((props: any) => {
     const id = uid();
     form.addEffects(id, () => {
       onFormInputChange((form) => {
-        console.log(form)
         setFormValueChanged?.(true);
       });
     });
