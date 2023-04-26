@@ -1,19 +1,16 @@
-import React from 'react';
-import { observer } from '@formily/react';
-import { FormLayout, FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
-import parse from 'json-templates';
-import { useTranslation } from 'react-i18next';
+import { FormItem, FormLayout } from '@formily/antd';
+import { SchemaInitializer, SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
+import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { Radio } from 'antd';
-
-import { SchemaInitializer, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
-import { evaluators, Evaluator, getOptions } from '@nocobase/evaluators/client';
-
+import parse from 'json-templates';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
+import { NAMESPACE, lang } from '../locale';
+import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 
 function matchDynamicExpressionCollectionField(field): boolean {
   const { getCollectionFields, getCollection } = useCollectionManager();
