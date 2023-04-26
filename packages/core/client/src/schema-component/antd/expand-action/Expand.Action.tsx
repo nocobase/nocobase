@@ -55,7 +55,7 @@ export const ExpandAction = (props) => {
   const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
   return (
     <div className={actionDesignerCss}>
-      {ctx.params['tree'] && (
+      {ctx?.params['tree'] && (
         <Button
           onClick={() => {
             ctx?.setExpandFlag();
