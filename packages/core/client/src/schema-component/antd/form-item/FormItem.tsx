@@ -440,8 +440,6 @@ FormItem.Designer = function Designer() {
                           service: {
                             resource: collectionField?.target,
                           },
-                          // for DynamicExpression
-                          sourceCollection: form?.values.sourceCollection,
                           style: {
                             width: '100%',
                             verticalAlign: 'top',
