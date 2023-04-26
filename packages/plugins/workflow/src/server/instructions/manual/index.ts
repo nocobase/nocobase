@@ -164,15 +164,18 @@ export default class implements Instruction {
         jobId: job.id,
       },
       group: ['status'],
+      transaction: processor.transaction,
     });
 
     const submitted = distribution.reduce(
       (count, item) => (item.status !== JOB_STATUS.PENDING ? count + item.count : count),
       0,
     );
+    const status = job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING);
     const result = mode ? (submitted || 0) / assignees.length : job.latestUserJob?.result ?? job.result;
+    processor.logger.debug(`manual resume job and next status: ${status}`);
     job.set({
-      status: job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING),
+      status,
       result,
     });
 

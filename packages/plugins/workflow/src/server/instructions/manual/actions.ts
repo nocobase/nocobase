@@ -68,6 +68,8 @@ export async function submit(context: Context, next) {
     transaction: processor.transaction
   });
 
+  await processor.exit(userJob.job);
+
   context.body = userJob;
   context.status = 202;
 

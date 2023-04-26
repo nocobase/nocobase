@@ -112,7 +112,6 @@ export default class Processor {
     } else {
       await this.exit(null);
     }
-    await this.commit();
   }
 
   public async resume(job: JobModel) {
@@ -123,7 +122,6 @@ export default class Processor {
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
-    await this.commit();
   }
 
   private async commit() {
@@ -226,6 +224,7 @@ export default class Processor {
       : EXECUTION_STATUS.RESOLVED;
     this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
+    await this.commit();
     return null;
   }
 
