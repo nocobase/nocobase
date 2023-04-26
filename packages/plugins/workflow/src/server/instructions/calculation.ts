@@ -1,11 +1,9 @@
+import { Evaluator, evaluators } from '@nocobase/evaluators';
 import parse from 'json-templates';
-
-import evaluators, { Evaluator } from '@nocobase/evaluators';
-
+import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
-import { Instruction } from '.';
 
 interface CalculationConfig {
   dynamic?: boolean | string;
