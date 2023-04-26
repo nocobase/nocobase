@@ -285,7 +285,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['authCheck'] });
     }
 
     this._authManager = new AuthManager(this, {

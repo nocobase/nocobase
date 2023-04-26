@@ -2,15 +2,18 @@ import { Handlers } from '@nocobase/resourcer';
 
 export default {
   signIn: async (ctx, next) => {
-    await ctx.auth.signIn(ctx);
+    await ctx.auth.signIn();
+    return next();
   },
   signOut: async (ctx, next) => {
-    return ctx.auth.signOut(ctx, next);
+    await ctx.auth.signOut();
+    return next();
   },
   signUp: async (ctx, next) => {
-    return ctx.auth.signUp(ctx, next);
+    await ctx.auth.signUp();
+    return next();
   },
   check: async (ctx) => {
-    ctx.body = await ctx.auth.getUser();
+    ctx.body = ctx.state.currentUser;
   },
 } as Handlers;
