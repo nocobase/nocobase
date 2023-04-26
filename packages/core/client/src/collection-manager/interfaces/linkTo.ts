@@ -17,7 +17,7 @@ export const linkTo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -33,7 +33,7 @@ export const linkTo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: true,

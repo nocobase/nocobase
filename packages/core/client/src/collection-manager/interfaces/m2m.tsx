@@ -23,7 +23,7 @@ export const m2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -39,7 +39,7 @@ export const m2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: true,

@@ -225,7 +225,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
+      {!field.readPretty && !['FormField', 'SubForm'].includes(fieldSchema['x-component']) && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}
@@ -491,7 +491,7 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {form && !isSubFormAssociationField && fieldComponentOptions && (
+      {form && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}

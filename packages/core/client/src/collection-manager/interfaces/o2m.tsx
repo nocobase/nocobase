@@ -22,7 +22,7 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -38,7 +38,7 @@ export const o2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -51,7 +51,7 @@ export const o2m: IField = {
     },
   },
   availableTypes: ['hasMany'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection, action }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
@@ -94,6 +94,44 @@ export const o2m: IField = {
                     type: 'checkbox',
                   },
                   useProps: '{{ useTableFieldProps }}',
+                },
+              },
+            },
+          },
+        };
+      } else if (schema['x-component'] === 'SubForm') {
+        const association = `${field.collectionName}.${field.name}`;
+        schema.type = 'void';
+        schema.properties = {
+          block: {
+            type: 'void',
+            'x-decorator': 'SubFormProvider',
+            'x-decorator-props': {
+              collection: field.target,
+              association: association,
+              resource: association,
+              action: action,
+              fieldName: field.name,
+              readPretty,
+            },
+            'x-component': 'CardItem',
+            'x-component-props': {
+              bordered: true,
+            },
+            properties: {
+              [field.name]: {
+                type: 'object',
+                'x-component': 'FormV2',
+                'x-component-props': {
+                  useProps: '{{ useSubFormProps }}',
+                },
+                properties: {
+                  __form_grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'FormItemInitializers',
+                    properties: {},
+                  },
                 },
               },
             },

@@ -166,7 +166,7 @@ export const EditRequired = () => {
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
 
-  return !field.readPretty && fieldSchema['x-component'] !== 'FormField' ? (
+  return !field.readPretty && !['FormField', 'SubForm'].includes(fieldSchema['x-component']) ? (
     <SchemaSettings.SwitchItem
       key="required"
       title={t('Required')}

@@ -370,7 +370,7 @@ const AssociationSelectDesigner = function Designer() {
             }}
           />
         )}
-      {form && !isSubFormAssociationField && fieldComponentOptions && (
+      {form && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}

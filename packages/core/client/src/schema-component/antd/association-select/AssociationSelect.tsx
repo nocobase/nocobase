@@ -4,10 +4,15 @@ import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
-import { defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
 
+export const defaultFieldNames = {
+  label: 'id',
+  value: 'value',
+  color: 'color',
+  options: 'children',
+};
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
   multiple?: boolean;

@@ -49,6 +49,44 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
           },
         },
       };
+    } else if (schema['x-component'] === 'SubForm') {
+      const association = `${field.collectionName}.${field.name}`;
+      schema.type = 'void';
+      schema.properties = {
+        block: {
+          type: 'void',
+          'x-decorator': 'SubFormProvider',
+          'x-decorator-props': {
+            collection: field.target,
+            association: association,
+            resource: association,
+            action: action,
+            fieldName: field.name,
+            readPretty,
+          },
+          'x-component': 'CardItem',
+          'x-component-props': {
+            bordered: true,
+          },
+          properties: {
+            [field.name]: {
+              type: 'object',
+              'x-component': 'FormV2',
+              'x-component-props': {
+                useProps: '{{ useSubFormProps }}',
+              },
+              properties: {
+                __form_grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-initializer': 'FormItemInitializers',
+                  properties: {},
+                },
+              },
+            },
+          },
+        },
+      };
     } else if (schema['x-component'] === 'AssociationSelect') {
       Object.assign(schema, {
         type: 'string',
@@ -88,7 +126,7 @@ export const o2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -105,7 +143,7 @@ export const o2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -267,7 +305,7 @@ export const oho: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -284,7 +322,7 @@ export const oho: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -437,7 +475,7 @@ export const obo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'Select',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -453,7 +491,7 @@ export const obo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'Select',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,

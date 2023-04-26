@@ -7,5 +7,5 @@ FormV2.FilterDesigner = FilterDesigner;
 FormV2.ReadPrettyDesigner = ReadPrettyFormDesigner;
 
 export * from './FormField';
+export * from './SubForm';
 export { FormV2, DetailsDesigner };
-

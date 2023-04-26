@@ -1,7 +1,7 @@
 import { castArray } from 'lodash';
 
 export const defaultFieldNames = {
-  label: 'id',
+  label: 'label',
   value: 'value',
   color: 'color',
   options: 'children',

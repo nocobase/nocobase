@@ -32,6 +32,7 @@ export const useFieldComponentOptions = () => {
           { label: t('Record picker'), value: 'CollectionField' },
           { label: t('Subtable'), value: 'TableField' },
           { label: t('Select'), value: 'AssociationSelect' },
+          { label: t('Subform'), value: 'SubForm' },
         ];
 
       case 'm2o':
@@ -40,12 +41,13 @@ export const useFieldComponentOptions = () => {
         return [
           { label: t('Record picker'), value: 'CollectionField' },
           { label: t('Select'), value: 'AssociationSelect' },
+          { label: t('Subform'), value: 'SubForm' },
         ];
 
       default:
         return [
           { label: t('Record picker'), value: 'CollectionField' },
-          { label: t('Subform'), value: 'FormField' },
+          { label: t('Subform'), value: 'SubForm' },
           { label: t('Select'), value: 'AssociationSelect' },
         ];
     }
