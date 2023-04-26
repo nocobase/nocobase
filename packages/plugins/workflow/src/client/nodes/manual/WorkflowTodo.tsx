@@ -1,7 +1,7 @@
 import React, { useContext, createContext, useEffect, useState, useMemo } from "react";
 import { createForm } from '@formily/core';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
-import { Tag } from 'antd';
+import { Spin, Tag } from 'antd';
 import parse from 'json-templates';
 import { css } from '@emotion/css';
 import moment from 'moment';
@@ -427,8 +427,9 @@ function useFlowRecordFromBlock(opts) {
 
 function FlowContextProvider(props) {
   const api = useAPIClient();
-  const { id, node } = useRecord();
+  const { id } = useRecord();
   const [flowContext, setFlowContext] = useState<any>(null);
+  const [node, setNode] = useState<any>(null);
 
   useEffect(() => {
     if (!id) {
@@ -438,11 +439,12 @@ function FlowContextProvider(props) {
       .resource('users_jobs')
       .get?.({
         filterByTk: id,
-        appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+        appends: ['node', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
       })
       .then(({ data }) => {
-        const { workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
+        const { node, workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
         linkNodes(nodes);
+        setNode(node);
         setFlowContext({
           workflow,
           nodes,
@@ -454,11 +456,26 @@ function FlowContextProvider(props) {
   const upstreams = useAvailableUpstreams(flowContext?.nodes.find(item => item.id === node.id));
   const nodeComponents = upstreams.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
 
-  return flowContext ? (
-    <FlowContext.Provider value={flowContext}>
-      <SchemaComponentOptions components={{ ...nodeComponents }}>{props.children}</SchemaComponentOptions>
-    </FlowContext.Provider>
-  ) : null;
+  return node && flowContext
+    ? (
+      <FlowContext.Provider value={flowContext}>
+        <SchemaComponent
+          components={{
+            ActionBarProvider,
+            ManualActionStatusProvider,
+            ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.components), {})),
+            ...nodeComponents
+          }}
+          schema={{
+            type: 'void',
+            name: 'tabs',
+            'x-component': 'Tabs',
+            properties: node.config?.schema
+          }}
+        />
+      </FlowContext.Provider>
+    )
+    : <Spin />;
 }
 
 function useFormBlockProps() {
@@ -481,31 +498,31 @@ function Drawer() {
   const ctx = useContext(SchemaComponentContext);
   const { id, node, workflow, status, updatedAt } = useRecord();
 
-  const { schema } = node.config ?? {};
+  // const { schema } = node.config ?? {};
 
   const statusOption = JobStatusOptionsMap[status];
   const footerSchema = status
     ? {
-        date: {
-          type: 'void',
-          'x-component': 'time',
-          'x-component-props': {
-            className: css`
-              margin-right: 0.5em;
-            `,
-          },
-          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+      date: {
+        type: 'void',
+        'x-component': 'time',
+        'x-component-props': {
+          className: css`
+            margin-right: 0.5em;
+          `,
         },
-        status: {
-          type: 'void',
-          'x-component': 'Tag',
-          'x-component-props': {
-            icon: statusOption.icon,
-            color: statusOption.color,
-          },
-          'x-content': statusOption.label,
+        'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+      },
+      status: {
+        type: 'void',
+        'x-component': 'Tag',
+        'x-component-props': {
+          icon: statusOption.icon,
+          color: statusOption.color,
         },
-      }
+        'x-content': statusOption.label,
+      },
+    }
     : null;
 
   return (
@@ -513,10 +530,7 @@ function Drawer() {
       <SchemaComponent
         components={{
           Tag,
-          ActionBarProvider,
-          ManualActionStatusProvider,
           FlowContextProvider,
-          ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.components), {}))
         }}
         schema={{
           type: 'void',
@@ -529,9 +543,9 @@ function Drawer() {
           properties: {
             tabs: {
               type: 'void',
-              'x-decorator': 'FlowContextProvider',
-              'x-component': 'Tabs',
-              properties: schema,
+              'x-component': 'FlowContextProvider',
+              // 'x-component': 'Tabs',
+              // properties: schema,
             },
             footer: {
               type: 'void',
@@ -561,7 +575,7 @@ function Decorator({ children }) {
       pageSize: 20,
       sort: ['-createdAt'],
       appends: ['user', 'node', 'workflow'],
-      except: ['workflow.config'],
+      except: ['node.config', 'workflow.config'],
     },
     rowKey: 'id',
     showIndex: true,
