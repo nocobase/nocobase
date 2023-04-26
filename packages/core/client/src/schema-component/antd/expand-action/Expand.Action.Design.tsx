@@ -83,11 +83,6 @@ export const ExpandActionDesign = (props) => {
               'x-component-props': fieldSchema['x-component-props'],
               title: fieldSchema.title,
             }
-              ...fieldSchema,
-              'x-component-props': {
-                ...fieldSchema['x-component-props'],
-              },
-            },
           });
           dn.refresh();
         }}
