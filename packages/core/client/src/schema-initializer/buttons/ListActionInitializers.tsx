@@ -151,14 +151,28 @@ export const ListItemActionInitializers = {
       children: [
         {
           type: 'item',
+          title: '{{t("View")}}',
+          component: 'ViewActionInitializer',
+          schema: {
+            'x-component': 'Action.Link',
+            'x-action': 'view',
+            'x-decorator': 'ACLActionProvider',
+            'x-align': 'left',
+          },
+        },
+        {
+          type: 'item',
           title: '{{t("Edit")}}',
           component: 'UpdateActionInitializer',
           schema: {
-            'x-component': 'Action',
+            'x-component': 'Action.Link',
+            'x-action': 'update',
             'x-decorator': 'ACLActionProvider',
-            'x-component-props': {
-              type: 'primary',
-            },
+            'x-align': 'left',
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
           },
         },
         {
@@ -166,8 +180,10 @@ export const ListItemActionInitializers = {
           title: '{{t("Delete")}}',
           component: 'DestroyActionInitializer',
           schema: {
-            'x-component': 'Action',
+            'x-component': 'Action.Link',
+            'x-action': 'destroy',
             'x-decorator': 'ACLActionProvider',
+            'x-align': 'left',
           },
         },
       ],

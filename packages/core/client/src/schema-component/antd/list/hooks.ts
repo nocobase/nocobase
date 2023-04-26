@@ -4,7 +4,9 @@ import { useInfiniteScroll } from 'ahooks';
 import { useField } from '@formily/react';
 
 export const useListActionBarProps = () => {
-  return {};
+  return {
+    size: 'large',
+  };
 };
 
 export const useService = () => {

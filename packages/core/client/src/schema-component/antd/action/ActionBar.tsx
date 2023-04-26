@@ -7,7 +7,7 @@ import { DndContext } from '../../common';
 import { useDesignable, useProps } from '../../hooks';
 
 export const ActionBar = observer((props: any) => {
-  const { layout = 'tow-columns', style, ...others } = useProps(props);
+  const { layout = 'tow-columns', style, size, ...others } = useProps(props);
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { designable } = useDesignable();
@@ -17,7 +17,7 @@ export const ActionBar = observer((props: any) => {
         <div style={{ display: 'flex', ...style }} {...others} className={cx(others.className, 'nb-action-bar')}>
           {props.children && (
             <div style={{ marginRight: 8 }}>
-              <Space>
+              <Space size={size}>
                 {fieldSchema.mapProperties((schema, key) => {
                   return <RecursionField key={key} name={key} schema={schema} />;
                 })}
@@ -56,7 +56,7 @@ export const ActionBar = observer((props: any) => {
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
       >
         <DndContext>
-          <Space>
+          <Space size={size}>
             {fieldSchema.mapProperties((schema, key) => {
               if (schema['x-align'] !== 'left') {
                 return null;
@@ -64,7 +64,7 @@ export const ActionBar = observer((props: any) => {
               return <RecursionField key={key} name={key} schema={schema} />;
             })}
           </Space>
-          <Space>
+          <Space size={size}>
             {fieldSchema.mapProperties((schema, key) => {
               if (schema['x-align'] === 'left') {
                 return null;
