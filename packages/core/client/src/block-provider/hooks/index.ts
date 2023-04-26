@@ -438,6 +438,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           try {
             await resource.update(updateData);
           } catch (error) {
+            /* empty */
           } finally {
             actionField.data.loading = false;
           }
@@ -682,9 +683,6 @@ export const useUpdateActionProps = () => {
           updateAssociationValues,
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
@@ -906,7 +904,7 @@ export const useAssociationFilterBlockProps = () => {
         fields: [labelKey, valueKey],
         pageSize: 200,
         page: 1,
-        ...field.componentProps?.params
+        ...field.componentProps?.params,
       },
     },
     {
@@ -919,9 +917,9 @@ export const useAssociationFilterBlockProps = () => {
   useEffect(() => {
     // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
     if (!isOptionalField(fieldSchema)) {
-      run()
+      run();
     }
-  },[labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)])
+  }, [labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)]);
 
   if (isOptionalField(fieldSchema)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
