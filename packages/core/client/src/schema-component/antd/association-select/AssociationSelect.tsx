@@ -416,6 +416,8 @@ AssociationSelect.Designer = function Designer() {
                     name: 'default',
                     title: t('Default value'),
                     default: fieldSchema.default || collectionField.defaultValue,
+                    'x-read-pretty': false,
+                    'x-disabled': false,
                   },
                 },
               } as ISchema

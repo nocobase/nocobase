@@ -450,6 +450,8 @@ FormItem.Designer = function Designer() {
                         name: 'default',
                         title: t('Default value'),
                         default: getFieldDefaultValue(fieldSchema, collectionField),
+                        'x-read-pretty': false,
+                        'x-disabled': false,
                       }
                     : {
                         ...(fieldSchema || {}),
