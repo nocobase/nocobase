@@ -60,7 +60,7 @@ export async function submit(context: Context, next) {
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
-  if (handler) {
+  if (handler && userJob.status) {
     await handler.call(instruction, userJob, forms[formKey], processor);
   }
 

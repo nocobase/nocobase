@@ -654,15 +654,80 @@ describe('workflow > instructions > manual', () => {
 
         await sleep(1000);
 
-        const [e2] = await workflow.getExecutions();
-        expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
-        const [j1] = await e2.getJobs();
+        const [e1] = await workflow.getExecutions();
+        expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j1] = await e1.getJobs();
         expect(j1.status).toBe(JOB_STATUS.RESOLVED);
         expect(j1.result).toMatchObject({ f1: { status: 1 } });
 
         const comments = await CommentRepo.find();
         expect(comments.length).toBe(1);
         expect(comments[0]).toMatchObject({ status: 1 });
+      });
+
+      it('save first and then commit', async () => {
+        const n1 = await workflow.createNode({
+          type: 'manual',
+          config: {
+            assignees: [users[0].id],
+            forms: {
+              f1: {
+                type: 'create',
+                actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING],
+                collection: 'comments',
+              }
+            }
+          }
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const UserJobModel = db.getModel('users_jobs');
+        const pendingJobs = await UserJobModel.findAll({
+          order: [[ 'userId', 'ASC' ]]
+        });
+        expect(pendingJobs.length).toBe(1);
+
+        const res1 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.PENDING,
+            result: { f1: { status: 1 } }
+          }
+        });
+        expect(res1.status).toBe(202);
+
+        await sleep(500);
+
+        const [e1] = await workflow.getExecutions();
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+        const [j1] = await e1.getJobs();
+        expect(j1.status).toBe(JOB_STATUS.PENDING);
+        expect(j1.result).toMatchObject({ f1: { status: 1 } });
+
+        const c1 = await CommentRepo.find();
+        expect(c1.length).toBe(0);
+
+        const res2 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.RESOLVED,
+            result: { f1: { status: 1 } }
+          }
+        });
+
+        await sleep(500);
+
+        const [e2] = await workflow.getExecutions();
+        expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j2] = await e2.getJobs();
+        expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+        expect(j2.result).toMatchObject({ f1: { status: 1 } });
+
+        const c2 = await CommentRepo.find();
+        expect(c2.length).toBe(1);
       });
     });
 

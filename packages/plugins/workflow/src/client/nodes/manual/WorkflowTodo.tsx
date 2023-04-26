@@ -498,8 +498,6 @@ function Drawer() {
   const ctx = useContext(SchemaComponentContext);
   const { id, node, workflow, status, updatedAt } = useRecord();
 
-  // const { schema } = node.config ?? {};
-
   const statusOption = JobStatusOptionsMap[status];
   const footerSchema = status
     ? {
@@ -544,8 +542,6 @@ function Drawer() {
             tabs: {
               type: 'void',
               'x-component': 'FlowContextProvider',
-              // 'x-component': 'Tabs',
-              // properties: schema,
             },
             footer: {
               type: 'void',
