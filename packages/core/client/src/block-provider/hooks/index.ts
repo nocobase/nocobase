@@ -4,7 +4,7 @@ import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { ChangeEvent, useContext } from 'react';
+import { ChangeEvent, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -891,8 +891,37 @@ export const useAssociationFilterBlockProps = () => {
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();
   const collectionFieldName = collectionField.name;
+  const field = useField();
 
   let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+
+  valueKey = collectionField?.targetKey || 'id';
+  labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+
+  ({ data, params, run } = useRequest(
+    {
+      resource: collectionField?.target,
+      action: 'list',
+      params: {
+        fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
+        ...field.componentProps?.params
+      },
+    },
+    {
+      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      manual: true,
+      debounceWait: 300,
+    },
+  ));
+
+  useEffect(() => {
+    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    if (!isOptionalField(fieldSchema)) {
+      run()
+    }
+  },[labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)])
 
   if (isOptionalField(fieldSchema)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
@@ -919,27 +948,8 @@ export const useAssociationFilterBlockProps = () => {
       list = (_list as any[]).filter((item) => item.label.includes(value));
     };
   } else {
-    valueKey = collectionField?.targetKey || 'id';
-    labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
-    ({ data, params, run } = useRequest(
-      {
-        resource: collectionField.target,
-        action: 'list',
-        params: {
-          fields: [labelKey, valueKey],
-          pageSize: 200,
-          page: 1,
-        },
-      },
-      {
-        refreshDeps: [labelKey, valueKey],
-        debounceWait: 300,
-      },
-    ));
     filterKey = `${collectionFieldName}.${valueKey}.$in`;
-
     list = data?.data || [];
-
     handleSearchInput = (e: ChangeEvent<any>) => {
       run({
         ...params?.[0],

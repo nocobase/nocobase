@@ -577,7 +577,7 @@ export default {
   "Enable SMS authentication": "SMS認証を有効にする",
   "Display association fields": "関連付けられたコレクションのフィールドを表示",
   "Set default value": "デフォルト値を設定",
-  "Optional fields": "オプションフィールド",
+  "Choices fields": "チョイスフィールド",
   "Editable": "編集可能",
   "Readonly": "読み取り専用（編集不可）",
   "Easy-reading": "読取り専用（読取りモード）",
