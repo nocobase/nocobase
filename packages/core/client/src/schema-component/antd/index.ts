@@ -41,5 +41,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export * from './gantt'
+export * from './gantt';
 import './index.less';

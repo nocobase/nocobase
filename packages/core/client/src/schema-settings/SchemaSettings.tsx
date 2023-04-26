@@ -382,7 +382,7 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
 };
 
 SchemaSettings.Item = function Item(props) {
-  let { eventKey } = props;
+  const { eventKey } = props;
   const key = useMemo(() => uid(), []);
   return (
     <Menu.Item

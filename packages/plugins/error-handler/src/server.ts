@@ -8,7 +8,7 @@ import zhCN from './locale/zh_CN';
 
 export class PluginErrorHandler extends Plugin {
   errorHandler: ErrorHandler = new ErrorHandler();
-  i18nNs: string = 'error-handler';
+  i18nNs = 'error-handler';
 
   beforeLoad() {
     this.registerSequelizeValidationErrorHandler();

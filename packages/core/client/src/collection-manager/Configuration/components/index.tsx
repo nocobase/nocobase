@@ -20,12 +20,14 @@ export const SourceForeignKey = observer(() => {
         placeholder={'留空时，自动生成 FK 字段'}
         disabled={field.disabled}
         value={field.value}
-        options={getCollectionFields(collection.name).filter(field => field.type).map((field) => {
-          return {
-            label: field?.uiSchema?.title || field.name,
-            value: field.name,
-          };
-        })}
+        options={getCollectionFields(collection.name)
+          .filter((field) => field.type)
+          .map((field) => {
+            return {
+              label: field?.uiSchema?.title || field.name,
+              value: field.name,
+            };
+          })}
       />
     </div>
   );
@@ -42,17 +44,18 @@ export const ThroughForeignKey = observer(() => {
         placeholder={'留空时，自动生成 FK 字段'}
         disabled={field.disabled}
         value={field.value}
-        options={getCollectionFields(form.values.through).filter(field => field.type).map((field) => {
-          return {
-            label: field?.uiSchema?.title || field.name,
-            value: field.name,
-          };
-        })}
+        options={getCollectionFields(form.values.through)
+          .filter((field) => field.type)
+          .map((field) => {
+            return {
+              label: field?.uiSchema?.title || field.name,
+              value: field.name,
+            };
+          })}
       />
     </div>
   );
 });
-
 
 export const TargetForeignKey = observer(() => {
   const field = useField<Field>();
@@ -65,12 +68,14 @@ export const TargetForeignKey = observer(() => {
         placeholder={'留空时，自动生成 FK 字段'}
         disabled={field.disabled}
         value={field.value}
-        options={getCollectionFields(form.values.target).filter(field => field.type).map((field) => {
-          return {
-            label: field?.uiSchema?.title || field.name,
-            value: field.name,
-          };
-        })}
+        options={getCollectionFields(form.values.target)
+          .filter((field) => field.type)
+          .map((field) => {
+            return {
+              label: field?.uiSchema?.title || field.name,
+              value: field.name,
+            };
+          })}
       />
     </div>
   );
@@ -83,7 +88,11 @@ export const SourceCollection = observer(() => {
   const compile = useCompile();
   return (
     <div>
-      <Select disabled value={collection.name} options={[{ value: collection.name, label: compile(collection.title) }]} />
+      <Select
+        disabled
+        value={collection.name}
+        options={[{ value: collection.name, label: compile(collection.title) }]}
+      />
     </div>
   );
 });

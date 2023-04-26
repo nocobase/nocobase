@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 import { TableOutlined } from '@ant-design/icons';
 
-import { useCollectionManager } from "../../collection-manager";
-import { useSchemaTemplateManager } from "../../schema-templates";
-import { SchemaInitializer } from "../SchemaInitializer";
-import { createTableBlockSchema, useRecordCollectionDataSourceItems } from "../utils";
+import { useCollectionManager } from '../../collection-manager';
+import { useSchemaTemplateManager } from '../../schema-templates';
+import { SchemaInitializer } from '../SchemaInitializer';
+import { createTableBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
 
 export const RecordAssociationBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;

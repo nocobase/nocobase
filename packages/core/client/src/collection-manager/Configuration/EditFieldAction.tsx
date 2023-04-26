@@ -45,6 +45,7 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         },
       },
     };
+    properties['defaultValue']['x-disabled'] = record.overriding;
   }
 
   return {
@@ -143,7 +144,6 @@ export const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
-
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>

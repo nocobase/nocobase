@@ -23,7 +23,9 @@ export const TemplateSummay = observer((props: any) => {
         padding: 16px;
       `}
     >
-      <div className={css``}>{t('Collection template')}: <Tag>{compile(schema.title)}</Tag></div>
+      <div className={css``}>
+        {t('Collection template')}: <Tag>{compile(schema.title)}</Tag>
+      </div>
       {schema.description ? (
         <div
           className={css`

@@ -7,7 +7,7 @@ import {
   useDraggable,
   useDroppable,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';

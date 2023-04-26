@@ -6,7 +6,7 @@ import lodash, { parseInt } from 'lodash';
 const findFilterFieldType = (ctx) => {
   const db = ctx.db;
 
-  let path = ctx.path.split('.');
+  const path = ctx.path.split('.');
 
   // remove operators
   path.pop();

@@ -7,14 +7,15 @@ type Props = {
   onChange: (value: any) => void;
   collectionName: string;
   renderSchemaComponent?: (props: any) => any;
-  style: React.CSSProperties;
   schema: any;
   operator: any;
-  children: any;
+  children?: any;
+  className?: string;
+  style?: React.CSSProperties;
 };
 
 export const VariableInput = (props: Props) => {
-  const { value, onChange, renderSchemaComponent: RenderSchemaComponent, style, schema } = props;
+  const { value, onChange, renderSchemaComponent: RenderSchemaComponent, style, schema, className } = props;
   const compile = useCompile();
   const userVariable = useUserVariable({ schema, level: 1 });
   const scope = useMemo(() => {
@@ -37,7 +38,7 @@ export const VariableInput = (props: Props) => {
   }, []);
 
   return (
-    <Variable.Input value={value} onChange={onChange} scope={scope} style={style}>
+    <Variable.Input className={className} value={value} onChange={onChange} scope={scope} style={style}>
       <RenderSchemaComponent value={value} onChange={onChange} />
     </Variable.Input>
   );

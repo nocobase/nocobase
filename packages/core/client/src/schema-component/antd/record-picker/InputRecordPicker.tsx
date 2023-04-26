@@ -18,7 +18,7 @@ import { getLabelFormatValue, useLabelUiSchema } from './util';
 export const RecordPickerContext = createContext(null);
 
 function flatData(data) {
-  let newArr = [];
+  const newArr = [];
   for (let i = 0; i < data.length; i++) {
     const children = data[i]['children'];
     if (Array.isArray(children)) {
@@ -159,7 +159,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           multiple={multiple}
           quickUpload={quickUpload}
           selectFile={selectFile}
-          action={`${collectionField.target}:create`}
+          action={`${collectionField?.target}:create`}
           onSelect={handleSelect}
           onRemove={handleRemove}
           onChange={(changed) => {
@@ -184,12 +184,16 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           allowClear
           onChange={(changed: any) => {
             if (!changed) {
-              onChange([]);
-              setSelectedRows([]);
-            } else if (!changed?.length) {
-              onChange([]);
-              setSelectedRows([]);
+              const value = multiple ? [] : null;
+              onChange(value);
+              setSelectedRows(value);
             } else if (Array.isArray(changed)) {
+              if (!changed.length) {
+                onChange([]);
+                setSelectedRows([]);
+                return;
+              }
+
               const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
               onChange(values);
               setSelectedRows(values);
@@ -237,7 +241,7 @@ const Drawer: React.FunctionComponent<{
   options,
 }) => {
   const getFilter = () => {
-    const targetKey = collectionField.targetKey || 'id';
+    const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
     const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
     return filter;

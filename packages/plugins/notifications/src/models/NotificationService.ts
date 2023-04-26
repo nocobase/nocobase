@@ -12,7 +12,7 @@ export class NotificationService extends Model {
     if (this._transporter) {
       return this._transporter;
     }
-    return this._transporter = NotificationService.createTransport(this.options);
+    return (this._transporter = NotificationService.createTransport(this.options));
   }
 
   async send(options) {

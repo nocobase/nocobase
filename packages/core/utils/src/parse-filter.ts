@@ -183,7 +183,7 @@ export type GetDayRangeOptions = {
 
 export function getDayRange(options: GetDayRangeOptions) {
   const { now, timezone = '+00:00', offset } = options;
-  let m = toMoment(now).utcOffset(timezone);
+  const m = toMoment(now).utcOffset(timezone);
   if (offset > 0) {
     return [
       // 第二天开始计算
@@ -227,7 +227,7 @@ export type Utc2unitOptions = {
 
 export function utc2unit(options: Utc2unitOptions) {
   const { now, unit, timezone = '+00:00', offset } = options;
-  let m = toMoment(now);
+  const m = toMoment(now);
   m.utcOffset(timezone);
   m.startOf(unit);
   if (offset > 0) {

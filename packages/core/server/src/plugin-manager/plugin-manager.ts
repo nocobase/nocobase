@@ -95,7 +95,7 @@ export class PluginManager {
   }
 
   addStaticMultiple(plugins: any) {
-    for (let plugin of plugins || []) {
+    for (const plugin of plugins || []) {
       if (typeof plugin == 'string') {
         this.addStatic(plugin);
       } else {
@@ -272,7 +272,7 @@ export class PluginManager {
       async: true,
     });
 
-    let model = await this.repository.findOne({
+    const model = await this.repository.findOne({
       transaction,
       filter: { name: plugin },
     });

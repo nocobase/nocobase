@@ -1,10 +1,10 @@
-import { Registry } from "@nocobase/utils";
+import { Registry } from '@nocobase/utils';
 import evaluators from '@nocobase/evaluators';
 
 import { Processor } from '..';
-import { JOB_STATUS } from "../constants";
-import FlowNodeModel from "../models/FlowNode";
-import { Instruction } from ".";
+import { JOB_STATUS } from '../constants';
+import FlowNodeModel from '../models/FlowNode';
+import { Instruction } from '.';
 
 export const calculators = new Registry<Function>();
 
@@ -78,8 +78,6 @@ calculators.register('notStartsWith', notStartsWith);
 calculators.register('endsWith', endsWith);
 calculators.register('notEndsWith', notEndsWith);
 
-
-
 type CalculationItem = {
   calculator?: string;
   operands?: [any?, any?];
@@ -89,7 +87,7 @@ type CalculationGroup = {
   group: {
     type: 'and' | 'or';
     calculations?: Calculation[];
-  }
+  };
 };
 
 type Calculation = CalculationItem | CalculationGroup;
@@ -115,7 +113,6 @@ function logicCalculate(calculation?: Calculation) {
   return calculate(calculation as CalculationItem);
 }
 
-
 export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, calculation, expression, rejectOnFalse } = node.config || {};
@@ -130,14 +127,14 @@ export default {
     } catch (e) {
       return {
         result: e.toString(),
-        status: JOB_STATUS.ERROR
-      }
+        status: JOB_STATUS.ERROR,
+      };
     }
 
     if (!result && rejectOnFalse) {
       return {
         status: JOB_STATUS.FAILED,
-        result
+        result,
       };
     }
 
@@ -146,11 +143,10 @@ export default {
       result,
       // TODO(optimize): try unify the building of job
       nodeId: node.id,
-      upstreamId: prevJob && prevJob.id || null
+      upstreamId: (prevJob && prevJob.id) || null,
     };
 
-    const branchNode = processor.nodes
-      .find(item => item.upstream === node && Boolean(item.branchIndex) === result);
+    const branchNode = processor.nodes.find((item) => item.upstream === node && Boolean(item.branchIndex) === result);
 
     if (!branchNode) {
       return job;
@@ -169,5 +165,5 @@ export default {
 
     // pass control to upper scope by ending current scope
     return processor.end(node, branchJob);
-  }
+  },
 } as Instruction;

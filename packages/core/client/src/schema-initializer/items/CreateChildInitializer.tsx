@@ -1,7 +1,6 @@
 import React from 'react';
 import { ActionInitializer } from './ActionInitializer';
 export const CreateChildInitializer = (props) => {
-
   const schema = {
     type: 'void',
     title: '{{ t("Add child") }}',

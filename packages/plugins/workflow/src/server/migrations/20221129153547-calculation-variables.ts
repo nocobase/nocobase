@@ -10,12 +10,12 @@ const VTypes = {
   },
   $context({ options }) {
     return `{{$context.${options.path}}}`;
-  }
+  },
 };
 
 function migrateConfig(config) {
   if (Array.isArray(config)) {
-    return config.map(item => migrateConfig(item));
+    return config.map((item) => migrateConfig(item));
   }
   if (typeof config !== 'object') {
     return config;
@@ -40,20 +40,22 @@ export default class extends Migration {
       const nodes = await NodeRepo.find({
         filter: {
           type: {
-            $or: ['calculation', 'condition']
-          }
+            $or: ['calculation', 'condition'],
+          },
         },
-        transaction
+        transaction,
       });
       console.log('%d nodes need to be migrated.', nodes.length);
 
       await nodes.reduce((promise, node) => {
-        return node.update({
-          config: migrateConfig(node.config)
-        }, {
-          transaction
-        });
-
+        return node.update(
+          {
+            config: migrateConfig(node.config),
+          },
+          {
+            transaction,
+          },
+        );
       }, Promise.resolve());
     });
   }
