@@ -10,7 +10,7 @@ import { NAMESPACE } from '../locale';
 import { useCollectionFieldOptions } from '../variable';
 
 const InternalExpression = observer((props: any) => {
-  const { onChange, sourceCollection } = props;
+  const { onChange } = props;
   const { values } = useForm();
   const [collection, setCollection] = useState(values?.sourceCollection);
 
@@ -24,18 +24,17 @@ const InternalExpression = observer((props: any) => {
     });
   });
 
-  const options = useCollectionFieldOptions({ collection: sourceCollection || collection });
+  const options = useCollectionFieldOptions({ collection: collection });
 
   return <Variable.TextArea {...props} scope={options} />;
 });
 
 function Result(props) {
-  const { sourceCollection } = props;
   const { t } = useTranslation();
   const values = useRecord();
   const options = useMemo(
-    () => useCollectionFieldOptions({ collection: sourceCollection || values.sourceCollection }),
-    [values.sourceCollection, values.sourceCollection, sourceCollection],
+    () => useCollectionFieldOptions({ collection: values.sourceCollection }),
+    [values.sourceCollection, values.sourceCollection],
   );
   return props.value ? (
     <Variable.TextArea {...props} scope={options} />
