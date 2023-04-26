@@ -18,5 +18,5 @@ export default {
   'Edit provider': 'Editar',
   'Delete provider': 'Excluir',
   'Sign in button name, which will be displayed on the sign in page':
-  'Nome do botão de login, que será exibido na página de login',
+    'Nome do botão de login, que será exibido na página de login',
 };

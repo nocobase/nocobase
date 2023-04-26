@@ -2,8 +2,6 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 
-
-
 describe('workflow > actions > workflows', () => {
   let app: MockServer;
   let agent;
@@ -33,8 +31,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const { status } = await agent.resource('workflows').update({
@@ -42,9 +40,9 @@ describe('workflow > actions > workflows', () => {
         values: {
           config: {
             mode: 1,
-            collection: 'tags'
-          }
-        }
+            collection: 'tags',
+          },
+        },
       });
 
       expect(status).toBe(200);
@@ -56,8 +54,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -72,9 +70,9 @@ describe('workflow > actions > workflows', () => {
         values: {
           config: {
             mode: 1,
-            collection: 'tags'
-          }
-        }
+            collection: 'tags',
+          },
+        },
       });
       expect(status).toBe(400);
     });
@@ -85,8 +83,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -100,8 +98,8 @@ describe('workflow > actions > workflows', () => {
         filterByTk: workflow.id,
         values: {
           enabled: false,
-          key: workflow.key
-        }
+          key: workflow.key,
+        },
       });
       expect(status).toBe(200);
 
@@ -121,8 +119,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const n1 = await workflow.createNode({
@@ -131,13 +129,13 @@ describe('workflow > actions > workflows', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: '{{$context.data.id}}'
+              id: '{{$context.data.id}}',
             },
             values: {
-              title: 't2'
-            }
-          }
-        }
+              title: 't2',
+            },
+          },
+        },
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -159,7 +157,7 @@ describe('workflow > actions > workflows', () => {
       const n2 = await w2.createNode(n1Data);
 
       await agent.resource(`workflows`).destroy({
-        filterByTk: w2.id
+        filterByTk: w2.id,
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -189,8 +187,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -200,8 +198,8 @@ describe('workflow > actions > workflows', () => {
       const { body, status } = await agent.resource(`workflows`).revision({
         filterByTk: w1.id,
         filter: {
-          key: w1.key
-        }
+          key: w1.key,
+        },
       });
 
       expect(status).toBe(200);
@@ -213,21 +211,24 @@ describe('workflow > actions > workflows', () => {
       expect(w2.executed).toBe(0);
       expect(w2.allExecuted).toBe(1);
 
-      await WorkflowModel.update({
-        enabled: true
-      }, {
-        where: {
-          id: w2.id
+      await WorkflowModel.update(
+        {
+          enabled: true,
         },
-        individualHooks: true
-      });
+        {
+          where: {
+            id: w2.id,
+          },
+          individualHooks: true,
+        },
+      );
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
       await sleep(500);
 
       const [w1next, w2next] = await WorkflowModel.findAll({
-        order: [['id', 'ASC']]
+        order: [['id', 'ASC']],
       });
 
       expect(w1next.enabled).toBe(false);
@@ -251,49 +252,47 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const n1 = await w1.createNode({
-        type: 'echo'
+        type: 'echo',
       });
       const n2 = await w1.createNode({
         type: 'calculation',
         config: {
           engine: 'math.js',
-          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + {{$jobsMapByNodeId.${n1.id}.data.read}}`
+          expression: `{{$jobsMapByNodeId.${n1.id}.data.read}} + {{$jobsMapByNodeId.${n1.id}.data.read}}`,
         },
-        upstreamId: n1.id
+        upstreamId: n1.id,
       });
       await n1.setDownstream(n2);
 
       const { body } = await agent.resource(`workflows`).revision({
         filterByTk: w1.id,
         filter: {
-          key: w1.key
-        }
+          key: w1.key,
+        },
       });
       const w2 = await WorkflowModel.findByPk(body.data.id, {
-        include: [
-          'nodes'
-        ]
+        include: ['nodes'],
       });
 
-      const n1_2 = w2.nodes.find(n => !n.upstreamId);
-      const n2_2 = w2.nodes.find(n => !n.downstreamId);
+      const n1_2 = w2.nodes.find((n) => !n.upstreamId);
+      const n2_2 = w2.nodes.find((n) => !n.downstreamId);
 
       expect(n1_2.type).toBe('echo');
       expect(n2_2.type).toBe('calculation');
       expect(n2_2.config).toMatchObject({
         engine: 'math.js',
-        expression: `{{$jobsMapByNodeId.${n1_2.id}.data.read}} + {{$jobsMapByNodeId.${n1_2.id}.data.read}}`
+        expression: `{{$jobsMapByNodeId.${n1_2.id}.data.read}} + {{$jobsMapByNodeId.${n1_2.id}.data.read}}`,
       });
 
       await w2.update({ enabled: true });
 
       await PostRepo.create({
-        values: { title: 't1', read: 1 }
+        values: { title: 't1', read: 1 },
       });
 
       await sleep(500);
@@ -309,8 +308,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const n2 = await w1.createNode({
@@ -323,22 +322,22 @@ describe('workflow > actions > workflows', () => {
                 type: '$jobsMapByNodeId',
                 options: {
                   nodeId: 0,
-                  path: 'data.read'
-                }
+                  path: 'data.read',
+                },
               },
               {
-                value: `{{$jobsMapByNodeId.0.data.read}}`
-              }
-            ]
-          }
+                value: `{{$jobsMapByNodeId.0.data.read}}`,
+              },
+            ],
+          },
         },
       });
 
       const { status } = await agent.resource(`workflows`).revision({
         filterByTk: w1.id,
         filter: {
-          key: w1.key
-        }
+          key: w1.key,
+        },
       });
 
       expect(status).toBe(400);
@@ -350,8 +349,8 @@ describe('workflow > actions > workflows', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -371,30 +370,36 @@ describe('workflow > actions > workflows', () => {
       expect(w2.allExecuted).toBe(0);
 
       // stop w1
-      await WorkflowModel.update({
-        enabled: false
-      }, {
-        where: {
-          id: w1.id
+      await WorkflowModel.update(
+        {
+          enabled: false,
         },
-        individualHooks: true
-      });
+        {
+          where: {
+            id: w1.id,
+          },
+          individualHooks: true,
+        },
+      );
 
-      await WorkflowModel.update({
-        enabled: true
-      }, {
-        where: {
-          id: w2.id
+      await WorkflowModel.update(
+        {
+          enabled: true,
         },
-        individualHooks: true
-      });
+        {
+          where: {
+            id: w2.id,
+          },
+          individualHooks: true,
+        },
+      );
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
 
       await sleep(500);
 
       const [w1next, w2next] = await WorkflowModel.findAll({
-        order: [['id', 'ASC']]
+        order: [['id', 'ASC']],
       });
 
       expect(w1next.enabled).toBe(false);

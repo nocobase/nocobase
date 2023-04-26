@@ -21,7 +21,7 @@ export async function signin(ctx: Context, next: Next) {
     branches[name] = authenticator;
   }
 
-  return branch(branches, context => context.action.params.authenticator ?? 'password')(ctx, () => {
+  return branch(branches, (context) => context.action.params.authenticator ?? 'password')(ctx, () => {
     const user = ctx.state.currentUser.toJSON();
     const token = jwtService.sign({ userId: user.id });
     ctx.body = {
@@ -60,7 +60,10 @@ export async function lostpassword(ctx: Context, next: Next) {
     },
   });
   if (!user) {
-    ctx.throw(404, { code: 'InvalidUserData', message: ctx.t('The email is incorrect, please re-enter', { ns: namespace }) });
+    ctx.throw(404, {
+      code: 'InvalidUserData',
+      message: ctx.t('The email is incorrect, please re-enter', { ns: namespace }),
+    });
   }
   user.resetToken = crypto.randomBytes(20).toString('hex');
   await user.save();
@@ -114,7 +117,7 @@ export async function updateProfile(ctx: Context, next: Next) {
   const UserRepo = ctx.db.getRepository('users');
   const result = await UserRepo.update({
     filterByTk: currentUser.id,
-    values
+    values,
   });
   ctx.body = result;
   await next();

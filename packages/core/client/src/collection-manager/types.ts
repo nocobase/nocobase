@@ -6,6 +6,7 @@ export interface CollectionManagerOptions {
   collections?: any[];
   templates?: any;
   refreshCM?: () => Promise<void>;
+  updateCollection?: (collection: any) => void;
 }
 
 export interface FieldOptions {
@@ -25,6 +26,7 @@ export interface CollectionOptions {
   fields?: FieldOptions[];
   inherits?: string[];
   tree?: string;
+  template?: string;
 }
 
 export interface ICollectionProviderProps {

@@ -1,11 +1,12 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
+import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 
 export const FormBlockContext = createContext<any>({});
@@ -40,16 +41,20 @@ const InternalFormBlockProvider = (props) => {
     >
       {readPretty ? (
         <RecordProvider parent={isEmpty(record?.__parent) ? record : record?.__parent} record={service?.data?.data}>
-          <div ref={formBlockRef}>{props.children}</div>
+          <div ref={formBlockRef}>
+            <RenderChildrenWithDataTemplates form={form} />
+          </div>
         </RecordProvider>
       ) : (
-        <div ref={formBlockRef}>{props.children}</div>
+        <div ref={formBlockRef}>
+          <RenderChildrenWithDataTemplates form={form} />
+        </div>
       )}
     </FormBlockContext.Provider>
   );
 };
 
-const useIsEmptyRecord = () => {
+export const useIsEmptyRecord = () => {
   const record = useRecord();
   const keys = Object.keys(record);
   if (keys.includes('__parent')) {
@@ -107,4 +112,28 @@ export const useFormBlockProps = () => {
   return {
     form: ctx.form,
   };
+};
+
+const RenderChildrenWithDataTemplates = ({ form }) => {
+  const FieldSchema = useFieldSchema();
+  const { findComponent } = useDesignable();
+  const field = useField();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
+
+  return (
+    <Component {...field.componentProps}>
+      <DataTemplateSelect style={{ marginBottom: 18 }} form={form} />
+      <RecursionField schema={FieldSchema} onlyRenderProperties />
+    </Component>
+  );
+};
+
+export const findFormBlock = (schema: Schema) => {
+  while (schema) {
+    if (schema['x-decorator'] === 'FormBlockProvider') {
+      return schema;
+    }
+    schema = schema.parent;
+  }
+  return null;
 };

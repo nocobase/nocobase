@@ -22,7 +22,7 @@ interface IHasManyRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(options?: TK | DestroyOptions): Promise<Boolean>;
+  destroy(options?: TK | DestroyOptions): Promise<boolean>;
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
@@ -43,12 +43,14 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       addFilter[this.associationField.targetKey] = options.filterByTk;
     }
 
-    return await targetRepository.find({
-      ...omit(options, ['filterByTk']),
+    const findOptions = {
+      ...omit(options, ['filterByTk', 'where', 'values', 'attributes']),
       filter: {
         $and: [options.filter || {}, addFilter],
       },
-    });
+    };
+
+    return await targetRepository.find(findOptions);
   }
 
   @transaction((args, transaction) => {
@@ -57,7 +59,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       transaction,
     };
   })
-  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);

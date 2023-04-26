@@ -38,5 +38,5 @@ export default {
       name: 'logs',
       target: 'notification_logs',
     },
-  ]
+  ],
 } as CollectionOptions;

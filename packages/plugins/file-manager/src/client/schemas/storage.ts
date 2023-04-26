@@ -62,7 +62,7 @@ const collection = {
         title: '{{t("Path")}}',
         type: 'string',
         'x-component': 'Input',
-      } as ISchema
+      } as ISchema,
     },
     {
       type: 'boolean',

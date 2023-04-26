@@ -71,24 +71,18 @@ const InternalSelect = connect(
   (props: Props) => {
     const { objectValue, value, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
-    if (mode === 'links') {
+    if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
-    const toValue = (v) => {
-      if (['multiple', 'tags'].includes(mode)) {
-        return v || [];
-      }
-      return v;
-    };
     if (objectValue) {
-      return <ObjectSelect {...others} value={toValue(value)} mode={mode} />;
+      return <ObjectSelect {...others} value={value} mode={mode} />;
     }
     return (
       <AntdSelect
         showSearch
         filterOption={filterOption}
         allowClear
-        value={toValue(value)}
+        value={value}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);

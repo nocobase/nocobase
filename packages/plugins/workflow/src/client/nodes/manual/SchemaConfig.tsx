@@ -1,12 +1,9 @@
 import React, { useState, useContext } from 'react';
-import { Field } from '@formily/core';
-import { useForm, Schema } from '@formily/react';
-import { ArrayTable } from '@formily/antd';
-import { cloneDeep, get, set } from 'lodash';
-import { useTranslation } from 'react-i18next';
+
+import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
+import { get } from 'lodash';
 
 import {
-  CollectionProvider,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
@@ -15,31 +12,35 @@ import {
   SchemaInitializerProvider,
   useSchemaComponentContext,
   gridRowColWrap,
-  useCollectionManager,
   ActionContext,
-  CollectionContext,
   GeneralSchemaDesigner,
-  SchemaSettings
+  SchemaSettings,
+  useCompile,
 } from '@nocobase/client';
-import { merge, uid } from '@nocobase/utils/client';
 import { useTrigger } from '../../triggers';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
 import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
-
-
+import customForm from './forms/customForm';
 
 function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
-  return trigger.useInitializers? trigger.useInitializers(workflow.config) : null;
+  return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
+}
+
+const blockTypeNames = {
+  customForm: customForm.title,
+  record: `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
 };
 
 function SimpleDesigner() {
-  const { t } = useTranslation();
+  const schema = useFieldSchema();
+  const title = blockTypeNames[schema['x-designer-props']?.type] ?? '{{t("Block")}}';
+  const compile = useCompile();
   return (
-    <GeneralSchemaDesigner title={t('Form')}>
+    <GeneralSchemaDesigner title={compile(title)}>
       <SchemaSettings.BlockTitleItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
@@ -52,62 +53,57 @@ function SimpleDesigner() {
   );
 }
 
-function FormBlockInitializer({ insert, ...props }) {
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        insert({
-          type: 'void',
-          'x-component': 'CardItem',
-          'x-designer': 'SimpleDesigner',
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'AddFormField',
-            }
-          }
-        });
-      }}
-    />
-  );
-}
-
 function AddBlockButton(props: any) {
   const current = useNodeContext();
   const nodes = useAvailableUpstreams(current);
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-  const nodeBlockInitializers = nodes.map((node) => {
-    const instruction = instructions.get(node.type);
-    return instruction?.useInitializers?.(node);
-  }).filter(Boolean);
+  const nodeBlockInitializers = nodes
+    .map((node) => {
+      const instruction = instructions.get(node.type);
+      return instruction?.useInitializers?.(node);
+    })
+    .filter(Boolean);
   const dataBlockInitializers = [
     ...triggerInitializers,
-    ...(nodeBlockInitializers.length ? [{
-      key: 'nodes',
-      type: 'subMenu',
-      title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-      children: nodeBlockInitializers
-    }] : []),
+    ...(nodeBlockInitializers.length
+      ? [
+          {
+            key: 'nodes',
+            type: 'subMenu',
+            title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+            children: nodeBlockInitializers,
+          },
+        ]
+      : []),
   ].filter(Boolean);
 
   const items = [
-    ...(dataBlockInitializers.length ? [{
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      children: dataBlockInitializers
-    }] : []),
+    ...(dataBlockInitializers.length
+      ? [
+          {
+            type: 'itemGroup',
+            title: '{{t("Data blocks")}}',
+            children: dataBlockInitializers,
+          },
+        ]
+      : []),
     {
       type: 'itemGroup',
       title: '{{t("Form")}}',
       children: [
-        {
-          key: 'form',
-          type: 'item',
-          title: '{{t("Form")}}',
-          component: FormBlockInitializer
-        },
+        customForm.config.initializer,
+        // {
+        //   key: 'createForm',
+        //   type: 'item',
+        //   title: '{{t("Create record form")}}',
+        //   component: CustomFormBlockInitializer,
+        // },
+        // {
+        //   key: 'updateForm',
+        //   type: 'item',
+        //   title: '{{t("Update record form")}}',
+        //   component: CustomFormBlockInitializer,
+        // }
       ],
     },
     {
@@ -123,224 +119,27 @@ function AddBlockButton(props: any) {
     },
   ] as SchemaInitializerItemOptions[];
 
-  return (
-    <SchemaInitializer.Button
-      {...props}
-      wrap={gridRowColWrap}
-      items={items}
-      title="{{t('Add block')}}"
-    />
-  );
-};
-
-const GroupLabels = {
-  basic: '{{t("Basic")}}',
-  choices: '{{t("Choices")}}',
-  media: '{{t("Media")}}',
-  datetime: '{{t("Date & Time")}}',
-  relation: '{{t("Relation")}}',
-  advanced: '{{t("Advanced type")}}',
-  systemInfo: '{{t("System info")}}',
-  others: '{{t("Others")}}',
-};
-
-function getOptions(interfaces) {
-  const fields = {};
-
-  Object.keys(interfaces).forEach((type) => {
-    const schema = interfaces[type];
-    const { group = 'others' } = schema;
-    fields[group] = fields[group] || {};
-    set(fields, [group, type], schema);
-  });
-
-  return Object.keys(GroupLabels)
-    .filter(groupName => ['basic', 'choices', 'datetime', 'media'].includes(groupName))
-    .map((groupName) => ({
-      title: GroupLabels[groupName],
-      children: Object.keys(fields[groupName] || {})
-        .map((type) => {
-          const field = fields[groupName][type];
-          return {
-            value: type,
-            title: field.title,
-            name: type,
-            ...fields[groupName][type],
-          };
-        })
-        .sort((a, b) => a.order - b.order),
-    }));
+  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
 }
 
-function useCommonInterfaceInitializers(): SchemaInitializerItemOptions[] {
-  const { interfaces } = useCollectionManager();
-  const options = getOptions(interfaces);
+function findSchema(schema, filter, onlyLeaf = false) {
+  const result = [];
 
-  return options.map(group => ({
-    key: group.title,
-    type: 'itemGroup',
-    title: group.title,
-    children: group.children.map(item => ({
-      key: item.name,
-      type: 'item',
-      title: item.title,
-      component: FormFieldInitializer,
-      fieldInterface: item.name,
-    }))
-  }));
-}
-
-const AddFormFieldButtonContext = React.createContext<any>({});
-
-function AddFormField(props) {
-  const { insertPosition = 'beforeEnd', component } = props;
-  const items = useCommonInterfaceInitializers();
-  const collection = useContext(CollectionContext);
-  const [interfaceOptions, setInterface] = useState<any>(null);
-  const [insert, setCallback] = useState<any>();
-
-  return (
-    <AddFormFieldButtonContext.Provider value={{
-      onAddField(item) {
-        const { properties: { unique, type, ...properties }, ...options } = cloneDeep(item);
-        delete properties.name['x-disabled'];
-        setInterface({
-          ...options,
-          properties
-        });
-      },
-      setCallback
-    }}>
-      <SchemaInitializer.Button
-        wrap={gridRowColWrap}
-        insertPosition={insertPosition}
-        items={items}
-        component={component}
-        title="{{t('Configure fields')}}"
-      />
-      <ActionContext.Provider value={{ visible: Boolean(interfaceOptions) }}>
-        {interfaceOptions
-          ? (
-            <SchemaComponent
-              schema={{
-                type: 'void',
-                name: 'drawer',
-                title: '{{t("Configure field")}}',
-                'x-decorator': 'Form',
-                'x-component': 'Action.Drawer',
-                properties: {
-                  ...interfaceOptions.properties,
-                  footer: {
-                    type: 'void',
-                    'x-component': 'Action.Drawer.Footer',
-                    properties: {
-                      cancel: {
-                        type: 'void',
-                        title: '{{t("Cancel")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          useAction() {
-                            const form = useForm();
-                            return {
-                              async run() {
-                                setCallback(null);
-                                setInterface(null);
-                                form.reset();
-                              },
-                            };
-                          }
-                        }
-                      },
-                      submit: {
-                        type: 'void',
-                        title: '{{t("Submit")}}',
-                        'x-component': 'Action',
-                        'x-component-props': {
-                          type: 'primary',
-                          useAction() {
-                            const { values, query } = useForm();
-                            return {
-                              async run() {
-                                const { default: options } = interfaceOptions;
-                                const defaultName = uid();
-                                options.name = values.name ?? defaultName;
-                                options.uiSchema.title = values.uiSchema?.title ?? defaultName;
-                                options.interface = interfaceOptions.name;
-                                const existed = collection.fields?.find(item => item.name === options.name);
-                                if (existed) {
-                                  const field = query('name').take() as Field;
-                                  field.setFeedback({
-                                    type: 'error',
-                                    // code: 'FormulaError',
-                                    messages: [lang('Field name existed in form')],
-                                  });
-                                  return;
-                                }
-                                collection.fields?.push(merge(options, values) as any);
-                                insert({
-                                  name: options.name,
-                                  type: options.uiSchema.type,
-                                  'x-decorator': 'FormItem',
-                                  'x-component': 'CollectionField',
-                                  'x-component-props': {},
-                                  'x-collection-field': `${collection.name}.${options.name}`,
-                                  'x-designer': 'FormItem.Designer',
-                                });
-                                setCallback(null);
-                                setInterface(null);
-                              }
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }}
-              components={{
-                ArrayTable
-              }}
-            />
-          )
-          : null}
-      </ActionContext.Provider>
-    </AddFormFieldButtonContext.Provider>
-  );
-}
-
-function FormFieldInitializer(props) {
-  const { item, insert } = props;
-  const { onAddField, setCallback } = useContext(AddFormFieldButtonContext);
-  const { getInterface } = useCollectionManager();
-
-  const interfaceOptions = getInterface(item.fieldInterface);
-
-  return (
-    <SchemaInitializer.Item
-      key={item.fieldInterface}
-      onClick={() => {
-        setCallback(() => insert);
-        onAddField(interfaceOptions);
-      }}
-    />
-  );
-};
-
-function findFormFields(formSchema, fields) {
-  if (!formSchema) {
-    return;
+  if (!schema) {
+    return result;
   }
 
-  if (!formSchema.properties) {
-    if (formSchema['x-component'] === 'CollectionField') {
-      fields.push(formSchema);
-    }
-    return;
+  if (filter(schema) && (!onlyLeaf || !schema.properties)) {
+    result.push(schema);
+    return result;
   }
 
-  Object.keys(formSchema.properties).forEach(key => {
-    findFormFields(formSchema.properties[key], fields);
-  });
+  if (schema.properties) {
+    Object.keys(schema.properties).forEach((key) => {
+      result.push(...findSchema(schema.properties[key], filter));
+    });
+  }
+  return result;
 }
 
 function SchemaComponentRefreshProvider(props) {
@@ -358,7 +157,7 @@ function SchemaComponentRefreshProvider(props) {
       {props.children}
     </SchemaComponentContext.Provider>
   );
-};
+}
 
 function ActionInitializer({ action, actionProps, ...props }) {
   return (
@@ -369,7 +168,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
         title: props.title,
         'x-decorator': 'ManualActionStatusProvider',
         'x-decorator-props': {
-          value: action
+          value: action,
         },
         'x-component': 'Action',
         'x-component-props': {
@@ -397,7 +196,7 @@ function AddActionButton(props) {
           action: JOB_STATUS.RESOLVED,
           actionProps: {
             type: 'primary',
-          }
+          },
         },
         {
           key: JOB_STATUS.REJECTED,
@@ -407,7 +206,7 @@ function AddActionButton(props) {
           action: JOB_STATUS.REJECTED,
           actionProps: {
             type: 'danger',
-          }
+          },
         },
         {
           key: JOB_STATUS.PENDING,
@@ -415,7 +214,7 @@ function AddActionButton(props) {
           title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.PENDING,
-        }
+        },
       ]}
       title="{{t('Configure actions')}}"
     />
@@ -424,7 +223,11 @@ function AddActionButton(props) {
 
 // NOTE: fake useAction for ui configuration
 function useSubmit() {
-  return { run() {} }
+  // const { values, submit, id: formId } = useForm();
+  // const formSchema = useFieldSchema();
+  return {
+    run() {},
+  };
 }
 
 function useFlowRecordFromBlock() {
@@ -439,14 +242,9 @@ export function SchemaConfig({ value, onChange }) {
   const form = useForm();
   const { workflow } = useFlowContext();
 
-  const { collection = {
-    name: uid(),
-    fields: []
-  }, blocks, actions } = value ?? {};
-
   const nodeInitializers = {};
   const nodeComponents = {};
-  nodes.forEach(item => {
+  nodes.forEach((item) => {
     const instruction = instructions.get(item.type);
     Object.assign(nodeInitializers, instruction.initializers);
     Object.assign(nodeComponents, instruction.components);
@@ -469,9 +267,9 @@ export function SchemaConfig({ value, onChange }) {
             'x-component-props': {},
             'x-initializer': 'TabPaneInitializers',
             'x-initializer-props': {
-              gridInitializer: 'AddBlockButton'
+              gridInitializer: 'AddBlockButton',
             },
-            properties: blocks ?? {
+            properties: value ?? {
               tab1: {
                 type: 'void',
                 title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
@@ -482,93 +280,76 @@ export function SchemaConfig({ value, onChange }) {
                     type: 'void',
                     'x-component': 'Grid',
                     'x-initializer': 'AddBlockButton',
-                    properties: {}
+                    properties: {},
                   },
                 },
-              }
-            }
-          },
-          footer: {
-            type: 'void',
-            'x-component': 'Action.Drawer.Footer',
-            'x-component-props': {
-              style: {
-                background: '#fff'
-              }
+              },
             },
-            properties: {
-              actions: {
-                type: 'void',
-                'x-component': 'ActionBar',
-                'x-initializer': 'AddActionButton',
-                properties: actions ?? {
-                  resolve: {
-                    type: 'void',
-                    title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'ManualActionStatusProvider',
-                    'x-decorator-props': {
-                      value: JOB_STATUS.RESOLVED
-                    },
-                    'x-component': 'Action',
-                    'x-component-props': {
-                      type: 'primary',
-                      useAction: '{{ useSubmit }}',
-                    },
-                    'x-designer': 'Action.Designer',
-                    'x-action': `${JOB_STATUS.RESOLVED}`,
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+          },
+        },
+      },
     },
   });
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: !workflow.executed }}>
-      <SchemaInitializerProvider initializers={{ AddBlockButton, AddFormField, AddActionButton, ...trigger.initializers, ...nodeInitializers }}>
+      <SchemaInitializerProvider
+        initializers={{
+          AddBlockButton,
+          AddActionButton,
+          ...trigger.initializers,
+          ...nodeInitializers,
+          ...customForm.config.initializers,
+        }}
+      >
         <SchemaComponentRefreshProvider
           onRefresh={() => {
-            const { tabs, footer } = get(schema.toJSON(), 'properties.drawer.properties');
-            const fields: any[] = [];
-            findFormFields(tabs, fields);
-
-            for(let i = collection.fields.length - 1; i >= 0; i--) {
-              if (!fields.find(field => field.name === collection.fields[i].name)) {
-                collection.fields.splice(i, 1);
-              }
-            }
-
-            const actionKeys = (Object.values(footer.properties.actions.properties ?? {}) as any[])
-              .reduce((actions: number[], { ['x-action']: status }) => actions.concat(Number.parseInt(status, 10)), []);
-            form.setValuesIn('actions', actionKeys);
-
-            onChange({
-              collection,
-              blocks: tabs.properties,
-              actions: footer.properties.actions.properties
+            const forms = {};
+            const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+            const formBlocks: any[] = findSchema(tabs, (item) => item['x-decorator'] === 'FormCollectionProvider');
+            formBlocks.forEach((formBlock) => {
+              const [formKey] = Object.keys(formBlock.properties);
+              const formSchema = formBlock.properties[formKey];
+              const fields = findSchema(
+                formSchema.properties.grid,
+                (item) => item['x-component'] === 'CollectionField',
+                true,
+              );
+              formBlock['x-decorator-props'].collection.fields = fields.map((field) => field['x-interface-options']);
+              forms[formKey] = {
+                type: 'custom',
+                title: formBlock['x-component-props']?.title || formKey,
+                actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+                  (item) => item['x-decorator-props'].value,
+                ),
+                collection: formBlock['x-decorator-props'].collection,
+              };
             });
+
+            form.setValuesIn('forms', forms);
+
+            onChange(tabs.properties);
           }}
         >
-          <CollectionProvider collection={collection}>
-            <SchemaComponent
-              schema={schema}
-              components={{
-                ...nodeComponents,
-                // NOTE: fake provider component
-                ManualActionStatusProvider(props) {
-                  return props.children;
-                },
-                SimpleDesigner
-              }}
-              scope={{
-                useSubmit,
-                useFlowRecordFromBlock
-              }}
-            />
-          </CollectionProvider>
+          <SchemaComponent
+            schema={schema}
+            components={{
+              ...nodeComponents,
+              ...customForm.config.components,
+              // NOTE: fake provider component
+              ManualActionStatusProvider(props) {
+                return props.children;
+              },
+              ActionBarProvider(props) {
+                return props.children;
+              },
+              SimpleDesigner,
+            }}
+            scope={{
+              useSubmit,
+              useFlowRecordFromBlock,
+            }}
+          />
         </SchemaComponentRefreshProvider>
       </SchemaInitializerProvider>
     </SchemaComponentContext.Provider>
@@ -583,9 +364,7 @@ export function SchemaConfigButton(props) {
       <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </div>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        {props.children}
-      </ActionContext.Provider>
+      <ActionContext.Provider value={{ visible, setVisible }}>{props.children}</ActionContext.Provider>
     </>
   );
 }

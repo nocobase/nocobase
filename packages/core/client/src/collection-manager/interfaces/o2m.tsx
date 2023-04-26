@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties
+  reverseFieldProperties,
 } from './properties';
 import { IField } from './types';
 
@@ -50,8 +50,13 @@ export const o2m: IField = {
       },
     },
   },
-  availableTypes:['hasMany'],
-  schemaInitialize(schema: ISchema, { field, block, readPretty }) {
+  availableTypes: ['hasMany'],
+  schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'TableField') {
         const association = `${field.collectionName}.${field.name}`;
@@ -122,6 +127,9 @@ export const o2m: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -171,7 +179,7 @@ export const o2m: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -265,4 +273,5 @@ export const o2m: IField = {
       // },
     ],
   },
+  invariable: true,
 };

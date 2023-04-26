@@ -1,16 +1,16 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { message, Modal } from 'antd';
+import { Modal, message } from 'antd';
 import parse from 'json-templates';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
-import { ChangeEvent, useContext } from 'react';
+import { ChangeEvent, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
-import { useCollection } from '../../collection-manager';
+import { useCollection, useCollectionManager } from '../../collection-manager';
 import { useFilterBlock } from '../../filter-provider/FilterProvider';
 import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
@@ -84,9 +84,9 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
       return omit({ ...form.values }, keys);
     }
   }
-  console.log('form.values',  form.values);
+  console.log('form.values', form.values);
   return form.values;
-  let values = {};
+  const values = {};
   for (const key in form.values) {
     if (fieldNames.includes(key)) {
       const collectionField = getField(key);
@@ -132,7 +132,7 @@ function getFormValues(filterByTk, field, form, fieldNames, getField, resource) 
 export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
-  const { visible, setVisible, fieldSchema } = useActionContext();
+  const { setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
@@ -203,11 +203,11 @@ export const useCreateActionProps = () => {
   };
 };
 
-interface FilterTarget {
+export interface FilterTarget {
   targets?: {
     /** field uid */
     uid: string;
-    /** associated fields */
+    /** associated field */
     field?: string;
   }[];
   uid?: string;
@@ -241,6 +241,8 @@ export const useFilterBlockActionProps = () => {
   const actionField = useField();
   const fieldSchema = useFieldSchema();
   const { getDataBlocks } = useFilterBlock();
+  const { name } = useCollection();
+  const { getCollectionJoinField } = useCollectionManager();
 
   actionField.data = actionField.data || {};
 
@@ -260,7 +262,9 @@ export const useFilterBlockActionProps = () => {
             // 保留原有的 filter
             const storedFilter = block.service.params?.[1]?.filters || {};
 
-            storedFilter[uid] = removeNullCondition(transformToFilter(form.values, fieldSchema));
+            storedFilter[uid] = removeNullCondition(
+              transformToFilter(form.values, fieldSchema, getCollectionJoinField, name),
+            );
 
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
@@ -279,6 +283,7 @@ export const useFilterBlockActionProps = () => {
         );
         actionField.data.loading = false;
       } catch (error) {
+        console.error(error);
         actionField.data.loading = false;
       }
     },
@@ -388,7 +393,6 @@ export const useCustomizeBulkUpdateActionProps = () => {
   const { field, resource, __parent, service } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionSchema = useFieldSchema();
-  const currentRecord = useRecord();
   const tableBlockContext = useTableBlockContext();
   const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
@@ -469,7 +473,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
   };
 };
 
-export const useCustomizeBulkEditActionProps = (props) => {
+export const useCustomizeBulkEditActionProps = () => {
   const form = useForm();
   const { t } = useTranslation();
   const { field, resource, __parent } = useBlockRequestContext();
@@ -490,7 +494,7 @@ export const useCustomizeBulkEditActionProps = (props) => {
       if (!skipValidator) {
         await form.submit();
       }
-      let values = cloneDeep(form.values);
+      const values = cloneDeep(form.values);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       for (const key in values) {
@@ -568,7 +572,7 @@ export const useCustomizeRequestActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
-  const { visible, setVisible } = useActionContext();
+  const { setVisible } = useActionContext();
 
   return {
     async onClick() {
@@ -664,7 +668,7 @@ export const useUpdateActionProps = () => {
         await form.submit();
       }
       const fieldNames = fields.map((field) => field.name);
-      let values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
@@ -719,7 +723,17 @@ export const useDestroyActionProps = () => {
       await resource.destroy({
         filterByTk,
       });
-      service?.refresh?.();
+
+      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+      if (count % pageSize === 1) {
+        service.run({
+          ...service?.params?.[0],
+          page: page - 1,
+        });
+      } else {
+        service?.refresh?.();
+      }
+
       if (block !== 'TableField') {
         __parent?.service?.refresh?.();
         setVisible?.(false);
@@ -802,7 +816,7 @@ export const useAssociationFilterProps = () => {
   const fieldSchema = useFieldSchema();
   const valueKey = collectionField?.targetKey || 'id';
   const labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
-  const field = useField()
+  const field = useField();
   const collectionFieldName = collectionField.name;
   const { data, params, run } = useRequest(
     {
@@ -812,7 +826,7 @@ export const useAssociationFilterProps = () => {
         fields: [labelKey, valueKey],
         pageSize: 200,
         page: 1,
-        ...field.componentProps?.params
+        ...field.componentProps?.params,
       },
     },
     {
@@ -820,7 +834,6 @@ export const useAssociationFilterProps = () => {
       debounceWait: 300,
     },
   );
-
 
   const list = data?.data || [];
   const onSelected = (value) => {
@@ -878,8 +891,37 @@ export const useAssociationFilterBlockProps = () => {
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();
   const collectionFieldName = collectionField.name;
+  const field = useField();
 
   let list, onSelected, handleSearchInput, params, run, data, valueKey, labelKey, filterKey;
+
+  valueKey = collectionField?.targetKey || 'id';
+  labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
+
+  ({ data, params, run } = useRequest(
+    {
+      resource: collectionField?.target,
+      action: 'list',
+      params: {
+        fields: [labelKey, valueKey],
+        pageSize: 200,
+        page: 1,
+        ...field.componentProps?.params
+      },
+    },
+    {
+      // 由于 选项字段不需要触发当前请求，所以当前请求更改为手动触发
+      manual: true,
+      debounceWait: 300,
+    },
+  ));
+
+  useEffect(() => {
+    // 由于 选项字段不需要触发当前请求，所以请求单独在 关系字段的时候触发
+    if (!isOptionalField(fieldSchema)) {
+      run()
+    }
+  },[labelKey, valueKey, JSON.stringify(field.componentProps?.params || {}), isOptionalField(fieldSchema)])
 
   if (isOptionalField(fieldSchema)) {
     const field = optionalFieldList.find((field) => field.name === fieldSchema.name);
@@ -906,27 +948,8 @@ export const useAssociationFilterBlockProps = () => {
       list = (_list as any[]).filter((item) => item.label.includes(value));
     };
   } else {
-    valueKey = collectionField?.targetKey || 'id';
-    labelKey = fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
-    ({ data, params, run } = useRequest(
-      {
-        resource: collectionField.target,
-        action: 'list',
-        params: {
-          fields: [labelKey, valueKey],
-          pageSize: 200,
-          page: 1,
-        },
-      },
-      {
-        refreshDeps: [labelKey, valueKey],
-        debounceWait: 300,
-      },
-    ));
     filterKey = `${collectionFieldName}.${valueKey}.$in`;
-
     list = data?.data || [];
-
     handleSearchInput = (e: ChangeEvent<any>) => {
       run({
         ...params?.[0],
@@ -969,7 +992,6 @@ export const useAssociationFilterBlockProps = () => {
       );
     });
   };
-
 
   return {
     /** 渲染 Collapse 的列表数据 */

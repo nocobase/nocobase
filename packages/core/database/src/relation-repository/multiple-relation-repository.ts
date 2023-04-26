@@ -80,10 +80,18 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       });
     }
 
-    return await sourceModel[getAccessor]({
+    const data = await sourceModel[getAccessor]({
       ...findOptions,
       transaction,
     });
+
+    await this.collection.db.emitAsync('afterRepositoryFind', {
+      findOptions: options,
+      dataCollection: this.collection,
+      data,
+    });
+
+    return data;
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
@@ -197,7 +205,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return instances;
   }
 
-  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<boolean> {
     return false;
   }
 

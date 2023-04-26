@@ -1,6 +1,6 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
@@ -55,7 +55,7 @@ export const useRemoveGridFormItem = () => {
   };
 };
 
-export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
+export const findTableColumn = (schema: Schema, key: string, action: string, deepth = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;
@@ -75,7 +75,7 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 
 export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   return currentFields
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
@@ -97,7 +97,12 @@ export const useTableColumnInitializerFields = () => {
         find: findTableColumn,
         remove: removeTableColumn,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, readPretty: true, block: 'Table' });
+          interfaceConfig?.schemaInitialize?.(s, {
+            field,
+            readPretty: true,
+            block: 'Table',
+            targetCollection: getCollection(field.target),
+          });
         },
         field,
         schema,
@@ -107,7 +112,7 @@ export const useTableColumnInitializerFields = () => {
 
 export const useAssociatedTableColumnInitializerFields = () => {
   const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
   const groups = fields
     ?.filter((field) => {
       return ['o2o', 'oho', 'obo', 'm2o'].includes(field.interface);
@@ -139,7 +144,12 @@ export const useAssociatedTableColumnInitializerFields = () => {
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field: subField, readPretty: true, block: 'Table' });
+              interfaceConfig?.schemaInitialize?.(s, {
+                field: subField,
+                readPretty: true,
+                block: 'Table',
+                targetCollection: getCollection(field.target),
+              });
             },
             field: subField,
             schema,
@@ -183,7 +193,12 @@ export const useInheritsTableColumnInitializerFields = () => {
             find: findTableColumn,
             remove: removeTableColumn,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field: k, readPretty: true, block: 'Table' });
+              interfaceConfig?.schemaInitialize?.(s, {
+                field: k,
+                readPretty: true,
+                block: 'Table',
+                targetCollection: getCollection(k?.target),
+              });
             },
             field: k,
             schema,
@@ -194,8 +209,8 @@ export const useInheritsTableColumnInitializerFields = () => {
 };
 
 export const useFormItemInitializerFields = (options?: any) => {
-  const { name, currentFields } = useCollection();
-  const { getInterface } = useCollectionManager();
+  const { name, currentFields, template } = useCollection();
+  const { getInterface, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
@@ -205,11 +220,16 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.filter((field) => field?.interface && !field?.isForeignKey && !field?.treeChildren)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
+      const targetCollection = getCollection(field.target);
+      const component =
+        field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+          ? 'TableField'
+          : 'CollectionField';
       const schema = {
         type: 'string',
         name: field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+        'x-component': component,
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -222,7 +242,13 @@ export const useFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty, action });
+          interfaceConfig?.schemaInitialize?.(s, {
+            field,
+            block,
+            readPretty,
+            action,
+            targetCollection,
+          });
         },
         schema,
       } as SchemaInitializerItemOptions;
@@ -240,7 +266,7 @@ export const useFormItemInitializerFields = (options?: any) => {
 // 筛选表单相关
 export const useFilterFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection();
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'FilterForm' } = options || {};
   const { snapshot, fieldSchema } = useActionContext();
@@ -250,12 +276,17 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
     ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
+      const targetCollection = getCollection(field.target);
+      const component =
+        field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+          ? 'TableField'
+          : 'CollectionField';
       let schema = {
         type: 'string',
         name: field.name,
         required: false,
         'x-designer': 'FormItem.FilterFormDesigner',
-        'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+        'x-component': component,
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -263,10 +294,10 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
       if (isAssocField(field)) {
         schema = {
           type: 'string',
-          name: field.name,
+          name: `${field.name}`,
           required: false,
-          'x-designer': 'AssociationSelect.FilterDesigner',
-          'x-component': 'AssociationSelect',
+          'x-designer': 'FormItem.FilterFormDesigner',
+          'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
           'x-collection-field': `${name}.${field.name}`,
           'x-component-props': field.uiSchema?.['x-component-props'],
@@ -278,7 +309,13 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: removeGridFormItem,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty, action });
+          interfaceConfig?.schemaInitialize?.(s, {
+            field,
+            block,
+            readPretty,
+            action,
+            targetCollection,
+          });
         },
         schema,
       } as SchemaInitializerItemOptions;
@@ -289,7 +326,7 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
 
 export const useAssociatedFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
-  const { getInterface, getCollectionFields } = useCollectionManager();
+  const { getInterface, getCollectionFields, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const interfaces = block === 'Form' ? ['m2o'] : ['o2o', 'oho', 'obo', 'm2o'];
@@ -323,7 +360,12 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
             component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field: subField, block, readPretty });
+              interfaceConfig?.schemaInitialize?.(s, {
+                field: subField,
+                block,
+                readPretty,
+                targetCollection: getCollection(field.target),
+              });
             },
             schema,
           } as SchemaInitializerItemOptions;
@@ -355,6 +397,9 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
+          // 使用 | 分隔，是为了防止 form.values 中出现 { a: { b: 1 } } 的情况
+          // 使用 | 分隔后，form.values 中会出现 { 'a|b': 1 } 的情况，这种情况下
+          // 就可以知道该字段是一个关系字段中的输入框，进而特殊处理
           getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
@@ -407,23 +452,28 @@ export const useInheritsFormItemInitializerFields = (options?) => {
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
+  const form = useForm();
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const form = useForm();
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
-      [targetCollection.title]: fields
+      [targetCollection?.title]: fields
         ?.filter((field) => field?.interface && !field?.isForeignKey)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
+          const targetCollection = getCollection(field.target);
+          const component =
+            field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+              ? 'TableField'
+              : 'CollectionField';
           const schema = {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
-            'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+            'x-component': component,
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
@@ -435,7 +485,12 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+              interfaceConfig?.schemaInitialize?.(s, {
+                field,
+                block,
+                readPretty,
+                targetCollection,
+              });
             },
             schema,
           } as SchemaInitializerItemOptions;
@@ -461,13 +516,18 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
         ?.filter((field) => field?.interface && !field?.isForeignKey && getInterface(field.interface)?.filterable)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
+          const targetCollection = getCollection(field.target);
+          const component =
+            field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+              ? 'TableField'
+              : 'CollectionField';
           const schema = {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             required: false,
             'x-designer': 'FormItem.FilterFormDesigner',
-            'x-component': field.interface === 'o2m' && !snapshot ? 'TableField' : 'CollectionField',
+            'x-component': component,
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
@@ -479,7 +539,12 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
             component: 'CollectionFieldInitializer',
             remove: removeGridFormItem,
             schemaInitialize: (s) => {
-              interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+              interfaceConfig?.schemaInitialize?.(s, {
+                field,
+                block,
+                readPretty,
+                targetCollection,
+              });
             },
             schema,
           } as SchemaInitializerItemOptions;
@@ -489,13 +554,18 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
 };
 export const useCustomFormItemInitializerFields = (options?: any) => {
   const { name, currentFields } = useCollection();
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
+      return (
+        field?.interface &&
+        !field?.uiSchema?.['x-read-pretty'] &&
+        field.interface !== 'snapshot' &&
+        field.type !== 'sequence'
+      );
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -514,7 +584,12 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
         component: 'CollectionFieldInitializer',
         remove: remove,
         schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
+          interfaceConfig?.schemaInitialize?.(s, {
+            field,
+            block,
+            readPretty,
+            targetCollection: getCollection(field.target),
+          });
         },
         schema,
       } as SchemaInitializerItemOptions;
@@ -523,36 +598,52 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
 
 export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const { name, fields } = useCollection();
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
-  return fields
-    ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
-    })
-    ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const schema = {
-        type: 'string',
-        name: field.name,
-        title: field?.uiSchema?.title || field.name,
-        'x-designer': 'FormItem.Designer',
-        'x-component': 'BulkEditField',
-        'x-decorator': 'FormItem',
-        'x-collection-field': `${name}.${field.name}`,
-      };
-      return {
-        type: 'item',
-        title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
-        remove: remove,
-        schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, { field, block, readPretty });
-        },
-        schema,
-      } as SchemaInitializerItemOptions;
-    });
+  const filterFields = useMemo(
+    () =>
+      fields
+        ?.filter((field) => {
+          return (
+            field?.interface &&
+            !field?.uiSchema?.['x-read-pretty'] &&
+            field.interface !== 'snapshot' &&
+            field.type !== 'sequence'
+          );
+        })
+        .map((field) => {
+          const interfaceConfig = getInterface(field.interface);
+          const schema = {
+            type: 'string',
+            name: field.name,
+            title: field?.uiSchema?.title || field.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': 'BulkEditField',
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}`,
+          };
+          return {
+            type: 'item',
+            title: field?.uiSchema?.title || field.name,
+            component: 'CollectionFieldInitializer',
+            remove: remove,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, {
+                field,
+                block,
+                readPretty,
+                targetCollection: getCollection(field.target),
+              });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        }),
+    [fields],
+  );
+
+  return filterFields;
 };
 
 const findSchema = (schema: Schema, key: string, action: string) => {
@@ -681,7 +772,7 @@ export const useRecordCollectionDataSourceItems = (
 
 export const useCollectionDataSourceItems = (componentName) => {
   const { t } = useTranslation();
-  const { collections } = useCollectionManager();
+  const { collections, getCollectionFields } = useCollectionManager();
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const [selected, setSelected] = useState([]);
   const [value, onChange] = useState(null);
@@ -703,9 +794,13 @@ export const useCollectionDataSourceItems = (componentName) => {
           const b = !value || selected.includes(item.name);
           if (item.inherit) {
             return false;
-          } else if (item.autoGenId === false && !item.fields.find((v) => v.primaryKey)) {
+          }
+          const fields = getCollectionFields(item.name);
+          if (item.autoGenId === false && !fields.find((v) => v.primaryKey)) {
             return false;
           } else if (['Kanban', 'FormItem'].includes(componentName) && item.template === 'view') {
+            return false;
+          } else if (item.template === 'file' && ['Kanban', 'FormItem', 'Calendar'].includes(componentName)) {
             return false;
           } else {
             return b && !(item?.isThrough && item?.autoCreate);
@@ -915,7 +1010,6 @@ export const createFormBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -1298,6 +1392,135 @@ export const createCalendarBlockSchema = (options) => {
   return schema;
 };
 
+export const createGanttBlockSchema = (options) => {
+  const { collection, resource, fieldNames, ...others } = options;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resource || collection}:list`,
+    'x-decorator': 'GanttBlockProvider',
+    'x-decorator-props': {
+      collection: collection,
+      resource: resource || collection,
+      action: 'list',
+      fieldNames: {
+        id: 'id',
+        ...fieldNames,
+      },
+      params: {
+        paginate: false,
+      },
+      ...others,
+    },
+    'x-designer': 'Gantt.Designer',
+    'x-component': 'CardItem',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-component': 'Gantt',
+        'x-component-props': {
+          useProps: '{{ useGanttBlockProps }}',
+        },
+        properties: {
+          toolBar: {
+            type: 'void',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 24,
+              },
+            },
+            'x-initializer': 'GanttActionInitializers',
+            properties: {},
+          },
+          table: {
+            type: 'array',
+            'x-decorator': 'div',
+            'x-decorator-props': {
+              style: {
+                float: 'left',
+                maxWidth: '35%',
+              },
+            },
+
+            'x-initializer': 'TableColumnInitializers',
+            'x-component': 'TableV2',
+            'x-component-props': {
+              rowKey: 'id',
+              rowSelection: {
+                type: 'checkbox',
+              },
+              useProps: '{{ useTableBlockProps }}',
+              pagination: false,
+            },
+            properties: {
+              actions: {
+                type: 'void',
+                title: '{{ t("Actions") }}',
+                'x-action-column': 'actions',
+                'x-decorator': 'TableV2.Column.ActionBar',
+                'x-component': 'TableV2.Column',
+                'x-designer': 'TableV2.ActionColumnDesigner',
+                'x-initializer': 'TableActionColumnInitializers',
+                properties: {
+                  actions: {
+                    type: 'void',
+                    'x-decorator': 'DndContext',
+                    'x-component': 'Space',
+                    'x-component-props': {
+                      split: '|',
+                    },
+                    properties: {},
+                  },
+                },
+              },
+            },
+          },
+          detail: {
+            type: 'void',
+            'x-component': 'Gantt.Event',
+            properties: {
+              drawer: {
+                type: 'void',
+                'x-component': 'Action.Drawer',
+                'x-component-props': {
+                  className: 'nb-action-popup',
+                },
+                title: '{{ t("View record") }}',
+                properties: {
+                  tabs: {
+                    type: 'void',
+                    'x-component': 'Tabs',
+                    'x-component-props': {},
+                    'x-initializer': 'TabPaneInitializers',
+                    properties: {
+                      tab1: {
+                        type: 'void',
+                        title: '{{t("Details")}}',
+                        'x-component': 'Tabs.TabPane',
+                        'x-designer': 'Tabs.Designer',
+                        'x-component-props': {},
+                        properties: {
+                          grid: {
+                            type: 'void',
+                            'x-component': 'Grid',
+                            'x-initializer': 'RecordBlockInitializers',
+                            properties: {},
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
 export const createKanbanBlockSchema = (options) => {
   const { collection, resource, groupField, ...others } = options;
   const schema: ISchema = {

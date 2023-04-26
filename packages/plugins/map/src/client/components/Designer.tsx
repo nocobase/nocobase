@@ -3,10 +3,11 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   SchemaSettings,
+  isPatternDisabled,
   useCollection,
   useCollectionManager,
   useDesignable,
-  useFormBlockContext
+  useFormBlockContext,
 } from '@nocobase/client';
 import set from 'lodash/set';
 import React from 'react';
@@ -155,7 +156,7 @@ const Designer = () => {
           }}
         />
       )}
-      {form && !form?.readPretty && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
+      {form && !form?.readPretty && !isPatternDisabled(fieldSchema) && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}

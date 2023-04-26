@@ -1,8 +1,5 @@
 import React, { useState, useContext } from 'react';
-import {
-  CloseOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Button, message, Modal, Tag, Alert, Input } from 'antd';
@@ -10,7 +7,16 @@ import { useTranslation } from 'react-i18next';
 import parse from 'json-templates';
 
 import { Registry } from '@nocobase/utils/client';
-import { ActionContext, SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  SchemaInitializerItemOptions,
+  useActionContext,
+  useAPIClient,
+  useCompile,
+  useRequest,
+  useResourceActionContext,
+} from '@nocobase/client';
 
 import { nodeBlockClass, nodeCardClass, nodeClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton } from '../AddButton';
@@ -29,8 +35,8 @@ import update from './update';
 import destroy from './destroy';
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
-import request from "./request";
-import { VariableOption } from '../variable';
+import request from './request';
+import { VariableOptions } from '../variable';
 
 export interface Instruction {
   title: string;
@@ -43,10 +49,10 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): VariableOption[] | null;
+  getOptions?(config, types?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
-};
+}
 
 export const instructions = new Registry<Instruction>();
 
@@ -80,14 +86,14 @@ function useUpdateAction() {
       await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {
-          config: form.values
-        }
+          config: form.values,
+        },
       });
       ctx.setVisible(false);
       refresh();
     },
   };
-};
+}
 
 export const NodeContext = React.createContext<any>({});
 
@@ -97,6 +103,9 @@ export function useNodeContext() {
 
 export function useAvailableUpstreams(node) {
   const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
   for (let current = node.upstream; current; current = current.upstream) {
     stack.push(current);
   }
@@ -110,35 +119,31 @@ export function Node({ data }) {
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(nodeBlockClass)}>
-        {instruction.render
-          ? instruction.render(data)
-          : <NodeDefaultView data={data} />
-        }
-        {!instruction.endding
-          ? <AddButton upstream={data} />
-          : (
-            <div
-              className={css`
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                width: 1px;
-                height: 6em;
-                padding: 2em 0;
-                background-color: #f0f2f5;
+        {instruction.render ? instruction.render(data) : <NodeDefaultView data={data} />}
+        {!instruction.endding ? (
+          <AddButton upstream={data} />
+        ) : (
+          <div
+            className={css`
+              flex-grow: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 1px;
+              height: 6em;
+              padding: 2em 0;
+              background-color: #f0f2f5;
 
-                .anticon{
-                  font-size: 1.5em;
-                  line-height: 100%;
-                }
-              `}
-            >
-              <CloseOutlined />
-            </div>
-          )
-        }
+              .anticon {
+                font-size: 1.5em;
+                line-height: 100%;
+              }
+            `}
+          >
+            <CloseOutlined />
+          </div>
+        )}
       </div>
     </NodeContext.Provider>
   );
@@ -157,30 +162,35 @@ export function RemoveButton() {
   async function onRemove() {
     async function onOk() {
       await resource.destroy?.({
-        filterByTk: current.id
+        filterByTk: current.id,
       });
       refresh();
     }
 
-    const usingNodes = nodes.filter(node => {
+    const usingNodes = nodes.filter((node) => {
       if (node === current) {
         return false;
       }
 
       const template = parse(node.config);
-      const refs = template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`);
+      const refs = template.parameters.filter(
+        ({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`,
+      );
       return refs.length;
     });
 
     if (usingNodes.length) {
       Modal.error({
         title: lang('Can not delete'),
-        content: lang('The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.', { nodes: usingNodes.map(item => `#${item.id}`).join(', ') }),
+        content: lang(
+          'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
+          { nodes: usingNodes.map((item) => `#${item.id}`).join(', ') },
+        ),
       });
       return;
     }
 
-    const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
+    const hasBranches = !nodes.find((item) => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
       ? t('Are you sure you want to delete it?')
       : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
@@ -188,13 +198,11 @@ export function RemoveButton() {
     Modal.confirm({
       title: t('Delete'),
       content: message,
-      onOk
+      onOk,
     });
   }
 
-  return workflow.executed
-  ? null
-  : (
+  return workflow.executed ? null : (
     <Button
       type="text"
       shape="circle"
@@ -216,11 +224,14 @@ export function JobButton() {
   if (!job) {
     return (
       <span
-        className={cx('workflow-node-job-button', css`
-          border: 2px solid #d9d9d9;
-          border-radius: 50%;
-          cursor: not-allowed;
-        `)}
+        className={cx(
+          'workflow-node-job-button',
+          css`
+            border: 2px solid #d9d9d9;
+            border-radius: 50%;
+            cursor: not-allowed;
+          `,
+        )}
       />
     );
   }
@@ -239,22 +250,25 @@ export function JobButton() {
             'x-component-props': {
               title: <Tag color={color}>{icon}</Tag>,
               shape: 'circle',
-              className: ['workflow-node-job-button', css`
-                .ant-tag{
-                  padding: 0;
-                  width: 100%;
-                  line-height: 18px;
-                  margin-right: 0;
-                  border-radius: 50%;
-                }
-              `]
+              className: [
+                'workflow-node-job-button',
+                css`
+                  .ant-tag {
+                    padding: 0;
+                    width: 100%;
+                    line-height: 18px;
+                    margin-right: 0;
+                    border-radius: 50%;
+                  }
+                `,
+              ],
             },
             properties: {
               [`${job.id}-modal`]: {
                 type: 'void',
                 'x-decorator': 'Form',
                 'x-decorator-props': {
-                  initialValue: job
+                  initialValue: job,
                 },
                 'x-component': 'Action.Modal',
                 title: (
@@ -279,7 +293,7 @@ export function JobButton() {
                     'x-decorator': 'FormItem',
                     'x-component': 'DatePicker',
                     'x-component-props': {
-                      showTime: true
+                      showTime: true,
                     },
                     'x-read-pretty': true,
                   },
@@ -292,15 +306,15 @@ export function JobButton() {
                       className: css`
                         padding: 1em;
                         background-color: #eee;
-                      `
+                      `,
                     },
                     'x-read-pretty': true,
-                  }
-                }
-              }
-            }
-          }
-        }
+                  },
+                },
+              },
+            },
+          },
+        },
       }}
     />
   );
@@ -328,8 +342,8 @@ export function NodeDefaultView(props) {
     await api.resource('flow_nodes').update?.({
       filterByTk: data.id,
       values: {
-        title
-      }
+        title,
+      },
     });
     refresh();
   }
@@ -381,7 +395,7 @@ export function NodeDefaultView(props) {
                   'x-component': Button,
                   'x-component-props': {
                     type: 'link',
-                    className: 'workflow-node-config-button'
+                    className: 'workflow-node-config-button',
                   },
                 },
                 [`${instruction.type}_${data.id}`]: {
@@ -396,71 +410,81 @@ export function NodeDefaultView(props) {
                       return useRequest(() => {
                         return Promise.resolve({ data: config });
                       }, options);
-                    }
+                    },
                   },
                   properties: {
-                    ...(workflow.executed ? {
-                      alert: {
-                        type: 'void',
-                        'x-component': Alert,
-                        'x-component-props': {
-                          type: 'warning',
-                          showIcon: true,
-                          message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                          className: css`
-                            width: 100%;
-                            font-size: 85%;
-                            margin-bottom: 2em;
-                          `
-                        },
-                      }
-                    } : {}),
+                    ...(workflow.executed
+                      ? {
+                          alert: {
+                            type: 'void',
+                            'x-component': Alert,
+                            'x-component-props': {
+                              type: 'warning',
+                              showIcon: true,
+                              message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                              className: css`
+                                width: 100%;
+                                font-size: 85%;
+                                margin-bottom: 2em;
+                              `,
+                            },
+                          },
+                        }
+                      : {}),
                     fieldset: {
                       type: 'void',
                       'x-component': 'fieldset',
                       'x-component-props': {
                         className: css`
-                          .ant-input,
                           .ant-select,
                           .ant-cascader-picker,
                           .ant-picker,
                           .ant-input-number,
-                          .ant-input-affix-wrapper{
-                            &:not(.full-width){
+                          .ant-input-affix-wrapper {
+                            &:not(.full-width) {
                               width: auto;
                               min-width: 6em;
                             }
                           }
-                        `
+
+                          .ant-input-affix-wrapper {
+                            &:not(.full-width) {
+                              .ant-input {
+                                width: auto;
+                                min-width: 6em;
+                              }
+                            }
+                          }
+                        `,
                       },
-                      properties: instruction.fieldset
+                      properties: instruction.fieldset,
                     },
                     actions: workflow.executed
-                    ? null
-                    : {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
+                      ? null
+                      : {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            cancel: {
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                            submit: {
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: useUpdateAction,
+                              },
+                            },
                           },
                         },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: useUpdateAction,
-                          },
-                        },
-                      },
-                    }
-                  }
-                } as ISchema
-              }
+                  },
+                } as ISchema,
+              },
             }}
           />
         </ActionContext.Provider>

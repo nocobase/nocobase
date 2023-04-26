@@ -51,4 +51,83 @@ pgOnly()('Inherited Collection with schema options', () => {
       context: {},
     });
   });
+
+  it('should list parent collection with children in difference schema in same table name', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'fakeParent',
+        schema: 'fake_schema',
+        tableName: 'parent',
+      },
+    });
+
+    const parent = await collectionRepository.create({
+      values: {
+        name: 'parent',
+        schema: 'rootSchema',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const child1 = await collectionRepository.create({
+      values: {
+        name: 'child1',
+        schema: 'child_1',
+        inherits: [parent.get('name')],
+      },
+      context: {},
+    });
+
+    // same table name with "otherTable" but in different schema
+    const child2 = await collectionRepository.create({
+      values: {
+        name: 'child2',
+        schema: 'public',
+        tableName: 'child2',
+        inherits: [parent.get('name')],
+      },
+      context: {},
+    });
+
+    const otherTable = await collectionRepository.create({
+      values: {
+        name: 'otherTable',
+        schema: 'other_schema',
+        tableName: 'child2',
+      },
+      context: {},
+    });
+
+    await db.getCollection('parent').repository.create({
+      values: {
+        name: 'parent',
+      },
+    });
+
+    await db.getCollection('child2').repository.create({
+      values: {
+        name: 'child2-1',
+      },
+    });
+
+    await db.getCollection('child1').repository.create({
+      values: {
+        name: 'chid1-1',
+      },
+    });
+
+    await db.getCollection('otherTable').repository.create({
+      values: {},
+    });
+
+    const list = await db.getCollection('parent').repository.find({});
+    const child2Record = list.find((item) => item.get('name') === 'child2-1');
+    expect(child2Record.get('__collection')).toBe(child2.get('name'));
+  });
 });

@@ -6,7 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 function pasteHtml(html, selectPastedContent = false) {
-  var sel, range;
+  let sel, range;
   if (window.getSelection) {
     // IE9 and non-IE
     sel = window.getSelection();
@@ -17,15 +17,15 @@ function pasteHtml(html, selectPastedContent = false) {
       // Range.createContextualFragment() would be useful here but is
       // only relatively recently standardized and is not supported in
       // some browsers (IE9, for one)
-      var el = document.createElement('div');
+      const el = document.createElement('div');
       el.innerHTML = html;
-      var frag = document.createDocumentFragment(),
+      let frag = document.createDocumentFragment(),
         node,
         lastNode;
       while ((node = el.firstChild)) {
         lastNode = frag.appendChild(node);
       }
-      var firstNode = frag.firstChild;
+      const firstNode = frag.firstChild;
       range.insertNode(frag);
 
       // Preserve the selection

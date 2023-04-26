@@ -5,7 +5,7 @@ import {
   recordPickerSelector,
   recordPickerViewer,
   relationshipType,
-  reverseFieldProperties
+  reverseFieldProperties,
 } from './properties';
 import { IField } from './types';
 
@@ -50,8 +50,21 @@ export const m2o: IField = {
       },
     },
   },
-  availableTypes:['belongsTo'],
-  schemaInitialize(schema: ISchema, { block, readPretty }) {
+  availableTypes: ['belongsTo'],
+  schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+    }
+
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+      schema['x-component-props'].quickUpload = true;
+      schema['x-component-props'].selectFile = true;
+    }
+
     if (block === 'Form') {
       if (schema['x-component'] === 'AssociationSelect') {
         Object.assign(schema, {
@@ -79,6 +92,9 @@ export const m2o: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -198,4 +214,5 @@ export const m2o: IField = {
       // },
     ],
   },
+  invariable: true,
 };

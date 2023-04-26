@@ -5,6 +5,7 @@ import i18next from 'i18next';
 import bodyParser from 'koa-bodyparser';
 import Application, { ApplicationOptions } from './application';
 import { parseVariables } from './middlewares';
+import { dateTemplate } from './middlewares/data-template';
 import { dataWrapping } from './middlewares/data-wrapping';
 import { db2resource } from './middlewares/db2resource';
 import { i18n } from './middlewares/i18n';
@@ -72,6 +73,7 @@ export function registerMiddlewares(app: Application, options: ApplicationOption
   }
 
   app.resourcer.use(parseVariables, { tag: 'parseVariables', after: 'acl' });
+  app.resourcer.use(dateTemplate, { tag: 'dateTemplate', after: 'acl' });
 
   app.use(db2resource, { tag: 'db2resource', after: 'dataWrapping' });
   app.use(app.resourcer.restApiMiddleware(), { tag: 'restApi', after: 'db2resource' });

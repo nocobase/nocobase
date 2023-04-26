@@ -1,6 +1,6 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import { ISchema, useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
+import { TemplateSummay } from './components/TemplateSummay';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -28,7 +29,7 @@ const getSchema = (schema, category, compile): ISchema => {
     properties['defaultValue']['x-decorator'] = 'FormItem';
   }
   const initialValue: any = {
-    name: schema.name !== 'view' ? `t_${uid()}` : null,
+    name: `t_${uid()}`,
     template: schema.name,
     view: schema.name === 'view',
     category,
@@ -62,7 +63,7 @@ const getSchema = (schema, category, compile): ISchema => {
         properties: {
           summary: {
             type: 'void',
-            'x-component': 'FieldSummary',
+            'x-component': 'TemplateSummay',
             'x-component-props': {
               schemaKey: schema.name,
             },
@@ -97,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const useDefaultCollectionFields = (values) => {
-  let defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
     const pk = values.fields.find((f) => f.primaryKey);
@@ -194,32 +195,41 @@ const useCreateCollection = (schema?: any) => {
   const { refreshCM } = useCollectionManager();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
-  const { resource, collection } = useResourceContext();
+  const { resource } = useResourceContext();
+  const field = useField();
   return {
     async run() {
-      await form.submit();
-      const values = cloneDeep(form.values);
-      if (schema?.events?.beforeSubmit) {
-        schema.events.beforeSubmit(values);
+      field.data = field.data || {};
+      field.data.loading = true;
+      try {
+        await form.submit();
+        const values = cloneDeep(form.values);
+        if (schema?.events?.beforeSubmit) {
+          schema.events.beforeSubmit(values);
+        }
+        const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
+        if (values.autoCreateReverseField) {
+        } else {
+          delete values.reverseField;
+        }
+        delete values.id;
+        delete values.autoCreateReverseField;
+
+        await resource.create({
+          values: {
+            logging: true,
+            ...values,
+            fields,
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
       }
-      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.id;
-      delete values.autoCreateReverseField;
-      await resource.create({
-        values: {
-          logging: true,
-          ...values,
-          fields,
-        },
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-      await refreshCM();
     },
   };
 };
@@ -279,7 +289,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable }}
+          components={{ ...components, ArrayTable, TemplateSummay }}
           scope={{
             getContainer,
             useCancelAction,

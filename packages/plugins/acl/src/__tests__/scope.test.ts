@@ -21,28 +21,29 @@ describe('scope api', () => {
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['admin']
-      }
+        roles: ['admin'],
+      },
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: admin.get('id'),
-    }), { type: 'bearer' });
+    adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }),
+      { type: 'bearer' },
+    );
   });
 
   it('should create scope of resource', async () => {
-    const response = await adminAgent
-      .resource('rolesResourcesScopes')
-      .create({
-        values: {
-          resourceName: 'posts',
-          name: 'published posts',
-          scope: {
-            published: true,
-          },
+    const response = await adminAgent.resource('rolesResourcesScopes').create({
+      values: {
+        resourceName: 'posts',
+        name: 'published posts',
+        scope: {
+          published: true,
         },
-      });
+      },
+    });
 
     expect(response.statusCode).toEqual(200);
 

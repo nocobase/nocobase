@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { useForm } from '@formily/react';
+import { useForm, useField } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -130,17 +130,25 @@ const useSyncFromDatabase = () => {
   const { targetKey } = useResourceContext();
   const { [targetKey]: filterByTk } = useRecord();
   const api = useAPIClient();
+  const field = useField();
   return {
     async run() {
       await form.submit();
-      await api.resource(`collections`).setFields({
-        filterByTk,
-        values: form.values,
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      refresh();
-      await refreshCM();
+      field.data = field.data || {};
+      field.data.loading = true;
+      try {
+        await api.resource(`collections`).setFields({
+          filterByTk,
+          values: form.values,
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
+      }
     },
   };
 };

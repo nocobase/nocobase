@@ -172,7 +172,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   declare middleware: any;
 
-  stopped: boolean = false;
+  stopped = false;
 
   constructor(public options: ApplicationOptions) {
     super();

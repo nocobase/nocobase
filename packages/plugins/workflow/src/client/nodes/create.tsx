@@ -8,8 +8,6 @@ import { CollectionFieldInitializers } from '../components/CollectionFieldInitia
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
-
-
 export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
@@ -30,22 +28,24 @@ export default {
       type: 'object',
       properties: {
         values,
-        appends
-      }
-    }
+        appends,
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     CollectionFieldset,
-    FieldsSelect
+    FieldsSelect,
   },
   getOptions(config, types) {
-    return useCollectionFieldOptions({ collection: config.collection, types });
+    return useCollectionFieldOptions({
+      collection: config.collection,
+      types,
+      depth: config.params?.appends?.length ? 1 : 0,
+    });
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
@@ -57,10 +57,10 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

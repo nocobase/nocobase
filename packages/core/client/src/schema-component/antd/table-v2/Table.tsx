@@ -2,20 +2,20 @@ import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
-import { useEventListener, useMemoizedFn } from 'ahooks';
+import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, useDesignable } from '../..';
+import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
   RecordProvider,
   useSchemaInitializer,
   useTableBlockContext,
-  useTableSelectorContext
+  useTableSelectorContext,
 } from '../../../';
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
@@ -131,7 +131,7 @@ const usePaginationProps = (pagination1, pagination2) => {
     ...pagination1,
     ...pagination2,
   };
-  return result.total < result.pageSize ? false : result;
+  return result.total <= result.pageSize ? false : result;
 };
 
 const useValidator = (validator: (value: any) => string) => {
@@ -167,6 +167,7 @@ export const Table: any = observer((props: any) => {
     rowSelection,
     rowKey,
     required,
+    onExpand,
     ...others
   } = { ...others1, ...others2 } as any;
   const schema = useFieldSchema();
@@ -209,15 +210,10 @@ export const Table: any = observer((props: any) => {
       return;
     });
   }, [requiredValidator]);
-  // useEffect(() => {
-  //   const data = field.value;
-  //   field.value = null;
-  //   field.value = data;
-  // }, [treeTable]);
 
   useEffect(() => {
     if (treeTable !== false) {
-      const keys = getIdsWithChildren(field.value?.slice());
+      const keys = getIdsWithChildren(field.value?.slice?.());
       setAllIncludesChildren(keys);
     }
   }, [field.value]);
@@ -227,7 +223,7 @@ export const Table: any = observer((props: any) => {
     } else {
       setExpandesKeys([]);
     }
-  }, [expandFlag]);
+  }, [expandFlag, allIncludesChildren]);
 
   const components = useMemo(() => {
     return {
@@ -332,6 +328,8 @@ export const Table: any = observer((props: any) => {
             const pageSize = props?.pagination?.pageSize || 20;
             if (current) {
               index = index + (current - 1) * pageSize + 1;
+            } else {
+              index = index + 1;
             }
             if (record.__index) {
               index = extractIndex(record.__index);
@@ -419,43 +417,35 @@ export const Table: any = observer((props: any) => {
   );
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
-  const [tableHeight, setTableHeight] = useState(0);
-  const [headerAndPaginationHeight, setHeaderAndPaginationHeight] = useState(0);
+
+  const { height: tableHeight, tableSizeRefCallback } = useTableSize();
 
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
           x: 'max-content',
-          y: tableHeight - headerAndPaginationHeight,
+          y: tableHeight,
         }
       : {
           x: 'max-content',
         };
-  }, [fixedBlock, tableHeight, headerAndPaginationHeight]);
-
-  const elementRef = useRef<HTMLDivElement>();
-
-  const calcTableSize = () => {
-    if (!elementRef.current) return;
-    const clientRect = elementRef.current?.getBoundingClientRect();
-    setTableHeight(Math.ceil(clientRect?.height || 0));
-  };
-
-  useEventListener('resize', calcTableSize);
-
-  const mountedRef: React.RefCallback<HTMLDivElement> = (ref) => {
-    elementRef.current = ref;
-    calcTableSize();
-  };
+  }, [fixedBlock, tableHeight]);
 
   return (
     <div
-      ref={mountedRef}
       className={css`
         height: 100%;
         overflow: hidden;
         .ant-table-wrapper {
           height: 100%;
+          .ant-spin-nested-loading {
+            height: 100%;
+            .ant-spin-container {
+              height: 100%;
+              display: flex;
+              flex-direction: column;
+            }
+          }
         }
         .ant-table {
           overflow-x: auto;
@@ -465,14 +455,9 @@ export const Table: any = observer((props: any) => {
     >
       <SortableWrapper>
         <AntdTable
-          ref={(ref) => {
-            if (ref) {
-              const headerHeight = ref.querySelector('.ant-table-header')?.getBoundingClientRect().height || 0;
-              const paginationHeight = ref.querySelector('.ant-table-pagination')?.getBoundingClientRect().height || 0;
-              setHeaderAndPaginationHeight(Math.ceil(headerHeight + paginationHeight + 16));
-            }
-          }}
+          ref={tableSizeRefCallback}
           rowKey={rowKey ?? defaultRowKey}
+          dataSource={field?.value?.slice?.()}
           {...others}
           {...restProps}
           pagination={paginationProps}
@@ -489,10 +474,10 @@ export const Table: any = observer((props: any) => {
             onExpand: (flag, record) => {
               const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
               setExpandesKeys(newKeys);
+              onExpand?.(flag, record);
             },
             expandedRowKeys: expandedKeys,
           }}
-          dataSource={field?.value?.slice?.()}
         />
       </SortableWrapper>
       {field.errors.length > 0 && (

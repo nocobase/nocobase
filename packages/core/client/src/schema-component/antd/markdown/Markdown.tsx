@@ -23,7 +23,7 @@ export const Markdown: any = connect(
   mapReadPretty((props) => {
     const { html, loading } = useParseMarkdown(props.value);
     const text = convertToText(html);
-    let value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
+    const value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
     if (loading) {
       return <Spin />;
     }

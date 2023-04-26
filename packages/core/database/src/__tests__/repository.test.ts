@@ -181,6 +181,80 @@ describe('repository.find', () => {
   });
 });
 
+describe('repository create with belongs to many', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => [await db.close()]);
+
+  it('should save value at through table', async () => {
+    const Product = db.collection({
+      name: 'products',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'price' },
+      ],
+    });
+
+    const OrderProduct = db.collection({
+      name: 'orders_products',
+      fields: [{ type: 'integer', name: 'quantity' }],
+    });
+
+    const Order = db.collection({
+      name: 'orders',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'products',
+          through: 'orders_products',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Product.repository.create({
+      values: [
+        {
+          name: 'product1',
+          price: 100,
+        },
+        {
+          name: 'product2',
+          price: 200,
+        },
+      ],
+    });
+
+    const p1 = await Product.repository.findOne({
+      filter: { name: 'product1' },
+    });
+
+    await Order.repository.create({
+      values: {
+        products: [
+          {
+            id: p1.get('id'),
+            orders_products: {
+              quantity: 20,
+            },
+          },
+        ],
+      },
+    });
+
+    const through = await OrderProduct.repository.findOne();
+    expect(through.get('quantity')).toBe(20);
+  });
+});
+
 describe('repository.create', () => {
   let db: Database;
   let User: Collection;

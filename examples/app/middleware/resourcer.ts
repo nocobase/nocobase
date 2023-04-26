@@ -37,7 +37,7 @@ app.resource({
       ctx.body = ctx.body || [];
       ctx.body.push('test list');
       await next();
-    }
+    },
   },
 });
 

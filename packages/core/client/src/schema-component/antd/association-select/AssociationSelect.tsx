@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd';
 import { Field } from '@formily/core';
-import { connect, ISchema, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { ISchema, connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
@@ -11,9 +11,10 @@ import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useSortFields
+  useSortFields,
 } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -91,15 +92,14 @@ interface AssociationSelectInterface {
 
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
 
-AssociationSelect.Designer = () => {
-  const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
+AssociationSelect.Designer = function Designer() {
+  const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const tk = useFilterByTk();
-  const {} = useCollection();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -134,7 +134,7 @@ AssociationSelect.Designer = () => {
   }
 
   const options = targetFields
-    .filter((field) => !field?.target && field.type !== 'boolean')
+    .filter((field) => isTitleField(field))
     .map((field) => ({
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
@@ -390,41 +390,52 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
-      {form && !form?.readPretty && collectionField?.uiSchema?.type && (
-        <SchemaSettings.ModalItem
-          title={t('Set default value')}
-          components={{ ArrayCollapse, FormLayout }}
-          schema={
-            {
-              type: 'object',
-              title: t('Set default value'),
-              properties: {
-                default: {
-                  ...collectionField.uiSchema,
-                  name: 'default',
-                  title: t('Default value'),
-                  'x-decorator': 'FormItem',
-                  default: fieldSchema.default || collectionField.defaultValue,
+      {form &&
+        !form?.readPretty &&
+        isShowDefaultValue(collectionField, getInterface) &&
+        !isPatternDisabled(fieldSchema) && (
+          <SchemaSettings.ModalItem
+            title={t('Set default value')}
+            components={{ ArrayCollapse, FormLayout }}
+            width={800}
+            schema={
+              {
+                type: 'object',
+                title: t('Set default value'),
+                properties: {
+                  default: {
+                    ...(fieldSchema || {}),
+                    'x-decorator': 'FormItem',
+                    'x-component-props': {
+                      ...fieldSchema['x-component-props'],
+                      component: collectionField?.target ? 'AssociationSelect' : undefined,
+                      service: {
+                        resource: collectionField?.target,
+                      },
+                    },
+                    name: 'default',
+                    title: t('Default value'),
+                    default: fieldSchema.default || collectionField.defaultValue,
+                  },
                 },
-              },
-            } as ISchema
-          }
-          onSubmit={(v) => {
-            const schema: ISchema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            if (field.value !== v.default) {
-              field.value = v.default;
+              } as ISchema
             }
-            fieldSchema.default = v.default;
-            schema.default = v.default;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
+            onSubmit={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              if (field.value !== v.default) {
+                field.value = v.default;
+              }
+              fieldSchema.default = v.default;
+              schema.default = v.default;
+              dn.emit('patch', {
+                schema,
+              });
+              refresh();
+            }}
+          />
+        )}
       {form && !isSubFormAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
@@ -454,6 +465,7 @@ AssociationSelect.Designer = () => {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
+              targetCollection: getCollection(collectionField.target),
             });
 
             if (type === 'CollectionField') {
@@ -473,6 +485,36 @@ AssociationSelect.Designer = () => {
           }}
         />
       )}
+      {form &&
+        !form?.readPretty &&
+        ['o2m', 'm2m'].includes(collectionField.interface) &&
+        fieldSchema['x-component'] !== 'TableField' && (
+          <SchemaSettings.SwitchItem
+            key="multiple"
+            title={t('Multiple')}
+            checked={
+              fieldSchema['x-component-props']?.multiple === undefined
+                ? true
+                : fieldSchema['x-component-props'].multiple
+            }
+            onChange={(value) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              field.componentProps = field.componentProps || {};
+
+              fieldSchema['x-component-props'].multiple = value;
+              field.componentProps.multiple = value;
+
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              dn.emit('patch', {
+                schema,
+              });
+              refresh();
+            }}
+          />
+        )}
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
@@ -593,7 +635,7 @@ AssociationSelect.Designer = () => {
           });
         }}
       />
-      {form && !form?.readPretty && fieldSchema?.['x-component-props']?.['pattern-disable'] != true && (
+      {form && !form?.readPretty && !isPatternDisabled(fieldSchema) && (
         <SchemaSettings.SelectItem
           key="pattern"
           title={t('Pattern')}
@@ -690,7 +732,7 @@ AssociationSelect.Designer = () => {
  * 用于筛选表单区块
  * @returns
  */
-AssociationSelect.FilterDesigner = () => {
+AssociationSelect.FilterDesigner = function FilterDesigner() {
   const { getCollectionFields, getInterface, getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();

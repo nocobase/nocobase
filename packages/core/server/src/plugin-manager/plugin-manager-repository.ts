@@ -30,6 +30,10 @@ export class PluginManagerRepository extends Repository {
       }
     }
 
+    for (const plugin of plugins) {
+      await plugin.beforeEnable();
+    }
+
     await this.update({
       filter: {
         name,

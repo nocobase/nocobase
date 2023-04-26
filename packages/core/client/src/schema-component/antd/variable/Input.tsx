@@ -1,12 +1,14 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Button, Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import classNames from 'classnames';
 import { useCompile } from '../..';
+import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
 
@@ -50,7 +52,7 @@ const ConstantTypes = {
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component({ onChange, value }) {
+    component: function Com({ onChange, value }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -87,13 +89,22 @@ const ConstantTypes = {
   null: {
     label: `{{t("Null")}}`,
     value: 'null',
-    component() {
+    component: function Com() {
       const { t } = useTranslation();
       return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
     default: null,
   },
 };
+
+function getTypedConstantOption(type) {
+  return {
+    value: '',
+    label: '{{t("Constant")}}',
+    children: Object.values(ConstantTypes),
+    component: ConstantTypes[type]?.component,
+  };
+}
 
 type VariableOptions = {
   value: string;
@@ -102,21 +113,29 @@ type VariableOptions = {
 };
 
 export function Input(props) {
-  const { value = '', scope, onChange, children, button } = props;
+  const compile = useCompile();
+  const form = useForm();
+
+  const { value = '', scope, onChange, children, button, useTypedConstant, style, className } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const ConstantComponent = ConstantTypes[type]?.component;
-  const constantOptions = Object.values(ConstantTypes);
-  const compile = useCompile();
-  const { t } = useTranslation();
-  const options: VariableOptions[] = compile([
-    { value: '', label: t('Constant'), children: children ? null : constantOptions },
-    ...(typeof scope === 'function' ? scope() : scope ?? []),
-  ]);
+  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
 
-  const form = useForm();
+  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
+    ? {
+        value: '',
+        label: '{{t("Constant")}}',
+      }
+    : useTypedConstant
+    ? getTypedConstantOption(type)
+    : {
+        value: '',
+        label: '{{t("Null")}}',
+        component: ConstantTypes.null.component,
+      };
+  const options: VariableOptions[] = compile([constantOption, ...variableOptions]);
 
   function onSwitch(next) {
     if (next[0] === '') {
@@ -147,20 +166,24 @@ export function Input(props) {
   return (
     <AntInput.Group
       compact
-      className={css`
-        width: auto;
-        display: flex !important;
-        .ant-input-disabled {
-          .ant-tag {
-            color: #bfbfbf;
-            border-color: #d9d9d9;
+      style={style}
+      className={classNames(
+        className,
+        css`
+          width: auto;
+          display: flex !important;
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
+            }
           }
-        }
-        .ant-input.null-value {
-          width: 4em;
-          min-width: 4em;
-        }
-      `}
+          .ant-input.null-value {
+            width: 4em;
+            min-width: 4em;
+          }
+        `,
+      )}
     >
       {variable ? (
         <div
@@ -214,6 +237,7 @@ export function Input(props) {
                   user-select: 'none';
                 `,
               )}
+              // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
               onClick={() => onChange(null)}
@@ -226,18 +250,13 @@ export function Input(props) {
         children ?? <ConstantComponent value={value} onChange={onChange} />
       )}
       {options.length > 1 ? (
-        <Cascader value={variable ?? ['', ...(children ? [] : [type])]} options={options} onChange={onSwitch}>
-          {button ?? (
-            <Button
-              type={variable ? 'primary' : 'default'}
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
-          )}
+        <Cascader
+          options={options}
+          value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
+          onChange={onSwitch}
+          changeOnSelect
+        >
+          {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
     </AntInput.Group>

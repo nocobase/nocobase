@@ -1,6 +1,6 @@
 import { FormLayout } from '@formily/antd';
-import { createForm, Field, onFormInputChange, onFieldReact, onFieldInit, onFieldChange } from '@formily/core';
-import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import { Field, createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -114,36 +114,31 @@ const WithForm = (props) => {
     };
   }, []);
   useEffect(() => {
-    if (linkageRules.length > 0) {
-      const id = uid();
-      const linkagefields = [];
-      const formGraph = form.getFormGraph();
-      form.addEffects(id, () => {
-        return linkageRules.map((v, index) => {
-          return v.actions?.map((h) => {
-            if (h.targetFields) {
-              const fields = h.targetFields.join(',');
-              return onFieldReact(`*(${fields})`, (field: any, form) => {
-                linkagefields.push(field);
-                linkageMergeAction(h, field, v.condition, form?.values);
-                if (index === linkageRules.length - 1) {
-                  setTimeout(() =>
-                    linkagefields.map((v) => {
-                      v.linkageProperty = {};
-                    }),
-                  );
-                }
-              });
-            }
-          });
+    const id = uid();
+    const linkagefields = [];
+    form.addEffects(id, () => {
+      return linkageRules.map((v, index) => {
+        return v.actions?.map((h) => {
+          if (h.targetFields) {
+            const fields = h.targetFields.join(',');
+            return onFieldReact(`*(${fields})`, (field: any, form) => {
+              linkagefields.push(field);
+              linkageMergeAction(h, field, v.condition, form?.values);
+              if (index === linkageRules.length - 1) {
+                setTimeout(() =>
+                  linkagefields.map((v) => {
+                    v.linkageProperty = {};
+                  }),
+                );
+              }
+            });
+          }
         });
       });
-      return () => {
-        form.removeEffects(id);
-        form.clearFormGraph();
-        form.setFormGraph(formGraph);
-      };
-    }
+    });
+    return () => {
+      form.removeEffects(id);
+    };
   }, [linkageRules]);
   return fieldSchema['x-decorator'] === 'Form' ? <FormDecorator {...props} /> : <FormComponent {...props} />;
 };
@@ -170,23 +165,26 @@ const WithoutForm = (props) => {
   );
 };
 
-export const Form: React.FC<FormProps> & { Designer?: any; FilterDesigner?: any; ReadPrettyDesigner?: any } = observer(
-  (props) => {
-    const field = useField<Field>();
-    const { form, disabled, ...others } = useProps(props);
-    const formDisabled = disabled || field.disabled;
-    return (
-      <ConfigProvider componentDisabled={formDisabled}>
-        <form>
-          <Spin spinning={field.loading || false}>
-            {form ? (
-              <WithForm form={form} {...others} disabled={formDisabled} />
-            ) : (
-              <WithoutForm {...others} disabled={formDisabled} />
-            )}
-          </Spin>
-        </form>
-      </ConfigProvider>
-    );
-  },
-);
+export const Form: React.FC<FormProps> & {
+  Designer?: any;
+  FilterDesigner?: any;
+  ReadPrettyDesigner?: any;
+  Templates?: any;
+} = observer((props) => {
+  const field = useField<Field>();
+  const { form, disabled, ...others } = useProps(props);
+  const formDisabled = disabled || field.disabled;
+  return (
+    <ConfigProvider componentDisabled={formDisabled}>
+      <form>
+        <Spin spinning={field.loading || false}>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
+        </Spin>
+      </form>
+    </ConfigProvider>
+  );
+});

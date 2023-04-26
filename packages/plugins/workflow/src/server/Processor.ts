@@ -1,21 +1,19 @@
 import { Transaction, Transactionable } from 'sequelize';
 import parse from 'json-templates';
 
-import { Model } from "@nocobase/database";
+import { Model } from '@nocobase/database';
+import { appendArrayColumn } from '@nocobase/evaluators';
 
 import Plugin from '.';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import FlowNodeModel from './models/FlowNode';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
-
-
+import { Logger } from '@nocobase/logger';
 
 export interface ProcessorOptions extends Transactionable {
-  plugin: Plugin
+  plugin: Plugin;
 }
-
-
 
 export default class Processor {
   static StatusMap = {
@@ -28,6 +26,8 @@ export default class Processor {
     [JOB_STATUS.REJECTED]: EXECUTION_STATUS.REJECTED,
   };
 
+  logger: Logger;
+
   transaction?: Transaction;
 
   nodes: FlowNodeModel[] = [];
@@ -36,6 +36,7 @@ export default class Processor {
   jobsMapByNodeId: { [key: number]: any } = {};
 
   constructor(public execution: ExecutionModel, public options: ProcessorOptions) {
+    this.logger = options.plugin.getLogger(execution.workflowId);
   }
 
   // make dual linked nodes list then cache
@@ -106,7 +107,7 @@ export default class Processor {
     }
     await this.prepare();
     if (this.nodes.length) {
-      const head = this.nodes.find(item => !item.upstream);
+      const head = this.nodes.find((item) => !item.upstream);
       await this.run(head, { result: execution.context });
     } else {
       await this.exit(null);
@@ -136,16 +137,23 @@ export default class Processor {
     let job;
     try {
       // call instruction to get result and status
+      this.logger.info(`execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id})`);
+      this.logger.debug(`config of node`, { data: node.config });
       job = await instruction(node, prevJob, this);
       if (!job) {
         return null;
       }
     } catch (err) {
       // for uncaught error, set to error
+      this.logger.error(
+        `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) failed: `,
+        { error: err },
+      );
       job = {
-        result: err instanceof Error
-          ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
-          : err,
+        result:
+          err instanceof Error
+            ? { message: err.message, stack: process.env.NODE_ENV === 'production' ? [] : err.stack }
+            : err,
         status: JOB_STATUS.ERROR,
       };
       // if previous job is from resuming
@@ -161,8 +169,14 @@ export default class Processor {
     }
     const savedJob = await this.saveJob(job);
 
+    this.logger.info(
+      `execution (${this.execution.id}) run instruction [${node.type}] for node (${node.id}) finished as status: ${savedJob.status}`,
+    );
+    this.logger.debug(`result of node`, { data: savedJob.result });
+
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
+      this.logger.debug(`run next node (${node.id})`);
       return this.run(node.downstream, savedJob);
     }
 
@@ -182,9 +196,11 @@ export default class Processor {
 
   // parent node should take over the control
   public async end(node, job) {
+    this.logger.debug(`branch ended at node (${node.id})})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
+      this.logger.debug(`not on main, recall to parent entry node (${node.id})})`);
       await this.recall(parentNode, job);
       return job;
     }
@@ -205,7 +221,10 @@ export default class Processor {
   }
 
   async exit(job: JobModel | null) {
-    const status = job ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status) : EXECUTION_STATUS.RESOLVED;
+    const status = job
+      ? (<typeof Processor>this.constructor).StatusMap[job.status] ?? Math.sign(job.status)
+      : EXECUTION_STATUS.RESOLVED;
+    this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
     return null;
   }
@@ -221,15 +240,18 @@ export default class Processor {
       [job] = await model.update(payload, {
         where: { id: payload.id },
         returning: true,
-        transaction: this.transaction
+        transaction: this.transaction,
       });
     } else {
-      job = await model.create({
-        ...payload,
-        executionId: this.execution.id,
-      }, {
-        transaction: this.transaction
-      });
+      job = await model.create(
+        {
+          ...payload,
+          executionId: this.execution.id,
+        },
+        {
+          transaction: this.transaction,
+        },
+      );
     }
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
@@ -239,7 +261,7 @@ export default class Processor {
 
   getBranches(node: FlowNodeModel): FlowNodeModel[] {
     return this.nodes
-      .filter(item => item.upstream === node && item.branchIndex !== null)
+      .filter((item) => item.upstream === node && item.branchIndex !== null)
       .sort((a, b) => Number(a.branchIndex) - Number(b.branchIndex));
   }
 
@@ -282,20 +304,25 @@ export default class Processor {
     const systemFns = {};
     const scope = {
       execution: this.execution,
-      node
+      node,
     };
-    for (let [name, fn] of this.options.plugin.functions.getEntities()) {
+    for (const [name, fn] of this.options.plugin.functions.getEntities()) {
       systemFns[name] = fn.bind(scope);
     }
 
     return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
-      $system: systemFns
+      $system: systemFns,
     };
   }
 
   public getParsedValue(value, node?) {
-    return parse(value)(this.getScope(node));
+    const template = parse(value);
+    const scope = this.getScope(node);
+    template.parameters.forEach(({ key }) => {
+      appendArrayColumn(scope, key);
+    });
+    return template(scope);
   }
 }

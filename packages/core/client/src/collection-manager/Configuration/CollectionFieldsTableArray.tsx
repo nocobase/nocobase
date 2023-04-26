@@ -1,21 +1,20 @@
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
-import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { Table, TableColumnProps } from 'antd';
 import { default as classNames } from 'classnames';
+import { findIndex } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { findIndex } from 'lodash';
 import {
   RecordIndexProvider,
   RecordProvider,
+  SchemaComponent,
   useCollectionManager,
+  useCompile,
+  useRecord,
   useRequest,
   useSchemaInitializer,
-  useRecord,
-  useCompile,
-  SchemaComponent,
-  useCollection,
 } from '../..';
 import { overridingSchema } from '../Configuration/schemas/collectionFields';
 
@@ -193,10 +192,9 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
     });
   };
 
-
-  const expandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
-    if(!props.loading){
-      const columns = useTableColumns();
+  const ExpandedRowRender = (record: CategorizeDataItem, index, indent, expanded) => {
+    const columns = useTableColumns();
+    if (!props.loading) {
       if (inherits.includes(record.key)) {
         columns.pop();
         columns.push({
@@ -245,7 +243,6 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         />
       );
     }
-   
   };
   return (
     <div
@@ -263,7 +260,7 @@ export const CollectionFieldsTableArray: React.FC<any> = observer((props) => {
         dataSource={categorizeData}
         pagination={false}
         expandable={{
-          expandedRowRender,
+          expandedRowRender: ExpandedRowRender,
           expandedRowKeys: expandedKeys,
         }}
         onExpand={(expanded, record) => {

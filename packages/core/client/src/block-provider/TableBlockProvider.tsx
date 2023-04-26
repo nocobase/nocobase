@@ -3,11 +3,11 @@ import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useCollectionManager } from '../collection-manager';
-import { SchemaComponentOptions, removeNullCondition, FixedBlockWrapper } from '../schema-component';
-import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
-import { findFilterTargets } from './hooks';
+import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
+import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
+import { findFilterTargets } from './hooks';
 
 export const TableBlockContext = createContext<any>({});
 
@@ -21,7 +21,7 @@ interface Props {
 
 const InternalTableBlockProvider = (props: Props) => {
   const { params, showIndex, dragSort, rowKey, childrenColumnName } = props;
-  const field = useField();
+  const field: any = useField();
   const { resource, service } = useBlockRequestContext();
   const [expandFlag, setExpandFlag] = useState(false);
   return (
@@ -66,6 +66,9 @@ export const useAssociationNames = (collection) => {
     if (schema['x-component'] === 'TableV2') {
       return schema;
     }
+    if (schema['x-component'] === 'Gantt') {
+      return schema.properties?.table;
+    }
     return buf;
   }, new Schema({}));
   return uniq(
@@ -106,7 +109,7 @@ export const TableBlockProvider = (props) => {
   }
   let childrenColumnName = 'children';
   if (collection?.tree && treeTable !== false) {
-    if (resourceName.includes('.')) {
+    if (resourceName?.includes('.')) {
       const f = getCollectionField(resourceName);
       if (f?.treeChildren) {
         childrenColumnName = f.name;
@@ -174,6 +177,7 @@ export const useTableBlockProps = () => {
       console.log(selectedRowKeys);
       ctx.field.data = ctx?.field?.data || {};
       ctx.field.data.selectedRowKeys = selectedRowKeys;
+      ctx?.field?.onRowSelect?.(selectedRowKeys);
     },
     async onRowDragEnd({ from, to }) {
       await ctx.resource.move({
@@ -183,7 +187,7 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      let sort = sorter.order
+      const sort = sorter.order
         ? sorter.order === `ascend`
           ? [sorter.field]
           : [`-${sorter.field}`]
@@ -243,6 +247,9 @@ export const useTableBlockProps = () => {
 
       // 更新表格的选中状态
       setSelectedRow((prev) => (prev?.includes(record[ctx.rowKey]) ? [] : [...value]));
+    },
+    onExpand(expanded, record) {
+      ctx?.field.onExpandClick?.(expanded, record);
     },
   };
 };

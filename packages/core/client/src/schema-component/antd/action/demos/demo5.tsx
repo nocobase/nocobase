@@ -8,7 +8,7 @@ import {
   FormLayout,
   Input,
   NumberPicker,
-  Submit
+  Submit,
 } from '@formily/antd';
 import { Select } from 'antd';
 import { createForm, Field, onFieldValueChange } from '@formily/core';
@@ -62,8 +62,10 @@ function TypeSelect(props) {
 
   return (
     <Select {...props}>
-      {Object.keys(types).map(key => (
-        <Select.Option key={key} value={key}>{types[key].title}</Select.Option>
+      {Object.keys(types).map((key) => (
+        <Select.Option key={key} value={key}>
+          {types[key].title}
+        </Select.Option>
       ))}
     </Select>
   );
@@ -163,7 +165,7 @@ const schema = {
               type: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': TypeSelect
+                'x-component': TypeSelect,
               },
             },
           },
@@ -176,7 +178,7 @@ const schema = {
             properties: {
               options: {
                 type: 'object',
-                'x-component': 'ViewOptions'
+                'x-component': 'ViewOptions',
               },
             },
           },

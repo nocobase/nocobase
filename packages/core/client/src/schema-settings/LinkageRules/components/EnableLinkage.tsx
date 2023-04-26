@@ -1,13 +1,18 @@
 import React from 'react';
 import { Switch } from 'antd';
 import { ArrayBase } from '@formily/antd';
+import { useTranslation } from 'react-i18next';
 
 export const EnableLinkage = React.forwardRef((props: any, ref) => {
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
+  const { t } = useTranslation();
+
   return (
     <Switch
       {...props}
+      checkedChildren={t('On')}
+      unCheckedChildren={t('Off')}
       checked={!array?.field?.value[index].disabled}
       size={'small'}
       style={{

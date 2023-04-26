@@ -5,7 +5,7 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
@@ -74,7 +74,7 @@ export const useDownloadXlsxTemplateAction = () => {
           responseType: 'blob',
         },
       );
-      let blob = new Blob([data], { type: 'application/x-xls' });
+      const blob = new Blob([data], { type: 'application/x-xls' });
       saveAs(blob, `${compile(title)}.xlsx`);
     },
   };
@@ -115,7 +115,7 @@ export const useImportStartAction = () => {
           return column;
         })
         .filter(Boolean);
-      let formData = new FormData();
+      const formData = new FormData();
       const uploadFiles = form.values.upload.map((f) => f.originFileObj);
       formData.append('file', uploadFiles[0]);
       formData.append('columns', JSON.stringify(columns));

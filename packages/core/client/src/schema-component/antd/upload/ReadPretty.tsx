@@ -1,24 +1,28 @@
 import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
 import { Field } from '@formily/core';
 import { useField } from '@formily/react';
+import { isString } from '@nocobase/utils/client';
 import { Button, Space } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useState } from 'react';
 import Lightbox from 'react-image-lightbox';
+import { useRecord } from '../../../record-provider';
 import { isImage, toArr, toImages } from './shared';
 import type { UploadProps } from './type';
 
 type Composed = React.FC<UploadProps> & {
   Upload?: React.FC<UploadProps>;
-  Attachment?: React.FC<UploadProps>;
+  File?: React.FC<UploadProps>;
 };
 
 export const ReadPretty: Composed = () => null;
 
-ReadPretty.Attachment = (props: UploadProps) => {
+ReadPretty.File = (props: UploadProps) => {
+  const record = useRecord();
   const field = useField<Field>();
-  const images = toImages(toArr(field.value));
+  const value = isString(field.value) ? record : field.value;
+  const images = toImages(toArr(value));
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const { size } = props;
@@ -136,7 +140,7 @@ ReadPretty.Upload = (props) => {
   return (field.value || []).map((item) => (
     <div>
       {item.url ? (
-        <a target={'_blank'} href={item.url}>
+        <a target={'_blank'} href={item.url} rel="noreferrer">
           {item.name}
         </a>
       ) : (

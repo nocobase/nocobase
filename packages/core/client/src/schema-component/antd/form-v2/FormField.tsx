@@ -1,4 +1,4 @@
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';

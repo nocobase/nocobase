@@ -34,7 +34,7 @@ export const TableActionInitializers = {
           },
           visible: () => {
             const collection = useCollection();
-            return (collection as any).template !== 'view';
+            return collection.template !== 'view' && collection.template !== 'file';
           },
         },
         {
@@ -96,14 +96,16 @@ export const TableActionInitializers = {
       },
       visible: () => {
         const collection = useCollection();
-        return (collection as any).template !== 'view';
+        const schema = useFieldSchema();
+        return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
       },
     },
     {
       type: 'divider',
       visible: () => {
         const collection = useCollection();
-        return (collection as any).template !== 'view';
+        const schema = useFieldSchema();
+        return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
       },
     },
     {

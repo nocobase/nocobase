@@ -9,6 +9,8 @@ import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
+import { Preview } from '../preview';
+import { isShowFilePicker } from './InputRecordPicker';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
@@ -32,16 +34,21 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   // const field = useField<Field>();
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
-  const [popoverVisible, setPopoverVisible] = useState<boolean>();
   const { getField } = useCollection();
   const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const showFilePicker = isShowFilePicker(labelUiSchema);
   const { snapshot } = useActionContext();
   const isTagsMode = fieldSchema['x-component-props']?.mode === 'tags';
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
+
+  if (showFilePicker) {
+    return collectionField ? <Preview {...props} /> : null;
+  }
+
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
       const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
@@ -49,10 +56,8 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
-            {snapshot ? (
+            {snapshot || isTagsMode ? (
               text
-            ) : isTagsMode ? (
-              <Typography.Text underline>{text}</Typography.Text>
             ) : (
               <a
                 onClick={(e) => {

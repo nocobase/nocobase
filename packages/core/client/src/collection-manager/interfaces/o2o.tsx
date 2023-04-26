@@ -117,12 +117,15 @@ export const o2o: IField = {
       },
     },
   },
-  availableTypes:['hasOne'],
+  availableTypes: ['hasOne'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -173,7 +176,7 @@ export const o2o: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -249,6 +252,7 @@ export const o2o: IField = {
       // },
     ],
   },
+  invariable: true,
 };
 
 export const oho: IField = {
@@ -298,6 +302,9 @@ export const oho: IField = {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
     }
   },
   properties: {
@@ -348,7 +355,7 @@ export const oho: IField = {
                   type: 'string',
                   title: '{{t("Target collection")}}',
                   required: true,
-                  'x-reactions': ['{{useAsyncDataSource(loadCollections)}}'],
+                  'x-reactions': ['{{useAsyncDataSource(loadCollections, ["file"])}}'],
                   'x-decorator': 'FormItem',
                   'x-component': 'Select',
                   'x-disabled': '{{ !createOnly }}',
@@ -416,6 +423,7 @@ export const oho: IField = {
       // },
     ],
   },
+  invariable: true,
 };
 
 export const obo: IField = {
@@ -459,11 +467,27 @@ export const obo: IField = {
       },
     },
   },
-  schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+  schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
+
+      // 预览文件时需要的参数
+      schema['x-component-props']['size'] = 'small';
+    }
+
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+    }
+
+    if (targetCollection?.template === 'file') {
+      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
+      fieldNames.label = 'preview';
+      schema['x-component-props']['fieldNames'] = fieldNames;
+      schema['x-component-props'].quickUpload = true;
+      schema['x-component-props'].selectFile = true;
     }
   },
   properties: {
@@ -583,4 +607,5 @@ export const obo: IField = {
       // },
     ],
   },
+  invariable: true,
 };

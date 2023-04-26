@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Modal } from 'antd';
+import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -12,7 +12,7 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
-export const ActionModal: ComposedActionDrawer = observer((props) => {
+export const ActionModal: ComposedActionDrawer<ModalProps> = observer((props) => {
   const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
   const { visible, setVisible, openSize = 'large' } = useActionContext();
   const actualWidth = width ?? openSizeWidthMap.get(openSize);
@@ -35,7 +35,7 @@ export const ActionModal: ComposedActionDrawer = observer((props) => {
           <Modal
             width={actualWidth}
             title={field.title}
-            {...others}
+            {...(others as ModalProps)}
             destroyOnClose
             visible={visible}
             onCancel={() => setVisible(false, true)}

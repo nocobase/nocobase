@@ -4,9 +4,12 @@ import { namespace } from '..';
 
 export default async function (ctx: Context, next: Next) {
   const { values } = ctx.action.params;
-  const account = values?.account || values?.email || values?.phone
+  const account = values?.account || values?.email || values?.phone;
   if (!account) {
-    return ctx.throw(400, { code: 'InvalidUserData', message: ctx.t('Please fill in your account', { ns: namespace }) });
+    return ctx.throw(400, {
+      code: 'InvalidUserData',
+      message: ctx.t('Please fill in your account', { ns: namespace }),
+    });
   }
   const User = ctx.db.getCollection('users');
   const user = await User.model.findOne<any>({
@@ -15,7 +18,7 @@ export default async function (ctx: Context, next: Next) {
         email: account,
         phone: account,
         account: account,
-      }
+      },
     },
   });
 

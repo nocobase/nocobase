@@ -5,7 +5,7 @@ export const icon: IField = {
   name: 'icon',
   type: 'object',
   group: 'basic',
-  order: 8,
+  order: 10,
   title: '{{t("Icon")}}',
   default: {
     type: 'string',
@@ -16,7 +16,7 @@ export const icon: IField = {
       'x-component': 'IconPicker',
     },
   },
-  availableTypes:['string'],
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,

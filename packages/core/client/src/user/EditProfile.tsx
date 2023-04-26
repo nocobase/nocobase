@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   useActionContext,
   useCurrentUserContext,
-  useRequest
+  useRequest,
 } from '../';
 import { useAPIClient } from '../api-client';
 
