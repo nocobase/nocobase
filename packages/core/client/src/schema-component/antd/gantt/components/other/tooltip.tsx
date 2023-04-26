@@ -125,10 +125,9 @@ export const StandardTooltipContent: React.FC<{
         {task.name}: {getYmd(task.start)} ~ {getYmd(task.end)}
       </b>
       {task.end.getTime() - task.start.getTime() !== 0 && (
-        <p className={cx(tooltipDefaultContainerParagraph)}>{`Duration: ${~~(
-          (task.end.getTime() - task.start.getTime()) /
-          (1000 * 60 * 60 * 24)
-        )} day(s)`}</p>
+        <p className={cx(tooltipDefaultContainerParagraph)}>{`Duration: ${
+          Math.round(((task.end.getTime() - task.start.getTime()) / (1000 * 60 * 60 * 24)) * 10) / 10
+        } day(s)`}</p>
       )}
 
       <p className={cx(tooltipDefaultContainerParagraph)}>{!!task.progress && `Progress: ${task.progress}%`}</p>
