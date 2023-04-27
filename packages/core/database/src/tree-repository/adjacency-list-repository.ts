@@ -30,7 +30,7 @@ export class AdjacencyListRepository extends Repository {
     const childIds = childNodes.map((node) => node[primaryKey]);
 
     const childInstances = await super.find({
-      ...lodash.omit(options, ['limit', 'offset']),
+      ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
       filter: {
         [primaryKey]: childIds,
       },
@@ -38,12 +38,12 @@ export class AdjacencyListRepository extends Repository {
 
     const nodeMap = {};
     for (const node of [...parentNodes, ...childInstances]) {
-      nodeMap[node[primaryKey]] = node;
+      nodeMap[`${node[primaryKey]}`] = node;
     }
 
     for (const node of childNodes) {
-      const parentNode = nodeMap[node[foreignKey]];
-      const childNode = nodeMap[node[primaryKey]];
+      const parentNode = nodeMap[`${node[foreignKey]}`];
+      const childNode = nodeMap[`${node[primaryKey]}`];
 
       if (!parentNode) {
         throw new Error(`Cannot find parent node ${node[foreignKey]}`);
@@ -57,28 +57,27 @@ export class AdjacencyListRepository extends Repository {
       parentNode.getDataValue(childrenKey).push(childNode);
     }
 
-    this.addIndexToTree(parentNodes);
+    this.addIndex(parentNodes);
     return parentNodes;
   }
 
-  private addIndexToTree(treeArr, index = '') {
-    for (let i = 0; i < treeArr.length; i++) {
-      // 遍历tree数组
-      const tree = treeArr[i]; // 取出当前节点
-      const children = tree.getDataValue('children'); // 取出当前节点的children
-      // tree.index = `${index}${i}`; // 给当前节点增加index属性
+  private addIndex(treeArray) {
+    function traverse(node, index) {
+      node.setDataValue('__index', `${index}`);
+      const children = node.getDataValue('children');
 
-      console.log({ index: `${index}${i}` });
-
-      tree.setDataValue('__index', `${index}${i}`);
-
-      if (children) {
-        // 如果children存在
-        this.addIndexToTree(children, `${tree.index}.children.`); // 递归遍历子节点，并给它们增加index属性
+      if (children && children.length > 0) {
+        children.forEach((child, i) => {
+          traverse(child, `${index}.children.${i}`);
+        });
       }
     }
-    return treeArr;
+
+    treeArray.forEach((tree, i) => {
+      traverse(tree, i);
+    });
   }
+
   private querySQL(rootIds, collection) {
     const { treeChildrenField, treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
