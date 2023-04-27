@@ -19,6 +19,12 @@ export const BlockInitializers = {
           component: 'TableBlockInitializer',
         },
         {
+          key: 'List',
+          type: 'item',
+          title: '{{t("List")}}',
+          component: 'ListBlockInitializer',
+        },
+        {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',
@@ -29,12 +35,6 @@ export const BlockInitializers = {
           type: 'item',
           title: '{{t("Details")}}',
           component: 'DetailsBlockInitializer',
-        },
-        {
-          key: 'List',
-          type: 'item',
-          title: '{{t("List")}}',
-          component: 'ListBlockInitializer',
         },
         {
           key: 'calendar',
