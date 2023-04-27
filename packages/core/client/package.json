@@ -23,6 +23,7 @@
     "cron-parser": "^4.6.0",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
+    "handlebars": "^4.7.7",
     "i18next": "^22.4.9",
     "i18next-http-backend": "^2.1.1",
     "json-templates": "^4.2.0",

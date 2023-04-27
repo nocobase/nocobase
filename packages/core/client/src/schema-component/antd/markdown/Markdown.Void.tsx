@@ -3,6 +3,7 @@ import { Button, Input as AntdInput, Space, Spin } from 'antd';
 import cls from 'classnames';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import handlebars from 'handlebars';
 import { useDesignable } from '../../hooks/useDesignable';
 import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { useParseMarkdown } from './util';
@@ -47,8 +48,16 @@ export const MarkdownVoid: any = observer((props: any) => {
   const schema = useFieldSchema();
   const { dn } = useDesignable();
   const { onSave, onCancel } = props;
-  const { html, loading } = useParseMarkdown(content);
-  if (loading) {
+  const markDown = useParseMarkdown(content);
+  let html = markDown.html;
+  if (field?.form?.values) {
+    try {
+      html = handlebars.compile(html)(field.form.values);
+    } catch {
+      console.log('templat解析错误');
+    }
+  }
+  if (markDown.loading) {
     return <Spin />;
   }
   return field?.editable ? (
