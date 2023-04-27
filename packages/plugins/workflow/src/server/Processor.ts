@@ -5,6 +5,7 @@ import { parse } from '@nocobase/utils';
 import { Transaction, Transactionable } from 'sequelize';
 import Plugin from '.';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { Runner } from './instructions';
 import ExecutionModel from './models/Execution';
 import FlowNodeModel from './models/FlowNode';
 import JobModel from './models/Job';
@@ -131,7 +132,7 @@ export default class Processor {
     }
   }
 
-  private async exec(instruction: Function, node: FlowNodeModel, prevJob) {
+  private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
     let job;
     try {
       // call instruction to get result and status
@@ -308,10 +309,21 @@ export default class Processor {
       systemFns[name] = fn.bind(scope);
     }
 
+    const $scopes = {};
+    if (node) {
+      for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+        const instruction = this.options.plugin.instructions.get(n.type);
+        if (typeof instruction.getScope === 'function') {
+          $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
+        }
+      }
+    }
+
     return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
       $system: systemFns,
+      $scopes,
     };
   }
 

@@ -24,6 +24,7 @@ import { useFlowContext } from '../FlowContext';
 import calculation from './calculation';
 import condition from './condition';
 import parallel from './parallel';
+import loop from './loop';
 import delay from './delay';
 
 import manual from './manual';
@@ -55,9 +56,10 @@ export interface Instruction {
 
 export const instructions = new Registry<Instruction>();
 
+instructions.register('calculation', calculation);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
-instructions.register('calculation', calculation);
+instructions.register('loop', loop);
 instructions.register('delay', delay);
 
 instructions.register('manual', manual);

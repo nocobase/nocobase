@@ -95,11 +95,11 @@ export const branchClass = css`
   flex-direction: column;
   align-items: center;
   position: relative;
+  min-width: 20em;
   padding: 0 2em;
 
   .workflow-node-list {
     flex-grow: 1;
-    min-width: 20em;
   }
 
   .workflow-branch-lines {

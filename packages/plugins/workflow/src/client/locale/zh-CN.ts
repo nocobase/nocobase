@@ -115,6 +115,8 @@ export default {
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
   'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
+  Loop: '循环',
+  'Loop target': '循环对象',
   Delay: '延时',
   Duration: '时长',
   'End Status': '到时状态',

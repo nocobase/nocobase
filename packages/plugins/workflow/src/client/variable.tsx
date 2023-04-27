@@ -17,7 +17,7 @@ const VariableTypes = [
   {
     title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
     value: '$jobsMapByNodeId',
-    options(types) {
+    useOptions(types) {
       const current = useNodeContext();
       const upstreams = useAvailableUpstreams(current);
       const options: VariableOption[] = [];
@@ -39,7 +39,7 @@ const VariableTypes = [
   {
     title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
     value: '$context',
-    options(types) {
+    useOptions(types) {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
       return trigger?.getOptions?.(workflow.config, types) ?? null;
@@ -48,7 +48,7 @@ const VariableTypes = [
   {
     title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
     value: '$system',
-    options(types) {
+    useOptions(types) {
       return [
         ...(!types || types.includes('date')
           ? [
@@ -138,7 +138,7 @@ export function filterTypedFields(fields, types, depth = 1) {
 export function useWorkflowVariableOptions(types?) {
   const compile = useCompile();
   const options = VariableTypes.map((item: any) => {
-    const opts = typeof item.options === 'function' ? item.options(types).filter(Boolean) : item.options;
+    const opts = typeof item.useOptions === 'function' ? item.useOptions(types).filter(Boolean) : null;
     return {
       label: compile(item.title),
       value: item.value,
@@ -214,8 +214,9 @@ function useNormalizedFields(collectionName) {
 export function useCollectionFieldOptions(options): VariableOption[] {
   const { fields, collection, types, depth = 1 } = options;
   const compile = useCompile();
-  const normalizedFields = fields ?? useNormalizedFields(collection);
-  const result: VariableOption[] = filterTypedFields(normalizedFields, types, depth)
+  const normalizedFields = useNormalizedFields(collection);
+  const computedFields = fields ?? normalizedFields;
+  const result: VariableOption[] = filterTypedFields(computedFields, types, depth)
     .filter((field) => !isAssociationField(field) || depth)
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);
@@ -225,7 +226,7 @@ export function useCollectionFieldOptions(options): VariableOption[] {
         value: field.name,
         children:
           isAssociationField(field) && depth
-            ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
+            ? arguments.callee({ collection: field.target, types, depth: depth - 1 })
             : null,
       };
     });
