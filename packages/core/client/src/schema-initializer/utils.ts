@@ -958,7 +958,9 @@ export const createListBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize: 10,
+        appends: [],
       },
+      appendsOnDemand: true,
       ...others,
     },
     'x-component': 'CardItem',
@@ -994,6 +996,9 @@ export const createListBlockSchema = (options) => {
                 type: 'void',
                 'x-component': 'Grid',
                 'x-initializer': formItemInitializers,
+                'x-initializer-props': {
+                  useProps: '{{ useListItemInitializerProps }}',
+                },
                 properties: {},
               },
               actionBar: {

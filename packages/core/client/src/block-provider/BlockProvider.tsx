@@ -19,6 +19,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../coll
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
+import _ from 'lodash';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -93,15 +94,17 @@ export const useResourceAction = (props, opts = {}) => {
    */
   const { resource, action, fieldName: tableFieldName } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
   const record = useRecord();
 
-  if (!Object.keys(params).includes('appends') && appends?.length) {
-    params['appends'] = appends;
+  if (!Object.keys(params).includes('appends')) {
+    const appends = fields?.filter((field) => field.target).map((field) => field.name);
+    if (appends?.length) {
+      params['appends'] = appends;
+    }
   }
   const result = useRequest(
     snapshot
@@ -145,8 +148,31 @@ export const MaybeCollectionProvider = (props) => {
 };
 
 const BlockRequestProvider = (props) => {
+  const { params, appendsOnDemand } = props;
   const field = useField();
   const resource = useBlockResource();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+
+  const patchAppends = (name, action) => {
+    // appends on demand
+    if (!appendsOnDemand) return;
+
+    const appends = new Set(params?.appends || []);
+    action === 'add' ? appends.add(name) : appends.delete(name);
+    field.decoratorProps.params = {
+      ...field.decoratorProps.params,
+      appends: [...appends.keys()],
+    };
+    _.set(fieldSchema['x-decorator-props'], 'params.appends', field.decoratorProps?.params?.appends);
+    dn.emit('patch', {
+      schema: {
+        'x-uid': fieldSchema['x-uid'],
+        'x-decorator-props': fieldSchema['x-decorator-props'],
+      },
+    });
+  };
+
   const service = useResourceAction(
     { ...props, resource },
     {
@@ -155,7 +181,9 @@ const BlockRequestProvider = (props) => {
   );
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider
+      value={{ block: props.block, props, field, service, resource, patchAppends, __parent }}
+    >
       {props.children}
     </BlockRequestContext.Provider>
   );
