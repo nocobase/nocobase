@@ -103,36 +103,53 @@ export const o2m: IField = {
         const association = `${field.collectionName}.${field.name}`;
         schema.type = 'void';
         schema.properties = {
-          block: {
-            type: 'void',
-            'x-decorator': 'SubFormProvider',
-            'x-decorator-props': {
-              collection: field.target,
-              association: association,
-              resource: association,
-              action: action,
-              fieldName: field.name,
-              readPretty,
-            },
-            'x-component': 'CardItem',
-            'x-component-props': {
-              bordered: true,
-            },
-            properties: {
-              [field.name]: {
-                type: 'object',
-                'x-component': 'FormV2',
-                'x-component-props': {
-                  useProps: '{{ useSubFormProps }}',
-                },
-                properties: {
-                  __form_grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'FormItemInitializers',
-                    properties: {},
+          array: {
+            type: 'array',
+            'x-component': 'ArrayCards',
+            default:[{}],
+            items: {
+              type: 'object',
+              properties: {
+                block: {
+                  type: 'void',
+                  'x-decorator': 'SubFormProvider',
+                  'x-decorator-props': {
+                    collection: field.target,
+                    association: association,
+                    resource: association,
+                    action: action,
+                    fieldName: field.name,
+                    readPretty,
+                  },
+                  'x-component': 'CardItem',
+                  'x-component-props': {
+                    bordered: true,
+                  },
+                  properties: {
+                    [field.name]: {
+                      type: 'object',
+                      'x-component': 'FormV2',
+                      'x-component-props': {
+                        useProps: '{{ useSubFormProps }}',
+                      },
+                      properties: {
+                        __form_grid: {
+                          type: 'void',
+                          'x-component': 'Grid',
+                          'x-initializer': 'FormItemInitializers',
+                          properties: {},
+                        },
+                      },
+                    },
                   },
                 },
+              },
+            },
+            properties: {
+              addition: {
+                type: 'void',
+                title: 'Add new',
+                'x-component': 'ArrayCards.Addition',
               },
             },
           },
