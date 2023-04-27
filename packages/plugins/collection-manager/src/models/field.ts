@@ -115,7 +115,7 @@ export class FieldModel extends MagicAttributeModel {
 
     let existsUniqueConstraint;
 
-    let constraintName = `${tableName}_${field.name}_uk`;
+    const constraintName = `${tableName}_${field.name}_uk`;
 
     if (existUniqueIndex) {
       const existsUniqueConstraints = await queryInterface.showConstraint(
@@ -162,6 +162,11 @@ export class FieldModel extends MagicAttributeModel {
     }
 
     const field = collection.getField(this.get('name'));
+
+    // overriding field should not sync default value
+    if (field.get('overriding')) {
+      return;
+    }
 
     const queryInterface = collection.db.sequelize.getQueryInterface();
 

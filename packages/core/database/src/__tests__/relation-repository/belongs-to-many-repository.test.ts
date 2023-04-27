@@ -157,7 +157,7 @@ describe('belongs to many with target key', function () {
   });
 
   test('destroy with target key and filter', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
         status: 'published',
@@ -486,7 +486,7 @@ describe('belongs to many', () => {
 
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
 
-    let t1 = await PostTagRepository.findOne({
+    const t1 = await PostTagRepository.findOne({
       filter: {
         name: 't1',
       },
@@ -571,7 +571,7 @@ describe('belongs to many', () => {
   });
 
   test('add', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: { name: 't1' },
     });
 
@@ -582,7 +582,7 @@ describe('belongs to many', () => {
     const PostTagRepository = new BelongsToManyRepository(Post, 'tags', p1.id);
     await PostTagRepository.add([[t1.id, { tagged_at: '123' }]]);
 
-    let p1Tag = await PostTagRepository.findOne();
+    const p1Tag = await PostTagRepository.findOne();
     expect(p1Tag.posts_tags.tagged_at).toEqual('123');
   });
 
@@ -603,7 +603,7 @@ describe('belongs to many', () => {
 
     await PostTagRepository.set([t1.id]);
 
-    let p1Tags = await PostTagRepository.find();
+    const p1Tags = await PostTagRepository.find();
     expect(p1Tags.length).toEqual(1);
 
     await PostTagRepository.set([[t1.id, { tagged_at: '999' }]]);
@@ -618,7 +618,7 @@ describe('belongs to many', () => {
   });
 
   test('find by pk', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
       },
@@ -646,7 +646,7 @@ describe('belongs to many', () => {
   });
 
   test('toggle', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: { name: 't1' },
     });
 
@@ -664,7 +664,7 @@ describe('belongs to many', () => {
   });
 
   test('remove', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: { name: 't1' },
     });
 
@@ -682,7 +682,7 @@ describe('belongs to many', () => {
   });
 
   test('destroy all', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
       },
@@ -709,7 +709,7 @@ describe('belongs to many', () => {
   });
 
   test('destroy by id and filter', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
         status: 'published',
@@ -746,7 +746,7 @@ describe('belongs to many', () => {
   });
 
   test('destroy with id', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
       },
@@ -774,7 +774,7 @@ describe('belongs to many', () => {
   });
 
   test('transaction', async () => {
-    let t1 = await Tag.repository.create({
+    const t1 = await Tag.repository.create({
       values: {
         name: 't1',
       },

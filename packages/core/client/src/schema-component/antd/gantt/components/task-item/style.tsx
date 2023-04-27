@@ -1,7 +1,6 @@
-
 import { css } from '@emotion/css';
 
-export const barLabel =css`
+export const barLabel = css`
   fill: #fff;
   text-anchor: middle;
   font-weight: 400;
@@ -12,8 +11,8 @@ export const barLabel =css`
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-`
-export const projectLabel =css`
+`;
+export const projectLabel = css`
   fill: #130d0d;
   font-weight: 500;
   font-size: 0.9em;
@@ -24,8 +23,8 @@ export const projectLabel =css`
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-`
-export const barLabelOutside =css`
+`;
+export const barLabelOutside = css`
   fill: #555;
   text-anchor: start;
   -webkit-touch-callout: none;
@@ -34,4 +33,4 @@ export const barLabelOutside =css`
   -ms-user-select: none;
   user-select: none;
   pointer-events: none;
-`
+`;

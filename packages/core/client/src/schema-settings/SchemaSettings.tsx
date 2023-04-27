@@ -382,7 +382,7 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
 };
 
 SchemaSettings.Item = function Item(props) {
-  let { eventKey } = props;
+  const { eventKey } = props;
   const key = useMemo(() => uid(), []);
   return (
     <Menu.Item
@@ -1132,7 +1132,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment'].includes(collectionField?.interface) &&
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
     !isSystemField(collectionField, getInterface)
   );
 };

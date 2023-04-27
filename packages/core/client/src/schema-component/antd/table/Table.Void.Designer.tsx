@@ -195,7 +195,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name}/>
+      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

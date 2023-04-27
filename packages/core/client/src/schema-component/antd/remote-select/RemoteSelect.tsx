@@ -156,7 +156,7 @@ const InternalRemoteSelect = connect(
     const getOptionsByFieldNames = useCallback(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
-          let value = item[fieldNames[key]];
+          const value = item[fieldNames[key]];
           if (value) {
             // support hidden, disabled, etc.
             obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =

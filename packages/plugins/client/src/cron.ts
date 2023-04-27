@@ -1,5 +1,5 @@
 export const getCronLocale = (lang: string) => {
-  let packageName = '@nocobase/client';
+  const packageName = '@nocobase/client';
   let locale = null;
   try {
     const file = `${packageName}/src/locale`;

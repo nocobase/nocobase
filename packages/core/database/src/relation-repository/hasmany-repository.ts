@@ -22,7 +22,7 @@ interface IHasManyRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(options?: TK | DestroyOptions): Promise<Boolean>;
+  destroy(options?: TK | DestroyOptions): Promise<boolean>;
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
@@ -59,7 +59,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
       transaction,
     };
   })
-  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);

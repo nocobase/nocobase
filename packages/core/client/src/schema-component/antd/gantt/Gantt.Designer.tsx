@@ -61,7 +61,7 @@ export const GanttDesigner = () => {
       />
       <SchemaSettings.SelectItem
         title={t('Time scale')}
-        value={fieldNames.range||'day'}
+        value={fieldNames.range || 'day'}
         options={[
           { label: compile('{{t("Hour")}}'), value: 'hour', color: 'orange' },
           { label: compile('{{t("Quarter of day")}}'), value: 'quarterDay', color: 'default' },
@@ -127,7 +127,7 @@ export const GanttDesigner = () => {
           dn.refresh();
         }}
       />
-       <SchemaSettings.SelectItem
+      <SchemaSettings.SelectItem
         title={t('Progress field')}
         value={fieldNames.progress}
         options={useOptions('float')}

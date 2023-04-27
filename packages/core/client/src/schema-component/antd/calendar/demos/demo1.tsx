@@ -5,7 +5,7 @@ import {
   AntdSchemaComponentProvider,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 import defaultValues from './defaultValues';

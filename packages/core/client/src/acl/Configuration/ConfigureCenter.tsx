@@ -19,7 +19,7 @@ const getParentKeys = (tree, func, path = []) => {
   return [];
 };
 const getChildrenKeys = (data = [], arr = []) => {
-  for (let item of data) {
+  for (const item of data) {
     arr.push(item.key);
     if (item.children && item.children.length) getChildrenKeys(item.children, arr);
   }

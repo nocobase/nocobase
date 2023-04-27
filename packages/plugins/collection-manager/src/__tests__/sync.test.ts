@@ -34,7 +34,7 @@ describe('sync collection', () => {
       },
     });
 
-    let tableInfo1 = await getTableInfo(c1.model.tableName);
+    const tableInfo1 = await getTableInfo(c1.model.tableName);
     expect(tableInfo1.f1).toBeTruthy();
 
     c1.setField('f2', {
@@ -50,7 +50,7 @@ describe('sync collection', () => {
       },
     });
 
-    let tableInfo2 = await getTableInfo(c1.model.tableName);
+    const tableInfo2 = await getTableInfo(c1.model.tableName);
     expect(tableInfo2.f2).toBeTruthy();
     expect(tableInfo2.f1).toBeTruthy();
   });

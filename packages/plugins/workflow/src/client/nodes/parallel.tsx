@@ -1,16 +1,14 @@
-import React, { useState } from "react";
-import { css, cx } from "@emotion/css";
+import React, { useState } from 'react';
+import { css, cx } from '@emotion/css';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Tooltip } from "antd";
+import { Button, Tooltip } from 'antd';
 
-import { NodeDefaultView } from ".";
-import { Branch } from "../Branch";
+import { NodeDefaultView } from '.';
+import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
-import { branchBlockClass, nodeSubtreeClass } from "../style";
-import { lang, NAMESPACE } from "../locale";
-import { RadioWithTooltip } from "../components/RadioWithTooltip";
-
-
+import { branchBlockClass, nodeSubtreeClass } from '../style';
+import { lang, NAMESPACE } from '../locale';
+import { RadioWithTooltip } from '../components/RadioWithTooltip';
 
 export default {
   title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
@@ -39,23 +37,26 @@ export default {
             label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed', { ns: "${NAMESPACE}" })}}`,
           },
-        ]
+        ],
       },
-      default: 'all'
-    }
+      default: 'all',
+    },
   },
-  view: {
-
-  },
+  view: {},
   render(data) {
-    const { id, config: { mode } } = data;
+    const {
+      id,
+      config: { mode },
+    } = data;
     const { workflow, nodes } = useFlowContext();
-    const branches = nodes.reduce((result, node) => {
-      if (node.upstreamId === id && node.branchIndex != null) {
-        return result.concat(node);
-      }
-      return result;
-    }, []).sort((a, b) => a.branchIndex - b.branchIndex);
+    const branches = nodes
+      .reduce((result, node) => {
+        if (node.upstreamId === id && node.branchIndex != null) {
+          return result.concat(node);
+        }
+        return result;
+      }, [])
+      .sort((a, b) => a.branchIndex - b.branchIndex);
     const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
 
     const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
@@ -74,26 +75,26 @@ export default {
                 from={data}
                 branchIndex={(lastBranchHead ? lastBranchHead.branchIndex : 0) + i + 1}
                 controller={
-                  branches.length + i > 1
-                    ? (
-                      <div className={css`
+                  branches.length + i > 1 ? (
+                    <div
+                      className={css`
                         padding-top: 2em;
 
-                        > button{
-                          .anticon{
-                            transform: rotate(45deg)
+                        > button {
+                          .anticon {
+                            transform: rotate(45deg);
                           }
                         }
-                      `}>
-                        <Button
-                          shape="circle"
-                          icon={<PlusOutlined />}
-                          onClick={() => setBranchCount(branchCount - 1)}
-                          disabled={workflow.executed}
-                        />
-                      </div>
-                    )
-                    : null
+                      `}
+                    >
+                      <Button
+                        shape="circle"
+                        icon={<PlusOutlined />}
+                        onClick={() => setBranchCount(branchCount - 1)}
+                        disabled={workflow.executed}
+                      />
+                    </div>
+                  ) : null
                 }
               />
             ))}
@@ -104,9 +105,12 @@ export default {
               height: 2em;
             `}
           >
-            <Tooltip title={lang('Add branch')} className={css`
-              visibility: ${workflow.executed ? 'hidden' : 'visible'}
-            `}>
+            <Tooltip
+              title={lang('Add branch')}
+              className={css`
+                visibility: ${workflow.executed ? 'hidden' : 'visible'};
+              `}
+            >
               <Button
                 icon={<PlusOutlined />}
                 className={css`
@@ -114,7 +118,7 @@ export default {
                   top: calc(50% - 1px);
                   transform: translateX(-50%) rotate(45deg);
 
-                  .anticon{
+                  .anticon {
                     transform: rotate(-45deg);
                   }
                 `}
@@ -125,9 +129,9 @@ export default {
           </div>
         </div>
       </NodeDefaultView>
-    )
+    );
   },
   components: {
-    RadioWithTooltip
-  }
+    RadioWithTooltip,
+  },
 };

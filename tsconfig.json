@@ -32,6 +32,9 @@
       "@nocobase/preset-*": [
         "packages/presets/*/src"
       ],
+      "@nocobase/evaluators/client": [
+        "packages/core/evaluators/src/client"
+      ],
       "@nocobase/utils/client": [
         "packages/core/utils/src/client"
       ],

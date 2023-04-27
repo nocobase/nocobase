@@ -74,7 +74,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -100,11 +100,12 @@ const CurrentFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   // updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -180,7 +181,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -206,11 +207,12 @@ const InheritFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -357,15 +359,20 @@ export const CollectionFields = (props) => {
   ];
 
   dataSource.push(
-    ...inherits.map((key) => {
-      const collection = getCollection(key);
-      return {
-        key,
-        title: `${t('Inherited fields')} - ` + compile(collection.title),
-        inherit: true,
-        fields: collection.fields,
-      };
-    }),
+    ...inherits
+      .map((key) => {
+        const collection = getCollection(key);
+        if (!collection) {
+          return;
+        }
+        return {
+          key,
+          title: `${t('Inherited fields')} - ` + compile(collection?.title),
+          inherit: true,
+          fields: collection?.fields || [],
+        };
+      })
+      .filter(Boolean),
   );
 
   const resourceActionProps = {

@@ -6,7 +6,7 @@ import {
   Form,
   SchemaComponent,
   SchemaComponentProvider,
-  useAPIClient
+  useAPIClient,
 } from '@nocobase/client';
 import { Card, Space } from 'antd';
 import React from 'react';

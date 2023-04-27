@@ -11,7 +11,7 @@ export default {
       name: 'usersJobs',
       target: 'users_jobs',
       foreignKey: 'jobId',
-      onDelete: 'CASCADE'
-    }
-  ]
+      onDelete: 'CASCADE',
+    },
+  ],
 };

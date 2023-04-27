@@ -18,13 +18,13 @@ export default function mermaidPlugin(md: MarkdownIt, options: any) {
   }
 
   // Store reference to original renderer.
-  let defaultFenceRenderer = md.renderer.rules.fence;
+  const defaultFenceRenderer = md.renderer.rules.fence;
 
   // Render custom code types as SVGs, letting the fence parser do all the heavy lifting.
   function customFenceRenderer(tokens: any[], idx: number, options: any, env: any, slf: any) {
-    let token = tokens[idx];
-    let info = token.info.trim();
-    let langName = info ? getLangName(info) : '';
+    const token = tokens[idx];
+    const info = token.info.trim();
+    const langName = info ? getLangName(info) : '';
 
     if (['mermaid', '{mermaid}'].indexOf(langName) === -1) {
       if (defaultFenceRenderer !== undefined) {
@@ -34,8 +34,8 @@ export default function mermaidPlugin(md: MarkdownIt, options: any) {
       return '';
     }
 
-    let imageHTML: string = '';
-    let imageAttrs: string[][] = [];
+    let imageHTML = '';
+    const imageAttrs: string[][] = [];
 
     // Create element to render into
     const element = document.createElement('div');
@@ -49,7 +49,7 @@ export default function mermaidPlugin(md: MarkdownIt, options: any) {
         token.content,
         (html: string) => {
           // We need to forcibly extract the max-width/height attributes to set on img tag
-          let svg = document.getElementById(container_id);
+          const svg = document.getElementById(container_id);
           if (svg !== null) {
             imageAttrs.push(['style', `max-width:${svg.style.maxWidth};max-height:${svg.style.maxHeight}`]);
           }

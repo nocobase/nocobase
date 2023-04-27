@@ -1,6 +1,6 @@
-import React, { SyntheticEvent, useRef, useEffect } from "react";
+import React, { SyntheticEvent, useRef, useEffect } from 'react';
 import { cx } from '@emotion/css';
-import {scrollWrapper,horizontalScroll} from './style'
+import { scrollWrapper, horizontalScroll } from './style';
 
 export const HorizontalScroll: React.FC<{
   scroll: number;
@@ -21,15 +21,13 @@ export const HorizontalScroll: React.FC<{
     <div
       dir="ltr"
       style={{
-        margin: rtl
-          ? `0px ${taskListWidth}px 0px 0px`
-          : `0px 0px 0px ${taskListWidth}px`,
+        margin: rtl ? `0px ${taskListWidth}px 0px 0px` : `0px 0px 0px ${taskListWidth}px`,
       }}
-      className={`${cx(scrollWrapper)} gantt-horizontal-scoll` }
+      className={`${cx(scrollWrapper)} gantt-horizontal-scoll`}
       onScroll={onScroll}
       ref={scrollRef}
     >
-      <div style={{ width: svgWidth  }} className={cx(horizontalScroll)} />
+      <div style={{ width: svgWidth }} className={cx(horizontalScroll)} />
     </div>
   );
 };

@@ -115,7 +115,11 @@ export const EditSubFieldAction = (props) => {
       >
         {t('Edit')}
       </a>
-      <SchemaComponent schema={schema} components={{ ...components, ArrayTable }} scope={{ useUpdateCollectionField }} />
+      <SchemaComponent
+        schema={schema}
+        components={{ ...components, ArrayTable }}
+        scope={{ useUpdateCollectionField }}
+      />
     </ActionContext.Provider>
   );
 };

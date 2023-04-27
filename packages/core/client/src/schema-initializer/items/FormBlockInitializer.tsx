@@ -1,7 +1,7 @@
-import React from "react";
+import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
-import { createFormBlockSchema } from "../utils";
-import { DataBlockInitializer } from "./DataBlockInitializer";
+import { createFormBlockSchema } from '../utils';
+import { DataBlockInitializer } from './DataBlockInitializer';
 
 export const FormBlockInitializer = (props) => {
   return (
