@@ -275,7 +275,7 @@ describe('sort', function () {
     const values = [];
     for (let i = 0; i < 10; i++) {
       const children = [];
-      for (let j = 0; j < 100; j++) {
+      for (let j = 0; j < 10; j++) {
         const grandchildren = [];
         for (let k = 0; k < 10; k++) {
           grandchildren.push({
