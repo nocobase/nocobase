@@ -1,7 +1,7 @@
 import { Context } from '@nocobase/actions';
 import { Auth } from '../auth';
 import { JwtOptions, JwtService } from './jwt-service';
-import { Repository } from '@nocobase/database';
+import { Collection, Model } from '@nocobase/database';
 
 /**
  * BaseAuth
@@ -9,19 +9,27 @@ import { Repository } from '@nocobase/database';
  */
 export class BaseAuth extends Auth {
   protected jwt: JwtService;
-  protected userRepository: Repository;
+  protected userCollection: Collection;
 
   constructor(
     options: {
-      jwt: JwtOptions;
+      jwt?: JwtOptions;
       [key: string]: any;
     },
-    userRepositoy: Repository,
+    userCollection: Collection,
     ctx: Context,
   ) {
     super(options, ctx);
-    this.userRepository = userRepositoy;
+    this.userCollection = userCollection;
     this.jwt = new JwtService(options.jwt);
+  }
+
+  set user(user: Model) {
+    this.ctx.state.currentUser = user;
+  }
+
+  get user() {
+    return this.ctx.state.currentUser;
   }
 
   async check() {
@@ -31,7 +39,7 @@ export class BaseAuth extends Auth {
     }
     try {
       const { userId } = await this.jwt.decode(token);
-      const user = await this.userRepository.findOne({
+      const user = await this.userCollection.repository.findOne({
         filter: {
           id: userId,
         },
@@ -43,7 +51,25 @@ export class BaseAuth extends Auth {
     }
   }
 
-  async getIdentity() {
-    return this.ctx.state.currentUser;
+  async validate(): Promise<Model> {
+    return null;
+  }
+
+  async signIn() {
+    try {
+      const user = await this.validate();
+      if (!user) {
+        this.ctx.throw(401, 'Unauthorized');
+      }
+      const token = this.jwt.sign({
+        id: user.id,
+      });
+      return {
+        user,
+        token,
+      };
+    } catch (err) {
+      this.ctx.throw(500, err.message);
+    }
   }
 }

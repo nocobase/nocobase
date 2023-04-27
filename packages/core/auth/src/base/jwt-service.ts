@@ -6,14 +6,19 @@ export interface JwtOptions {
 }
 
 export class JwtService {
-  constructor(protected options: JwtOptions) {}
+  constructor(protected options: JwtOptions) {
+    this.options = options || {
+      secret: process.env.APP_KEY,
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    };
+  }
 
   private expiresIn() {
-    return this.options.expiresIn || process.env.JWT_EXPIRES_IN || '7d';
+    return this.options.expiresIn;
   }
 
   private secret() {
-    return this.options.secret || process.env.APP_KEY;
+    return this.options.secret;
   }
 
   sign(payload: any) {

@@ -24,7 +24,10 @@ export class AuthManager {
     this.app = app;
     this.options = options;
     this.app.resourcer.use(this.middleware, { tag: 'authCheck' });
-    this.app.resourcer.registerActions(actions);
+    this.app.resource({
+      name: 'auth',
+      actions,
+    });
   }
 
   setStorer(storer: Storer) {
@@ -41,6 +44,10 @@ export class AuthManager {
    */
   registerTypes(authType: string, auth: AuthExtend<Auth>) {
     this.authTypes.register(authType, auth);
+  }
+
+  listTypes() {
+    return this.authTypes.getKeys();
   }
 
   /**
@@ -66,13 +73,13 @@ export class AuthManager {
    * @description Auth middleware, used to check the authentication status.
    */
   middleware() {
-    return async (ctx: Context, next: Next) => {
+    return async (ctx: Context & { auth: Auth }, next: Next) => {
       const name = ctx.get(this.options.authKey);
       try {
         ctx.auth = await ctx.app.authManager.get(name, ctx);
         const user = await ctx.auth.check();
         if (user) {
-          ctx.state.currentUser = user;
+          ctx.auth.user = user;
         }
       } catch (err) {
         ctx.throw(500, err.message);

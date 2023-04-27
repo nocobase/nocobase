@@ -5,7 +5,7 @@ import { CollectionOptions } from '@nocobase/database';
  * such as saml, oicd, oauth, sms, etc.
  */
 export default {
-  namespace: 'users.users',
+  namespace: 'auth.auth',
   duplicator: {
     dumpable: 'optional',
     /**
@@ -13,9 +13,9 @@ export default {
      */
     with: 'users',
   },
-  name: 'userAuthInfomation',
-  title: '{{t("User Auth Infomation")}}',
-  model: 'UserAuthInfoModel',
+  name: 'usersAuthenticators',
+  title: '{{t("Users Authenticators")}}',
+  model: 'UserAuthModel',
   createdBy: true,
   updatedBy: true,
   logging: true,
@@ -34,14 +34,6 @@ export default {
       },
       interface: 'id',
     },
-    {
-      name: 'user',
-      type: 'belongsTo',
-      target: 'users',
-      targetKey: 'id',
-      foreignKey: 'userId',
-      onDelete: 'CASCADE',
-    },
     /**
      * uuid:
      * Unique user id of the authentication method, such as wechat openid, phone number, etc.
@@ -50,45 +42,10 @@ export default {
       name: 'uuid',
       interface: 'input',
       type: 'string',
-      unique: 'uuid_type_plugin',
       allowNull: false,
       uiSchema: {
         type: 'string',
         title: '{{t("UUID")}}',
-        'x-component': 'Input',
-        required: true,
-      },
-    },
-    /**
-     * type:
-     * Authentication method, such as wechat, phone, saml, oidc, etc.
-     */
-    {
-      interface: 'input',
-      type: 'string',
-      name: 'type',
-      unique: 'uuid_type_plugin',
-      allowNull: false,
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Type")}}',
-        'x-component': 'Input',
-        required: true,
-      },
-    },
-    /**
-     * plugin:
-     * Name of the plugin that provides the authentication method.
-     */
-    {
-      interface: 'input',
-      type: 'string',
-      name: 'plugin',
-      unique: 'uuid_type_plugin',
-      allowNull: false,
-      uiSchema: {
-        type: 'string',
-        title: '{{t("Plugin Name")}}',
         'x-component': 'Input',
         required: true,
       },
