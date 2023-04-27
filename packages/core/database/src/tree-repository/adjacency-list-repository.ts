@@ -57,18 +57,18 @@ export class AdjacencyListRepository extends Repository {
       parentNode.getDataValue(childrenKey).push(childNode);
     }
 
-    this.addIndex(parentNodes);
+    this.addIndex(parentNodes, childrenKey);
     return parentNodes;
   }
 
-  private addIndex(treeArray) {
+  private addIndex(treeArray, childrenKey = 'children') {
     function traverse(node, index) {
       node.setDataValue('__index', `${index}`);
-      const children = node.getDataValue('children');
+      const children = node.getDataValue(childrenKey);
 
       if (children && children.length > 0) {
         children.forEach((child, i) => {
-          traverse(child, `${index}.children.${i}`);
+          traverse(child, `${index}.${childrenKey}.${i}`);
         });
       }
     }
