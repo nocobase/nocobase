@@ -42,4 +42,5 @@ export * from './tree-select';
 export * from './upload';
 export * from './variable';
 export * from './gantt';
+export * from './association-field';
 import './index.less';

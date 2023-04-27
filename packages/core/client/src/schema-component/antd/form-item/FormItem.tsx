@@ -107,8 +107,10 @@ FormItem.Designer = function Designer() {
   const targetFields = collectionField?.target
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
+  const filedComponent =
+    fieldSchema['x-component-props']?.['component'] || collectionField?.uiSchema['x-component-props']?.['component'];
   const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
+  const isAssociationField = ['oho', 'obo', 'o2m', 'm2o', 'm2m', 'linkTo'].includes(collectionField.interface);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -131,6 +133,8 @@ FormItem.Designer = function Designer() {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  console.log(fieldSchema);
+  console.log(collectionField);
 
   return (
     <GeneralSchemaDesigner>
@@ -508,48 +512,44 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {form && !isSubFormAssociationField && fieldComponentOptions && (
+      {form && isAssociationField && fieldComponentOptions && (
         <SchemaSettings.SelectItem
           title={t('Field component')}
           options={fieldComponentOptions}
-          value={fieldSchema['x-component']}
-          onChange={(type) => {
-            const schema: ISchema = {
-              name: collectionField?.name,
-              type: 'void',
-              required: fieldSchema['required'],
-              description: fieldSchema['description'],
-              default: fieldSchema['default'],
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': type,
-              'x-validator': fieldSchema['x-validator'],
-              'x-collection-field': fieldSchema['x-collection-field'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-              'x-component-props': {
-                ...collectionField?.uiSchema?.['x-component-props'],
-                ...fieldSchema['x-component-props'],
-              },
+          value={filedComponent}
+          onChange={(component) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
             };
-
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-              targetCollection,
+            field['x-component-props'] = field['x-component-props'] || {};
+            field['x-component-props']['component'] = component;
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['component'] = component;
+            schema['x-component-props'] = schema['x-component-props'] || {};
+            schema['x-component-props']['component'] = component;
+            dn.emit('patch', {
+              schema,
             });
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
+            refresh();
+          }}
+        />
+      )}
+      {!field.readPretty && isAssociationField && (
+        <SchemaSettings.SwitchItem
+          key="allowAddNew"
+          title={t('Allow add new data')}
+          checked={(fieldSchema['x-add-new'] !== false) as boolean}
+          onChange={(allowAddNew) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field['x-add-new'] = allowAddNew;
+            fieldSchema['x-add-new'] = allowAddNew;
+            schema['x-add-new'] = allowAddNew;
+            dn.emit('patch', {
+              schema,
             });
+            refresh();
           }}
         />
       )}

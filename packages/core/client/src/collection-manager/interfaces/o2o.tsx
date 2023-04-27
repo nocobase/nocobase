@@ -54,7 +54,7 @@ const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, a
         type: 'string',
         'x-designer': 'AssociationSelect.Designer',
       });
-    } else {
+    } else if(schema['x-component'] === 'RecordPicker'){
       schema.type = 'string';
       schema['properties'] = {
         viewer: cloneDeep(recordPickerViewer),
@@ -88,9 +88,9 @@ export const o2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
+        component: 'Select',
         multiple: false,
         fieldNames: {
           label: 'id',
@@ -105,9 +105,9 @@ export const o2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
+          component: 'Select',
           multiple: false,
           fieldNames: {
             label: 'id',
@@ -268,9 +268,9 @@ export const oho: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
+        component: 'Select',
         multiple: false,
         fieldNames: {
           label: 'id',
@@ -285,9 +285,9 @@ export const oho: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
+          component: 'Select',
           multiple: false,
           fieldNames: {
             label: 'id',
@@ -439,9 +439,9 @@ export const obo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
+        component: 'Select',
         multiple: false,
         fieldNames: {
           label: 'id',
@@ -455,9 +455,9 @@ export const obo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
+          component: 'Select',
           multiple: false,
           fieldNames: {
             label: 'id',

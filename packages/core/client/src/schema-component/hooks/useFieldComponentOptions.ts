@@ -29,24 +29,26 @@ export const useFieldComponentOptions = () => {
     switch (collectionField.interface) {
       case 'o2m':
         return [
-          { label: t('Record picker'), value: 'CollectionField' },
-          { label: t('Subtable'), value: 'TableField' },
+          { label: t('Record picker'), value: 'RecordPicker' },
+          { label: t('Subtable'), value: 'SubTable' },
           { label: t('Select'), value: 'AssociationSelect' },
+          { label: t('Subform'), value: 'SubForm' },
         ];
 
       case 'm2o':
       case 'm2m':
       case 'linkTo':
         return [
-          { label: t('Record picker'), value: 'CollectionField' },
+          { label: t('Record picker'), value: 'RecordPicker' },
           { label: t('Select'), value: 'AssociationSelect' },
+          { label: t('Subform'), value: 'SubForm' },
         ];
 
       default:
         return [
-          { label: t('Record picker'), value: 'CollectionField' },
-          { label: t('Subform'), value: 'FormField' },
+          { label: t('Record picker'), value: 'RecordPicker' },
           { label: t('Select'), value: 'AssociationSelect' },
+          { label: t('Subform'), value: 'SubForm' },
         ];
     }
   }, [t, collectionField?.interface, label]);

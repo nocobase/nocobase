@@ -22,9 +22,9 @@ export const m2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
+        component: 'Select',
         multiple: false,
         fieldNames: {
           label: 'id',
@@ -38,9 +38,9 @@ export const m2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
+          component: 'Select',
           multiple: true,
           fieldNames: {
             label: 'id',

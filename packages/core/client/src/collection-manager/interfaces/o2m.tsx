@@ -22,9 +22,9 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
-        // mode: 'tags',
+        component: 'Select',
         multiple: true,
         fieldNames: {
           label: 'id',
@@ -38,9 +38,9 @@ export const o2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
-          // mode: 'tags',
+          component: 'Select',
           multiple: false,
           fieldNames: {
             label: 'id',
