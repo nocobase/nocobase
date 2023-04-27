@@ -81,7 +81,7 @@ const actionAclCheck = (actionPath) => {
   return true;
 };
 
-export const CreateRecordAction = observer((props) => {
+export const CreateRecordAction = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
@@ -115,6 +115,7 @@ export const CreateRecordAction = observer((props) => {
   const ctx = useActionContext();
   const compile = useCompile();
   const { designable } = useDesignable();
+  const icon = props.icon || <PlusOutlined />;
   const menu = (
     <Menu>
       {inheritsCollections.map((option) => {
@@ -160,13 +161,13 @@ export const CreateRecordAction = observer((props) => {
                 setCurrentCollection(collection.name);
               }}
             >
-              <PlusOutlined />
+              {icon}
               {props.children}
             </Dropdown.Button>
           ) : (
             <Dropdown overlay={menu}>
               {
-                <Button icon={<PlusOutlined />} type={'primary'}>
+                <Button icon={icon} type={'primary'}>
                   {props.children} <DownOutlined />
                 </Button>
               }
@@ -177,7 +178,7 @@ export const CreateRecordAction = observer((props) => {
             type={componentType}
             disabled={field.disabled}
             danger={componentType === 'danger'}
-            icon={<PlusOutlined />}
+            icon={icon}
             onClick={(info) => {
               setVisible(true);
               setCurrentCollection(collection.name);
