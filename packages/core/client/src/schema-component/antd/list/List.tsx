@@ -85,11 +85,15 @@ const InternalList = (props) => {
       <SortableItem className={cx('nb-list', designerCss)}>
         <AntdList
           dataSource={data}
-          pagination={{
-            onChange: onPaginationChange,
-            total: meta?.count || 0,
-            pageSize: meta?.pageSize || 10,
-          }}
+          pagination={
+            !meta || meta.count <= meta.pageSize
+              ? false
+              : {
+                  onChange: onPaginationChange,
+                  total: meta?.count || 0,
+                  pageSize: meta?.pageSize || 10,
+                }
+          }
           loading={service.loading ?? loading}
           renderItem={(item) => {
             return (
