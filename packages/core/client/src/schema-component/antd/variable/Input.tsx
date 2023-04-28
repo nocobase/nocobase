@@ -36,7 +36,7 @@ const ConstantTypes = {
   string: {
     label: `{{t("String")}}`,
     value: 'string',
-    component({ onChange, value }) {
+    component: function StringComponent({ onChange, value }) {
       return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
     },
     default: '',
@@ -44,7 +44,7 @@ const ConstantTypes = {
   number: {
     label: '{{t("Number")}}',
     value: 'number',
-    component({ onChange, value }) {
+    component: function NumberComponent({ onChange, value }) {
       return <InputNumber value={value} onChange={onChange} />;
     },
     default: 0,
@@ -52,7 +52,7 @@ const ConstantTypes = {
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component: function Com({ onChange, value }) {
+    component: function BooleanComponent({ onChange, value }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -71,7 +71,7 @@ const ConstantTypes = {
   date: {
     label: '{{t("Date")}}',
     value: 'date',
-    component({ onChange, value }) {
+    component: function DateComponent({ onChange, value }) {
       return (
         <DatePicker
           value={moment(value)}
@@ -89,7 +89,7 @@ const ConstantTypes = {
   null: {
     label: `{{t("Null")}}`,
     value: 'null',
-    component: function Com() {
+    component: function NullComponent() {
       const { t } = useTranslation();
       return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
