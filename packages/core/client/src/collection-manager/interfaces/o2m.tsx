@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
+import { uid } from '@formily/shared';
 import {
   constraintsProps,
   recordPickerSelector,
@@ -111,7 +112,7 @@ export const o2m: IField = {
               type: 'object',
               properties: {
                 block: {
-                  type: 'void',
+                  type: 'object',
                   'x-decorator': 'SubFormProvider',
                   'x-decorator-props': {
                     collection: field.target,
@@ -126,7 +127,7 @@ export const o2m: IField = {
                     bordered: true,
                   },
                   properties: {
-                    [field.name]: {
+                    [uid()]: {
                       type: 'object',
                       'x-component': 'FormV2',
                       'x-component-props': {
