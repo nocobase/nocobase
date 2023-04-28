@@ -10,8 +10,6 @@ import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
 
-
-
 export default {
   title: `{{t("Loop", { ns: "${NAMESPACE}" })}}`,
   type: 'loop',
@@ -23,39 +21,49 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}'
+        scope: '{{useWorkflowVariableOptions}}',
       },
       required: true,
     },
   },
-  view: {
-
-  },
-  render(data) {
+  view: {},
+  render: function Renderer(data) {
     const { workflow, nodes } = useFlowContext();
-    const entry = nodes.find(node => node.upstreamId === data.id && node.branchIndex != null);
+    const entry = nodes.find((node) => node.upstreamId === data.id && node.branchIndex != null);
 
     return (
       <NodeDefaultView data={data}>
         <div className={cx(nodeSubtreeClass)}>
-          <div className={cx(branchBlockClass, css`
-            padding-left: 20em;
-          `)}>
+          <div
+            className={cx(
+              branchBlockClass,
+              css`
+                padding-left: 20em;
+              `,
+            )}
+          >
             <Branch from={data} entry={entry} branchIndex={entry?.branchIndex ?? 0} />
 
             <div className={cx(branchClass)}>
               <div className="workflow-branch-lines" />
-              <div className={cx(addButtonClass, css`
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-                width: 2em;
-                height: 6em;
-              `)}>
-                <ArrowUpOutlined className={css`
-                  background-color: #f0f2f5;
-                `} />
+              <div
+                className={cx(
+                  addButtonClass,
+                  css`
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    position: relative;
+                    width: 2em;
+                    height: 6em;
+                  `,
+                )}
+              >
+                <ArrowUpOutlined
+                  className={css`
+                    background-color: #f0f2f5;
+                  `}
+                />
               </div>
             </div>
           </div>
@@ -70,7 +78,7 @@ export default {
     );
   },
   scope: {
-    useWorkflowVariableOptions
+    useWorkflowVariableOptions,
   },
   components: {
     CalculationResult({ dataSource }) {
@@ -79,24 +87,32 @@ export default {
         return lang('Calculation result');
       }
       const result = parse(dataSource)({
-        $jobsMapByNodeId: (execution.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }), {})
+        $jobsMapByNodeId: (execution.jobs ?? []).reduce(
+          (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+          {},
+        ),
       });
 
       return (
-        <pre className={css`
-          margin: 0;
-        `}>
+        <pre
+          className={css`
+            margin: 0;
+          `}
+        >
           {JSON.stringify(result, null, 2)}
         </pre>
       );
-    }
+    },
   },
   getOptions(config, types) {
-    if (types && !types.some(type => type in BaseTypeSets || Object.values(BaseTypeSets).some(set => set.has(type)))) {
+    if (
+      types &&
+      !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
+    ) {
       return null;
     }
     return [
       // { key: '', value: '', label: lang('Calculation result') }
     ];
-  }
+  },
 };
