@@ -1060,7 +1060,7 @@ export const createCardListBlockSchema = (options) => {
       readPretty: true,
       action: 'list',
       params: {
-        pageSize: 10,
+        pageSize: 12,
         appends: [],
       },
       requestOptions: {
