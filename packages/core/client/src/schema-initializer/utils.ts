@@ -1036,6 +1036,96 @@ export const createListBlockSchema = (options) => {
   console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
+
+export const createCardListBlockSchema = (options) => {
+  const {
+    formItemInitializers = 'ReadPrettyFormItemInitializers',
+    actionInitializers = 'ListActionInitializers',
+    itemActionInitializers = 'ListItemActionInitializers',
+    collection,
+    association,
+    resource,
+    template,
+    ...others
+  } = options;
+  const resourceName = resource || association || collection;
+  const schema: ISchema = {
+    type: 'void',
+    'x-acl-action': `${resourceName}:view`,
+    'x-decorator': 'CardList.Decorator',
+    'x-decorator-props': {
+      resource: resourceName,
+      collection,
+      association,
+      readPretty: true,
+      action: 'list',
+      params: {
+        pageSize: 10,
+        appends: [],
+      },
+      requestOptions: {
+        manual: true,
+      },
+      appendsOnDemand: true,
+      ...others,
+    },
+    'x-component': 'CardItem',
+    'x-designer': 'CardList.Designer',
+    properties: {
+      actionBar: {
+        type: 'void',
+        'x-initializer': actionInitializers,
+        'x-component': 'ActionBar',
+        'x-component-props': {
+          style: {
+            marginBottom: 'var(--nb-spacing)',
+          },
+        },
+        properties: {},
+      },
+      [uid()]: {
+        type: 'void',
+        'x-component': 'CardList',
+        'x-component-props': {
+          props: '{{ useCardListBlockProps }}',
+        },
+        properties: {
+          [uid()]: {
+            type: 'object',
+            'x-component': 'CardList.Item',
+            'x-read-pretty': true,
+            'x-component-props': {
+              useProps: '{{ useCardListItemProps }}',
+            },
+            properties: {
+              grid: template || {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': formItemInitializers,
+                'x-initializer-props': {
+                  useProps: '{{ useCardListItemInitializerProps }}',
+                },
+                properties: {},
+              },
+              actionBar: {
+                type: 'void',
+                'x-align': 'left',
+                'x-initializer': itemActionInitializers,
+                'x-component': 'ActionBar',
+                'x-component-props': {
+                  useProps: '{{ useCardListActionBarProps }}',
+                },
+                properties: {},
+              },
+            },
+          },
+        },
+      },
+    },
+  };
+  console.log(JSON.stringify(schema, null, 2));
+  return schema;
+};
 export const createFormBlockSchema = (options) => {
   const {
     formItemInitializers = 'FormItemInitializers',

@@ -25,6 +25,12 @@ export const BlockInitializers = {
           component: 'ListBlockInitializer',
         },
         {
+          key: 'CardList',
+          type: 'item',
+          title: '{{t("Card List")}}',
+          component: 'CardListBlockInitializer',
+        },
+        {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',

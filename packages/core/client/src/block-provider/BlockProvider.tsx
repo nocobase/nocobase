@@ -2,9 +2,10 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
+import merge from 'deepmerge';
 import { Col, Row } from 'antd';
 import template from 'lodash/template';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
@@ -153,6 +154,23 @@ const BlockRequestProvider = (props) => {
   const resource = useBlockResource();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
+  const [allowedActions, setAllowedActions] = useState({});
+
+  const service = useResourceAction(
+    { ...props, resource },
+    {
+      ...props.requestOptions,
+    },
+  );
+
+  // Infinite scroll support
+  const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
+  useEffect(() => {
+    if (!serviceAllowedActions) return;
+    setAllowedActions((last) => {
+      return merge(last, serviceAllowedActions ?? {});
+    });
+  }, [serviceAllowedActions]);
 
   const patchAppends = (name, action) => {
     // appends on demand
@@ -173,16 +191,10 @@ const BlockRequestProvider = (props) => {
     });
   };
 
-  const service = useResourceAction(
-    { ...props, resource },
-    {
-      ...props.requestOptions,
-    },
-  );
   const __parent = useContext(BlockRequestContext);
   return (
     <BlockRequestContext.Provider
-      value={{ block: props.block, props, field, service, resource, patchAppends, __parent }}
+      value={{ allowedActions, block: props.block, props, field, service, resource, patchAppends, __parent }}
     >
       {props.children}
     </BlockRequestContext.Provider>
