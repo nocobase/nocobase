@@ -9,7 +9,7 @@ import { useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions, SchemaComponent } from '../../core';
-import { useDesigner } from '../../hooks';
+import { useDesignable, useDesigner } from '../../hooks';
 import { ListItem } from './List.Item';
 
 const designerCss = css`
@@ -55,6 +55,7 @@ const InternalList = (props) => {
   const Designer = useDesigner();
   const { getPrimaryKey } = useCollection();
   const meta = service?.data?.meta;
+  const { designable } = useDesignable();
 
   const onPaginationChange: PaginationProps['onChange'] = (page, pageSize) => {
     service.run({
@@ -73,7 +74,6 @@ const InternalList = (props) => {
     >
       <SortableItem className={cx('nb-list', designerCss)}>
         <AntdList
-          dataSource={service?.data?.data || []}
           pagination={
             !meta || meta.count <= meta.pageSize
               ? false
@@ -84,14 +84,20 @@ const InternalList = (props) => {
                 }
           }
           loading={service?.loading}
-          renderItem={(item) => {
-            return (
+        >
+          <div
+            className={css`
+              height: 50vh;
+              overflow-y: scroll;
+            `}
+          >
+            {service?.data?.data?.map((item) => (
               <RecordProvider key={item[getPrimaryKey()]} record={item}>
-                <SchemaComponent schema={fieldSchema}></SchemaComponent>
+                <SchemaComponent memoized={!designable} schema={fieldSchema}></SchemaComponent>
               </RecordProvider>
-            );
-          }}
-        ></AntdList>
+            ))}
+          </div>
+        </AntdList>
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>

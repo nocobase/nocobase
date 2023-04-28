@@ -8,7 +8,7 @@ import { useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions, SchemaComponent } from '../../core';
-import { useDesigner } from '../../hooks';
+import { useDesignable, useDesigner } from '../../hooks';
 import { useInfiniteScroll } from 'ahooks';
 import { CardListItem } from './CardList.Item';
 import { useCardListBlockContext, useCardListItemProps, CardListBlockProvider } from './CardList.Decorator';
@@ -58,6 +58,7 @@ const InternalCardList = (props) => {
   const { getPrimaryKey } = useCollection();
   const { t } = useTranslation();
   const scrollEl = useRef<HTMLDivElement>();
+  const { designable } = useDesignable();
 
   const { data, loading, loadingMore, noMore } = useInfiniteScroll(
     async (d) => {
@@ -74,10 +75,7 @@ const InternalCardList = (props) => {
       threshold: 200,
       target: scrollEl,
       isNoMore: (d) => {
-        const total = d?.meta?.total;
-        const pageSize = d?.meta?.pageSize;
-        const curSize = d?.list?.length;
-        return curSize !== pageSize || curSize === total;
+        return d?.meta.page === d?.meta?.totalPage;
       },
       reloadDeps: [field.decoratorProps?.params],
     },
@@ -130,7 +128,7 @@ const InternalCardList = (props) => {
                 return (
                   <RecordProvider key={item[getPrimaryKey()]} record={item}>
                     <Col span={24 / columnCount}>
-                      <SchemaComponent schema={fieldSchema}></SchemaComponent>
+                      <SchemaComponent memoized={designable} schema={fieldSchema}></SchemaComponent>
                     </Col>
                   </RecordProvider>
                 );
