@@ -29,15 +29,22 @@ export class AdjacencyListRepository extends Repository {
 
     const childIds = childNodes.map((node) => node[primaryKey]);
 
-    const childInstances = (
-      await super.find({
-        ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
-        fields: [primaryKey, foreignKey, ...(options.fields || [])],
-        filter: {
-          [primaryKey]: childIds,
-        },
-      })
-    ).map((r) => {
+    const findChildrenOptions = {
+      ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
+      filter: {
+        [primaryKey]: childIds,
+      },
+    };
+
+    if (findChildrenOptions.fields) {
+      [primaryKey, foreignKey].forEach((field) => {
+        if (!findChildrenOptions.fields.includes(field)) {
+          findChildrenOptions.fields.push(field);
+        }
+      });
+    }
+
+    const childInstances = (await super.find(findChildrenOptions)).map((r) => {
       return r.toJSON();
     });
 
@@ -54,7 +61,7 @@ export class AdjacencyListRepository extends Repository {
       const children = nodeMap[parentId];
 
       if (!children) {
-        return undefined;
+        return [];
       }
 
       return children.map((child) => ({
@@ -81,9 +88,15 @@ export class AdjacencyListRepository extends Repository {
       if (lodash.isPlainObject(node)) {
         node['__index'] = `${index}`;
         children = node[childrenKey];
+        if (children.length === 0) {
+          delete node[childrenKey];
+        }
       } else {
         node.setDataValue('__index', `${index}`);
         children = node.getDataValue(childrenKey);
+        if (children.length === 0) {
+          node.setDataValue(childrenKey, undefined);
+        }
       }
 
       if (children && children.length > 0) {
