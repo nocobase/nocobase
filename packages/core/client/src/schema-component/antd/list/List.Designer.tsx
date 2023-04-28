@@ -37,6 +37,7 @@ export const ListDesigner = () => {
   });
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
