@@ -20,6 +20,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   target: string;
   wait?: number;
   manual?: boolean;
+  multiple?:boolean;
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
@@ -211,14 +212,25 @@ const InternalRemoteSelect = connect(
         async onClick() {
           await onClick();
           const { data } = actionField.data.data?.data;
-          form.setValuesIn(field.props.name, {
-            [fieldNames.label]: data[fieldNames.label],
-            id: data.id,
-            value: data.id,
-          });
+          if (['oho', 'obo'].includes(collectionField.interface)) {
+            form.setValuesIn(field.props.name, {
+              [fieldNames.label]: data[fieldNames.label],
+              id: data.id,
+              value: data.id,
+            });
+          } else {
+            const values = form.values[fieldSchema.name] || [];
+            values.push({
+              [fieldNames.label]: data[fieldNames.label],
+              id: data.id,
+              value: data.id,
+            });
+            form.setValuesIn(field.props.name, values);
+          }
         },
       };
     };
+    console.log(others);
     return (
       <div style={{ display: 'flex' }}>
         <Select

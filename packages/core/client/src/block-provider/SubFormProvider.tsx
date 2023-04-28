@@ -1,10 +1,12 @@
 import { createForm, onFormValuesChange } from '@formily/core';
-import { useField, useForm } from '@formily/react';
+import { useField, useForm, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
+import { useCollectionManager, useCollection } from '../collection-manager';
+import { isArray } from 'lodash';
 
 export const SubFormContext = createContext<any>({});
 
@@ -15,16 +17,27 @@ const InternalSubFormProvider = (props) => {
   if (!formBlockCtx?.updateAssociationValues?.includes(fieldName)) {
     formBlockCtx?.updateAssociationValues?.push(fieldName);
   }
-
   const field = useField();
   const parentForm = useForm();
+  const { getCollectionField } = useCollectionManager();
+  const collectionField = getCollectionField(props.association);
   const form = useMemo(
     () =>
       createForm({
         effects() {
           onFormValuesChange((form) => {
-            parentForm.setValuesIn(fieldName, form.values);
-            formBlockCtx?.form?.setValuesIn(fieldName, form.values);
+            if (['oho', 'obo'].includes(collectionField.interface)) {
+              parentForm.setValuesIn(fieldName, form.values);
+              formBlockCtx?.form?.setValuesIn(fieldName, form.values);
+            } else {
+              console.log(parentForm.values)
+              console.log(form.values)
+              // const fieldValue = parentForm.values[fieldName];
+              // const values = isArray(fieldValue) ? fieldValue : [fieldValue];
+              // values.push(form.values);
+              // console.log(values);
+              // parentForm.setValuesIn(fieldName, values);
+            }
           });
         },
         readPretty,

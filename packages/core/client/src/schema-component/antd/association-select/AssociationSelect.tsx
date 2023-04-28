@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React, { useCallback, useMemo } from 'react';
 import { useFieldTitle } from '../../hooks';
@@ -9,7 +9,7 @@ import useServiceOptions from './useServiceOptions';
 
 export const defaultFieldNames = {
   label: 'id',
-  value: 'value',
+  value: 'id',
   color: 'color',
   options: 'children',
 };
@@ -21,6 +21,7 @@ export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
 const InternalAssociationSelect = connect(
   (props: AssociationSelectProps) => {
     const { fieldNames, objectValue = true } = props;
+    const fieldSchema = useFieldSchema();
     const service = useServiceOptions(props);
     useFieldTitle();
 
@@ -46,7 +47,15 @@ const InternalAssociationSelect = connect(
       }
     }, [props.value, normalizeValues]);
 
-    return <RemoteSelect {...props} objectValue={objectValue} value={value} service={service}></RemoteSelect>;
+    return (
+      <RemoteSelect
+        {...props}
+        multiple={fieldSchema['x-component-props']?.multiple !== false}
+        objectValue={objectValue}
+        value={value}
+        service={service}
+      ></RemoteSelect>
+    );
   },
   mapProps(
     {

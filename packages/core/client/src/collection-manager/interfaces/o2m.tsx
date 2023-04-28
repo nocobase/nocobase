@@ -107,12 +107,15 @@ export const o2m: IField = {
           array: {
             type: 'array',
             'x-component': 'ArrayCards',
-            default:[{}],
+            'x-component-props': {
+              headStyle: { display: 'none' },
+            },
+            default: [{}],
             items: {
               type: 'object',
               properties: {
                 block: {
-                  type: 'object',
+                  type: 'void',
                   'x-decorator': 'SubFormProvider',
                   'x-decorator-props': {
                     collection: field.target,
@@ -122,7 +125,7 @@ export const o2m: IField = {
                     fieldName: field.name,
                     readPretty,
                   },
-                  'x-component': 'CardItem',
+                  'x-component': 'div',
                   'x-component-props': {
                     bordered: true,
                   },
@@ -135,7 +138,7 @@ export const o2m: IField = {
                       },
                       properties: {
                         __form_grid: {
-                          type: 'void',
+                          type: 'object',
                           'x-component': 'Grid',
                           'x-initializer': 'FormItemInitializers',
                           properties: {},
