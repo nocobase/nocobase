@@ -6,9 +6,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@hapi/topo": "^6.0.0",
+    "dedupe": "^3.0.2",
     "deepmerge": "^4.2.2",
     "flat-to-nested": "^1.1.1",
-    "graphlib": "^2.1.8"
+    "graphlib": "^2.1.8",
+    "object-path": "^0.11.8"
   },
   "peerDependencies": {
     "moment": "2.x",

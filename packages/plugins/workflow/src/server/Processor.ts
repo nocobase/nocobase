@@ -1,7 +1,7 @@
 import { Model } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import { Logger } from '@nocobase/logger';
-import parse from 'json-templates';
+import { parse } from '@nocobase/utils';
 import { Transaction, Transactionable } from 'sequelize';
 import Plugin from '.';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
