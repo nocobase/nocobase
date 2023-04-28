@@ -2,7 +2,7 @@ import { Database } from '../database';
 import { mockDatabase } from './';
 import { AdjacencyListRepository } from '../tree-repository/adjacency-list-repository';
 
-describe('sort', function () {
+describe('tree test', function () {
   let db: Database;
 
   beforeEach(async () => {

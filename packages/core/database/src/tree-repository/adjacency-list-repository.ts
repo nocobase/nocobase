@@ -29,42 +29,62 @@ export class AdjacencyListRepository extends Repository {
 
     const childIds = childNodes.map((node) => node[primaryKey]);
 
-    const childInstances = await super.find({
-      ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
-      filter: {
-        [primaryKey]: childIds,
-      },
+    const childInstances = (
+      await super.find({
+        ...lodash.omit(options, ['limit', 'offset', 'filterByTk']),
+        fields: [primaryKey, foreignKey, ...(options.fields || [])],
+        filter: {
+          [primaryKey]: childIds,
+        },
+      })
+    ).map((r) => {
+      return r.toJSON();
     });
 
     const nodeMap = {};
-    for (const node of [...parentNodes, ...childInstances]) {
-      nodeMap[`${node[primaryKey]}`] = node;
+
+    childInstances.forEach((node) => {
+      if (!nodeMap[`${node[foreignKey]}`]) {
+        nodeMap[`${node[foreignKey]}`] = [];
+      }
+      nodeMap[`${node[foreignKey]}`].push(node);
+    });
+
+    function buildTree(parentId) {
+      const children = nodeMap[parentId];
+
+      if (!children) {
+        return undefined;
+      }
+
+      return children.map((child) => ({
+        ...child,
+        [childrenKey]: buildTree(child.id),
+      }));
     }
 
-    for (const node of childNodes) {
-      const parentNode = nodeMap[`${node[foreignKey]}`];
-      const childNode = nodeMap[`${node[primaryKey]}`];
-
-      if (!parentNode) {
-        throw new Error(`Cannot find parent node ${node[foreignKey]}`);
-      }
-
-      const children = parentNode.getDataValue(childrenKey);
-      if (!children) {
-        parentNode.setDataValue(childrenKey, []);
-      }
-
-      parentNode.getDataValue(childrenKey).push(childNode);
+    for (const parent of parentNodes) {
+      const parentId = parent[primaryKey];
+      const children = buildTree(parentId);
+      parent.setDataValue(childrenKey, children);
     }
 
     this.addIndex(parentNodes, childrenKey);
+
     return parentNodes;
   }
 
   private addIndex(treeArray, childrenKey = 'children') {
     function traverse(node, index) {
-      node.setDataValue('__index', `${index}`);
-      const children = node.getDataValue(childrenKey);
+      let children;
+
+      if (lodash.isPlainObject(node)) {
+        node['__index'] = `${index}`;
+        children = node[childrenKey];
+      } else {
+        node.setDataValue('__index', `${index}`);
+        children = node.getDataValue(childrenKey);
+      }
 
       if (children && children.length > 0) {
         children.forEach((child, i) => {

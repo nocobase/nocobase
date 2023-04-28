@@ -225,7 +225,7 @@ export class Collection<
       repo = this.context.database.repositories.get(repository) || Repository;
     }
 
-    if (this.options.tree == 'adjacency-list') {
+    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
       repo = AdjacencyListRepository;
     }
 
