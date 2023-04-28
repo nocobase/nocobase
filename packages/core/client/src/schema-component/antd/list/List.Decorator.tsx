@@ -1,14 +1,23 @@
 import { createForm } from '@formily/core';
-import { useField } from '@formily/react';
+import { FormContext, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
+import { FormV2 } from '../form-v2';
+import { FormLayout } from '@formily/antd';
 
 export const ListBlockContext = createContext<any>({});
 
 const InternalListBlockProvider = (props) => {
   const field = useField<any>();
   const { resource, service } = useBlockRequestContext();
+  const form = useForm();
+  useEffect(() => {
+    if (!service?.loading) {
+      form.setValuesIn('list', service?.data?.data);
+    }
+  }, [service?.data?.data, service?.loading]);
+
   return (
     <ListBlockContext.Provider
       value={{
@@ -17,7 +26,7 @@ const InternalListBlockProvider = (props) => {
         resource,
       }}
     >
-      {props.children}
+      <FormLayout layout={'vertical'}>{props.children}</FormLayout>
     </ListBlockContext.Provider>
   );
 };
@@ -35,20 +44,9 @@ export const useListBlockContext = () => {
 };
 
 export const useListItemProps = () => {
-  const form = useMemo(
-    () =>
-      createForm({
-        readPretty: true,
-      }),
-    [],
-  );
   const record = useRecord();
-  useEffect(() => {
-    form.setValues(record);
-  }, [form, record]);
-
   return {
-    form,
+    // form,
     disabled: false,
   };
 };

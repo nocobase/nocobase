@@ -993,14 +993,14 @@ export const createListBlockSchema = (options) => {
         },
         properties: {},
       },
-      [uid()]: {
-        type: 'void',
+      list: {
+        type: 'array',
         'x-component': 'List',
         'x-component-props': {
           props: '{{ useListBlockProps }}',
         },
         properties: {
-          [uid()]: {
+          listItem: {
             type: 'object',
             'x-component': 'List.Item',
             'x-read-pretty': true,
@@ -1024,6 +1024,7 @@ export const createListBlockSchema = (options) => {
                 'x-component': 'ActionBar',
                 'x-component-props': {
                   useProps: '{{ useListActionBarProps }}',
+                  layout: 'one-column',
                 },
                 properties: {},
               },

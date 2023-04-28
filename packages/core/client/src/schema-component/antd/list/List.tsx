@@ -1,16 +1,17 @@
 import { ListDesigner } from './List.Designer';
 import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
-import React from 'react';
-import { useFieldSchema } from '@formily/react';
+import React, { useCallback, useEffect } from 'react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { List as AntdList, PaginationProps } from 'antd';
 import { useListActionBarProps } from './hooks';
 import { useCollection } from '../../../collection-manager';
-import { RecordProvider } from '../../../record-provider';
+import { RecordContext, RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions, SchemaComponent } from '../../core';
 import { useDesignable, useDesigner } from '../../hooks';
 import { ListItem } from './List.Item';
+import { ArrayField } from '@formily/core';
 
 const designerCss = css`
   width: 100%;
@@ -51,19 +52,23 @@ const designerCss = css`
 
 const InternalList = (props) => {
   const { service } = useListBlockContext();
+  const { run, params } = service;
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const { getPrimaryKey } = useCollection();
   const meta = service?.data?.meta;
-  const { designable } = useDesignable();
+  const field = useField<ArrayField>();
 
-  const onPaginationChange: PaginationProps['onChange'] = (page, pageSize) => {
-    service.run({
-      ...service?.params?.[0],
-      page: page,
-      pageSize: pageSize,
-    });
-  };
+  const onPaginationChange: PaginationProps['onChange'] = useCallback(
+    (page, pageSize) => {
+      run({
+        ...params?.[0],
+        page: page,
+        pageSize: pageSize,
+      });
+    },
+    [run, params],
+  );
 
   return (
     <SchemaComponentOptions
@@ -85,18 +90,24 @@ const InternalList = (props) => {
           }
           loading={service?.loading}
         >
-          <div
-            className={css`
-              height: 50vh;
-              overflow-y: scroll;
-            `}
-          >
-            {service?.data?.data?.map((item) => (
-              <RecordProvider key={item[getPrimaryKey()]} record={item}>
-                <SchemaComponent memoized={!designable} schema={fieldSchema}></SchemaComponent>
-              </RecordProvider>
-            ))}
-          </div>
+          {field.value?.map((item, index) => {
+            return (
+              <RecursionField
+                basePath={field.address}
+                key={item[getPrimaryKey()]}
+                name={index}
+                onlyRenderProperties
+                schema={
+                  {
+                    type: 'object',
+                    properties: {
+                      [index]: fieldSchema.properties['listItem'],
+                    },
+                  } as any
+                }
+              ></RecursionField>
+            );
+          })}
         </AntdList>
         <Designer />
       </SortableItem>

@@ -14,7 +14,11 @@ export const ActionBar = observer((props: any) => {
   if (layout === 'one-column') {
     return (
       <DndContext>
-        <div style={{ display: 'flex', ...style }} {...others} className={cx(others.className, 'nb-action-bar')}>
+        <div
+          style={{ display: 'flex', alignItems: 'center', ...style }}
+          {...others}
+          className={cx(others.className, 'nb-action-bar')}
+        >
           {props.children && (
             <div style={{ marginRight: 8 }}>
               <Space size={size}>
