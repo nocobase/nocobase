@@ -1,12 +1,10 @@
 import { ListDesigner } from './List.Designer';
 import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
 import React from 'react';
-import { useField, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { useInfiniteScroll } from 'ahooks';
-import { Divider, Spin, Empty, List as AntdList, PaginationProps } from 'antd';
-import { useTranslation } from 'react-i18next';
-import { useListActionBarProps, useService } from './hooks';
+import { List as AntdList, PaginationProps } from 'antd';
+import { useListActionBarProps } from './hooks';
 import { useCollection } from '../../../collection-manager';
 import { RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
@@ -56,16 +54,7 @@ const InternalList = (props) => {
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
   const { getPrimaryKey } = useCollection();
-  const { t } = useTranslation();
-
-  const { noMore, loadingMore, data, meta, loading } = useService();
-
-  let endedMessage = 'More data coming soon';
-  if (loadingMore) {
-    endedMessage = t('loading more ~~~');
-  } else if (noMore) {
-    endedMessage = t('It is all, nothing more 🤐');
-  }
+  const meta = service?.data?.meta;
 
   const onPaginationChange: PaginationProps['onChange'] = (page, pageSize) => {
     service.run({
@@ -84,7 +73,7 @@ const InternalList = (props) => {
     >
       <SortableItem className={cx('nb-list', designerCss)}>
         <AntdList
-          dataSource={data}
+          dataSource={service?.data?.data || []}
           pagination={
             !meta || meta.count <= meta.pageSize
               ? false
@@ -94,7 +83,7 @@ const InternalList = (props) => {
                   pageSize: meta?.pageSize || 10,
                 }
           }
-          loading={service.loading ?? loading}
+          loading={service?.loading}
           renderItem={(item) => {
             return (
               <RecordProvider key={item[getPrimaryKey()]} record={item}>
