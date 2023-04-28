@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { Modal, message } from 'antd';
-import parse from 'json-templates';
+import { parse } from '@nocobase/utils/client';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
