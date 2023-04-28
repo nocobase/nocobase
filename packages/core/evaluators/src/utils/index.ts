@@ -55,6 +55,10 @@ export function evaluate(this: Evaluator, expression: string, scope: Scope = {})
       result = replaceNumberIndex(v, context);
     }
 
+    if (result instanceof Date) {
+      result = `'${result.toISOString()}'`;
+    }
+
     return ` ${result} `;
   });
   return this(exp, context);
