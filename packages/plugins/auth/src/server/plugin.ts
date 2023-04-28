@@ -9,23 +9,28 @@ export class AuthPlugin extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {
-    this.app.actions(await this.importActions());
+    // this.app.actions(await this.importActions());
+    this.app.actions({
+      'authenticators:listTypes': async (ctx, next) => {
+        ctx.app.logger.info('test');
+        ctx.body = 'test';
+        await next();
+      },
+    });
   }
 
-  async importActions() {
-    const files = await readdir(resolve(__dirname, 'actions'));
-    const actions = {};
-    files.forEach((file) => {
-      const fileName = file.replace(/\.ts$/, '');
-      const mod: Handlers = requireModule(resolve(__dirname, 'actions', file));
-      Object(mod)
-        .entries()
-        .forEach(([key, handler]: [key: string, handler: HandlerType]) => {
-          actions[`${fileName}:${key}`] = handler;
-        });
-    });
-    return actions;
-  }
+  // async importActions() {
+  //   const files = await readdir(resolve(__dirname, 'actions'));
+  //   const actions = {};
+  //   files.forEach((file) => {
+  //     const fileName = file.replace(/\.ts$/, '');
+  //     const mod: Handlers = requireModule(resolve(__dirname, 'actions', file));
+  //     Object.entries(mod).forEach(([key, handler]: [key: string, handler: HandlerType]) => {
+  //       actions[`${fileName}:${key}`] = handler;
+  //     });
+  //   });
+  //   return actions;
+  // }
 
   async load() {
     await this.db.import({

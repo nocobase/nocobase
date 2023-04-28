@@ -81,6 +81,7 @@ export class AuthManager {
         if (user) {
           ctx.auth.user = user;
         }
+        ctx.app.logger.info(`authCheck, name: ${name}, ${user ? user.id : 'anonymous'}`);
       } catch (err) {
         ctx.throw(500, err.message);
       }

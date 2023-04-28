@@ -284,13 +284,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._appManager = new AppManager(this);
     }
 
-    if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['authCheck'] });
-    }
-
     this._authManager = new AuthManager(this, {
       authKey: 'X-Authenticator',
     });
+    this._resourcer.use(this._authManager.middleware(), { tag: 'authCheck' });
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['authCheck'] });
+    }
 
     registerMiddlewares(this, options);
 
