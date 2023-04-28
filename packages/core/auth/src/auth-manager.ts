@@ -23,7 +23,6 @@ export class AuthManager {
   constructor(app, options: AuthManagerOptions) {
     this.app = app;
     this.options = options;
-    this.app.resourcer.use(this.middleware, { tag: 'authCheck' });
     this.app.resource({
       name: 'auth',
       actions,
@@ -47,7 +46,7 @@ export class AuthManager {
   }
 
   listTypes() {
-    return this.authTypes.getKeys();
+    return Array.from(this.authTypes.getKeys());
   }
 
   /**
@@ -57,6 +56,9 @@ export class AuthManager {
    * @return {Promise<Auth>} authenticator instance.
    */
   async get(name: string, ctx: Context) {
+    if (!this.storer) {
+      throw new Error('AuthManager.storer is not set.');
+    }
     const authenticator = await this.storer.get(name);
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
@@ -75,18 +77,22 @@ export class AuthManager {
   middleware() {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
       const name = ctx.get(this.options.authKey);
+      let authenticator: Auth;
       try {
-        ctx.auth = await ctx.app.authManager.get(name, ctx);
+        authenticator = await ctx.app.authManager.get(name, ctx);
+        ctx.auth = authenticator;
+      } catch (err) {
+        ctx.auth = {} as Auth;
+        ctx.app.logger.error(`authCheck, ${err.message}`);
+        return next();
+      }
+      if (authenticator) {
         const user = await ctx.auth.check();
         if (user) {
           ctx.auth.user = user;
         }
-        ctx.app.logger.info(`authCheck, name: ${name}, ${user ? user.id : 'anonymous'}`);
-      } catch (err) {
-        ctx.throw(500, err.message);
       }
-
-      return next();
+      await next();
     };
   }
 }

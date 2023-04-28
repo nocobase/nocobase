@@ -62,7 +62,7 @@ export class BaseAuth extends Auth {
         this.ctx.throw(401, 'Unauthorized');
       }
       const token = this.jwt.sign({
-        id: user.id,
+        userId: user.id,
       });
       return {
         user,

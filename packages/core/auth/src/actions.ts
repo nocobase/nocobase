@@ -14,7 +14,7 @@ export default {
     await next();
   },
   check: async (ctx, next) => {
-    ctx.body = ctx.auth.getUser();
+    ctx.body = ctx.auth.user || {};
     await next();
   },
 } as Handlers;

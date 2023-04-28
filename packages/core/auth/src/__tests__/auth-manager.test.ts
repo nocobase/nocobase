@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
+import { Model } from '@nocobase/database';
 import { mockServer } from '@nocobase/test';
 
 class MockStorer {
@@ -14,6 +15,8 @@ class MockStorer {
 }
 
 class BasicAuth extends Auth {
+  public user: Model;
+
   async check() {
     return null;
   }

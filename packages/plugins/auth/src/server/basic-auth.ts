@@ -15,7 +15,7 @@ export class BasicAuth extends BaseAuth {
     const { uniqueField = 'email', values } = ctx.action.params;
 
     if (!values[uniqueField]) {
-      return ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
+      ctx.throw(400, ctx.t('Please fill in your email address', { ns: namespace }));
     }
     const user = await this.userCollection.repository.findOne({
       where: {
@@ -24,13 +24,13 @@ export class BasicAuth extends BaseAuth {
     });
 
     if (!user) {
-      return ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The email is incorrect, please re-enter', { ns: namespace }));
     }
 
     const field = this.userCollection.getField<PasswordField>('password');
     const valid = await field.verify(values.password, user.password);
     if (!valid) {
-      return ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
+      ctx.throw(401, ctx.t('The password is incorrect, please re-enter', { ns: namespace }));
     }
     return user;
   }
