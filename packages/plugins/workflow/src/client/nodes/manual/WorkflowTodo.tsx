@@ -1,7 +1,6 @@
 import React, { useContext, createContext, useEffect, useState } from 'react';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import parse from 'json-templates';
 import { css } from '@emotion/css';
 import moment from 'moment';
 
@@ -19,7 +18,7 @@ import {
   useRequest,
   useTableBlockContext,
 } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
+import { uid, parse } from '@nocobase/utils/client';
 
 import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from '../../constants';
 import { NAMESPACE } from '../../locale';

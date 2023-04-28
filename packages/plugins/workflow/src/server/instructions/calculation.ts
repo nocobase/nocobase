@@ -1,5 +1,5 @@
 import { Evaluator, evaluators } from '@nocobase/evaluators';
-import parse from 'json-templates';
+import { parse } from '@nocobase/utils';
 import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
