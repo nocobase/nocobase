@@ -116,10 +116,7 @@ export const useResourceAction = (props, opts = {}) => {
           if (!action) {
             return Promise.resolve({});
           }
-          const actionParams = { ...opts };
-          if (params.appends) {
-            actionParams.appends = params.appends;
-          }
+          const actionParams = { ...params, ...opts };
           return resource[action](actionParams).then((res) => res.data);
         },
     {
@@ -131,7 +128,7 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [JSON.stringify(params.appends)],
+      refreshDeps: [JSON.stringify(params)],
     },
   );
   return result;
