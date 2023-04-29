@@ -22,7 +22,7 @@ export const m2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -38,7 +38,7 @@ export const m2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
@@ -52,6 +52,8 @@ export const m2o: IField = {
   },
   availableTypes: ['belongsTo'],
   schemaInitialize(schema: ISchema, { block, readPretty, targetCollection }) {
+    schema['type'] = 'object';
+    return;
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;

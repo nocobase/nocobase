@@ -22,7 +22,7 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -38,7 +38,7 @@ export const o2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -52,6 +52,8 @@ export const o2m: IField = {
   },
   availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+    schema['type'] = 'array';
+    return;
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;

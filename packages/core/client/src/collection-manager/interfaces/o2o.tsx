@@ -88,7 +88,7 @@ export const o2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -105,7 +105,7 @@ export const o2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -119,6 +119,7 @@ export const o2o: IField = {
   },
   availableTypes: ['hasOne'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+    return;
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -268,7 +269,7 @@ export const oho: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -285,7 +286,7 @@ export const oho: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -298,6 +299,8 @@ export const oho: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
+    schema['type'] = 'object';
+    return;
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
@@ -439,7 +442,7 @@ export const obo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -455,7 +458,7 @@ export const obo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -468,6 +471,8 @@ export const obo: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
+    schema['type'] = 'object';
+    return;
     internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
