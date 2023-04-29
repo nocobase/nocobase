@@ -26,7 +26,7 @@ export const InternalSelect = () => {
         <Button
           type={'primary'}
           onClick={() => {
-            insertAddNewer(schema.Nester);
+            insertAddNewer(schema.AddNewer);
             setVisibleAddNewer(true);
           }}
         >
