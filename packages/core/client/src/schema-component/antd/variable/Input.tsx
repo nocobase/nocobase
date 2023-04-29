@@ -97,11 +97,14 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type) {
+function getTypedConstantOption(type: string, types?: true | string[]) {
+  const allTypes = Object.values(ConstantTypes);
   return {
     value: '',
     label: '{{t("Constant")}}',
-    children: Object.values(ConstantTypes),
+    children: types
+      ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
+      : allTypes,
     component: ConstantTypes[type]?.component,
   };
 }
@@ -129,7 +132,7 @@ export function Input(props) {
         label: '{{t("Constant")}}',
       }
     : useTypedConstant
-    ? getTypedConstantOption(type)
+    ? getTypedConstantOption(type, useTypedConstant)
     : {
         value: '',
         label: '{{t("Null")}}',

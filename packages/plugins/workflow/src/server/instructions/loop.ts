@@ -3,13 +3,27 @@ import JobModel from '../models/Job';
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 
+function getTargetLength(target) {
+  let length = 0;
+  if (typeof target === 'number') {
+    if (target < 0) {
+      throw new Error('Loop target in number type must be greater than 0');
+    }
+    length = Math.floor(target);
+  } else {
+    const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
+    length = targets.length;
+  }
+  return length;
+}
+
 export default {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const [branch] = processor.getBranches(node);
     const target = processor.getParsedValue(node.config.target);
-    const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
+    const length = getTargetLength(target);
 
-    if (!branch || !targets.length) {
+    if (!branch || !length) {
       return {
         status: JOB_STATUS.RESOLVED,
         result: 0,
@@ -50,8 +64,8 @@ export default {
 
     const target = processor.getParsedValue(loop.config.target);
     // branchJob.status === JOB_STATUS.RESOLVED means branchJob is done, try next loop or exit as resolved
-    const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
-    if (branchJob.status > JOB_STATUS.PENDING && nextIndex < targets.length) {
+    const length = getTargetLength(target);
+    if (branchJob.status > JOB_STATUS.PENDING && nextIndex < length) {
       job.set({ result: nextIndex });
       await processor.saveJob(job);
       await processor.run(branch, job);
@@ -76,10 +90,13 @@ export default {
   getScope(node, index, processor) {
     const target = processor.getParsedValue(node.config.target);
     const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
+    const length = getTargetLength(target);
+    const item = typeof target === 'number' ? index : targets[index];
 
     const result = {
-      item: targets[index],
+      item,
       index,
+      length,
     };
 
     return result;

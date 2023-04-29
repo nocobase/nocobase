@@ -154,11 +154,45 @@ describe('workflow > instructions > loop', () => {
       expect(jobs[0].result).toBe(0);
     });
 
+    it('target is number, cycle number times', async () => {
+      const n1 = await workflow.createNode({
+        type: 'loop',
+        config: {
+          target: 2.5,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n3);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+
+      expect(jobs.length).toBe(4);
+      expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
+      expect(jobs[0].result).toBe(2);
+    });
+
     it('target is no array, set as an array', async () => {
       const n1 = await workflow.createNode({
         type: 'loop',
         config: {
-          target: 1,
+          target: {},
         },
       });
 
@@ -225,7 +259,7 @@ describe('workflow > instructions > loop', () => {
   });
 
   describe('scope variable', () => {
-    it.only('item.key', async () => {
+    it('item.key', async () => {
       const n1 = await workflow.createNode({
         type: 'loop',
         config: {

@@ -117,6 +117,13 @@ export default {
   'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
   Loop: '循环',
   'Loop target': '循环对象',
+  'Loop index': '当前索引',
+  'Loop length': '循环长度',
+  'Loop will cause performance issue based on the quantity, please use carefully.':
+    '循环次数过高可能引起性能问题，请谨慎使用。',
+  'Scope variables': '局域变量',
+  'Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.':
+    '所选数字值将被视为次数，所选字符串值将被视为字符组，其他非数组值将被转换为值数组。',
   Delay: '延时',
   Duration: '时长',
   'End Status': '到时状态',

@@ -49,7 +49,8 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): VariableOptions;
+  useVariables?(node, types?): VariableOptions;
+  useScopeVariables?(node, types?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 }
@@ -109,6 +110,21 @@ export function useAvailableUpstreams(node) {
   }
   for (let current = node.upstream; current; current = current.upstream) {
     stack.push(current);
+  }
+
+  return stack;
+}
+
+export function useUpstreamScopes(node) {
+  const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
+
+  for (let current = node; current; current = current.upstream) {
+    if (current.upstream && current.branchIndex != null) {
+      stack.push(current.upstream);
+    }
   }
 
   return stack;

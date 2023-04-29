@@ -45,7 +45,7 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  getOptions(config, types) {
+  useVariables({ config }, types) {
     return useCollectionFieldOptions({
       collection: config.collection,
       types,
