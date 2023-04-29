@@ -1,15 +1,13 @@
 import { ListDesigner } from './List.Designer';
 import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { List as AntdList, PaginationProps } from 'antd';
 import { useListActionBarProps } from './hooks';
-import { useCollection } from '../../../collection-manager';
-import { RecordContext, RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
-import { SchemaComponentOptions, SchemaComponent } from '../../core';
-import { useDesignable, useDesigner } from '../../hooks';
+import { SchemaComponentOptions } from '../../core';
+import { useDesigner } from '../../hooks';
 import { ListItem } from './List.Item';
 import { ArrayField } from '@formily/core';
 
@@ -55,7 +53,6 @@ const InternalList = (props) => {
   const { run, params } = service;
   const fieldSchema = useFieldSchema();
   const Designer = useDesigner();
-  const { getPrimaryKey } = useCollection();
   const meta = service?.data?.meta;
   const field = useField<ArrayField>();
 
@@ -94,7 +91,7 @@ const InternalList = (props) => {
             return (
               <RecursionField
                 basePath={field.address}
-                key={item[getPrimaryKey()]}
+                key={index}
                 name={index}
                 onlyRenderProperties
                 schema={
