@@ -1,8 +1,7 @@
-import React from 'react';
 import { css } from '@emotion/css';
-
 import { i18n } from '@nocobase/client';
-import evaluators from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
+import React from 'react';
 
 export const renderEngineReference = (key: string) => {
   const engine = evaluators.get(key);

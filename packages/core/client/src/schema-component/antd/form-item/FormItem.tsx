@@ -18,8 +18,15 @@ import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+
+const defaultInputStyle = css`
+  & > .nb-form-item {
+    flex: 1;
+  }
+`;
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -420,8 +427,7 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  // 关系字段不支持设置变量
-                  default: collectionField?.target
+                  default: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchema || {}),
                         'x-decorator': 'FormItem',
@@ -434,10 +440,16 @@ FormItem.Designer = function Designer() {
                           service: {
                             resource: collectionField?.target,
                           },
+                          style: {
+                            width: '100%',
+                            verticalAlign: 'top',
+                          },
                         },
                         name: 'default',
                         title: t('Default value'),
                         default: getFieldDefaultValue(fieldSchema, collectionField),
+                        'x-read-pretty': false,
+                        'x-disabled': false,
                       }
                     : {
                         ...(fieldSchema || {}),
@@ -447,6 +459,7 @@ FormItem.Designer = function Designer() {
                           ...(fieldSchema?.['x-component-props'] || {}),
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
+                          className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
                             const s = _.cloneDeep(fieldSchema) || ({} as Schema);
                             s.title = '';
@@ -464,6 +477,7 @@ FormItem.Designer = function Designer() {
                                     defaultValue: getFieldDefaultValue(s, collectionField),
                                     style: {
                                       width: '100%',
+                                      verticalAlign: 'top',
                                     },
                                   },
                                 }}

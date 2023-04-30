@@ -49,6 +49,7 @@ import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { EnableChildCollections } from './EnableChildCollections';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -1061,7 +1062,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   );
 };
 
-SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
+SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1099,7 +1100,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
         } as ISchema
       }
       onSubmit={(v) => {
-        console.log(v);
         const enableChildren = [];
         for (const item of v.enableChildren.childrenCollections) {
           enableChildren.push(_.pickBy(item, _.identity));
@@ -1132,7 +1132,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment'].includes(collectionField?.interface) &&
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
     !isSystemField(collectionField, getInterface)
   );
 };

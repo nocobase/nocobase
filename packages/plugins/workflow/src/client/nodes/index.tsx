@@ -4,9 +4,8 @@ import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
 import { Button, message, Modal, Tag, Alert, Input } from 'antd';
 import { useTranslation } from 'react-i18next';
-import parse from 'json-templates';
 
-import { Registry } from '@nocobase/utils/client';
+import { Registry, parse } from '@nocobase/utils/client';
 import {
   ActionContext,
   SchemaComponent,

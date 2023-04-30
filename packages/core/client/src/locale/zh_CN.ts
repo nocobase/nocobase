@@ -225,7 +225,7 @@ export default {
   "Association fields filter": "关系筛选",
   "PK & FK fields": "主外键字段",
   "Association fields": "关系字段",
-  "Optional fields": "可选字段",
+  "Choices fields": "选项字段",
   "System fields": "系统字段",
   "General fields": "普通字段",
   "Inherited fields": "继承字段",
