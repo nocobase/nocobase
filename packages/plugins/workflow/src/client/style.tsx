@@ -181,12 +181,8 @@ export const nodeCardClass = css`
     box-shadow: 0 0.25em 1em rgba(0, 100, 200, 0.25);
   }
 
-  .workflow-node-remove-button,
-  .workflow-node-job-button {
-    position: absolute;
-  }
-
   .workflow-node-remove-button {
+    position: absolute;
     right: 0.5em;
     top: 0.5em;
     color: #999;
@@ -202,21 +198,10 @@ export const nodeCardClass = css`
     }
   }
 
-  .workflow-node-job-button {
-    display: flex;
-    top: 1em;
-    right: 1em;
-    width: 1.25rem;
-    height: 1.25rem;
-    min-width: 1.25rem;
-    justify-content: center;
-    align-items: center;
-    font-size: 0.8em;
-    color: #fff;
-
-    &[type='button'] {
-      border: none;
-    }
+  > .workflow-node-job-button {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
   }
 
   .ant-input {
@@ -248,6 +233,30 @@ export const nodeCardClass = css`
     .workflow-node-remove-button {
       opacity: 1;
     }
+  }
+`;
+
+export const nodeJobButtonClass = css`
+  display: flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  min-width: 1.25rem;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.8em;
+  color: #fff;
+
+  &[type='button'] {
+    border: none;
+  }
+
+  .ant-tag {
+    padding: 0;
+    width: 100%;
+    line-height: 18px;
+    margin-right: 0;
+    border-radius: 50%;
+    text-align: center;
   }
 `;
 

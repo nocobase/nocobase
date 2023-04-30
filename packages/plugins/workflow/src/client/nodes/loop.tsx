@@ -1,5 +1,4 @@
 import React from 'react';
-import { ISchema } from '@formily/react';
 import { Alert } from 'antd';
 import { ArrowUpOutlined } from '@ant-design/icons';
 import { cx, css } from '@emotion/css';
@@ -59,7 +58,7 @@ export default {
       },
       required: true,
     },
-  } as ISchema,
+  },
   view: {},
   render: function Renderer(data) {
     const { nodes } = useFlowContext();
@@ -87,7 +86,9 @@ export default {
                     display: flex;
                     justify-content: center;
                     align-items: center;
-                    position: relative;
+                    position: absolute;
+                    top: 50%;
+                    transform: translateY(-50%);
                     width: 2em;
                     height: 6em;
                   `,

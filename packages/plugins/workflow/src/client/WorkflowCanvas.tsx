@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
+import { Dropdown, Button, Switch, message, Breadcrumb } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import classnames from 'classnames';
@@ -16,13 +16,12 @@ import {
 } from '@nocobase/client';
 
 import { FlowContext, useFlowContext } from './FlowContext';
-import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
-import { TriggerConfig } from './triggers';
-import { Branch } from './Branch';
+import { workflowVersionDropdownClass } from './style';
 import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
 import { linkNodes } from './utils';
+import { CanvasContent } from './CanvasContent';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -134,31 +133,29 @@ export function WorkflowCanvas() {
           <div className="workflow-versions">
             <Dropdown
               trigger={['click']}
-              overlay={
-                <Menu
-                  onClick={onSwitchVersion}
-                  defaultSelectedKeys={[`${workflow.id}`]}
-                  className={cx(workflowVersionDropdownClass)}
-                  items={revisions
-                    .sort((a, b) => b.id - a.id)
-                    .map((item, index) => ({
-                      key: `${item.id}`,
-                      icon: item.current ? <RightOutlined /> : null,
-                      label: (
-                        <span
-                          className={classnames({
-                            executed: item.executed,
-                            unexecuted: !item.executed,
-                            enabled: item.enabled,
-                          })}
-                        >
-                          <strong>{`#${item.id}`}</strong>
-                          <time>{new Date(item.createdAt).toLocaleString()}</time>
-                        </span>
-                      ),
-                    }))}
-                />
-              }
+              menu={{
+                onClick: onSwitchVersion,
+                defaultSelectedKeys: [`${workflow.id}`],
+                className: cx(workflowVersionDropdownClass),
+                items: revisions
+                  .sort((a, b) => b.id - a.id)
+                  .map((item, index) => ({
+                    key: `${item.id}`,
+                    icon: item.current ? <RightOutlined /> : null,
+                    label: (
+                      <span
+                        className={classnames({
+                          executed: item.executed,
+                          unexecuted: !item.executed,
+                          enabled: item.enabled,
+                        })}
+                      >
+                        <strong>{`#${item.id}`}</strong>
+                        <time>{new Date(item.createdAt).toLocaleString()}</time>
+                      </span>
+                    ),
+                  }))
+              }}
             >
               <Button type="text">
                 <label>{lang('Version')}</label>
@@ -174,15 +171,13 @@ export function WorkflowCanvas() {
             unCheckedChildren={lang('Off')}
           />
           <Dropdown
-            overlay={
-              <Menu
-                items={[
-                  { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
-                  { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
-                ]}
-                onClick={onMenuCommand}
-              />
-            }
+            menu={{
+              items: [
+                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
+                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
+              ],
+              onClick: onMenuCommand,
+            }}
           >
             <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
@@ -197,17 +192,7 @@ export function WorkflowCanvas() {
           </ActionContext.Provider>
         </aside>
       </div>
-      <div className="workflow-canvas">
-        <TriggerConfig />
-        <div className={branchBlockClass}>
-          <Branch entry={entry} />
-        </div>
-        <div className={cx('end', nodeCardClass)}>
-          <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{lang('End')}</Tag>
-          </div>
-        </div>
-      </div>
+      <CanvasContent entry={entry} />
     </FlowContext.Provider>
   );
 }

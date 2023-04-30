@@ -14,7 +14,7 @@
     "@nocobase/resourcer": "0.9.2-alpha.4",
     "@nocobase/server": "0.9.2-alpha.4",
     "@nocobase/utils": "0.9.2-alpha.4",
-    "antd": "4.22.8",
+    "antd": "^4.24.8",
     "axios": "^0.27.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
