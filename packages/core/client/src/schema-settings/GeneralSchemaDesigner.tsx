@@ -72,12 +72,15 @@ export const GeneralSchemaDesigner = (props: any) => {
               <DragOutlined />
             </DragHandler>
           )}
-          {!disableInitializer &&
-            ctx?.renderSchemaInitializer?.({
-              insertPosition: 'afterEnd',
-              wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-              component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 14 }} />,
-            })}
+          {!disableInitializer && ctx?.InitializerComponent ? (
+            <ctx.InitializerComponent
+              insertPosition="afterEnd"
+              wrap={rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap}
+              component={<PlusOutlined style={{ cursor: 'pointer', fontSize: 14 }} />}
+            />
+          ) : (
+            ctx?.renderSchemaInitializer?.()
+          )}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}
           </SchemaSettings>

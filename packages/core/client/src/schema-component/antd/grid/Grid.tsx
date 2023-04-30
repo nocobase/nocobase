@@ -330,7 +330,7 @@ export const Grid: any = observer((props: any) => {
   const gridRef = useRef(null);
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { render, InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
   const addr = field.address.toString();
   const rows = useRowProperties();
   const { setPrintContent } = useFormBlockContext();
@@ -339,7 +339,7 @@ export const Grid: any = observer((props: any) => {
     gridRef.current && setPrintContent?.(gridRef.current);
   }, [gridRef.current]);
   return (
-    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render }}>
+    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent }}>
       <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>
         <DndWrapper dndContext={props.dndContext}>
           <RowDivider
@@ -372,7 +372,7 @@ export const Grid: any = observer((props: any) => {
             );
           })}
         </DndWrapper>
-        {render()}
+        <InitializerComponent />
       </div>
     </GridContext.Provider>
   );

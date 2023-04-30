@@ -9,7 +9,7 @@ import { useDesignable, useProps } from '../../hooks';
 export const ActionBar = observer((props: any) => {
   const { layout = 'tow-columns', style, size, ...others } = useProps(props);
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
   const { designable } = useDesignable();
   if (layout === 'one-column') {
     return (
@@ -28,7 +28,7 @@ export const ActionBar = observer((props: any) => {
               </Space>
             </div>
           )}
-          {render()}
+          <InitializerComponent />
         </div>
       </DndContext>
     );
@@ -78,7 +78,7 @@ export const ActionBar = observer((props: any) => {
           </Space>
         </DndContext>
       </div>
-      {render()}
+      <InitializerComponent />
     </div>
   );
 });
