@@ -1,7 +1,7 @@
 import { ListDesigner } from './List.Designer';
 import { ListBlockProvider, useListBlockContext, useListItemProps } from './List.Decorator';
-import React, { useCallback } from 'react';
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { List as AntdList, PaginationProps } from 'antd';
 import { useListActionBarProps } from './hooks';
@@ -55,6 +55,24 @@ const InternalList = (props) => {
   const Designer = useDesigner();
   const meta = service?.data?.meta;
   const field = useField<ArrayField>();
+  const [schemaMap] = useState(new Map());
+  const getSchema = useCallback(
+    (key) => {
+      if (!schemaMap.has(key)) {
+        schemaMap.set(
+          key,
+          new Schema({
+            type: 'object',
+            properties: {
+              [key]: fieldSchema.properties['listItem'],
+            },
+          }),
+        );
+      }
+      return schemaMap.get(key);
+    },
+    [fieldSchema.properties, schemaMap],
+  );
 
   const onPaginationChange: PaginationProps['onChange'] = useCallback(
     (page, pageSize) => {
@@ -94,14 +112,7 @@ const InternalList = (props) => {
                 key={index}
                 name={index}
                 onlyRenderProperties
-                schema={
-                  {
-                    type: 'object',
-                    properties: {
-                      [index]: fieldSchema.properties['listItem'],
-                    },
-                  } as any
-                }
+                schema={getSchema(index)}
               ></RecursionField>
             );
           })}
