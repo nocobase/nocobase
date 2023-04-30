@@ -26,39 +26,42 @@ const useTableColumns = () => {
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializer(schema['x-initializer']);
-  const columns = schema
-    .reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
-        return buf.concat([s]);
-      }
-      return buf;
-    }, [])
-    ?.map((s: Schema) => {
-      const collectionFields = s.reduceProperties((buf, s) => {
-        if (isCollectionFieldComponent(s)) {
+  const columns = useMemo(() => {
+    return schema
+      .reduceProperties((buf, s) => {
+        if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
           return buf.concat([s]);
         }
-      }, []);
-      const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
-      return {
-        title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
-        dataIndex,
-        key: s.name,
-        sorter: s['x-component-props']?.['sorter'],
-        width: 200,
-        ...s['x-component-props'],
-        render: (v, record) => {
-          const index = field.value?.indexOf(record);
-          return (
-            <RecordIndexProvider index={record.__index || index}>
-              <RecordProvider record={record}>
-                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
-              </RecordProvider>
-            </RecordIndexProvider>
-          );
-        },
-      } as TableColumnProps<any>;
-    });
+        return buf;
+      }, [])
+      ?.map((s: Schema) => {
+        const collectionFields = s.reduceProperties((buf, s) => {
+          if (isCollectionFieldComponent(s)) {
+            return buf.concat([s]);
+          }
+        }, []);
+        const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
+        return {
+          title: <RecursionField name={s.name} schema={s} onlyRenderSelf />,
+          dataIndex,
+          key: s.name,
+          sorter: s['x-component-props']?.['sorter'],
+          width: 200,
+          ...s['x-component-props'],
+          render: (v, record) => {
+            const index = field.value?.indexOf(record);
+            console.log(1234);
+            return (
+              <RecordIndexProvider index={record.__index || index}>
+                <RecordProvider record={record}>
+                  <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
+                </RecordProvider>
+              </RecordIndexProvider>
+            );
+          },
+        } as TableColumnProps<any>;
+      });
+  }, [schema]);
   if (!exists) {
     return columns;
   }
