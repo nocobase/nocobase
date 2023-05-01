@@ -69,7 +69,7 @@ const InternalField: React.FC = (props: Props) => {
   if (!uiSchema) {
     return null;
   }
-  return React.createElement(Component, props, props.children);
+  return <Component {...props} />;
 };
 
 export const InternalFallbackField = () => {
