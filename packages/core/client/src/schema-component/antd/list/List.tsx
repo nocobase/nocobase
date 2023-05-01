@@ -101,6 +101,7 @@ const InternalList = (props) => {
                   onChange: onPaginationChange,
                   total: meta?.count || 0,
                   pageSize: meta?.pageSize || 10,
+                  current: meta?.page || 1,
                 }
           }
           loading={service?.loading}

@@ -60,7 +60,7 @@ export const ListDesigner = () => {
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
           _.set(fieldSchema, 'x-decorator-props.params.filter', filter);
-          field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+          field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -149,7 +149,7 @@ export const ListDesigner = () => {
           });
 
           _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
-          field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+          field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
           dn.emit('patch', {
             schema: {
               ['x-uid']: fieldSchema['x-uid'],
@@ -158,7 +158,28 @@ export const ListDesigner = () => {
           });
         }}
       />
-      <SchemaSettings.Template componentName={'Details'} collectionName={name} resourceName={defaultResource} />
+      <SchemaSettings.SelectItem
+        title={t('Records per page')}
+        value={field.decoratorProps?.params?.pageSize || 20}
+        options={[
+          { label: '10', value: 10 },
+          { label: '20', value: 20 },
+          { label: '50', value: 50 },
+          { label: '80', value: 80 },
+          { label: '100', value: 100 },
+        ]}
+        onChange={(pageSize) => {
+          _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
+          field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              'x-decorator-props': fieldSchema['x-decorator-props'],
+            },
+          });
+        }}
+      />
+      <SchemaSettings.Template componentName={'List'} collectionName={name} resourceName={defaultResource} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

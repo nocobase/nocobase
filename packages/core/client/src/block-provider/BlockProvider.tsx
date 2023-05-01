@@ -5,7 +5,7 @@ import { useRequest } from 'ahooks';
 import merge from 'deepmerge';
 import { Col, Row } from 'antd';
 import template from 'lodash/template';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
@@ -86,14 +86,14 @@ const useResource = (props: UseResourceProps) => {
 const useActionParams = (props) => {
   const { useParams } = props;
   const params = useParams?.() || {};
-  return { ...props.params, ...params };
+  return Object.assign(props.params, params);
 };
 
 export const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */
-  const { resource, action, fieldName: tableFieldName } = props;
+  const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
   const { fields } = useCollection();
   const params = useActionParams(props);
   const api = useAPIClient();
@@ -101,7 +101,7 @@ export const useResourceAction = (props, opts = {}) => {
   const { snapshot } = useActionContext();
   const record = useRecord();
 
-  if (!Object.keys(params).includes('appends')) {
+  if (!Reflect.has(params, 'appends')) {
     const appends = fields?.filter((field) => field.target).map((field) => field.name);
     if (appends?.length) {
       params['appends'] = appends;
@@ -128,9 +128,22 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [JSON.stringify(params)],
+      refreshDeps: [runWhenParamsChanged ? JSON.stringify(params.appends) : null],
     },
   );
+
+  // automatic run service when params has changed
+  const firstRun = useRef(false);
+  useEffect(() => {
+    if (!runWhenParamsChanged) {
+      return;
+    }
+    if (firstRun.current) {
+      result?.run({ ...result?.params?.[0], ...params });
+    }
+    firstRun.current = true;
+  }, [JSON.stringify(params), runWhenParamsChanged]);
+
   return result;
 };
 

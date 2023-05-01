@@ -976,6 +976,7 @@ export const createListBlockSchema = (options) => {
         pageSize: 10,
         appends: [],
       },
+      runWhenParamsChanged: true,
       appendsOnDemand: true,
       ...others,
     },
