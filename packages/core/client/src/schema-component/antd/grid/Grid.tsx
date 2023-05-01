@@ -300,7 +300,7 @@ const useRowProperties = () => {
       }
       return buf;
     }, []);
-  }, [Object.keys(fieldSchema.properties).join(',')]);
+  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
 };
 
 const useColProperties = () => {
@@ -312,7 +312,7 @@ const useColProperties = () => {
       }
       return buf;
     }, []);
-  }, [Object.keys(fieldSchema.properties).join(',')]);
+  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
 };
 
 const DndWrapper = (props) => {
