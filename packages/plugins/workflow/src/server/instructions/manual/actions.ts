@@ -48,15 +48,13 @@ export async function submit(context: Context, next) {
 
   // NOTE: validate assignee
   const assignees = processor.getParsedValue(userJob.node.config.assignees ?? []);
-  if (!assignees.includes(currentUser.id)
-    || userJob.userId !== currentUser.id
-  ) {
+  if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
     return context.throw(403);
   }
 
   userJob.set({
     status: values.status,
-    result: values.result
+    result: values.status ? values.result : Object.assign(userJob.result ?? {}, values.result),
   });
 
   const handler = instruction.formTypes.get(forms[formKey].type);
@@ -64,9 +62,7 @@ export async function submit(context: Context, next) {
     await handler.call(instruction, userJob, forms[formKey], processor);
   }
 
-  await userJob.save({
-    transaction: processor.transaction
-  });
+  await userJob.save({ transaction: processor.transaction });
 
   await processor.exit(userJob.job);
 
