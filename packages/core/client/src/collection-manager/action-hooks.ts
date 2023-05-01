@@ -383,7 +383,7 @@ export const useBulkDestroyAction = () => {
   return {
     async run() {
       if (!state?.selectedRowKeys || !state?.selectedRowKeys.length) {
-        return message.error(t('Please select the fields you want to delete'));
+        return message.error(t('Please select the records you want to delete'));
       }
       await resource.destroy({
         filterByTk: state?.selectedRowKeys || [],
