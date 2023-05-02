@@ -1,7 +1,6 @@
 import Database, { Collection as DBCollection, StringFieldOptions } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '.';
-import { appends } from '@nocobase/plugin-workflow/src/client/schemas/collection';
 
 describe('recreate field', () => {
   let db: Database;
@@ -74,14 +73,21 @@ describe('recreate field', () => {
       include: [
         {
           association: 'a',
-          // attributes: {
-          // include: [],
-          // },
         },
       ],
     });
 
-    console.log(results);
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).toContain('getA');
+
+    await Field.repository.destroy({
+      filter: {
+        name: 'a',
+        collectionName: 'a1',
+      },
+    });
+
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).not.toContain('getA');
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).not.toContain('a');
   });
 });
 
