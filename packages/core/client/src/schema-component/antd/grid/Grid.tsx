@@ -447,11 +447,11 @@ Grid.Col = observer((props: any) => {
   const width = useMemo(() => {
     let width = '';
     if (cols?.length) {
-      const w = field.componentProps?.width || 100 / cols.length;
+      const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
       width = `calc(${w}% - var(--nb-spacing) *  ${(cols.length + 1) / cols.length})`;
     }
     return width;
-  }, [cols?.length, field.componentProps?.width]);
+  }, [cols?.length, schema?.['x-component-props']?.['width']]);
 
   const { setNodeRef } = useDroppable({
     id: field.address.toString(),
