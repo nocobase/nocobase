@@ -1,0 +1,1 @@
+export const CustomRequestCollectionName = 'customRequest';

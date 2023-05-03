@@ -579,6 +579,7 @@ export const useCustomizeRequestActionProps = () => {
     async onClick() {
       const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
+      console.log('submit', xAction);
       if (!requestSettings['url']) {
         return;
       }

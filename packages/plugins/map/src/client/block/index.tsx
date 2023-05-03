@@ -10,6 +10,7 @@ import { MapBlockProvider, useMapBlockProps } from './MapBlockProvider';
 export const MapBlockOptions: React.FC = (props) => {
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
+  console.log(children, 'children');
 
   useEffect(() => {
     if (!children.find((item) => item.component === 'MapBlockInitializer')) {

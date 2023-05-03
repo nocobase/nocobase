@@ -183,10 +183,11 @@ export const ActionDesigner = (props) => {
         )}
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
           <SchemaSettings.ActionModalItem
-            title={t('Request settings')}
+            title={t('Request settings1')}
             schema={requestSettingsSchema}
             initialValues={fieldSchema?.['x-action-settings']?.requestSettings}
             onSubmit={(requestSettings) => {
+              console.log(requestSettings,'requestSettings');
               fieldSchema['x-action-settings']['requestSettings'] = requestSettings;
               dn.emit('patch', {
                 schema: {
