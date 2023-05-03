@@ -217,6 +217,7 @@ export abstract class Field {
   bind() {
     const { model } = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
+
     // @ts-ignore
     model.refreshAttributes();
     if (this.options.index) {
@@ -226,6 +227,9 @@ export abstract class Field {
 
   unbind() {
     const { model } = this.context.collection;
+
+    delete model.prototype[this.name];
+
     model.removeAttribute(this.name);
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
