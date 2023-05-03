@@ -9,3 +9,4 @@ export * from './useFieldComponentOptions';
 export * from './useFieldTitle';
 export * from './useProps';
 export * from './useTableSize';
+export * from './useFieldModeOptions';

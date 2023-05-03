@@ -15,7 +15,7 @@ import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefault
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
-import { useCompile, useDesignable, useFieldComponentOptions, useFieldModeOptions } from '../../hooks';
+import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { isInvariable } from '../variable';

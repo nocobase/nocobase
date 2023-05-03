@@ -308,6 +308,7 @@ export default {
   "Selector mode": "选择器模式",
   "Subtable mode": "子表格模式",
   "Subform mode": "子表单模式",
+  "Field mode":"字段组件",
   "Edit block title": "编辑区块标题",
   "Block title": "区块标题",
   "Pattern": "模式",
