@@ -11,6 +11,7 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { SchemaComponentOptions } from '../../core';
+import { pageSizeOptions } from './options';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
@@ -188,6 +189,21 @@ export const CardListDesigner = () => {
 
             _.set(fieldSchema, 'x-decorator-props.params.sort', sortArr);
             field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params };
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-decorator-props': fieldSchema['x-decorator-props'],
+              },
+            });
+          }}
+        />
+        <SchemaSettings.SelectItem
+          title={t('Records per page')}
+          value={field.decoratorProps?.params?.pageSize || 20}
+          options={pageSizeOptions.map((v) => ({ value: v }))}
+          onChange={(pageSize) => {
+            _.set(fieldSchema, 'x-decorator-props.params.pageSize', pageSize);
+            field.decoratorProps.params = { ...fieldSchema['x-decorator-props'].params, page: 1 };
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],

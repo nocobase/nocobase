@@ -1,18 +1,16 @@
-import React, { useRef } from 'react';
-import { useField, useFieldSchema } from '@formily/react';
+import React, { useCallback, useState } from 'react';
+import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { Col, Divider, Empty, Row, Spin } from 'antd';
-import { useTranslation } from 'react-i18next';
+import { List as AntdList, Row, PaginationProps, Col } from 'antd';
 import { useCardListActionBarProps } from './hooks';
-import { useCollection } from '../../../collection-manager';
-import { RecordProvider } from '../../../record-provider';
 import { SortableItem } from '../../common';
-import { SchemaComponentOptions, SchemaComponent } from '../../core';
-import { useDesignable, useDesigner } from '../../hooks';
-import { useInfiniteScroll } from 'ahooks';
+import { SchemaComponentOptions } from '../../core';
+import { useDesigner } from '../../hooks';
 import { CardListItem } from './CardList.Item';
 import { useCardListBlockContext, useCardListItemProps, CardListBlockProvider } from './CardList.Decorator';
 import { CardListDesigner } from './CardList.Designer';
+import { ArrayField } from '@formily/core';
+import { pageSizeOptions } from './options';
 
 const designerCss = css`
   width: 100%;
@@ -52,41 +50,40 @@ const designerCss = css`
 
 const InternalCardList = (props) => {
   const { service, columnCount = 1 } = useCardListBlockContext();
+  const { run, params } = service;
+  const meta = service?.data?.meta;
   const fieldSchema = useFieldSchema();
-  const field = useField();
+  const field = useField<ArrayField>();
   const Designer = useDesigner();
-  const { getPrimaryKey } = useCollection();
-  const { t } = useTranslation();
-  const scrollEl = useRef<HTMLDivElement>();
-  const { designable } = useDesignable();
-
-  const { data, loading, loadingMore, noMore } = useInfiniteScroll(
-    async (d) => {
-      const data = await service.runAsync({
-        ...service?.params?.[0],
-        page: d ? d.meta.page + 1 : 1,
-      });
-      return {
-        list: data?.data,
-        meta: data?.meta,
-      };
+  const [schemaMap] = useState(new Map());
+  const getSchema = useCallback(
+    (key) => {
+      if (!schemaMap.has(key)) {
+        schemaMap.set(
+          key,
+          new Schema({
+            type: 'object',
+            properties: {
+              [key]: fieldSchema.properties['item'],
+            },
+          }),
+        );
+      }
+      return schemaMap.get(key);
     },
-    {
-      threshold: 200,
-      target: scrollEl,
-      isNoMore: (d) => {
-        return d?.meta.page === d?.meta?.totalPage;
-      },
-      reloadDeps: [field.decoratorProps?.params],
-    },
+    [fieldSchema.properties, schemaMap],
   );
 
-  let endedMessage = 'More data coming soon';
-  if (loadingMore) {
-    endedMessage = t('loading more ~~~');
-  } else if (noMore) {
-    endedMessage = t('It is all, nothing more 🤐');
-  }
+  const onPaginationChange: PaginationProps['onChange'] = useCallback(
+    (page, pageSize) => {
+      run({
+        ...params?.[0],
+        page: page,
+        pageSize: pageSize,
+      });
+    },
+    [run, params],
+  );
 
   return (
     <SchemaComponentOptions
@@ -96,59 +93,54 @@ const InternalCardList = (props) => {
       }}
     >
       <SortableItem className={cx('nb-card-list', designerCss)}>
-        {data?.list?.length ? (
-          <div
-            className={cx(
-              'nb-card-list-content',
-              css`
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 100%;
-                overflow-y: auto;
-                height: 50vh;
-              `,
-            )}
-            ref={scrollEl}
+        <AntdList
+          pagination={
+            !meta || meta.count <= meta.pageSize
+              ? false
+              : {
+                  onChange: onPaginationChange,
+                  total: meta?.count || 0,
+                  pageSize: meta?.pageSize || 10,
+                  current: meta?.page || 1,
+                  pageSizeOptions,
+                }
+          }
+          loading={service?.loading}
+        >
+          <Row
+            style={{ width: '100%' }}
+            gutter={[
+              {
+                md: 16,
+                sm: 8,
+              },
+              {
+                md: 16,
+                sm: 8,
+              },
+            ]}
           >
-            <Row
-              style={{ width: '100%' }}
-              gutter={[
-                {
-                  md: 16,
-                  sm: 8,
-                },
-                {
-                  md: 16,
-                  sm: 8,
-                },
-              ]}
-            >
-              {data?.list?.map((item) => {
-                return (
-                  <RecordProvider key={item[getPrimaryKey()]} record={item}>
-                    <Col span={24 / columnCount}>
-                      <SchemaComponent memoized={designable} schema={fieldSchema}></SchemaComponent>
-                    </Col>
-                  </RecordProvider>
-                );
-              })}
-            </Row>
-            <Divider plain>{endedMessage}</Divider>
-          </div>
-        ) : (
-          <div
-            className={css`
-              height: 100%;
-              display: flex;
-              height: 50vh;
-              justify-content: center;
-              align-items: center;
-            `}
-          >
-            {loading ? <Spin /> : <Empty />}
-          </div>
-        )}
+            {field.value?.map((item, index) => {
+              return (
+                <Col key={index} span={24 / columnCount}>
+                  <RecursionField
+                    basePath={field.address}
+                    name={index}
+                    onlyRenderProperties
+                    schema={
+                      {
+                        type: 'object',
+                        properties: {
+                          [index]: fieldSchema.properties['item'],
+                        },
+                      } as any
+                    }
+                  ></RecursionField>
+                </Col>
+              );
+            })}
+          </Row>
+        </AntdList>
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>

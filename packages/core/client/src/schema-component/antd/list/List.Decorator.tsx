@@ -9,7 +9,6 @@ import { FormLayout } from '@formily/antd';
 export const ListBlockContext = createContext<any>({});
 
 const InternalListBlockProvider = (props) => {
-  const field = useField<any>();
   const { resource, service } = useBlockRequestContext();
   const form = useForm();
   useEffect(() => {
@@ -21,7 +20,6 @@ const InternalListBlockProvider = (props) => {
   return (
     <ListBlockContext.Provider
       value={{
-        field,
         service,
         resource,
       }}
@@ -44,9 +42,5 @@ export const useListBlockContext = () => {
 };
 
 export const useListItemProps = () => {
-  const record = useRecord();
-  return {
-    // form,
-    disabled: false,
-  };
+  return {};
 };

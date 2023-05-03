@@ -1001,7 +1001,7 @@ export const createListBlockSchema = (options) => {
           props: '{{ useListBlockProps }}',
         },
         properties: {
-          listItem: {
+          item: {
             type: 'object',
             'x-component': 'List.Item',
             'x-read-pretty': true,
@@ -1035,7 +1035,6 @@ export const createListBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -1065,9 +1064,7 @@ export const createCardListBlockSchema = (options) => {
         pageSize: 12,
         appends: [],
       },
-      requestOptions: {
-        manual: true,
-      },
+      runWhenParamsChanged: true,
       appendsOnDemand: true,
       ...others,
     },
@@ -1085,14 +1082,14 @@ export const createCardListBlockSchema = (options) => {
         },
         properties: {},
       },
-      [uid()]: {
-        type: 'void',
+      list: {
+        type: 'array',
         'x-component': 'CardList',
         'x-component-props': {
           props: '{{ useCardListBlockProps }}',
         },
         properties: {
-          [uid()]: {
+          item: {
             type: 'object',
             'x-component': 'CardList.Item',
             'x-read-pretty': true,
@@ -1125,7 +1122,6 @@ export const createCardListBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 export const createFormBlockSchema = (options) => {

@@ -64,7 +64,7 @@ const InternalList = (props) => {
           new Schema({
             type: 'object',
             properties: {
-              [key]: fieldSchema.properties['listItem'],
+              [key]: fieldSchema.properties['item'],
             },
           }),
         );
