@@ -55,9 +55,9 @@ const InternalAssociationSelect = connect(
     }, [props.value, normalizeValues]);
     return (
       <>
-        <Input.Group compact>
+        <Input.Group compact style={{display:'flex'}}>
           <RemoteSelect
-            style={{ width: '85%' }}
+            style={{ width: '100%' }}
             {...props}
             objectValue={objectValue}
             value={value}

@@ -78,8 +78,8 @@ export const InternalSelect = (props) => {
 
   return (
     <>
-      <Input.Group compact>
-        <div style={{ width: '85%' }}>
+      <Input.Group compact style={{ display: 'flex' }}>
+        <div style={{ width: '100%' }}>
           {showFilePicker ? (
             <FileSelector
               value={options}

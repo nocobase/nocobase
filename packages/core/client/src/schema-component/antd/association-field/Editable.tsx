@@ -23,6 +23,7 @@ export const Editable = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
+
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField = useField();
@@ -30,14 +31,14 @@ export const Editable = observer((props: any) => {
       async onClick() {
         await onClick();
         const { data } = actionField.data?.data?.data || {};
-        if (['oho', 'obo'].includes(collectionField.interface)) {
+        if (['oho', 'obo', 'm2o'].includes(collectionField.interface)) {
           form.setValuesIn(field.props.name, {
             [fieldNames.label]: data[fieldNames.label],
             id: data.id,
             value: data.id,
           });
         } else {
-          const values = form.values[fieldSchema.name] || [];
+          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
           values.push({
             [fieldNames.label]: data[fieldNames.label],
             id: data.id,

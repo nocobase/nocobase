@@ -673,6 +673,7 @@ FormItem.Designer = function Designer() {
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
             dn.emit('patch', {
               schema,
             });
