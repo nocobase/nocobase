@@ -1,5 +1,5 @@
 {
-  "lang": "es-PE",
+  "lang": "es-ES",
   "moment": "es",
   "resources": {
     "client": {
@@ -1082,7 +1082,7 @@
           "Semana de inicio",
           "Fin de semana"
         ],
-        "locale": "es_PE",
+        "locale": "es_ES",
         "today": "Hoy",
         "now": "Ahora",
         "backToToday": "Volver a hoy",
@@ -1152,7 +1152,7 @@
           "Semana de inicio",
           "Fin de semana"
         ],
-        "locale": "es_PE",
+        "locale": "es_ES",
         "today": "Hoy",
         "now": "Ahora",
         "backToToday": "Volver a hoy",
