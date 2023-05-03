@@ -86,7 +86,7 @@ const useResource = (props: UseResourceProps) => {
 const useActionParams = (props) => {
   const { useParams } = props;
   const params = useParams?.() || {};
-  return Object.assign(props.params, params);
+  return { ...props.params, ...params };
 };
 
 export const useResourceAction = (props, opts = {}) => {
