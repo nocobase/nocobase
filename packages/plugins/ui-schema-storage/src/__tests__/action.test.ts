@@ -286,7 +286,7 @@ describe('action test', () => {
         },
       });
 
-    let response = await app.agent().resource('uiSchemas').insertAdjacent({
+    const response = await app.agent().resource('uiSchemas').insertAdjacent({
       resourceIndex: 'A',
       position: 'afterEnd',
       values: schema,

@@ -20,7 +20,7 @@ interface ResourceActionProviderProps {
 const ResourceContext = createContext<any>(null);
 
 const CollectionResourceActionProvider = (props) => {
-  let { collection, request, uid, dragSort } = props;
+  const { collection, request, uid, dragSort } = props;
   const api = useAPIClient();
   const record = useRecord();
   const actionName = request?.action;
@@ -52,7 +52,7 @@ const CollectionResourceActionProvider = (props) => {
 };
 
 const AssociationResourceActionProvider = (props) => {
-  let { collection, association, request, uid, dragSort } = props;
+  const { collection, association, request, uid, dragSort } = props;
   const api = useAPIClient();
   const record = useRecord();
   const resourceOf = record[association.sourceKey];

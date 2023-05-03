@@ -4,10 +4,7 @@ import React from 'react';
 
 export const ViewFieldAction = ({ item: record }) => {
   return (
-    <ViewCollectionFieldAction
-      item={{ ...record }}
-      getContainer={() => document.getElementById('graph_container')}
-    >
+    <ViewCollectionFieldAction item={{ ...record }} getContainer={() => document.getElementById('graph_container')}>
       <EyeOutlined className="btn-view" />
     </ViewCollectionFieldAction>
   );

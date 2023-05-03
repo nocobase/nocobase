@@ -8,8 +8,6 @@ import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
-
-
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
   type: 'query',
@@ -29,28 +27,30 @@ export default {
       type: 'object',
       properties: {
         filter,
-        appends
-      }
+        appends,
+      },
     },
     failOnEmpty: {
       type: 'boolean',
       title: `{{t("Fail on no data", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-    }
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     FilterDynamicComponent,
-    FieldsSelect
+    FieldsSelect,
   },
   getOptions(config, types) {
-    return useCollectionFieldOptions({ collection: config.collection, types, depth: config.params?.appends?.length ? 1 : 0 });
+    return useCollectionFieldOptions({
+      collection: config.collection,
+      types,
+      depth: config.params?.appends?.length ? 1 : 0,
+    });
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
@@ -62,10 +62,10 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

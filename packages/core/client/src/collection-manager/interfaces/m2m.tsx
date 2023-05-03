@@ -282,4 +282,5 @@ export const m2m: IField = {
       // },
     ],
   },
+  invariable: true,
 };

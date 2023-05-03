@@ -4,7 +4,7 @@ import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@
 export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const resourcer = ctx.resourcer;
   const database = ctx.db;
-  let params = parseRequest(
+  const params = parseRequest(
     {
       path: ctx.request.path,
       method: ctx.request.method,

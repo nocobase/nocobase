@@ -1,9 +1,13 @@
 import { Database, Model, Op } from '@nocobase/database';
-import { HasManyCountAssociationsMixin, HasManyCreateAssociationMixin, HasManyGetAssociationsMixin, Transactionable } from 'sequelize';
+import {
+  HasManyCountAssociationsMixin,
+  HasManyCreateAssociationMixin,
+  HasManyGetAssociationsMixin,
+  Transactionable,
+} from 'sequelize';
 
 import ExecutionModel from './Execution';
 import FlowNodeModel from './FlowNode';
-
 
 export default class WorkflowModel extends Model {
   declare static database: Database;

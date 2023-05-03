@@ -14,3 +14,4 @@ export * from './requireModule';
 export * from './toposort';
 export * from './uid';
 export * from './inflection';
+export * from './json-templates';

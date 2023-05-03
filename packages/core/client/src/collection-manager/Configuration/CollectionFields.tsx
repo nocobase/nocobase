@@ -24,16 +24,34 @@ import { OverridingCollectionField } from './OverridingCollectionField';
 import { SyncFieldsAction } from './SyncFieldsAction';
 import { ViewCollectionField } from './ViewInheritedField';
 import { collection } from './schemas/collectionFields';
-const CELL_WIDTH = 200;
 
 const indentStyle = css`
   .ant-table {
-    margin-left: -7px !important;
+    margin-left: -16px !important;
   }
 `;
 const rowStyle = css`
   .ant-table-cell {
     background-color: white;
+  }
+`;
+const tableContainer = css`
+  tr {
+    display: flex;
+  }
+  td,
+  th {
+    flex: 2;
+    width: 0;
+    &:last-child {
+      flex: 1;
+    }
+  }
+  .ant-table-selection-column,
+  .ant-table-row-expand-icon-cell {
+    flex-basis: 50px !important;
+    min-width: 50px;
+    flex: 0;
   }
 `;
 
@@ -56,7 +74,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -67,29 +85,27 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'name',
       title: t('Field name'),
-      width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      width: CELL_WIDTH,
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
       title: t('Title field'),
-      width: CELL_WIDTH,
       render: function Render(_, record) {
         const handleChange = (checked) => {
           setLoadingRecord(record);
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   // updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -112,7 +128,6 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      width: CELL_WIDTH,
       render: (_, record) => {
         const deleteProps = {
           confirm: {
@@ -166,7 +181,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -177,29 +192,27 @@ const InheritFields = (props) => {
     {
       dataIndex: 'name',
       title: t('Field name'),
-      width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      width: CELL_WIDTH,
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
       title: t('Title field'),
-      width: CELL_WIDTH,
       render(_, record) {
         const handleChange = (checked) => {
           setLoadingRecord(record);
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -222,7 +235,6 @@ const InheritFields = (props) => {
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      width: CELL_WIDTH,
       render: function Render(_, record) {
         const overrideProps = {
           type: 'primary',
@@ -275,34 +287,27 @@ export const CollectionFields = (props) => {
         <div
           className={css`
             font-weight: 500;
-            white-space: nowrap;
-            width: 100px;
           `}
         >
           {value}
         </div>
       ),
-      // width: CELL_WIDTH,
     },
     {
       dataIndex: 'name',
       title: t('Field name'),
-      width: CELL_WIDTH + 20,
     },
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      width: CELL_WIDTH,
     },
     {
       dataIndex: 'titleField',
       title: t('Title field'),
-      width: CELL_WIDTH,
     },
     {
       dataIndex: 'actions',
       title: t('Actions'),
-      width: CELL_WIDTH,
     },
   ];
 
@@ -322,7 +327,7 @@ export const CollectionFields = (props) => {
       const conf = getInterface(field.interface);
       if (conf.group === 'systemInfo') {
         groups.system.push(field);
-      } else if (['m2m', 'm2o', 'o2b', 'o2m', 'linkTo'].includes(field.interface)) {
+      } else if (conf.group === 'relation') {
         groups.association.push(field);
       } else {
         groups.general.push(field);
@@ -354,15 +359,20 @@ export const CollectionFields = (props) => {
   ];
 
   dataSource.push(
-    ...inherits.map((key) => {
-      const collection = getCollection(key);
-      return {
-        key,
-        title: `${t('Inherited fields')} - ` + compile(collection.title),
-        inherit: true,
-        fields: collection.fields,
-      };
-    }),
+    ...inherits
+      .map((key) => {
+        const collection = getCollection(key);
+        if (!collection) {
+          return;
+        }
+        return {
+          key,
+          title: `${t('Inherited fields')} - ` + compile(collection?.title),
+          inherit: true,
+          fields: collection?.fields || [],
+        };
+      })
+      .filter(Boolean),
   );
 
   const resourceActionProps = {
@@ -420,8 +430,10 @@ export const CollectionFields = (props) => {
             columns={columns}
             dataSource={dataSource.filter((d) => d.fields.length)}
             pagination={false}
+            className={tableContainer}
             expandable={{
               defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
               expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (

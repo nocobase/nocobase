@@ -66,6 +66,5 @@ export function afterDestroyForForeignKeyField(db: Database) {
         } as FindOptions),
       );
     }
-
   };
 }

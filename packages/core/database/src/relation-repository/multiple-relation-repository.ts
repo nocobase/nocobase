@@ -205,7 +205,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
     return instances;
   }
 
-  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<boolean> {
     return false;
   }
 

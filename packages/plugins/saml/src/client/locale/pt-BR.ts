@@ -19,5 +19,5 @@ export default {
   'Delete provider': 'Excluir',
   'Are you sure you want to delete it?': 'Tem certeza de que deseja excluí-lo?',
   'Sign in button name, which will be displayed on the sign in page':
-  'Nome do botão de login, que será exibido na página de login',
+    'Nome do botão de login, que será exibido na página de login',
 };

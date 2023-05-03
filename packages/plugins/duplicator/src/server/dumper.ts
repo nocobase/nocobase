@@ -56,7 +56,7 @@ export class Dumper extends AppMigrator {
 
   async dump(options: { selectedOptionalGroupNames: string[]; selectedUserCollections: string[] }) {
     const { requiredGroups, optionalGroups } = await this.dumpableCollections();
-    let { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
+    const { selectedOptionalGroupNames, selectedUserCollections = [] } = options;
 
     const throughCollections = this.findThroughCollections(selectedUserCollections);
 
@@ -111,7 +111,7 @@ export class Dumper extends AppMigrator {
   async dumpDb() {
     const db = this.app.db;
     const dialect = db.sequelize.getDialect();
-    let sqlContent = [];
+    const sqlContent = [];
     if (dialect === 'postgres') {
       // get user defined functions in postgres
       const functions = await db.sequelize.query(

@@ -156,7 +156,7 @@ export function percent2float(value: string) {
   if (!value.endsWith('%')) {
     return NaN;
   }
-  let val = value.substring(0, value.length - 1);
+  const val = value.substring(0, value.length - 1);
   if (isNaN(+val)) {
     return NaN;
   }

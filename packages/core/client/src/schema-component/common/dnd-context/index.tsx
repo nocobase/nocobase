@@ -69,7 +69,7 @@ export const DndContext = observer((props: Props) => {
         const { active } = event;
         const activeSchema = active?.data?.current?.schema;
         setVisible(!!activeSchema);
-        if(props?.onDragStart){
+        if (props?.onDragStart) {
           props?.onDragStart?.(event);
         }
       }}

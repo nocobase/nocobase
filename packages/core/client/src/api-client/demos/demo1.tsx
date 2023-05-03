@@ -10,9 +10,7 @@ mock.onGet('/users:get').reply(200, {
   data: { id: 1, name: 'John Smith' },
 });
 
-const providers = [
-  [APIClientProvider, { apiClient }]
-];
+const providers = [[APIClientProvider, { apiClient }]];
 
 export default compose(...providers)(() => {
   const { data } = useRequest({

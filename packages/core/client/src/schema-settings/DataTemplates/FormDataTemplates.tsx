@@ -87,12 +87,13 @@ export const FormDataTemplates = observer((props: any) => {
                         targetField: field,
                         mapOptions(option) {
                           try {
-                            const label = collection?.titleField || 'id';
+                            const label = getLabel(collection);
                             option[label] = (
                               <>
                                 #{option.id} {option[label]}
                               </>
                             );
+
                             return option;
                           } catch (error) {
                             console.error(error);
@@ -100,7 +101,7 @@ export const FormDataTemplates = observer((props: any) => {
                           }
                         },
                         fieldNames: {
-                          label: collection?.titleField || 'id',
+                          label: getLabel(collection),
                           value: 'id',
                         },
                       },
@@ -190,3 +191,7 @@ export const FormDataTemplates = observer((props: any) => {
     />
   );
 });
+
+function getLabel(collection: any) {
+  return !collection?.titleField || collection.titleField === 'id' ? 'label' : collection?.titleField;
+}

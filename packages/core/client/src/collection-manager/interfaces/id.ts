@@ -21,7 +21,7 @@ export const id: IField = {
       'x-read-pretty': true,
     },
   },
-  availableTypes:['bigInt','integer','string'],
+  availableTypes: ['bigInt', 'integer', 'string'],
   properties: {
     'uiSchema.title': {
       type: 'string',

@@ -41,11 +41,11 @@ describe('sort', function () {
       sort: '-num',
     });
     const nums = items.map((item) => item.get('num'));
-    expect(nums).toEqual([3,2,1,null]);
+    expect(nums).toEqual([3, 2, 1, null]);
     const items2 = await Test.repository.find({
       sort: 'num',
     });
     const nums2 = items2.map((item) => item.get('num'));
-    expect(nums2).toEqual([1,2,3,null]);
+    expect(nums2).toEqual([1, 2, 3, null]);
   });
 });

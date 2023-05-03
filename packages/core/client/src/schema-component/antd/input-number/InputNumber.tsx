@@ -9,7 +9,7 @@ export const InputNumber = connect((props) => {
   const handleChange = (v) => {
     onChange(parseFloat(v));
   };
-  return <AntdNumber onChange={handleChange} {...others}  />;
+  return <AntdNumber onChange={handleChange} {...others} />;
 }, mapReadPretty(ReadPretty));
 
 export default InputNumber;

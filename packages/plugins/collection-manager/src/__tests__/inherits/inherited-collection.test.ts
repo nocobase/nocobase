@@ -24,6 +24,56 @@ pgOnly()('Inherited Collection', () => {
     await app.destroy();
   });
 
+  it('should update overridden multiple select field', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'parent',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'array',
+            name: 'selectors',
+            uiSchema: {
+              enum: [{ value: '123', label: '123' }],
+            },
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'child',
+        inherits: ['parent'],
+        fields: [
+          {
+            type: 'array',
+            name: 'selectors',
+            uiSchema: {
+              enum: [{ value: '123', label: '123' }],
+            },
+            overriding: true,
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await fieldsRepository.update({
+      filter: {
+        name: 'selectors',
+        collectionName: 'child',
+      },
+      values: {
+        uiSchema: {
+          enum: [{ value: '223', label: '223' }],
+        },
+        defaultValue: [],
+      },
+    });
+  });
+
   it('should rename inherited collection', async () => {
     const parent = await collectionRepository.create({
       values: {
