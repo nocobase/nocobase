@@ -18,6 +18,7 @@ export const getAuthUrl = async (ctx: Context, next) => {
   ctx.body = client.authorizationUrl({
     nonce: ctx.OIDC_NONCE,
     scope: 'openid profile',
+    redirect_uri: provider.redirectUrl
   });
 
   return next();
