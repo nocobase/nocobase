@@ -219,6 +219,17 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   );
 };
 
+export const RecordPickerProvider = (props) => {
+  const { multiple, onChange, selectedRows, setSelectedRows, options, collectionField } = props;
+  return (
+    <RecordPickerContext.Provider
+      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
+    >
+      {props.children}
+    </RecordPickerContext.Provider>
+  );
+};
+
 const Drawer: React.FunctionComponent<{
   multiple: any;
   onChange: any;
@@ -246,11 +257,16 @@ const Drawer: React.FunctionComponent<{
     const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
     return filter;
   };
-
+  const recordPickerProps = {
+    multiple,
+    onChange,
+    selectedRows,
+    setSelectedRows,
+    options,
+    collectionField,
+  };
   return (
-    <RecordPickerContext.Provider
-      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
-    >
+    <RecordPickerProvider {...recordPickerProps}>
       <CollectionProvider allowNull name={collectionField?.target}>
         <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
           <FormProvider>
@@ -268,7 +284,7 @@ const Drawer: React.FunctionComponent<{
           </FormProvider>
         </ActionContext.Provider>
       </CollectionProvider>
-    </RecordPickerContext.Provider>
+    </RecordPickerProvider>
   );
 };
 

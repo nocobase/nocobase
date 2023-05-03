@@ -166,7 +166,7 @@ export const useCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.create({
+        const data= await resource.create({
           values: {
             ...values,
             ...overwriteValues,
@@ -174,6 +174,7 @@ export const useCreateActionProps = () => {
           },
         });
         actionField.data.loading = false;
+        actionField.data.data = data;
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {

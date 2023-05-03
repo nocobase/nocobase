@@ -1,13 +1,18 @@
 import { FormLayout } from '@formily/antd';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { CollectionProvider } from '../../../collection-manager';
-import { useAssociationFieldContext } from './hooks';
+import { useAssociationFieldContext, useInsertSchema } from './hooks';
+import schema from './schema';
 
 export const InternalNester = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const insertNester = useInsertSchema('Nester');
   const { options } = useAssociationFieldContext();
+  useEffect(() => {
+    insertNester(schema.Nester);
+  }, []);
   return (
     <CollectionProvider name={options.target}>
       <FormLayout layout={'vertical'}>

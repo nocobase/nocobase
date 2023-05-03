@@ -13,33 +13,116 @@ export default {
   AddNewer: {
     type: 'void',
     'x-component': 'AssociationField.AddNewer',
-    title: 'Drawer Title',
+    'x-action': 'create',
+    title: "{{t('Add new')}}",
+    'x-designer': 'Action.Designer',
+    'x-decorator': 'ACLActionProvider',
     properties: {
-      hello1: {
-        'x-content': 'AddNewer',
-        title: 'T1',
+      drawer: {
+        type: 'void',
+        title: '{{ t("Add record") }}',
+        'x-component': 'Action.Container',
+        'x-component-props': {
+          className: 'nb-action-popup',
+        },
+        properties: {
+          tabs: {
+            type: 'void',
+            'x-component': 'Tabs',
+            'x-component-props': {},
+            'x-initializer': 'TabPaneInitializersForCreateFormBlock',
+            properties: {
+              tab1: {
+                type: 'void',
+                title: '{{t("Add new")}}',
+                'x-component': 'Tabs.TabPane',
+                'x-designer': 'Tabs.Designer',
+                'x-component-props': {},
+                properties: {
+                  grid: {
+                    type: 'void',
+                    'x-component': 'Grid',
+                    'x-initializer': 'CreateFormBlockInitializers',
+                    properties: {},
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
   Selector: {
     type: 'void',
     'x-component': 'AssociationField.Selector',
-    title: 'Drawer Title',
+    title: '{{ t("Select record") }}',
+    'x-component-props': {
+      className: 'nb-record-picker-selector',
+    },
     properties: {
-      hello1: {
-        'x-content': 'Selector',
-        title: 'T1',
+      grid: {
+        type: 'void',
+        'x-component': 'Grid',
+        'x-initializer': 'TableSelectorInitializers',
+        properties: {},
+      },
+      footer: {
+        'x-component': 'Action.Container.Footer',
+        'x-component-props': {},
+        properties: {
+          actions: {
+            type: 'void',
+            'x-component': 'ActionBar',
+            'x-component-props': {},
+            properties: {
+              submit: {
+                title: '{{ t("Submit") }}',
+                'x-action': 'submit',
+                'x-component': 'Action',
+                'x-designer': 'Action.Designer',
+                'x-component-props': {
+                  type: 'primary',
+                  htmlType: 'submit',
+                  useProps: '{{ usePickActionProps }}',
+                },
+              },
+            },
+          },
+        },
       },
     },
   },
   Viewer: {
     type: 'void',
+    title: '{{ t("View record") }}',
     'x-component': 'AssociationField.Viewer',
-    title: 'Drawer Title',
+    'x-component-props': {
+      className: 'nb-action-popup',
+    },
     properties: {
-      hello1: {
-        'x-content': 'Viewer',
-        title: 'T1',
+      tabs: {
+        type: 'void',
+        'x-component': 'Tabs',
+        'x-component-props': {},
+        'x-initializer': 'TabPaneInitializers',
+        properties: {
+          tab1: {
+            type: 'void',
+            title: '{{t("Details")}}',
+            'x-component': 'Tabs.TabPane',
+            'x-designer': 'Tabs.Designer',
+            'x-component-props': {},
+            properties: {
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'RecordBlockInitializers',
+                properties: {},
+              },
+            },
+          },
+        },
       },
     },
   }

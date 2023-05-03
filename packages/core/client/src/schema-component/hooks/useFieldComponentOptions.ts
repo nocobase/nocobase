@@ -53,3 +53,58 @@ export const useFieldComponentOptions = () => {
 
   return fieldComponentOptions;
 };
+
+export const useFieldModeOptions = () => {
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const { getField } = useCollection();
+  const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const { t } = useTranslation();
+  const { label } = fieldSchema['x-component-props']?.fieldNames || {};
+
+  const fieldModeOptions = useMemo(() => {
+    if (!collectionField || !collectionField?.interface) {
+      return;
+    }
+
+    if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
+
+    const collection = getCollection(collectionField.target);
+    if (collection?.template === 'file') {
+      return [
+        { label: t('Record picker'), value: 'Picker' },
+        { label: t('Select'), value: 'Select' },
+      ];
+    }
+
+    switch (collectionField.interface) {
+      case 'o2m':
+        return [
+          { label: t('Record picker'), value: 'Picker' },
+          { label: t('Subtable'), value: 'TableField' },
+          { label: t('Select'), value: 'Select' },
+          { label: t('Nester'), value: 'Nester' },
+
+        ];
+
+      case 'm2o':
+      case 'm2m':
+      case 'linkTo':
+        return [
+          { label: t('Record picker'), value: 'Picker' },
+          { label: t('Select'), value: 'Select' },
+          { label: t('Nester'), value: 'Nester' },
+
+        ];
+
+      default:
+        return [
+          { label: t('Record picker'), value: 'Picker' },
+          { label: t('Select'), value: 'Select' },
+          { label: t('Nester'), value: 'Nester' },
+        ];
+    }
+  }, [t, collectionField?.interface, label]);
+
+  return fieldModeOptions;
+};

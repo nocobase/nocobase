@@ -15,7 +15,7 @@ import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefault
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
-import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
+import { useCompile, useDesignable, useFieldComponentOptions, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
 import { isInvariable } from '../variable';
@@ -107,8 +107,10 @@ FormItem.Designer = function Designer() {
   const targetFields = collectionField?.target
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
-  const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
+  // const fieldComponentOptions = useFieldComponentOptions();
+  const fieldModeOptions = useFieldModeOptions();
+
+  const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -508,48 +510,45 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {form && !isSubFormAssociationField && fieldComponentOptions && (
+      {form && isAssociationField && fieldModeOptions && (
         <SchemaSettings.SelectItem
-          title={t('Field component')}
-          options={fieldComponentOptions}
-          value={fieldSchema['x-component']}
-          onChange={(type) => {
-            const schema: ISchema = {
-              name: collectionField?.name,
-              type: 'void',
-              required: fieldSchema['required'],
-              description: fieldSchema['description'],
-              default: fieldSchema['default'],
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': type,
-              'x-validator': fieldSchema['x-validator'],
-              'x-collection-field': fieldSchema['x-collection-field'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-              'x-component-props': {
-                ...collectionField?.uiSchema?.['x-component-props'],
-                ...fieldSchema['x-component-props'],
-              },
+          key="field-mode"
+          title={t('Field mode')}
+          options={fieldModeOptions}
+          value={field?.componentProps?.['mode'] || 'Select'}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
             };
-
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-              targetCollection,
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            dn.emit('patch', {
+              schema,
             });
+            dn.refresh();
+          }}
+        />
+      )}
 
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
-                  },
-                });
-              },
+      {!field.readPretty && isAssociationField && (
+        <SchemaSettings.SwitchItem
+          key="allowAddNew"
+          title={t('Allow add new data')}
+          checked={(fieldSchema['x-add-new'] !== false) as boolean}
+          onChange={(allowAddNew) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field['x-add-new'] = allowAddNew;
+            fieldSchema['x-add-new'] = allowAddNew;
+            schema['x-add-new'] = allowAddNew;
+            dn.emit('patch', {
+              schema,
             });
+            refresh();
           }}
         />
       )}
