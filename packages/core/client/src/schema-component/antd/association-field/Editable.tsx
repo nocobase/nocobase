@@ -24,8 +24,6 @@ export const Editable = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-  // console.log(currentMode);
-  console.log(props);
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField = useField();

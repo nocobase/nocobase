@@ -5,15 +5,16 @@ import { ActionContext } from '../action';
 import { useInsertSchema, useFieldNames } from './hooks';
 import schema from './schema';
 import { useCompile } from '../../hooks';
-import { useCollection, CollectionProvider } from '../../../collection-manager';
+import { useCollection, CollectionProvider, useCollectionManager } from '../../../collection-manager';
 import { RecordPickerProvider } from '../../';
 import { FileSelector } from '../preview';
-import { getLabelFormatValue, useLabelUiSchema, isShowFilePicker } from './util';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 export const InternalSelect = (props) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const field: any = useField();
   const fieldNames = useFieldNames(props);
+  const { getCollection } = useCollectionManager();
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const [visibleSelector, setVisibleSelector] = useState(false);
   const fieldSchema = useFieldSchema();
@@ -38,13 +39,13 @@ export const InternalSelect = (props) => {
 
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = isShowFilePicker(labelUiSchema);
+  const showFilePicker = getCollection(collectionField.target).template === 'file';
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
-    if (value) {
+    if (value&&Object.keys(value).length>0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
         const label = option[fieldNames.label];
         return {
@@ -75,7 +76,6 @@ export const InternalSelect = (props) => {
     }
     onChange(newOptions);
   };
-
   return (
     <>
       <Input.Group compact style={{ display: 'flex' }}>
@@ -84,8 +84,8 @@ export const InternalSelect = (props) => {
             <FileSelector
               value={options}
               multiple={multiple}
-              quickUpload={quickUpload}
-              selectFile={selectFile}
+              quickUpload={quickUpload!==false}
+              selectFile={selectFile!==false}
               action={`${collectionField?.target}:create`}
               onSelect={handleSelect}
               onRemove={handleRemove}
