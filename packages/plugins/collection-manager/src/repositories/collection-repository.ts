@@ -1,22 +1,25 @@
-import { Repository } from '@nocobase/database';
+import { Repository, Transactionable } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
 import { CollectionsGraph } from '@nocobase/utils';
 
-interface LoadOptions {
+interface LoadOptions extends Transactionable {
   filter?: any;
   skipExist?: boolean;
+  replaceCollection?: boolean;
 }
 
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
-    const { filter, skipExist } = options;
-    const instances = (await this.find({ filter })) as CollectionModel[];
+    const { filter, skipExist, transaction } = options;
+    const instances = (await this.find({ filter, transaction })) as CollectionModel[];
 
     const graphlib = CollectionsGraph.graphlib();
 
     const graph = new graphlib.Graph();
 
-    const nameMap = {};
+    const nameMap: {
+      [key: string]: CollectionModel;
+    } = {};
 
     const viewCollections = [];
 
@@ -62,12 +65,19 @@ export class CollectionRepository extends Repository {
 
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist, skipField: viewCollections.includes(instanceName) });
+      await nameMap[instanceName].load({
+        skipExist,
+        transaction,
+        skipField: viewCollections.includes(instanceName),
+        replaceCollection: options.replaceCollection,
+      });
     }
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
-      await nameMap[viewCollectionName].loadFields({});
+      await nameMap[viewCollectionName].loadFields({
+        transaction,
+      });
     }
   }
 

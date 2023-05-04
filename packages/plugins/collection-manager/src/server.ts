@@ -65,6 +65,15 @@ export class CollectionManagerPlugin extends Plugin {
     this.app.db.on('collections.afterUpdate', afterUpdateForCollection(this.db));
     this.app.db.on('collections.afterUpdate', afterUpdateForRenameCollection(this.db));
 
+    this.app.db.on('collections.afterSave', async (model, options) => {
+      if (options.reload) {
+        await this.db.getRepository<CollectionRepository>('collections').load({
+          transaction: options.transaction,
+          replaceCollection: true,
+        });
+      }
+    });
+
     this.app.db.on(
       'collections.afterCreateWithAssociations',
       async (model: CollectionModel, { context, transaction }) => {

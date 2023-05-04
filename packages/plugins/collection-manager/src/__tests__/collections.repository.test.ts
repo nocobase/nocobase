@@ -10,7 +10,11 @@ describe('collections repository', () => {
   let Field: DBCollection;
 
   beforeEach(async () => {
-    app = await createApp();
+    app = await createApp({
+      database: {
+        tablePrefix: '',
+      },
+    });
     db = app.db;
     Collection = db.getCollection('collections');
     Field = db.getCollection('fields');

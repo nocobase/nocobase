@@ -541,6 +541,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   removeCollection(name: string) {
     const collection = this.collections.get(name);
+    if (!collection) return;
+
     this.emit('beforeRemoveCollection', collection);
 
     collection.resetFields();

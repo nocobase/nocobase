@@ -1,11 +1,12 @@
 import { Database } from '@nocobase/database';
 import { CollectionModel } from '../models';
-import { CollectionsGraph, inflection } from '@nocobase/utils';
+import { inflection } from '@nocobase/utils';
 import lodash from 'lodash';
-import * as process from 'process';
 
 export function afterUpdateForRenameCollection(db: Database) {
-  return async (model: CollectionModel, { context, transaction }) => {
+  return async (model: CollectionModel, options) => {
+    const { context, transaction } = options;
+
     if (context) {
       const prevName = model.previous('name');
       const currentName = model.get('name');
@@ -24,6 +25,7 @@ export function afterUpdateForRenameCollection(db: Database) {
         );
       };
 
+      // old collection fields
       const collectionFields = await db.getRepository('fields').find({
         filter: {
           collectionName: prevName,
@@ -88,6 +90,7 @@ export function afterUpdateForRenameCollection(db: Database) {
           }
         }
 
+        // update field collection name
         await field.update(
           {
             options,
@@ -101,6 +104,7 @@ export function afterUpdateForRenameCollection(db: Database) {
         );
       }
 
+      // association field point to old collection
       const associationFields = await db.getRepository('fields').find({
         filter: {
           'options.target': prevName,
@@ -166,20 +170,6 @@ export function afterUpdateForRenameCollection(db: Database) {
         );
       }
 
-      // reload collections that depend on this collection
-      const relatedCollections = CollectionsGraph.preOrder({
-        collections: [...db.collections.values()].map((collection) => {
-          return {
-            name: collection.name,
-            fields: [...collection.fields.values()],
-            inherits: collection.options.inherits,
-          };
-        }),
-
-        node: prevName,
-        direction: 'reverse',
-      });
-
       // update inherited collections
       const children = db.inheritanceMap.getChildren(prevName);
       if (children.size > 0) {
@@ -212,20 +202,6 @@ export function afterUpdateForRenameCollection(db: Database) {
         }
       }
 
-      const relatedCollectionModels = await db.getRepository('collections').find({
-        filter: {
-          name: relatedCollections,
-        },
-        transaction,
-      });
-
-      for (const relatedCollectionModel of relatedCollectionModels) {
-        await relatedCollectionModel.load({
-          transaction,
-          replaceCollection: true,
-        });
-      }
-
       // update association models
       await model.migrate({
         transaction,
@@ -235,11 +211,7 @@ export function afterUpdateForRenameCollection(db: Database) {
         },
       });
 
-      if (typeof jest === 'undefined') {
-        process.nextTick(() => {
-          process.exit(100);
-        });
-      }
+      options.reload = true;
     }
   };
 }
