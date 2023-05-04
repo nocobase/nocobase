@@ -109,7 +109,6 @@ FormItem.Designer = function Designer() {
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   // const fieldComponentOptions = useFieldComponentOptions();
   const fieldModeOptions = useFieldModeOptions();
-
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
@@ -258,7 +257,7 @@ FormItem.Designer = function Designer() {
         <SchemaSettings.SwitchItem
           key="quick-upload"
           title={t('Quick upload')}
-          checked={fieldSchema['x-component-props']?.quickUpload!==false as boolean}
+          checked={fieldSchema['x-component-props']?.quickUpload !== (false as boolean)}
           onChange={(value) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -278,7 +277,7 @@ FormItem.Designer = function Designer() {
         <SchemaSettings.SwitchItem
           key="select-file"
           title={t('Select file')}
-          checked={fieldSchema['x-component-props']?.selectFile!==false as boolean}
+          checked={fieldSchema['x-component-props']?.selectFile !== (false as boolean)}
           onChange={(value) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

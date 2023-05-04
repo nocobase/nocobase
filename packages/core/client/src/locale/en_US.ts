@@ -283,6 +283,7 @@ export default {
   "Subtable": "Subtable",
   "Subform": "Sub-form",
   "Field mode":"Field mode",
+  "Text and link":"Text and link",
   "Record picker": "Record picker",
   "Toggles the subfield mode": "Toggles the subfield mode",
   "Selector mode": "Selector mode",

@@ -557,6 +557,7 @@ export default {
   "Subtable": "サブテーブル",
   "Subform": "サブフォーム",
   "Field mode":"フィールドコンポーネント",
+  "Text and link":"テキストとリンク",
   "Regular expression": "正規表現",
   "Enabled languages": "利用可能な言語",
   "View all plugins": "すべてのプラグラインを見る",

@@ -309,6 +309,7 @@ export default {
   "Subtable mode": "子表格模式",
   "Subform mode": "子表单模式",
   "Field mode":"字段组件",
+  "Text and link":"文本链接",
   "Edit block title": "编辑区块标题",
   "Block title": "区块标题",
   "Pattern": "模式",
