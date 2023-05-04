@@ -10,9 +10,14 @@ interface LoadOptions extends Transactionable {
 
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
-    const { filter, skipExist, transaction } = options;
+    const { filter, skipExist, transaction, replaceCollection } = options;
     const instances = (await this.find({ filter, transaction })) as CollectionModel[];
 
+    if (replaceCollection) {
+      instances.forEach((instance) => {
+        this.database.removeCollection(instance.get('name'));
+      });
+    }
     const graphlib = CollectionsGraph.graphlib();
 
     const graph = new graphlib.Graph();
@@ -65,6 +70,7 @@ export class CollectionRepository extends Repository {
 
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
+
       await nameMap[instanceName].load({
         skipExist,
         transaction,

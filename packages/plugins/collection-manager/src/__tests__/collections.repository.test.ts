@@ -121,7 +121,7 @@ describe('collections repository', () => {
   });
 
   it('should rename collection ', async () => {
-    const UserCollection = await db.getRepository('collections').create({
+    await db.getRepository('collections').create({
       values: {
         name: 'users',
         fields: [
@@ -275,6 +275,7 @@ describe('collections repository', () => {
       appends: ['posts', 'profile', 'tags'],
     });
 
+    expect(student1.get('name')).toEqual('u1');
     expect(student1.get('posts')).toHaveLength(1);
     expect(student1.get('tags')).toHaveLength(2);
     expect(student1.get('profile').age).toEqual(18);
