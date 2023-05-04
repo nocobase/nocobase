@@ -11,6 +11,7 @@ import { flatData } from './util';
 import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { useCollection } from '../../../collection-manager';
 import { SchemaComponentOptions, useActionContext, RecordPickerContext } from '../../';
+import { InternalSubTable } from './InternalSubTable';
 
 export const Editable = observer((props: any) => {
   const { fieldNames } = props;
@@ -23,7 +24,8 @@ export const Editable = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-
+  // console.log(currentMode);
+  console.log(props);
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField = useField();
@@ -41,8 +43,8 @@ export const Editable = observer((props: any) => {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
           values.push({
             [fieldNames.label]: data[fieldNames.label],
-            id: data.id,
-            value: data.id,
+            id: data?.id,
+            value: data?.id,
           });
           form.setValuesIn(field.props.name, values);
         }
@@ -111,6 +113,7 @@ export const Editable = observer((props: any) => {
         {currentMode === 'FileManager' && <FileManager {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
+        {currentMode === 'SubTable' && <InternalSubTable {...props} />}
       </SchemaComponentOptions>
     </AssociationFieldProvider>
   );

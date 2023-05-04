@@ -125,5 +125,29 @@ export default {
         },
       },
     },
-  }
+  },
+  SubTable: {
+    type: 'void',
+    'x-decorator': 'SubTableProvider',
+    'x-component': 'AssociationField.SubTable',
+    properties: {
+      actions: {
+        type: 'void',
+        'x-initializer': 'SubTableActionInitializers',
+        'x-component': 'AssociationField.SubTable.ActionBar',
+        'x-component-props': {},
+      },
+      table: {
+        type: 'array',
+        'x-initializer': 'TableColumnInitializers',
+        'x-component': 'TableV2',
+        'x-component-props': {
+          rowSelection: {
+            type: 'checkbox',
+          },
+          useProps: '{{ useSubTableProps }}',
+        },
+      },
+    },
+  },
 };

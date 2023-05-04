@@ -30,7 +30,7 @@ export const useFieldModeOptions = () => {
         case 'o2m':
           return [
             { label: t('Record picker'), value: 'Picker' },
-            { label: t('Subtable'), value: 'TableField' },
+            { label: t('Subtable'), value: 'SubTable' },
             { label: t('Select'), value: 'Select' },
             { label: t('Subform'), value: 'Nester' },
   
@@ -54,6 +54,5 @@ export const useFieldModeOptions = () => {
           ];
       }
     }, [t, collectionField?.interface, label]);
-  
     return fieldModeOptions;
   };

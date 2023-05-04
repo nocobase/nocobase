@@ -9,6 +9,7 @@ import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
   TableFieldResource,
+  SubTableResource,
   WithoutTableFieldResource,
   useAPIClient,
   useActionContext,
@@ -62,12 +63,29 @@ const useResource = (props: UseResourceProps) => {
     };
     return new TableFieldResource(options);
   }
+
+  if (block === 'SubTable') {
+    const options = {
+      field,
+      api,
+      resource,
+      sourceId: sourceId || record[association?.sourceKey || 'id'],
+    };
+    return new SubTableResource(options);
+  }
   const withoutTableFieldResource = useContext(WithoutTableFieldResource);
   const __parent = useContext(BlockRequestContext);
   if (
     !withoutTableFieldResource &&
     __parent?.block === 'TableField' &&
     __parent?.resource instanceof TableFieldResource
+  ) {
+    return __parent.resource;
+  }
+
+  if (
+    __parent?.block === 'SubTable' &&
+    __parent?.resource instanceof SubTableResource
   ) {
     return __parent.resource;
   }

@@ -109,7 +109,6 @@ FormItem.Designer = function Designer() {
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   // const fieldComponentOptions = useFieldComponentOptions();
   const fieldModeOptions = useFieldModeOptions();
-
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
