@@ -10,6 +10,7 @@ export const CardListItem = (props) => {
           display: flex;
           width: 100%;
           flex-direction: column;
+          gap: 8px;
         `}
       >
         {props.children}

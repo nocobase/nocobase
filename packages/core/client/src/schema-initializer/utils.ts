@@ -1041,8 +1041,8 @@ export const createListBlockSchema = (options) => {
 export const createCardListBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'ListActionInitializers',
-    itemActionInitializers = 'ListItemActionInitializers',
+    actionInitializers = 'CardListActionInitializers',
+    itemActionInitializers = 'CardListItemActionInitializers',
     collection,
     association,
     resource,
@@ -1113,6 +1113,7 @@ export const createCardListBlockSchema = (options) => {
                 'x-component': 'ActionBar',
                 'x-component-props': {
                   useProps: '{{ useCardListActionBarProps }}',
+                  layout: 'one-column',
                 },
                 properties: {},
               },
