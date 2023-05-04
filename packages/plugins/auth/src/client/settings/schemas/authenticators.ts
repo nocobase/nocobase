@@ -269,7 +269,7 @@ export const authenticatorsSchema: ISchema = {
                         authType: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
-                          'x-reactions': ['{{useAsyncDataSource(getTypesWithAPI)}}'],
+                          'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
                         },
                         description: {
                           'x-component': 'CollectionField',
