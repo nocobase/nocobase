@@ -2,6 +2,7 @@ import { useCompile } from '../../schema-component';
 import { useCollectionManager, useCollection } from '../../collection-manager';
 
 const supportsType = [
+  'id',
   'checkbox',
   'number',
   'percent',
