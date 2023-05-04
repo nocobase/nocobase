@@ -119,7 +119,7 @@ export default {
   'Loop target': '循环对象',
   'Loop index': '当前索引',
   'Loop length': '循环长度',
-  'Loop will cause performance issue based on the quantity, please use carefully.':
+  'Loop will cause performance issue based on the quantity, please use with caution.':
     '循环次数过高可能引起性能问题，请谨慎使用。',
   'Scope variables': '局域变量',
   'Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.':

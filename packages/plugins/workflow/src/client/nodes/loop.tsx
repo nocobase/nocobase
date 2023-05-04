@@ -38,7 +38,7 @@ export default {
       'x-component-props': {
         type: 'warning',
         showIcon: true,
-        message: `{{t("Loop will cause performance issue based on the quantity, please use carefully.", { ns: "${NAMESPACE}" })}}`,
+        message: `{{t("Loop will cause performance issue based on the quantity, please use with caution.", { ns: "${NAMESPACE}" })}}`,
         className: css`
           width: 100%;
           font-size: 85%;
