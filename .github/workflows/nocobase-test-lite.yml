@@ -25,7 +25,7 @@ jobs:
   build-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: [ '18' ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -42,14 +42,14 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: [ '18' ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:10
+        image: postgres:11
         # Provide the password for postgres
         env:
           POSTGRES_USER: nocobase

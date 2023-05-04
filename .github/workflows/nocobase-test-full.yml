@@ -23,7 +23,7 @@ jobs:
   build-test:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: [ '18' ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -40,8 +40,8 @@ jobs:
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -63,17 +63,17 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
-        schema: [public, nocobase]
-        collection_schema: [public, user_schema]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
+        schema: [ public, nocobase ]
+        collection_schema: [ public, user_schema ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
       # Label used to access the service container
       postgres:
         # Docker Hub image
-        image: postgres:10
+        image: postgres:11
         # Provide the password for postgres
         env:
           POSTGRES_USER: nocobase
@@ -110,8 +110,8 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
