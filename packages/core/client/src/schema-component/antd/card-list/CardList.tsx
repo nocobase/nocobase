@@ -127,14 +127,7 @@ const InternalCardList = (props) => {
                     basePath={field.address}
                     name={index}
                     onlyRenderProperties
-                    schema={
-                      {
-                        type: 'object',
-                        properties: {
-                          [index]: fieldSchema.properties['item'],
-                        },
-                      } as any
-                    }
+                    schema={getSchema(index)}
                   ></RecursionField>
                 </Col>
               );
