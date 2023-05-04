@@ -4,7 +4,8 @@ import { BasicAuth } from './basic-auth';
 import { readdir } from 'fs/promises';
 import { requireModule } from '@nocobase/utils';
 import { HandlerType, Handlers } from '@nocobase/resourcer';
-
+const presetAuthType = 'email/password';
+const presetAuthenticator = 'basic';
 export class AuthPlugin extends Plugin {
   afterAdd() {}
 
@@ -28,6 +29,9 @@ export class AuthPlugin extends Plugin {
       directory: resolve(__dirname, 'collections'),
     });
 
+    this.app.authManager.registerTypes(presetAuthType, {
+      auth: BasicAuth,
+    });
     this.app.authManager.setStorer({
       get: async (name: string) => {
         const repo = this.db.getRepository('authenticators');
@@ -39,12 +43,9 @@ export class AuthPlugin extends Plugin {
   }
 
   async install(options?: InstallOptions) {
-    const presetAuthType = 'email/password';
-    const presetAuthenticator = 'basic';
-    this.app.authManager.registerTypes(presetAuthType, BasicAuth);
-
     const repository = this.db.getRepository('authenticators');
-    if (await repository.findOne({ filter: { name: presetAuthenticator } })) {
+    const exist = await repository.findOne({ filter: { name: presetAuthenticator } });
+    if (exist) {
       return;
     }
 
@@ -52,6 +53,7 @@ export class AuthPlugin extends Plugin {
       values: {
         name: presetAuthenticator,
         authType: presetAuthType,
+        description: 'Sign in with email and password.',
       },
     });
   }

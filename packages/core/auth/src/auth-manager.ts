@@ -4,6 +4,7 @@ import { Application } from '@nocobase/server';
 import { Model } from '@nocobase/database';
 import { Context, Next } from '@nocobase/actions';
 import actions from './actions';
+import { ISchema } from '@formily/react';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -13,10 +14,15 @@ type AuthManagerOptions = {
   authKey: string;
 };
 
+type AuthConfig = {
+  auth: AuthExtend<Auth>; // The authentication class.
+  optionsSchema?: ISchema; // The schema of the options of the authentication.
+};
+
 export class AuthManager {
   protected app: Application;
   protected options: AuthManagerOptions;
-  protected authTypes: Registry<AuthExtend<Auth>> = new Registry();
+  protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
 
@@ -39,10 +45,10 @@ export class AuthManager {
    * The types will show in the authenticators list of the admin panel.
    *
    * @param {string} authType - The type of the authenticator. It is required to be unique.
-   * @param {Auth} auth - The authentication class.
+   * @param {AuthConfig} authConfig - Configurations of the kind of authenticator.
    */
-  registerTypes(authType: string, auth: AuthExtend<Auth>) {
-    this.authTypes.register(authType, auth);
+  registerTypes(authType: string, authConfig: AuthConfig) {
+    this.authTypes.register(authType, authConfig);
   }
 
   listTypes() {
@@ -63,7 +69,7 @@ export class AuthManager {
     if (!authenticator) {
       throw new Error(`Authenticator [${name}] is not found.`);
     }
-    const auth = this.authTypes.get(authenticator.authType);
+    const { auth } = this.authTypes.get(authenticator.authType);
     if (!auth) {
       throw new Error(`AuthType [${name}] is not found.`);
     }

@@ -62,7 +62,7 @@ describe('actions', () => {
       const token = data.token;
       expect(token).toBeDefined();
 
-      res = await agent.get('/auth:check').set({ Authorization: 'Bearer ' + token, 'X-Authenticator': 'basic' });
+      res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
       expect(res.body.data.id).toBeDefined();
     });
   });

@@ -290,7 +290,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this._resourcer.use(this._authManager.middleware(), { tag: 'authCheck' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['authCheck'] });
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
     }
 
     registerMiddlewares(this, options);

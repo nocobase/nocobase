@@ -20,20 +20,6 @@ export default {
   updatedBy: true,
   logging: true,
   fields: [
-    {
-      name: 'id',
-      type: 'bigInt',
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
-      uiSchema: {
-        type: 'number',
-        title: '{{t("ID")}}',
-        'x-component': 'InputNumber',
-        'x-read-pretty': true,
-      },
-      interface: 'id',
-    },
     /**
      * uuid:
      * Unique user id of the authentication method, such as wechat openid, phone number, etc.

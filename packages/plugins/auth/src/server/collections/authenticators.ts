@@ -54,7 +54,7 @@ export default {
       defaultValue: '',
       uiSchema: {
         type: 'string',
-        title: '{{t("Type")}}',
+        title: '{{t("Description")}}',
         'x-component': 'Input',
         required: true,
       },

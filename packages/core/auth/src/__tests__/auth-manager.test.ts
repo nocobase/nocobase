@@ -45,7 +45,7 @@ describe('auth-manager', () => {
   });
 
   it('should get authenticator', async () => {
-    authManager.registerTypes('basic', BasicAuth);
+    authManager.registerTypes('basic', { auth: BasicAuth });
     const authenticator = await authManager.get('basic-test', {} as Context);
     expect(authenticator).toBeInstanceOf(BasicAuth);
   });
