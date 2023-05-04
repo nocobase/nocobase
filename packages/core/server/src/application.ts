@@ -243,7 +243,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.middleware = new Toposort<any>();
     this.plugins = new Map<string, Plugin>();
     this._acl = createACL();
-
     this.use(logger.middleware, { tag: 'logger' });
 
     if (this._db) {

@@ -9,7 +9,10 @@ import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
 
-import { requestSettingsSchema } from './utils';
+import { formatParamsIntoKeyValue, formatParamsIntoObject, requestSettingsSchema } from './utils';
+import { ArrayItems, Space } from '@formily/antd';
+import { cloneDeep, omit } from 'lodash';
+import { JSONInput } from '../variable/JSONInput';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -44,7 +47,7 @@ export const ActionDesigner = (props) => {
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const isAction = useLinkageAction()
+  const isAction = useLinkageAction();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
@@ -183,12 +186,23 @@ export const ActionDesigner = (props) => {
         )}
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
           <SchemaSettings.ActionModalItem
+            components={{ ArrayItems, Space, JSONInput }}
             title={t('Request settings1')}
             schema={requestSettingsSchema}
-            initialValues={fieldSchema?.['x-action-settings']?.requestSettings}
+            initialValues={{
+              ...omit(fieldSchema?.['x-action-settings']?.requestSettings, ['headers', 'params']),
+              headers: formatParamsIntoKeyValue(fieldSchema?.['x-action-settings']?.requestSettings.headers),
+              params: formatParamsIntoKeyValue(fieldSchema?.['x-action-settings']?.requestSettings.params),
+            }}
             onSubmit={(requestSettings) => {
-              console.log(requestSettings,'requestSettings');
-              fieldSchema['x-action-settings']['requestSettings'] = requestSettings;
+              const tempRequestSettings = cloneDeep(requestSettings);
+              const headers = formatParamsIntoObject(tempRequestSettings.headers);
+              const params = formatParamsIntoObject(tempRequestSettings.params);
+              fieldSchema['x-action-settings']['requestSettings'] = {
+                ...omit(tempRequestSettings, 'headers'),
+                headers,
+                params,
+              };
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],

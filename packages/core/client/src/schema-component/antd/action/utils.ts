@@ -2,35 +2,10 @@ import type { ISchema } from '@formily/react';
 import { last } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
-const validateJSON = {
-  validator: `{{(value, rule)=> {
-    if (!value) {
-      return '';
-    }
-    try {
-      const val = JSON.parse(value);
-      if(!isNaN(val)) {
-        return false;
-      }
-      return true;
-    } catch(error) {
-      console.error(error);
-      return false;
-    }
-  }}}`,
-  message: '{{t("Invalid JSON format")}}',
-};
 
 export const requestSettingsSchema: ISchema = {
   type: 'object',
   properties: {
-    url: {
-      type: 'string',
-      title: '{{t("Request URL")}}',
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-    },
     method: {
       type: 'string',
       title: '{{t("Request method")}}',
@@ -45,26 +20,123 @@ export const requestSettingsSchema: ISchema = {
         { label: 'DELETE', value: 'DELETE' },
       ],
     },
-    headers: {
+    url: {
       type: 'string',
+      title: '{{t("Request URL")}}',
+      required: true,
+      'x-decorator': 'FormItem',
+      'x-component': 'Input',
+    },
+    headers: {
+      type: 'array',
       title: '{{t("Request headers")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'Input.TextArea',
-      'x-validator': validateJSON,
+      'x-component': 'ArrayItems',
+      items: {
+        type: 'object',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            'x-component-props': {
+              align: 'bottom',
+            },
+            properties: {
+              key: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Fields")}}',
+                  style: { width: 270 },
+                },
+              },
+              value: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Fields values")}}',
+                  style: { width: 270 },
+                },
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          // TODO 国际化
+          title: '添加请求头',
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
     },
     params: {
-      type: 'string',
+      type: 'array',
       title: '{{t("Request query parameters")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'Input.TextArea',
-      'x-validator': validateJSON,
+      'x-component': 'ArrayItems',
+      items: {
+        type: 'object',
+        properties: {
+          space: {
+            type: 'void',
+            'x-component': 'Space',
+            properties: {
+              key: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Fields")}}',
+                  style: { width: 270 },
+                },
+              },
+              value: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Fields values")}}',
+                  style: { width: 270 },
+                },
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
+          },
+        },
+      },
+      properties: {
+        add: {
+          type: 'void',
+          // TODO 国际化
+          title: '添加参数',
+          'x-component': 'ArrayItems.Addition',
+        },
+      },
     },
     data: {
       type: 'string',
       title: '{{t("Request body")}}',
       'x-decorator': 'FormItem',
-      'x-component': 'Input.TextArea',
-      'x-validator': validateJSON,
+      'x-component': 'JSONInput',
+      'x-component-props': {
+        autoSize: {
+          minRows: 6,
+        },
+        placeholder: '请输入请求数据',
+      },
     },
   },
 };
@@ -117,4 +189,14 @@ export const linkageAction = (operator, field, condition, values) => {
     default:
       return null;
   }
+};
+
+export const formatParamsIntoObject = (object: { key: string; value: string }[]) => {
+  return object.reduce((prev, curr) => {
+    prev[curr?.key] = curr.value;
+    return prev;
+  }, {});
+};
+export const formatParamsIntoKeyValue = (object: Record<string, unknown>) => {
+  return Object.entries(object || {})?.map((item) => ({ key: item[0], value: item[1] }));
 };
