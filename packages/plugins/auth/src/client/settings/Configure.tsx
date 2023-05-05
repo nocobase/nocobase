@@ -1,29 +1,14 @@
 import {
   SchemaComponent,
-  useAPIClient,
   useRequest,
   useRecord,
   useActionContext,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import { useForm, ISchema } from '@formily/react';
-
-const OptionsSchemaContext = createContext<{
-  [authType: string]: ISchema;
-}>({});
-
-export const OptionsSchemaProvider: React.FC<{ authType: string; schema: ISchema }> = (props) => {
-  const schemas = useContext(OptionsSchemaContext);
-  schemas[props.authType] = props.schema;
-  return <OptionsSchemaContext.Provider value={schemas}>{props.children}</OptionsSchemaContext.Provider>;
-};
-
-export const useOptionsSchema = (authType: string) => {
-  const schemas = useContext(OptionsSchemaContext);
-  return schemas[authType] || {};
-};
+import React, { useEffect } from 'react';
+import { useForm } from '@formily/react';
+import { useOptionsSchema } from '@nocobase/client';
 
 export const useUpdateOptionsAction = () => {
   const { setVisible } = useActionContext();

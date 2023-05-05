@@ -4,8 +4,7 @@ import { BasicAuth } from './basic-auth';
 import { readdir } from 'fs/promises';
 import { requireModule } from '@nocobase/utils';
 import { HandlerType, Handlers } from '@nocobase/resourcer';
-const presetAuthType = 'email/password';
-const presetAuthenticator = 'basic';
+import { presetAuthType, presetAuthenticator } from '../preset';
 export class AuthPlugin extends Plugin {
   afterAdd() {}
 
@@ -40,6 +39,10 @@ export class AuthPlugin extends Plugin {
     });
 
     this.app.actions(await this.importModules<Handlers, HandlerType>('actions'));
+    ['check', 'signIn', 'signUp', 'lostPassword', 'resetPassword', 'getUserByResetToken'].forEach((action) =>
+      this.app.acl.allow('auth', action),
+    );
+    this.app.acl.allow('authenticators', 'publicList');
   }
 
   async install(options?: InstallOptions) {

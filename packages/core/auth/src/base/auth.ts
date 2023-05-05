@@ -25,7 +25,7 @@ export class BaseAuth extends Auth {
   }
 
   set user(user: Model) {
-    // this.ctx.state.currentUser = user;
+    this.ctx.state.currentUser = user;
   }
 
   get user() {
