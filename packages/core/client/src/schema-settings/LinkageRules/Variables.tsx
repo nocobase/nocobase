@@ -2,6 +2,7 @@ import { useCompile } from '../../schema-component';
 import { useCollectionManager, useCollection } from '../../collection-manager';
 
 const supportsType = [
+  'id',
   'checkbox',
   'number',
   'percent',
@@ -24,7 +25,7 @@ const supportsType = [
   'o2m',
   'm2m',
 ];
-const useVariableTypes = (currentCollection) => {
+const useVariableTypes = (currentCollection, excludes = []) => {
   const { getCollectionFields, getInterface, getCollection } = useCollectionManager();
   const collection = getCollection(currentCollection);
   const fields = getCollectionFields(currentCollection);
@@ -34,7 +35,7 @@ const useVariableTypes = (currentCollection) => {
       value: currentCollection,
       options() {
         const field2option = (field, depth) => {
-          if (!field.interface || !supportsType.includes(field.interface)) {
+          if (!field.interface || !supportsType.filter((v) => !excludes.includes(v)).includes(field.interface)) {
             return;
           }
           const fieldInterface = getInterface(field.interface);
@@ -92,9 +93,9 @@ const useVariableTypes = (currentCollection) => {
   ];
 };
 
-export function useVariableOptions(collectionName) {
+export function useVariableOptions(collectionName, excludes?) {
   const compile = useCompile();
-  const options = useVariableTypes(collectionName).map((item) => {
+  const options = useVariableTypes(collectionName, excludes).map((item) => {
     const options = typeof item.options === 'function' ? item.options() : item.options;
     return {
       label: compile(item.title),
