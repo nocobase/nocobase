@@ -19,7 +19,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { AuthManager } from '@nocobase/auth';
+import { AuthManager, actions as authActions } from '@nocobase/auth';
 
 const packageJson = require('../package.json');
 
@@ -284,8 +284,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._appManager = new AppManager(this);
     }
 
-    this._authManager = new AuthManager(this, {
+    this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
+    });
+    this.resource({
+      name: 'auth',
+      authActions,
     });
     this._resourcer.use(this._authManager.middleware(), { tag: 'authCheck' });
 

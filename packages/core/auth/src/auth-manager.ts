@@ -1,10 +1,8 @@
 import { Registry } from '@nocobase/utils';
 import { AuthExtend, Auth } from './auth';
-import { Application } from '@nocobase/server';
 import { Model } from '@nocobase/database';
 import { Context, Next } from '@nocobase/actions';
 import actions from './actions';
-import { ISchema } from '@formily/react';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -19,19 +17,13 @@ type AuthConfig = {
 };
 
 export class AuthManager {
-  protected app: Application;
   protected options: AuthManagerOptions;
   protected authTypes: Registry<AuthConfig> = new Registry();
   // authenticators collection manager.
   protected storer: Storer;
 
-  constructor(app, options: AuthManagerOptions) {
-    this.app = app;
+  constructor(options: AuthManagerOptions) {
     this.options = options;
-    this.app.resource({
-      name: 'auth',
-      actions,
-    });
   }
 
   setStorer(storer: Storer) {
