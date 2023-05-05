@@ -35,6 +35,14 @@ export class BasicAuth extends BaseAuth {
     return user;
   }
 
+  async signUp() {
+    const ctx = this.ctx;
+    const User = ctx.db.getRepository('users');
+    const { values } = ctx.action.params;
+    const user = await User.create({ values });
+    return user;
+  }
+
   async lostPassword() {
     const ctx = this.ctx;
     const {

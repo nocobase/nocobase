@@ -30,8 +30,7 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsProvider } from '../system-settings';
-import { SignupPage } from '../user';
-import { SigninPage } from '../auth';
+import { SigninPage, SignupPage } from '../auth';
 import { SigninPageExtensionProvider } from '../auth/SigninPageExtension';
 import { compose } from './compose';
 

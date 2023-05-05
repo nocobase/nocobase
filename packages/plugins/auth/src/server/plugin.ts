@@ -42,6 +42,7 @@ export class AuthPlugin extends Plugin {
     ['check', 'signIn', 'signUp', 'lostPassword', 'resetPassword', 'getUserByResetToken'].forEach((action) =>
       this.app.acl.allow('auth', action),
     );
+    ['signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
     this.app.acl.allow('authenticators', 'publicList');
   }
 

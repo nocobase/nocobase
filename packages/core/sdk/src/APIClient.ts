@@ -139,7 +139,7 @@ export class Auth {
     this.api.storage.setItem(this.NOCOBASE_ROLE_KEY, role || '');
   }
 
-  async signIn(values, authenticator = 'email/password'): Promise<AxiosResponse<any>> {
+  async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
       url: 'auth:signIn',
@@ -154,6 +154,17 @@ export class Auth {
       token: data?.token,
     });
     return response;
+  }
+
+  async signUp(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
+    return await this.api.request({
+      method: 'post',
+      url: 'auth:signUp',
+      data: values,
+      headers: {
+        'X-Authenticator': authenticator,
+      },
+    });
   }
 
   async signOut() {

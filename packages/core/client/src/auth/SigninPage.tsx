@@ -25,7 +25,7 @@ const SigninPageContext = createContext<{
 
 export const SigninPageProvider = (props: {
   authType: string;
-  component: FunctionComponent;
+  component: FunctionComponent<{ name: string }>;
   allowSignup?: boolean;
   tabTitle?: string;
   children: JSX.Element;
@@ -136,7 +136,7 @@ export const SigninPage = () => {
               {item.component}
               {item.allowSignup && (
                 <div>
-                  <Link to="/signup">{t('Create an account')}</Link>
+                  <Link to={`/signup?authType=${item.authType}&name=${item.name}`}>{t('Create an account')}</Link>
                 </div>
               )}
             </Tabs.TabPane>
@@ -147,7 +147,9 @@ export const SigninPage = () => {
           {authenticators[0].component}
           {authenticators[0].allowSignup && (
             <div>
-              <Link to="/signup">{t('Create an account')}</Link>
+              <Link to={`/signup?authType=${authenticators[0].authType}&name=${authenticators[0].name}`}>
+                {t('Create an account')}
+              </Link>
             </div>
           )}
         </div>

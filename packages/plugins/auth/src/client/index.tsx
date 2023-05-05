@@ -1,10 +1,11 @@
-import { SettingsCenterProvider, SigninPageProvider } from '@nocobase/client';
+import { SettingsCenterProvider, SigninPageProvider, SignupPageProvider } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Authenticator } from './settings/Authenticator';
 import { OptionsSchemaProvider } from '@nocobase/client';
 import SigninPage from './basic/SigninPage';
 import { presetAuthType } from '../preset';
+import SignupPage from './basic/SignupPage';
 
 export default (props) => {
   const { t } = useTranslation();
@@ -47,7 +48,9 @@ export default (props) => {
           tabTitle={t('Sign in via email')}
           component={SigninPage}
         >
-          {props.children}
+          <SignupPageProvider authType={presetAuthType} component={SignupPage}>
+            {props.children}
+          </SignupPageProvider>
         </SigninPageProvider>
       </OptionsSchemaProvider>
     </SettingsCenterProvider>

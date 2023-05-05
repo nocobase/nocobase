@@ -1,7 +1,6 @@
 import { SchemaComponent, useSignIn } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
-import { presetAuthenticator } from '../../preset';
 
 const passwordForm: ISchema = {
   type: 'object',
@@ -43,9 +42,9 @@ const passwordForm: ISchema = {
     },
   },
 };
-export default () => {
+export default (props: { name: string }) => {
   const useBasicSignIn = () => {
-    return useSignIn(presetAuthenticator);
+    return useSignIn(props.name);
   };
   return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn }} />;
 };
