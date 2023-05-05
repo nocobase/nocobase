@@ -31,21 +31,6 @@ export class AuthPlugin extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
-      optionsSchema: {
-        type: 'object',
-        properties: {
-          secret: {
-            title: 'JWT Secret',
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-          expireIn: {
-            title: '{{t("Expire In",{ns:"auth"})}}',
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-        },
-      },
     });
     this.app.authManager.setStorer({
       get: async (name: string) => {

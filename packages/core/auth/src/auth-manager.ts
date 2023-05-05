@@ -16,7 +16,6 @@ type AuthManagerOptions = {
 
 type AuthConfig = {
   auth: AuthExtend<Auth>; // The authentication class.
-  optionsSchema?: ISchema; // The schema of the options of the authentication.
 };
 
 export class AuthManager {
