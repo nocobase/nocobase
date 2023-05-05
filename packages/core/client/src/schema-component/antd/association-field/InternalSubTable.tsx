@@ -1,9 +1,11 @@
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema, RecursionField } from '@formily/react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { unionBy } from 'lodash';
 import { useInsertSchema } from './hooks';
 import { useCollection } from '../../../collection-manager';
 import schema from './schema';
+import { SchemaComponentOptions, useActionContext, RecordPickerContext } from '../../';
 
 export const InternalSubTable: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
@@ -27,16 +29,33 @@ export const InternalSubTable: any = observer((props: any) => {
       }),
       insertSubTable(schema.SubTable);
   }, []);
+
+  const usePickActionProps = () => {
+    const { setVisible } = useActionContext();
+    const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
+    return {
+      onClick() {
+        if (multiple) {
+          onChange(unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
+        } else {
+          onChange(selectedRows?.[0] || null);
+        }
+        setVisible(false);
+      },
+    };
+  };
   return (
     <div>
-      <RecursionField
-        onlyRenderProperties
-        basePath={field.address}
-        schema={fieldSchema}
-        filterProperties={(s) => {
-          return s['x-component'] === 'AssociationField.SubTable';
-        }}
-      />
+      <SchemaComponentOptions scope={{ usePickActionProps }}>
+        <RecursionField
+          onlyRenderProperties
+          basePath={field.address}
+          schema={fieldSchema}
+          filterProperties={(s) => {
+            return s['x-component'] === 'AssociationField.SubTable';
+          }}
+        />
+      </SchemaComponentOptions>
     </div>
   );
 });

@@ -1,16 +1,12 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import React, { useContext, useEffect, useState } from 'react';
-import { unionBy, differenceBy } from 'lodash';
+import React, { useEffect, useState } from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
-import { FileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { InternalSelect } from './InternalSelect';
 import { AssociationSelect } from './AssociationSelect';
 import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { flatData } from './util';
-import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
 import { useCollection } from '../../../collection-manager';
-import { SchemaComponentOptions, useActionContext, RecordPickerContext } from '../../';
+import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 
 export const Editable = observer((props: any) => {
@@ -50,63 +46,9 @@ export const Editable = observer((props: any) => {
     };
   };
 
-  const usePickActionProps = () => {
-    const { setVisible } = useActionContext();
-    const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
-    return {
-      onClick() {
-        if (multiple) {
-          onChange(unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
-        } else {
-          onChange(selectedRows?.[0] || null);
-        }
-        setVisible(false);
-      },
-    };
-  };
-
-  const useTableSelectorProps = () => {
-    const field: any = useField();
-    const {
-      multiple,
-      options = [],
-      setSelectedRows,
-      selectedRows: rcSelectRows = [],
-      onChange,
-    } = useContext(RecordPickerContext);
-    const { onRowSelectionChange, rowKey = 'id', ...others } = useTsp();
-    const { setVisible } = useActionContext();
-
-    return {
-      ...others,
-      rowKey,
-      rowSelection: {
-        type: multiple ? 'checkbox' : 'radio',
-        selectedRowKeys: rcSelectRows
-          .filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
-          .map((item) => item[rowKey]),
-      },
-      onRowSelectionChange(selectedRowKeys, selectedRows) {
-        if (multiple) {
-          const scopeRows = flatData(field.value) || [];
-          const allSelectedRows = rcSelectRows || [];
-          const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey);
-          const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey);
-          const unionSelectedRowKeys = unionSelectedRows.map((item) => item[rowKey]);
-          setSelectedRows?.(unionSelectedRows);
-          onRowSelectionChange?.(unionSelectedRowKeys, unionSelectedRows);
-        } else {
-          setSelectedRows?.(selectedRows);
-          onRowSelectionChange?.(selectedRowKeys, selectedRows);
-          onChange(selectedRows?.[0] || null);
-          setVisible(false);
-        }
-      },
-    };
-  };
   return (
     <AssociationFieldProvider>
-      <SchemaComponentOptions scope={{ useCreateActionProps, usePickActionProps, useTableSelectorProps }}>
+      <SchemaComponentOptions scope={{ useCreateActionProps }}>
         {currentMode === 'Picker' && <InternalSelect {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
