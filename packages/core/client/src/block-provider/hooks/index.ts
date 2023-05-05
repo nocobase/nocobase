@@ -440,6 +440,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
           try {
             await resource.update(updateData);
           } catch (error) {
+            /* empty */
           } finally {
             actionField.data.loading = false;
           }
@@ -684,9 +685,6 @@ export const useUpdateActionProps = () => {
           updateAssociationValues,
         });
         actionField.data.loading = false;
-        if (!(resource instanceof TableFieldResource)) {
-          __parent?.__parent?.service?.refresh?.();
-        }
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
