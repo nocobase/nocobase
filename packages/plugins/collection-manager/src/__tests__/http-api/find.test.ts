@@ -1,6 +1,6 @@
+import { Database } from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { createApp } from '../index';
-import { Database } from '@nocobase/database';
 
 describe('find with association', () => {
   let app: MockServer;
@@ -113,6 +113,13 @@ describe('find with association', () => {
         },
       ],
     };
+
+    const items = await db.getRepository('users').find({
+      filter,
+      appends: ['children'],
+    });
+
+    expect(items[0].name).toEqual('u3');
 
     const response2 = await agent.resource('users').list({
       filter,
