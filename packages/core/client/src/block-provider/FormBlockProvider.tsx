@@ -1,7 +1,7 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
-import isEmpty from 'lodash/isEmpty';
+import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -65,13 +65,13 @@ export const useIsEmptyRecord = () => {
   return keys.length > 0;
 };
 
-const getResource = (schema, arr = []) => {
+const getAssociationAppends = (schema, arr = []) => {
   return schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'CollectionField' && ['object', 'array'].includes(s.type)) {
       buf.push(s.name);
-      return getResource(s, buf);
+      return getAssociationAppends(s, buf);
     } else {
-      return getResource(s, buf);
+      return getAssociationAppends(s, buf);
     }
   }, arr);
 };
@@ -98,8 +98,14 @@ const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
-  const nesterSchema = formSchema.properties.grid;
-  return [getResource(nesterSchema).join('.')];
+  const gridSchema = formSchema.properties.grid;
+  const data = [];
+  gridSchema.reduceProperties((buf, s) => {
+    buf.push(getAssociationAppends(s).join('.'));
+    return buf;
+  }, data);
+  const appends = data.filter((g) => g.length);
+  return appends;
 };
 
 export const FormBlockProvider = (props) => {
