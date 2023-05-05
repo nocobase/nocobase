@@ -1,4 +1,9 @@
 // 表单的操作配置
+import { useFormBlockContext } from '../../block-provider';
+import React from 'react';
+import { gridRowColWrap, SchemaInitializer } from '..';
+import { useTranslation } from 'react-i18next';
+
 export const FormActionInitializers = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
@@ -129,10 +134,11 @@ export const FormActionInitializers = {
   ],
 };
 
-export const CreateFormActionInitializers = {
-  title: '{{t("Configure actions")}}',
-  icon: 'SettingOutlined',
-  items: [
+export const CreateFormActionInitializers = (props) => {
+  const { action } = useFormBlockContext();
+  console.log(action);
+  const { t } = useTranslation();
+  const items: any[] = [
     {
       type: 'itemGroup',
       title: '{{t("Enable actions")}}',
@@ -257,7 +263,16 @@ export const CreateFormActionInitializers = {
         },
       ],
     },
-  ],
+  ];
+  console.log(items);
+  return (
+    <SchemaInitializer.Button
+      wrap={gridRowColWrap}
+      icon={'SettingOutlined'}
+      items={items}
+      title={t('Configure actions')}
+    />
+  );
 };
 
 export const UpdateFormActionInitializers = {
