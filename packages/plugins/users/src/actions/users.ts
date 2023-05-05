@@ -131,11 +131,7 @@ export async function changePassword(ctx: Context, next: Next) {
     ctx.throw(401);
   }
   const User = ctx.db.getCollection('users');
-  const user = await User.model.findOne<any>({
-    where: {
-      email: ctx.state.currentUser.email,
-    },
-  });
+  const user = await User.model.findByPk(ctx.state.currentUser.id);
   const pwd = User.getField<PasswordField>('password');
   const isValid = await pwd.verify(oldPassword, user.password);
   if (!isValid) {
