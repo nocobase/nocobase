@@ -116,9 +116,9 @@ describe('find with association', () => {
 
     const response2 = await agent.resource('users').list({
       filter,
+      appends: ['children'],
     });
 
-    console.log(response2.body);
     expect(response2.statusCode).toEqual(200);
     expect(response2.body.data[0].name).toEqual('u3');
   });
