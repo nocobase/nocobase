@@ -2,6 +2,7 @@ import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
 import omit from 'lodash/omit';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '.';
 import { useCompile } from '..';
 import { useRequest } from '../api-client';
@@ -9,7 +10,6 @@ import { useRecord } from '../record-provider';
 import { useActionContext } from '../schema-component';
 import { useFilterFieldOptions, useFilterFieldProps } from '../schema-component/antd/filter/useFilterActionProps';
 import { useResourceActionContext, useResourceContext } from './ResourceActionProvider';
-import { useTranslation } from 'react-i18next';
 
 export const useCancelAction = () => {
   const form = useForm();
@@ -382,7 +382,7 @@ export const useBulkDestroyAction = () => {
   const { t } = useTranslation();
   return {
     async run() {
-      if (!state?.selectedRowKeys || !state?.selectedRowKeys.length) {
+      if (!state?.selectedRowKeys?.length) {
         return message.error(t('Please select the records you want to delete'));
       }
       await resource.destroy({

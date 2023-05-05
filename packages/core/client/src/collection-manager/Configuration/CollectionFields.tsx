@@ -311,8 +311,6 @@ export const CollectionFields = (props) => {
   ];
 
   const fields = getCurrentCollectionFields(name);
-  console.log(fields);
-
   const groups = {
     pf: [],
     association: [],
