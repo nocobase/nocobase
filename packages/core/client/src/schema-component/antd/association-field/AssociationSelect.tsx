@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { ISchema, connect, mapProps, mapReadPretty, RecursionField, useFieldSchema, useField } from '@formily/react';
-import { Button, Input, Select } from 'antd';
+import { connect, mapProps, mapReadPretty, RecursionField, useFieldSchema, useField } from '@formily/react';
+import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
-import React, { useCallback, useMemo, useState, useContext } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
@@ -12,7 +12,6 @@ import { useInsertSchema } from './hooks';
 import useServiceOptions from './hooks';
 import { useCollection } from '../../../collection-manager';
 import schema from './schema';
-import { AssociationFieldContext } from './context';
 import { CollectionProvider } from '../../../collection-manager';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
@@ -43,7 +42,7 @@ const InternalAssociationSelect = connect(
     );
 
     const value = useMemo(() => {
-      if (props.value === undefined || props.value === null) {
+      if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
         return;
       }
 
@@ -55,7 +54,7 @@ const InternalAssociationSelect = connect(
     }, [props.value, normalizeValues]);
     return (
       <>
-        <Input.Group compact style={{display:'flex'}}>
+        <Input.Group compact style={{ display: 'flex' }}>
           <RemoteSelect
             style={{ width: '100%' }}
             {...props}
