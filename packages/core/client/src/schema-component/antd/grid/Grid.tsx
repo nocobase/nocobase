@@ -344,8 +344,6 @@ export const Grid: any = observer((props: any) => {
     gridRef.current && setPrintContent?.(gridRef.current);
   }, [gridRef.current]);
 
-  console.log('🚀 ~ file: Grid.tsx:349 ~ constGrid:any=observer ~ InitializerComponent:', InitializerComponent);
-
   return (
     <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent }}>
       <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>

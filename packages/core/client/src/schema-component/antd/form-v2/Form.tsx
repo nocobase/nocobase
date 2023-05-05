@@ -13,7 +13,7 @@ export interface FormProps {
   [key: string]: any;
 }
 
-const FormComponent: React.FC<FormProps> = (props) => {
+export const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();

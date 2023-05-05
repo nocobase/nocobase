@@ -54,6 +54,7 @@ const InternalCardList = (props) => {
   const meta = service?.data?.meta;
   const fieldSchema = useFieldSchema();
   const field = useField<ArrayField>();
+  console.log('🚀 ~ file: CardList.tsx:57 ~ InternalCardList ~ field:', field);
   const Designer = useDesigner();
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(

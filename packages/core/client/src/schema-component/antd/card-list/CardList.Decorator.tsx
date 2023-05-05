@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { useField, useForm } from '@formily/react';
+import { FormContext, useField, useForm } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
@@ -9,11 +9,16 @@ export const CardListBlockContext = createContext<any>({});
 
 const InternalCardListBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
-  const form = useForm();
+  const field = useField();
+  const form = useMemo(() => {
+    return createForm({
+      readPretty: true,
+    });
+  }, []);
 
   useEffect(() => {
     if (!service?.loading) {
-      form.setValuesIn('list', service?.data?.data);
+      form.setValuesIn(field.address.concat('list').toString(), service?.data?.data);
     }
   }, [service?.data?.data, service?.loading]);
 
@@ -25,7 +30,9 @@ const InternalCardListBlockProvider = (props) => {
         columnCount: props.columnCount,
       }}
     >
-      <FormLayout layout={'vertical'}>{props.children}</FormLayout>
+      <FormContext.Provider value={form}>
+        <FormLayout layout={'vertical'}>{props.children}</FormLayout>
+      </FormContext.Provider>
     </CardListBlockContext.Provider>
   );
 };
