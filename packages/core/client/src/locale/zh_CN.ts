@@ -217,6 +217,7 @@ export default {
   "Edit collection": "编辑数据表",
   "Configure fields": "配置字段",
   "Configure columns": "配置字段",
+  "Please select the records you want to delete": "请选择要删除的记录",
   "Edit field": "编辑字段",
   "Override": "重写",
   "Override field": "重写字段",
