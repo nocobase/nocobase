@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { BaseAuth } from '@nocobase/auth';
-import { namespace } from '../';
+import { namespace } from '../preset';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
 
