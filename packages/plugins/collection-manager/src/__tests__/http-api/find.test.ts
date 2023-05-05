@@ -118,6 +118,7 @@ describe('find with association', () => {
       filter,
     });
 
+    console.log(response2.body);
     expect(response2.statusCode).toEqual(200);
     expect(response2.body.data[0].name).toEqual('u3');
   });
