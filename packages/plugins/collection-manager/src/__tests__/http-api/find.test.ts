@@ -8,11 +8,7 @@ describe('find with association', () => {
 
   let db: Database;
   beforeEach(async () => {
-    app = await createApp({
-      database: {
-        tablePrefix: '',
-      },
-    });
+    app = await createApp();
 
     agent = app.agent();
     db = app.db;
