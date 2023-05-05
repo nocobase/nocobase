@@ -4,6 +4,7 @@ import { Editable } from './Editable';
 import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
 import { SubTable } from './SubTable';
+import { InternalSelect } from './InternalSelect';
 
 export const AssociationField: any = connect(Editable, mapReadPretty(ReadPretty));
 
@@ -12,3 +13,4 @@ AssociationField.Nester = Nester;
 AssociationField.AddNewer = Action.Container;
 AssociationField.Selector = Action.Container;
 AssociationField.Viewer = Action.Container;
+AssociationField.InternalSelect = InternalSelect;

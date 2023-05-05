@@ -12,8 +12,6 @@ import { TableFieldProvider, useTableFieldProps } from './TableFieldProvider';
 import { TableSelectorProvider, useTableSelectorProps } from './TableSelectorProvider';
 import { FormFieldProvider, useFormFieldProps } from './FormFieldProvider';
 import { GanttBlockProvider, useGanttBlockProps } from './GanttBlockProvider';
-import { SubTableProvider, useSubTableProps } from './SubTableProvider';
-
 
 export const BlockSchemaComponentProvider: React.FC = (props) => {
   return (
@@ -30,7 +28,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         DetailsBlockProvider,
         KanbanBlockProvider,
         RecordLink,
-        SubTableProvider,
       }}
       scope={{
         ...bp,
@@ -46,7 +43,6 @@ export const BlockSchemaComponentProvider: React.FC = (props) => {
         useTableSelectorProps,
         useKanbanBlockProps,
         useGanttBlockProps,
-        useSubTableProps,
       }}
     >
       {props.children}

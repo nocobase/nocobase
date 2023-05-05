@@ -4,6 +4,7 @@ import { FileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { AssociationSelect } from './AssociationSelect';
+import { InternalSubTable } from './InternalSubTable';
 
 export const ReadPretty = (props) => {
   const { mode = 'Picker' } = props;
@@ -13,6 +14,7 @@ export const ReadPretty = (props) => {
       {mode === 'FileManager' && <FileManager {...props} />}
       {mode === 'Nester' && <InternalNester {...props} />}
       {mode === 'Select' && <AssociationSelect {...props} />}
+      {mode === 'SubTable' && <InternalSubTable {...props} />}
     </AssociationFieldProvider>
   );
 };

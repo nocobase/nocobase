@@ -128,7 +128,7 @@ export default {
   },
   SubTable: {
     type: 'void',
-    'x-decorator': 'SubTableProvider',
+    'x-decorator': 'TableBlockProvider',
     'x-component': 'AssociationField.SubTable',
     properties: {
       actions: {
@@ -145,7 +145,7 @@ export default {
           rowSelection: {
             type: 'checkbox',
           },
-          useProps: '{{ useSubTableProps }}',
+          useProps: '{{ useTableBlockProps }}',
         },
       },
     },

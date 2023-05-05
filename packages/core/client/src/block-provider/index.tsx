@@ -11,4 +11,3 @@ export * from './TableSelectorProvider';
 export * from './FormFieldProvider';
 export * from './GanttBlockProvider';
 export * from './SharedFilterProvider';
-export * from './SubTableProvider';

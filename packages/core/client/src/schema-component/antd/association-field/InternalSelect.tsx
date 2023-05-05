@@ -22,6 +22,7 @@ export const InternalSelect = (props) => {
   const insertSelector = useInsertSchema('Selector');
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
+  console.log(field.props.name,fieldSchema)
 
   const addbuttonClick = () => {
     insertAddNewer(schema.AddNewer);
@@ -30,16 +31,16 @@ export const InternalSelect = (props) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField.interface),
+    multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
     association: {
-      target: collectionField.target,
+      target: collectionField?.target,
     },
     onChange: props?.onChange,
   };
 
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = getCollection(collectionField.target).template === 'file';
+  const showFilePicker = getCollection(collectionField?.target).template === 'file';
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);

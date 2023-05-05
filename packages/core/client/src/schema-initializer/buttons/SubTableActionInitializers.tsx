@@ -1,3 +1,5 @@
+import { useCollection } from '../../';
+
 // 表格操作配置
 export const SubTableActionInitializers = {
   title: "{{t('Configure actions')}}",
@@ -17,20 +19,30 @@ export const SubTableActionInitializers = {
           component: 'CreateActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return collection.template !== 'view' && collection.template !== 'file';
           },
         },
         {
           type: 'item',
-          title: "{{t('Delete')}}",
-          component: 'BulkDestroyActionInitializer',
+          title: "{{t('Select')}}",
+          component: 'SelectActionInitializer',
           schema: {
             'x-align': 'right',
-            // 'x-component-props': {
-            //   size: 'small',
-            // },
+            'x-decorator': 'ACLActionProvider',
+            'x-acl-action-props': {
+              skipScopeCheck: true,
+            },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return collection.template !== 'view' && collection.template !== 'file';
           },
         },
       ],

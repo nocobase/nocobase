@@ -24,6 +24,8 @@ export const Editable = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
+
+  
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField = useField();
@@ -39,8 +41,9 @@ export const Editable = observer((props: any) => {
           });
         } else {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
+          console.log(values,fieldNames,data)
           values.push({
-            [fieldNames.label]: data[fieldNames.label],
+            [fieldNames?.label]: data?.[fieldNames?.label],
             id: data?.id,
             value: data?.id,
           });

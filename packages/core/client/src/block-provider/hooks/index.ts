@@ -163,6 +163,7 @@ export const useCreateActionProps = () => {
         values[treeParentField?.name ?? 'parent'] = currentRecord;
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
+      console.log(field.data)
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
