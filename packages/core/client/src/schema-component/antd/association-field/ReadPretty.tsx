@@ -6,12 +6,12 @@ import { AssociationSelectReadPretty } from './AssociationSelect';
 import { InternalSubTable } from './InternalSubTable';
 
 export const ReadPretty = (props) => {
-  const { mode = 'Picker' } = props;
+  const { mode = 'Select', enableLink } = props;
   return (
     <AssociationFieldProvider>
-      {mode === 'Picker' && <ReadPrettyInternalViewer {...props} />}
+      {(mode === 'Picker' || enableLink !== false) && <ReadPrettyInternalViewer {...props} />}
       {mode === 'Nester' && <InternalNester {...props} />}
-      {mode === 'Select' && <AssociationSelectReadPretty {...props} />}
+      {mode === 'Select' && enableLink === false && <AssociationSelectReadPretty {...props} />}
       {mode === 'SubTable' && <InternalSubTable {...props} />}
     </AssociationFieldProvider>
   );

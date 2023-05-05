@@ -99,9 +99,6 @@ const useAssociationNames = (collection) => {
     return buf;
   }, new Schema({}));
   const nesterSchema = formSchema.properties.grid;
-  const jsonData = nesterSchema.toJSON();
-  console.log(jsonData);
-
   return [getResource(nesterSchema).join('.')];
 };
 
@@ -114,7 +111,6 @@ export const FormBlockProvider = (props) => {
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
   const appends = useAssociationNames(collection);
-  console.log(appends);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }

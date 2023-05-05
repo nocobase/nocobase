@@ -584,12 +584,13 @@ FormItem.Designer = function Designer() {
       {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
         <SchemaSettings.SwitchItem
           title={t('Enable link')}
-          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          checked={fieldSchema['x-component-props']?.enableLink !== false}
           onChange={(flag) => {
             fieldSchema['x-component-props'] = {
               ...fieldSchema?.['x-component-props'],
-              mode: flag ? 'links' : 'tags',
+              enableLink: flag,
             };
+            field.componentProps['enableLink']=flag
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],

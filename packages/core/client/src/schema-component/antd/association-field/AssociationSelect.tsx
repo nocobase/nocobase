@@ -118,6 +118,7 @@ export const AssociationSelectReadPretty = connect(
   (props: any) => {
     if (props.fieldNames) {
       const service = useServiceOptions(props);
+      console.log(props)
       useFieldTitle();
       return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
     }
