@@ -5,6 +5,7 @@ import isEmpty from 'lodash/isEmpty';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
+import { useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
@@ -12,7 +13,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty } = props;
+  const { action, readPretty, params } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -30,6 +31,7 @@ const InternalFormBlockProvider = (props) => {
   return (
     <FormBlockContext.Provider
       value={{
+        params,
         action,
         form,
         field,
@@ -63,13 +65,59 @@ export const useIsEmptyRecord = () => {
   return keys.length > 0;
 };
 
+const getResource = (schema, arr = []) => {
+  return schema.reduceProperties((buf, s) => {
+    if (s['x-component'] === 'CollectionField' && ['object', 'array'].includes(s.type)) {
+      buf.push(s.name);
+      return getResource(s, buf);
+    } else {
+      return getResource(s, buf);
+    }
+  }, arr);
+};
+
+const useAssociationNames = (collection) => {
+  const { getCollectionFields } = useCollectionManager();
+  const collectionFields = getCollectionFields(collection);
+  const associationFields = new Set();
+  for (const collectionField of collectionFields) {
+    if (collectionField.target) {
+      associationFields.add(collectionField.name);
+      const fields = getCollectionFields(collectionField.target);
+      for (const field of fields) {
+        if (field.target) {
+          associationFields.add(`${collectionField.name}.${field.name}`);
+        }
+      }
+    }
+  }
+  const fieldSchema = useFieldSchema();
+  const formSchema = fieldSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'FormV2') {
+      return schema;
+    }
+    return buf;
+  }, new Schema({}));
+  const nesterSchema = formSchema.properties.grid;
+  const jsonData = nesterSchema.toJSON();
+  console.log(jsonData);
+
+  return [getResource(nesterSchema).join('.')];
+};
+
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
   const { __collection } = record;
+  const params = { ...props.params };
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
+  const appends = useAssociationNames(collection);
+  console.log(appends);
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
   let detailFlag = false;
   if (isEmptyRecord) {
     detailFlag = true;
@@ -81,8 +129,8 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+      <BlockProvider {...props} block={'form'} params={params}>
+        <InternalFormBlockProvider {...props} params={params} />
       </BlockProvider>
     )
   );
