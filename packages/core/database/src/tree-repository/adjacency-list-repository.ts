@@ -44,9 +44,7 @@ export class AdjacencyListRepository extends Repository {
       });
     }
 
-    const childInstances = (await super.find(findChildrenOptions)).map((r) => {
-      return r.toJSON();
-    });
+    const childInstances = await super.find(findChildrenOptions);
 
     const nodeMap = {};
 
@@ -64,10 +62,10 @@ export class AdjacencyListRepository extends Repository {
         return [];
       }
 
-      return children.map((child) => ({
-        ...child,
-        [childrenKey]: buildTree(child.id),
-      }));
+      return children.map((child) => {
+        child.setDataValue(childrenKey, buildTree(child.id));
+        return child;
+      });
     }
 
     for (const parent of parentNodes) {

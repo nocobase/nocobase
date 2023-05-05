@@ -351,10 +351,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
-    const transaction = await this.getTransaction(options);
     options = {
       ...options,
-      transaction,
+      transaction: await this.getTransaction(options),
     };
 
     const count = await this.count(options);
