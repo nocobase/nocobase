@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, RecursionField, useFieldSchema, useField } from '@formily/react';
+import { connect, mapProps, RecursionField, useFieldSchema, useField, observer } from '@formily/react';
 import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
@@ -113,3 +113,27 @@ interface AssociationSelectInterface {
 }
 
 export const AssociationSelect = InternalAssociationSelect as unknown as AssociationSelectInterface;
+
+export const AssociationSelectReadPretty = connect(
+  (props: any) => {
+    if (props.fieldNames) {
+      const service = useServiceOptions(props);
+      useFieldTitle();
+      return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
+    }
+    return null;
+  },
+  mapProps(
+    {
+      dataSource: 'options',
+      loading: true,
+    },
+    (props, field) => {
+      return {
+        ...props,
+        fieldNames: props.fieldNames && { ...props.fieldNames, ...field.componentProps.fieldNames },
+        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
+      };
+    },
+  ),
+);

@@ -2,7 +2,7 @@ import React from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
-import { AssociationSelect } from './AssociationSelect';
+import { AssociationSelectReadPretty } from './AssociationSelect';
 import { InternalSubTable } from './InternalSubTable';
 
 export const ReadPretty = (props) => {
@@ -11,7 +11,7 @@ export const ReadPretty = (props) => {
     <AssociationFieldProvider>
       {mode === 'Picker' && <ReadPrettyInternalViewer {...props} />}
       {mode === 'Nester' && <InternalNester {...props} />}
-      {mode === 'Select' && <AssociationSelect {...props} />}
+      {mode === 'Select' && <AssociationSelectReadPretty {...props} />}
       {mode === 'SubTable' && <InternalSubTable {...props} />}
     </AssociationFieldProvider>
   );

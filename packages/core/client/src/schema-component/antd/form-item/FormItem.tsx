@@ -516,7 +516,6 @@ FormItem.Designer = function Designer() {
           options={fieldModeOptions}
           value={field?.componentProps?.['mode'] || 'Select'}
           onChange={(mode) => {
-            console.log(mode)
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
