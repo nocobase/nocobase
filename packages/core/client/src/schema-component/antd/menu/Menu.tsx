@@ -363,7 +363,7 @@ Menu.Item = observer((props) => {
       eventKey={schema.name}
       schema={schema}
     >
-      <SortableItem className={designerCss}>
+      <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
         <Icon type={icon} />
         <span
           className={css`
@@ -402,7 +402,7 @@ Menu.URL = observer((props) => {
         window.open(props.href, '_blank');
       }}
     >
-      <SortableItem className={designerCss}>
+      <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
         <Icon type={icon} />
         <span
           className={css`
@@ -441,7 +441,7 @@ Menu.SubMenu = observer((props) => {
       key={schema.name}
       eventKey={schema.name}
       title={
-        <SortableItem className={subMenuDesignerCss}>
+        <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
           <Icon type={icon} />
           {field.title}
           <Designer />
