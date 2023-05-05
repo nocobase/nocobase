@@ -1,65 +1,68 @@
-import { SchemaComponent, useAPIClient, useRequest } from '@nocobase/client';
+import { ActionContext, SchemaComponent, useActionContext } from '@nocobase/client';
 import { Card } from 'antd';
-import React, { useState, useEffect } from 'react';
-import { authenticatorsSchema } from './schemas/authenticators';
-import type { MenuProps } from 'antd';
+import React, { useState } from 'react';
+import { authenticatorsSchema, createFormSchema } from './schemas/authenticators';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { action } from '@formily/reactive';
+import { AuthTypeContext, useAuthTypes } from './authType';
+import { Configure, useUpdateOptionsAction, useValuesFromOptions } from './Configure';
 
-const useAuthTypes = () => {
-  const api = useAPIClient();
-  const [types, setTypes] = useState([]);
-  const getAuthTypes = async () =>
-    api
-      .resource('authenticators')
-      .listTypes()
-      .then((res) => {
-        const types = res?.data?.data || [];
-        return types.map((type: string) => ({
-          key: type,
-          label: type,
-        }));
-      });
-  useRequest(getAuthTypes, {
-    onSuccess: (types) => {
-      setTypes(types);
+const useAsyncDataSource = (service) => (field) => {
+  field.loading = true;
+  return service(field).then(
+    action.bound((data) => {
+      field.dataSource = data;
+      field.loading = false;
+    }),
+  );
+};
+
+const useCloseAction = () => {
+  const { setVisible } = useActionContext();
+  return {
+    async run() {
+      setVisible(false);
     },
-  });
-  return { types, getAuthTypes };
+  };
 };
 
 const AddNew = () => {
   const { t } = useTranslation();
-  const { types: items } = useAuthTypes();
+  const [visible, setVisible] = useState(false);
+  const [type, setType] = useState('');
+  const { types, getAuthTypes } = useAuthTypes();
+  const items = types.map((item) => ({
+    ...item,
+    onClick: () => {
+      setVisible(true);
+      setType(item.value);
+    },
+  }));
 
   return (
-    <Dropdown menu={{ items }}>
-      <Button icon={<PlusOutlined />} type={'primary'}>
-        {t('Add new')} <DownOutlined />
-      </Button>
-    </Dropdown>
+    <ActionContext.Provider value={{ visible, setVisible }}>
+      <AuthTypeContext.Provider value={{ type }}>
+        <Dropdown menu={{ items }}>
+          <Button icon={<PlusOutlined />} type={'primary'}>
+            {t('Add new')} <DownOutlined />
+          </Button>
+        </Dropdown>
+        <SchemaComponent scope={{ useCloseAction, useAsyncDataSource, getAuthTypes }} schema={createFormSchema} />
+      </AuthTypeContext.Provider>
+    </ActionContext.Provider>
   );
 };
 
 export const Authenticator = () => {
   const { getAuthTypes } = useAuthTypes();
-  const useAsyncDataSource = (service) => (field) => {
-    field.loading = true;
-    return service(field).then(
-      action.bound((data) => {
-        field.dataSource = data;
-        field.loading = false;
-      }),
-    );
-  };
   return (
     <Card bordered={false}>
       <SchemaComponent
         schema={authenticatorsSchema}
-        components={{ AddNew }}
-        scope={{ useAsyncDataSource, getAuthTypes }}
+        components={{ AddNew, Configure }}
+        scope={{ useAsyncDataSource, getAuthTypes, useUpdateOptionsAction, useValuesFromOptions }}
       />
     </Card>
   );

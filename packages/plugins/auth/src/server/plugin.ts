@@ -11,17 +11,17 @@ export class AuthPlugin extends Plugin {
 
   async beforeLoad() {}
 
-  async importActions() {
-    const files = await readdir(resolve(__dirname, 'actions'));
-    const actions = {};
+  async importModules<T, U>(dir: string) {
+    const files = await readdir(resolve(__dirname, dir));
+    const mods: { [key: string]: U } = {};
     files.forEach((file) => {
       const fileName = file.replace(/\.ts$/, '');
-      const mod: Handlers = requireModule(resolve(__dirname, 'actions', file));
-      Object.entries(mod).forEach(([key, handler]: [key: string, handler: HandlerType]) => {
-        actions[`${fileName}:${key}`] = handler;
+      const mod: T = requireModule(resolve(__dirname, dir, file));
+      Object.entries(mod).forEach(([key, handler]: [key: string, handler: U]) => {
+        mods[`${fileName}:${key}`] = handler;
       });
     });
-    return actions;
+    return mods;
   }
 
   async load() {
@@ -31,6 +31,21 @@ export class AuthPlugin extends Plugin {
 
     this.app.authManager.registerTypes(presetAuthType, {
       auth: BasicAuth,
+      optionsSchema: {
+        type: 'object',
+        properties: {
+          secret: {
+            title: 'JWT Secret',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+          expireIn: {
+            title: '{{t("Expire In",{ns:"auth"})}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        },
+      },
     });
     this.app.authManager.setStorer({
       get: async (name: string) => {
@@ -39,7 +54,7 @@ export class AuthPlugin extends Plugin {
       },
     });
 
-    this.app.actions(await this.importActions());
+    this.app.actions(await this.importModules<Handlers, HandlerType>('actions'));
   }
 
   async install(options?: InstallOptions) {

@@ -55,6 +55,10 @@ export class AuthManager {
     return Array.from(this.authTypes.getKeys());
   }
 
+  getAuthConfig(authType: string) {
+    return this.authTypes.get(authType);
+  }
+
   /**
    * get
    * @description Get authenticator instance by name.

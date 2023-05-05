@@ -1,6 +1,8 @@
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
-import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
+import { useActionContext, useRequest } from '@nocobase/client';
+import { useContext } from 'react';
+import { AuthTypeContext } from '../authType';
 
 const collection = {
   name: 'authenticators',
@@ -40,10 +42,73 @@ const collection = {
         type: 'string',
         title: '{{t("Description")}}',
         'x-component': 'Input',
-        required: true,
       },
     },
   ],
+};
+
+export const createFormSchema: ISchema = {
+  type: 'object',
+  properties: {
+    drawer: {
+      type: 'void',
+      'x-component': 'Action.Drawer',
+      'x-decorator': 'Form',
+      'x-decorator-props': {
+        useValues(options) {
+          const ctx = useActionContext();
+          const { type: authType } = useContext(AuthTypeContext);
+          return useRequest(
+            () =>
+              Promise.resolve({
+                data: {
+                  name: `s_${uid()}`,
+                  authType,
+                },
+              }),
+            { ...options, refreshDeps: [ctx.visible] },
+          );
+        },
+      },
+      title: '{{t("Add new")}}',
+      properties: {
+        name: {
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+        },
+        authType: {
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+          'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
+        },
+        description: {
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+        },
+        footer: {
+          type: 'void',
+          'x-component': 'Action.Drawer.Footer',
+          properties: {
+            cancel: {
+              title: '{{t("Cancel")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                useAction: '{{ cm.useCancelAction }}',
+              },
+            },
+            submit: {
+              title: '{{t("Submit")}}',
+              'x-component': 'Action',
+              'x-component-props': {
+                type: 'primary',
+                useAction: '{{ cm.useCreateAction }}',
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 };
 
 export const authenticatorsSchema: ISchema = {
@@ -95,67 +160,6 @@ export const authenticatorsSchema: ISchema = {
           'x-component': 'AddNew',
           'x-component-props': {
             type: 'primary',
-          },
-          properties: {
-            drawer: {
-              type: 'void',
-              'x-component': 'Action.Drawer',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                useValues(options) {
-                  const ctx = useActionContext();
-                  return useRequest(
-                    () =>
-                      Promise.resolve({
-                        data: {
-                          name: `s_${uid()}`,
-                        },
-                      }),
-                    { ...options, refreshDeps: [ctx.visible] },
-                  );
-                },
-              },
-              title: '{{t("Add new")}}',
-              properties: {
-                name: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                authType: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                description: {
-                  'x-component': 'CollectionField',
-                  'x-decorator': 'FormItem',
-                },
-                options: {
-                  type: 'object',
-                  'x-component': 'FormItem',
-                },
-                footer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer.Footer',
-                  properties: {
-                    cancel: {
-                      title: '{{t("Cancel")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        useAction: '{{ cm.useCancelAction }}',
-                      },
-                    },
-                    submit: {
-                      title: '{{t("Submit")}}',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        type: 'primary',
-                        useAction: '{{ cm.useCreateAction }}',
-                      },
-                    },
-                  },
-                },
-              },
-            },
           },
         },
       },
@@ -242,6 +246,36 @@ export const authenticatorsSchema: ISchema = {
                       title: '{{ t("Configure") }}',
                       'x-component': 'Action.Drawer',
                       'x-decorator': 'Form',
+                      'x-decorator-props': {
+                        useValues: '{{ useValuesFromOptions }}',
+                      },
+                      properties: {
+                        form: {
+                          type: 'void',
+                          'x-component': 'Configure',
+                        },
+                        footer: {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            cancel: {
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                            submit: {
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: '{{ useUpdateOptionsAction }}',
+                              },
+                            },
+                          },
+                        },
+                      },
                     },
                   },
                 },
