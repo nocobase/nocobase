@@ -1,4 +1,4 @@
-import { RecursionField, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, useField, useFieldSchema, observer } from '@formily/react';
 import { Button, Input, Select } from 'antd';
 import React, { useState, useEffect, useContext } from 'react';
 import { differenceBy, unionBy } from 'lodash';
@@ -72,7 +72,7 @@ const useTableSelectorProps = () => {
   };
 };
 
-export const InternalSelect = (props) => {
+export const InternalSelect = observer((props: any) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const field: any = useField();
   const fieldNames = useFieldNames(props);
@@ -103,7 +103,7 @@ export const InternalSelect = (props) => {
     },
     onChange: props?.onChange,
     selectedRows,
-    setSelectedRows
+    setSelectedRows,
   };
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
@@ -120,7 +120,6 @@ export const InternalSelect = (props) => {
 
   const getValue = () => {
     if (multiple == null) return null;
-
     return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
   };
 
@@ -260,4 +259,4 @@ export const InternalSelect = (props) => {
       </ActionContext.Provider>
     </>
   );
-};
+});
