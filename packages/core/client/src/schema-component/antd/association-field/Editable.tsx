@@ -24,8 +24,6 @@ export const Editable = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-
-  
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField = useField();
@@ -41,7 +39,6 @@ export const Editable = observer((props: any) => {
           });
         } else {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
-          console.log(values,fieldNames,data)
           values.push({
             [fieldNames?.label]: data?.[fieldNames?.label],
             id: data?.id,
@@ -111,7 +108,6 @@ export const Editable = observer((props: any) => {
     <AssociationFieldProvider>
       <SchemaComponentOptions scope={{ useCreateActionProps, usePickActionProps, useTableSelectorProps }}>
         {currentMode === 'Picker' && <InternalSelect {...props} />}
-        {currentMode === 'FileManager' && <FileManager {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}

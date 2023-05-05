@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, RecursionField, useFieldSchema, useField } from '@formily/react';
+import { connect, mapProps, RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
@@ -7,7 +7,6 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
-import { ReadPretty } from './ReadPretty';
 import { useInsertSchema } from './hooks';
 import useServiceOptions from './hooks';
 import { useCollection } from '../../../collection-manager';
@@ -62,7 +61,7 @@ const InternalAssociationSelect = connect(
             value={value}
             service={service}
           ></RemoteSelect>
-          {isAllowAddNew && (
+          {isAllowAddNew && !field.readPretty && (
             <Button
               type={'primary'}
               onClick={() => {
@@ -105,7 +104,6 @@ const InternalAssociationSelect = connect(
       };
     },
   ),
-  mapReadPretty(ReadPretty),
 );
 
 interface AssociationSelectInterface {
