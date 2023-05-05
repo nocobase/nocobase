@@ -99,6 +99,16 @@ const schema: ISchema = {
             // accept: 'jpg,png'
           },
         },
+        loginBgImg: {
+          type: 'string',
+          title: "{{t('Login Page Background Image')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Upload.Attachment',
+          'x-component-props': {
+            action: 'attachments:upload',
+            multiple: false,
+          },
+        },
         enabledLanguages: {
           type: 'array',
           title: '{{t("Enabled languages")}}',
@@ -184,6 +194,17 @@ const schema2: ISchema = {
         logo: {
           type: 'string',
           title: "{{t('Logo')}}",
+          'x-decorator': 'FormItem',
+          'x-component': 'Upload.Attachment',
+          'x-component-props': {
+            action: 'attachments:upload',
+            multiple: false,
+            // accept: 'jpg,png'
+          },
+        },
+        loginBgImg: {
+          type: 'string',
+          title: "{{t('Login Page Background Image')}}",
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {

@@ -29,6 +29,11 @@ export default defineCollection({
       target: 'attachments',
     },
     {
+      type: 'belongsTo',
+      name: 'loginBgImg',
+      target: 'attachments',
+    },
+    {
       type: 'json',
       name: 'enabledLanguages',
       defaultValue: [],

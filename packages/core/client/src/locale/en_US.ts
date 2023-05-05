@@ -39,6 +39,7 @@ export default {
   "System settings": "System settings",
   "System title": "System title",
   "Logo": "Logo",
+  "Login Page Background Image": "Login Page Background Image",
   "Add menu item": "Add menu item",
   "Page": "Page",
   "Name": "Name",

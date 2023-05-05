@@ -8,23 +8,37 @@ export function AuthLayout(props: any) {
   return (
     <div
       style={{
-        maxWidth: 320,
-        margin: '0 auto',
+        background: `url(${data?.data?.loginBgImg?.url}) no-repeat`,
+        width: '100vw',
+        height: '100vh',
         paddingTop: '20vh',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
     >
-      <h1>{data?.data?.title}</h1>
-      {props.children}
       <div
-        className={css`
-          position: absolute;
-          bottom: 24px;
-          width: 100%;
-          left: 0;
-          text-align: center;
-        `}
+        style={{
+          maxWidth: 460,
+          margin: '0 auto',
+          background: '#fff',
+          padding: '30px 60px',
+          borderRadius: '20px',
+        }}
       >
-        <PoweredBy />
+        <h1>{data?.data?.title}</h1>
+        {props.children}
+        <div
+          className={css`
+            position: absolute;
+            bottom: 24px;
+            width: 100%;
+            left: 0;
+            display: flex;
+            justify-content: center;
+          `}
+        >
+          <PoweredBy />
+        </div>
       </div>
     </div>
   );
