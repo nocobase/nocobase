@@ -6,7 +6,6 @@ import { ActionContext } from '../action';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
-import { defaultFieldNames } from '../select';
 import { useInsertSchema } from './hooks';
 import useServiceOptions from './hooks';
 import { useCollection } from '../../../collection-manager';
@@ -24,7 +23,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-  const service = fieldNames && useServiceOptions(props);
+  const service =  useServiceOptions(props);
   const fieldSchema = useFieldSchema();
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const insertAddNewer = useInsertSchema('AddNewer');

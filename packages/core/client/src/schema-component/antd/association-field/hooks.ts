@@ -44,11 +44,11 @@ export default function useServiceOptions(props) {
   const normalizeValues = useCallback(
     (obj) => {
       if (obj && typeof obj === 'object') {
-        return obj[fieldNames.value];
+        return obj[fieldNames?.value];
       }
       return obj;
     },
-    [fieldNames.value],
+    [fieldNames?.value],
   );
 
   const value = useMemo(() => {
@@ -89,7 +89,7 @@ export default function useServiceOptions(props) {
           : null,
         params?.filter && value
           ? {
-              [fieldNames.value]: {
+              [fieldNames?.value]: {
                 ['$in']: value,
               },
             }
@@ -97,7 +97,7 @@ export default function useServiceOptions(props) {
       ],
       '$or',
     );
-  }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames.value]);
+  }, [params?.filter, getCollectionFields, collectionField, sourceValue, value, fieldNames?.value]);
 
   return useMemo(() => {
     return {
