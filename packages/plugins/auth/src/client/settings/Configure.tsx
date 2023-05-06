@@ -1,14 +1,13 @@
 import {
-  SchemaComponent,
   useRequest,
   useRecord,
   useActionContext,
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useForm } from '@formily/react';
-import { useOptionsSchema } from '@nocobase/client';
+import { useOptionsComponent } from '@nocobase/client';
 
 export const useUpdateOptionsAction = () => {
   const { setVisible } = useActionContext();
@@ -58,7 +57,6 @@ export const useValuesFromOptions = (options) => {
 
 export const Configure = () => {
   const record = useRecord();
-  const schema = useOptionsSchema(record.authType);
-
-  return <SchemaComponent schema={schema} />;
+  const component = useOptionsComponent(record.authType);
+  return component;
 };

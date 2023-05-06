@@ -2,17 +2,18 @@ import { SettingsCenterProvider, SigninPageProvider, SignupPageProvider } from '
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Authenticator } from './settings/Authenticator';
-import { OptionsSchemaProvider } from '@nocobase/client';
+import { OptionsComponentProvider } from '@nocobase/client';
 import SigninPage from './basic/SigninPage';
 import { presetAuthType } from '../preset';
 import SignupPage from './basic/SignupPage';
+import { Options } from './basic/Options';
 
 export default (props) => {
   const { t } = useTranslation();
   return (
     <SettingsCenterProvider
       settings={{
-        authentication: {
+        auth: {
           title: t('Authentication'),
           icon: 'LoginOutlined',
           tabs: {
@@ -24,24 +25,7 @@ export default (props) => {
         },
       }}
     >
-      <OptionsSchemaProvider
-        authType={presetAuthType}
-        schema={{
-          type: 'object',
-          properties: {
-            secret: {
-              title: 'JWT Secret',
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-            expireIn: {
-              title: '{{t("Expire In",{ns:"auth"})}}',
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-          },
-        }}
-      >
+      <OptionsComponentProvider authType={presetAuthType} component={Options}>
         <SigninPageProvider
           authType={presetAuthType}
           allowSignup={true}
@@ -52,7 +36,7 @@ export default (props) => {
             {props.children}
           </SignupPageProvider>
         </SigninPageProvider>
-      </OptionsSchemaProvider>
+      </OptionsComponentProvider>
     </SettingsCenterProvider>
   );
 };
