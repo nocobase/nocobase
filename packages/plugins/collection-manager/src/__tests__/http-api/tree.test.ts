@@ -76,5 +76,9 @@ describe('tree', () => {
         name: 'c11',
       },
     });
+
+    await c1.reload();
+
+    expect(c1.get('name')).toBe('c11');
   });
 });
