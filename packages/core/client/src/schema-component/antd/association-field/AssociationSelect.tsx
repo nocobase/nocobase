@@ -3,7 +3,7 @@ import { connect, mapProps, RecursionField, useFieldSchema, useField, observer }
 import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { defaultFieldNames } from '../select';
@@ -18,93 +18,76 @@ export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   multiple?: boolean;
 };
 
-const InternalAssociationSelect = connect(
-  (props: AssociationSelectProps) => {
-    const { fieldNames, objectValue = true } = props;
-    const field: any = useField();
-    const [visibleAddNewer, setVisibleAddNewer] = useState(false);
-    const { getField } = useCollection();
-    const collectionField = getField(field.props.name);
-    const service = useServiceOptions(props);
-    const fieldSchema = useFieldSchema();
-    const isAllowAddNew = fieldSchema['x-add-new'] !== false;
-    const insertAddNewer = useInsertSchema('AddNewer');
-    useFieldTitle();
-    const normalizeValues = useCallback(
-      (obj) => {
-        if (!objectValue && typeof obj === 'object') {
-          return obj[fieldNames.value];
-        }
-        return obj;
-      },
-      [objectValue, fieldNames.value],
-    );
-
-    const value = useMemo(() => {
-      if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
-        return;
+const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
+  const { fieldNames, objectValue = true } = props;
+  const field: any = useField();
+  const [visibleAddNewer, setVisibleAddNewer] = useState(false);
+  const { getField } = useCollection();
+  const collectionField = getField(field.props.name);
+  const service = fieldNames && useServiceOptions(props);
+  const fieldSchema = useFieldSchema();
+  const isAllowAddNew = fieldSchema['x-add-new'] !== false;
+  const insertAddNewer = useInsertSchema('AddNewer');
+  useFieldTitle();
+  const normalizeValues = useCallback(
+    (obj) => {
+      if (!objectValue && typeof obj === 'object') {
+        return obj[fieldNames?.value];
       }
-
-      if (Array.isArray(props.value)) {
-        return props.value.map(normalizeValues);
-      } else {
-        return normalizeValues(props.value);
-      }
-    }, [props.value, normalizeValues]);
-    return (
-      <>
-        <Input.Group compact style={{ display: 'flex' }}>
-          <RemoteSelect
-            style={{ width: '100%' }}
-            {...props}
-            objectValue={objectValue}
-            value={value}
-            service={service}
-          ></RemoteSelect>
-          {isAllowAddNew && !field.readPretty && (
-            <Button
-              type={'primary'}
-              onClick={() => {
-                insertAddNewer(schema.AddNewer);
-                setVisibleAddNewer(true);
-              }}
-            >
-              Add new
-            </Button>
-          )}
-        </Input.Group>
-
-        <ActionContext.Provider
-          value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}
-        >
-          <CollectionProvider name={collectionField.target}>
-            <RecursionField
-              onlyRenderProperties
-              basePath={field.address}
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'AssociationField.AddNewer';
-              }}
-            />
-          </CollectionProvider>
-        </ActionContext.Provider>
-      </>
-    );
-  },
-  mapProps(
-    {
-      dataSource: 'options',
-      loading: true,
+      return obj;
     },
-    (props, field) => {
-      return {
-        ...props,
-        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames },
-        suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
-      };
-    },
-  ),
-);
+    [objectValue, fieldNames?.value],
+  );
+
+  const value = useMemo(() => {
+    if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
+      return;
+    }
+
+    if (Array.isArray(props.value)) {
+      return props.value.map(normalizeValues);
+    } else {
+      return normalizeValues(props.value);
+    }
+  }, [props.value, normalizeValues]);
+  return (
+    <div key={fieldSchema.name}>
+      <Input.Group compact style={{ display: 'flex' }}>
+        <RemoteSelect
+          style={{ width: '100%' }}
+          {...props}
+          objectValue={objectValue}
+          value={value}
+          service={service}
+        ></RemoteSelect>
+        {isAllowAddNew && !field.readPretty && (
+          <Button
+            type={'primary'}
+            onClick={() => {
+              insertAddNewer(schema.AddNewer);
+              setVisibleAddNewer(true);
+            }}
+          >
+            Add new
+          </Button>
+        )}
+      </Input.Group>
+
+      <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+        <CollectionProvider name={collectionField.target}>
+          <RecursionField
+            onlyRenderProperties
+            basePath={field.address}
+            schema={fieldSchema}
+            filterProperties={(s) => {
+              return s['x-component'] === 'AssociationField.AddNewer';
+            }}
+          />
+        </CollectionProvider>
+      </ActionContext.Provider>
+    </div>
+  );
+});
 
 interface AssociationSelectInterface {
   (props: any): React.ReactElement;
@@ -118,7 +101,6 @@ export const AssociationSelectReadPretty = connect(
   (props: any) => {
     if (props.fieldNames) {
       const service = useServiceOptions(props);
-      console.log(props)
       useFieldTitle();
       return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
     }
