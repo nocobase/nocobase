@@ -17,9 +17,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
   const resource = `${field.collectionName}.${field.name}`;
   const { block } = useBlockRequestContext();
   const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
-  const assocFieldRecord = record
-    ? record[field.name] || { [field.targetKey || 'id']: record[field.foreignKey] }
-    : null;
+  const assocFieldRecord = record?.[field.name];
 
   return (
     <SchemaInitializer.Item
