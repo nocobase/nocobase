@@ -2,7 +2,14 @@ import { FindOptions, Repository } from '../repository';
 import lodash from 'lodash';
 
 export class AdjacencyListRepository extends Repository {
-  async find(options?: FindOptions): Promise<any> {
+  async update(options): Promise<any> {
+    return super.update({
+      ...(options || {}),
+      addIndex: false,
+    });
+  }
+
+  async find(options?: FindOptions & { addIndex?: boolean }): Promise<any> {
     const parentNodes = await super.find(lodash.omit(options));
 
     if (parentNodes.length === 0) {
@@ -75,34 +82,26 @@ export class AdjacencyListRepository extends Repository {
       parent.setDataValue(childrenKey, children);
     }
 
-    this.addIndex(parentNodes, childrenKey);
+    this.addIndex(parentNodes, childrenKey, options);
 
     return parentNodes;
   }
 
-  private addIndex(treeArray, childrenKey = 'children') {
+  private addIndex(treeArray, childrenKey, options) {
     function traverse(node, index) {
-      let children;
+      // patch for sequelize toJSON
+      if (node._options.includeNames && !node._options.includeNames.includes(childrenKey)) {
+        node._options.includeNames.push(childrenKey);
+      }
 
-      if (lodash.isPlainObject(node)) {
-        node['__index'] = `${index}`;
-        children = node[childrenKey];
-        if (children.length === 0) {
-          delete node[childrenKey];
-        }
-      } else {
-        // patch for sequelize toJSON
-        if (node._options.includeNames && !node._options.includeNames.includes(childrenKey)) {
-          node._options.includeNames.push(childrenKey);
-        }
-
+      if (options.addIndex !== false) {
         node.setDataValue('__index', `${index}`);
+      }
 
-        children = node.getDataValue(childrenKey);
+      const children = node.getDataValue(childrenKey);
 
-        if (children.length === 0) {
-          node.setDataValue(childrenKey, undefined);
-        }
+      if (children.length === 0) {
+        node.setDataValue(childrenKey, undefined);
       }
 
       if (children && children.length > 0) {
