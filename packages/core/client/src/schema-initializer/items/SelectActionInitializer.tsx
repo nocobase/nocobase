@@ -1,12 +1,7 @@
 import React from 'react';
-import { useField, useFieldSchema } from '@formily/react';
-import { useCollection } from '../../';
 import { ActionInitializer } from './ActionInitializer';
 
 export const SelectActionInitializer = (props) => {
-  const { getField } = useCollection();
-  const fieldSchema = useFieldSchema();
-  const collectionField = getField(fieldSchema.name);
   const schema = {
     type: 'void',
     title: '{{ t("Select") }}',
@@ -19,16 +14,6 @@ export const SelectActionInitializer = (props) => {
     properties: {
       drawer: {
         type: 'void',
-        'x-decorator': 'RecordPickerProvider',
-        'x-decorator-props': {
-          size: 'small',
-          fieldNames: props.fieldNames,
-          multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
-          association: {
-            target: collectionField?.target,
-          },
-          onChange: props?.onChange,
-        },
         'x-component': 'AssociationField.Selector',
         title: '{{ t("Select record") }}',
         'x-component-props': {
