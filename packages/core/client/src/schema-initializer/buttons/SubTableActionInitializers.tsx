@@ -29,22 +29,22 @@ export const SubTableActionInitializers = {
             return collection.template !== 'view' && collection.template !== 'file';
           },
         },
-        {
-          type: 'item',
-          title: "{{t('Select')}}",
-          component: 'SelectActionInitializer',
-          schema: {
-            'x-align': 'right',
-            'x-decorator': 'ACLActionProvider',
-            'x-acl-action-props': {
-              skipScopeCheck: true,
-            },
-          },
-          visible: () => {
-            const collection = useCollection();
-            return collection.template !== 'view' && collection.template !== 'file';
-          },
-        },
+        // {
+        //   type: 'item',
+        //   title: "{{t('Select')}}",
+        //   component: 'SelectActionInitializer',
+        //   schema: {
+        //     'x-align': 'right',
+        //     'x-decorator': 'ACLActionProvider',
+        //     'x-acl-action-props': {
+        //       skipScopeCheck: true,
+        //     },
+        //   },
+        //   visible: () => {
+        //     const collection = useCollection();
+        //     return collection.template !== 'view' && collection.template !== 'file';
+        //   },
+        // },
       ],
     },
   ],
