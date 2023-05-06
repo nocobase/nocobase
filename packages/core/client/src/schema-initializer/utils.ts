@@ -1253,6 +1253,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
     association,
     resource,
     template,
+    /** 关系字段的值 */
+    assocFieldRecord,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1267,6 +1269,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       readPretty: true,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
+      assocFieldRecord,
       ...others,
     },
     'x-designer': 'FormV2.ReadPrettyDesigner',

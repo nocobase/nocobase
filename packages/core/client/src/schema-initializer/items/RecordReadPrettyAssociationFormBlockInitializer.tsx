@@ -1,7 +1,8 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
 import { useBlockRequestContext } from '../../block-provider';
+import { useRecord } from '../../record-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
@@ -9,12 +10,14 @@ import { createReadPrettyFormBlockSchema, useRecordCollectionDataSourceItems } f
 export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const record = useRecord();
 
   const field = item.field;
   const collection = field.target;
   const resource = `${field.collectionName}.${field.name}`;
   const { block } = useBlockRequestContext();
   const actionInitializers = block !== 'TableField' ? 'ReadPrettyFormActionInitializers' : null;
+  const assocFieldRecord = record?.[field.name];
 
   return (
     <SchemaInitializer.Item
@@ -33,6 +36,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               template: s,
+              assocFieldRecord,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -51,6 +55,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
+              assocFieldRecord,
             }),
           );
         }
