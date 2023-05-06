@@ -104,6 +104,7 @@ export const InternalSelect = observer((props: any) => {
     onChange: props?.onChange,
     selectedRows,
     setSelectedRows,
+    collectionField
   };
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
