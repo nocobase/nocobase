@@ -10,7 +10,6 @@ import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 
 export const Editable = observer((props: any) => {
-  const { fieldNames } = props;
   const [currentMode, setCurrentMode] = useState(props.mode || 'Select');
   useEffect(() => {
     props.mode && setCurrentMode(props.mode);
