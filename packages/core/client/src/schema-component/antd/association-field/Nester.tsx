@@ -1,6 +1,8 @@
 import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
+
 import React, { useContext, useMemo } from 'react';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
@@ -33,12 +35,20 @@ const toArr = (value) => {
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
-  const values = useMemo(() => toArr(field.value), field.value);
+  const values = toArr(field.value);
   return (
     <Card bordered={true}>
       {values.map((_, index) => {
         return (
           <>
+            <Button
+              icon={<CloseOutlined />}
+              type={'text'}
+              style={{ float: 'right', zIndex: 1000, fontSize: 12 }}
+              onClick={() => {
+                field.value.splice(index, 1);
+              }}
+            />
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
             <Divider />
           </>
