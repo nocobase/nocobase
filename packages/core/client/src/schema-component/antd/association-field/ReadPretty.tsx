@@ -9,7 +9,7 @@ export const ReadPretty = (props) => {
   const { mode = 'Select', enableLink } = props;
   return (
     <AssociationFieldProvider>
-      {(mode === 'Picker' || enableLink !== false) && <ReadPrettyInternalViewer {...props} />}
+      {(mode === 'Picker' || (mode === 'Select' && enableLink !== false)) && <ReadPrettyInternalViewer {...props} />}
       {mode === 'Nester' && <InternalNester {...props} />}
       {mode === 'Select' && enableLink === false && <AssociationSelectReadPretty {...props} />}
       {mode === 'SubTable' && <InternalSubTable {...props} />}
