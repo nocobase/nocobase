@@ -52,6 +52,7 @@ export class AdjacencyListRepository extends Repository {
       if (!nodeMap[`${node[foreignKey]}`]) {
         nodeMap[`${node[foreignKey]}`] = [];
       }
+
       nodeMap[`${node[foreignKey]}`].push(node);
     });
 
@@ -90,6 +91,11 @@ export class AdjacencyListRepository extends Repository {
           delete node[childrenKey];
         }
       } else {
+        // patch for sequelize toJSON
+        if (!node._options.includeNames.includes(childrenKey)) {
+          node._options.includeNames.push(childrenKey);
+        }
+
         node.setDataValue('__index', `${index}`);
         children = node.getDataValue(childrenKey);
         if (children.length === 0) {
