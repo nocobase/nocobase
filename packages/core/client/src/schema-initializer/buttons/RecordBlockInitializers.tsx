@@ -1,7 +1,7 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
+import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {
@@ -17,19 +17,18 @@ const recursiveParent = (schema: Schema) => {
 const useRelationFields = () => {
   const fieldSchema = useFieldSchema();
   const { getCollectionFields } = useCollectionManager();
-  const { fields } = useCollection();
-  let currentFields = [];
+  let fields = [];
 
   if (fieldSchema['x-initializer']) {
-    currentFields = fields;
+    fields = useCollection().fields;
   } else {
     const collection = recursiveParent(fieldSchema.parent);
     if (collection) {
-      currentFields = getCollectionFields(collection);
+      fields = getCollectionFields(collection);
     }
   }
 
-  const relationFields = currentFields
+  const relationFields = fields
     .filter((field) => ['linkTo', 'subTable', 'o2m', 'm2m', 'obo', 'oho', 'o2o', 'm2o'].includes(field.interface))
     .map((field) => {
       if (['hasOne', 'belongsTo'].includes(field.type)) {
