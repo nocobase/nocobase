@@ -25,9 +25,9 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  if (service.loading) {
-    return <Spin />;
-  }
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   return (
     <FormBlockContext.Provider
       value={{
@@ -157,8 +157,10 @@ export const useFormBlockProps = () => {
   });
 
   useEffect(() => {
-    ctx.form?.setInitialValues(ctx.service?.data?.data);
-  }, []);
+    if (!ctx?.service?.loading) {
+      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    }
+  }, [ctx?.service?.loading]);
   return {
     form: ctx.form,
   };
