@@ -2,6 +2,7 @@ import { Database } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import jwt from 'jsonwebtoken';
 
 describe('configuration', () => {
   let app: MockServer;
@@ -46,19 +47,31 @@ describe('configuration', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: admin.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
-    userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    userAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     guestAgent = app.agent();
   });

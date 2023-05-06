@@ -2,6 +2,7 @@ import { Database } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import jwt from 'jsonwebtoken';
 
 describe('scope api', () => {
   let app: MockServer;
@@ -26,12 +27,18 @@ describe('scope api', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: admin.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
   });
 
   it('should create scope of resource', async () => {

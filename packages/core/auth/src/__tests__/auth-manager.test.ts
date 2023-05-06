@@ -1,7 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { Auth, AuthManager } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
-import { mockServer } from '@nocobase/test';
 
 class MockStorer {
   elements: Map<string, any> = new Map();
@@ -29,7 +28,6 @@ class BasicAuth extends Auth {
 describe('auth-manager', () => {
   let authManager: AuthManager;
   beforeEach(() => {
-    const app = mockServer();
     authManager = new AuthManager({
       authKey: 'X-Authenticator',
     });

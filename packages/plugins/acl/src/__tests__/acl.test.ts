@@ -4,6 +4,7 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import jwt from 'jsonwebtoken';
 
 describe('acl', () => {
   let app: MockServer;
@@ -30,14 +31,18 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: admin.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
@@ -121,12 +126,18 @@ describe('acl', () => {
     });
     const userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: rootUser.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: rootUser.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     expect(await db.getCollection('roles').repository.count()).toBe(3);
 
@@ -632,13 +643,18 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-    const userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const userAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     const schema = {
       'x-uid': 'test',
@@ -696,21 +712,22 @@ describe('acl', () => {
   });
 
   it('should destroy new role when user are root user', async () => {
-    const roles = await db.getRepository('roles').find();
-
-    const users = await db.getRepository('users').find();
     const rootUser = await db.getRepository('users').findOne({
       filterByTk: 1,
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    const rootAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: rootUser.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const rootAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: rootUser.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     const response = await rootAgent
       // @ts-ignore

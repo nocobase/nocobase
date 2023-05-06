@@ -3,6 +3,7 @@ import { Database, HasManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import jwt from 'jsonwebtoken';
 
 describe('association test', () => {
   let app: MockServer;
@@ -89,14 +90,18 @@ describe('association test', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    const userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const userAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     //@ts-ignore
     const response = await userAgent.resource('posts').list({});
@@ -153,19 +158,31 @@ describe('association field acl', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    userAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: admin.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     await db.getRepository('collections').create({
       values: {

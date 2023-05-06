@@ -1,6 +1,7 @@
 import { Database } from '@nocobase/database';
 import { prepareApp } from './prepare';
 import { MockServer } from '@nocobase/test';
+import jwt from 'jsonwebtoken';
 
 describe('list action with acl', () => {
   let app: MockServer;
@@ -305,10 +306,14 @@ describe('list association action with acl', () => {
     const userAgent = app
       .agent()
       .set('X-With-ACL-Meta', true)
+      .set('X-Authenticator', 'basic')
       .auth(
-        userPlugin.jwtService.sign({
-          userId: user.get('id'),
-        }),
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
         { type: 'bearer' },
       );
 
@@ -352,10 +357,14 @@ describe('list association action with acl', () => {
     const agent = app
       .agent()
       .set('X-With-ACL-Meta', true)
+      .set('X-Authenticator', 'basic')
       .auth(
-        userPlugin.jwtService.sign({
-          userId: user.get('id'),
-        }),
+        jwt.sign(
+          {
+            userId: user.get('id'),
+          },
+          'test-key',
+        ),
         { type: 'bearer' },
       );
 

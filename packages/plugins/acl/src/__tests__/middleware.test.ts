@@ -3,6 +3,7 @@ import { Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import jwt from 'jsonwebtoken';
 
 describe('middleware', () => {
   let app: MockServer;
@@ -31,12 +32,18 @@ describe('middleware', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app
+      .agent()
+      .auth(
+        jwt.sign(
+          {
+            userId: admin.get('id'),
+          },
+          'test-key',
+        ),
+        { type: 'bearer' },
+      )
+      .set('X-Authenticator', 'basic');
 
     await db.getRepository('collections').create({
       values: {
