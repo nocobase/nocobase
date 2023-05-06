@@ -11,6 +11,11 @@ const escape = (value, ctx) => {
   return sequelize.escape(value);
 };
 
+const getQueryInterface = (ctx) => {
+  const sequelize = ctx.db.sequelize;
+  return sequelize.getQueryInterface();
+};
+
 const sqliteExistQuery = (value, ctx) => {
   const fieldName = getFieldName(ctx);
   const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
@@ -45,10 +50,9 @@ export default {
     const fieldName = getFieldName(ctx);
 
     if (isPg(ctx)) {
-      return {
-        [Op.contained]: value,
-        [Op.contains]: value,
-      };
+      const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
+      const queryValue = escape(JSON.stringify(value), ctx);
+      return Sequelize.literal(`${name} @> ${queryValue} AND ${name} <@ ${queryValue}`);
     }
 
     value = escape(JSON.stringify(value.sort()), ctx);

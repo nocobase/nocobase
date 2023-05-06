@@ -51,13 +51,23 @@ describe('find with associations', () => {
           name: 'u1',
           posts: [
             {
-              tags: ['t1', 't2'],
+              tags: ['t1'],
               title: 'u1p1',
             },
           ],
         },
       ],
     });
+
+    const posts = await Post.repository.find({
+      filter: {
+        tags: {
+          $match: ['t1'],
+        },
+      },
+    });
+
+    expect(posts.length).toEqual(1);
 
     const filter = {
       $and: [
@@ -75,7 +85,7 @@ describe('find with associations', () => {
       filter,
     });
 
-    console.log(results);
+    expect(results[0].get('name')).toEqual('u1');
   });
 
   it('should filter by association field', async () => {
