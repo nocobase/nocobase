@@ -31,9 +31,6 @@ export const Editable = observer((props: any) => {
         if (['oho', 'obo', 'm2o'].includes(collectionField.interface)) {
           const value = {
             ...data,
-            [fieldNames.label]: data[fieldNames.label],
-            id: data.id,
-            value: data.id,
           };
           setTimeout(() => {
             form.setValuesIn(field.props.name, value);
@@ -42,9 +39,6 @@ export const Editable = observer((props: any) => {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
           values.push({
             ...data,
-            [fieldNames?.label]: data?.[fieldNames?.label],
-            id: data?.id,
-            value: data?.id,
           });
           setTimeout(() => {
             form.setValuesIn(field.props.name, values);
