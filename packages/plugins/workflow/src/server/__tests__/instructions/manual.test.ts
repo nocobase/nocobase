@@ -22,7 +22,7 @@ describe('workflow > instructions > manual', () => {
     app = await getApp({
       plugins: ['users', 'auth'],
     });
-    app.pm.install();
+    await app.getPlugin('users').install();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
