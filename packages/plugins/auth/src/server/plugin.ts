@@ -11,27 +11,35 @@ export class AuthPlugin extends Plugin {
   async beforeLoad() {}
 
   async load() {
+    // Set up database
     await this.db.import({
       directory: resolve(__dirname, 'collections'),
     });
-
-    this.app.authManager.registerTypes(presetAuthType, {
-      auth: BasicAuth,
+    this.db.addMigrations({
+      namespace: 'auth',
+      directory: resolve(__dirname, 'migrations'),
+      context: {
+        plugin: this,
+      },
     });
+    // Set up auth manager and register preset auth type
     this.app.authManager.setStorer({
       get: async (name: string) => {
         const repo = this.db.getRepository('authenticators');
         return await repo.findOne({ filter: { name } });
       },
     });
-
+    this.app.authManager.registerTypes(presetAuthType, {
+      auth: BasicAuth,
+    });
+    // Register actions
     Object.entries(authActions).forEach(([action, handler]) =>
       this.app.resourcer.registerAction(`auth:${action}`, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourcer.registerAction(`authenticators:${action}`, handler),
     );
-
+    // Set up ACL
     ['check', 'signIn', 'signUp', 'lostPassword', 'resetPassword', 'getUserByResetToken'].forEach((action) =>
       this.app.acl.allow('auth', action),
     );
@@ -51,7 +59,6 @@ export class AuthPlugin extends Plugin {
         name: presetAuthenticator,
         authType: presetAuthType,
         description: 'Sign in with email and password.',
-        default: true,
         enabled: true,
       },
     });
