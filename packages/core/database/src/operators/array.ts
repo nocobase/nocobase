@@ -52,7 +52,7 @@ export default {
     if (isPg(ctx)) {
       const name = ctx.fullName === fieldName ? `"${ctx.model.name}"."${fieldName}"` : `"${fieldName}"`;
       const queryValue = escape(JSON.stringify(value), ctx);
-      return Sequelize.literal(`${name} @> ${queryValue} AND ${name} <@ ${queryValue}`);
+      return Sequelize.literal(`${name} @> ${queryValue}::JSONB AND ${name} <@ ${queryValue}::JSONB`);
     }
 
     value = escape(JSON.stringify(value.sort()), ctx);
