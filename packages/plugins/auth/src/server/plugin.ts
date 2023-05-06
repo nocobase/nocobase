@@ -1,27 +1,14 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { BasicAuth } from './basic-auth';
-import { readdir } from 'fs/promises';
-import { requireModule } from '@nocobase/utils';
-import { HandlerType, Handlers } from '@nocobase/resourcer';
 import { presetAuthType, presetAuthenticator } from '../preset';
+import authActions from './actions/auth';
+import authenticatorsActions from './actions/authenticators';
+
 export class AuthPlugin extends Plugin {
   afterAdd() {}
 
   async beforeLoad() {}
-
-  async importModules<T, U>(dir: string) {
-    const files = await readdir(resolve(__dirname, dir));
-    const mods: { [key: string]: U } = {};
-    files.forEach((file) => {
-      const fileName = file.replace(/\.ts$/, '');
-      const mod: T = requireModule(resolve(__dirname, dir, file));
-      Object.entries(mod).forEach(([key, handler]: [key: string, handler: U]) => {
-        mods[`${fileName}:${key}`] = handler;
-      });
-    });
-    return mods;
-  }
 
   async load() {
     await this.db.import({
@@ -38,7 +25,13 @@ export class AuthPlugin extends Plugin {
       },
     });
 
-    this.app.actions(await this.importModules<Handlers, HandlerType>('actions'));
+    Object.entries(authActions).forEach(([action, handler]) =>
+      this.app.resourcer.registerAction(`auth:${action}`, handler),
+    );
+    Object.entries(authenticatorsActions).forEach(([action, handler]) =>
+      this.app.resourcer.registerAction(`authenticators:${action}`, handler),
+    );
+
     ['check', 'signIn', 'signUp', 'lostPassword', 'resetPassword', 'getUserByResetToken'].forEach((action) =>
       this.app.acl.allow('auth', action),
     );

@@ -1,6 +1,6 @@
 import { Handlers } from '@nocobase/resourcer';
 
-export default {
+export const actions = {
   signIn: async (ctx, next) => {
     ctx.body = await ctx.auth.signIn();
     await next();

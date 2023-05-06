@@ -113,6 +113,9 @@ export class Auth {
 
   getAuth() {
     const auth = this.api.storage.getItem('NOCOBASE_AUTH');
+    if (!auth) {
+      return null;
+    }
     return JSON.parse(auth);
   }
 

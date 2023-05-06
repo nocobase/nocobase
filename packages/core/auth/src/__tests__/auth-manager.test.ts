@@ -30,7 +30,7 @@ describe('auth-manager', () => {
   let authManager: AuthManager;
   beforeEach(() => {
     const app = mockServer();
-    authManager = new AuthManager(app, {
+    authManager = new AuthManager({
       authKey: 'X-Authenticator',
     });
 

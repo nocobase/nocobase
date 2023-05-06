@@ -2,7 +2,6 @@ import { Registry } from '@nocobase/utils';
 import { AuthExtend, Auth } from './auth';
 import { Model } from '@nocobase/database';
 import { Context, Next } from '@nocobase/actions';
-import actions from './actions';
 
 type Storer = {
   get: (name: string) => Promise<Model>;

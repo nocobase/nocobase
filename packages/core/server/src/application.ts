@@ -289,7 +289,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
     this.resource({
       name: 'auth',
-      authActions,
+      actions: authActions,
     });
     this._resourcer.use(this._authManager.middleware(), { tag: 'authCheck' });
 

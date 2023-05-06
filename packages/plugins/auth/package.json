@@ -6,6 +6,7 @@
     "@nocobase/server": "0.9.2-alpha.4",
     "@nocobase/test": "0.9.2-alpha.4",
     "@nocobase/client": "0.9.2-alpha.4",
-    "@nocobase/database": "0.9.2-alpha.4"
+    "@nocobase/database": "0.9.2-alpha.4",
+    "@nocobase/actions": "0.9.2-alpha.4"
   }
 }

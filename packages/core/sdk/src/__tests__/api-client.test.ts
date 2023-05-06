@@ -24,13 +24,14 @@ describe('api-client', () => {
       baseURL: 'https://localhost:8000/api',
     });
     const mock = new MockAdapter(api.axios);
-    mock.onPost('users:signin').reply(200, {
+    mock.onPost('auth:signIn').reply(200, {
       data: { id: 1, name: 'John Smith', token: '123' },
     });
     const response = await api.auth.signIn({});
     expect(response.status).toBe(200);
-    expect(api.auth.token).toBe('123');
-    expect(localStorage.getItem('NOCOBASE_TOKEN')).toBe('123');
+    expect(api.auth.getToken()).toBe('123');
+    const local = JSON.parse(localStorage.getItem('NOCOBASE_AUTH'));
+    expect(local.token).toBe('123');
   });
 
   test('resource action', async () => {
@@ -72,14 +73,16 @@ describe('api-client', () => {
     });
 
     const mock = new MockAdapter(api.axios);
-    mock.onPost('users:signin').reply(200, {
+    mock.onPost('auth:signIn').reply(200, {
       data: { id: 1, name: 'John Smith', token: '123' },
     });
 
     const response = await api.auth.signIn({});
     expect(response.status).toBe(200);
-    expect(api.auth.token).toBe('123');
-    expect(items.get('NOCOBASE_TOKEN')).toBe('123');
+    expect(api.auth.getToken()).toBe('123');
+    console.log(items.get('NOCOBASE_AUTH'));
+    const local = JSON.parse(items.get('NOCOBASE_AUTH'));
+    expect(local.token).toBe('123');
   });
 
   test('custom auth', async () => {
@@ -87,11 +90,11 @@ describe('api-client', () => {
       async signIn(values: any): Promise<AxiosResponse<any, any>> {
         const response = await this.api.request({
           method: 'post',
-          url: 'users:test',
+          url: 'auth:test',
           data: values,
         });
         const data = response?.data?.data;
-        this.setToken(data?.token);
+        this.setAuth({ authenticator: 'test', token: data?.token });
         return response;
       }
     }
@@ -104,13 +107,14 @@ describe('api-client', () => {
     expect(api.auth).toBeInstanceOf(TestAuth);
 
     const mock = new MockAdapter(api.axios);
-    mock.onPost('users:test').reply(200, {
+    mock.onPost('auth:test').reply(200, {
       data: { id: 1, name: 'John Smith', token: '123' },
     });
 
     const response = await api.auth.signIn({});
     expect(response.status).toBe(200);
-    expect(api.auth.token).toBe('123');
-    expect(localStorage.getItem('NOCOBASE_TOKEN')).toBe('123');
+    expect(api.auth.getToken()).toBe('123');
+    const local = JSON.parse(localStorage.getItem('NOCOBASE_AUTH'));
+    expect(local.token).toBe('123');
   });
 });
