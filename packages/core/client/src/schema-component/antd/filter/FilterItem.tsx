@@ -47,7 +47,7 @@ export const FilterItem = observer((props: any) => {
         />
         {!operator?.noValue &&
           React.createElement(DynamicComponent, {
-            value,
+            value: value ? value : undefined,
             schema,
             onChange(value) {
               setValue(value);
