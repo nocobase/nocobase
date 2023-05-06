@@ -163,11 +163,10 @@ export const useCreateActionProps = () => {
         values[treeParentField?.name ?? 'parent'] = currentRecord;
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
-      console.log(field.data)
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const data= await resource.create({
+        const data = await resource.create({
           values: {
             ...values,
             ...overwriteValues,
@@ -738,6 +737,19 @@ export const useDestroyActionProps = () => {
         __parent?.service?.refresh?.();
         setVisible?.(false);
       }
+    },
+  };
+};
+
+export const useRemoveActionProps = (associationName) => {
+  const filterByTk = useFilterByTk();
+  const api = useAPIClient();
+  const resource = api.resource(associationName, filterByTk);
+  return {
+    async onClick(value) {
+      await resource.remove({
+        values: [value.id],
+      });
     },
   };
 };

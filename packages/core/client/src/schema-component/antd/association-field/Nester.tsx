@@ -2,10 +2,10 @@ import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
-
-import React, { useContext, useMemo } from 'react';
+import React, { useContext } from 'react';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
+import { useRemoveActionProps } from '../../../block-provider/hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -34,21 +34,25 @@ const toArr = (value) => {
 
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
-  const { field } = useAssociationFieldContext<ArrayField>();
+  const { field ,options:collectionField} = useAssociationFieldContext<ArrayField>();
   const values = toArr(field.value);
+  const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
     <Card bordered={true}>
-      {values.map((_, index) => {
+      {values.map((value, index) => {
         return (
           <>
-            <Button
-              icon={<CloseOutlined />}
-              type={'text'}
-              style={{ float: 'right', zIndex: 1000, fontSize: 12 }}
-              onClick={() => {
-                field.value.splice(index, 1);
-              }}
-            />
+              <Button
+                icon={<CloseOutlined />}
+                type={'text'}
+                style={{ float: 'right', zIndex: 1000, fontSize: 12 }}
+                onClick={() => {
+                  field.value.splice(index, 1);
+                  if (field.readPretty) {
+                    onClick(value)
+                  }
+                }}
+              />
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
             <Divider />
           </>
