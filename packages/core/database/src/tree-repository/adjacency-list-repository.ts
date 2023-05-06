@@ -92,12 +92,14 @@ export class AdjacencyListRepository extends Repository {
         }
       } else {
         // patch for sequelize toJSON
-        if (!node._options.includeNames.includes(childrenKey)) {
+        if (node._options.includeNames && !node._options.includeNames.includes(childrenKey)) {
           node._options.includeNames.push(childrenKey);
         }
 
         node.setDataValue('__index', `${index}`);
+
         children = node.getDataValue(childrenKey);
+
         if (children.length === 0) {
           node.setDataValue(childrenKey, undefined);
         }
