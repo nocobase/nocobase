@@ -104,7 +104,7 @@ export const InternalSelect = observer((props: any) => {
     onChange: props?.onChange,
     selectedRows,
     setSelectedRows,
-    collectionField
+    collectionField,
   };
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
@@ -228,14 +228,14 @@ export const InternalSelect = observer((props: any) => {
       </Input.Group>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
         <CollectionProvider name={collectionField.target}>
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.AddNewer';
-            }}
-          />
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'AssociationField.AddNewer';
+              }}
+            />
         </CollectionProvider>
       </ActionContext.Provider>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>

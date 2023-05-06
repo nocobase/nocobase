@@ -14,38 +14,29 @@ export default {
     type: 'void',
     'x-component': 'AssociationField.AddNewer',
     'x-action': 'create',
-    title: "{{t('Add new')}}",
-    'x-designer': 'Action.Designer',
-    'x-decorator': 'ACLActionProvider',
+    title: '{{ t("Add record") }}',
+    'x-component-props': {
+      className: 'nb-action-popup',
+    },
     properties: {
-      drawer: {
+      tabs: {
         type: 'void',
-        title: '{{ t("Add record") }}',
-        'x-component': 'Action.Container',
-        'x-component-props': {
-          className: 'nb-action-popup',
-        },
+        'x-component': 'Tabs',
+        'x-component-props': {},
+        'x-initializer': 'TabPaneInitializersForCreateFormBlock',
         properties: {
-          tabs: {
+          tab1: {
             type: 'void',
-            'x-component': 'Tabs',
+            title: '{{t("Add new")}}',
+            'x-component': 'Tabs.TabPane',
+            'x-designer': 'Tabs.Designer',
             'x-component-props': {},
-            'x-initializer': 'TabPaneInitializersForCreateFormBlock',
             properties: {
-              tab1: {
+              grid: {
                 type: 'void',
-                title: '{{t("Add new")}}',
-                'x-component': 'Tabs.TabPane',
-                'x-designer': 'Tabs.Designer',
-                'x-component-props': {},
-                properties: {
-                  grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'CreateFormBlockInitializers',
-                    properties: {},
-                  },
-                },
+                'x-component': 'Grid',
+                'x-initializer': 'CreateFormBlockInitializers',
+                properties: {},
               },
             },
           },
