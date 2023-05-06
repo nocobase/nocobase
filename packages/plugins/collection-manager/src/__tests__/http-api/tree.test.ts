@@ -1,7 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import { createApp } from '../index';
-import lodash from 'lodash';
 
 describe('tree', () => {
   let app: MockServer;
@@ -67,6 +66,19 @@ describe('tree', () => {
 
     expect(listResponse.statusCode).toBe(200);
 
-    console.log(listResponse.body);
+    // update c1
+    await db.getRepository('categories').update({
+      filter: {
+        name: 'c1',
+      },
+      values: {
+        __index: '1231', // should ignore
+        name: 'c11',
+      },
+    });
+
+    await c1.reload();
+
+    expect(c1.get('name')).toBe('c11');
   });
 });
