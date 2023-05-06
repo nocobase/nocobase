@@ -26,6 +26,21 @@ describe('actions', () => {
       const res = await agent.resource('authenticators').listTypes();
       expect(res.body.data).toEqual(['email/password']);
     });
+
+    it('should return enabled authenticators', async () => {
+      const repo = db.getRepository('authenticators');
+      await repo.createMany({
+        records: [
+          { name: 'test', authType: 'testType', enabled: true },
+          { name: 'test2', authType: 'testType' },
+        ],
+      });
+      const res = await agent.resource('authenticators').publicList();
+      expect(res.body.data).toEqual([
+        { name: 'basic', authType: 'email/password' },
+        { name: 'test', authType: 'testType' },
+      ]);
+    });
   });
 
   describe('auth', () => {

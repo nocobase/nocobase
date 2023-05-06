@@ -7,6 +7,7 @@ export default {
   namespace: 'auth.auth',
   duplicator: 'optional',
   name: 'authenticators',
+  sortable: true,
   title: '{{t("Authenticators")}}',
   model: 'AuthModel',
   createdBy: true,
@@ -64,6 +65,11 @@ export default {
       name: 'options',
       allowNull: false,
       defaultValue: {},
+    },
+    {
+      type: 'boolean',
+      name: 'enabled',
+      defaultValue: false,
     },
     {
       interface: 'm2m',

@@ -51,6 +51,8 @@ export class AuthPlugin extends Plugin {
         name: presetAuthenticator,
         authType: presetAuthType,
         description: 'Sign in with email and password.',
+        default: true,
+        enabled: true,
       },
     });
   }

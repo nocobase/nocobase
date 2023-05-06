@@ -44,6 +44,15 @@ const collection = {
         'x-component': 'Input',
       },
     },
+    {
+      type: 'boolean',
+      name: 'enabled',
+      uiSchema: {
+        type: 'boolean',
+        title: '{{t("Enabled")}}',
+        'x-component': 'Checkbox',
+      },
+    },
   ],
 };
 
@@ -82,6 +91,10 @@ export const createFormSchema: ISchema = {
           'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
         },
         description: {
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
+        },
+        enabled: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
         },
@@ -224,6 +237,18 @@ export const authenticatorsSchema: ISchema = {
             },
           },
         },
+        enabled: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            enabled: {
+              type: 'boolean',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
         actions: {
           type: 'void',
           title: '{{t("Actions")}}',
@@ -306,6 +331,10 @@ export const authenticatorsSchema: ISchema = {
                           'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
                         },
                         description: {
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
+                        },
+                        enabled: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
                         },

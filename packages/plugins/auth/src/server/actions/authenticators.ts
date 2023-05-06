@@ -9,6 +9,9 @@ export default {
     const repo = ctx.db.getRepository('authenticators');
     ctx.body = await repo.find({
       fields: ['name', 'authType'],
+      filter: {
+        enabled: true,
+      },
     });
     await next();
   },
