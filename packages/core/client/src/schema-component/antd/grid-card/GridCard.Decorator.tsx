@@ -2,8 +2,8 @@ import { createForm } from '@formily/core';
 import { FormContext, useField, useForm } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
-import { useRecord } from '../../../record-provider';
 import { FormLayout } from '@formily/antd';
+import { css } from '@emotion/css';
 
 export const GridCardBlockContext = createContext<any>({});
 
@@ -31,7 +31,25 @@ const InternalGridCardBlockProvider = (props) => {
       }}
     >
       <FormContext.Provider value={form}>
-        <FormLayout layout={'vertical'}>{props.children}</FormLayout>
+        <FormLayout layout={'vertical'}>
+          <div
+            className={css`
+              & > .nb-block-item {
+                margin-bottom: var(--nb-spacing);
+                & > .nb-action-bar {
+                  padding: var(--nb-spacing);
+                  background: #fff;
+                }
+                .ant-list-pagination {
+                  padding: var(--nb-spacing);
+                  background: #fff;
+                }
+              }
+            `}
+          >
+            {props.children}
+          </div>
+        </FormLayout>
       </FormContext.Provider>
     </GridCardBlockContext.Provider>
   );

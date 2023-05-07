@@ -1068,7 +1068,7 @@ export const createGridCardBlockSchema = (options) => {
       appendsOnDemand: true,
       ...others,
     },
-    'x-component': 'CardItem',
+    'x-component': 'BlockItem',
     'x-designer': 'GridCard.Designer',
     properties: {
       actionBar: {

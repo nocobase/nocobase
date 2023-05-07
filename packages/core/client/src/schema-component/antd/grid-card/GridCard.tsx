@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { List as AntdList, Row, PaginationProps, Col } from 'antd';
+import { List as AntdList, PaginationProps, Col } from 'antd';
 import { useGridCardActionBarProps } from './hooks';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
@@ -111,31 +111,26 @@ const InternalGridCard = (props) => {
                   pageSizeOptions,
                 }
           }
-          loading={service?.loading}
-        >
-          <Row gutter={[rowGutter, rowGutter]}>
-            {field.value?.map((item, index) => {
-              return (
-                <Col
+          dataSource={field.value}
+          grid={{
+            ...columnCount,
+            gutter: [rowGutter, rowGutter],
+          }}
+          renderItem={(item, index) => {
+            return (
+              <Col style={{ height: '100%' }}>
+                <RecursionField
                   key={index}
-                  xs={24 / columnCount.xs}
-                  sm={24 / columnCount.sm}
-                  md={24 / columnCount.md}
-                  lg={24 / columnCount.lg}
-                  xl={24 / columnCount.xl}
-                  xxl={24 / columnCount.xxl}
-                >
-                  <RecursionField
-                    basePath={field.address}
-                    name={index}
-                    onlyRenderProperties
-                    schema={getSchema(index)}
-                  ></RecursionField>
-                </Col>
-              );
-            })}
-          </Row>
-        </AntdList>
+                  basePath={field.address}
+                  name={index}
+                  onlyRenderProperties
+                  schema={getSchema(index)}
+                ></RecursionField>
+              </Col>
+            );
+          }}
+          loading={service?.loading}
+        />
         <Designer />
       </SortableItem>
     </SchemaComponentOptions>
