@@ -45,7 +45,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
         },
       },
     };
-    properties['defaultValue']['x-disabled'] = record.overriding;
   }
 
   return {

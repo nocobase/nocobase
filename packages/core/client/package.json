@@ -25,7 +25,6 @@
     "file-saver": "^2.0.5",
     "i18next": "^22.4.9",
     "i18next-http-backend": "^2.1.1",
-    "json-templates": "^4.2.0",
     "markdown-it": "13.0.1",
     "markdown-it-highlightjs": "3.3.1",
     "mathjs": "^10.6.0",

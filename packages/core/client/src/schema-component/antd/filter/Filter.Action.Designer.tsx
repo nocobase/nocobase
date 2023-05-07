@@ -90,23 +90,21 @@ export const FilterActionDesigner = (props) => {
           } as ISchema
         }
         onSubmit={({ title, icon }) => {
-          if (title) {
-            fieldSchema.title = title;
-            field.title = title;
-            field.componentProps.icon = icon;
-            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-            fieldSchema['x-component-props'].icon = icon;
-            dn.emit('patch', {
-              schema: {
-                ['x-uid']: fieldSchema['x-uid'],
-                title,
-                'x-component-props': {
-                  ...fieldSchema['x-component-props'],
-                },
+          fieldSchema.title = title;
+          field.title = title;
+          field.componentProps.icon = icon;
+          fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+          fieldSchema['x-component-props'].icon = icon;
+          dn.emit('patch', {
+            schema: {
+              ['x-uid']: fieldSchema['x-uid'],
+              title,
+              'x-component-props': {
+                ...fieldSchema['x-component-props'],
               },
-            });
-            dn.refresh();
-          }
+            },
+          });
+          dn.refresh();
         }}
       />
       <SchemaSettings.Divider />
