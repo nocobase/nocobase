@@ -42,5 +42,5 @@ export * from './upload';
 export * from './variable';
 export * from './gantt';
 export * from './list';
-export * from './card-list';
+export * from './grid-card';
 import './index.less';

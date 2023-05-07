@@ -1038,11 +1038,11 @@ export const createListBlockSchema = (options) => {
   return schema;
 };
 
-export const createCardListBlockSchema = (options) => {
+export const createGridCardBlockSchema = (options) => {
   const {
     formItemInitializers = 'ReadPrettyFormItemInitializers',
-    actionInitializers = 'CardListActionInitializers',
-    itemActionInitializers = 'CardListItemActionInitializers',
+    actionInitializers = 'GridCardActionInitializers',
+    itemActionInitializers = 'GridCardItemActionInitializers',
     collection,
     association,
     resource,
@@ -1053,7 +1053,7 @@ export const createCardListBlockSchema = (options) => {
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resourceName}:view`,
-    'x-decorator': 'CardList.Decorator',
+    'x-decorator': 'GridCard.Decorator',
     'x-decorator-props': {
       resource: resourceName,
       collection,
@@ -1069,7 +1069,7 @@ export const createCardListBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'CardItem',
-    'x-designer': 'CardList.Designer',
+    'x-designer': 'GridCard.Designer',
     properties: {
       actionBar: {
         type: 'void',
@@ -1084,17 +1084,17 @@ export const createCardListBlockSchema = (options) => {
       },
       list: {
         type: 'array',
-        'x-component': 'CardList',
+        'x-component': 'GridCard',
         'x-component-props': {
-          props: '{{ useCardListBlockProps }}',
+          props: '{{ useGridCardBlockProps }}',
         },
         properties: {
           item: {
             type: 'object',
-            'x-component': 'CardList.Item',
+            'x-component': 'GridCard.Item',
             'x-read-pretty': true,
             'x-component-props': {
-              useProps: '{{ useCardListItemProps }}',
+              useProps: '{{ useGridCardItemProps }}',
             },
             properties: {
               grid: template || {
@@ -1102,7 +1102,7 @@ export const createCardListBlockSchema = (options) => {
                 'x-component': 'Grid',
                 'x-initializer': formItemInitializers,
                 'x-initializer-props': {
-                  useProps: '{{ useCardListItemInitializerProps }}',
+                  useProps: '{{ useGridCardItemInitializerProps }}',
                 },
                 properties: {},
               },
@@ -1112,7 +1112,7 @@ export const createCardListBlockSchema = (options) => {
                 'x-initializer': itemActionInitializers,
                 'x-component': 'ActionBar',
                 'x-component-props': {
-                  useProps: '{{ useCardListActionBarProps }}',
+                  useProps: '{{ useGridCardActionBarProps }}',
                   layout: 'one-column',
                 },
                 properties: {},

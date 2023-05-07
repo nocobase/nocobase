@@ -18,7 +18,7 @@ const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   return obj;
 }, {});
 
-export const CardListDesigner = () => {
+export const GridCardDesigner = () => {
   const { name, title } = useCollection();
   const template = useSchemaTemplate();
   const { t } = useTranslation();

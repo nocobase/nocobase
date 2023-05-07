@@ -5,9 +5,9 @@ import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 import { useRecord } from '../../../record-provider';
 import { FormLayout } from '@formily/antd';
 
-export const CardListBlockContext = createContext<any>({});
+export const GridCardBlockContext = createContext<any>({});
 
-const InternalCardListBlockProvider = (props) => {
+const InternalGridCardBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const field = useField();
   const form = useMemo(() => {
@@ -23,7 +23,7 @@ const InternalCardListBlockProvider = (props) => {
   }, [service?.data?.data, service?.loading]);
 
   return (
-    <CardListBlockContext.Provider
+    <GridCardBlockContext.Provider
       value={{
         service,
         resource,
@@ -33,22 +33,22 @@ const InternalCardListBlockProvider = (props) => {
       <FormContext.Provider value={form}>
         <FormLayout layout={'vertical'}>{props.children}</FormLayout>
       </FormContext.Provider>
-    </CardListBlockContext.Provider>
+    </GridCardBlockContext.Provider>
   );
 };
 
-export const CardListBlockProvider = (props) => {
+export const GridCardBlockProvider = (props) => {
   return (
     <BlockProvider {...props}>
-      <InternalCardListBlockProvider {...props} />
+      <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );
 };
 
-export const useCardListBlockContext = () => {
-  return useContext(CardListBlockContext);
+export const useGridCardBlockContext = () => {
+  return useContext(GridCardBlockContext);
 };
 
-export const useCardListItemProps = () => {
+export const useGridCardItemProps = () => {
   return {};
 };

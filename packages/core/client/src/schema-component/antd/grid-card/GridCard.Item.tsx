@@ -9,7 +9,7 @@ const itemCss = css`
   gap: 8px;
 `;
 
-export const CardListItem = (props) => {
+export const GridCardItem = (props) => {
   return (
     <Card bordered hoverable {...props}>
       <div className={itemCss}>{props.children}</div>

@@ -121,7 +121,7 @@ export default {
   "Table": "表格",
   "Form": "表单",
   "List": "列表",
-  "CardList": "卡片列表",
+  "Grid Card": "网格卡片",
   "Display title": "显示标题",
   'Set the column count of the row': "设置行的列数",
   "Table OID(Inheritance)":"数据表 OID(继承)",

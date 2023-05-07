@@ -2,7 +2,7 @@ import { useFieldSchema, Schema } from '@formily/react';
 import { useCollection } from '../../collection-manager';
 
 // 表单的操作配置
-export const CardListActionInitializers = {
+export const GridCardActionInitializers = {
   title: "{{t('Configure actions')}}",
   icon: 'SettingOutlined',
   style: {
@@ -138,7 +138,7 @@ export const CardListActionInitializers = {
   ],
 };
 
-export const CardListItemActionInitializers = {
+export const GridCardItemActionInitializers = {
   title: '{{t("Configure actions")}}',
   icon: 'SettingOutlined',
   items: [

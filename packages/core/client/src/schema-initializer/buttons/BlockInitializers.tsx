@@ -25,10 +25,10 @@ export const BlockInitializers = {
           component: 'ListBlockInitializer',
         },
         {
-          key: 'CardList',
+          key: 'GridCard',
           type: 'item',
-          title: '{{t("Card List")}}',
-          component: 'CardListBlockInitializer',
+          title: '{{t("Grid Card")}}',
+          component: 'GridCardBlockInitializer',
         },
         {
           key: 'form',

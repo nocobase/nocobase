@@ -50,4 +50,4 @@ export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
 export * from './ViewActionInitializer';
 export * from './ListBlockInitializer';
-export * from './CardListBlockInitializer';
+export * from './GridListBlockInitializer';

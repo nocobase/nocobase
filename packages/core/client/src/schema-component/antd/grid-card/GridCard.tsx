@@ -2,13 +2,13 @@ import React, { useCallback, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import { List as AntdList, Row, PaginationProps, Col } from 'antd';
-import { useCardListActionBarProps } from './hooks';
+import { useGridCardActionBarProps } from './hooks';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner } from '../../hooks';
-import { CardListItem } from './CardList.Item';
-import { useCardListBlockContext, useCardListItemProps, CardListBlockProvider } from './CardList.Decorator';
-import { CardListDesigner } from './CardList.Designer';
+import { GridCardItem } from './GridCard.Item';
+import { useGridCardBlockContext, useGridCardItemProps, GridCardBlockProvider } from './GridCard.Decorator';
+import { GridCardDesigner } from './GridCard.Designer';
 import { ArrayField } from '@formily/core';
 import { pageSizeOptions } from './options';
 
@@ -48,13 +48,13 @@ const designerCss = css`
   }
 `;
 
-const InternalCardList = (props) => {
-  const { service, columnCount = 1 } = useCardListBlockContext();
+const InternalGridCard = (props) => {
+  const { service, columnCount = 1 } = useGridCardBlockContext();
   const { run, params } = service;
   const meta = service?.data?.meta;
   const fieldSchema = useFieldSchema();
   const field = useField<ArrayField>();
-  console.log('🚀 ~ file: CardList.tsx:57 ~ InternalCardList ~ field:', field);
+  console.log('🚀 ~ file: GridCard.tsx:57 ~ InternalGridCard ~ field:', field);
   const Designer = useDesigner();
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(
@@ -89,8 +89,8 @@ const InternalCardList = (props) => {
   return (
     <SchemaComponentOptions
       scope={{
-        useCardListItemProps,
-        useCardListActionBarProps,
+        useGridCardItemProps,
+        useGridCardActionBarProps,
       }}
     >
       <SortableItem className={cx('nb-card-list', designerCss)}>
@@ -141,12 +141,12 @@ const InternalCardList = (props) => {
   );
 };
 
-export const CardList = InternalCardList as typeof InternalCardList & {
-  Item: typeof CardListItem;
-  Designer: typeof CardListDesigner;
-  Decorator: typeof CardListBlockProvider;
+export const GridCard = InternalGridCard as typeof InternalGridCard & {
+  Item: typeof GridCardItem;
+  Designer: typeof GridCardDesigner;
+  Decorator: typeof GridCardBlockProvider;
 };
 
-CardList.Item = CardListItem;
-CardList.Designer = CardListDesigner;
-CardList.Decorator = CardListBlockProvider;
+GridCard.Item = GridCardItem;
+GridCard.Designer = GridCardDesigner;
+GridCard.Decorator = GridCardBlockProvider;

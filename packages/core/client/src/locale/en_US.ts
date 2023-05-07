@@ -105,7 +105,7 @@ export default {
   "Table OID(Inheritance)":"Table OID(Inheritance)",
   "Form": "Form",
   "List": "List",
-  "CardList": "Card List",
+  "Grid Card": "Grid Card",
   "Display title": "Display title",
   'Set the column count of the row': "Set the column count of the row",
   "Collapse": "Collapse",
