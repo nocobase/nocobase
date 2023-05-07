@@ -522,7 +522,7 @@ export const EditOperator = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const operatorList = useOperatorList();
-  const { operators: storedOperators, uid } = findFilterOperators(fieldSchema);
+  const { operators: storedOperators = {}, uid } = findFilterOperators(fieldSchema);
 
   if (operatorList.length && !storedOperators[fieldSchema.name]) {
     storedOperators[fieldSchema.name] = operatorList[0].value;
