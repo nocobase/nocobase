@@ -47,6 +47,30 @@ export const ListActionInitializers = {
         },
       ],
     },
+    {
+      type: 'item',
+      title: "{{t('Import')}}",
+      component: 'ImportActionInitializer',
+      schema: {
+        'x-align': 'right',
+        'x-decorator': 'ACLActionProvider',
+        'x-acl-action-props': {
+          skipScopeCheck: true,
+        },
+      },
+    },
+    {
+      type: 'item',
+      title: "{{t('Export')}}",
+      component: 'ExportActionInitializer',
+      schema: {
+        'x-align': 'right',
+        'x-decorator': 'ACLActionProvider',
+        'x-acl-action-props': {
+          skipScopeCheck: true,
+        },
+      },
+    },
     // {
     //   type: 'divider',
     //   visible: () => {
