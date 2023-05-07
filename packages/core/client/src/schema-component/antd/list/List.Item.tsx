@@ -1,5 +1,8 @@
 import React from 'react';
 import { css } from '@emotion/css';
+import { useField } from '@formily/react';
+import { ObjectField } from '@formily/core';
+import { RecordSimpleProvider } from '../../../record-provider';
 
 const itemCss = css`
   display: flex;
@@ -11,5 +14,10 @@ const itemCss = css`
 `;
 
 export const ListItem = (props) => {
-  return <div className={itemCss}>{props.children}</div>;
+  const field = useField<ObjectField>();
+  return (
+    <div className={itemCss}>
+      <RecordSimpleProvider value={field.value}>{props.children}</RecordSimpleProvider>
+    </div>
+  );
 };
