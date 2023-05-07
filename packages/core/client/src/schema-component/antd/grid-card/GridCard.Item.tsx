@@ -18,10 +18,6 @@ export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
   return (
     <Card
-      bordered
-      bodyStyle={{
-        height: '100%',
-      }}
       className={css`
         &,
         & .ant-card-body {
