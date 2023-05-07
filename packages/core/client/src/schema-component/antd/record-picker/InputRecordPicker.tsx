@@ -221,10 +221,10 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
 };
 
 export const RecordPickerProvider = (props) => {
-  const { multiple, onChange, selectedRows, setSelectedRows, options, collectionField } = props;
+  const { multiple, onChange, selectedRows, setSelectedRows, options, collectionField, ...other } = props;
   return (
     <RecordPickerContext.Provider
-      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
+      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField, ...other }}
     >
       {props.children}
     </RecordPickerContext.Provider>

@@ -7,7 +7,11 @@ import { useCollection } from '../../../collection-manager';
 import schema from './schema';
 import { flatData } from './util';
 import { RecordPickerProvider, SchemaComponentOptions, RecordPickerContext, useActionContext } from '../../';
-import { useTableSelectorProps as useTsp } from '../../../block-provider/TableSelectorProvider';
+import {
+  TableSelectorParamsProvider,
+  useTableSelectorProps as useTsp,
+} from '../../../block-provider/TableSelectorProvider';
+import { useTableBlockProps as useTableP } from '../../../';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -48,6 +52,19 @@ const useTableSelectorProps = () => {
   };
 };
 
+export const useTableBlockProps = () => {
+  const field: any = useField();
+  const tableProps = useTableP();
+  const { multiple, selectedRows, tableData, options, collectionField } = useContext(RecordPickerContext);
+
+  useEffect(() => {
+    field.value = tableData;
+  }, [tableData]);
+  return {
+    ...tableProps,
+  };
+};
+
 export const InternalSubTable: any = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const field: any = useField<Field>();
@@ -56,6 +73,7 @@ export const InternalSubTable: any = observer((props: any) => {
   const form = useForm();
   const collectionField = getField(field.props.name);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [tableData, setTableData] = useState(field.value);
   const pickerProps = {
     size: 'small',
     multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
@@ -66,6 +84,8 @@ export const InternalSubTable: any = observer((props: any) => {
     selectedRows,
     setSelectedRows,
     collectionField,
+    tableData,
+    setTableData,
   };
 
   useEffect(() => {
@@ -88,12 +108,16 @@ export const InternalSubTable: any = observer((props: any) => {
 
   const usePickActionProps = () => {
     const { setVisible } = useActionContext();
-    const { multiple, selectedRows, onChange, options, collectionField } = useContext(RecordPickerContext);
+    const { multiple, selectedRows, onChange, collectionField, setTableData, tableData } =
+      useContext(RecordPickerContext);
     return {
       onClick() {
         if (multiple) {
-          form.setValuesIn(fieldSchema.name, unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
-          onChange(unionBy(selectedRows, options, collectionField?.targetKey || 'id'));
+          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
+          const data = unionBy(selectedRows, values, collectionField?.targetKey || 'id');
+          form.setValuesIn(fieldSchema.name, data);
+          onChange(data);
+          setTableData(data);
         } else {
           form.setValuesIn(fieldSchema.name, selectedRows?.[0] || null);
           onChange(selectedRows?.[0] || null);
@@ -102,18 +126,26 @@ export const InternalSubTable: any = observer((props: any) => {
       },
     };
   };
+  const getFilter = () => {
+    const targetKey = collectionField?.targetKey || 'id';
+    const list = field.value.map((option) => option[targetKey]).filter(Boolean);
+    const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
+    return filter;
+  };
   return (
     <div>
-      <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
+      <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps, useTableBlockProps }}>
         <RecordPickerProvider {...pickerProps}>
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.SubTable';
-            }}
-          />
+          <TableSelectorParamsProvider params={{ filter: getFilter() }}>
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'AssociationField.SubTable';
+              }}
+            />
+          </TableSelectorParamsProvider>
         </RecordPickerProvider>
       </SchemaComponentOptions>
     </div>
