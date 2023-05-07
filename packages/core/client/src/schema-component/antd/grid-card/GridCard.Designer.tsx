@@ -221,7 +221,7 @@ export const GridCardDesigner = () => {
             });
           }}
         />
-        <SchemaSettings.Template componentName={'Details'} collectionName={name} resourceName={defaultResource} />
+        <SchemaSettings.Template componentName={'GridCard'} collectionName={name} resourceName={defaultResource} />
         <SchemaSettings.Divider />
         <SchemaSettings.Remove
           removeParentsIfNoChildren
