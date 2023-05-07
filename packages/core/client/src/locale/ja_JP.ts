@@ -556,6 +556,7 @@ export default {
   "Field component": "フィールドコンポーネント",
   "Subtable": "サブテーブル",
   "Subform": "サブフォーム",
+  "Sub-list":"サブリスト",
   "Field mode":"フィールドコンポーネント",
   "Allow add new data":"データの追加を許可",
   "Text and link":"テキストとリンク",

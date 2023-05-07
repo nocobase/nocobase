@@ -304,6 +304,7 @@ export default {
   "Field component": "字段组件",
   "Subtable": "子表格",
   "Subform": "子表单",
+  "Sub-list":"子列表",
   "Record picker": "数据选择器",
   "Toggles the subfield mode": "切换子字段模式",
   "Selector mode": "选择器模式",

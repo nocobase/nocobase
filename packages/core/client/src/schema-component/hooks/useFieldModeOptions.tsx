@@ -33,7 +33,7 @@ export const useFieldModeOptions = () => {
           ? [
               { label: t('Text and link'), value: 'Select' },
               { label: t('Subtable'), value: 'SubTable' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Sub-list'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
@@ -48,7 +48,7 @@ export const useFieldModeOptions = () => {
         return isReadPretty
           ? [
               { label: t('Text and link'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Sub-list'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
@@ -60,7 +60,7 @@ export const useFieldModeOptions = () => {
         return isReadPretty
           ? [
               { label: t('Text and link'), value: 'Select' },
-              { label: t('Subform'), value: 'Nester' },
+              { label: t('Sub-list'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },

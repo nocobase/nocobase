@@ -23,7 +23,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
-  const service =  useServiceOptions(props);
+  const service = useServiceOptions(props);
   const fieldSchema = useFieldSchema();
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const insertAddNewer = useInsertSchema('AddNewer');
@@ -61,7 +61,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
         ></RemoteSelect>
         {isAllowAddNew && !field.readPretty && (
           <Button
-            type={'primary'}
+            type={'default'}
             onClick={() => {
               insertAddNewer(schema.AddNewer);
               setVisibleAddNewer(true);

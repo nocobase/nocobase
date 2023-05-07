@@ -5,7 +5,7 @@ import { CloseOutlined } from '@ant-design/icons';
 import React, { useContext } from 'react';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
-import { useRemoveActionProps } from '../../../block-provider/hooks';
+// import { useRemoveActionProps } from '../../../block-provider/hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -34,27 +34,26 @@ const toArr = (value) => {
 
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
-  const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
+  const { field } = useAssociationFieldContext<ArrayField>();
   const values = toArr(field.value);
-  const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
+  // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
     <Card bordered={true}>
       {values.map((value, index) => {
         return (
           <>
-            <div style={{ textAlign: 'right' }}>
-              <Button
-                icon={<CloseOutlined />}
-                type={'text'}
-                style={{ zIndex: 1000 }}
-                onClick={() => {
-                  field.value.splice(index, 1);
-                  if (field.readPretty) {
-                    onClick(value);
-                  }
-                }}
-              />
-            </div>
+            {!field.readPretty && (
+              <div style={{ textAlign: 'right' }}>
+                <Button
+                  icon={<CloseOutlined />}
+                  type={'text'}
+                  style={{ zIndex: 1000 }}
+                  onClick={() => {
+                    field.value.splice(index, 1);
+                  }}
+                />
+              </div>
+            )}
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
             <Divider />
           </>

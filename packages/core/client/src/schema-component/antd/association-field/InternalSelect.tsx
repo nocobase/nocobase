@@ -217,7 +217,7 @@ export const InternalSelect = observer((props: any) => {
         {isAllowAddNew && (
           <Button
             style={{ width: '15%' }}
-            type={'primary'}
+            type={'default'}
             onClick={() => {
               addbuttonClick();
             }}
@@ -228,14 +228,14 @@ export const InternalSelect = observer((props: any) => {
       </Input.Group>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
         <CollectionProvider name={collectionField.target}>
-            <RecursionField
-              onlyRenderProperties
-              basePath={field.address}
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return s['x-component'] === 'AssociationField.AddNewer';
-              }}
-            />
+          <RecursionField
+            onlyRenderProperties
+            basePath={field.address}
+            schema={fieldSchema}
+            filterProperties={(s) => {
+              return s['x-component'] === 'AssociationField.AddNewer';
+            }}
+          />
         </CollectionProvider>
       </ActionContext.Provider>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
