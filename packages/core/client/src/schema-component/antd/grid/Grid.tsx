@@ -4,7 +4,7 @@ import { observer, RecursionField, Schema, useField, useFieldSchema } from '@for
 import { uid } from '@formily/shared';
 import cls from 'classnames';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { useDesignable, useDesigner, useFormBlockContext, useSchemaInitializer } from '../../../';
+import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 
 const GridRowContext = createContext<any>({});
@@ -316,8 +316,7 @@ const useColProperties = () => {
 };
 
 const DndWrapper = (props) => {
-  const { designable } = useDesignable();
-  if (props.dndContext === false || !designable) {
+  if (props.dndContext === false) {
     return <>{props.children}</>;
   }
   return <DndContext {...props.dndContext}>{props.children}</DndContext>;

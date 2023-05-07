@@ -13,7 +13,7 @@ export interface FormProps {
   [key: string]: any;
 }
 
-export const FormComponent: React.FC<FormProps> = (props) => {
+const FormComponent: React.FC<FormProps> = (props) => {
   const { form, children, ...others } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -172,11 +172,11 @@ export const Form: React.FC<FormProps> & {
   Templates?: any;
 } = observer((props) => {
   const field = useField<Field>();
-  const { form, disabled, className, ...others } = useProps(props);
+  const { form, disabled, ...others } = useProps(props);
   const formDisabled = disabled || field.disabled;
   return (
     <ConfigProvider componentDisabled={formDisabled}>
-      <form className={className}>
+      <form>
         <Spin spinning={field.loading || false}>
           {form ? (
             <WithForm form={form} {...others} disabled={formDisabled} />
