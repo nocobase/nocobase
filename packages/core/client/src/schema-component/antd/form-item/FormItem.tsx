@@ -63,7 +63,6 @@ export const FormItem: any = observer((props: any) => {
     }
   }, []);
   const compile = useCompile();
-  console.log(compile(field.description));
 
   return (
     <ACLCollectionFieldProvider>
