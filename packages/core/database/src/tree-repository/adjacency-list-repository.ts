@@ -104,7 +104,7 @@ export class AdjacencyListRepository extends Repository {
 
       const children = node.getDataValue(childrenKey);
 
-      if (children.length === 0) {
+      if (children && children.length === 0) {
         node.setDataValue(childrenKey, undefined);
       }
 
