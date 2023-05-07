@@ -1,5 +1,5 @@
-import { FormOutlined } from '@ant-design/icons';
 import React from 'react';
+import { FormOutlined } from '@ant-design/icons';
 
 import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -30,8 +30,8 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               resource,
               association: resource,
               action: 'get',
-              useSourceId: '{{ useSourceIdFromRecord }}',
-              useParams: null,
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
               template: s,
             });
             if (item.mode === 'reference') {
@@ -49,8 +49,8 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               resource,
               association: resource,
               action: 'get',
-              useSourceId: '{{ useSourceIdFromRecord }}',
-              useParams: null,
+              useSourceId: '{{ useSourceIdFromParentRecord }}',
+              useParams: '{{ useParamsFromRecord }}',
             }),
           );
         }
