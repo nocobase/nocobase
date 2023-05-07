@@ -1,8 +1,7 @@
 import { Collection, Op } from '@nocobase/database';
 import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-import parse from 'json-templates';
+import { Registry, parse } from '@nocobase/utils';
 import { resolve } from 'path';
 
 import { namespace } from './';

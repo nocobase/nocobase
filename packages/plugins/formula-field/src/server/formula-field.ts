@@ -1,8 +1,6 @@
-import { DataTypes } from 'sequelize';
-
 import { BaseFieldOptions, Field } from '@nocobase/database';
-import evaluators from '@nocobase/evaluators';
-
+import { evaluators } from '@nocobase/evaluators';
+import { DataTypes } from 'sequelize';
 import { toDbType } from '../utils';
 
 export interface FormulaFieldOptions extends BaseFieldOptions {

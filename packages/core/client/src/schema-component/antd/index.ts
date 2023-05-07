@@ -10,6 +10,7 @@ export * from './color-select';
 export * from './cron';
 export * from './date-picker';
 export * from './details';
+export * from './expand-action';
 export * from './filter';
 export * from './form';
 export * from './form-item';
