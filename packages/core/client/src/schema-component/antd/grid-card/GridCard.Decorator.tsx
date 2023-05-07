@@ -36,7 +36,7 @@ const InternalGridCardBlockProvider = (props) => {
             className={css`
               & > .nb-block-item {
                 margin-bottom: var(--nb-spacing);
-                & > .nb-action-bar {
+                & > .nb-action-bar:has(:first-child:not(:empty)) {
                   padding: var(--nb-spacing);
                   background: #fff;
                 }
