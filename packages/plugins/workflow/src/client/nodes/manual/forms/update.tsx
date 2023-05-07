@@ -1,30 +1,25 @@
-import React, { useState, useContext } from 'react';
-import { useForm, useFieldSchema } from '@formily/react';
+import React from 'react';
+import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  ActionContext,
   CollectionProvider,
   createFormBlockSchema,
   GeneralSchemaDesigner,
   RecordProvider,
-  SchemaComponent,
   SchemaInitializer,
-  SchemaInitializerButtonContext,
   SchemaSettings,
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
-  useCompile,
   useDesignable,
-  useRecord
-} from "@nocobase/client";
+  useRecord,
+} from '@nocobase/client';
 
-import { NAMESPACE } from "../../../locale";
+import { NAMESPACE } from '../../../locale';
 import { JOB_STATUS } from '../../../constants';
 import { findSchema, ManualFormType } from '../SchemaConfig';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
-
 
 function UpdateFormDesigner() {
   const { name, title } = useCollection();
@@ -50,7 +45,7 @@ function UpdateFormDesigner() {
                 options,
               };
             },
-            dynamicComponent: 'FilterDynamicComponent'
+            dynamicComponent: 'FilterDynamicComponent',
           },
         }}
         initialValues={fieldSchema?.['x-decorator-props']}
@@ -75,16 +70,14 @@ function UpdateFormDesigner() {
       />
     </GeneralSchemaDesigner>
   );
-};
+}
 
 function UpdateFormBlockProvider({ collection, children }) {
   const record = useRecord() ?? {};
 
   return (
     <CollectionProvider collection={collection}>
-      <RecordProvider record={record}>
-        {children}
-      </RecordProvider>
+      <RecordProvider record={record}>{children}</RecordProvider>
     </CollectionProvider>
   );
 }
@@ -102,7 +95,7 @@ function UpdateFormBlockInitializer({ insert, collection, ...props }) {
           title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'ManualActionStatusProvider',
           'x-decorator-props': {
-            value: JOB_STATUS.RESOLVED
+            value: JOB_STATUS.RESOLVED,
           },
           'x-component': 'Action',
           'x-component-props': {
@@ -111,8 +104,8 @@ function UpdateFormBlockInitializer({ insert, collection, ...props }) {
           },
           'x-designer': 'Action.Designer',
           'x-action': `${JOB_STATUS.RESOLVED}`,
-        }
-      }
+        },
+      },
     });
     Object.assign(schema, {
       'x-decorator': 'UpdateFormBlockProvider',
@@ -123,15 +116,8 @@ function UpdateFormBlockInitializer({ insert, collection, ...props }) {
     insert(schema);
   }
 
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={onConfirm}
-    />
-  );
+  return <SchemaInitializer.Item {...props} onClick={onConfirm} />;
 }
-
-
 
 export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
@@ -142,14 +128,14 @@ export default {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections.map(item => ({
+        children: collections.map((item) => ({
           key: item.name,
           type: 'item',
           title: item.title,
           collection: item.name,
-          component: UpdateFormBlockInitializer
+          component: UpdateFormBlockInitializer,
         })),
-      }
+      };
     },
     initializers: {
       // AddCustomFormField
@@ -157,31 +143,32 @@ export default {
     components: {
       UpdateFormBlockProvider,
       FilterDynamicComponent,
-      UpdateFormDesigner
+      UpdateFormDesigner,
     },
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, item => item['x-decorator'] === 'UpdateFormBlockProvider');
-      formBlocks.forEach(formBlock => {
+      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'UpdateFormBlockProvider');
+      formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
         forms[formKey] = {
           ...formBlock['x-decorator-props'],
           type: 'update',
           title: formBlock['x-component-props']?.title || formKey,
-          actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-            .map(item => item['x-decorator-props'].value),
+          actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+            (item) => item['x-decorator-props'].value,
+          ),
         };
       });
       return forms;
-    }
+    },
   },
   block: {
     scope: {
       // useFormBlockProps
     },
     components: {
-      UpdateFormBlockProvider
-    }
-  }
+      UpdateFormBlockProvider,
+    },
+  },
 } as ManualFormType;

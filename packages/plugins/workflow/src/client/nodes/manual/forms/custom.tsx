@@ -1,8 +1,8 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext } from 'react';
 
 import { cloneDeep, set } from 'lodash';
-import { Field, createForm } from '@formily/core';
-import { useForm, useFieldSchema } from '@formily/react';
+import { Field } from '@formily/core';
+import { useForm } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 
 import {
@@ -14,8 +14,6 @@ import {
   SchemaInitializer,
   SchemaInitializerItemOptions,
   useCollectionManager,
-  useCurrentUserContext,
-  useRecord,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 
@@ -323,39 +321,43 @@ export default {
         key: 'customForm',
         type: 'item',
         title: `{{t("Custom form", { ns: "${NAMESPACE}" })}}`,
-        component: CustomFormBlockInitializer
+        component: CustomFormBlockInitializer,
       };
     },
     initializers: {
       AddCustomFormField,
     },
     components: {
-      FormCollectionProvider
+      FormCollectionProvider,
     },
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, item => item['x-decorator'] === 'FormCollectionProvider');
-      formBlocks.forEach(formBlock => {
+      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'FormCollectionProvider');
+      formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
-        const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
-        formBlock['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
+        const fields = findSchema(
+          formSchema.properties.grid,
+          (item) => item['x-component'] === 'CollectionField',
+          true,
+        );
+        formBlock['x-decorator-props'].collection.fields = fields.map((field) => field['x-interface-options']);
         forms[formKey] = {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
-          actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-            .map(item => item['x-decorator-props'].value),
-          collection: formBlock['x-decorator-props'].collection
+          actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+            (item) => item['x-decorator-props'].value,
+          ),
+          collection: formBlock['x-decorator-props'].collection,
         };
       });
       return forms;
-    }
+    },
   },
   block: {
-    scope: {
-    },
+    scope: {},
     components: {
-      FormCollectionProvider: CollectionProvider
-    }
-  }
+      FormCollectionProvider: CollectionProvider,
+    },
+  },
 } as ManualFormType;

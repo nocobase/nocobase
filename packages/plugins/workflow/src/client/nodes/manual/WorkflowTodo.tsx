@@ -1,4 +1,4 @@
-import React, { useContext, createContext, useEffect, useState, useMemo } from "react";
+import React, { useContext, createContext, useEffect, useState, useMemo } from 'react';
 import { createForm } from '@formily/core';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Spin, Tag } from 'antd';
@@ -10,7 +10,6 @@ import {
   CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentContext,
-  SchemaComponentOptions,
   TableBlockProvider,
   useActionContext,
   useAPIClient,
@@ -26,8 +25,8 @@ import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from '../../constan
 import { NAMESPACE } from '../../locale';
 import { FlowContext, useFlowContext } from '../../FlowContext';
 import { instructions, useAvailableUpstreams } from '..';
-import { linkNodes } from "../../utils";
-import { manualFormTypes } from "./SchemaConfig";
+import { linkNodes } from '../../utils';
+import { manualFormTypes } from './SchemaConfig';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -339,7 +338,7 @@ export const WorkflowTodo: React.FC & { Drawer: React.FC; Decorator: React.FC } 
       }}
     />
   );
-}
+};
 
 function ActionBarProvider(props) {
   // * status is done:
@@ -450,32 +449,39 @@ function FlowContextProvider(props) {
           nodes,
           execution,
         });
+        return;
       });
   }, [id]);
 
-  const upstreams = useAvailableUpstreams(flowContext?.nodes.find(item => item.id === node.id));
-  const nodeComponents = upstreams.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
+  const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
+  const nodeComponents = upstreams.reduce(
+    (components, { type }) => Object.assign(components, instructions.get(type).components),
+    {},
+  );
 
-  return node && flowContext
-    ? (
-      <FlowContext.Provider value={flowContext}>
-        <SchemaComponent
-          components={{
-            ActionBarProvider,
-            ManualActionStatusProvider,
-            ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.components), {})),
-            ...nodeComponents
-          }}
-          schema={{
-            type: 'void',
-            name: 'tabs',
-            'x-component': 'Tabs',
-            properties: node.config?.schema
-          }}
-        />
-      </FlowContext.Provider>
-    )
-    : <Spin />;
+  return node && flowContext ? (
+    <FlowContext.Provider value={flowContext}>
+      <SchemaComponent
+        components={{
+          ActionBarProvider,
+          ManualActionStatusProvider,
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.block.components),
+            {},
+          ),
+          ...nodeComponents,
+        }}
+        schema={{
+          type: 'void',
+          name: 'tabs',
+          'x-component': 'Tabs',
+          properties: node.config?.schema,
+        }}
+      />
+    </FlowContext.Provider>
+  ) : (
+    <Spin />
+  );
 }
 
 function useFormBlockProps() {
@@ -483,13 +489,21 @@ function useFormBlockProps() {
   const { data: user } = useCurrentUserContext();
   const { name } = useFieldSchema();
 
-  const pattern = Boolean(status)
-    ? (result?.[name] ? 'readPretty' : 'disabled')
-    : (user?.data?.id !== userId ? 'disabled' : 'editable');
-  const form = useMemo(() => createForm({
-    pattern,
-    initialValues: result?.[name] ?? {}
-  }), [status, result, name]);
+  const pattern = status
+    ? result?.[name]
+      ? 'readPretty'
+      : 'disabled'
+    : user?.data?.id !== userId
+    ? 'disabled'
+    : 'editable';
+  const form = useMemo(
+    () =>
+      createForm({
+        pattern,
+        initialValues: result?.[name] ?? {},
+      }),
+    [status, result, name],
+  );
 
   return { form };
 }
@@ -501,26 +515,26 @@ function Drawer() {
   const statusOption = JobStatusOptionsMap[status];
   const footerSchema = status
     ? {
-      date: {
-        type: 'void',
-        'x-component': 'time',
-        'x-component-props': {
-          className: css`
-            margin-right: 0.5em;
-          `,
+        date: {
+          type: 'void',
+          'x-component': 'time',
+          'x-component-props': {
+            className: css`
+              margin-right: 0.5em;
+            `,
+          },
+          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
-        'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
-      },
-      status: {
-        type: 'void',
-        'x-component': 'Tag',
-        'x-component-props': {
-          icon: statusOption.icon,
-          color: statusOption.color,
+        status: {
+          type: 'void',
+          'x-component': 'Tag',
+          'x-component-props': {
+            icon: statusOption.icon,
+            color: statusOption.color,
+          },
+          'x-content': statusOption.label,
         },
-        'x-content': statusOption.label,
-      },
-    }
+      }
     : null;
 
   return (
@@ -554,12 +568,15 @@ function Drawer() {
           useSubmit,
           useFlowRecordFromBlock,
           useFormBlockProps,
-          ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.block.scope), {})),
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.block.scope),
+            {},
+          ),
         }}
       />
     </SchemaComponentContext.Provider>
   );
-};
+}
 
 function Decorator({ children }) {
   const { collections, ...cm } = useCollectionManager();

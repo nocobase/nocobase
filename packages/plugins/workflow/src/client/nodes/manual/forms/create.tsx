@@ -1,7 +1,4 @@
-import React, { useState } from 'react';
-import { Modal, Select } from 'antd';
-import { useTranslation } from 'react-i18next';
-import { css } from '@emotion/css';
+import React from 'react';
 
 import {
   CollectionProvider,
@@ -10,11 +7,10 @@ import {
   RecordProvider,
   SchemaInitializer,
   useCollectionManager,
-  useCompile,
-  useRecord
-} from "@nocobase/client";
+  useRecord,
+} from '@nocobase/client';
 
-import { NAMESPACE } from "../../../locale";
+import { NAMESPACE } from '../../../locale';
 import { JOB_STATUS } from '../../../constants';
 import { findSchema, ManualFormType } from '../SchemaConfig';
 
@@ -42,7 +38,7 @@ function CreateFormBlockInitializer({ insert, collection, ...props }) {
           title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
           'x-decorator': 'ManualActionStatusProvider',
           'x-decorator-props': {
-            value: JOB_STATUS.RESOLVED
+            value: JOB_STATUS.RESOLVED,
           },
           'x-component': 'Action',
           'x-component-props': {
@@ -51,22 +47,15 @@ function CreateFormBlockInitializer({ insert, collection, ...props }) {
           },
           'x-designer': 'Action.Designer',
           'x-action': `${JOB_STATUS.RESOLVED}`,
-        }
-      }
+        },
+      },
     });
     schema['x-decorator'] = 'CreateFormBlockProvider';
     insert(schema);
   }
 
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={onConfirm}
-    />
-  );
+  return <SchemaInitializer.Item {...props} onClick={onConfirm} />;
 }
-
-
 
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
@@ -77,44 +66,45 @@ export default {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections.map(item => ({
+        children: collections.map((item) => ({
           key: item.name,
           type: 'item',
           title: item.title,
           collection: item.name,
-          component: CreateFormBlockInitializer
-        }))
+          component: CreateFormBlockInitializer,
+        })),
       };
     },
     initializers: {
       // AddCustomFormField
     },
     components: {
-      CreateFormBlockProvider
+      CreateFormBlockProvider,
     },
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, item => item['x-decorator'] === 'CreateFormBlockProvider');
-      formBlocks.forEach(formBlock => {
+      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'CreateFormBlockProvider');
+      formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
         forms[formKey] = {
           type: 'create',
           title: formBlock['x-component-props']?.title || formKey,
-          actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-            .map(item => item['x-decorator-props'].value),
-          collection: formBlock['x-decorator-props'].collection
+          actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+            (item) => item['x-decorator-props'].value,
+          ),
+          collection: formBlock['x-decorator-props'].collection,
         };
       });
       return forms;
-    }
+    },
   },
   block: {
     scope: {
       // useFormBlockProps
     },
     components: {
-      CreateFormBlockProvider
-    }
-  }
+      CreateFormBlockProvider,
+    },
+  },
 } as ManualFormType;
