@@ -27,6 +27,15 @@ describe('evaluate', () => {
     expect(result).toBe(1);
   });
 
+  it('function result Date', () => {
+    const result = formulaEval('{{a}}', {
+      a() {
+        return new Date();
+      },
+    });
+    expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z/);
+  });
+
   it('number path to array item 0 (math.js)', () => {
     expect(() => mathEval('{{a.0}}', { a: [1, 2, 3] })).toThrow();
   });

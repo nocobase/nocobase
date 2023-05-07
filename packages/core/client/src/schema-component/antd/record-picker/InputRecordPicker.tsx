@@ -47,7 +47,7 @@ const useTableSelectorProps = () => {
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys: rcSelectRows
-        .filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
+        ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
         .map((item) => item[rowKey]),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
@@ -184,12 +184,17 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           allowClear
           onChange={(changed: any) => {
             if (!changed) {
-              onChange([]);
-              setSelectedRows([]);
-            } else if (!changed?.length) {
-              onChange([]);
-              setSelectedRows([]);
+              const value = multiple ? [] : null;
+              onChange(value);
+              setSelectedRows(value);
+              setOptions([]);
             } else if (Array.isArray(changed)) {
+              if (!changed.length) {
+                onChange([]);
+                setSelectedRows([]);
+                return;
+              }
+
               const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
               onChange(values);
               setSelectedRows(values);

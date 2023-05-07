@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
 import { onFieldInputValueChange, onFormInitialValuesChange } from '@formily/core';
-import { useForm, observer, connect, mapReadPretty, useFormEffects } from '@formily/react';
+import { connect, mapReadPretty, observer, useForm, useFormEffects } from '@formily/react';
 import { Tag } from 'antd';
+import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useRecord, Variable } from '@nocobase/client';
@@ -24,7 +24,7 @@ const InternalExpression = observer((props: any) => {
     });
   });
 
-  const options = useCollectionFieldOptions({ collection });
+  const options = useCollectionFieldOptions({ collection: collection });
 
   return <Variable.TextArea {...props} scope={options} />;
 });

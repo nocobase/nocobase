@@ -44,13 +44,13 @@ export const ActionDesigner = (props) => {
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const isAction = useLinkageAction()
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
-  const isLinkageAction = linkageAction || useLinkageAction();
+  const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
-  const isSupportEditButton = fieldSchema['x-action'] !== 'expandAll';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   useEffect(() => {
     const schemaUid = uid();
@@ -87,7 +87,6 @@ export const ActionDesigner = (props) => {
                   title: t('Button title'),
                   default: fieldSchema.title,
                   'x-component-props': {},
-                  'x-visible': isSupportEditButton,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 icon: {
@@ -96,7 +95,7 @@ export const ActionDesigner = (props) => {
                   title: t('Button icon'),
                   default: fieldSchema?.['x-component-props']?.icon,
                   'x-component-props': {},
-                  'x-visible': isSupportEditButton && !isLink,
+                  'x-visible': !isLink,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 type: {

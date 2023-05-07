@@ -1,8 +1,7 @@
-import { cloneDeep } from 'lodash';
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
-
+import { cloneDeep } from 'lodash';
 import { NAMESPACE } from '../locale';
 
 // const booleanReactions = [

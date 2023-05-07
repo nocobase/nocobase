@@ -210,7 +210,7 @@ export default {
   "Association fields filter": "Association fields filter",
   "PK & FK fields": "PK & FK fields",
   "Association fields": "Association fields",
-  "Optional fields": "Optional fields",
+  "Choices fields": "Choices fields",
   "System fields": "System fields",
   "General fields": "General fields",
   "Inherited fields": "Inherited fields",

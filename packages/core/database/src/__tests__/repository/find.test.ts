@@ -1,7 +1,101 @@
 import { mockDatabase } from '../index';
 import Database from '@nocobase/database';
 import { Collection } from '../../collection';
-import { OptionsParser } from '../../options-parser';
+
+describe('find with associations', () => {
+  let db: Database;
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should filter by association field', async () => {
+    const User = db.collection({
+      name: 'users',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          foreignKey: 'parent_id',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          foreignKey: 'parent_id',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user', target: 'users', foreignKey: 'user_id' },
+      ],
+    });
+
+    await db.sync();
+
+    expect(User.options.tree).toBeTruthy();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              title: 'u1p1',
+            },
+          ],
+          children: [
+            {
+              name: 'u2',
+              posts: [
+                {
+                  title: '标题2',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const filter = {
+      $and: [
+        {
+          children: {
+            posts: {
+              title: {
+                $eq: '标题2',
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    const [findResult, count] = await User.repository.findAndCount({
+      filter,
+      offset: 0,
+      limit: 20,
+    });
+
+    expect(findResult[0].get('name')).toEqual('u1');
+  });
+});
 
 describe('repository find', () => {
   let db: Database;

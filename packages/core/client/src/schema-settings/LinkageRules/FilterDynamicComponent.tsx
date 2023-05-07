@@ -11,7 +11,7 @@ type Props = {
 
 export function FilterDynamicComponent(props: Props) {
   const { value, onChange, renderSchemaComponent, collectionName } = props;
-  const scope = useVariableOptions(collectionName);
+  const scope = useVariableOptions(collectionName, ['o2m', 'm2m']);
   return (
     <Variable.Input value={value} onChange={onChange} scope={scope}>
       {renderSchemaComponent()}
