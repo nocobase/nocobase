@@ -5,15 +5,87 @@ import { Collection } from '../../collection';
 describe('find with associations', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase({
-      tablePrefix: '',
-    });
+    db = mockDatabase();
 
     await db.clean({ drop: true });
   });
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should filter by association array field', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'array',
+          name: 'tags',
+        },
+        {
+          type: 'string',
+          name: 'title',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              tags: ['t1'],
+              title: 'u1p1',
+            },
+          ],
+        },
+      ],
+    });
+
+    const posts = await Post.repository.find({
+      filter: {
+        tags: {
+          $match: ['t1'],
+        },
+      },
+    });
+
+    expect(posts.length).toEqual(1);
+
+    const filter = {
+      $and: [
+        {
+          posts: {
+            tags: {
+              $match: ['t1'],
+            },
+          },
+        },
+      ],
+    };
+
+    const results = await User.repository.find({
+      filter,
+    });
+
+    expect(results[0].get('name')).toEqual('u1');
   });
 
   it('should filter by association field', async () => {
