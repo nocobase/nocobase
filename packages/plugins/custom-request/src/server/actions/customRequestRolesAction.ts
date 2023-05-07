@@ -1,18 +1,18 @@
 import { Context } from '@nocobase/actions';
-import { NAMESPACE, ROLE_NAMESPACE } from '../constants';
+import { ROLE_NAMESPACE } from '../constants';
 
-const getRepositoryFromCtx = (ctx: Context, nameSpace = NAMESPACE) => {
-  return ctx.db.getCollection(nameSpace).repository;
+const getRepositoryFromCtx = (ctx: Context) => {
+  return ctx.db.getCollection(ROLE_NAMESPACE).repository;
 };
 
-export const customRequestActions = {
+export const customRequestRolesActions = {
   get: async (ctx: Context, next) => {
     const { params: values } = ctx.action;
     const repo = getRepositoryFromCtx(ctx);
     const key = values.filterByTk;
 
     const record = await repo.findOne({
-      filter: { key },
+      filter: { customRequestKey: key },
     });
     ctx.body = record || {};
     return next();
@@ -20,34 +20,20 @@ export const customRequestActions = {
   set: async (ctx: Context, next) => {
     const { params: values } = ctx.action;
     const repo = getRepositoryFromCtx(ctx);
-    const rolesRepo = getRepositoryFromCtx(ctx, ROLE_NAMESPACE);
-    const key = values.values?.key;
-    const options = values.values?.options;
+    const customRequestKey = values.values?.customRequestKey;
+    const roleName = values.values?.roleName;
     const record = await repo.findOne({
-      filter: { key },
+      filter: { customRequestKey, roleName },
     });
     if (record) {
-      await repo.update({
-        values: {
-          options,
-          name: options.name,
-        },
-        filter: {
-          key,
-        },
+      repo.destroy({
+        filter: { customRequestKey, roleName },
       });
     } else {
       await repo.create({
         values: {
-          key,
-          options,
-          name: options.name,
-        },
-      });
-      await rolesRepo.create({
-        values: {
-          customRequestKey: key,
-          roleName: ctx.request.headers['x-role'],
+          customRequestKey,
+          roleName,
         },
       });
     }

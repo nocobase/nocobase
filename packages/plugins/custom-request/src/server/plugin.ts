@@ -1,95 +1,35 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { CustomRequestCollectionName } from './constants';
-import { MagicAttributeModel } from '@nocobase/database';
-import { CustomRequestModel } from './model';
-import { ServerHookModel } from '@nocobase/plugin-ui-schema-storage/src/server-hooks/model';
-import { uiSchemaActions } from './actions/custom-request-action';
-import { uid } from '@nocobase/utils';
-import path, { resolve } from 'path';
-import CustomRequestRepository from '../repository';
+import { NAMESPACE, ROLE_NAMESPACE } from './constants';
+import { customRequestActions } from './actions';
+import { resolve } from 'path';
+import { customRequestRolesActions } from './actions/customRequestRolesAction';
 
 export class CustomRequestPlugin extends Plugin {
-  registerRepository() {
-    this.app.db.registerRepositories({
-      CustomRequestRepository,
-    });
-  }
-
   afterAdd() {}
 
   beforeLoad() {
-    const db = this.app.db;
-
-    this.app.db.registerModels({ MagicAttributeModel, CustomRequestModel, ServerHookModel });
-
-    this.registerRepository();
     this.app.acl.registerSnippet({
-      name: `pm.${this.name}.block-templates`,
+      name: `ui.customRequest`,
       actions: ['customRequest:*'],
     });
 
-    this.app.acl.registerSnippet({
-      name: `${CustomRequestCollectionName}`,
-      actions: [
-        `${CustomRequestCollectionName}:insert`,
-        `${CustomRequestCollectionName}:insertNewSchema`,
-        `${CustomRequestCollectionName}:remove`,
-        `${CustomRequestCollectionName}:patch`,
-        `${CustomRequestCollectionName}:batchPatch`,
-        `${CustomRequestCollectionName}:clearAncestor`,
-        `${CustomRequestCollectionName}:insertBeforeBegin`,
-        `${CustomRequestCollectionName}:insertAfterBegin`,
-        `${CustomRequestCollectionName}:insertBeforeEnd`,
-        `${CustomRequestCollectionName}:insertAfterEnd`,
-        `${CustomRequestCollectionName}:insertAdjacent`,
-        `${CustomRequestCollectionName}:saveAsTemplate`,
-      ],
-    });
-
-    db.on(`${CustomRequestCollectionName}.beforeCreate`, function setUid(model) {
-      if (!model.get('name')) {
-        model.set('name', uid());
-      }
-    });
-
-    db.on(`${CustomRequestCollectionName}.afterCreate`, async function insertSchema(model, options) {
-      const { transaction } = options;
-      const uiSchemaRepository = db.getCollection(CustomRequestCollectionName).repository as CustomRequestRepository;
-
-      const context = options.context;
-
-      if (context?.disableInsertHook) {
-        return;
-      }
-
-      await uiSchemaRepository.insert(model.toJSON(), {
-        transaction,
-      });
-    });
-
-    db.on(`${CustomRequestCollectionName}.afterUpdate`, async function patchSchema(model, options) {
-      const { transaction } = options;
-      const uiSchemaRepository = db.getCollection(CustomRequestCollectionName).repository as CustomRequestRepository;
-
-      await uiSchemaRepository.patch(model.toJSON(), {
-        transaction,
-      });
-    });
-
     this.app.resourcer.define({
-      name: CustomRequestCollectionName,
-      actions: uiSchemaActions,
+      name: NAMESPACE,
+      actions: customRequestActions,
+    });
+    this.app.resourcer.define({
+      name: ROLE_NAMESPACE,
+      actions: customRequestRolesActions,
     });
 
-    this.app.acl.allow(CustomRequestCollectionName, ['getProperties', 'getJsonSchema'], 'loggedIn');
-    this.app.acl.allow('uiSchemaTemplates', ['get', 'list'], 'loggedIn');
+    this.app.acl.allow(NAMESPACE, ['get', 'list'], 'loggedIn');
+    this.app.acl.allow(ROLE_NAMESPACE, ['get', 'set'], 'loggedIn');
   }
 
   async load() {
     console.log('load');
-    await this.app.db.import({
-      directory: resolve(__dirname, 'collections'),
-    });
+
+    await this.importCollections(resolve(__dirname, 'collections'));
   }
 
   async install(options?: InstallOptions) {}

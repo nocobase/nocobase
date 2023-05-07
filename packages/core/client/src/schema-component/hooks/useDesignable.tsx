@@ -174,7 +174,7 @@ export class Designable {
         return;
       }
       await api.request({
-        url: `/customRequest:patch`,
+        url: `/uiSchemas:patch`,
         method: 'post',
         data: {
           ...schema,

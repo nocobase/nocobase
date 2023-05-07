@@ -3,14 +3,14 @@ import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useColle
 import { SchemaOptionsContext } from '@formily/react';
 import { FormDialog, FormLayout } from '@formily/antd';
 import React, { useContext } from 'react';
-import { useCustomRequestTranslation } from './locale';
 import { createCustomRequestSchema } from './utils';
+import { useTranslation } from 'react-i18next';
 
 export const CustomRequestInitializer = (props) => {
   const { insert } = props;
   const options = useContext(SchemaOptionsContext);
   const { getCollectionFieldsOptions } = useCollectionManager();
-  const { t } = useCustomRequestTranslation();
+  const { t } = useTranslation();
 
   return (
     <DataBlockInitializer

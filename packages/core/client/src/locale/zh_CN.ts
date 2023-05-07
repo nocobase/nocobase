@@ -667,7 +667,7 @@ export default {
   'Request URL': '请求地址',
   'Request method': '请求方法',
   'Request query parameters': '请求查询参数',
-  'Request headers': '请求头参数',
+  'Request headers': '请求头',
   'Request body': '请求体(JSON格式)',
   'Request success': '请求成功',
   'Invalid JSON format': '非法JSON格式',
@@ -761,4 +761,19 @@ export default {
   'Add template': '添加模板',
   'Display data template selector': '显示数据模板选择框',
   'Form data templates': '表单数据模板',
+  'Timeout config': '超时设置',
+  ms: '毫秒',
+  'HTTP request': 'HTTP 请求',
+  'HTTP method': 'HTTP 方法',
+  URL: '地址',
+  Headers: '请求头',
+  Parameters: '参数',
+  'Add parameter': '添加参数',
+  Body: '请求体',
+  'Add request header': '添加请求头',
+  'Only support standard JSON data': '仅支持标准 JSON 数据',
+  '"Content-Type" only support "application/json", and no need to specify':
+    '"Content-Type" 请求头仅支持 "application/json"，无需填写',
+  "Input request data": "输入请求数据",
+  'Request name':'请求名称'
 }

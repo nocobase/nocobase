@@ -1,4 +1,5 @@
 import { Spin } from 'antd';
+import { CustomRequestConfigure } from '../../../../../plugins/custom-request/src/client/components/CustomRequestConfigure';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
@@ -29,7 +30,12 @@ export const RoleTable = () => {
       <AvailableActionsProver>
         <SchemaComponent
           schema={roleSchema}
-          components={{ MenuItemsProvider, SettingCenterPermissionProvider, PermissionProvider }}
+          components={{
+            MenuItemsProvider,
+            SettingCenterPermissionProvider,
+            PermissionProvider,
+            CustomRequestConfigure,
+          }}
         />
       </AvailableActionsProver>
     </div>

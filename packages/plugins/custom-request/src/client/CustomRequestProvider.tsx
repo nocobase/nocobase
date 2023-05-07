@@ -1,55 +1,26 @@
-import { useField, useFieldSchema } from '@formily/react';
-import { BlockProvider, FixedBlockWrapper, SchemaComponentOptions, useBlockRequestContext } from '@nocobase/client';
-import React, { createContext, useContext, useState } from 'react';
+import { useRequest } from '@nocobase/client';
+import React, { createContext, useContext } from 'react';
 
-export const CustomRequestContext = createContext<any>({});
+const CustomRequestContext = createContext(null);
 
-const InternalCustomRequestProvider = (props) => {
-  const { fieldNames } = props;
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const { resource, service } = useBlockRequestContext();
-  const [selectedRecordKeys, setSelectedRecordKeys] = useState([]);
-
-  return (
-    <FixedBlockWrapper>
-      <SchemaComponentOptions scope={{ selectedRecordKeys }}>
-        <CustomRequestContext.Provider
-          value={{
-            field,
-            service,
-            resource,
-            fieldNames,
-            fixedBlock: fieldSchema?.['x-decorator-props']?.fixedBlock,
-            selectedRecordKeys,
-            setSelectedRecordKeys,
-          }}
-        >
-          {props.children}
-        </CustomRequestContext.Provider>
-      </SchemaComponentOptions>
-    </FixedBlockWrapper>
-  );
-};
-
-export const CustomRequestProvider = (props) => {
-  return (
-    <BlockProvider {...props} params={{ ...props.params, paginate: false }}>
-      <InternalCustomRequestProvider {...props} />
-    </BlockProvider>
-  );
-};
-
-export const useCustomRequestContext = () => {
+export const useCustomRequest = () => {
   return useContext(CustomRequestContext);
 };
 
-export const useCustomRequestProps = () => {
-  const ctx = useCustomRequestContext();
-
-  return {
-    ...ctx,
-    dataSource: ctx?.service?.data?.data,
-    zoom: ctx?.field?.componentProps?.zoom || 13,
-  };
+export const CustomRequestProvider = (props) => {
+  const options = { url: `/customRequest:list` };
+  const roleService = useRequest({ url: '/customrequestRoles:list' }, { manual: true });
+  const service = useRequest(options, { manual: true });
+  const items = service.data?.data || [];
+  return (
+    <CustomRequestContext.Provider
+      value={{
+        service,
+        roleService,
+        items,
+      }}
+    >
+      {props.children}
+    </CustomRequestContext.Provider>
+  );
 };

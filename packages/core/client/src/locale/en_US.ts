@@ -691,4 +691,19 @@ export default {
   "Render Failed": "Render Failed",
   "Feedback": "Feedback",
   "Try again": "Try again",
+  'Timeout config': 'Timeout config',
+  ms: 'ms',
+  'HTTP request': 'HTTP request',
+  'HTTP method': 'HTTP method',
+  URL: 'URL',
+  Headers: 'Headers',
+  Parameters: 'Parameters',
+  'Add parameter': 'Add parameter',
+  Body: 'Body',
+  'Add request header': 'Add request header',
+  'Only support standard JSON data': 'Only support standard JSON data',
+  '"Content-Type" only support "application/json", and no need to specify':
+    '"Content-Type" only support "application/json", and no need to specify',
+  'Input request data': 'Input request data',
+  'Request name':'Request name'
 };

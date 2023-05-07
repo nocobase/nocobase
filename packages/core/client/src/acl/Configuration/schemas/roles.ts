@@ -291,6 +291,18 @@ export const roleSchema: ISchema = {
                                     },
                                   },
                                 },
+                                tab5: {
+                                  type: 'void',
+                                  title: '{{t("Custom request")}}',
+                                  'x-component': 'Tabs.TabPane',
+                                  'x-component-props': {},
+                                  properties: {
+                                    menu: {
+                                      'x-decorator': 'CustomRequestProvider',
+                                      'x-component': 'CustomRequestConfigure',
+                                    },
+                                  },
+                                },
                               },
                             },
                           },

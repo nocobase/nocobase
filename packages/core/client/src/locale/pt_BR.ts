@@ -664,4 +664,18 @@ export default {
   'Add template': 'Adicionar modelo',
   'Display data template selector': 'Exibir seletor de modelo de dados',
   'Form data templates': 'Modelos de dados do formulário',
+  'Timeout config': 'Configuração de tempo limite',
+  ms: 'ms',
+  'HTTP request': 'Requisição HTTP',
+  'HTTP method': 'Método HTTP',
+  URL: 'URL',
+  Parameters: 'Parâmetros',
+  'Add parameter': 'Adicionar parâmetro',
+  Body: 'Corpo',
+  Headers: 'Cabeçalhos',
+  'Add request header': 'Adicionar cabeçalho de requisição',
+  'Only support standard JSON data': 'Suporta somente dados JSON padrão',
+  '"Content-Type" only support "application/json", and no need to specify':
+    '"Content-Type" somente suporta "application/json" e não precisa ser especificado',
+  "Request name":"Solicitar nome"
 };

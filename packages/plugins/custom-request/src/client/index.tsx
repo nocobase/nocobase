@@ -8,14 +8,14 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import Configuration from './components/Configuration';
-import { useCustomRequestTranslation } from './locale';
-import './locale';
 import { CustomRequest } from './CustomRequest';
 import { CustomRequestInitializer } from './CustomRequestInitializer';
+import { useTranslation } from 'react-i18next';
+import { CustomRequestProvider } from './CustomRequestProvider';
 
 export default React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
-  const { t } = useCustomRequestTranslation();
+  const { t } = useTranslation();
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
   if (children) {
@@ -49,7 +49,7 @@ export default React.memo((props) => {
         >
           <SchemaComponentOptions components={{ CustomRequest }}>
             <CollectionManagerContext.Provider value={{ ...ctx, interfaces: { ...ctx.interfaces } }}>
-              {props.children}
+              <CustomRequestProvider>{props.children}</CustomRequestProvider>
             </CollectionManagerContext.Provider>
           </SchemaComponentOptions>
         </SettingsCenterProvider>

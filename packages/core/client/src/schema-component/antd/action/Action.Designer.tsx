@@ -1,18 +1,19 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Menu, message } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDesignable } from '../..';
+import { useCustomRequestSchema, useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
 
-import { formatParamsIntoKeyValue, formatParamsIntoObject, requestSettingsSchema } from './utils';
 import { ArrayItems, Space } from '@formily/antd';
-import { cloneDeep, omit } from 'lodash';
+import { cloneDeep } from 'lodash';
 import { JSONInput } from '../variable/JSONInput';
+import { useAPIClient, useRequest } from '../../../api-client';
+import { useRecord } from '../../../record-provider';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -47,6 +48,13 @@ export const ActionDesigner = (props) => {
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const requestSettingsSchema = useCustomRequestSchema();
+  const api = useAPIClient();
+  const record = useRecord();
+  const customRequestCache = useRef<Record<string, boolean>>(
+    JSON.parse(localStorage.getItem('customRequestCache') || '{}'),
+  );
+
   const isAction = useLinkageAction();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
@@ -55,6 +63,10 @@ export const ActionDesigner = (props) => {
   const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const [customRequestSettings, setCustomRequestSettings] = useState({
+    // TODO 区块名/操作名
+    name: '',
+  });
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -74,6 +86,37 @@ export const ActionDesigner = (props) => {
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
     ),
   };
+  useEffect(() => {
+    if (!customRequestCache.current[fieldSchema?.['x-uid']]) {
+      customRequestService.run();
+      customRequestRoleService.run();
+    }
+    return () => {
+      customRequestCache.current = {};
+      localStorage.setItem('customRequestCache', '');
+    };
+  }, [field.address]);
+  const customRequestService = useRequest(
+    { url: `/customRequest:get/${fieldSchema?.['x-uid']}` },
+    {
+      manual: true,
+      onSuccess(data) {
+        setCustomRequestSettings(data.data.options);
+        customRequestCache.current[fieldSchema?.['x-uid']] = true;
+        localStorage.setItem('customRequestCache', JSON.stringify(customRequestCache.current));
+      },
+    },
+  );
+  const customRequestRoleService = useRequest(
+    { url: `/customrequestRoles:get/${fieldSchema?.['x-uid']}` },
+    {
+      manual: true,
+      onSuccess(data) {
+        console.log(data, 'customRequestServicedata');
+        // setCustomRequestSettings(data.data.options);
+      },
+    },
+  );
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer>
       <MenuGroup>
@@ -187,29 +230,21 @@ export const ActionDesigner = (props) => {
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
           <SchemaSettings.ActionModalItem
             components={{ ArrayItems, Space, JSONInput }}
-            title={t('Request settings1')}
+            title={t('Request settings')}
             schema={requestSettingsSchema}
-            initialValues={{
-              ...omit(fieldSchema?.['x-action-settings']?.requestSettings, ['headers', 'params']),
-              headers: formatParamsIntoKeyValue(fieldSchema?.['x-action-settings']?.requestSettings.headers),
-              params: formatParamsIntoKeyValue(fieldSchema?.['x-action-settings']?.requestSettings.params),
-            }}
-            onSubmit={(requestSettings) => {
+            initialValues={customRequestSettings}
+            onSubmit={async (requestSettings) => {
               const tempRequestSettings = cloneDeep(requestSettings);
-              const headers = formatParamsIntoObject(tempRequestSettings.headers);
-              const params = formatParamsIntoObject(tempRequestSettings.params);
-              fieldSchema['x-action-settings']['requestSettings'] = {
-                ...omit(tempRequestSettings, 'headers'),
-                headers,
-                params,
-              };
-              dn.emit('patch', {
-                schema: {
-                  ['x-uid']: fieldSchema['x-uid'],
-                  'x-action-settings': fieldSchema['x-action-settings'],
+              await api.request({
+                url: `/customRequest:set/${fieldSchema['x-uid']}`,
+                method: 'post',
+                data: {
+                  key: fieldSchema['x-uid'],
+                  options: tempRequestSettings,
+                  role: record.name,
                 },
               });
-              dn.refresh();
+              message.success(t('Saved successfully'), 0.2);
             }}
           />
         )}
