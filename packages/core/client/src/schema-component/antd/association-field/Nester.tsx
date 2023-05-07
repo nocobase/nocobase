@@ -34,7 +34,7 @@ const toArr = (value) => {
 
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
-  const { field ,options:collectionField} = useAssociationFieldContext<ArrayField>();
+  const { field, options: collectionField } = useAssociationFieldContext<ArrayField>();
   const values = toArr(field.value);
   const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
@@ -42,17 +42,19 @@ const ToManyNester = observer((props) => {
       {values.map((value, index) => {
         return (
           <>
+            <div style={{ textAlign: 'right' }}>
               <Button
                 icon={<CloseOutlined />}
                 type={'text'}
-                style={{ float: 'right', zIndex: 1000, fontSize: 12 }}
+                style={{ zIndex: 1000 }}
                 onClick={() => {
                   field.value.splice(index, 1);
                   if (field.readPretty) {
-                    onClick(value)
+                    onClick(value);
                   }
                 }}
               />
+            </div>
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
             <Divider />
           </>
