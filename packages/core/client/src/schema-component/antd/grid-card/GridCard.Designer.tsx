@@ -1,5 +1,5 @@
 import { useFieldSchema, useField, ISchema } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ArrayItems } from '@formily/antd';
 import { Slider } from 'antd';
 import _ from 'lodash';
@@ -11,12 +11,23 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { SchemaComponentOptions } from '../../core';
-import { pageSizeOptions } from './options';
+import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps } from './options';
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
   return obj;
 }, {});
+
+const columnCountSchema = {
+  'x-component': 'Slider',
+  'x-decorator': 'FormItem',
+  'x-component-props': {
+    min: 1,
+    max: 24,
+    marks: columnCountMarks,
+    step: null,
+  },
+};
 
 export const GridCardDesigner = () => {
   const { name, title } = useCollection();
@@ -30,7 +41,15 @@ export const GridCardDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
-  const defaultColumnCount = field.decoratorProps.columnCount || 1;
+  const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
+
+  const columnCountProperties = useMemo(() => {
+    return gridSizes.reduce((o, k) => {
+      o[k] = { ...columnCountSchema, title: k, description: `${t('Screen')} ${screenSizeMaps[k]} ${t('pixels')}` };
+      return o;
+    }, {});
+  }, [t]);
+
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
       ? {
@@ -48,25 +67,15 @@ export const GridCardDesigner = () => {
         <SchemaSettings.BlockTitleItem />
         <SchemaSettings.ModalItem
           title={t('Set the column count of the row')}
+          initialValues={columnCount}
           schema={
             {
               type: 'object',
               title: t('Set the column count of the row'),
-              default: defaultColumnCount,
-              properties: {
-                columnCount: {
-                  'x-component': 'Slider',
-                  'x-component-props': {
-                    min: 1,
-                    max: 24,
-                    marks: columnCountMarks,
-                    step: null,
-                  },
-                },
-              },
+              properties: columnCountProperties,
             } as ISchema
           }
-          onSubmit={({ columnCount }) => {
+          onSubmit={(columnCount) => {
             _.set(fieldSchema, 'x-decorator-props.columnCount', columnCount);
             field.decoratorProps.columnCount = columnCount;
             dn.emit('patch', {

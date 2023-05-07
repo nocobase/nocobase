@@ -10,7 +10,13 @@ import { GridCardItem } from './GridCard.Item';
 import { useGridCardBlockContext, useGridCardItemProps, GridCardBlockProvider } from './GridCard.Decorator';
 import { GridCardDesigner } from './GridCard.Designer';
 import { ArrayField } from '@formily/core';
-import { pageSizeOptions } from './options';
+import { defaultColumnCount, pageSizeOptions } from './options';
+
+const rowGutter = {
+  md: 16,
+  sm: 8,
+  xs: 8,
+};
 
 const designerCss = css`
   width: 100%;
@@ -49,12 +55,11 @@ const designerCss = css`
 `;
 
 const InternalGridCard = (props) => {
-  const { service, columnCount = 1 } = useGridCardBlockContext();
+  const { service, columnCount = defaultColumnCount } = useGridCardBlockContext();
   const { run, params } = service;
   const meta = service?.data?.meta;
   const fieldSchema = useFieldSchema();
   const field = useField<ArrayField>();
-  console.log('🚀 ~ file: GridCard.tsx:57 ~ InternalGridCard ~ field:', field);
   const Designer = useDesigner();
   const [schemaMap] = useState(new Map());
   const getSchema = useCallback(
@@ -108,22 +113,18 @@ const InternalGridCard = (props) => {
           }
           loading={service?.loading}
         >
-          <Row
-            style={{ width: '100%' }}
-            gutter={[
-              {
-                md: 16,
-                sm: 8,
-              },
-              {
-                md: 16,
-                sm: 8,
-              },
-            ]}
-          >
+          <Row gutter={[rowGutter, rowGutter]}>
             {field.value?.map((item, index) => {
               return (
-                <Col key={index} span={24 / columnCount}>
+                <Col
+                  key={index}
+                  xs={24 / columnCount.xs}
+                  sm={24 / columnCount.sm}
+                  md={24 / columnCount.md}
+                  lg={24 / columnCount.lg}
+                  xl={24 / columnCount.xl}
+                  xxl={24 / columnCount.xxl}
+                >
                   <RecursionField
                     basePath={field.address}
                     name={index}

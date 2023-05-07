@@ -15,7 +15,7 @@ const itemCss = css`
 export const GridCardItem = (props) => {
   const field = useField<ObjectField>();
   return (
-    <Card bordered hoverable>
+    <Card bordered>
       <div className={itemCss}>
         <RecordSimpleProvider value={field.value}>{props.children}</RecordSimpleProvider>
       </div>

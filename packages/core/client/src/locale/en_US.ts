@@ -106,6 +106,8 @@ export default {
   "Form": "Form",
   "List": "List",
   "Grid Card": "Grid Card",
+  "pixels": "pixels",
+  "Screen": "Screen",
   "Display title": "Display title",
   'Set the column count of the row': "Set the column count of the row",
   "Collapse": "Collapse",

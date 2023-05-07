@@ -62,6 +62,8 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
+  const compile = useCompile();
+  console.log(compile(field.description));
 
   return (
     <ACLCollectionFieldProvider>
@@ -86,7 +88,7 @@ export const FormItem: any = observer((props: any) => {
             typeof field.description === 'string' ? (
               <div
                 dangerouslySetInnerHTML={{
-                  __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+                  __html: HTMLEncode(compile(field.description)).split('\n').join('<br/>'),
                 }}
               />
             ) : (
