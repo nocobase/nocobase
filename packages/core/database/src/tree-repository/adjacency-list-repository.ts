@@ -24,10 +24,14 @@ export class AdjacencyListRepository extends Repository {
 
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
 
-    const sql = this.querySQL(
-      parentNodes.map((node) => node.id),
-      collection,
-    );
+    const parentIds = parentNodes.map((node) => node[primaryKey]);
+
+    if (parentIds.length == 0) {
+      this.database.logger.warn('parentIds is empty');
+      return parentNodes;
+    }
+
+    const sql = this.querySQL(parentIds, collection);
 
     const childNodes = await this.database.sequelize.query(sql, {
       type: 'SELECT',
@@ -117,7 +121,7 @@ export class AdjacencyListRepository extends Repository {
   }
 
   private querySQL(rootIds, collection) {
-    const { treeChildrenField, treeParentField } = collection;
+    const { treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
     const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
 
