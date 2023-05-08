@@ -53,3 +53,10 @@ export function flatData(data) {
 export function isShowFilePicker(labelUiSchema) {
   return labelUiSchema?.['x-component'] === 'Preview';
 }
+
+export const toValue = (value, placeholder) => {
+  if (value === null || value === undefined) {
+    return placeholder;
+  }
+  return value;
+};

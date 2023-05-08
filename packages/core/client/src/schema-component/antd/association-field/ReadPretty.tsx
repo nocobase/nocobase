@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useField } from '@formily/react';
+import { useField, observer } from '@formily/react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
@@ -8,7 +8,7 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { InternalSubTable } from './InternalSubTable';
 import { FileManageReadPretty } from './FileManager';
 
-export const ReadPretty = (props) => {
+export const ReadPretty = observer((props:any) => {
   const { enableLink } = props;
   const field: any = useField();
   const { getField } = useCollection();
@@ -30,4 +30,4 @@ export const ReadPretty = (props) => {
       {currentMode === 'FileManager' && <FileManageReadPretty {...props} />}
     </AssociationFieldProvider>
   );
-};
+});

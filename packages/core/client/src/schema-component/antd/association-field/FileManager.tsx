@@ -1,11 +1,14 @@
 import { RecursionField, useField, useFieldSchema, connect } from '@formily/react';
-import { Button, Input, Select } from 'antd';
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, Fragment, useRef } from 'react';
+import { toArr } from '@formily/shared';
 import { differenceBy, unionBy } from 'lodash';
 import { ActionContext } from '../action';
 import { useInsertSchema, useFieldNames } from './hooks';
 import schema from './schema';
 import { useCompile } from '../../hooks';
+import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
+import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
+import { RecordProvider, useRecord } from '../../../record-provider';
 import { useCollection, CollectionProvider } from '../../../collection-manager';
 import {
   RecordPickerProvider,
@@ -18,7 +21,7 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { getLabelFormatValue, useLabelUiSchema, flatData } from './util';
+import { getLabelFormatValue, useLabelUiSchema, flatData, toValue, isShowFilePicker } from './util';
 import { FileSelector, Preview } from '../preview';
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -175,11 +178,98 @@ const InternalFileManager = (props) => {
   );
 };
 
+interface IEllipsisWithTooltipRef {
+  setPopoverVisible: (boolean) => void;
+}
 const FileManageReadPretty = connect((props) => {
+  const { ellipsis } = props;
   const field: any = useField();
+  const fieldSchema = useFieldSchema();
+  const fieldNames = useFieldNames(props);
   const { getField } = useCollection();
+  const compile = useCompile();
   const collectionField = getField(field.props.name);
-  return collectionField ? <Preview {...props} /> : null;
+  const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
+  const showFilePicker = isShowFilePicker(labelUiSchema);
+  const { snapshot } = useActionContext();
+  const insertViewer = useInsertSchema('Viewer');
+  const [visible, setVisible] = useState(false);
+  const [record, setRecord] = useState({});
+  const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
+  const recordCtx = useRecord();
+  const isTagsMode = fieldSchema['x-component-props']?.mode === 'tags';
+  if (showFilePicker) {
+    return collectionField ? <Preview {...props} fieldNames={fieldNames} /> : null;
+  }
+  const renderWithoutTableFieldResourceProvider = () => (
+    <WithoutTableFieldResource.Provider value={true}>
+      <FormProvider>
+        <RecursionField
+          schema={fieldSchema}
+          onlyRenderProperties
+          basePath={field.address}
+          filterProperties={(s) => {
+            return s['x-component'] === 'AssociationField.Viewer';
+          }}
+        />
+      </FormProvider>
+    </WithoutTableFieldResource.Provider>
+  );
+  const renderRecords = () =>
+    toArr(props.value).map((record, index, arr) => {
+      const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
+      const text = getLabelFormatValue(labelUiSchema, val, true);
+      return (
+        <Fragment key={`${record.id}_${index}`}>
+          <span>
+            {snapshot || isTagsMode ? (
+              text
+            ) : (
+              <a
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  insertViewer(schema.Viewer);
+                  setVisible(true);
+                  setRecord(record);
+                  ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
+                }}
+              >
+                {text}
+              </a>
+            )}
+          </span>
+          {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
+        </Fragment>
+      );
+    });
+  const renderRecordProvider = () => {
+    const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
+
+    return collectionFieldNames && collectionFieldNames.length > 2 ? (
+      <RecordProvider record={recordCtx[collectionFieldNames[1]]}>
+        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+      </RecordProvider>
+    ) : (
+      <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+    );
+  };
+  return collectionField ? (
+    <div>
+      <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
+        <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
+          <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
+            {renderRecords()}
+          </EllipsisWithTooltip>
+          <ActionContext.Provider
+            value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
+          >
+            {renderRecordProvider()}
+          </ActionContext.Provider>
+        </CollectionProvider>
+      </BlockAssociationContext.Provider>
+    </div>
+  ) : null;
 });
 
 export { InternalFileManager, FileManageReadPretty };

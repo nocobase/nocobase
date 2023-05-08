@@ -8,8 +8,7 @@ import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import { Preview } from '../preview';
-import { getLabelFormatValue, useLabelUiSchema, isShowFilePicker } from './util';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 import { useInsertSchema, useFieldNames } from './hooks';
 import schema from './schema';
 
@@ -38,15 +37,10 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = isShowFilePicker(labelUiSchema);
   const { snapshot } = useActionContext();
   const isTagsMode = fieldSchema['x-component-props']?.mode === 'tags';
 
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
-
-  if (showFilePicker) {
-    return collectionField ? <Preview {...props} /> : null;
-  }
 
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
