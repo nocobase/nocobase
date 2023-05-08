@@ -2,18 +2,19 @@ import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import { isEmpty } from 'lodash';
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import app from '@nocobase/app-server';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty, params } = props;
+  const { action, readPretty, params, updateAssociationValues } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -37,7 +38,7 @@ const InternalFormBlockProvider = (props) => {
         field,
         service,
         resource,
-        updateAssociationValues: [],
+        updateAssociationValues,
         formBlockRef,
       }}
     >
@@ -72,7 +73,7 @@ const getAssociationAppends = (schema, arr = []) => {
       if (s['x-component-props'].mode === 'Nester') {
         return getAssociationAppends(s, buf);
       }
-      return buf
+      return buf;
     } else {
       return getAssociationAppends(s, buf);
     }
@@ -104,12 +105,21 @@ const useAssociationNames = (collection) => {
   const gridSchema = formSchema.properties.grid;
   const data = [];
   gridSchema.reduceProperties((buf, s) => {
-    buf.push(getAssociationAppends(s).join('.'));
+    buf.push(getAssociationAppends(s));
     return buf;
   }, data);
-  const appends = data.filter((g) => g.length);
-  console.log(appends);
-  return appends;
+  const associations = data.filter((g) => g.length);
+  const appends = associations.map((v) => {
+    return v.join('.');
+  });
+
+  const updateAssociationValues = associations.map((k) => {
+    return k.map((v, index) => {
+      const s = index > 0 ? k.slice(0, index + 1) : [v];
+      return s.join('.');
+    });
+  });
+  return { appends, updateAssociationValues };
 };
 
 export const FormBlockProvider = (props) => {
@@ -120,7 +130,7 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-  const appends = useAssociationNames(collection);
+  const { appends, updateAssociationValues } = useAssociationNames(collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -136,7 +146,7 @@ export const FormBlockProvider = (props) => {
   return (
     (detailFlag || createFlag) && (
       <BlockProvider {...props} block={'form'} params={params}>
-        <InternalFormBlockProvider {...props} params={params} />
+        <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
       </BlockProvider>
     )
   );
