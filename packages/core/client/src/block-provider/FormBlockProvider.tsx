@@ -69,7 +69,10 @@ const getAssociationAppends = (schema, arr = []) => {
   return schema.reduceProperties((buf, s) => {
     if (s['x-component'] === 'CollectionField' && ['object', 'array'].includes(s.type)) {
       buf.push(s.name);
-      return getAssociationAppends(s, buf);
+      if (s['x-component-props'].mode === 'Nester') {
+        return getAssociationAppends(s, buf);
+      }
+      return buf
     } else {
       return getAssociationAppends(s, buf);
     }
@@ -105,6 +108,7 @@ const useAssociationNames = (collection) => {
     return buf;
   }, data);
   const appends = data.filter((g) => g.length);
+  console.log(appends);
   return appends;
 };
 
