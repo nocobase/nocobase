@@ -89,7 +89,9 @@ export const createFormSchema: ISchema = {
         authType: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
-          'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
+          'x-component-props': {
+            options: '{{ types }}',
+          },
         },
         description: {
           'x-component': 'CollectionField',
@@ -266,13 +268,7 @@ export const authenticatorsSchema: ISchema = {
                   type: 'void',
                   title: '{{ t("Configure") }}',
                   'x-component': 'Action.Link',
-                  // 'x-reactions': {
-                  //   fulfill: {
-                  //     state: {
-                  //       display: '{{ useCanConfigure }}',
-                  //     },
-                  //   },
-                  // },
+                  'x-visible': '{{ useCanConfigure() }}',
                   properties: {
                     drawer: {
                       type: 'void',
@@ -336,7 +332,9 @@ export const authenticatorsSchema: ISchema = {
                         authType: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
-                          'x-reactions': ['{{useAsyncDataSource(getAuthTypes)}}'],
+                          'x-component-props': {
+                            options: '{{ types }}',
+                          },
                         },
                         description: {
                           'x-component': 'CollectionField',

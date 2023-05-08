@@ -34,9 +34,7 @@ export const useUpdateOptionsAction = () => {
 
 export const useCanConfigure = () => {
   const record = useRecord();
-  const can = useHasOptionsComponent(record.authType);
-  console.log(can);
-  return can;
+  return !!useHasOptionsComponent(record.authType);
 };
 
 export const useValuesFromOptions = (options) => {

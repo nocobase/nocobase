@@ -29,18 +29,18 @@ export default (props) => {
         },
       }}
     >
-      <OptionsComponentProvider authType={presetAuthType} component={Options}>
-        <SigninPageProvider
-          authType={presetAuthType}
-          allowSignup={true}
-          tabTitle={t('Sign in via email')}
-          component={SigninPage}
-        >
-          <SignupPageProvider authType={presetAuthType} component={SignupPage}>
-            {props.children}
-          </SignupPageProvider>
-        </SigninPageProvider>
-      </OptionsComponentProvider>
+      {/* <OptionsComponentProvider authType={presetAuthType} component={Options}> */}
+      <SigninPageProvider
+        authType={presetAuthType}
+        allowSignup={true}
+        tabTitle={t('Sign in via email')}
+        component={SigninPage}
+      >
+        <SignupPageProvider authType={presetAuthType} component={SignupPage}>
+          {props.children}
+        </SignupPageProvider>
+      </SigninPageProvider>
+      {/* </OptionsComponentProvider> */}
     </SettingsCenterProvider>
   );
 };
