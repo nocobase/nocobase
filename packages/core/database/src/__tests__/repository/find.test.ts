@@ -88,6 +88,97 @@ describe('find with associations', () => {
     expect(results[0].get('name')).toEqual('u1');
   });
 
+  it('should filter with append', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { name: 'title', type: 'string' },
+        {
+          name: 'user',
+          type: 'belongsTo',
+        },
+        {
+          name: 'category',
+          type: 'belongsTo',
+        },
+      ],
+    });
+
+    const Category = db.collection({
+      name: 'categories',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'belongsTo', name: 'organization' },
+        {
+          type: 'belongsTo',
+          name: 'department',
+        },
+      ],
+    });
+
+    const Org = db.collection({
+      name: 'organizations',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const Dept = db.collection({
+      name: 'departments',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          category: { name: 'c1' },
+          user: {
+            name: 'u1',
+            organization: {
+              name: 'o1',
+            },
+            department: {
+              name: 'd1',
+            },
+          },
+        },
+        {
+          title: 'p2',
+          category: { name: 'c2' },
+          user: {
+            name: 'u2',
+            organization: {
+              name: 'o2',
+            },
+            department: {
+              name: 'd2',
+            },
+          },
+        },
+      ],
+    });
+
+    const filterResult = await Post.repository.find({
+      appends: ['user.department'],
+      filter: {
+        'user.name': 'u1',
+      },
+    });
+
+    expect(filterResult[0].user.department).toBeDefined();
+  });
+
   it('should filter by association field', async () => {
     const User = db.collection({
       name: 'users',
