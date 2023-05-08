@@ -22,6 +22,7 @@ export const useFieldModeOptions = () => {
     if (collection?.template === 'file') {
       return [
         { label: t('File Manager'), value: 'FileManager' },
+        { label: t('Record picker'), value: 'Picker' },
         { label: t('Select'), value: 'Select' },
       ];
     }
