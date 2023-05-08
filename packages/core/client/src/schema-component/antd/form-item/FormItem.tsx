@@ -107,9 +107,9 @@ FormItem.Designer = function Designer() {
   const targetFields = collectionField?.target
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
-  // const fieldComponentOptions = useFieldComponentOptions();
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const isFileField = isFileCollection(targetCollection);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -253,7 +253,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {!form?.readPretty && isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileField ? (
         <SchemaSettings.SwitchItem
           key="quick-upload"
           title={t('Quick upload')}
@@ -273,7 +273,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       ) : null}
-      {!form?.readPretty && isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileField ? (
         <SchemaSettings.SwitchItem
           key="select-file"
           title={t('Select file')}
@@ -514,7 +514,7 @@ FormItem.Designer = function Designer() {
           key="field-mode"
           title={t('Field mode')}
           options={fieldModeOptions}
-          value={field?.componentProps?.['mode'] || isFileCollection(targetCollection) ? 'FileManager' : 'Select'}
+          value={field?.componentProps?.['mode'] || isFileField ? 'FileManager' : 'Select'}
           onChange={(mode) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -581,7 +581,7 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && !isFileField && (
         <SchemaSettings.SwitchItem
           title={t('Enable link')}
           checked={fieldSchema['x-component-props']?.enableLink !== false}
