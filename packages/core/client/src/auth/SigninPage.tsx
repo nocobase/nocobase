@@ -11,14 +11,13 @@ import React, {
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
+import { SignupPageContext, useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import { useForm } from '@formily/react';
 
 const SigninPageContext = createContext<{
   [authType: string]: {
     component: FunctionComponent;
-    allowSignup?: boolean;
     tabTitle?: string;
   };
 }>({});
@@ -26,14 +25,12 @@ const SigninPageContext = createContext<{
 export const SigninPageProvider = (props: {
   authType: string;
   component: FunctionComponent<{ name: string }>;
-  allowSignup?: boolean;
   tabTitle?: string;
   children: JSX.Element;
 }) => {
   const components = useContext(SigninPageContext);
   components[props.authType] = {
     component: props.component,
-    allowSignup: props.allowSignup || true,
     tabTitle: props.tabTitle,
   };
   return <SigninPageContext.Provider value={components}>{props.children}</SigninPageContext.Provider>;
@@ -65,6 +62,7 @@ export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const signInPages = useContext(SigninPageContext);
+  const signupPages = useContext(SignupPageContext);
   const signinExtension = useSigninPageExtension();
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<
@@ -93,7 +91,7 @@ export const SigninPage = () => {
           component: createElement<{
             name: string;
           }>(page.component, { name: item.name }),
-          allowSignup: page.allowSignup,
+          allowSignup: !!signupPages[item.authType],
           tabTitle: page.tabTitle || item.name,
           ...item,
         };

@@ -5,7 +5,7 @@ import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle } from '..';
 import { useForm } from '@formily/react';
 
-const SignupPageContext = createContext<{
+export const SignupPageContext = createContext<{
   [authType: string]: {
     component: FunctionComponent<{
       name: string;
