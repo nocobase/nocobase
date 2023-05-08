@@ -16,6 +16,7 @@ export const ReadPretty = (props) => {
   const collectionField = getField(field.props.name);
   const isFileCollection = getCollection(collectionField?.target).template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || isFileCollection ? 'FileManager' : 'Select');
+  console.log(props)
   useEffect(() => {
     props.mode && setCurrentMode(props.mode);
   }, [props.mode]);

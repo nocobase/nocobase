@@ -65,6 +65,7 @@ const InternalFileManager = (props) => {
   const [selectedRows, setSelectedRows] = useState([]);
   const insertSelector = useInsertSchema('Selector');
   const fieldNames = useFieldNames(props);
+  console.log(fieldNames)
   const field: any = useField();
   const [options, setOptions] = useState([]);
   const { getField } = useCollection();
@@ -179,6 +180,7 @@ const FileManageReadPretty = connect((props) => {
   const field: any = useField();
   const { getField } = useCollection();
   const collectionField = getField(field.props.name);
+  console.log(props)
   return collectionField ? <Preview {...props} /> : null;
 });
 
