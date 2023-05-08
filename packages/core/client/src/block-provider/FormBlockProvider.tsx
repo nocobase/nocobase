@@ -103,7 +103,7 @@ function flattenNestedList(nestedList) {
       if (Array.isArray(list[i])) {
         flattenHelper(list[i], `${prefix}.${list[i][0]}`);
       } else {
-        const str = prefix.replace(`${list[i]}`, '').trim();
+        const str = prefix.replaceAll(`${list[i]}`, '').replace('..','.').trim();
         flattenedList.push(`${str}${list[i]}`);
       }
     }
@@ -146,7 +146,6 @@ const useAssociationNames = (collection) => {
   }, data);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
-  console.log(appends, associations);
   return { appends, updateAssociationValues: appends };
 };
 export const FormBlockProvider = (props) => {
