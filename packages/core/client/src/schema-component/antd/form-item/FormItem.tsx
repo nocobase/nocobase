@@ -98,7 +98,6 @@ FormItem.Designer = function Designer() {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const variablesCtx = useVariablesCtx();
-
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -509,7 +508,7 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {form && isAssociationField && fieldModeOptions && (
+      {isAssociationField && fieldModeOptions && (
         <SchemaSettings.SelectItem
           key="field-mode"
           title={t('Field mode')}

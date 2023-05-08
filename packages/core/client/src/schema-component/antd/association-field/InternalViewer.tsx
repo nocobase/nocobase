@@ -23,7 +23,6 @@ const toValue = (value, placeholder) => {
   return value;
 };
 export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
-  const { ellipsis } = props;
   const fieldSchema = useFieldSchema();
   const recordCtx = useRecord();
   const { getCollectionJoinField } = useCollectionManager();
@@ -102,7 +101,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
         <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
-          <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
+          <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>
           <ActionContext.Provider
