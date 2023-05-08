@@ -29,7 +29,7 @@ const collection = {
       name: 'authType',
       uiSchema: {
         type: 'string',
-        title: '{{t("Auth Type")}}',
+        title: '{{t("Auth Type", {ns: "auth"})}}',
         'x-component': 'Select',
         required: true,
       },

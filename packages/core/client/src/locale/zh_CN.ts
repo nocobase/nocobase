@@ -761,4 +761,6 @@ export default {
   'Add template': '添加模板',
   'Display data template selector': '显示数据模板选择框',
   'Form data templates': '表单数据模板',
+
+  'No configuration available.': '无可配置项。',
 }

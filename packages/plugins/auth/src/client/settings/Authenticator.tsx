@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { action } from '@formily/reactive';
 import { AuthTypeContext, useAuthTypes } from './authType';
 import { Configure, useUpdateOptionsAction, useValuesFromOptions } from './Configure';
+import { useAuthTranslation } from '../locale';
 
 const useAsyncDataSource = (service) => (field) => {
   field.loading = true;
@@ -29,7 +30,7 @@ const useCloseAction = () => {
 };
 
 const AddNew = () => {
-  const { t } = useTranslation();
+  const { t } = useAuthTranslation();
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState('');
   const { types, getAuthTypes } = useAuthTypes();

@@ -4,11 +4,16 @@ import { BasicAuth } from './basic-auth';
 import { presetAuthType, presetAuthenticator } from '../preset';
 import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
+import { enUS, zhCN } from './locale';
+import { namespace } from '../preset';
 
 export class AuthPlugin extends Plugin {
   afterAdd() {}
 
-  async beforeLoad() {}
+  async beforeLoad() {
+    this.app.i18n.addResources('zh-CN', namespace, zhCN);
+    this.app.i18n.addResources('en-US', namespace, enUS);
+  }
 
   async load() {
     // Set up database
