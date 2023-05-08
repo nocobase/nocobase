@@ -514,7 +514,7 @@ FormItem.Designer = function Designer() {
           key="field-mode"
           title={t('Field mode')}
           options={fieldModeOptions}
-          value={field?.componentProps?.['mode'] || isFileField ? 'FileManager' : 'Select'}
+          value={field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select')}
           onChange={(mode) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
