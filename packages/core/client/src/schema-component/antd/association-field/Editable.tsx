@@ -21,8 +21,7 @@ export const Editable = observer((props: any) => {
   const { getCollection } = useCollectionManager();
   const collectionField = getField(field.props.name);
   const isFileCollection = getCollection(collectionField?.target).template === 'file';
-  const [currentMode, setCurrentMode] = useState(props.mode || isFileCollection ? 'FileManager' : 'Select');
-
+  const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField: any = useField();
