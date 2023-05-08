@@ -203,6 +203,19 @@ export const useCustomRequestSchema = () => {
         },
         description: `{{t("Only support standard JSON data")}}`,
       },
+      timeout: {
+        type: 'number',
+        title: `{{t("Timeout config")}}`,
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {},
+        'x-component': 'InputNumber',
+        'x-component-props': {
+          addonAfter: `{{t("ms")}}`,
+          min: 1,
+          step: 1000,
+          defaultValue: 5000,
+        },
+      },
     },
   };
 };

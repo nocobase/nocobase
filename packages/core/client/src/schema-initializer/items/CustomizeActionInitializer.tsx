@@ -10,6 +10,5 @@ export const CustomizeActionInitializer = (props) => {
     schema['x-acl-action'] = `${collection.name}:${schema['x-acl-action']}`;
     schema['x-decorator'] = 'ACLActionProvider';
   }
-  console.log(schema, 'schema');
   return <BlockInitializer {...props} schema={schema} />;
 };

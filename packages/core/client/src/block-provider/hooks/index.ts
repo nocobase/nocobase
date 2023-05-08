@@ -614,6 +614,7 @@ export const useCustomizeRequestActionProps = () => {
         headers: parse(formatParamsIntoObject(headers))({ currentRecord, currentUser }),
         params: parse(formatParamsIntoObject(params))({ currentRecord, currentUser }),
         data: parse(data)({ currentRecord, currentUser }),
+        timeout: requestSettings?.timeout,
       };
       actionField.data = field.data || {};
       actionField.data.loading = true;
