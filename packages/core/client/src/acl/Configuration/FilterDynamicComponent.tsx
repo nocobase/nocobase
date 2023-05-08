@@ -48,7 +48,7 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
 };
 
 const useUserVariable = ({ schema, operator }) => {
-  const options = useOptions('users', { schema, operator, maxDepth: 1 }) || [];
+  const options = useOptions('users', { schema, operator, maxDepth: 3 }) || [];
 
   return {
     label: `{{t("Current user")}}`,
