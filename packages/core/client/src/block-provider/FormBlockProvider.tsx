@@ -67,7 +67,10 @@ export const useIsEmptyRecord = () => {
 
 const getAssociationAppends = (schema, arr = []) => {
   return schema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'CollectionField' && ['object', 'array'].includes(s.type)) {
+    if (
+      s['x-component'] === 'CollectionField' &&
+      (['object', 'array'].includes(s.type) || ['createdBy', 'updatedBy'].includes(s.name))
+    ) {
       buf.push(s.name);
       if (s['x-component-props'].mode === 'Nester') {
         return getAssociationAppends(s, buf);
@@ -143,12 +146,7 @@ const useAssociationNames = (collection) => {
   }, data);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
-  const updateAssociationValues = associations.concat().map((k) => {
-    return k.map((v, index) => {
-      const s = index > 0 ? k.slice(0, index + 1) : [v];
-      return s.join('.');
-    });
-  });
+  console.log(appends, associations);
   return { appends, updateAssociationValues: appends };
 };
 export const FormBlockProvider = (props) => {
