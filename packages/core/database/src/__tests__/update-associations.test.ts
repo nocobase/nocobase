@@ -4,6 +4,82 @@ import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
+  describe('update with nested associations', function () {
+    let db: Database;
+    beforeEach(async () => {
+      db = mockDatabase();
+      await db.clean({ drop: true });
+    });
+
+    afterEach(async () => {
+      await db.close();
+    });
+
+    it('should update nested', async () => {
+      const createCollection = (name: string, fields = []) => {
+        return db.collection({
+          name,
+          fields: [{ type: 'string', name: 'name' }, ...fields],
+        });
+      };
+      const A = createCollection('a', [{ type: 'hasOne', name: 'b', target: 'b', foreignKey: 'a_id' }]);
+      const B = createCollection('b', [{ type: 'hasOne', name: 'c', target: 'c', foreignKey: 'b_id' }]);
+      const C = createCollection('c', [{ type: 'hasOne', name: 'd', target: 'd', foreignKey: 'c_id' }]);
+      const D = createCollection('d');
+
+      await db.sync();
+
+      await A.repository.create({
+        values: {
+          name: 'a1',
+          b: {
+            name: 'b1',
+            c: {
+              name: 'c1',
+              d: {
+                name: 'd1',
+              },
+            },
+          },
+        },
+      });
+
+      const a1 = await A.repository.findOne({
+        appends: ['b.c.d'],
+      });
+
+      await A.repository.update({
+        filter: {
+          id: a1.get('id'),
+        },
+        values: {
+          name: 'a11',
+          b: {
+            id: a1.get('b').get('id'),
+            name: 'b11',
+            c: {
+              id: a1.get('b').get('c').get('id'),
+              name: 'c11',
+              d: {
+                id: a1.get('b').get('c').get('d').get('id'),
+                name: 'd11',
+              },
+            },
+          },
+        },
+        updateAssociationValues: ['b.c.d', 'b'],
+      });
+
+      const a = await A.repository.findOne({
+        appends: ['b', 'b.c', 'b.c.d'],
+      });
+
+      expect(a.get('b').get('name')).toEqual('b11');
+      expect(a.get('b').get('c').get('name')).toEqual('c1');
+      expect(a.get('b').get('c').get('d').get('name')).toEqual('d11');
+    });
+  });
+
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(async () => {
