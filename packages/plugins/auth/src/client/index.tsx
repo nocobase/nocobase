@@ -1,10 +1,16 @@
-import { SettingsCenterProvider, SigninPageProvider, SignupPageProvider } from '@nocobase/client';
+import {
+  OptionsComponentProvider,
+  SettingsCenterProvider,
+  SigninPageProvider,
+  SignupPageProvider,
+} from '@nocobase/client';
 import React from 'react';
 import { Authenticator } from './settings/Authenticator';
 import SigninPage from './basic/SigninPage';
 import { presetAuthType } from '../preset';
 import SignupPage from './basic/SignupPage';
 import { useAuthTranslation } from './locale';
+import { Options } from './basic/Options';
 
 export default (props) => {
   const { t } = useAuthTranslation();
@@ -23,18 +29,18 @@ export default (props) => {
         },
       }}
     >
-      {/* <OptionsComponentProvider authType={presetAuthType} component={Options}> */}
-      <SigninPageProvider
-        authType={presetAuthType}
-        allowSignup={true}
-        tabTitle={t('Sign in via email')}
-        component={SigninPage}
-      >
-        <SignupPageProvider authType={presetAuthType} component={SignupPage}>
-          {props.children}
-        </SignupPageProvider>
-      </SigninPageProvider>
-      {/* </OptionsComponentProvider> */}
+      <OptionsComponentProvider authType={presetAuthType} component={Options}>
+        <SigninPageProvider
+          authType={presetAuthType}
+          allowSignup={true}
+          tabTitle={t('Sign in via email')}
+          component={SigninPage}
+        >
+          <SignupPageProvider authType={presetAuthType} component={SignupPage}>
+            {props.children}
+          </SignupPageProvider>
+        </SigninPageProvider>
+      </OptionsComponentProvider>
     </SettingsCenterProvider>
   );
 };

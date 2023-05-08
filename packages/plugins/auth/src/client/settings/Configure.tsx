@@ -4,6 +4,7 @@ import {
   useActionContext,
   useResourceActionContext,
   useResourceContext,
+  useHasOptionsComponent,
 } from '@nocobase/client';
 import { useEffect } from 'react';
 import { useForm } from '@formily/react';
@@ -29,6 +30,13 @@ export const useUpdateOptionsAction = () => {
       refresh();
     },
   };
+};
+
+export const useCanConfigure = () => {
+  const record = useRecord();
+  const can = useHasOptionsComponent(record.authType);
+  console.log(can);
+  return can;
 };
 
 export const useValuesFromOptions = (options) => {

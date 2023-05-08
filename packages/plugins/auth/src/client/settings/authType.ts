@@ -1,5 +1,5 @@
-import { useAPIClient, useRequest } from '@nocobase/client';
-import { useState, createContext } from 'react';
+import { useAPIClient } from '@nocobase/client';
+import { createContext } from 'react';
 
 export const AuthTypeContext = createContext<{
   type: string;
@@ -7,7 +7,6 @@ export const AuthTypeContext = createContext<{
 
 export const useAuthTypes = () => {
   const api = useAPIClient();
-  const [types, setTypes] = useState([]);
   const getAuthTypes = async () =>
     api
       .resource('authenticators')
@@ -20,11 +19,5 @@ export const useAuthTypes = () => {
           value: type,
         }));
       });
-
-  useRequest(getAuthTypes, {
-    onSuccess: (types) => {
-      setTypes(types);
-    },
-  });
-  return { types, getAuthTypes };
+  return { getAuthTypes };
 };

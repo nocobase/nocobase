@@ -1,8 +1,9 @@
 import { uid } from '@formily/shared';
 import { ISchema } from '@formily/react';
-import { useActionContext, useRequest } from '@nocobase/client';
+import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useContext } from 'react';
 import { AuthTypeContext } from '../authType';
+import { useCanConfigure } from '../Configure';
 
 const collection = {
   name: 'authenticators',
@@ -265,6 +266,13 @@ export const authenticatorsSchema: ISchema = {
                   type: 'void',
                   title: '{{ t("Configure") }}',
                   'x-component': 'Action.Link',
+                  // 'x-reactions': {
+                  //   fulfill: {
+                  //     state: {
+                  //       display: '{{ useCanConfigure }}',
+                  //     },
+                  //   },
+                  // },
                   properties: {
                     drawer: {
                       type: 'void',

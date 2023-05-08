@@ -1,13 +1,12 @@
-import { ActionContext, SchemaComponent, useActionContext } from '@nocobase/client';
+import { ActionContext, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import { Card } from 'antd';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authenticatorsSchema, createFormSchema } from './schemas/authenticators';
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
-import { useTranslation } from 'react-i18next';
 import { action } from '@formily/reactive';
 import { AuthTypeContext, useAuthTypes } from './authType';
-import { Configure, useUpdateOptionsAction, useValuesFromOptions } from './Configure';
+import { Configure, useUpdateOptionsAction, useValuesFromOptions, useCanConfigure } from './Configure';
 import { useAuthTranslation } from '../locale';
 
 const useAsyncDataSource = (service) => (field) => {
@@ -33,14 +32,20 @@ const AddNew = () => {
   const { t } = useAuthTranslation();
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState('');
-  const { types, getAuthTypes } = useAuthTypes();
-  const items = types.map((item) => ({
-    ...item,
-    onClick: () => {
-      setVisible(true);
-      setType(item.value);
+  const [items, setItems] = useState([]);
+  const { getAuthTypes } = useAuthTypes();
+  useRequest(getAuthTypes, {
+    onSuccess: (types) => {
+      const items = types.map((item) => ({
+        ...item,
+        onClick: () => {
+          setVisible(true);
+          setType(item.value);
+        },
+      }));
+      setItems(items);
     },
-  }));
+  });
 
   return (
     <ActionContext.Provider value={{ visible, setVisible }}>
@@ -63,7 +68,7 @@ export const Authenticator = () => {
       <SchemaComponent
         schema={authenticatorsSchema}
         components={{ AddNew, Configure }}
-        scope={{ useAsyncDataSource, getAuthTypes, useUpdateOptionsAction, useValuesFromOptions }}
+        scope={{ useAsyncDataSource, getAuthTypes, useUpdateOptionsAction, useValuesFromOptions, useCanConfigure }}
       />
     </Card>
   );

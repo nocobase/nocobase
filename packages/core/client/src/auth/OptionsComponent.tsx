@@ -11,12 +11,13 @@ export const OptionsComponentProvider: FC<{ authType: string; component: Functio
   return <OptionsComponentContext.Provider value={components}>{props.children}</OptionsComponentContext.Provider>;
 };
 
+export const useHasOptionsComponent = (authType: string) => {
+  const components = useContext(OptionsComponentContext);
+  return components[authType];
+};
+
 export const useOptionsComponent = (authType: string) => {
   const { t } = useTranslation();
-  const components = useContext(OptionsComponentContext);
-  return components[authType] ? (
-    createElement(components[authType])
-  ) : (
-    <div style={{ color: '#ccc' }}>{t('No configuration available.')}</div>
-  );
+  const component = useHasOptionsComponent(authType);
+  return component ? createElement(component) : <div style={{ color: '#ccc' }}>{t('No configuration available.')}</div>;
 };
