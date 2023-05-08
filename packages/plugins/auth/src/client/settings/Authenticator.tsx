@@ -6,7 +6,7 @@ import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
 import { Configure, useUpdateOptionsAction, useValuesFromOptions, useCanConfigure } from './Configure';
-import { useAuthTranslation } from '../locale';
+import { useTranslation } from 'react-i18next';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
@@ -18,7 +18,7 @@ const useCloseAction = () => {
 };
 
 const AddNew = () => {
-  const { t } = useAuthTranslation();
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const [type, setType] = useState('');
   const types = useAuthTypes();
