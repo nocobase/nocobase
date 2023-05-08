@@ -18,19 +18,9 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { getLabelFormatValue, useLabelUiSchema,flatData } from './util';
 
-function flatData(data) {
-  const newArr = [];
-  for (let i = 0; i < data.length; i++) {
-    const children = data[i]['children'];
-    if (Array.isArray(children)) {
-      newArr.push(...flatData(children));
-    }
-    newArr.push({ ...data[i] });
-  }
-  return newArr;
-}
+
 
 const useTableSelectorProps = () => {
   const field: any = useField();
