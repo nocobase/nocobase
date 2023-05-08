@@ -2,15 +2,15 @@ import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect, useState } from 'react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { InternalNester } from './InternalNester';
-import { InternalSelect } from './InternalSelect';
+import { InternalPicker } from './InternalPicker';
 import { AssociationSelect } from './AssociationSelect';
 import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { useCollection } from '../../../collection-manager';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
+import { InternalFileManager } from './FileManager';
 
 export const Editable = observer((props: any) => {
-  const [currentMode, setCurrentMode] = useState(props.mode || 'Select');
   useEffect(() => {
     props.mode && setCurrentMode(props.mode);
   }, [props.mode]);
@@ -18,7 +18,10 @@ export const Editable = observer((props: any) => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
+  const { getCollection } = useCollectionManager();
   const collectionField = getField(field.props.name);
+  const isFileCollection = getCollection(collectionField?.target).template === 'file';
+  const [currentMode, setCurrentMode] = useState(props.mode || isFileCollection ? 'FileManager' : 'Select');
 
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
@@ -50,10 +53,11 @@ export const Editable = observer((props: any) => {
   return (
     <AssociationFieldProvider>
       <SchemaComponentOptions scope={{ useCreateActionProps }}>
-        {currentMode === 'Picker' && <InternalSelect {...props} />}
+        {currentMode === 'Picker' && <InternalPicker {...props} />}
         {currentMode === 'Nester' && <InternalNester {...props} />}
         {currentMode === 'Select' && <AssociationSelect {...props} />}
         {currentMode === 'SubTable' && <InternalSubTable {...props} />}
+        {currentMode === 'FileManager' && <InternalFileManager {...props} />}
       </SchemaComponentOptions>
     </AssociationFieldProvider>
   );

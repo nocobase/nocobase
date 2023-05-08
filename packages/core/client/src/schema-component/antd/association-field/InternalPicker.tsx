@@ -6,19 +6,18 @@ import { ActionContext } from '../action';
 import { useInsertSchema, useFieldNames } from './hooks';
 import schema from './schema';
 import { useCompile } from '../../hooks';
-import { useCollection, CollectionProvider, useCollectionManager } from '../../../collection-manager';
+import { useCollection, CollectionProvider } from '../../../collection-manager';
 import {
   RecordPickerProvider,
   SchemaComponentOptions,
   RecordPickerContext,
   useActionContext,
   FormProvider,
-} from '../../';
+} from '../..';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { FileSelector } from '../preview';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 function flatData(data) {
@@ -72,11 +71,10 @@ const useTableSelectorProps = () => {
   };
 };
 
-export const InternalSelect = observer((props: any) => {
+export const InternalPicker = observer((props: any) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const field: any = useField();
   const fieldNames = useFieldNames(props);
-  const { getCollection } = useCollectionManager();
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const [visibleSelector, setVisibleSelector] = useState(false);
   const fieldSchema = useFieldSchema();
@@ -90,7 +88,6 @@ export const InternalSelect = observer((props: any) => {
   };
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const showFilePicker = getCollection(collectionField?.target).template === 'file';
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
@@ -124,19 +121,6 @@ export const InternalSelect = observer((props: any) => {
     return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
   };
 
-  const handleSelect = () => {
-    setVisibleSelector(true);
-    setSelectedRows([]);
-  };
-
-  const handleRemove = (file) => {
-    const newOptions = options.filter((option) => option.id !== file.id);
-    setOptions(newOptions);
-    if (newOptions.length === 0) {
-      return onChange(null);
-    }
-    onChange(newOptions);
-  };
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -161,58 +145,36 @@ export const InternalSelect = observer((props: any) => {
     <>
       <Input.Group compact style={{ display: 'flex' }}>
         <div style={{ width: '100%' }}>
-          {showFilePicker ? (
-            <FileSelector
-              value={options}
-              multiple={multiple}
-              quickUpload={quickUpload !== false}
-              selectFile={selectFile !== false}
-              action={`${collectionField?.target}:create`}
-              onSelect={handleSelect}
-              onRemove={handleRemove}
-              onChange={(changed) => {
-                if (changed.every((file) => file.status !== 'uploading')) {
-                  changed = changed.filter((file) => file.status === 'done').map((file) => file.response.data);
-                  if (multiple) {
-                    onChange([...options, ...changed]);
-                  } else {
-                    onChange(changed[0]);
-                  }
+          <Select
+            style={{ width: '100%' }}
+            {...others}
+            mode={multiple ? 'multiple' : props.mode}
+            fieldNames={fieldNames}
+            onDropdownVisibleChange={(open) => {
+              insertSelector(schema.Selector);
+              setVisibleSelector(true);
+            }}
+            allowClear
+            onChange={(changed: any) => {
+              if (!changed) {
+                const value = multiple ? [] : null;
+                onChange(value);
+                setSelectedRows(value);
+              } else if (Array.isArray(changed)) {
+                if (!changed.length) {
+                  onChange([]);
+                  setSelectedRows([]);
+                  return;
                 }
-              }}
-            />
-          ) : (
-            <Select
-              style={{ width: '100%' }}
-              {...others}
-              mode={multiple ? 'multiple' : props.mode}
-              fieldNames={fieldNames}
-              onDropdownVisibleChange={(open) => {
-                insertSelector(schema.Selector);
-                setVisibleSelector(true);
-              }}
-              allowClear
-              onChange={(changed: any) => {
-                if (!changed) {
-                  const value = multiple ? [] : null;
-                  onChange(value);
-                  setSelectedRows(value);
-                } else if (Array.isArray(changed)) {
-                  if (!changed.length) {
-                    onChange([]);
-                    setSelectedRows([]);
-                    return;
-                  }
-                  const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
-                  onChange(values);
-                  setSelectedRows(values);
-                }
-              }}
-              options={options}
-              value={getValue()}
-              open={false}
-            />
-          )}
+                const values = options?.filter((option) => changed.includes(option[fieldNames.value]));
+                onChange(values);
+                setSelectedRows(values);
+              }
+            }}
+            options={options}
+            value={getValue()}
+            open={false}
+          />
         </div>
         {isAllowAddNew && (
           <Button

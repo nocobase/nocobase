@@ -12,7 +12,6 @@ export const useFieldModeOptions = () => {
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const { t } = useTranslation();
   const { label } = fieldSchema['x-component-props']?.fieldNames || {};
-
   const fieldModeOptions = useMemo(() => {
     if (!collectionField || !collectionField?.interface) {
       return;
@@ -22,7 +21,7 @@ export const useFieldModeOptions = () => {
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return [
-        { label: t('Record picker'), value: 'Picker' },
+        { label: t('File Manager'), value: 'FileManager' },
         { label: t('Select'), value: 'Select' },
       ];
     }

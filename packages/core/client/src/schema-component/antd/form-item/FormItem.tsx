@@ -514,7 +514,7 @@ FormItem.Designer = function Designer() {
           key="field-mode"
           title={t('Field mode')}
           options={fieldModeOptions}
-          value={field?.componentProps?.['mode'] || 'Select'}
+          value={field?.componentProps?.['mode'] || isFileCollection(targetCollection) ? 'FileManager' : 'Select'}
           onChange={(mode) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -590,7 +590,7 @@ FormItem.Designer = function Designer() {
               ...fieldSchema?.['x-component-props'],
               enableLink: flag,
             };
-            field.componentProps['enableLink']=flag
+            field.componentProps['enableLink'] = flag;
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
