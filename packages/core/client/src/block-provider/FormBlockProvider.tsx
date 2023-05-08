@@ -8,6 +8,7 @@ import { useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { isArray } from 'mathjs';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -73,10 +74,44 @@ const getAssociationAppends = (schema, arr = []) => {
       }
       return buf;
     } else {
-      return getAssociationAppends(s, buf);
+      if (s['x-component'] === 'Grid') {
+        let kk = buf.concat();
+        return getNesterAppends(s, kk);
+      } else {
+        return getAssociationAppends(s, buf);
+      }
     }
   }, arr);
 };
+
+const getNesterAppends = (gridSchema, data) => {
+  gridSchema.reduceProperties((buf, s) => {
+    buf.push(getAssociationAppends(s));
+    return buf;
+  }, data);
+  return data.filter((g) => g.length);
+};
+
+function flattenNestedList(nestedList) {
+  const flattenedList = [];
+
+  function flattenHelper(list, prefix) {
+    for (let i = 0; i < list.length; i++) {
+      if (Array.isArray(list[i])) {
+        flattenHelper(list[i], `${prefix}.${list[i][0]}`);
+      } else {
+        const str = prefix.replace(`${list[i]}`, '').trim();
+        flattenedList.push(`${str}${list[i]}`);
+      }
+    }
+  }
+
+  for (let i = 0; i < nestedList.length; i++) {
+    flattenHelper(nestedList[i], nestedList[i][0]);
+  }
+
+  return flattenedList;
+}
 
 const useAssociationNames = (collection) => {
   const { getCollectionFields } = useCollectionManager();
@@ -107,19 +142,15 @@ const useAssociationNames = (collection) => {
     return buf;
   }, data);
   const associations = data.filter((g) => g.length);
-  const appends = associations.map((v) => {
-    return v.join('.');
-  });
-
-  const updateAssociationValues = associations.map((k) => {
+  const appends = flattenNestedList(associations);
+  const updateAssociationValues = associations.concat().map((k) => {
     return k.map((v, index) => {
       const s = index > 0 ? k.slice(0, index + 1) : [v];
       return s.join('.');
     });
   });
-  return { appends, updateAssociationValues };
+  return { appends, updateAssociationValues: appends };
 };
-
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
@@ -128,6 +159,7 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
+
   const { appends, updateAssociationValues } = useAssociationNames(collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
