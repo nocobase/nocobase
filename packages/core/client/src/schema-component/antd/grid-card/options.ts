@@ -1,18 +1,21 @@
 export const pageSizeOptions = [12, 24, 60, 96, 120];
-export const gridSizes = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
+export const gridSizes = ['xs', 'md', 'lg', 'xxl'];
+export const screenSizeTitleMaps = {
+  xs: 'Phone device',
+  md: 'Tablet device',
+  lg: 'Desktop device',
+  xxl: 'Large screen device',
+};
 export const screenSizeMaps = {
-  xs: '< 576',
-  sm: '≥ 576',
+  xs: '< 768',
   md: '≥ 768',
   lg: '≥ 992',
-  xl: '≥ 1200',
   xxl: '≥ 1600',
 };
+
 export const defaultColumnCount = {
   xs: 1,
-  sm: 1,
   md: 2,
   lg: 3,
-  xl: 4,
   xxl: 4,
 };

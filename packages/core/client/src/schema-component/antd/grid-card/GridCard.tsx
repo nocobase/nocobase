@@ -114,6 +114,8 @@ const InternalGridCard = (props) => {
           dataSource={field.value}
           grid={{
             ...columnCount,
+            sm: columnCount.xs,
+            xl: columnCount.lg,
             gutter: [rowGutter, rowGutter],
           }}
           renderItem={(item, index) => {

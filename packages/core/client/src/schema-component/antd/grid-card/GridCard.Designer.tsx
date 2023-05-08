@@ -11,23 +11,13 @@ import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { SchemaComponentOptions } from '../../core';
-import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps } from './options';
+import { defaultColumnCount, gridSizes, pageSizeOptions, screenSizeMaps, screenSizeTitleMaps } from './options';
+Slider;
 
 const columnCountMarks = [1, 2, 3, 4, 6, 8, 12, 24].reduce((obj, cur) => {
   obj[cur] = cur;
   return obj;
 }, {});
-
-const columnCountSchema = {
-  'x-component': 'Slider',
-  'x-decorator': 'FormItem',
-  'x-component-props': {
-    min: 1,
-    max: 24,
-    marks: columnCountMarks,
-    step: null,
-  },
-};
 
 export const GridCardDesigner = () => {
   const { name, title } = useCollection();
@@ -43,12 +33,32 @@ export const GridCardDesigner = () => {
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const columnCount = field.decoratorProps.columnCount || defaultColumnCount;
 
+  const columnCountSchema = useMemo(() => {
+    return {
+      'x-component': 'Slider',
+      'x-decorator': 'FormItem',
+      'x-component-props': {
+        min: 1,
+        max: 24,
+        marks: columnCountMarks,
+        tooltip: {
+          formatter: (value) => `${value}${t('Column')}`,
+        },
+        step: null,
+      },
+    };
+  }, [t]);
+
   const columnCountProperties = useMemo(() => {
     return gridSizes.reduce((o, k) => {
-      o[k] = { ...columnCountSchema, title: k, description: `${t('Screen')} ${screenSizeMaps[k]} ${t('pixels')}` };
+      o[k] = {
+        ...columnCountSchema,
+        title: t(screenSizeTitleMaps[k]),
+        description: `${t('Screen size')} ${screenSizeMaps[k]} ${t('pixels')}`,
+      };
       return o;
     }, {});
-  }, [t]);
+  }, [columnCountSchema, t]);
 
   const sort = defaultSort?.map((item: string) => {
     return item.startsWith('-')
@@ -66,12 +76,12 @@ export const GridCardDesigner = () => {
       <SchemaComponentOptions components={{ Slider }}>
         <SchemaSettings.BlockTitleItem />
         <SchemaSettings.ModalItem
-          title={t('Set the column count of the row')}
+          title={t('Set the count of columns displayed in a row')}
           initialValues={columnCount}
           schema={
             {
               type: 'object',
-              title: t('Set the column count of the row'),
+              title: t('Set the count of columns displayed in a row'),
               properties: columnCountProperties,
             } as ISchema
           }
