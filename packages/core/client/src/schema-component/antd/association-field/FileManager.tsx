@@ -84,7 +84,7 @@ const InternalFileManager = (props) => {
   };
 
   useEffect(() => {
-    if (value) {
+    if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
         const label = option[fieldNames.label];
         return {
