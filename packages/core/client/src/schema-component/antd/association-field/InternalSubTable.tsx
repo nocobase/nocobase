@@ -55,8 +55,7 @@ const useTableSelectorProps = () => {
 export const useTableBlockProps = () => {
   const field: any = useField();
   const tableProps = useTableP();
-  const { multiple, selectedRows, tableData, options, collectionField } = useContext(RecordPickerContext);
-
+  const { tableData } = useContext(RecordPickerContext);
   useEffect(() => {
     field.value = tableData;
   }, [tableData]);
@@ -103,7 +102,6 @@ export const InternalSubTable: any = observer((props: any) => {
         dragSort: false,
       }),
       insertSubTable(schema.SubTable);
-    field.value = [];
   }, []);
 
   const usePickActionProps = () => {
