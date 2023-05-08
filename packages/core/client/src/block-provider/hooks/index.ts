@@ -21,6 +21,7 @@ import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { formatParamsIntoObject } from '../../schema-component/antd/action/utils';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -574,15 +575,27 @@ export const useCustomizeRequestActionProps = () => {
   const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
   const { setVisible } = useActionContext();
+  const uid = actionSchema['x-uid'];
+  const { t } = useTranslation();
 
   return {
     async onClick() {
-      const { skipValidator, onSuccess, requestSettings } = actionSchema?.['x-action-settings'] ?? {};
+      const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
-      console.log('submit', xAction);
+
+      const roles = await apiClient.request({ url: 'customrequestRoles:list' });
+      const currentRoles = currentUser.roles.map((item) => item.name);
+
+      const disabled = !roles?.data.data
+        ?.filter((item) => currentRoles.includes(item.roleName))
+        ?.map((item) => item.customRequestKey)
+        ?.includes(uid);
+      if (disabled) return message.error(t('The current role has no request permission'));
+      const requestSettings = (await apiClient.request({ url: `/customRequest:get/${uid}` }))?.data.data?.options;
       if (!requestSettings['url']) {
         return;
       }
+
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
@@ -598,15 +611,17 @@ export const useCustomizeRequestActionProps = () => {
       const requestBody = {
         url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
         method: requestSettings['method'],
-        headers: parse(headers)({ currentRecord, currentUser }),
-        params: parse(params)({ currentRecord, currentUser }),
+        headers: parse(formatParamsIntoObject(headers))({ currentRecord, currentUser }),
+        params: parse(formatParamsIntoObject(params))({ currentRecord, currentUser }),
         data: parse(data)({ currentRecord, currentUser }),
       };
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
         await apiClient.request({
-          ...requestBody,
+          url: 'customRequest:send',
+          method: 'post',
+          data: requestBody,
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

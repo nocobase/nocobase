@@ -51,3 +51,13 @@ export const linkageAction = (operator, field, condition, values) => {
       return null;
   }
 };
+
+export const formatParamsIntoObject = (object: { key: string; value: string }[]) => {
+  return object.reduce((prev, curr) => {
+    prev[curr?.key] = curr.value;
+    return prev;
+  }, {});
+};
+export const formatParamsIntoKeyValue = (object: Record<string, unknown>) => {
+  return Object.entries(object || {})?.map((item) => ({ key: item[0], value: item[1] }));
+};

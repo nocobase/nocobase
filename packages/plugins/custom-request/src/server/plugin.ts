@@ -22,8 +22,8 @@ export class CustomRequestPlugin extends Plugin {
       actions: customRequestRolesActions,
     });
 
-    this.app.acl.allow(NAMESPACE, ['get', 'list'], 'loggedIn');
-    this.app.acl.allow(ROLE_NAMESPACE, ['get', 'set'], 'loggedIn');
+    this.app.acl.allow(NAMESPACE, ['get', 'list', 'send'], 'loggedIn');
+    this.app.acl.allow(ROLE_NAMESPACE, ['get', 'set', 'list'], 'loggedIn');
   }
 
   async load() {

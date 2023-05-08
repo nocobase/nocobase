@@ -677,5 +677,6 @@ export default {
   'Only support standard JSON data': 'Suporta somente dados JSON padrão',
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" somente suporta "application/json" e não precisa ser especificado',
-  "Request name":"Solicitar nome"
+  "Request name":"Solicitar nome",
+  "The current role has no request permission":"A função atual não tem permissão de solicitação"
 };

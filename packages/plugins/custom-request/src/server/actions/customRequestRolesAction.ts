@@ -11,7 +11,7 @@ export const customRequestRolesActions = {
     const repo = getRepositoryFromCtx(ctx);
     const key = values.filterByTk;
 
-    const record = await repo.findOne({
+    const record = await repo.find({
       filter: { customRequestKey: key },
     });
     ctx.body = record || {};

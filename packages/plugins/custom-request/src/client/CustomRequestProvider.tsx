@@ -1,7 +1,7 @@
 import { useRequest } from '@nocobase/client';
 import React, { createContext, useContext } from 'react';
 
-const CustomRequestContext = createContext(null);
+export const CustomRequestContext = createContext(null);
 
 export const useCustomRequest = () => {
   return useContext(CustomRequestContext);
@@ -18,6 +18,7 @@ export const CustomRequestProvider = (props) => {
         service,
         roleService,
         items,
+        rolesData: roleService.data?.data,
       }}
     >
       {props.children}

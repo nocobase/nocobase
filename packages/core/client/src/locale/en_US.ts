@@ -705,5 +705,6 @@ export default {
   '"Content-Type" only support "application/json", and no need to specify':
     '"Content-Type" only support "application/json", and no need to specify',
   'Input request data': 'Input request data',
-  'Request name':'Request name'
+  'Request name':'Request name',
+  "The current role has no request permission":"The current role has no request permission"
 };

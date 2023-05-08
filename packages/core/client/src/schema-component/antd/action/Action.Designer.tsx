@@ -51,7 +51,7 @@ export const ActionDesigner = (props) => {
   const requestSettingsSchema = useCustomRequestSchema();
   const api = useAPIClient();
   const record = useRecord();
-  const customRequestCache = useRef<Record<string, boolean>>(
+  const customRequestCache = useRef<Record<string, any>>(
     JSON.parse(localStorage.getItem('customRequestCache') || '{}'),
   );
 
@@ -89,31 +89,29 @@ export const ActionDesigner = (props) => {
   useEffect(() => {
     if (!customRequestCache.current[fieldSchema?.['x-uid']]) {
       customRequestService.run();
-      customRequestRoleService.run();
+    } else {
+      setCustomRequestSettings(customRequestCache.current[fieldSchema?.['x-uid']]);
     }
     return () => {
       customRequestCache.current = {};
       localStorage.setItem('customRequestCache', '');
     };
-  }, [field.address]);
+  }, []);
+  const updateLocalCustomRequestSettings = (params: Record<string, any>) => {
+    customRequestCache.current[fieldSchema?.['x-uid']] = params;
+    localStorage.setItem('customRequestCache', JSON.stringify(customRequestCache.current));
+  };
   const customRequestService = useRequest(
     { url: `/customRequest:get/${fieldSchema?.['x-uid']}` },
     {
       manual: true,
       onSuccess(data) {
-        setCustomRequestSettings(data.data.options);
-        customRequestCache.current[fieldSchema?.['x-uid']] = true;
-        localStorage.setItem('customRequestCache', JSON.stringify(customRequestCache.current));
-      },
-    },
-  );
-  const customRequestRoleService = useRequest(
-    { url: `/customrequestRoles:get/${fieldSchema?.['x-uid']}` },
-    {
-      manual: true,
-      onSuccess(data) {
-        console.log(data, 'customRequestServicedata');
-        // setCustomRequestSettings(data.data.options);
+        const params = {
+          name: data.data.name,
+          ...data.data.options,
+        };
+        setCustomRequestSettings(params);
+        updateLocalCustomRequestSettings(params);
       },
     },
   );
@@ -245,6 +243,7 @@ export const ActionDesigner = (props) => {
                 },
               });
               message.success(t('Saved successfully'), 0.2);
+              updateLocalCustomRequestSettings(tempRequestSettings);
             }}
           />
         )}

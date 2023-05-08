@@ -1,5 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { NAMESPACE, ROLE_NAMESPACE } from '../constants';
+import axios from 'axios';
 
 const getRepositoryFromCtx = (ctx: Context, nameSpace = NAMESPACE) => {
   return ctx.db.getCollection(nameSpace).repository;
@@ -59,6 +60,14 @@ export const customRequestActions = {
     const repo = getRepositoryFromCtx(ctx);
     const record = await repo.find();
     ctx.body = record || [];
+    return next();
+  },
+  send: async (ctx: Context, next) => {
+    const { params: values } = ctx.action;
+    const res = await axios({
+      ...values?.values,
+    });
+    ctx.body = res?.data;
     return next();
   },
 };

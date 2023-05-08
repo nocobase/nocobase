@@ -24,6 +24,7 @@ export class PresetNocoBase extends Plugin {
     'iframe-block',
     'formula-field',
     'charts',
+    'custom-request',
   ];
 
   localPlugins = [
