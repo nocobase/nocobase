@@ -1,5 +1,5 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
@@ -33,12 +33,19 @@ export const RecordAssociationFormBlockInitializer = (props) => {
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
               template: s,
+              // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+              createdByAssoc: true,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
             }
             insert(blockSchema);
           } else {
+            try {
+              s['x-decorator-props'].createdByAssoc = true;
+            } catch (err) {
+              console.error(err);
+            }
             insert(s);
           }
         } else {
@@ -51,6 +58,8 @@ export const RecordAssociationFormBlockInitializer = (props) => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               actionInitializers,
+              // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+              createdByAssoc: true,
             }),
           );
         }

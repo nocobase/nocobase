@@ -1,5 +1,5 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 
 import { useBlockRequestContext } from '../../block-provider';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -33,6 +33,8 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
               template: s,
+              // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+              createdByAssoc: true,
             });
             if (item.mode === 'reference') {
               blockSchema['x-template-key'] = item.template.key;
@@ -51,6 +53,7 @@ export const RecordReadPrettyAssociationFormBlockInitializer = (props) => {
               action: 'get',
               useSourceId: '{{ useSourceIdFromParentRecord }}',
               useParams: '{{ useParamsFromRecord }}',
+              createdByAssoc: true,
             }),
           );
         }

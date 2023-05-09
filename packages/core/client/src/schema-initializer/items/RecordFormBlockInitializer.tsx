@@ -1,5 +1,5 @@
-import React from 'react';
 import { FormOutlined } from '@ant-design/icons';
+import React from 'react';
 import { useBlockAssociationContext } from '../../block-provider';
 import { useCollection } from '../../collection-manager';
 import { useSchemaTemplateManager } from '../../schema-templates';
@@ -9,7 +9,8 @@ import { createFormBlockSchema, useRecordCollectionDataSourceItems } from '../ut
 export const RecordFormBlockInitializer = (props) => {
   const { onCreateBlockSchema, componentType, createBlockSchema, insert, targetCollection, ...others } = props;
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const collection = targetCollection || useCollection();
+  const defaultCollection = useCollection();
+  const collection = targetCollection || defaultCollection;
   const association = useBlockAssociationContext();
   return (
     <SchemaInitializer.Item

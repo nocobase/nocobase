@@ -404,7 +404,7 @@ export const obo: IField = {
 
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+      schema['x-component-props'].fieldNames.label = targetCollection?.titleField || 'id';
     }
   },
   properties: {

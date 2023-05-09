@@ -2,14 +2,53 @@ import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollection } from '../collection-manager';
-import { RecordProvider, useRecord } from '../record-provider';
+import { isToOne, useCollection, useCollectionManager } from '../collection-manager';
+import { RecordProvider, getLinkedParentRecord, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useAssociationNames } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
+
+interface MultipleRecordProviderProps {
+  /** 当前关系字段的 collectionName 与 fieldName 的拼接字符串，例如：'collectionName.fieldName' */
+  association: string;
+  /** 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块 */
+  createdByAssoc: boolean;
+  children?: any;
+}
+
+const AddRecordProvider = (props: MultipleRecordProviderProps) => {
+  const { children, association, createdByAssoc } = props;
+  const { getCollectionField } = useCollectionManager();
+  let record = useRecord();
+
+  if (isEmpty(record)) {
+    return children;
+  }
+
+  if (!createdByAssoc || !association) {
+    return children;
+  }
+
+  const collectionField = getCollectionField(association);
+  if (!collectionField || !isToOne(collectionField)) {
+    return children;
+  }
+
+  if (record[collectionField.name]) {
+    record = getLinkedParentRecord(record[collectionField.name], record);
+  } else if (record[collectionField.foreignKey || `${collectionField.name}Id`]) {
+    record = {
+      [collectionField.targetKey || 'id']: record[collectionField.foreignKey || `${collectionField.name}Id`],
+    };
+  } else {
+    return children;
+  }
+
+  return <RecordProvider record={record}>{children}</RecordProvider>;
+};
 
 const InternalFormBlockProvider = (props) => {
   const { action, readPretty, params, updateAssociationValues } = props;
@@ -87,9 +126,11 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'} params={params}>
-        <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
-      </BlockProvider>
+      <AddRecordProvider {...props}>
+        <BlockProvider {...props} block={'form'} params={params}>
+          <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
+        </BlockProvider>
+      </AddRecordProvider>
     )
   );
 };

@@ -1,14 +1,23 @@
+import _ from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useCurrentUserContext } from '../user';
 
 export const RecordContext = createContext({});
 export const RecordIndexContext = createContext(null);
 
-export const RecordProvider: React.FC<{ record: any; parent?: any }> = (props) => {
+export const getLinkedParentRecord = (record, parent) => {
+  if (!record) {
+    return {};
+  }
+  record = _.cloneDeep(record);
+  record['__parent'] = _.cloneDeep(parent);
+  return record;
+};
+
+export const RecordProvider: React.FC<{ record: object; parent?: any }> = (props) => {
   const { record, children, parent = false } = props;
   const __parent = useContext(RecordContext);
-  const value = { ...record };
-  value['__parent'] = parent ? parent : __parent;
+  const value = getLinkedParentRecord(record, parent ? parent : __parent);
   return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
 };
 

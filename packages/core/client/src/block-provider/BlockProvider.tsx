@@ -2,8 +2,8 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
-import merge from 'deepmerge';
 import { Col, Row } from 'antd';
+import merge from 'deepmerge';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -20,7 +20,6 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../coll
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
-import _ from 'lodash';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -54,7 +53,8 @@ const useResource = (props: UseResourceProps) => {
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
-  const sourceId = useSourceId?.();
+  const sourceId = useSourceId?.(props);
+
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
@@ -315,10 +315,11 @@ export const useSourceIdFromRecord = () => {
   }
 };
 
-export const useSourceIdFromParentRecord = () => {
+export const useSourceIdFromParentRecord = (props: UseResourceProps) => {
+  const { association } = props;
   const record = useRecord();
   const { getCollectionField } = useCollectionManager();
-  const assoc = useContext(BlockAssociationContext);
+  const assoc = useContext(BlockAssociationContext) || association;
   if (assoc) {
     const association = getCollectionField(assoc);
     return record?.__parent?.[association.sourceKey || 'id'];

@@ -1,10 +1,9 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
-import { Typography } from 'antd';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
-import { RecordProvider, useRecord } from '../../../record-provider';
+import { getLinkedParentRecord, RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
@@ -53,6 +52,7 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
     toArr(props.value).map((record, index, arr) => {
       const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
       const text = getLabelFormatValue(labelUiSchema, val, true);
+
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
@@ -92,15 +92,33 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
   );
 
   const renderRecordProvider = () => {
-    const collectionFieldNames = fieldSchema?.['x-collection-field']?.split('.');
+    const names = (fieldSchema?.name as string)?.split('.') || [];
 
-    return collectionFieldNames && collectionFieldNames.length > 2 ? (
-      <RecordProvider record={recordCtx[collectionFieldNames[1]]}>
-        <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
-      </RecordProvider>
-    ) : (
-      <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
-    );
+    // 最后一个是在用户点击的时候设置的，这里不用处理
+    names.pop();
+
+    if (names.length > 0) {
+      let parentRecord = recordCtx;
+      try {
+        for (const name of names) {
+          // 根据关系字段的层级关系链接 record
+          // TODO: 当被选中的字段没有在当前区块显示的时候，是不会存在数据的，所以这里会报错，当存在这种情况时，需要刷新一下区块的数据，应该就会包含当前字段的数据了
+          parentRecord = getLinkedParentRecord(parentRecord[name], parentRecord);
+        }
+      } catch (err) {
+        console.error(err);
+        throw new Error(`ReadPrettyRecordPicker: ${fieldSchema.name} is not a valid field name`);
+      }
+
+      return (
+        <RecordProvider record={parentRecord}>
+          {/* 在这里再把用户点击的关系字段的数据作为 record 传进去 */}
+          <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>
+        </RecordProvider>
+      );
+    }
+
+    return <RecordProvider record={record}>{renderWithoutTableFieldResourceProvider()}</RecordProvider>;
   };
 
   return collectionField ? (

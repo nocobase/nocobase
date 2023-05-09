@@ -1,28 +1,39 @@
 import { Schema, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
+import { SchemaInitializer, SchemaInitializerItemOptions, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 
-const recursiveParent = (schema: Schema) => {
+/**
+ * 获取最近的一个 block 的 collection
+ * @param schema
+ * @returns
+ */
+const getBlockCollection = (schema: Schema) => {
   if (!schema) return null;
 
   if (schema['x-decorator']?.endsWith('BlockProvider')) {
-    return schema['x-decorator-props']?.['collection'];
+    return schema['x-decorator-props']?.collection;
   } else {
-    return recursiveParent(schema.parent);
+    return getBlockCollection(schema.parent);
   }
 };
 
 const useRelationFields = () => {
+  // 这里指的是当前弹窗的 schema
+  // TODO: 是否可以删除掉？因为把下面的判断删除掉也可以获取到正确的 collection
   const fieldSchema = useFieldSchema();
+
   const { getCollectionFields } = useCollectionManager();
+  // 1.如果是点击 Table 的查看按钮触发的弹窗显示，则这里指的是 Table 区块的 collection
+  // 2.如果是点击关系字段触发的弹窗，则这里指的是关系字段的 target collection
+  const { fields: collectionFields, name } = useCollection();
   let fields = [];
 
   if (fieldSchema['x-initializer']) {
-    fields = useCollection().fields;
+    fields = collectionFields;
   } else {
-    const collection = recursiveParent(fieldSchema.parent);
+    const collection = getBlockCollection(fieldSchema.parent);
     if (collection) {
       fields = getCollectionFields(collection);
     }
@@ -104,7 +115,7 @@ const useRelationFields = () => {
   return relationFields;
 };
 
-const useDetailCollections = (props) => {
+const getDetailCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const detailCollections = [
     {
@@ -132,7 +143,7 @@ const useDetailCollections = (props) => {
   return detailCollections;
 };
 
-const useFormCollections = (props) => {
+const getFormCollections = (props) => {
   const { actionInitializers, childrenCollections, collection } = props;
   const formCollections = [
     {
@@ -188,7 +199,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'details',
                   type: 'subMenu',
                   title: '{{t("Details")}}',
-                  children: useDetailCollections({
+                  children: getDetailCollections({
                     ...props,
                     childrenCollections: detailChildrenCollections,
                     collection,
@@ -206,7 +217,7 @@ export const RecordBlockInitializers = (props: any) => {
                   key: 'form',
                   type: 'subMenu',
                   title: '{{t("Form")}}',
-                  children: useFormCollections({
+                  children: getFormCollections({
                     ...props,
                     childrenCollections: formChildrenCollections,
                     collection,

@@ -1,14 +1,14 @@
-import React, { useContext } from 'react';
+import { TableOutlined } from '@ant-design/icons';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { SchemaOptionsContext } from '@formily/react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TableOutlined } from '@ant-design/icons';
 
 import { useCollectionManager } from '../../collection-manager';
+import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { useSchemaTemplateManager } from '../../schema-templates';
 import { SchemaInitializer } from '../SchemaInitializer';
 import { createCalendarBlockSchema, useRecordCollectionDataSourceItems } from '../utils';
-import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 
 export const RecordAssociationCalendarBlockInitializer = (props) => {
   const { item, onCreateBlockSchema, componentType, createBlockSchema, insert, ...others } = props;
@@ -27,6 +27,11 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
       onClick={async ({ item }) => {
         if (item.template) {
           const s = await getTemplateSchemaByMode(item);
+          try {
+            s['x-decorator-props'].createdByAssoc = true;
+          } catch (err) {
+            console.error(err);
+          }
           insert(s);
         } else {
           const stringFields = collection?.fields
@@ -90,6 +95,8 @@ export const RecordAssociationCalendarBlockInitializer = (props) => {
               fieldNames: {
                 ...values,
               },
+              // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+              createdByAssoc: true,
             }),
           );
         }

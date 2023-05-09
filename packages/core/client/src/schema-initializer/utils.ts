@@ -148,7 +148,7 @@ export const useAssociatedTableColumnInitializerFields = () => {
                 field: subField,
                 readPretty: true,
                 block: 'Table',
-                targetCollection: getCollection(field.target),
+                targetCollection: getCollection(subField.target),
               });
             },
             field: subField,
@@ -338,7 +338,7 @@ export const useAssociatedFormItemInitializerFields = (options?: any) => {
       const subFields = getCollectionFields(field.target);
       const items = subFields
         ?.filter(
-          (subField) => subField?.interface && !['subTable'].includes(subField?.interface) && !subField.treeChildren,
+          (subField) => subField?.interface && !['subTable'].includes(subField.interface) && !subField.treeChildren,
         )
         ?.map((subField) => {
           const interfaceConfig = getInterface(subField.interface);
@@ -397,9 +397,6 @@ const getItem = (
       title: field.uiSchema?.title,
       children: subFields
         .map((subField) =>
-          // 使用 | 分隔，是为了防止 form.values 中出现 { a: { b: 1 } } 的情况
-          // 使用 | 分隔后，form.values 中会出现 { 'a|b': 1 } 的情况，这种情况下
-          // 就可以知道该字段是一个关系字段中的输入框，进而特殊处理
           getItem(subField, `${schemaName}.${subField.name}`, collectionName, getCollectionFields, [
             ...processedCollections,
             field.target,
@@ -888,6 +885,8 @@ export const createDetailsBlockSchema = (options) => {
     association,
     resource,
     template,
+    // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+    createdByAssoc,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -905,6 +904,7 @@ export const createDetailsBlockSchema = (options) => {
         pageSize: 1,
       },
       // useParams: '{{ useParamsFromRecord }}',
+      createdByAssoc,
       ...others,
     },
     'x-designer': 'DetailsDesigner',
@@ -1130,6 +1130,8 @@ export const createFormBlockSchema = (options) => {
     association,
     action,
     template,
+    // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+    createdByAssoc,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1146,6 +1148,7 @@ export const createFormBlockSchema = (options) => {
       resource: resourceName,
       collection,
       association,
+      createdByAssoc,
       // action: 'get',
       // useParams: '{{ useParamsFromRecord }}',
     },
@@ -1253,6 +1256,8 @@ export const createReadPrettyFormBlockSchema = (options) => {
     association,
     resource,
     template,
+    // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+    createdByAssoc,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1267,6 +1272,7 @@ export const createReadPrettyFormBlockSchema = (options) => {
       readPretty: true,
       action: 'get',
       useParams: '{{ useParamsFromRecord }}',
+      createdByAssoc,
       ...others,
     },
     'x-designer': 'FormV2.ReadPrettyDesigner',
@@ -1318,6 +1324,8 @@ export const createTableBlockSchema = (options) => {
     TableBlockDesigner,
     blockType,
     pageSize = 20,
+    // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+    createdByAssoc,
     ...others
   } = options;
   const schema: ISchema = {
@@ -1336,6 +1344,7 @@ export const createTableBlockSchema = (options) => {
       dragSort: false,
       disableTemplate: disableTemplate ?? false,
       blockType,
+      createdByAssoc,
       ...others,
     },
     'x-designer': TableBlockDesigner ?? 'TableBlockDesigner',
@@ -1471,7 +1480,14 @@ export const createTableSelectorSchema = (options) => {
 };
 
 export const createCalendarBlockSchema = (options) => {
-  const { collection, resource, fieldNames, ...others } = options;
+  const {
+    collection,
+    resource,
+    fieldNames,
+    // 是否是通过 RecordBlockInitializers 中的 Relationship blocks 中的选项创建的区块
+    createdByAssoc,
+    ...others
+  } = options;
   const schema: ISchema = {
     type: 'void',
     'x-acl-action': `${resource || collection}:list`,
@@ -1487,6 +1503,7 @@ export const createCalendarBlockSchema = (options) => {
       params: {
         paginate: false,
       },
+      createdByAssoc,
       ...others,
     },
     'x-designer': 'CalendarV2.Designer',

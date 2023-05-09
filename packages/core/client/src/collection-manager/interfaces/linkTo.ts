@@ -49,7 +49,7 @@ export const linkTo: IField = {
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
-      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
+      schema['x-component-props'].fieldNames.label = targetCollection?.titleField || 'id';
     }
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};

@@ -252,7 +252,7 @@ export const useCollectionManager = () => {
     getCollectionFieldsOptions,
     getCurrentCollectionFields,
     getCollection,
-    getCollectionJoinField(name: string) {
+    getCollectionJoinField(name: string): CollectionFieldOptions {
       if (!name) {
         return;
       }
