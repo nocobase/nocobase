@@ -107,7 +107,6 @@ export class ViewFieldInference {
       rawFields.push([name, inferResult]);
     }
 
-    console.log(rawFields);
     return Object.fromEntries(rawFields);
   }
 
