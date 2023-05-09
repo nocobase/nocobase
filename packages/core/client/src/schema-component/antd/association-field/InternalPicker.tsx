@@ -168,7 +168,7 @@ export const InternalPicker = observer((props: any) => {
         </div>
         {isAllowAddNew && (
           <Button
-            style={{ width: '15%' }}
+            style={{ width: 'auto' }}
             type={'default'}
             onClick={() => {
               addbuttonClick();
