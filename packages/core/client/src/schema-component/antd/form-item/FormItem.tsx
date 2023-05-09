@@ -117,6 +117,7 @@ FormItem.Designer = function Designer() {
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldModeOptions = useFieldModeOptions();
   const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const isTableField = fieldSchema['x-component'] === 'TableField';
   const isFileField = isFileCollection(targetCollection);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
@@ -658,7 +659,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isAssociationField && fieldModeOptions && (
+      {isAssociationField && fieldModeOptions && !isTableField && (
         <SchemaSettings.SelectItem
           key="field-mode"
           title={t('Field mode')}

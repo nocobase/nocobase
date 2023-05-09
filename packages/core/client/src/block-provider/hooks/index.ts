@@ -1057,7 +1057,7 @@ export const useAssociationNames = (collection) => {
           let kk = buf.concat();
           return getNesterAppends(s, kk);
         } else {
-          return getAssociationAppends(s, buf);
+          return s['x-component'] !== 'TableV2' && getAssociationAppends(s, buf);
         }
       }
     }, arr);
@@ -1067,7 +1067,7 @@ export const useAssociationNames = (collection) => {
     function flattenHelper(list, prefix) {
       for (let i = 0; i < list.length; i++) {
         if (Array.isArray(list[i])) {
-          flattenHelper(list[i], `${prefix}.${list[i][0]}`);
+          `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
         } else {
           const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
           !list.includes(str) && flattenedList.push(`${str}${list[i]}`);
@@ -1086,6 +1086,7 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
+  console.log(formSchema.toJSON());
   const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
