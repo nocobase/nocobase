@@ -1,17 +1,21 @@
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { getValues } from './shared';
-import { Select, defaultFieldNames } from '../select';
 import { useRequest } from '../../../api-client';
+import { useCollectionManager } from '../../../collection-manager';
 import { useRecord } from '../../../record-provider';
 import { useActionContext } from '../action';
+import { Select, defaultFieldNames } from '../select';
+import { getValues } from './shared';
 
-export const ReadPretty = observer((props: any) => {
+export const ReadPretty = observer((props: any = {}) => {
+  const { service } = props;
   const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
   const field = useField<any>();
   const fieldSchema = useFieldSchema();
   const record = useRecord();
   const { snapshot } = useActionContext();
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
 
   const { data } = useRequest(
     snapshot
@@ -21,6 +25,7 @@ export const ReadPretty = observer((props: any) => {
       : {
           action: 'list',
           ...props.service,
+          resource: service?.resource || collectionField?.target,
           params: {
             paginate: false,
             filter: {

@@ -357,6 +357,7 @@ AssociationSelect.Designer = function Designer() {
                 ...collectionField?.uiSchema?.['x-component-props'],
                 ...fieldSchema['x-component-props'],
               },
+              'x-read-pretty': field.readPretty,
             };
 
             interfaceConfig?.schemaInitialize?.(schema, {
