@@ -6,7 +6,7 @@ import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 
@@ -39,9 +39,9 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
-    const { getField } = useCollection();
     const { getCollectionJoinField, getInterface } = useCollectionManager();
-    const collectionField = getField(fieldSchema.name);
+    const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
+
     const targetField =
       _targetField ||
       (collectionField?.target &&
@@ -115,6 +115,7 @@ const InternalRemoteSelect = connect(
       {
         action: 'list',
         ...service,
+        resource: service?.resource || collectionField?.target,
         params: {
           pageSize: 200,
           ...service?.params,
