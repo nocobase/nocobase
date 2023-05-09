@@ -434,7 +434,7 @@ SELECT * FROM numbers;
         name: 'users',
         fields: [
           { name: 'name', type: 'string' },
-          { type: 'belongsTo', name: 'group', foreignKey: 'group_id', interface: 'test-interface' },
+          { type: 'belongsTo', name: 'group', foreignKey: 'groupId', interface: 'test-interface' },
         ],
       },
       context: {},
@@ -481,5 +481,11 @@ SELECT * FROM numbers;
 
     expect(groupField.type).toEqual('belongsTo');
     expect(groupField.interface).toEqual('test-interface');
+
+    const listResponse1 = await agent.resource(viewName).list({
+      appends: ['group'],
+    });
+
+    expect(listResponse1.status).toEqual(200);
   });
 });

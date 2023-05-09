@@ -297,7 +297,7 @@ describe('view collection', function () {
         name: 'view_collection',
         viewName: 'test_view',
         isView: true,
-        fields: [{ type: 'string', name: 'Uppercase', field: 'Uppercase' }],
+        fields: [{ type: 'string', name: 'upper_case', field: 'Uppercase' }],
         schema: db.inDialect('postgres') ? 'public' : undefined,
       },
       context: {},
@@ -305,7 +305,7 @@ describe('view collection', function () {
 
     const viewCollection = db.getCollection('view_collection');
 
-    expect(viewCollection.model.rawAttributes['Uppercase'].field).toEqual('Uppercase');
+    expect(viewCollection.model.rawAttributes['upper_case'].field).toEqual('Uppercase');
     const results = await viewCollection.repository.find();
     expect(results.length).toBe(1);
   });

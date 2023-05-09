@@ -483,6 +483,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     })();
 
     const collection = new collectionKlass(options, { database: this });
+
     this.collections.set(collection.name, collection);
 
     this.emit('afterDefineCollection', collection);
@@ -657,7 +658,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       throw Error(`unsupported field type ${type}`);
     }
 
-    if (options.field && context.collection.options.underscored) {
+    const { collection } = context;
+
+    if (options.field && collection.options.underscored && !collection.isView()) {
       options.field = snakeCase(options.field);
     }
 
