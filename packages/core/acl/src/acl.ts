@@ -1,5 +1,5 @@
 import { Action } from '@nocobase/resourcer';
-import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, getDateVars, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import lodash from 'lodash';
@@ -343,6 +343,7 @@ export class ACL extends EventEmitter {
           ctx: {
             state,
           },
+          $date: getDateVars(),
           $user: async () => state.currentUser,
         },
       });

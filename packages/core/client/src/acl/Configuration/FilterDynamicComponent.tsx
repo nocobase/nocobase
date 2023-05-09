@@ -3,6 +3,7 @@ import { useCompile } from '../../schema-component';
 import { useFilterOptions } from '../../schema-component/antd/filter';
 import { useValues } from '../../schema-component/antd/filter/useValues';
 import { Variable } from '../../schema-component/antd/variable';
+import { useDateVariable } from '../../schema-settings/VariableInput/hooks/useDateVariable';
 
 interface GetOptionsParams {
   schema: any;
@@ -62,10 +63,11 @@ const useUserVariable = ({ schema, operator }) => {
 const useVariableOptions = () => {
   const { operator, schema } = useValues();
   const userVariable = useUserVariable({ schema, operator });
+  const dateVariable = useDateVariable({ operator, schema });
 
   if (!operator || !schema) return [];
 
-  return [userVariable];
+  return [dateVariable, userVariable];
 };
 
 export function FilterDynamicComponent(props) {
