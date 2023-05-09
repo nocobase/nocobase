@@ -102,7 +102,6 @@ export const ReadPrettyRecordPicker: React.FC = observer((props: any) => {
       try {
         for (const name of names) {
           // 根据关系字段的层级关系链接 record
-          // TODO: 当被选中的字段没有在当前区块显示的时候，是不会存在数据的，所以这里会报错，当存在这种情况时，需要刷新一下区块的数据，应该就会包含当前字段的数据了
           parentRecord = getLinkedParentRecord(parentRecord[name], parentRecord);
         }
       } catch (err) {
