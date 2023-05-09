@@ -14,6 +14,8 @@ import { cloneDeep } from 'lodash';
 import { JSONInput } from '../variable/JSONInput';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
+import { findTableOrFormBlockProviderByActionFieldSchema } from './utils';
+import isEmpty from 'lodash/isEmpty';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -63,9 +65,10 @@ export const ActionDesigner = (props) => {
   const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const targetSchema = findTableOrFormBlockProviderByActionFieldSchema(fieldSchema);
+  const defaultCustomRequestName = targetSchema?.['x-component-props']?.title || targetSchema?.['x-uid'] || '';
   const [customRequestSettings, setCustomRequestSettings] = useState({
-    // TODO 区块名/操作名
-    name: '',
+    name: defaultCustomRequestName,
   });
   useEffect(() => {
     const schemaUid = uid();
@@ -106,12 +109,15 @@ export const ActionDesigner = (props) => {
     {
       manual: true,
       onSuccess(data) {
-        const params = {
-          name: data.data.name,
-          ...data.data.options,
-        };
-        setCustomRequestSettings(params);
-        updateLocalCustomRequestSettings(params);
+        if (!isEmpty(data?.data)) {
+          const params = {
+            ...customRequestSettings,
+            name: data.data.name,
+            ...data.data.options,
+          };
+          setCustomRequestSettings(params);
+          updateLocalCustomRequestSettings(params);
+        }
       },
     },
   );
@@ -230,7 +236,7 @@ export const ActionDesigner = (props) => {
             components={{ ArrayItems, Space, JSONInput }}
             title={t('Request settings')}
             schema={requestSettingsSchema}
-            initialValues={customRequestSettings}
+            initialValues={{ name: defaultCustomRequestName }}
             onSubmit={async (requestSettings) => {
               const tempRequestSettings = cloneDeep(requestSettings);
               await api.request({

@@ -1,6 +1,7 @@
 import { last } from 'lodash';
 import { conditionAnalyse } from '../../common/utils/uitls';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
+import { Schema } from '@formily/json-schema';
 
 export const linkageAction = (operator, field, condition, values) => {
   const disableResult = field?.linkageProperty?.disabled || [false];
@@ -58,6 +59,17 @@ export const formatParamsIntoObject = (object: { key: string; value: string }[])
     return prev;
   }, {});
 };
-export const formatParamsIntoKeyValue = (object: Record<string, unknown>) => {
-  return Object.entries(object || {})?.map((item) => ({ key: item[0], value: item[1] }));
+
+export const findTableOrFormBlockProviderByActionFieldSchema = (fieldSchema: Schema) => {
+  let targetSchema = fieldSchema;
+  let targetBlockName = '';
+  if (targetSchema['x-action'] === 'customize:table:request') {
+    targetBlockName = 'TableBlockProvider';
+  } else if (targetSchema['x-action'] === 'customize:form:request') {
+    targetBlockName = 'FormBlockProvider';
+  }
+  while (targetBlockName && targetSchema && targetSchema?.['x-decorator'] !== targetBlockName) {
+    targetSchema = targetSchema?.parent;
+  }
+  return targetSchema;
 };

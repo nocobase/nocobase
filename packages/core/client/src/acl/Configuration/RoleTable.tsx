@@ -1,12 +1,12 @@
 import { Spin } from 'antd';
-import { CustomRequestConfigure } from '../../../../../plugins/custom-request/src/client/CustomRequestConfigure';
-import CustomRequestProvider from '../../../../../plugins/custom-request/src/client';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
 import { MenuItemsProvider } from '../Configuration/MenuItemsProvider';
 import { PermissionProvider, SettingCenterPermissionProvider } from '../Configuration/PermisionProvider';
 import { roleSchema } from './schemas/roles';
+import { CustomRequestConfigure } from './CustomRequestConfigure';
+import { CustomRequestProvider } from './CustomRequestProvider';
 
 const AvailableActionsContext = createContext([]);
 

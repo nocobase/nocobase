@@ -1,8 +1,9 @@
-import { useAPIClient, useRecord } from '@nocobase/client';
+import { useRecord } from '../../record-provider';
 import { Checkbox, message, Table } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCustomRequest } from './index';
+import { useCustomRequest } from './CustomRequestProvider';
+import { useAPIClient } from '../../api-client';
 
 export const CustomRequestConfigure = () => {
   const currentRecord = useRecord();
