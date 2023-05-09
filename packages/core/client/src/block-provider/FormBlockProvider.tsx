@@ -4,11 +4,10 @@ import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
-import { useCollectionManager } from '../collection-manager';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { isArray } from 'mathjs';
+import { useAssociationNames } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
@@ -65,82 +64,6 @@ export const useIsEmptyRecord = () => {
   return keys.length > 0;
 };
 
-function flattenNestedList(nestedList) {
-  const flattenedList = [];
-  function flattenHelper(list, prefix) {
-    for (let i = 0; i < list.length; i++) {
-      if (Array.isArray(list[i])) {
-        flattenHelper(list[i], `${prefix}.${list[i][0]}`);
-      } else {
-        const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
-        flattenedList.push(`${str}${list[i]}`);
-      }
-    }
-  }
-  for (let i = 0; i < nestedList.length; i++) {
-    flattenHelper(nestedList[i], nestedList[i][0]);
-  }
-  return flattenedList;
-}
-
-const useAssociationNames = (collection) => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const collectionFields = getCollectionFields(collection);
-  const associationFields = new Set();
-  for (const collectionField of collectionFields) {
-    if (collectionField.target) {
-      associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
-      for (const field of fields) {
-        if (field.target) {
-          associationFields.add(`${collectionField.name}.${field.name}`);
-        }
-      }
-    }
-  }
-  const fieldSchema = useFieldSchema();
-  const formSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'] === 'FormV2') {
-      return schema;
-    }
-    return buf;
-  }, new Schema({}));
-
-  const getAssociationAppends = (schema, arr = []) => {
-    return schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (
-        s['x-component'] === 'CollectionField' &&
-        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
-      ) {
-        buf.push(s.name);
-        if (s['x-component-props'].mode === 'Nester') {
-          return getAssociationAppends(s, buf);
-        }
-        return buf;
-      } else {
-        if (s['x-component'] === 'Grid') {
-          let kk = buf.concat();
-          return getNesterAppends(s, kk);
-        } else {
-          return getAssociationAppends(s, buf);
-        }
-      }
-    }, arr);
-  };
-
-  const getNesterAppends = (gridSchema, data) => {
-    gridSchema.reduceProperties((buf, s) => {
-      buf.push(getAssociationAppends(s));
-      return buf;
-    }, data);
-    return data.filter((g) => g.length);
-  };
-  const data = getAssociationAppends(formSchema);
-  const associations = data.filter((g) => g.length);
-  const appends = flattenNestedList(associations);
-  return { appends, updateAssociationValues: appends };
-};
 export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
