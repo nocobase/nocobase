@@ -18,9 +18,7 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { getLabelFormatValue, useLabelUiSchema,flatData } from './util';
-
-
+import { getLabelFormatValue, useLabelUiSchema, flatData } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -78,7 +76,7 @@ export const InternalPicker = observer((props: any) => {
   };
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
-  const isAllowAddNew = fieldSchema['x-add-new'] !== false;
+  const isAllowAddNew = fieldSchema['x-add-new'];
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
   const pickerProps = {

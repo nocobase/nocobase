@@ -685,7 +685,7 @@ FormItem.Designer = function Designer() {
         <SchemaSettings.SwitchItem
           key="allowAddNew"
           title={t('Allow add new data')}
-          checked={(fieldSchema['x-add-new'] !== false) as boolean}
+          checked={fieldSchema['x-add-new'] as boolean}
           onChange={(allowAddNew) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],

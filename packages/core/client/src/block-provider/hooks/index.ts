@@ -1091,5 +1091,5 @@ function flattenNestedList(nestedList) {
   for (let i = 0; i < nestedList.length; i++) {
     flattenHelper(nestedList[i], nestedList[i][0]);
   }
-  return flattenedList;
+  return flattenedList.filter((obj) => !obj.startsWith('.'));
 }

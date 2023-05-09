@@ -26,7 +26,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
   const service = useServiceOptions(props);
   const fieldSchema = useFieldSchema();
   const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
-  const isAllowAddNew = fieldSchema['x-add-new'] !== false;
+  const isAllowAddNew = fieldSchema['x-add-new'];
   const insertAddNewer = useInsertSchema('AddNewer');
   useFieldTitle();
   const normalizeValues = useCallback(
@@ -50,6 +50,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
       return normalizeValues(props.value);
     }
   }, [props.value, normalizeValues]);
+  field.value = value;
   return (
     <div key={fieldSchema.name}>
       <Input.Group compact style={{ display: 'flex' }}>
