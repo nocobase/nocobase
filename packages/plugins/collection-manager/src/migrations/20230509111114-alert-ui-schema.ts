@@ -42,7 +42,7 @@ export default class extends Migration {
 
         const uiSchema = fieldRecord.get('uiSchema');
 
-        if (!uiSchema?.['x-component']) {
+        if (uiSchema?.['x-component'] !== 'RecordPicker') {
           continue;
         }
 
