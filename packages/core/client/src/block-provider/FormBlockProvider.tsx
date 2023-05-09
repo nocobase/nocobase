@@ -140,7 +140,7 @@ const useAssociationNames = (collection) => {
   }, new Schema({}));
   const gridSchema = formSchema.properties.grid;
   const data = [];
-  gridSchema.reduceProperties((buf, s) => {
+  gridSchema?.reduceProperties((buf, s) => {
     buf.push(getAssociationAppends(s));
     return buf;
   }, data);
