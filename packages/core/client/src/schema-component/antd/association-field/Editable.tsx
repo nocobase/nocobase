@@ -9,6 +9,7 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 import { InternalFileManager } from './FileManager';
+import { RecordPicker } from '../../antd/record-picker';
 
 export const Editable = observer((props: any) => {
   useEffect(() => {
@@ -22,6 +23,16 @@ export const Editable = observer((props: any) => {
   const collectionField = getField(field.props.name);
   const isFileCollection = getCollection(collectionField?.target).template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
+
+  const isOldRecordPicker = fieldSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'].includes('RecordPicker.')) {
+      return schema;
+    }
+    return buf;
+  }, null);
+  if (isOldRecordPicker) {
+    return <RecordPicker {...props} />;
+  }
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField: any = useField();
