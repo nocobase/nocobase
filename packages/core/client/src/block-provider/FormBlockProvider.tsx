@@ -65,59 +65,26 @@ export const useIsEmptyRecord = () => {
   return keys.length > 0;
 };
 
-const getAssociationAppends = (schema, arr = []) => {
-  return schema.reduceProperties((buf, s) => {
-    if (
-      s['x-component'] === 'CollectionField' &&
-      (['object', 'array'].includes(s.type) || ['createdBy', 'updatedBy'].includes(s.name))
-    ) {
-      buf.push(s.name);
-      if (s['x-component-props'].mode === 'Nester') {
-        return getAssociationAppends(s, buf);
-      }
-      return buf;
-    } else {
-      if (s['x-component'] === 'Grid') {
-        let kk = buf.concat();
-        return getNesterAppends(s, kk);
-      } else {
-        return getAssociationAppends(s, buf);
-      }
-    }
-  }, arr);
-};
-
-const getNesterAppends = (gridSchema, data) => {
-  gridSchema.reduceProperties((buf, s) => {
-    buf.push(getAssociationAppends(s));
-    return buf;
-  }, data);
-  return data.filter((g) => g.length);
-};
-
 function flattenNestedList(nestedList) {
   const flattenedList = [];
-
   function flattenHelper(list, prefix) {
     for (let i = 0; i < list.length; i++) {
       if (Array.isArray(list[i])) {
         flattenHelper(list[i], `${prefix}.${list[i][0]}`);
       } else {
-        const str = prefix.replaceAll(`${list[i]}`, '').replace('..','.').trim();
+        const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
         flattenedList.push(`${str}${list[i]}`);
       }
     }
   }
-
   for (let i = 0; i < nestedList.length; i++) {
     flattenHelper(nestedList[i], nestedList[i][0]);
   }
-
   return flattenedList;
 }
 
 const useAssociationNames = (collection) => {
-  const { getCollectionFields } = useCollectionManager();
+  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -138,12 +105,38 @@ const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
-  const gridSchema = formSchema.properties.grid;
-  const data = [];
-  gridSchema?.reduceProperties((buf, s) => {
-    buf.push(getAssociationAppends(s));
-    return buf;
-  }, data);
+
+  const getAssociationAppends = (schema, arr = []) => {
+    return schema.reduceProperties((buf, s) => {
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      if (
+        s['x-component'] === 'CollectionField' &&
+        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
+      ) {
+        buf.push(s.name);
+        if (s['x-component-props'].mode === 'Nester') {
+          return getAssociationAppends(s, buf);
+        }
+        return buf;
+      } else {
+        if (s['x-component'] === 'Grid') {
+          let kk = buf.concat();
+          return getNesterAppends(s, kk);
+        } else {
+          return getAssociationAppends(s, buf);
+        }
+      }
+    }, arr);
+  };
+
+  const getNesterAppends = (gridSchema, data) => {
+    gridSchema.reduceProperties((buf, s) => {
+      buf.push(getAssociationAppends(s));
+      return buf;
+    }, data);
+    return data.filter((g) => g.length);
+  };
+  const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
   return { appends, updateAssociationValues: appends };
@@ -156,7 +149,6 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-
   const { appends, updateAssociationValues } = useAssociationNames(collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
