@@ -7,7 +7,7 @@ import { AssociationSelectReadPretty } from './AssociationSelect';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { InternalSubTable } from './InternalSubTable';
 import { FileManageReadPretty } from './FileManager';
-import { RecordPicker } from '../../antd/record-picker';
+import { ReadPrettyRecordPicker } from '../../antd/record-picker';
 
 export const ReadPretty = observer((props: any) => {
   const { enableLink } = props;
@@ -16,7 +16,7 @@ export const ReadPretty = observer((props: any) => {
   const { getField } = useCollection();
   const { getCollection } = useCollectionManager();
   const collectionField = getField(field.props.name);
-  const isFileCollection = getCollection(collectionField?.target).template === 'file';
+  const isFileCollection = getCollection(collectionField?.target)?.template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
   useEffect(() => {
     props.mode && setCurrentMode(props.mode);
@@ -28,9 +28,8 @@ export const ReadPretty = observer((props: any) => {
     }
     return buf;
   }, null);
-
   if (isOldRecordPicker && !props.mode) {
-    return <RecordPicker.ReadPretty {...props} />;
+    return <ReadPrettyRecordPicker {...props} />;
   }
   return (
     <AssociationFieldProvider>

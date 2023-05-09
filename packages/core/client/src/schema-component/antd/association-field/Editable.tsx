@@ -21,7 +21,7 @@ export const Editable = observer((props: any) => {
   const { getField } = useCollection();
   const { getCollection } = useCollectionManager();
   const collectionField = getField(field.props.name);
-  const isFileCollection = getCollection(collectionField?.target).template === 'file';
+  const isFileCollection = getCollection(collectionField?.target)?.template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
   const isOldRecordPicker = fieldSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'].includes('RecordPicker.')) {
@@ -58,7 +58,6 @@ export const Editable = observer((props: any) => {
       },
     };
   };
-
   return (
     <AssociationFieldProvider>
       <SchemaComponentOptions scope={{ useCreateActionProps }}>
