@@ -1062,7 +1062,23 @@ export const useAssociationNames = (collection) => {
       }
     }, arr);
   };
-
+  function flattenNestedList(nestedList) {
+    const flattenedList = [];
+    function flattenHelper(list, prefix) {
+      for (let i = 0; i < list.length; i++) {
+        if (Array.isArray(list[i])) {
+          flattenHelper(list[i], `${prefix}.${list[i][0]}`);
+        } else {
+          const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
+          !list.includes(str) && flattenedList.push(`${str}${list[i]}`);
+        }
+      }
+    }
+    for (let i = 0; i < nestedList.length; i++) {
+      flattenHelper(nestedList[i], nestedList[i][0]);
+    }
+    return flattenedList.filter((obj) => !obj.startsWith('.'));
+  }
   const getNesterAppends = (gridSchema, data) => {
     gridSchema.reduceProperties((buf, s) => {
       buf.push(getAssociationAppends(s));
@@ -1075,21 +1091,3 @@ export const useAssociationNames = (collection) => {
   const appends = flattenNestedList(associations);
   return { appends, updateAssociationValues: appends };
 };
-
-function flattenNestedList(nestedList) {
-  const flattenedList = [];
-  function flattenHelper(list, prefix) {
-    for (let i = 0; i < list.length; i++) {
-      if (Array.isArray(list[i])) {
-        flattenHelper(list[i], `${prefix}.${list[i][0]}`);
-      } else {
-        const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
-        flattenedList.push(`${str}${list[i]}`);
-      }
-    }
-  }
-  for (let i = 0; i < nestedList.length; i++) {
-    flattenHelper(nestedList[i], nestedList[i][0]);
-  }
-  return flattenedList.filter((obj) => !obj.startsWith('.'));
-}
