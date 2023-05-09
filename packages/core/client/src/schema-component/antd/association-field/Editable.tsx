@@ -23,14 +23,13 @@ export const Editable = observer((props: any) => {
   const collectionField = getField(field.props.name);
   const isFileCollection = getCollection(collectionField?.target).template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
-
   const isOldRecordPicker = fieldSchema.reduceProperties((buf, schema) => {
     if (schema['x-component'].includes('RecordPicker.')) {
       return schema;
     }
     return buf;
   }, null);
-  if (isOldRecordPicker) {
+  if (isOldRecordPicker && !props.mode) {
     return <RecordPicker {...props} />;
   }
   const useCreateActionProps = () => {

@@ -29,7 +29,7 @@ export const ReadPretty = observer((props: any) => {
     return buf;
   }, null);
 
-  if (isOldRecordPicker) {
+  if (isOldRecordPicker && !props.mode) {
     return <RecordPicker.ReadPretty {...props} />;
   }
   return (
