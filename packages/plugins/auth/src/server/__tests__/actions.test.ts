@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import Database, { Repository } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import AuthPlugin from '../';
 import UsersPlugin from '@nocobase/plugin-users';
@@ -7,6 +7,7 @@ describe('actions', () => {
   describe('authenticators', () => {
     let app: MockServer;
     let db: Database;
+    let repo: Repository;
     let agent;
 
     beforeAll(async () => {
@@ -14,8 +15,15 @@ describe('actions', () => {
       app.plugin(AuthPlugin);
       await app.loadAndInstall({ clean: true });
       db = app.db;
+      repo = db.getRepository('authenticators');
 
       agent = app.agent();
+    });
+
+    afterEach(async () => {
+      await repo.destroy({
+        truncate: true,
+      });
     });
 
     afterAll(async () => {
@@ -36,10 +44,30 @@ describe('actions', () => {
         ],
       });
       const res = await agent.resource('authenticators').publicList();
-      expect(res.body.data).toEqual([
-        { name: 'basic', authType: 'email/password' },
-        { name: 'test', authType: 'testType' },
-      ]);
+      expect(res.body.data).toEqual([{ name: 'test', authType: 'testType' }]);
+    });
+
+    it('should keep at least one authenticator', async () => {
+      await repo.createMany({
+        records: [{ name: 'test', authType: 'testType', enabled: true }],
+      });
+      const res = await agent.resource('authenticators').destroy();
+      expect(res.statusCode).toBe(400);
+      expect(await repo.count()).toBe(1);
+    });
+
+    it('shoud enable at least one authenticator', async () => {
+      await repo.createMany({
+        records: [{ name: 'test', authType: 'testType', enabled: true }],
+      });
+      const res = await agent.resource('authenticators').update({
+        filterByTk: 1,
+        values: {
+          enabled: false,
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(await repo.count()).toBe(1);
     });
   });
 
