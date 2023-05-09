@@ -75,7 +75,7 @@ export const InternalSubTable: any = observer((props: any) => {
   const [tableData, setTableData] = useState(field.value);
   const pickerProps = {
     size: 'small',
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
+    multiple: props.multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface),
     association: {
       target: collectionField?.target,
     },

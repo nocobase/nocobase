@@ -82,7 +82,7 @@ export const InternalPicker = observer((props: any) => {
   const pickerProps = {
     size: 'small',
     fieldNames,
-    multiple: ['o2m', 'm2m'].includes(collectionField?.interface),
+    multiple: multiple !== false && ['o2m', 'm2m'].includes(collectionField?.interface),
     association: {
       target: collectionField?.target,
     },

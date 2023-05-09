@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, RecursionField, useFieldSchema, useField, observer } from '@formily/react';
+import { connect, mapProps, RecursionField, useFieldSchema, useField } from '@formily/react';
 import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useMemo, useState, useEffect } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { useInsertSchema } from './hooks';
@@ -50,7 +50,9 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
       return normalizeValues(props.value);
     }
   }, [props.value, normalizeValues]);
-  field.value = value;
+  useEffect(() => {
+    field.value = value;
+  }, []);
   return (
     <div key={fieldSchema.name}>
       <Input.Group compact style={{ display: 'flex' }}>
