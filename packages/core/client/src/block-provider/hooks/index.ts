@@ -583,18 +583,17 @@ export const useCustomizeRequestActionProps = () => {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
 
+      const requestSettings = (await apiClient.request({ url: `/customRequest:get/${uid}` }))?.data.data?.options;
+      if (!requestSettings?.['url']) {
+        return;
+      }
       const roles = await apiClient.request({ url: 'customrequestRoles:list' });
       const currentRoles = currentUser.roles.map((item) => item.name);
-
       const disabled = !roles?.data.data
         ?.filter((item) => currentRoles.includes(item.roleName))
         ?.map((item) => item.customRequestKey)
         ?.includes(uid);
       if (disabled) return message.error(t('The current role has no request permission'));
-      const requestSettings = (await apiClient.request({ url: `/customRequest:get/${uid}` }))?.data.data?.options;
-      if (!requestSettings['url']) {
-        return;
-      }
 
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();

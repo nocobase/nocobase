@@ -1,5 +1,6 @@
 import { Spin } from 'antd';
-import { CustomRequestConfigure } from '../../../../../plugins/custom-request/src/client/components/CustomRequestConfigure';
+import { CustomRequestConfigure } from '../../../../../plugins/custom-request/src/client/CustomRequestConfigure';
+import CustomRequestProvider from '../../../../../plugins/custom-request/src/client';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../../api-client';
 import { SchemaComponent } from '../../schema-component';
@@ -34,6 +35,7 @@ export const RoleTable = () => {
             MenuItemsProvider,
             SettingCenterPermissionProvider,
             PermissionProvider,
+            CustomRequestProvider,
             CustomRequestConfigure,
           }}
         />
