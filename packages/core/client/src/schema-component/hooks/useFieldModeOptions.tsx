@@ -20,7 +20,10 @@ export const useFieldModeOptions = () => {
     if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
-      return [
+      return isReadPretty?[
+        { label: t('Text and link'), value: 'Select' },
+        { label: t('File Manager'), value: 'FileManager' },
+      ]:[
         { label: t('File Manager'), value: 'FileManager' },
         { label: t('Record picker'), value: 'Picker' },
         { label: t('Select'), value: 'Select' },
