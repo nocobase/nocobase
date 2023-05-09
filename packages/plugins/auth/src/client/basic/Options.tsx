@@ -6,15 +6,20 @@ export const Options = () => (
     schema={{
       type: 'object',
       properties: {
-        secret: {
-          title: 'JWT Secret',
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-        },
-        expireIn: {
-          title: '{{t("Expire In",{ns:"auth"})}}',
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
+        jwt: {
+          type: 'object',
+          properties: {
+            secret: {
+              title: 'JWT Secret',
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+            },
+            expireIn: {
+              title: '{{t("Expire In",{ns:"auth"})}}',
+              'x-component': 'Input',
+              'x-decorator': 'FormItem',
+            },
+          },
         },
       },
     }}
