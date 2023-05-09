@@ -67,7 +67,6 @@ export class AuthManager {
     if (!auth) {
       throw new Error(`AuthType [${name}] is not found.`);
     }
-    console.log(authenticator.options);
     return new auth(authenticator.options, ctx);
   }
 

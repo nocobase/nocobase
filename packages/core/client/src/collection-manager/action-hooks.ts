@@ -355,11 +355,16 @@ export const useUpdateAction = () => {
       await form.submit();
       field.data = field.data || {};
       field.data.loading = true;
-      await resource.update({ filterByTk, values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await resource.update({ filterByTk, values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        refresh();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        field.data.loading = false;
+      }
     },
   };
 };

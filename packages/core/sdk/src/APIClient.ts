@@ -93,7 +93,7 @@ export class Auth {
     if (this.role) {
       config.headers['X-Role'] = this.role;
     }
-    if (this.auth?.authenticator) {
+    if (this.auth?.authenticator && !config.headers['X-Authenticator']) {
       config.headers['X-Authenticator'] = this.auth.authenticator;
     }
     if (this.auth?.token) {

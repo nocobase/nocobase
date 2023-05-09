@@ -343,6 +343,7 @@ export const authenticatorsSchema: ISchema = {
                     },
                     useAction: '{{cm.useDestroyAction}}',
                   },
+                  'x-disabled': '{{ useCanNotDelete() }}',
                 },
               },
             },

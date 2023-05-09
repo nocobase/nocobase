@@ -7,7 +7,6 @@ export interface JwtOptions {
 
 export class JwtService {
   constructor(protected options: JwtOptions) {
-    console.log('JwtService constructor', options);
     const { secret, expiresIn } = options || {};
     this.options = {
       secret: secret || process.env.APP_KEY,

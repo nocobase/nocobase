@@ -1,4 +1,11 @@
-import { ActionContext, SchemaComponent, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  useAPIClient,
+  useActionContext,
+  useAsyncData,
+  useRequest,
+} from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useState } from 'react';
 import { authenticatorsSchema, createFormSchema } from './schemas/authenticators';
@@ -44,6 +51,13 @@ const AddNew = () => {
   );
 };
 
+// Disable delete button when there is only one authenticator
+const useCanNotDelete = () => {
+  const { data } = useAsyncData();
+  // return data?.meta?.count === 1;
+  return false;
+};
+
 export const Authenticator = () => {
   const [types, setTypes] = useState([]);
   const api = useAPIClient();
@@ -73,7 +87,7 @@ export const Authenticator = () => {
         <SchemaComponent
           schema={authenticatorsSchema}
           components={{ AddNew, Options }}
-          scope={{ types, useValuesFromOptions }}
+          scope={{ types, useValuesFromOptions, useCanNotDelete }}
         />
       </AuthTypesContext.Provider>
     </Card>
