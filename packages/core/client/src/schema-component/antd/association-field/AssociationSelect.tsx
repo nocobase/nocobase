@@ -25,6 +25,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
   const collectionField = getField(field.props.name);
   const service = useServiceOptions(props);
   const fieldSchema = useFieldSchema();
+  const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
   const isAllowAddNew = fieldSchema['x-add-new'] !== false;
   const insertAddNewer = useInsertSchema('AddNewer');
   useFieldTitle();
@@ -59,7 +60,7 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
           value={value}
           service={service}
         ></RemoteSelect>
-        {isAllowAddNew && !field.readPretty && (
+        {isAllowAddNew && !field.readPretty && !isFilterForm && (
           <Button
             type={'default'}
             onClick={() => {

@@ -695,7 +695,7 @@ FormItem.Designer = function Designer() {
   );
 };
 
-function isFileCollection(collection: Collection) {
+export function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
 }
 

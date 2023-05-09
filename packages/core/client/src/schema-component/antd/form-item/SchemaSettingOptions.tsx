@@ -8,8 +8,9 @@ import { useTranslation } from 'react-i18next';
 import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
-import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
+import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { useOperatorList } from '../filter/useOperators';
+import { isFileCollection } from './FormItem';
 
 export const findFilterOperators = (schema: Schema) => {
   while (schema) {
@@ -371,61 +372,37 @@ export const EditDefaultValue = () => {
 };
 
 export const EditComponent = () => {
-  const { getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
-  const { getField, template } = useCollection();
-  const tk = useFilterByTk();
-  const { form } = useFormBlockContext();
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
+  const { getField } = useCollection();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, insertAdjacent } = useDesignable();
+  const { dn } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const interfaceConfig = getInterface(collectionField?.interface);
-  const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
+  const fieldModeOptions = useFieldModeOptions();
+  const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const targetCollection = getCollection(collectionField?.target);
+  const isFileField = isFileCollection(targetCollection);
 
-  return form && !isSubFormAssociationField && fieldComponentOptions ? (
+  return isAssociationField && fieldModeOptions ? (
     <SchemaSettings.SelectItem
-      title={t('Field component')}
-      options={fieldComponentOptions}
-      value={fieldSchema['x-component']}
-      onChange={(type) => {
-        const schema: ISchema = {
-          name: collectionField.name,
-          type: 'void',
-          required: fieldSchema['required'],
-          description: fieldSchema['description'],
-          default: fieldSchema['default'],
-          'x-decorator': 'FormItem',
-          'x-designer': 'FormItem.Designer',
-          'x-component': type,
-          'x-validator': fieldSchema['x-validator'],
-          'x-collection-field': fieldSchema['x-collection-field'],
-          'x-decorator-props': fieldSchema['x-decorator-props'],
-          'x-component-props': {
-            ...collectionField?.uiSchema?.['x-component-props'],
-            ...fieldSchema['x-component-props'],
-          },
+      key="field-mode"
+      title={t('Field mode')}
+      options={fieldModeOptions}
+      value={field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select')}
+      onChange={(mode) => {
+        const schema = {
+          ['x-uid']: fieldSchema['x-uid'],
         };
-
-        interfaceConfig?.schemaInitialize?.(schema, {
-          field: collectionField,
-          block: 'Form',
-          readPretty: field.readPretty,
-          action: tk ? 'get' : null,
-          targetCollection: getCollection(collectionField.target),
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['mode'] = mode;
+        schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps = field.componentProps || {};
+        field.componentProps.mode = mode;
+        dn.emit('patch', {
+          schema,
         });
-
-        insertAdjacent('beforeBegin', divWrap(schema), {
-          onSuccess: () => {
-            dn.remove(null, {
-              removeParentsIfNoChildren: true,
-              breakRemoveOn: {
-                'x-component': 'Grid',
-              },
-            });
-          },
-        });
+        dn.refresh();
       }}
     />
   ) : null;
@@ -586,6 +563,7 @@ export const EditTitleField = () => {
         fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
         fieldSchema['x-component-props']['fieldNames'] = fieldNames;
         schema['x-component-props'] = fieldSchema['x-component-props'];
+        field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
         dn.emit('patch', {
           schema,
         });
