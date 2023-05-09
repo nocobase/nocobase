@@ -263,7 +263,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * find
    * @param options
    */
-  async find(options?: FindOptions) {
+  async find(options: FindOptions = {}) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 
