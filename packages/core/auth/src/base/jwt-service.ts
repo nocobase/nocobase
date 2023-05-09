@@ -7,9 +7,10 @@ export interface JwtOptions {
 
 export class JwtService {
   constructor(protected options: JwtOptions) {
-    this.options = options || {
-      secret: process.env.APP_KEY,
-      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    const { secret, expiresIn } = options || {};
+    this.options = {
+      secret: secret || process.env.APP_KEY,
+      expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }
 

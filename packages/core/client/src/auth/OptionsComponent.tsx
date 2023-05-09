@@ -19,5 +19,5 @@ export const useHasOptionsComponent = (authType: string) => {
 export const useOptionsComponent = (authType: string) => {
   const { t } = useTranslation();
   const component = useHasOptionsComponent(authType);
-  return component ? createElement(component) : <div style={{ color: '#ccc' }}>{t('No configuration available.')}</div>;
+  return component ? createElement(component) : <></>;
 };

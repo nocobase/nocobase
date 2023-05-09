@@ -5,7 +5,7 @@ import { authenticatorsSchema, createFormSchema } from './schemas/authenticators
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
-import { Configure, useUpdateOptionsAction, useValuesFromOptions, useCanConfigure } from './Configure';
+import { Options, useValuesFromOptions } from './Options';
 import { useTranslation } from 'react-i18next';
 
 const useCloseAction = () => {
@@ -72,8 +72,8 @@ export const Authenticator = () => {
       <AuthTypesContext.Provider value={{ types }}>
         <SchemaComponent
           schema={authenticatorsSchema}
-          components={{ AddNew, Configure }}
-          scope={{ types, useUpdateOptionsAction, useValuesFromOptions, useCanConfigure }}
+          components={{ AddNew, Options }}
+          scope={{ types, useValuesFromOptions }}
         />
       </AuthTypesContext.Provider>
     </Card>

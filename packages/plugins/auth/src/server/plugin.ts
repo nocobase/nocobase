@@ -45,11 +45,13 @@ export class AuthPlugin extends Plugin {
       this.app.resourcer.registerAction(`authenticators:${action}`, handler),
     );
     // Set up ACL
-    ['check', 'signIn', 'signUp', 'lostPassword', 'resetPassword', 'getUserByResetToken'].forEach((action) =>
-      this.app.acl.allow('auth', action),
-    );
+    ['check', 'signIn', 'signUp'].forEach((action) => this.app.acl.allow('auth', action));
     ['signOut', 'changePassword'].forEach((action) => this.app.acl.allow('auth', action, 'loggedIn'));
     this.app.acl.allow('authenticators', 'publicList');
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.authenticators`,
+      actions: ['authenticators:*'],
+    });
   }
 
   async install(options?: InstallOptions) {

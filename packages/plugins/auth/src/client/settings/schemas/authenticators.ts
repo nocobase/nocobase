@@ -3,7 +3,6 @@ import { ISchema } from '@formily/react';
 import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useContext } from 'react';
 import { AuthTypeContext } from '../authType';
-import { useCanConfigure } from '../Configure';
 
 const collection = {
   name: 'authenticators',
@@ -100,6 +99,10 @@ export const createFormSchema: ISchema = {
         enabled: {
           'x-component': 'CollectionField',
           'x-decorator': 'FormItem',
+        },
+        options: {
+          type: 'object',
+          'x-component': 'Options',
         },
         footer: {
           type: 'void',
@@ -264,53 +267,9 @@ export const authenticatorsSchema: ISchema = {
                 split: '|',
               },
               properties: {
-                configure: {
-                  type: 'void',
-                  title: '{{ t("Configure") }}',
-                  'x-component': 'Action.Link',
-                  'x-visible': '{{ useCanConfigure() }}',
-                  properties: {
-                    drawer: {
-                      type: 'void',
-                      title: '{{ t("Configure") }}',
-                      'x-component': 'Action.Drawer',
-                      'x-decorator': 'Form',
-                      'x-decorator-props': {
-                        useValues: '{{ useValuesFromOptions }}',
-                      },
-                      properties: {
-                        form: {
-                          type: 'void',
-                          'x-component': 'Configure',
-                        },
-                        footer: {
-                          type: 'void',
-                          'x-component': 'Action.Drawer.Footer',
-                          properties: {
-                            cancel: {
-                              title: '{{t("Cancel")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                useAction: '{{ cm.useCancelAction }}',
-                              },
-                            },
-                            submit: {
-                              title: '{{t("Submit")}}',
-                              'x-component': 'Action',
-                              'x-component-props': {
-                                type: 'primary',
-                                useAction: '{{ useUpdateOptionsAction }}',
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
                 update: {
                   type: 'void',
-                  title: '{{t("Edit")}}',
+                  title: '{{t("Configure")}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     type: 'primary',
@@ -323,7 +282,7 @@ export const authenticatorsSchema: ISchema = {
                       'x-decorator-props': {
                         useValues: '{{ cm.useValuesFromRecord }}',
                       },
-                      title: '{{t("Edit")}}',
+                      title: '{{t("Configure")}}',
                       properties: {
                         name: {
                           'x-component': 'CollectionField',
@@ -343,6 +302,10 @@ export const authenticatorsSchema: ISchema = {
                         enabled: {
                           'x-component': 'CollectionField',
                           'x-decorator': 'FormItem',
+                        },
+                        options: {
+                          type: 'object',
+                          'x-component': 'Options',
                         },
                         footer: {
                           type: 'void',
