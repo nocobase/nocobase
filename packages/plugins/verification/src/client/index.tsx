@@ -8,7 +8,7 @@ import { VerificationProviders } from './VerificationProviders';
 
 export { default as verificationProviderTypes } from './providerTypes';
 
-export default function(props) {
+export default function (props) {
   const ctx = useContext(PluginManagerContext);
   return (
     <SettingsCenterProvider
@@ -36,6 +36,4 @@ export default function(props) {
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );
-};
-
-
+}

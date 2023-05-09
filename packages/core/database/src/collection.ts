@@ -14,6 +14,7 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
 
 export type RepositoryType = typeof Repository;
 
@@ -79,7 +80,7 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
     if (!targetKey && this.model.rawAttributes['id']) {
       return 'id';
     }
@@ -223,6 +224,11 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
+
+    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
+      repo = AdjacencyListRepository;
+    }
+
     this.repository = new repo(this);
   }
 
@@ -484,7 +490,7 @@ export class Collection<
     }
 
     // collection defined indexes
-    let indexes: any = this.model.options.indexes || [];
+    const indexes: any = this.model.options.indexes || [];
 
     let indexName = [];
     let indexItem;

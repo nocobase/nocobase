@@ -1,5 +1,5 @@
 import { HighlightOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { Button, Tooltip } from 'antd';
 import React from 'react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
@@ -17,15 +17,17 @@ export const DesignableSwitch = () => {
   useHotkeys('Ctrl+Shift+U', () => setDesignable(!designable), [designable]);
 
   return (
-    <Button
-      // selected={designable}
-      icon={<HighlightOutlined />}
-      title={t('UI Editor')}
-      // subtitle={'Ctrl+Shift+U'}
-      style={style}
-      onClick={() => {
-        setDesignable(!designable);
-      }}
-    />
+    <Tooltip title={t('UI Editor')}>
+      <Button
+        // selected={designable}
+        icon={<HighlightOutlined />}
+        title={t('UI Editor')}
+        // subtitle={'Ctrl+Shift+U'}
+        style={style}
+        onClick={() => {
+          setDesignable(!designable);
+        }}
+      />
+    </Tooltip>
   );
 };

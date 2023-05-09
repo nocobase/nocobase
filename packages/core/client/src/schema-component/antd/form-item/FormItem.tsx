@@ -4,6 +4,7 @@ import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
+import moment from 'moment';
 import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
@@ -17,8 +18,15 @@ import { SchemaComponent } from '../../core';
 import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
 import { HTMLEncode } from '../input/shared';
+import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+
+const defaultInputStyle = css`
+  & > .nb-form-item {
+    flex: 1;
+  }
+`;
 
 const divWrap = (schema: ISchema) => {
   return {
@@ -419,8 +427,7 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  // 关系字段不支持设置变量
-                  default: collectionField?.target
+                  default: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchema || {}),
                         'x-decorator': 'FormItem',
@@ -433,10 +440,16 @@ FormItem.Designer = function Designer() {
                           service: {
                             resource: collectionField?.target,
                           },
+                          style: {
+                            width: '100%',
+                            verticalAlign: 'top',
+                          },
                         },
                         name: 'default',
                         title: t('Default value'),
                         default: getFieldDefaultValue(fieldSchema, collectionField),
+                        'x-read-pretty': false,
+                        'x-disabled': false,
                       }
                     : {
                         ...(fieldSchema || {}),
@@ -446,9 +459,12 @@ FormItem.Designer = function Designer() {
                           ...(fieldSchema?.['x-component-props'] || {}),
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
+                          className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
                             const s = _.cloneDeep(fieldSchema) || ({} as Schema);
                             s.title = '';
+                            s['x-read-pretty'] = false;
+                            s['x-disabled'] = false;
 
                             return (
                               <SchemaComponent
@@ -461,6 +477,7 @@ FormItem.Designer = function Designer() {
                                     defaultValue: getFieldDefaultValue(s, collectionField),
                                     style: {
                                       width: '100%',
+                                      verticalAlign: 'top',
                                     },
                                   },
                                 }}
@@ -538,7 +555,7 @@ FormItem.Designer = function Designer() {
       )}
       {form &&
         !form?.readPretty &&
-        ['o2m', 'm2m'].includes(collectionField.interface) &&
+        ['o2m', 'm2m'].includes(collectionField?.interface) &&
         fieldSchema['x-component'] !== 'TableField' && (
           <SchemaSettings.SwitchItem
             key="multiple"
@@ -686,5 +703,9 @@ function isFileCollection(collection: Collection) {
 FormItem.FilterFormDesigner = FilterFormDesigner;
 
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
-  return fieldSchema?.default || collectionField?.defaultValue;
+  const result = fieldSchema?.default || collectionField?.defaultValue;
+  if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
+    return moment(result);
+  }
+  return result;
 }

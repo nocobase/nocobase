@@ -3,8 +3,6 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '.';
 import { EXECUTION_STATUS } from '../constants';
 
-
-
 describe('workflow > Plugin', () => {
   let app: MockServer;
   let db: Database;
@@ -27,8 +25,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       expect(workflow.current).toBe(true);
@@ -39,8 +37,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       expect(workflow.current).toBe(true);
@@ -54,8 +52,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
       expect(workflow.current).toBe(true);
 
@@ -83,8 +81,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
       expect(workflow.current).toBe(true);
 
@@ -112,8 +110,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -124,7 +122,7 @@ describe('workflow > Plugin', () => {
       expect(c1).toBe(1);
 
       await workflow.update({
-        enabled: false
+        enabled: false,
       });
       expect(workflow.current).toBe(true);
 
@@ -136,7 +134,7 @@ describe('workflow > Plugin', () => {
       expect(c2).toBe(1);
 
       await workflow.update({
-        enabled: true
+        enabled: true,
       });
       expect(workflow.current).toBe(true);
 
@@ -154,8 +152,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -168,8 +166,8 @@ describe('workflow > Plugin', () => {
       await workflow.update({
         config: {
           mode: 1,
-          collection: 'tags'
-        }
+          collection: 'tags',
+        },
       });
 
       const p2 = await PostRepo.create({ values: { title: 't2' } });
@@ -188,8 +186,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const n1 = await workflow.createNode({
@@ -198,13 +196,13 @@ describe('workflow > Plugin', () => {
           collection: 'posts',
           params: {
             filter: {
-              id: '{{$context.data.id}}'
+              id: '{{$context.data.id}}',
             },
             values: {
-              title: 't2'
-            }
-          }
-        }
+              title: 't2',
+            },
+          },
+        },
       });
 
       await PostRepo.create({ values: { title: 't1' } });
@@ -238,8 +236,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const n1 = await workflow.createNode({
@@ -248,10 +246,10 @@ describe('workflow > Plugin', () => {
           collection: 'posts',
           params: {
             values: {
-              title: 't2'
-            }
-          }
-        }
+              title: 't2',
+            },
+          },
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -284,8 +282,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const w2 = await WorkflowModel.create({
@@ -293,8 +291,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const w3 = await WorkflowModel.create({
@@ -302,8 +300,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const p1 = await PostRepo.create({ values: { title: 't1' } });
@@ -326,8 +324,8 @@ describe('workflow > Plugin', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       await app.stop();
@@ -342,8 +340,8 @@ describe('workflow > Plugin', () => {
         key: w1.key,
         useTransaction: w1.useTransaction,
         context: {
-          data: p1.get()
-        }
+          data: p1.get(),
+        },
       });
 
       await app.start();

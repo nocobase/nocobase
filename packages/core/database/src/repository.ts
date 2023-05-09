@@ -278,6 +278,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
 
+      // find all ids
       const ids = (
         await model.findAll({
           ...opts,
@@ -299,6 +300,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
+      // find template model
       const templateModel = await model.findOne({
         ...opts,
         includeIgnoreAttributes: false,
@@ -318,7 +320,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       rows = await handleAppendsQuery({
         queryPromises: opts.include.map((include) => {
           const options = {
-            ...omit(opts, ['limit', 'offset']),
+            ...omit(opts, ['limit', 'offset', 'filter']),
             include: include,
             where,
             transaction,
@@ -351,10 +353,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
-    const transaction = await this.getTransaction(options);
     options = {
       ...options,
-      transaction,
+      transaction: await this.getTransaction(options),
     };
 
     const count = await this.count(options);
@@ -472,6 +473,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });

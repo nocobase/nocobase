@@ -105,8 +105,14 @@ const ColDivider = (props) => {
       prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
       nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
       const dividerWidth = (el.clientWidth * (props.cols.length + 1)) / props.cols.length;
-      const preWidth = ((100 * (prev.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
-      const nextWidth = ((100 * (next.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
+      const preWidth = (
+        (100 * (prev.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
+      const nextWidth = (
+        (100 * (next.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
 
       prevSchema['x-component-props']['width'] = preWidth;
       nextSchema['x-component-props']['width'] = nextWidth;

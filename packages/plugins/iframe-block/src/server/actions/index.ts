@@ -2,7 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { Repository } from '@nocobase/database';
 
 export async function getHtml(ctx: Context, next: Next) {
-  let { filterByTk } = ctx.action.params;
+  const { filterByTk } = ctx.action.params;
   const { resourceName } = ctx.action;
   const repository = ctx.db.getRepository<any>(resourceName) as Repository;
   const model = await repository.findById(filterByTk);

@@ -6,8 +6,6 @@ import { PluginManager } from '@nocobase/client';
 
 import { lang } from './locale';
 
-
-
 export const WorkflowShortcut = () => {
   const history = useHistory();
   return (

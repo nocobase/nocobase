@@ -21,7 +21,7 @@ import {
   SignupPage,
   SystemSettingsProvider,
   SystemSettingsShortcut,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Spin } from 'antd';
 import React from 'react';

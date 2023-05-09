@@ -1,7 +1,7 @@
-import { css } from "@emotion/css";
-import { useForm } from "@formily/react";
-import { useCollectionFilterOptions } from "@nocobase/client";
-import { NAMESPACE } from "../locale";
+import { css } from '@emotion/css';
+import { useForm } from '@formily/react';
+import { useCollectionFilterOptions } from '@nocobase/client';
+import { NAMESPACE } from '../locale';
 
 export const collection = {
   type: 'string',
@@ -11,8 +11,9 @@ export const collection = {
   'x-decorator': 'FormItem',
   'x-component': 'Select',
   'x-component-props': {
-    placeholder: '{{t("Select collection")}}'
-  }
+    dropdownMatchSelectWidth: false,
+    placeholder: '{{t("Select collection")}}',
+  },
 };
 
 export const values = {
@@ -23,7 +24,7 @@ export const values = {
     labelAlign: 'left',
     className: css`
       flex-direction: column;
-    `
+    `,
   },
   'x-component': 'CollectionFieldset',
   description: `{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.", { ns: "${NAMESPACE}" })}}`,
@@ -43,11 +44,11 @@ export const filter = {
         className: css`
           position: relative;
           width: 100%;
-        `
+        `,
       };
     },
-    dynamicComponent: 'FilterDynamicComponent'
-  }
+    dynamicComponent: 'FilterDynamicComponent',
+  },
 };
 
 export const appends = {
@@ -61,7 +62,7 @@ export const appends = {
     placeholder: '{{t("Select Field")}}',
     filter(field) {
       return ['linkTo', 'belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type);
-    }
+    },
   },
   'x-reactions': [
     {
@@ -70,7 +71,7 @@ export const appends = {
         state: {
           visible: '{{!!$deps[0]}}',
         },
-      }
+      },
     },
-  ]
+  ],
 };

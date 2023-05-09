@@ -66,7 +66,7 @@ export const ChartBlockInitializer = (props) => {
             value: field.name,
           };
         });
-        let values = await FormDialog(
+        const values = await FormDialog(
           {
             okText: compile('{{t("Submit")}}'),
             title: lang('Create chart block'),

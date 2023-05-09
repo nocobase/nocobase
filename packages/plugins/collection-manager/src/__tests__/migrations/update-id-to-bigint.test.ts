@@ -88,7 +88,7 @@ excludeSqlite()('update id to bigint  test', () => {
       }
     };
 
-    let usersTableInfo = await db.sequelize
+    const usersTableInfo = await db.sequelize
       .getQueryInterface()
       .describeTable(db.getCollection('users').getTableNameWithSchema());
 

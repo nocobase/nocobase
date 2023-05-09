@@ -74,7 +74,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -100,11 +100,12 @@ const CurrentFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   // updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -160,10 +161,9 @@ const CurrentFields = (props) => {
         type: 'checkbox',
         onChange: (selectedRowKeys) => {
           setState((state) => {
-            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
             return {
               ...state,
-              selectedRowKeys: result,
+              selectedRowKeys,
             };
           });
         },
@@ -180,7 +180,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { updateCollection } = useCollectionManager();
+  const { updateCollection, refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -206,11 +206,12 @@ const InheritFields = (props) => {
           resource
             .update({ filterByTk, values: { titleField: checked ? record.name : 'id' } })
             .then(async () => {
-              const data = await props.refreshAsync();
-              if (data?.data) {
-                updateCollection(data.data);
-              }
+              await props.refreshAsync();
+              // if (data?.data) {
+              //   updateCollection(data.data);
+              // }
               setLoadingRecord(null);
+              refreshCM();
             })
             .catch((err) => {
               setLoadingRecord(null);
@@ -310,7 +311,6 @@ export const CollectionFields = (props) => {
   ];
 
   const fields = getCurrentCollectionFields(name);
-
   const groups = {
     pf: [],
     association: [],
@@ -325,7 +325,7 @@ export const CollectionFields = (props) => {
       const conf = getInterface(field.interface);
       if (conf.group === 'systemInfo') {
         groups.system.push(field);
-      } else if (['m2m', 'm2o', 'o2b', 'o2m', 'linkTo'].includes(field.interface)) {
+      } else if (conf.group === 'relation') {
         groups.association.push(field);
       } else {
         groups.general.push(field);
@@ -355,17 +355,21 @@ export const CollectionFields = (props) => {
       fields: groups.system,
     },
   ];
-
   dataSource.push(
-    ...inherits.map((key) => {
-      const collection = getCollection(key);
-      return {
-        key,
-        title: `${t('Inherited fields')} - ` + compile(collection.title),
-        inherit: true,
-        fields: collection.fields,
-      };
-    }),
+    ...inherits
+      .map((key) => {
+        const collection = getCollection(key);
+        if (!collection) {
+          return;
+        }
+        return {
+          key,
+          title: `${t('Inherited fields')} - ` + compile(collection?.title),
+          inherit: true,
+          fields: collection?.fields || [],
+        };
+      })
+      .filter(Boolean),
   );
 
   const resourceActionProps = {
@@ -401,7 +405,6 @@ export const CollectionFields = (props) => {
   );
   const addProps = { type: 'primary' };
   const syncProps = { type: 'primary' };
-
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>
@@ -426,6 +429,7 @@ export const CollectionFields = (props) => {
             className={tableContainer}
             expandable={{
               defaultExpandAllRows: true,
+              defaultExpandedRowKeys: dataSource.map((d) => d.key),
               expandedRowClassName: () => rowStyle,
               expandedRowRender: (record) =>
                 record.inherit ? (

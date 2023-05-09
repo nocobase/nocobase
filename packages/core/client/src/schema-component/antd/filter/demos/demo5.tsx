@@ -1,8 +1,4 @@
-import {
-  AntdSchemaComponentProvider,
-  FilterAction, SchemaComponent,
-  SchemaComponentProvider
-} from '@nocobase/client';
+import { AntdSchemaComponentProvider, FilterAction, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema: any = {

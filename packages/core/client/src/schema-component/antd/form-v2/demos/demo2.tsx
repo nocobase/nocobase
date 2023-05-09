@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   useFilterByTk,
-  useFormBlockContext
+  useFormBlockContext,
 } from '@nocobase/client';
 import React from 'react';
 import collections from './collections';

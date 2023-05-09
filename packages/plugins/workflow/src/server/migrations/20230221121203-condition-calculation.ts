@@ -1,16 +1,14 @@
 import { Migration } from '@nocobase/server';
 
-
-
 const calculatorsMap = {
-  'equal': '==',
+  equal: '==',
   '===': '==',
-  'notEqual': '!=',
+  notEqual: '!=',
   '!==': '!=',
-  'gt': '>',
-  'gte': '>=',
-  'lt': '<',
-  'lte': '<=',
+  gt: '>',
+  gte: '>=',
+  lt: '<',
+  lte: '<=',
   includes(a, b) {
     return `SEARCH('${b}', '${a}') >= 0`;
   },
@@ -18,7 +16,7 @@ const calculatorsMap = {
     return `SEARCH('${b}', '${a}') < 0`;
   },
   startsWith(a, b) {
-    return `SEARCH('${b}', '${a}') == 0`
+    return `SEARCH('${b}', '${a}') == 0`;
   },
   endsWith(a, b) {
     return `RIGHT('${a}', LEN('${b}')) == '${b}'`;
@@ -29,17 +27,19 @@ const calculatorsMap = {
   notEndsWith(a, b) {
     return `RIGHT('${a}', LEN('${b}')) != '${b}'`;
   },
-}
+};
 
 function migrateConfig({ group: { type = 'and', calculations = [] } }) {
   return {
     group: {
       type,
       calculations: calculations.map(({ calculator = '===', operands = [] }: any) => {
-        return `(${operands.map((operand) => operand?.group ? migrateConfig(operand) : operand).join(` ${calculatorsMap[calculator]} `)})`;
-      })
-    }
-  }
+        return `(${operands
+          .map((operand) => (operand?.group ? migrateConfig(operand) : operand))
+          .join(` ${calculatorsMap[calculator]} `)})`;
+      }),
+    },
+  };
 }
 
 export default class extends Migration {
@@ -53,23 +53,30 @@ export default class extends Migration {
     await this.context.db.sequelize.transaction(async (transaction) => {
       const nodes = await NodeRepo.find({
         filter: {
-          type: 'condition'
+          type: 'condition',
         },
-        transaction
+        transaction,
       });
       console.log('%d nodes need to be migrated.', nodes.length);
 
-      await nodes.reduce((promise, node) => promise.then(() => {
-        return node.update({
-          config: {
-            ...node.config,
-            engine: 'basic',
-            // calculation: migrateConfig(node.config.calculation)
-          }
-        }, {
-          transaction
-        });
-      }), Promise.resolve());
+      await nodes.reduce(
+        (promise, node) =>
+          promise.then(() => {
+            return node.update(
+              {
+                config: {
+                  ...node.config,
+                  engine: 'basic',
+                  // calculation: migrateConfig(node.config.calculation)
+                },
+              },
+              {
+                transaction,
+              },
+            );
+          }),
+        Promise.resolve(),
+      );
     });
   }
 }

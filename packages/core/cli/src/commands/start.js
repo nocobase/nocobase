@@ -9,7 +9,7 @@ const chalk = require('chalk');
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, NODE_ARGS } = process.env;
   cli
     .command('start')
     .option('-p, --port [port]')
@@ -51,12 +51,16 @@ module.exports = (cli) => {
       if (opts.daemon) {
         run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {
-        run('pm2-runtime', [
-          'start',
-          `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
-          '--',
-          ...process.argv.slice(2),
-        ]);
+        run(
+          'pm2-runtime',
+          [
+            'start',
+            `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
+            NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
+            '--',
+            ...process.argv.slice(2),
+          ].filter(Boolean),
+        );
       }
     });
 };

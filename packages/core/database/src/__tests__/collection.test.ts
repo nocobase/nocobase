@@ -17,6 +17,25 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should remove sequelize model prototype methods after field remove', async () => {
+    db.collection({
+      name: 'tags',
+    });
+
+    const UserCollection = db.collection({
+      name: 'users',
+      fields: [{ type: 'belongsToMany', name: 'tags' }],
+    });
+
+    console.log(Object.getOwnPropertyNames(UserCollection.model.prototype));
+
+    await UserCollection.removeField('tags');
+
+    console.log(Object.getOwnPropertyNames(UserCollection.model.prototype));
+    // @ts-ignore
+    expect(UserCollection.model.prototype.getTags).toBeUndefined();
+  });
+
   it('should not throw error when create empty collection in sqlite and mysql', async () => {
     if (!db.inDialect('sqlite', 'mysql')) {
       return;

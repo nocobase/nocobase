@@ -26,14 +26,17 @@ describe('middleware', () => {
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
-        roles: ['admin']
-      }
+        roles: ['admin'],
+      },
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(userPlugin.jwtService.sign({
-      userId: admin.get('id'),
-    }), { type: 'bearer' });
+    adminAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: admin.get('id'),
+      }),
+      { type: 'bearer' },
+    );
 
     await db.getRepository('collections').create({
       values: {
@@ -97,33 +100,29 @@ describe('middleware', () => {
   });
 
   it('should limit fields on view actions', async () => {
-    await adminAgent
-      .resource('roles.resources', role.get('name'))
-      .create({
-        values: {
-          name: 'posts',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-              fields: ['title', 'description'],
-            },
-            {
-              name: 'view',
-              fields: ['title'],
-            },
-          ],
-        },
-      });
+    await adminAgent.resource('roles.resources', role.get('name')).create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['title', 'description'],
+          },
+          {
+            name: 'view',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
 
-    await adminAgent
-      .resource('posts')
-      .create({
-        values: {
-          title: 'post-title',
-          description: 'post-description',
-        },
-      });
+    await adminAgent.resource('posts').create({
+      values: {
+        title: 'post-title',
+        description: 'post-description',
+      },
+    });
 
     const post = await db.getRepository('posts').findOne();
     expect(post.get('title')).toEqual('post-title');
@@ -140,56 +139,48 @@ describe('middleware', () => {
   });
 
   it('should parse template value on action params', async () => {
-    const res = await adminAgent
-      .resource('rolesResourcesScopes')
-      .create({
-        values: {
-          name: 'own',
-          scope: {
-            createdById: '{{ ctx.state.currentUser.id }}',
+    const res = await adminAgent.resource('rolesResourcesScopes').create({
+      values: {
+        name: 'own',
+        scope: {
+          createdById: '{{ ctx.state.currentUser.id }}',
+        },
+      },
+    });
+
+    await adminAgent.resource('roles.resources', role.get('name')).create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['title', 'description', 'createdById'],
           },
-        },
-      });
+          {
+            name: 'view',
+            fields: ['title'],
+            scope: res.body.data.id,
+          },
+        ],
+      },
+    });
 
-    await adminAgent
-      .resource('roles.resources', role.get('name'))
-      .create({
-        values: {
-          name: 'posts',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-              fields: ['title', 'description', 'createdById'],
-            },
-            {
-              name: 'view',
-              fields: ['title'],
-              scope: res.body.data.id,
-            },
-          ],
-        },
-      });
+    await adminAgent.resource('posts').create({
+      values: {
+        title: 't1',
+        description: 'd1',
+        createdById: 1,
+      },
+    });
 
-    await adminAgent
-      .resource('posts')
-      .create({
-        values: {
-          title: 't1',
-          description: 'd1',
-          createdById: 1,
-        },
-      });
-
-    await adminAgent
-      .resource('posts')
-      .create({
-        values: {
-          title: 't2',
-          description: 'p2',
-          createdById: 2,
-        },
-      });
+    await adminAgent.resource('posts').create({
+      values: {
+        title: 't2',
+        description: 'p2',
+        createdById: 2,
+      },
+    });
 
     const response = await adminAgent.resource('posts').list();
     const data = response.body.data;
@@ -197,29 +188,25 @@ describe('middleware', () => {
   });
 
   it('should change fields params to whitelist in create action', async () => {
-    await adminAgent
-      .resource('roles.resources', role.get('name'))
-      .create({
-        values: {
-          name: 'posts',
-          usingActionsConfig: true,
-          actions: [
-            {
-              name: 'create',
-              fields: ['title'],
-            },
-          ],
-        },
-      });
+    await adminAgent.resource('roles.resources', role.get('name')).create({
+      values: {
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
 
-    await adminAgent
-      .resource('posts')
-      .create({
-        values: {
-          title: 'post-title',
-          description: 'post-description',
-        },
-      });
+    await adminAgent.resource('posts').create({
+      values: {
+        title: 'post-title',
+        description: 'post-description',
+      },
+    });
 
     const post = await db.getRepository('posts').findOne();
     expect(post.get('title')).toEqual('post-title');

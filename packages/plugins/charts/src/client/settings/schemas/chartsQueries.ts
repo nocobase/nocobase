@@ -5,7 +5,7 @@ import {
   useRecord,
   useRequest,
   useResourceActionContext,
-  useResourceContext
+  useResourceContext,
 } from '@nocobase/client';
 import { useChartQueryMetadataContext } from '../../ChartQueryMetadataProvider';
 

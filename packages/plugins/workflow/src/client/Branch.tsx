@@ -1,19 +1,19 @@
-import React from "react";
+import React from 'react';
 import { cx } from '@emotion/css';
-import { branchClass } from "./style";
-import { AddButton } from "./AddButton";
+import { branchClass } from './style';
+import { AddButton } from './AddButton';
 import { Node } from './nodes';
 
 export function Branch({
   from = null,
   entry = null,
   branchIndex = null,
-  controller = null
+  controller = null,
 }: {
   from?: any;
   entry?: any;
   branchIndex?: number | null;
-  controller?: any
+  controller?: any;
 }) {
   const list: any[] = [];
   for (let node = entry; node; node = node.downstream) {
@@ -26,7 +26,9 @@ export function Branch({
       {controller}
       <AddButton upstream={from} branchIndex={branchIndex} />
       <div className="workflow-node-list">
-        {list.map(item => <Node data={item} key={item.id} />)}
+        {list.map((item) => (
+          <Node data={item} key={item.id} />
+        ))}
       </div>
     </div>
   );

@@ -187,7 +187,7 @@ export const useTableBlockProps = () => {
       ctx.service.refresh();
     },
     onChange({ current, pageSize }, filters, sorter) {
-      let sort = sorter.order
+      const sort = sorter.order
         ? sorter.order === `ascend`
           ? [sorter.field]
           : [`-${sorter.field}`]

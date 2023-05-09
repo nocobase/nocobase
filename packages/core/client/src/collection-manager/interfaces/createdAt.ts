@@ -20,7 +20,7 @@ export const createdAt: IField = {
       'x-read-pretty': true,
     },
   },
-  availableTypes:['date'],
+  availableTypes: ['date'],
   properties: {
     ...defaultProps,
     ...dateTimeProps,

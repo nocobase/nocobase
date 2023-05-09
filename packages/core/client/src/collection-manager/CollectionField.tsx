@@ -3,6 +3,7 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
@@ -97,6 +98,12 @@ export const InternalFallbackField = () => {
   return <div>{displayText}</div>;
 };
 
+// 当字段被删除时，显示一个提示占位符
+const DeletedField = () => {
+  const { t } = useTranslation();
+  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
+};
+
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const field = fieldSchema?.['x-component-props']?.['field'];
@@ -105,7 +112,7 @@ export const CollectionField = connect((props) => {
     <CollectionFieldProvider
       name={fieldSchema.name}
       field={field}
-      fallback={snapshot ? <InternalFallbackField /> : null}
+      fallback={snapshot ? <InternalFallbackField /> : <DeletedField />}
     >
       <InternalField {...props} />
     </CollectionFieldProvider>

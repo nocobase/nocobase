@@ -1,21 +1,16 @@
-import React from 'react';
-import { observer } from '@formily/react';
-import { FormLayout, FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
-import parse from 'json-templates';
-import { useTranslation } from 'react-i18next';
+import { FormItem, FormLayout } from '@formily/antd';
+import { SchemaInitializer, SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
+import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
+import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
-
-import { SchemaInitializer, SchemaInitializerItemOptions, useCollectionManager, Variable } from '@nocobase/client';
-import { evaluators, Evaluator, getOptions } from '@nocobase/evaluators/client';
-
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFlowContext } from '../FlowContext';
-import { lang, NAMESPACE } from '../locale';
-import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
-
-
+import { NAMESPACE, lang } from '../locale';
+import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
 
 function matchDynamicExpressionCollectionField(field): boolean {
   const { getCollectionFields, getCollection } = useCollectionManager();
@@ -24,23 +19,24 @@ function matchDynamicExpressionCollectionField(field): boolean {
   }
 
   const fields = getCollectionFields(field.target);
-  return fields.some(f => f.interface === 'expression');
+  return fields.some((f) => f.interface === 'expression');
 }
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions([
-    matchDynamicExpressionCollectionField
-  ]);
+  const scope = useWorkflowVariableOptions([matchDynamicExpressionCollectionField]);
 
   return (
     <FormLayout layout="vertical">
       <FormItem label={t('Expression type', { ns: NAMESPACE })}>
-        <Radio.Group value={value === false ? false : (value || null)} onChange={(ev) => {
-          onChange(ev.target.value);
-        }}>
-          <Radio value={false}>{t("Static", { ns: NAMESPACE })}</Radio>
-          <Radio value={value || null}>{t("Dynamic", { ns: NAMESPACE })}</Radio>
+        <Radio.Group
+          value={value === false ? false : value || null}
+          onChange={(ev) => {
+            onChange(ev.target.value);
+          }}
+        >
+          <Radio value={false}>{t('Static', { ns: NAMESPACE })}</Radio>
+          <Radio value={value || null}>{t('Dynamic', { ns: NAMESPACE })}</Radio>
         </Radio.Group>
       </FormItem>
       {value !== false ? (
@@ -49,13 +45,12 @@ const DynamicConfig = ({ value, onChange }) => {
         </FormItem>
       ) : null}
     </FormLayout>
-  )
+  );
 };
 
 function useWorkflowVariableEntityOptions() {
-  return useWorkflowVariableOptions([{ type: "reference", options: { collection: "*", entity: true } }]);
+  return useWorkflowVariableOptions([{ type: 'reference', options: { collection: '*', entity: true } }]);
 }
-
 
 export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
@@ -73,7 +68,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
-        options: getOptions()
+        options: getOptions(),
       },
       required: true,
       default: 'math.js',
@@ -82,9 +77,9 @@ export default {
         fulfill: {
           state: {
             visible: '{{$deps[0] === false}}',
-          }
-        }
-      }
+          },
+        },
+      },
     },
     expression: {
       type: 'string',
@@ -92,7 +87,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.TextArea',
       'x-component-props': {
-        scope: '{{useWorkflowVariableOptions}}'
+        scope: '{{useWorkflowVariableOptions}}',
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
@@ -111,19 +106,19 @@ export default {
           fulfill: {
             state: {
               visible: '{{$deps[0] === false}}',
-            }
-          }
+            },
+          },
         },
         {
           dependencies: ['engine'],
           fulfill: {
             schema: {
               description: '{{renderEngineReference($deps[0])}}',
-            }
-          }
+            },
+          },
         },
       ],
-      required: true
+      required: true,
     },
     scope: {
       type: 'string',
@@ -131,25 +126,23 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
-        scope: '{{useWorkflowVariableEntityOptions}}'
+        scope: '{{useWorkflowVariableEntityOptions}}',
       },
       'x-reactions': {
         dependencies: ['dynamic'],
         fulfill: {
           state: {
             visible: '{{$deps[0] !== false}}',
-          }
-        }
-      }
-    }
+          },
+        },
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
     useWorkflowVariableOptions,
     useWorkflowVariableEntityOptions,
-    renderEngineReference
+    renderEngineReference,
   },
   components: {
     CalculationResult({ dataSource }) {
@@ -158,22 +151,30 @@ export default {
         return lang('Calculation result');
       }
       const result = parse(dataSource)({
-        $jobsMapByNodeId: (execution.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }), {})
+        $jobsMapByNodeId: (execution.jobs ?? []).reduce(
+          (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+          {},
+        ),
       });
 
       return (
-        <pre className={css`
-          margin: 0;
-        `}>
+        <pre
+          className={css`
+            margin: 0;
+          `}
+        >
           {JSON.stringify(result, null, 2)}
         </pre>
       );
     },
     RadioWithTooltip,
-    DynamicConfig
+    DynamicConfig,
   },
   getOptions(config, types) {
-    if (types && !types.some(type => type in BaseTypeSets || Object.values(BaseTypeSets).some(set => set.has(type)))) {
+    if (
+      types &&
+      !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
+    ) {
       return null;
     }
     return [
@@ -185,9 +186,9 @@ export default {
       type: 'item',
       title: node.title ?? `#${node.id}`,
       component: CalculationInitializer,
-      node
+      node,
     };
-  }
+  },
 };
 
 function CalculationInitializer({ node, insert, ...props }) {
@@ -201,7 +202,7 @@ function CalculationInitializer({ node, insert, ...props }) {
           title: node.title,
           'x-component': 'CardItem',
           'x-component-props': {
-            title: node.title ?? `#${node.id}`
+            title: node.title ?? `#${node.id}`,
           },
           'x-designer': 'SimpleDesigner',
           properties: {
@@ -210,12 +211,12 @@ function CalculationInitializer({ node, insert, ...props }) {
               'x-component': 'CalculationResult',
               'x-component-props': {
                 // NOTE: as same format as other reference for migration of revision
-                dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+                dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
               },
-            }
-          }
+            },
+          },
         });
       }}
     />
-  )
+  );
 }
