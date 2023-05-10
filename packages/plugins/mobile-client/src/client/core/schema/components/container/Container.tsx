@@ -73,7 +73,7 @@ const InternalContainer: React.FC = (props) => {
       <Designer></Designer>
       <div
         style={{
-          paddingBottom: tabRoutes.length ? '49px' : '0px',
+          paddingBottom: tabRoutes.length ? '50px' : '0px',
         }}
         className={cx('nb-mobile-container-content')}
       >
