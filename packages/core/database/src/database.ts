@@ -689,9 +689,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async validateAndSync(options?: SyncOptions) {
     for (let collection of this.collections.values()) {
-      if (!collection.validateBeforeSync()) {
-        continue;
-      }
+      // if (!collection.validateBeforeSync()) {
+      //   continue;
+      // }
       await collection.model.sync(options);
       collection.saveAfterSync();
     }
