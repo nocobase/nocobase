@@ -37,6 +37,7 @@ describe('Aggregation', () => {
         { name: 'u3', age: 3 },
         { name: 'u4', age: 4 },
         { name: 'u5', age: 5 },
+        { name: 'u5', age: 5 },
       ],
     });
   });
@@ -48,7 +49,29 @@ describe('Aggregation', () => {
         field: 'age',
       });
 
-      console.log(sumResult);
+      expect(sumResult).toEqual(20);
+    });
+
+    it('should sum with distinct', async () => {
+      const sumResult = await User.repository.aggregate({
+        method: 'sum',
+        field: 'age',
+        distinct: true,
+      });
+
+      expect(sumResult).toEqual(15);
+    });
+
+    it('should sum with filter', async () => {
+      const sumResult = await User.repository.aggregate({
+        method: 'sum',
+        field: 'age',
+        filter: {
+          name: 'u5',
+        },
+      });
+
+      expect(sumResult).toEqual(10);
     });
   });
 });

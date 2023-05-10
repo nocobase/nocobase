@@ -207,6 +207,7 @@ interface AggregateOptions {
   method: 'avg' | 'count' | 'min' | 'max' | 'sum';
   field?: string;
   filter?: Filter;
+  distinct?: boolean;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -280,7 +281,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       attributes: [
         [
           Sequelize.literal(
-            `${method}(${this.database.sequelize
+            `${method}(${options.distinct ? 'distinct' : ''} ${this.database.sequelize
               .getQueryInterface()
               .quoteIdentifiers(`${this.collection.name}.${field}`)})`,
           ),
