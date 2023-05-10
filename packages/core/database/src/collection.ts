@@ -220,6 +220,10 @@ export class Collection<
     this.model.database = this.context.database;
     // @ts-ignore
     this.model.collection = this;
+
+    this.model.afterDestroy((instance, options) => {
+      this.afterDestroy();
+    });
   }
 
   setRepository(repository?: RepositoryType | string) {
@@ -682,7 +686,7 @@ export class Collection<
     return false;
   }
 
-  async validateBeforeSync() {
+  validateBeforeSync() {
     const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
     const snapshotFile = path.join(snapshotDir, `${this.name}.json`);
     if (!fs.existsSync(snapshotFile)) {
@@ -708,7 +712,7 @@ export class Collection<
     return false;
   }
 
-  async saveAfterSync() {
+  saveAfterSync() {
     const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
     if (!fs.existsSync(snapshotDir)) {
       mkdirp.sync(snapshotDir);
@@ -723,5 +727,13 @@ export class Collection<
       snapshot.fields[fieldName] = this.fields.get(fieldName).options;
     }
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
+  }
+
+  afterDestroy() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
+    const snapshotFile = path.join(snapshotDir, `${this.name}.json`);
+    if (fs.existsSync(snapshotFile)) {
+      fs.unlinkSync(snapshotFile);
+    }
   }
 }

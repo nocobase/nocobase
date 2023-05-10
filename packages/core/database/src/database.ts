@@ -70,6 +70,8 @@ import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ViewCollection } from './view-collection';
+import fs from 'fs';
+import path from 'path';
 
 export type MergeOptions = merge.Options;
 
@@ -687,11 +689,11 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async validateAndSync(options?: SyncOptions) {
     for (let collection of this.collections.values()) {
-      if (!await collection.validateBeforeSync()) {
+      if (!collection.validateBeforeSync()) {
         continue;
       }
       await collection.model.sync(options);
-      await collection.saveAfterSync();
+      collection.saveAfterSync();
     }
   }
 
@@ -700,6 +702,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (drop !== true) {
       return;
     }
+
+    this.beforeClean();
 
     if (this.options.schema) {
       const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
@@ -719,6 +723,13 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     await this.queryInterface.dropAll(options);
+  }
+
+  beforeClean() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.options.schema || 'public');
+    if (fs.existsSync(snapshotDir)) {
+      fs.rmSync(snapshotDir, { recursive: true, force: true });
+    }
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
