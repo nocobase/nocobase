@@ -102,6 +102,8 @@ export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const record = useRecord();
   const { fieldSchema } = useActionContext();
+  const field = useField();
+
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
@@ -114,7 +116,10 @@ export const useFormBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      ctx.form?.setInitialValues(ctx.service?.data?.data);
+      const isInit = Object.values(ctx.form.values).filter((v) => v).length === 0;
+      if (isInit) {
+        ctx.form?.setInitialValues(ctx.service?.data?.data);
+      }
     }
   }, [ctx?.service?.loading]);
   return {
