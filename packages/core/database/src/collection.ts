@@ -15,6 +15,9 @@ import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
+import mkdirp from 'mkdirp';
+import path from 'path';
+import fs from 'fs';
 
 export type RepositoryType = typeof Repository;
 
@@ -677,5 +680,48 @@ export class Collection<
 
   public isView() {
     return false;
+  }
+
+  async validateBeforeSync() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
+    const snapshotFile = path.join(snapshotDir, `${this.name}.json`);
+    if (!fs.existsSync(snapshotFile)) {
+      return true;
+    }
+
+    const snapshotFromFile = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
+    let snapshot = {
+      fields: {},
+    };
+
+    for (let fieldName of this.fields.keys()) {
+      snapshot.fields[fieldName] = this.fields.get(fieldName).options;
+    }
+
+    // remove undefined values recursively which lodash can't
+    snapshot = JSON.parse(JSON.stringify(snapshot)); 
+
+    if (!_.isEqual(snapshotFromFile, snapshot)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async saveAfterSync() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
+    if (!fs.existsSync(snapshotDir)) {
+      mkdirp.sync(snapshotDir);
+    }
+
+    const snapshotFile = path.join(snapshotDir, `${this.name}.json`);
+    const snapshot = {
+      fields: {},
+    };
+
+    for (let fieldName of this.fields.keys()) {
+      snapshot.fields[fieldName] = this.fields.get(fieldName).options;
+    }
+    fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
   }
 }
