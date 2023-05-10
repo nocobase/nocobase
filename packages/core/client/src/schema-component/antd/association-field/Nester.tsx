@@ -1,7 +1,7 @@
 import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined } from '@ant-design/icons';
 import React, { useContext } from 'react';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
@@ -38,16 +38,14 @@ const ToManyNester = observer((props) => {
   const values = toArr(field.value);
   // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
-    <Card bordered={true}>
+    <Card bordered={true} style={{ position: 'relative' }}>
       {values.map((value, index) => {
         return (
           <>
             {!field.readPretty && (
               <div style={{ textAlign: 'right' }}>
-                <Button
-                  icon={<CloseOutlined />}
-                  type={'text'}
-                  style={{ zIndex: 1000 }}
+                <CloseCircleOutlined
+                  style={{ zIndex: 1000, position: 'absolute', color: '#a8a3a3' }}
                   onClick={() => {
                     field.value.splice(index, 1);
                   }}
