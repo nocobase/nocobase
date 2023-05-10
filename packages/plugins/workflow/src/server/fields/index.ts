@@ -1,7 +1,7 @@
-import { ExpressionField } from "./expression-field";
+import { ExpressionField } from './expression-field';
 
 export default function (plugin) {
   plugin.db.registerFieldTypes({
-    expression: ExpressionField
+    expression: ExpressionField,
   });
 }

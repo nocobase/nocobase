@@ -1,11 +1,12 @@
 import { CloseCircleFilled } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
-import { Button, Cascader, DatePicker, Input as AntInput, InputNumber, Select, Tag } from 'antd';
+import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import moment from 'moment';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import classNames from 'classnames';
 import { useCompile } from '../..';
 import { XButton } from './XButton';
 
@@ -35,7 +36,7 @@ const ConstantTypes = {
   string: {
     label: `{{t("String")}}`,
     value: 'string',
-    component({ onChange, value }) {
+    component: function StringComponent({ onChange, value }) {
       return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
     },
     default: '',
@@ -43,7 +44,7 @@ const ConstantTypes = {
   number: {
     label: '{{t("Number")}}',
     value: 'number',
-    component({ onChange, value }) {
+    component: function NumberComponent({ onChange, value }) {
       return <InputNumber value={value} onChange={onChange} />;
     },
     default: 0,
@@ -51,7 +52,7 @@ const ConstantTypes = {
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component({ onChange, value }) {
+    component: function BooleanComponent({ onChange, value }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -70,7 +71,7 @@ const ConstantTypes = {
   date: {
     label: '{{t("Date")}}',
     value: 'date',
-    component({ onChange, value }) {
+    component: function DateComponent({ onChange, value }) {
       return (
         <DatePicker
           value={moment(value)}
@@ -88,7 +89,7 @@ const ConstantTypes = {
   null: {
     label: `{{t("Null")}}`,
     value: 'null',
-    component() {
+    component: function NullComponent() {
       const { t } = useTranslation();
       return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
@@ -96,14 +97,12 @@ const ConstantTypes = {
   },
 };
 
-
-
 function getTypedConstantOption(type) {
   return {
     value: '',
     label: '{{t("Constant")}}',
     children: Object.values(ConstantTypes),
-    component: ConstantTypes[type]?.component
+    component: ConstantTypes[type]?.component,
   };
 }
 
@@ -117,30 +116,26 @@ export function Input(props) {
   const compile = useCompile();
   const form = useForm();
 
-  const { value = '', scope, onChange, children, button, useTypedConstant } = props;
+  const { value = '', scope, onChange, children, button, useTypedConstant, style, className } = props;
   const parsed = parseValue(value);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const varialbeOptions = typeof scope === 'function' ? scope() : scope ?? [];
+  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
     ? {
-      value: '',
-      label: '{{t("Constant")}}'
-    }
-    : (useTypedConstant
-      ? getTypedConstantOption(type)
-      : {
+        value: '',
+        label: '{{t("Constant")}}',
+      }
+    : useTypedConstant
+    ? getTypedConstantOption(type)
+    : {
         value: '',
         label: '{{t("Null")}}',
-        component: ConstantTypes.null.component
-      }
-    );
-  const options: VariableOptions[] = compile([
-    constantOption,
-    ...varialbeOptions,
-  ]);
+        component: ConstantTypes.null.component,
+      };
+  const options: VariableOptions[] = compile([constantOption, ...variableOptions]);
 
   function onSwitch(next) {
     if (next[0] === '') {
@@ -171,20 +166,24 @@ export function Input(props) {
   return (
     <AntInput.Group
       compact
-      className={css`
-        width: auto;
-        display: flex !important;
-        .ant-input-disabled {
-          .ant-tag {
-            color: #bfbfbf;
-            border-color: #d9d9d9;
+      style={style}
+      className={classNames(
+        className,
+        css`
+          width: auto;
+          display: flex !important;
+          .ant-input-disabled {
+            .ant-tag {
+              color: #bfbfbf;
+              border-color: #d9d9d9;
+            }
           }
-        }
-        .ant-input.null-value {
-          width: 4em;
-          min-width: 4em;
-        }
-      `}
+          .ant-input.null-value {
+            width: 4em;
+            min-width: 4em;
+          }
+        `,
+      )}
     >
       {variable ? (
         <div
@@ -238,6 +237,7 @@ export function Input(props) {
                   user-select: 'none';
                 `,
               )}
+              // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
               onClick={() => onChange(null)}
@@ -246,7 +246,9 @@ export function Input(props) {
             </span>
           ) : null}
         </div>
-      ) : children ?? <ConstantComponent value={value} onChange={onChange} />}
+      ) : (
+        children ?? <ConstantComponent value={value} onChange={onChange} />
+      )}
       {options.length > 1 ? (
         <Cascader
           options={options}
@@ -254,9 +256,7 @@ export function Input(props) {
           onChange={onSwitch}
           changeOnSelect
         >
-          {button ?? (
-            <XButton type={variable ? 'primary' : 'default'} />
-          )}
+          {button ?? <XButton type={variable ? 'primary' : 'default'} />}
         </Cascader>
       ) : null}
     </AntInput.Group>

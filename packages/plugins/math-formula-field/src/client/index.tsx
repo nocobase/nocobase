@@ -15,7 +15,7 @@ export default React.memo((props) => {
         mathExpressionDescription: (
           <div>
             {t('Syntax see', { ns: 'math-formula-field' })}{' '}
-            <a target={'_blank'} href={'https://mathjs.org/docs/expressions/syntax.html'}>
+            <a target={'_blank'} href={'https://mathjs.org/docs/expressions/syntax.html'} rel="noreferrer">
               math.js
             </a>
           </div>

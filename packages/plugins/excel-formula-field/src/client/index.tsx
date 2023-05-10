@@ -16,7 +16,7 @@ export default React.memo((props) => {
         excelExpressionDescription: (
           <div>
             {t('Syntax see', { ns: 'math-formula-field' })}{' '}
-            <a target={'_blank'} href={'https://formulajs.info/functions/'}>
+            <a target={'_blank'} href={'https://formulajs.info/functions/'} rel="noreferrer">
               formula.js
             </a>
           </div>

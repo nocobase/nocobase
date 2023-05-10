@@ -6,7 +6,7 @@ import {
   Form,
   SchemaComponent,
   SchemaComponentProvider,
-  useActionContext
+  useActionContext,
 } from '@nocobase/client';
 import React, { useState } from 'react';
 

@@ -32,9 +32,14 @@ export const multipleSelect: IField = {
     operators: operators.array,
   },
   schemaInitialize(schema: ISchema, { block }) {
+    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
+    props.style = {
+      ...(props.style || {}),
+      width: '100%',
+    };
+
     if (['Table', 'Kanban'].includes(block)) {
-      schema['x-component-props'] = schema['x-component-props'] || {};
-      schema['x-component-props']['ellipsis'] = true;
+      props['ellipsis'] = true;
     }
   },
 };

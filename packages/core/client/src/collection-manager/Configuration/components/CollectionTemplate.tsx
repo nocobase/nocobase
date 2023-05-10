@@ -10,5 +10,5 @@ export const CollectionTemplate = observer((props: any) => {
   const compile = useCompile();
   const schema = getTemplate(value);
 
-  return <Tag>{compile(schema?.title||'{{t("General collection")}}')}</Tag>;
+  return <Tag>{compile(schema?.title || '{{t("General collection")}}')}</Tag>;
 });

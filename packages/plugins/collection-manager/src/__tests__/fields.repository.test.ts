@@ -2,6 +2,95 @@ import Database, { Collection as DBCollection, StringFieldOptions } from '@nocob
 import Application from '@nocobase/server';
 import { createApp } from '.';
 
+describe('recreate field', () => {
+  let db: Database;
+  let app: Application;
+  let Collection: DBCollection;
+  let Field: DBCollection;
+
+  beforeEach(async () => {
+    app = await createApp();
+    db = app.db;
+    Collection = db.getCollection('collections');
+    Field = db.getCollection('fields');
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should recreate field', async () => {
+    await Collection.repository.create({
+      values: {
+        name: 'a1',
+      },
+      context: {},
+    });
+
+    await Collection.repository.create({
+      values: {
+        name: 'a2',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'a',
+        type: 'string',
+        collectionName: 'a1',
+      },
+      context: {},
+    });
+
+    await db.getRepository('a1').create({
+      values: {
+        a: 'a',
+      },
+    });
+
+    await Field.repository.destroy({
+      filter: {
+        name: 'a',
+        collectionName: 'a1',
+      },
+      context: {},
+    });
+
+    await Field.repository.create({
+      values: {
+        name: 'a',
+        type: 'hasOne',
+        collectionName: 'a1',
+        target: 'a2',
+        foreignKey: 'a_id',
+      },
+      context: {},
+    });
+
+    const a1Model = db.getRepository('a1').model;
+    const results = await a1Model.findAll({
+      include: [
+        {
+          association: 'a',
+        },
+      ],
+    });
+
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).toContain('getA');
+
+    await Field.repository.destroy({
+      filter: {
+        name: 'a',
+        collectionName: 'a1',
+      },
+    });
+
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).not.toContain('getA');
+    expect(Object.getOwnPropertyNames(db.getCollection('a1').model.prototype)).not.toContain('a');
+  });
+});
+
 describe('collections repository', () => {
   let db: Database;
   let app: Application;

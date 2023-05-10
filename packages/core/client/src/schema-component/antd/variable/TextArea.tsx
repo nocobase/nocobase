@@ -12,7 +12,11 @@ type RangeIndexes = [number, number, number, number];
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
-function pasteHTML(container: HTMLElement, html: string, { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {}) {
+function pasteHTML(
+  container: HTMLElement,
+  html: string,
+  { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {},
+) {
   // IE9 and non-IE
   const sel = window.getSelection?.();
   const range = sel?.getRangeAt(0);
@@ -173,14 +177,16 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
   const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
 
-  const result: RangeIndexes = [...getSingleEndRange(nodes, startElementIndex, range.startOffset), ...getSingleEndRange(nodes, endElementIndex, range.endOffset)];
+  const result: RangeIndexes = [
+    ...getSingleEndRange(nodes, startElementIndex, range.startOffset),
+    ...getSingleEndRange(nodes, endElementIndex, range.endOffset),
+  ];
   return result;
 }
 
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
-  const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
@@ -284,7 +290,7 @@ export function TextArea(props) {
     if (ev.key === 'Enter') {
       ev.preventDefault();
     }
-    setIME(ev.keyCode === 229);
+    setIME(ev.keyCode === 229 && ![' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Enter'].includes(ev.key));
     // if (ev.key === 'Control') {
     //   console.debug(getSelection().getRangeAt(0));
     // }
@@ -306,12 +312,14 @@ export function TextArea(props) {
       },
       transformTags: {
         span(tagName, attribs) {
-          return attribs['data-variable'] ? {
-            tagName: tagName,
-            attribs,
-          } : {};
-        }
-      }
+          return attribs['data-variable']
+            ? {
+                tagName: tagName,
+                attribs,
+              }
+            : {};
+        },
+      },
     }).replace(/\n/g, ' ');
     // ev.clipboardData.setData('text/html', sanitizedHTML);
     // console.log(input, sanitizedHTML);
@@ -320,7 +328,6 @@ export function TextArea(props) {
     setRange(getCurrentRange(ev.currentTarget));
     onChange(getValue(ev.currentTarget));
   }
-
 
   const disabled = props.disabled || form.disabled;
 
@@ -368,15 +375,12 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      {!disabled
-        ? <VariableSelect options={options} onInsert={onInsert} />
-        : null
-      }
+      {!disabled ? <VariableSelect options={options} onInsert={onInsert} /> : null}
     </Input.Group>
   );
 }
 
-TextArea.ReadPretty = (props) => {
+TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value, multiline = true, scope } = props;
   const compile = useCompile();
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
@@ -392,7 +396,7 @@ TextArea.ReadPretty = (props) => {
         .ant-tag {
           display: inline;
           line-height: 19px;
-          margin: 0 .25em;
+          margin: 0 0.25em;
           padding: 2px 7px;
           border-radius: 10px;
         }
@@ -405,4 +409,4 @@ TextArea.ReadPretty = (props) => {
       {content}
     </EllipsisWithTooltip>
   );
-}
+};

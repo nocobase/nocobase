@@ -10,4 +10,3 @@ export default {
   'Collection name': 'Nome da tabela',
   'Collection category': 'Categoria da tabela',
 };
-

@@ -7,5 +7,12 @@ import { requestChartData } from './g2plot/requestChartData';
 
 export const AntdSchemaComponentProvider = (props) => {
   const { children } = props;
-  return <SchemaComponentOptions scope={{ requestChartData, useFilterActionProps }} components={{ ...components, ...common } as any}>{children}</SchemaComponentOptions>;
+  return (
+    <SchemaComponentOptions
+      scope={{ requestChartData, useFilterActionProps }}
+      components={{ ...components, ...common } as any}
+    >
+      {children}
+    </SchemaComponentOptions>
+  );
 };

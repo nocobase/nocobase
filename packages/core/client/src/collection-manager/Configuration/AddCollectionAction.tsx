@@ -13,8 +13,8 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
-import { templateOptions } from './templates';
 import { TemplateSummay } from './components/TemplateSummay';
+import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
   if (!schema) {
@@ -98,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const useDefaultCollectionFields = (values) => {
-  let defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
     const pk = values.fields.find((f) => f.primaryKey);

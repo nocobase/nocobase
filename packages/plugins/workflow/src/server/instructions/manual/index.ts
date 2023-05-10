@@ -2,20 +2,19 @@ import actions from '@nocobase/actions';
 import { HandlerType } from '@nocobase/resourcer';
 
 import Plugin from '../..';
-import { JOB_STATUS } from "../../constants";
+import { JOB_STATUS } from '../../constants';
 import { Instruction } from '..';
 import jobsCollection from './collecions/jobs';
 import usersCollection from './collecions/users';
 import usersJobsCollection from './collecions/users_jobs';
 import { submit } from './actions';
 
-
 type FormType = {
   type: 'custom' | 'create' | 'update';
   actions: number[];
   options: {
     [key: string]: any;
-  }
+  };
 };
 
 export interface ManualConfig {
@@ -30,45 +29,48 @@ const MULTIPLE_ASSIGNED_MODE = {
   ALL: Symbol('all'),
   ANY: Symbol('any'),
   ALL_PERCENTAGE: Symbol('all percentage'),
-  ANY_PERCENTAGE: Symbol('any percentage')
+  ANY_PERCENTAGE: Symbol('any percentage'),
 };
 
 const Modes = {
   [MULTIPLE_ASSIGNED_MODE.SINGLE]: {
     getStatus(distribution, assignees) {
-      const done = distribution.find(item => item.status !== JOB_STATUS.PENDING && item.count > 0);
-      return done ? done.status : null
-    }
+      const done = distribution.find((item) => item.status !== JOB_STATUS.PENDING && item.count > 0);
+      return done ? done.status : null;
+    },
   },
   [MULTIPLE_ASSIGNED_MODE.ALL]: {
     getStatus(distribution, assignees) {
-      const resolved = distribution.find(item => item.status === JOB_STATUS.RESOLVED);
+      const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
       if (resolved && resolved.count === assignees.length) {
         return JOB_STATUS.RESOLVED;
       }
-      const rejected = distribution.find(item => item.status < JOB_STATUS.PENDING);
+      const rejected = distribution.find((item) => item.status < JOB_STATUS.PENDING);
       if (rejected && rejected.count) {
         return rejected.status;
       }
 
       return null;
-    }
+    },
   },
   [MULTIPLE_ASSIGNED_MODE.ANY]: {
     getStatus(distribution, assignees) {
-      const resolved = distribution.find(item => item.status === JOB_STATUS.RESOLVED);
+      const resolved = distribution.find((item) => item.status === JOB_STATUS.RESOLVED);
       if (resolved && resolved.count) {
         return JOB_STATUS.RESOLVED;
       }
-      const rejectedCount = distribution.reduce((count, item) => item.status < JOB_STATUS.PENDING ? count + item.count : count, 0);
+      const rejectedCount = distribution.reduce(
+        (count, item) => (item.status < JOB_STATUS.PENDING ? count + item.count : count),
+        0,
+      );
       // NOTE: all failures are considered as rejected for now
       if (rejectedCount === assignees.length) {
         return JOB_STATUS.REJECTED;
       }
 
       return null;
-    }
-  }
+    },
+  },
 };
 
 function getMode(mode) {
@@ -99,46 +101,49 @@ export default class implements Instruction {
           filter: {
             $or: [
               {
-                'workflow.enabled': true
+                'workflow.enabled': true,
               },
               {
                 'workflow.enabled': false,
                 status: {
-                  $ne: JOB_STATUS.PENDING
-                }
-              }
-            ]
+                  $ne: JOB_STATUS.PENDING,
+                },
+              },
+            ],
           },
-          handler: actions.list as HandlerType
+          handler: actions.list as HandlerType,
         },
-        submit
-      }
+        submit,
+      },
     });
   }
 
   async run(node, prevJob, processor) {
     const { mode, ...config } = node.config as ManualConfig;
-    const assignees = [...(new Set(processor.getParsedValue(config.assignees) || []))];
+    const assignees = [...new Set(processor.getParsedValue(config.assignees) || [])];
 
     const job = await processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: mode ? [] : null,
       nodeId: node.id,
-      upstreamId: prevJob?.id ?? null
+      upstreamId: prevJob?.id ?? null,
     });
 
     // NOTE: batch create users jobs
     const UserJobModel = processor.options.plugin.db.getModel('users_jobs');
-    await UserJobModel.bulkCreate(assignees.map(userId => ({
-      userId,
-      jobId: job.id,
-      nodeId: node.id,
-      executionId: job.executionId,
-      workflowId: node.workflowId,
-      status: JOB_STATUS.PENDING
-    })), {
-      transaction: processor.transaction
-    });
+    await UserJobModel.bulkCreate(
+      assignees.map((userId) => ({
+        userId,
+        jobId: job.id,
+        nodeId: node.id,
+        executionId: job.executionId,
+        workflowId: node.workflowId,
+        status: JOB_STATUS.PENDING,
+      })),
+      {
+        transaction: processor.transaction,
+      },
+    );
 
     return job;
   }
@@ -150,18 +155,21 @@ export default class implements Instruction {
     const UserJobModel = processor.options.plugin.db.getModel('users_jobs');
     const distribution = await UserJobModel.count({
       where: {
-        jobId: job.id
+        jobId: job.id,
       },
-      group: ['status']
+      group: ['status'],
     });
 
-    const submitted = distribution.reduce((count, item) => item.status !== JOB_STATUS.PENDING ? count + item.count : count, 0);
+    const submitted = distribution.reduce(
+      (count, item) => (item.status !== JOB_STATUS.PENDING ? count + item.count : count),
+      0,
+    );
     const result = mode ? (submitted || 0) / assignees.length : job.latestUserJob?.result ?? job.result;
     job.set({
       status: job.status || (getMode(mode).getStatus(distribution, assignees) ?? JOB_STATUS.PENDING),
-      result
+      result,
     });
 
     return job;
   }
-};
+}

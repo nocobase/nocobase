@@ -14,6 +14,7 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
 
 export type RepositoryType = typeof Repository;
 
@@ -24,6 +25,14 @@ type dumpable = 'required' | 'optional' | 'skip';
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   namespace?: string;
+  /**
+   * Used for @nocobase/plugin-duplicator
+   * @see packages/core/database/src/collection-group-manager.tss
+   *
+   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
+   * @prop {string[] | string} [with] - Collections dumped with this collection
+   * @prop {any} [delayRestore] - A function to execute after all collections are restored
+   */
   duplicator?:
     | dumpable
     | {
@@ -71,7 +80,7 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
     if (!targetKey && this.model.rawAttributes['id']) {
       return 'id';
     }
@@ -215,6 +224,11 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
+
+    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
+      repo = AdjacencyListRepository;
+    }
+
     this.repository = new repo(this);
   }
 
@@ -474,7 +488,7 @@ export class Collection<
     }
 
     // collection defined indexes
-    let indexes: any = this.model.options.indexes || [];
+    const indexes: any = this.model.options.indexes || [];
 
     let indexName = [];
     let indexItem;

@@ -1,11 +1,8 @@
-import { cloneDeep } from 'lodash';
 import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry } from '@nocobase/utils/client';
-
+import { cloneDeep } from 'lodash';
 import { NAMESPACE } from '../locale';
-
-
 
 // const booleanReactions = [
 //   {
@@ -26,7 +23,7 @@ const numberReactions = [
         display: '{{["double", "decimal"].includes($deps[0]) ? "visible" : "none"}}',
       },
     },
-  }
+  },
 ];
 
 const datetimeReactions = [
@@ -37,22 +34,25 @@ const datetimeReactions = [
         display: '{{$deps[0] === "date" ? "visible" : "none"}}',
       },
     },
-  }
+  },
 ];
 
 const { defaultProps, dateTimeProps, operators } = interfacesProperties;
 const datetimeProperties = {
   'uiSchema.x-component-props.dateFormat': {
     ...cloneDeep(dateTimeProps['uiSchema.x-component-props.dateFormat']),
-    'x-reactions': datetimeReactions
+    'x-reactions': datetimeReactions,
   },
   'uiSchema.x-component-props.showTime': {
     ...cloneDeep(dateTimeProps['uiSchema.x-component-props.showTime']),
-    'x-reactions': [...(dateTimeProps['uiSchema.x-component-props.showTime']['x-reactions'] as string[]), ...datetimeReactions]
+    'x-reactions': [
+      ...(dateTimeProps['uiSchema.x-component-props.showTime']['x-reactions'] as string[]),
+      ...datetimeReactions,
+    ],
   },
   'uiSchema.x-component-props.timeFormat': {
     ...cloneDeep(dateTimeProps['uiSchema.x-component-props.timeFormat']),
-  }
+  },
 };
 
 export default {
@@ -74,7 +74,7 @@ export default {
         stringMode: true,
         step: '1',
       },
-      'x-read-pretty': true
+      'x-read-pretty': true,
     },
   },
   properties: {
@@ -128,7 +128,10 @@ export default {
       title: `{{t("Calculation engine", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
-      enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce((result: any[], [value, options]) => result.concat({ value, ...options }), []),
+      enum: Array.from((evaluators as Registry<Evaluator>).getEntities()).reduce(
+        (result: any[], [value, options]) => result.concat({ value, ...options }),
+        [],
+      ),
       required: true,
       default: 'math.js',
     },
@@ -176,8 +179,8 @@ export default {
         fulfill: {
           schema: {
             description: '{{renderExpressionDescription($deps[0])}}',
-          }
-        }
+          },
+        },
       },
       ['x-validator'](value, rules, { form }) {
         const { values } = form;
@@ -189,7 +192,7 @@ export default {
         } catch (e) {
           return i18n.t('Expression syntax error', { ns: NAMESPACE });
         }
-      }
+      },
     },
   },
   filterable: {

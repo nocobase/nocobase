@@ -71,7 +71,7 @@ import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ViewCollection } from './view-collection';
 
-export interface MergeOptions extends merge.Options {}
+export type MergeOptions = merge.Options;
 
 export interface PendingOptions {
   field: RelationField;
@@ -500,7 +500,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     const [collectionName, associationName, ...args] = path.split('.');
-    let collection = this.getCollection(collectionName);
+    const collection = this.getCollection(collectionName);
 
     if (!collection) {
       return;
@@ -529,7 +529,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     const [collectionName, associationName] = name.split('.');
-    let collection = this.collections.get(collectionName);
+    const collection = this.collections.get(collectionName);
 
     if (associationName) {
       const target = collection.getField(associationName)?.target;

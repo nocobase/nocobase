@@ -9,8 +9,6 @@ import { useCollectionFieldOptions } from '../../variable';
 import { appends } from '../../schemas/collection';
 import { FieldsSelect } from '../../components/FieldsSelect';
 
-
-
 export default {
   title: `{{t("Schedule event", { ns: "${NAMESPACE}" })}}`,
   type: 'schedule',
@@ -18,8 +16,7 @@ export default {
     config: {
       type: 'void',
       'x-component': 'ScheduleConfig',
-      'x-component-props': {
-      }
+      'x-component-props': {},
     },
     appends: {
       ...appends,
@@ -30,17 +27,17 @@ export default {
             state: {
               visible: `{{$deps[0] === ${SCHEDULE_MODE.COLLECTION_FIELD} && $deps[1]}}`,
             },
-          }
+          },
         },
-      ]
+      ],
     },
   },
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     ScheduleConfig,
-    FieldsSelect
+    FieldsSelect,
   },
   getOptions(config, types) {
     const { t } = useWorkflowTranslation();
@@ -56,7 +53,7 @@ export default {
           key: 'data',
           value: 'data',
           label: t('Trigger data'),
-          children: fieldOptions
+          children: fieldOptions,
         });
       }
     }
@@ -72,10 +69,10 @@ export default {
       title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
       component: CollectionBlockInitializer,
       collection: config.collection,
-      dataSource: '{{$context.data}}'
+      dataSource: '{{$context.data}}',
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

@@ -2,8 +2,6 @@ import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FormulaField } from './formula-field';
 
-
-
 export class FormulaFieldPlugin extends Plugin {
   afterAdd() {}
 

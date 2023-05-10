@@ -7,7 +7,7 @@ function getInterfaceRender(name: string): Function {
 function renderHeader(params, ctx) {
   const { columns, fields, headers = [], rowIndex = 0 } = params;
 
-  let { colIndex = 0 } = params;
+  const { colIndex = 0 } = params;
 
   if (!headers[rowIndex]) {
     headers.push([]);

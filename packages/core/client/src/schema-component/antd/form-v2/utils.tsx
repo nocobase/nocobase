@@ -1,7 +1,8 @@
-import { last, cloneDeep } from 'lodash';
-import { conditionAnalyse } from '../../common/utils/uitls';
+import { evaluators } from '@nocobase/evaluators/client';
+import { cloneDeep, last } from 'lodash';
 import { ActionType } from '../../../schema-settings/LinkageRules/type';
-import evaluators from '@nocobase/evaluators/client';
+import { conditionAnalyse } from '../../common/utils/uitls';
+
 export const linkageMergeAction = ({ operator, value }, field, condition, values) => {
   const requiredResult = field?.linkageProperty?.required || [field?.initProperty?.required || false];
   const displayResult = field?.linkageProperty?.display || [field?.initProperty?.display];
@@ -62,6 +63,7 @@ export const linkageMergeAction = ({ operator, value }, field, condition, values
             const result = evaluate(value.result || value.value, { ...scope, now: () => new Date().toString() });
             valueResult.push(result);
           } catch (error) {
+            console.log(error);
           }
         } else if (value?.mode === 'constant') {
           valueResult.push(value?.value || value);

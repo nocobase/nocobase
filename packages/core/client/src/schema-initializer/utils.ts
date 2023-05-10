@@ -1,6 +1,6 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
 import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
@@ -55,7 +55,7 @@ export const useRemoveGridFormItem = () => {
   };
 };
 
-export const findTableColumn = (schema: Schema, key: string, action: string, deepth: number = 0) => {
+export const findTableColumn = (schema: Schema, key: string, action: string, deepth = 0) => {
   return schema.reduceProperties((buf, s) => {
     if (s[key] === action) {
       return s;
@@ -448,18 +448,18 @@ export const useFilterAssociatedFormItemInitializerFields = () => {
 };
 
 export const useInheritsFormItemInitializerFields = (options?) => {
-  const { name, template } = useCollection();
+  const { name } = useCollection();
   const { getInterface, getInheritCollections, getCollection, getParentCollectionFields } = useCollectionManager();
   const inherits = getInheritCollections(name);
   const { snapshot } = useActionContext();
+  const form = useForm();
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const form = useForm();
     const { readPretty = form.readPretty, block = 'Form' } = options || {};
     const targetCollection = getCollection(v);
     return {
-      [targetCollection.title]: fields
+      [targetCollection?.title]: fields
         ?.filter((field) => field?.interface && !field?.isForeignKey)
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
@@ -560,7 +560,12 @@ export const useCustomFormItemInitializerFields = (options?: any) => {
   const remove = useRemoveGridFormItem();
   return currentFields
     ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
+      return (
+        field?.interface &&
+        !field?.uiSchema?.['x-read-pretty'] &&
+        field.interface !== 'snapshot' &&
+        field.type !== 'sequence'
+      );
     })
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
@@ -597,37 +602,48 @@ export const useCustomBulkEditFormItemInitializerFields = (options?: any) => {
   const form = useForm();
   const { readPretty = form.readPretty, block = 'Form' } = options || {};
   const remove = useRemoveGridFormItem();
-  return fields
-    ?.filter((field) => {
-      return field?.interface && !field?.uiSchema?.['x-read-pretty'] && field.interface !== 'snapshot';
-    })
-    ?.map((field) => {
-      const interfaceConfig = getInterface(field.interface);
-      const schema = {
-        type: 'string',
-        name: field.name,
-        title: field?.uiSchema?.title || field.name,
-        'x-designer': 'FormItem.Designer',
-        'x-component': 'BulkEditField',
-        'x-decorator': 'FormItem',
-        'x-collection-field': `${name}.${field.name}`,
-      };
-      return {
-        type: 'item',
-        title: field?.uiSchema?.title || field.name,
-        component: 'CollectionFieldInitializer',
-        remove: remove,
-        schemaInitialize: (s) => {
-          interfaceConfig?.schemaInitialize?.(s, {
-            field,
-            block,
-            readPretty,
-            targetCollection: getCollection(field.target),
-          });
-        },
-        schema,
-      } as SchemaInitializerItemOptions;
-    });
+  const filterFields = useMemo(
+    () =>
+      fields
+        ?.filter((field) => {
+          return (
+            field?.interface &&
+            !field?.uiSchema?.['x-read-pretty'] &&
+            field.interface !== 'snapshot' &&
+            field.type !== 'sequence'
+          );
+        })
+        .map((field) => {
+          const interfaceConfig = getInterface(field.interface);
+          const schema = {
+            type: 'string',
+            name: field.name,
+            title: field?.uiSchema?.title || field.name,
+            'x-designer': 'FormItem.Designer',
+            'x-component': 'BulkEditField',
+            'x-decorator': 'FormItem',
+            'x-collection-field': `${name}.${field.name}`,
+          };
+          return {
+            type: 'item',
+            title: field?.uiSchema?.title || field.name,
+            component: 'CollectionFieldInitializer',
+            remove: remove,
+            schemaInitialize: (s) => {
+              interfaceConfig?.schemaInitialize?.(s, {
+                field,
+                block,
+                readPretty,
+                targetCollection: getCollection(field.target),
+              });
+            },
+            schema,
+          } as SchemaInitializerItemOptions;
+        }),
+    [fields],
+  );
+
+  return filterFields;
 };
 
 const findSchema = (schema: Schema, key: string, action: string) => {

@@ -372,7 +372,7 @@ describe('list association action with acl', () => {
         sortable: false,
         name: 'table_a',
         template: 'tree',
-        tree: 'adjacencyList',
+        tree: 'adjacency-list',
         fields: [
           {
             interface: 'integer',
@@ -391,6 +391,7 @@ describe('list association action with acl', () => {
             interface: 'm2o',
             type: 'belongsTo',
             name: 'parent',
+            treeParent: true,
             foreignKey: 'parentId',
             uiSchema: {
               title: '{{t("Parent")}}',
@@ -409,6 +410,7 @@ describe('list association action with acl', () => {
               'x-component': 'RecordPicker',
               'x-component-props': { multiple: true, fieldNames: { label: 'id', value: 'id' } },
             },
+            treeChildren: true,
             target: 'table_a',
           },
           {

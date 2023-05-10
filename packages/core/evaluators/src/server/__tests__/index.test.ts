@@ -3,8 +3,6 @@ import evaluators from '..';
 const mathEval = evaluators.get('math.js');
 const formulaEval = evaluators.get('formula.js');
 
-
-
 describe('evaluate', () => {
   it('reference null or undefined', () => {
     const result = formulaEval('{{a.b}}', { a: null });
@@ -12,13 +10,30 @@ describe('evaluate', () => {
   });
 
   it('function result string with quote', () => {
-    const result = formulaEval('{{a}}', { a() { return "I'm done." } });
+    const result = formulaEval('{{a}}', {
+      a() {
+        return "I'm done.";
+      },
+    });
     expect(result).toBe("I'm done.");
   });
 
   it('function result number', () => {
-    const result = formulaEval('{{a}}', { a() { return 1 } });
+    const result = formulaEval('{{a}}', {
+      a() {
+        return 1;
+      },
+    });
     expect(result).toBe(1);
+  });
+
+  it('function result Date', () => {
+    const result = formulaEval('{{a}}', {
+      a() {
+        return new Date();
+      },
+    });
+    expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z/);
   });
 
   it('number path to array item 0 (math.js)', () => {

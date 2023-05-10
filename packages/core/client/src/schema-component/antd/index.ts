@@ -10,6 +10,7 @@ export * from './color-select';
 export * from './cron';
 export * from './date-picker';
 export * from './details';
+export * from './expand-action';
 export * from './filter';
 export * from './form';
 export * from './form-item';
@@ -40,5 +41,5 @@ export * from './time-picker';
 export * from './tree-select';
 export * from './upload';
 export * from './variable';
-export * from './gantt'
+export * from './gantt';
 import './index.less';

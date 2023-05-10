@@ -1,7 +1,7 @@
 import { ISchema } from '@formily/react';
 import { defaultProps } from './properties';
 import { IField } from './types';
-import { i18n } from '../../i18n'
+import { i18n } from '../../i18n';
 
 export const markdown: IField = {
   name: 'markdown',
@@ -17,7 +17,7 @@ export const markdown: IField = {
       'x-component': 'Markdown',
     },
   },
-  availableTypes:['text'],
+  availableTypes: ['text'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -37,12 +37,14 @@ export const markdown: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': `{{(field) => {
           const targetValue = field.query('.min').value();
           field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
+              'Max length must greater than min length',
+            )}' : ''
         }}}`,
       },
       min: {
@@ -52,17 +54,19 @@ export const markdown: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': {
           dependencies: ['.max'],
           fulfill: {
             state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
+                'Min length must less than max length',
+              )}' : ''}}`,
             },
           },
         },
       },
     };
-  }
+  },
 };

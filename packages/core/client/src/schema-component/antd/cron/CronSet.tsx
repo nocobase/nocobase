@@ -64,7 +64,14 @@ const CronSetInternal = (props: CronSetProps) => {
   return (
     <fieldset>
       <Select allowClear {...props} value={value} options={options} onChange={(value) => onCronChange(value)}></Select>
-      {isCustomize ? <Cron value={value} onChange={(v) => onCronChange(v, true)} allowedDropdowns={['period', 'week-days', 'months', 'month-days']} allowedPeriods={['year', 'month', 'week', 'day', ]} /> : null}
+      {isCustomize ? (
+        <Cron
+          value={value}
+          onChange={(v) => onCronChange(v, true)}
+          allowedDropdowns={['period', 'week-days', 'months', 'month-days']}
+          allowedPeriods={['year', 'month', 'week', 'day']}
+        />
+      ) : null}
     </fieldset>
   );
 };
@@ -84,7 +91,11 @@ const ReadPretty = (props: CronSetProps) => {
     return value && options?.find((o) => o.value === value)?.label;
   }, [options, value]);
 
-  return <EllipsisWithTooltip ellipsis>{value && (label ? compile(label) : <Cron.ReadPretty {...props} />)}</EllipsisWithTooltip>;
+  return (
+    <EllipsisWithTooltip ellipsis>
+      {value && (label ? compile(label) : <Cron.ReadPretty {...props} />)}
+    </EllipsisWithTooltip>
+  );
 };
 
 export const CronSet = connect(CronSetInternal, mapReadPretty(ReadPretty));

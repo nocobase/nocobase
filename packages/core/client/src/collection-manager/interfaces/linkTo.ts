@@ -175,4 +175,5 @@ export const linkTo: IField = {
       // },
     ],
   },
+  invariable: true,
 };

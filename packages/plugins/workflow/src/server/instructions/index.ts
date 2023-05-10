@@ -23,15 +23,12 @@ export interface Instruction {
   run: Runner;
 
   // for start node in main flow (or branch) to resume when manual sub branch triggered
-  resume?: Runner
+  resume?: Runner;
 }
 
-type InstructionConstructor<T> = { new(p: Plugin): T };
+type InstructionConstructor<T> = { new (p: Plugin): T };
 
-export default function<T extends Instruction>(
-  plugin,
-  more: { [key: string]: T | InstructionConstructor<T> } = {}
-) {
+export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor<T> } = {}) {
   const { instructions } = plugin;
 
   const natives = [
@@ -44,15 +41,19 @@ export default function<T extends Instruction>(
     'create',
     'update',
     'destroy',
-    'request'
-  ].reduce((result, key) => Object.assign(result, {
-    [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key))
-  }), {});
+    'request',
+  ].reduce(
+    (result, key) =>
+      Object.assign(result, {
+        [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key)),
+      }),
+    {},
+  );
 
   for (const [name, instruction] of Object.entries({ ...more, ...natives })) {
-    instructions.register(name, typeof instruction === 'function'
-      ? new (instruction as InstructionConstructor<T>)(plugin)
-      : instruction
+    instructions.register(
+      name,
+      typeof instruction === 'function' ? new (instruction as InstructionConstructor<T>)(plugin) : instruction,
     );
   }
 }

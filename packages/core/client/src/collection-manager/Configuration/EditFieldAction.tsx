@@ -143,7 +143,6 @@ export const EditFieldAction = (props) => {
   const { t } = useTranslation();
   const compile = useCompile();
   const [data, setData] = useState<any>({});
-
   return (
     <RecordProvider record={record}>
       <ActionContext.Provider value={{ visible, setVisible }}>

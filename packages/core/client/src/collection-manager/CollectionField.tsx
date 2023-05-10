@@ -3,16 +3,23 @@ import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useActionContext, useCompile, useComponent, useFormBlockContext, useRecord } from '..';
 import { CollectionFieldProvider } from './CollectionFieldProvider';
 import { useCollectionField } from './hooks';
 
+type Props = {
+  component: any;
+  children?: React.ReactNode;
+};
+
 // TODO: 初步适配
-const InternalField: React.FC = (props) => {
+const InternalField: React.FC = (props: Props) => {
+  const { component } = props;
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { uiSchema, defaultValue } = useCollectionField();
-  const component = useComponent(uiSchema?.['x-component'] || 'Input');
+  const Component = useComponent(component || uiSchema?.['x-component'] || 'Input');
   const compile = useCompile();
   const setFieldProps = (key, value) => {
     field[key] = typeof field[key] === 'undefined' ? value : field[key];
@@ -57,12 +64,12 @@ const InternalField: React.FC = (props) => {
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
     const componentProps = merge(originalProps, field.componentProps || {});
-    field.component = [component, componentProps];
+    field.component = [Component, componentProps];
   }, [JSON.stringify(uiSchema)]);
   if (!uiSchema) {
     return null;
   }
-  return React.createElement(component, props, props.children);
+  return React.createElement(Component, props, props.children);
 };
 
 export const InternalFallbackField = () => {
@@ -91,6 +98,12 @@ export const InternalFallbackField = () => {
   return <div>{displayText}</div>;
 };
 
+// 当字段被删除时，显示一个提示占位符
+const DeletedField = () => {
+  const { t } = useTranslation();
+  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
+};
+
 export const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   const field = fieldSchema?.['x-component-props']?.['field'];
@@ -99,7 +112,7 @@ export const CollectionField = connect((props) => {
     <CollectionFieldProvider
       name={fieldSchema.name}
       field={field}
-      fallback={snapshot ? <InternalFallbackField /> : null}
+      fallback={snapshot ? <InternalFallbackField /> : <DeletedField />}
     >
       <InternalField {...props} />
     </CollectionFieldProvider>

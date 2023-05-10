@@ -27,7 +27,7 @@ export const jsonConfigDesc = (title: string, link: string) => {
   return (
     <span>
       {lang('Json config references: ')}
-      <a href={link} target="_blank">
+      <a href={link} target="_blank" rel="noreferrer">
         {lang(title)}
       </a>
     </span>

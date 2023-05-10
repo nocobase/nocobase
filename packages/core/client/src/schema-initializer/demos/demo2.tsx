@@ -3,7 +3,7 @@ import {
   ActionBar,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerProvider
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';
 

@@ -18,7 +18,7 @@ import {
   SchemaComponentProvider,
   SchemaInitializer,
   SchemaInitializerProvider,
-  useCollectionManager
+  useCollectionManager,
 } from '@nocobase/client';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useContext } from 'react';

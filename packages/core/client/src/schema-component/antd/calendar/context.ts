@@ -7,4 +7,4 @@ export const DeleteEventContext = createContext(null);
 
 export const useDeleteEvent = () => {
   return useContext(DeleteEventContext);
-}
+};
