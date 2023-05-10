@@ -22,12 +22,11 @@ const SigninPageContext = createContext<{
   };
 }>({});
 
-export const SigninPageProvider = (props: {
+export const SigninPageProvider: React.FC<{
   authType: string;
   component: FunctionComponent<{ name: string }>;
   tabTitle?: string;
-  children: JSX.Element;
-}) => {
+}> = (props) => {
   const components = useContext(SigninPageContext);
   components[props.authType] = {
     component: props.component,

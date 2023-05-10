@@ -36,6 +36,7 @@ export class PresetNocoBase extends Plugin {
     'map',
     'snapshot-field',
     'graph-collection-manager',
+    'sms-auth',
   ];
 
   splitNames(name: string) {

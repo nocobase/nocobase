@@ -5,9 +5,9 @@ import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
 
 export class BasicAuth extends BaseAuth {
-  constructor(options: { [key: string]: any }, ctx: Context) {
-    const userCollection = ctx.db.getCollection('users');
-    super(options, userCollection, ctx);
+  constructor(config: { options: { [key: string]: any }; ctx: Context }) {
+    const userCollection = config.ctx.db.getCollection('users');
+    super({ ...config, userCollection });
   }
 
   async validate() {

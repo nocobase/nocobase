@@ -13,13 +13,12 @@ export const SignupPageContext = createContext<{
   };
 }>({});
 
-export const SignupPageProvider = (props: {
+export const SignupPageProvider: React.FC<{
   authType: string;
   component: FunctionComponent<{
     name: string;
   }>;
-  children: JSX.Element;
-}) => {
+}> = (props) => {
   const components = useContext(SignupPageContext);
   components[props.authType] = {
     component: props.component,

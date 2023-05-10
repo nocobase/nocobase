@@ -1,0 +1,104 @@
+import { Database, Model, ModelStatic } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
+import SmsAuthPlugin from '../plugin';
+import VerificationPlugin from '@nocobase/plugin-verification';
+
+class Provider {
+  constructor(protected plugin: VerificationPlugin, protected options) {}
+
+  async send(receiver: string, data: { [key: string]: any }): Promise<any> {}
+}
+
+describe('signin', () => {
+  let app: MockServer;
+  let db: Database;
+  let verificationModel: ModelStatic<Model>;
+  let authenticator: Model;
+  let agent;
+
+  beforeAll(async () => {
+    app = mockServer({
+      plugins: ['users', 'auth', 'verification', 'acl'],
+    });
+    app.plugin(SmsAuthPlugin);
+    await app.loadAndInstall({ clean: true });
+    db = app.db;
+    agent = app.agent();
+
+    const verificationPlugin: VerificationPlugin = app.getPlugin('verification');
+    verificationPlugin.providers.register('fake', Provider as any);
+    const VerificationProviderRepo = db.getRepository('verifications_providers');
+    await VerificationProviderRepo.create({
+      values: {
+        type: 'fake',
+        default: true,
+      },
+    });
+    verificationModel = db.getCollection('verifications').model;
+
+    const authenticatorRepo = db.getRepository('authenticators');
+    authenticator = await authenticatorRepo.create({
+      values: {
+        name: 'sms-auth',
+        authType: 'sms',
+        enabled: 1,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await db.close();
+  });
+
+  it('should create new user and sign in via phone number', async () => {
+    let res = await agent.resource('verifications').create({
+      values: {
+        type: 'auth:signIn',
+        phone: '1',
+      },
+    });
+    const verification = await verificationModel.findByPk(res.body.data.id);
+    res = await agent.set({ 'X-Authenticator': 'sms-auth' }).post('/auth:signIn').send({
+      phone: '1',
+      code: verification.content,
+    });
+    expect(res.statusCode).toBe(200);
+    const data = res.body.data;
+    const token = data.token;
+    expect(token).toBeDefined();
+    expect(res.body.data.user).toBeDefined();
+    expect(res.body.data.user.nickname).toEqual('1');
+  });
+
+  it('should sign in via phone number', async () => {
+    const phone = '2';
+    await authenticator.createUser(
+      {
+        nickname: phone,
+        phone: phone,
+      },
+      {
+        through: {
+          uuid: phone,
+        },
+      },
+    );
+    let res = await agent.resource('verifications').create({
+      values: {
+        type: 'auth:signIn',
+        phone: '2',
+      },
+    });
+    const verification = await verificationModel.findByPk(res.body.data.id);
+    res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'sms-auth' }).send({
+      phone: '2',
+      code: verification.content,
+    });
+    expect(res.statusCode).toEqual(200);
+    const data = res.body.data;
+    const token = data.token;
+    expect(token).toBeDefined();
+    expect(res.body.data.user).toBeDefined();
+    expect(res.body.data.user.nickname).toBe('2');
+  });
+});
