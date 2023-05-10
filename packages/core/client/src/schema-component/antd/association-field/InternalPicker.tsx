@@ -1,4 +1,4 @@
-import { RecursionField, useField, useFieldSchema, observer } from '@formily/react';
+import { RecursionField, useField, useFieldSchema, observer,useForm } from '@formily/react';
 import { Button, Input, Select } from 'antd';
 import React, { useState, useEffect, useContext } from 'react';
 import { differenceBy, unionBy } from 'lodash';
@@ -86,6 +86,7 @@ export const InternalPicker = observer((props: any) => {
     association: {
       target: collectionField?.target,
     },
+    options,
     onChange: props?.onChange,
     selectedRows,
     setSelectedRows,
