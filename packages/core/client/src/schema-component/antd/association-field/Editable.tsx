@@ -47,7 +47,7 @@ export const Editable = observer((props: any) => {
             form.setValuesIn(field.props.name, value);
           }, 100);
         } else {
-          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]));
+          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]||[]));
           values.push({
             ...data,
           });

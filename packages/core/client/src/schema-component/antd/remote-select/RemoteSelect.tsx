@@ -2,6 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import moment from 'moment';
+import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -156,7 +157,7 @@ const InternalRemoteSelect = connect(
     const getOptionsByFieldNames = useCallback(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
-          const value = item[fieldNames[key]];
+          const value = item?.[fieldNames[key]];
           if (value) {
             // support hidden, disabled, etc.
             obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
@@ -185,9 +186,13 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
-      return data?.data?.map(getOptionsByFieldNames) || [];
+      return uniqBy(
+        data?.data
+          ?.map(getOptionsByFieldNames)
+          .concat(Array.isArray(value) ? value.map(normalizeOptions) : [normalizeOptions(value)]) || [],
+        fieldNames.value,
+      );
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
-
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
         return;
