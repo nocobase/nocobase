@@ -43,11 +43,10 @@ const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
     if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
       return;
     }
-
     if (Array.isArray(props.value)) {
-      return props.value.map(normalizeValues);
+      return props.value;
     } else {
-      return normalizeValues(props.value);
+      return props.value;
     }
   }, [props.value, normalizeValues]);
   useEffect(() => {

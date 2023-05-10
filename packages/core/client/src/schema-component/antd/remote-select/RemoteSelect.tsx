@@ -95,6 +95,7 @@ const InternalRemoteSelect = connect(
               });
             }
             return {
+              ...option,
               [fieldNames.label]: label || option[fieldNames.value],
               [fieldNames.value]: option[fieldNames.value],
             };
@@ -157,12 +158,6 @@ const InternalRemoteSelect = connect(
     const getOptionsByFieldNames = useCallback(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
-          const value = item?.[fieldNames[key]];
-          if (value) {
-            // support hidden, disabled, etc.
-            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
-              key === 'label' ? compile(value) : value;
-          }
           return obj;
         }, {} as any);
       },
@@ -180,18 +175,10 @@ const InternalRemoteSelect = connect(
 
     const options = useMemo(() => {
       if (!data?.data?.length) {
-        return value !== undefined && value !== null
-          ? Array.isArray(value)
-            ? value.map(normalizeOptions)
-            : [normalizeOptions(value)]
-          : [];
+        return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      const valueOptions =
-        (value !== undefined &&
-          value !== null &&
-          (Array.isArray(value) ? value.map(normalizeOptions) : [normalizeOptions(value)])) ||
-        [];
-      return uniqBy(data?.data?.map(getOptionsByFieldNames).concat(valueOptions) || [], fieldNames.value);
+      const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
+      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
