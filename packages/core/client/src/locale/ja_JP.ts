@@ -558,7 +558,6 @@ export default {
   "Subform": "サブフォーム",
   "Sub-details":"サブリスト",
   "Field mode":"フィールドコンポーネント",
-  "File Manager":"ファイルマネージャ",
   "Allow add new data":"データの追加を許可",
   "Regular expression": "正規表現",
   "Enabled languages": "利用可能な言語",
