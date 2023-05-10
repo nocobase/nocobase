@@ -134,7 +134,10 @@ export const TableColumnDesigner = (props) => {
                 ...fieldSchema?.['x-component-props'],
                 enableLink: flag,
               };
-              field.componentProps['enableLink'] = flag;
+              field.componentProps = {
+                ...fieldSchema?.['x-component-props'],
+                enableLink: flag,
+              };
               dn.emit('patch', {
                 schema: {
                   'x-uid': fieldSchema['x-uid'],

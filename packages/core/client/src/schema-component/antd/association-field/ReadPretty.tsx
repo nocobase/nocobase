@@ -10,9 +10,9 @@ import { FileManageReadPretty } from './FileManager';
 import { ReadPrettyRecordPicker } from '../../antd/record-picker';
 
 export const ReadPretty = observer((props: any) => {
-  const { enableLink } = props;
   const field: any = useField();
   const fieldSchema = useFieldSchema();
+  const { enableLink } = fieldSchema['x-component-props'];
   const { getField } = useCollection();
   const { getCollection } = useCollectionManager();
   const collectionField = getField(field.props.name);
