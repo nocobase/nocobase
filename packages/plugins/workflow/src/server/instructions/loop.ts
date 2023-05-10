@@ -20,7 +20,7 @@ function getTargetLength(target) {
 export default {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const [branch] = processor.getBranches(node);
-    const target = processor.getParsedValue(node.config.target);
+    const target = processor.getParsedValue(node.config.target, node);
     const length = getTargetLength(target);
 
     if (!branch || !length) {
@@ -62,7 +62,7 @@ export default {
 
     const nextIndex = result + 1;
 
-    const target = processor.getParsedValue(loop.config.target);
+    const target = processor.getParsedValue(loop.config.target, node);
     // branchJob.status === JOB_STATUS.RESOLVED means branchJob is done, try next loop or exit as resolved
     const length = getTargetLength(target);
     if (branchJob.status > JOB_STATUS.PENDING && nextIndex < length) {
@@ -88,7 +88,7 @@ export default {
   },
 
   getScope(node, index, processor) {
-    const target = processor.getParsedValue(node.config.target);
+    const target = processor.getParsedValue(node.config.target, node);
     const targets = (Array.isArray(target) ? target : [target]).filter((t) => t != null);
     const length = getTargetLength(target);
     const item = typeof target === 'number' ? index : targets[index];
