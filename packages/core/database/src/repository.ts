@@ -9,6 +9,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
+  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -202,6 +203,12 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 }
 
+interface AggregateOptions {
+  method: 'avg' | 'count' | 'min' | 'max' | 'sum';
+  field?: string;
+  filter?: Filter;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   implements IRepository
 {
@@ -259,6 +266,33 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
+  async aggregate(options: AggregateOptions): Promise<any> {
+    const transaction = await this.getTransaction(options);
+    const { method, field } = options;
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    const results = await this.model.findAll({
+      ...queryOptions,
+      attributes: [
+        [
+          Sequelize.literal(
+            `${method}(${this.database.sequelize
+              .getQueryInterface()
+              .quoteIdentifiers(`${this.collection.name}.${field}`)})`,
+          ),
+          `${method}`,
+        ],
+      ],
+      raw: true,
+      transaction,
+    });
+
+    return results[0][method];
+  }
   /**
    * find
    * @param options
