@@ -53,6 +53,25 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     return await targetRepository.find(findOptions);
   }
 
+  async aggregate(options) {
+    const targetRepository = this.targetCollection.repository;
+    const addFilter = {
+      [this.association.foreignKey]: this.sourceKeyValue,
+    };
+    if (options?.filterByTk) {
+      addFilter[this.associationField.targetKey] = options.filterByTk;
+    }
+
+    const aggOptions = {
+      ...options,
+      filter: {
+        $and: [options.filter || {}, addFilter],
+      },
+    };
+
+    return await targetRepository.aggregate(aggOptions);
+  }
+
   @transaction((args, transaction) => {
     return {
       filterByTk: args[0],

@@ -1,6 +1,92 @@
-import { mockDatabase } from '@nocobase/database';
+import { HasManyRepository, mockDatabase } from '../../index';
 import Database from '../../database';
 import { Collection } from '../../collection';
+
+describe('association aggregation', () => {
+  let db: Database;
+
+  let User: Collection;
+  let Post: Collection;
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  beforeEach(async () => {
+    db = mockDatabase();
+    await db.clean({ drop: true });
+
+    User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
+        { type: 'hasMany', name: 'posts' },
+      ],
+    });
+
+    Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'string',
+          name: 'category',
+        },
+        {
+          type: 'integer',
+          name: 'readCount',
+        },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          age: 1,
+          posts: [
+            { title: 'p1', category: 'c1', readCount: 1 },
+            { title: 'p2', category: 'c2', readCount: 2 },
+          ],
+        },
+        {
+          name: 'u2',
+          age: 2,
+          posts: [
+            { title: 'p3', category: 'c3', readCount: 3 },
+            { title: 'p4', category: 'c4', readCount: 4 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it('should sum field', async () => {
+    const user1 = await User.repository.findOne({
+      filter: {
+        name: 'u1',
+      },
+    });
+
+    const PostRepository = await db.getRepository<HasManyRepository>('users.posts', user1.get('id'));
+    const sumResult = await PostRepository.aggregate({
+      field: 'readCount',
+      method: 'sum',
+    });
+
+    expect(sumResult).toEqual(3);
+  });
+});
 
 describe('Aggregation', () => {
   let db: Database;

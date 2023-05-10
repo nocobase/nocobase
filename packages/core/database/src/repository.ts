@@ -271,6 +271,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const transaction = await this.getTransaction(options);
     const { method, field } = options;
 
+    const fieldAttribute = this.collection.model.rawAttributes[field];
+
     const queryOptions = this.buildQueryOptions({
       ...options,
       fields: [],
@@ -283,7 +285,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
           Sequelize.literal(
             `${method}(${options.distinct ? 'distinct' : ''} ${this.database.sequelize
               .getQueryInterface()
-              .quoteIdentifiers(`${this.collection.name}.${field}`)})`,
+              .quoteIdentifiers(`${this.collection.name}.${fieldAttribute.field}`)})`,
           ),
           `${method}`,
         ],
