@@ -15,6 +15,7 @@ export const Editable = observer((props: any) => {
   useEffect(() => {
     props.mode && setCurrentMode(props.mode);
   }, [props.mode]);
+  const { multiple } = props;
   const field: any = useField();
   const form = useForm();
   const fieldSchema = useFieldSchema();
@@ -39,20 +40,20 @@ export const Editable = observer((props: any) => {
       async onClick() {
         await onClick();
         const { data } = actionField.data?.data?.data || {};
-        if (['oho', 'obo', 'm2o'].includes(collectionField.interface)) {
-          const value = {
-            ...data,
-          };
-          setTimeout(() => {
-            form.setValuesIn(field.props.name, value);
-          }, 100);
-        } else {
+        if (['m2m', 'o2m'].includes(collectionField.interface) && multiple !== false) {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
           values.push({
             ...data,
           });
           setTimeout(() => {
             form.setValuesIn(field.props.name, values);
+          }, 100);
+        } else {
+          const value = {
+            ...data,
+          };
+          setTimeout(() => {
+            form.setValuesIn(field.props.name, value);
           }, 100);
         }
       },
