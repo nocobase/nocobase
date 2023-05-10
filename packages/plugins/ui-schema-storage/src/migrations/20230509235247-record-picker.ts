@@ -43,10 +43,11 @@ export default class extends Migration {
         }
         if (schema['x-component-props']?.mode === 'tags') {
           schema['x-component-props']['enableLink'] = true;
+          schema['x-component-props']['mode'] = 'Select';
         } else if (schema['x-component-props']?.mode === 'links') {
           schema['x-component-props']['enableLink'] = true;
+          schema['x-component-props']['mode'] = 'Select';
         }
-        schema['x-component-props']['mode'] = 'Picker';
         item.set('schema', schema);
         await item.save({ transaction });
       }
