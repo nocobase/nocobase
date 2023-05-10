@@ -204,6 +204,62 @@ export const useCreateActionProps = () => {
   };
 };
 
+export const useAssociationCreateActionProps = () => {
+  const form = useForm();
+  const { field, resource } = useBlockRequestContext();
+  const { setVisible, fieldSchema } = useActionContext();
+  const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const { fields, getField, getTreeParentField } = useCollection();
+  const compile = useCompile();
+  const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
+  return {
+    async onClick() {
+      const fieldNames = fields.map((field) => field.name);
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const addChild = fieldSchema?.['x-component-props']?.addChild;
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+      if (!skipValidator) {
+        await form.submit();
+      }
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      if (addChild) {
+        const treeParentField = getTreeParentField();
+        values[treeParentField?.name ?? 'parent'] = currentRecord;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
+      }
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        const data = await resource.create({
+          values: {
+            ...values,
+            ...overwriteValues,
+            ...assignedValues,
+          },
+        });
+        actionField.data.loading = false;
+        actionField.data.data = data;
+        setVisible?.(false);
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        message.success(compile(onSuccess?.successMessage));
+      } catch (error) {
+        actionField.data.loading = false;
+      }
+    },
+  };
+};
+
 export interface FilterTarget {
   targets?: {
     /** field uid */

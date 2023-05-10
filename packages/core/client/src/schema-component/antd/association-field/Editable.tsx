@@ -4,7 +4,7 @@ import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { AssociationSelect } from './AssociationSelect';
-import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
+import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
@@ -47,7 +47,7 @@ export const Editable = observer((props: any) => {
             form.setValuesIn(field.props.name, value);
           }, 100);
         } else {
-          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name]||[]));
+          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
           values.push({
             ...data,
           });

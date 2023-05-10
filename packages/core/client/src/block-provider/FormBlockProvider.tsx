@@ -102,8 +102,6 @@ export const useFormBlockProps = () => {
   const ctx = useFormBlockContext();
   const record = useRecord();
   const { fieldSchema } = useActionContext();
-  const field = useField();
-
   const addChild = fieldSchema?.['x-component-props']?.addChild;
   useEffect(() => {
     if (addChild) {
@@ -113,27 +111,10 @@ export const useFormBlockProps = () => {
       });
     }
   });
-  function hasValue(obj) {
-    if (obj == null) return false;
-    if (typeof obj === 'string' || Array.isArray(obj)) return obj.length > 0;
-    if (typeof obj === 'object') {
-      for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-          if (hasValue(obj[key])) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-    return true;
-  }
+
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const isHasvale = hasValue(ctx.form.values);
-      if (!isHasvale) {
-        ctx.form?.setInitialValues(ctx.service?.data?.data);
-      }
+      ctx.form?.setInitialValues(ctx.service?.data?.data);
     }
   }, [ctx?.service?.loading]);
   return {
