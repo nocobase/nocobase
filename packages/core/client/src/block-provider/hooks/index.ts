@@ -1100,12 +1100,13 @@ export const useAssociationNames = (collection) => {
     return schema.reduceProperties((buf, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (
-        s['x-component'] === 'CollectionField' &&
+        collectionfield &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
       ) {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
+
         buf.push(s.name);
         if (s['x-component-props'].mode === 'Nester') {
           return getAssociationAppends(s, buf);
