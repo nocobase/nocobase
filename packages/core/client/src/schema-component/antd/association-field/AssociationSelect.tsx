@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, RecursionField, useFieldSchema, useField } from '@formily/react';
+import { connect, mapProps, RecursionField, useFieldSchema, useField, observer } from '@formily/react';
 import { Button, Input } from 'antd';
 import _ from 'lodash';
 import { ActionContext } from '../action';
-import React, { memo, useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useFieldTitle } from '../../hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import { useInsertSchema } from './hooks';
@@ -17,7 +17,7 @@ export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   multiple?: boolean;
 };
 
-const InternalAssociationSelect = memo((props: AssociationSelectProps) => {
+const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { fieldNames, objectValue = true } = props;
   const field: any = useField();
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);

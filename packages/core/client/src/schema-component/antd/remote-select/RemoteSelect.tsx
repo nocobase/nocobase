@@ -39,7 +39,6 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
-    console.log(field.componentProps?.service?.params?.filter);
     const { getField } = useCollection();
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
@@ -189,6 +188,7 @@ const InternalRemoteSelect = connect(
       run();
       firstRun.current = true;
     };
+
     return (
       <Select
         autoClearSearchValue

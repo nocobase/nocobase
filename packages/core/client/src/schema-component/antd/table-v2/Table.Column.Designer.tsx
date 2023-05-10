@@ -25,7 +25,7 @@ const useLabelFields = (collectionName?: any) => {
 
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
-  const { getInterface,getCollection } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   const field = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
@@ -128,17 +128,18 @@ export const TableColumnDesigner = (props) => {
         !isFileField && (
           <SchemaSettings.SwitchItem
             title={t('Enable link')}
-            checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+            checked={fieldSchema['x-component-props']?.enableLink !== false}
             onChange={(flag) => {
               fieldSchema['x-component-props'] = {
                 ...fieldSchema?.['x-component-props'],
-                mode: flag ? 'links' : 'tags',
+                enableLink: flag,
               };
+              field.componentProps['enableLink'] = flag;
               dn.emit('patch', {
                 schema: {
                   'x-uid': fieldSchema['x-uid'],
                   'x-component-props': {
-                    ...fieldSchema['x-component-props'],
+                    ...fieldSchema?.['x-component-props'],
                   },
                 },
               });
