@@ -284,6 +284,7 @@ export default {
   "Subtable": "Subtable",
   "Subform": "Sub-form",
   "Field mode":"Field mode",
+  "File Manager":"File Manager",
   "Allow add new data":"Allow add new data",
   "Record picker": "Record picker",
   "Toggles the subfield mode": "Toggles the subfield mode",
