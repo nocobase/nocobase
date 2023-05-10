@@ -21,7 +21,7 @@ export const useFieldModeOptions = () => {
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return isReadPretty?[
-        { label: t('Text and link'), value: 'Select' },
+        { label: t('Title'), value: 'Select' },
         { label: t('File Manager'), value: 'FileManager' },
       ]:[
         { label: t('File Manager'), value: 'FileManager' },
@@ -34,9 +34,9 @@ export const useFieldModeOptions = () => {
       case 'o2m':
         return isReadPretty
           ? [
-              { label: t('Text and link'), value: 'Select' },
+              { label: t('Title'), value: 'Select' },
               // { label: t('Subtable'), value: 'SubTable' },
-              { label: t('Sub-list'), value: 'Nester' },
+              { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
@@ -50,8 +50,8 @@ export const useFieldModeOptions = () => {
       case 'linkTo':
         return isReadPretty
           ? [
-              { label: t('Text and link'), value: 'Select' },
-              { label: t('Sub-list'), value: 'Nester' },
+              { label: t('Title'), value: 'Select' },
+              { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
@@ -62,8 +62,8 @@ export const useFieldModeOptions = () => {
       default:
         return isReadPretty
           ? [
-              { label: t('Text and link'), value: 'Select' },
-              { label: t('Sub-list'), value: 'Nester' },
+              { label: t('Title'), value: 'Select' },
+              { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
