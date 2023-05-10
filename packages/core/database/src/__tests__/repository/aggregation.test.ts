@@ -1,4 +1,4 @@
-import { HasManyRepository, mockDatabase } from '../../index';
+import { BelongsToManyRepository, HasManyRepository, mockDatabase } from '../../index';
 import Database from '../../database';
 import { Collection } from '../../collection';
 
@@ -7,6 +7,7 @@ describe('association aggregation', () => {
 
   let User: Collection;
   let Post: Collection;
+  let Tag: Collection;
 
   afterEach(async () => {
     await db.close();
@@ -22,6 +23,10 @@ describe('association aggregation', () => {
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
+        {
+          type: 'belongsToMany',
+          name: 'tags',
+        },
       ],
     });
 
@@ -47,44 +52,162 @@ describe('association aggregation', () => {
       ],
     });
 
-    await db.sync();
-
-    await User.repository.create({
-      values: [
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
         {
-          name: 'u1',
-          age: 1,
-          posts: [
-            { title: 'p1', category: 'c1', readCount: 1 },
-            { title: 'p2', category: 'c2', readCount: 2 },
-          ],
+          type: 'string',
+          name: 'name',
         },
         {
-          name: 'u2',
-          age: 2,
-          posts: [
-            { title: 'p3', category: 'c3', readCount: 3 },
-            { title: 'p4', category: 'c4', readCount: 4 },
-          ],
+          type: 'integer',
+          name: 'score',
         },
       ],
     });
+
+    await db.sync();
   });
 
-  it('should sum field', async () => {
-    const user1 = await User.repository.findOne({
-      filter: {
-        name: 'u1',
-      },
+  describe('belongs to many', () => {
+    beforeEach(async () => {
+      await User.repository.create({
+        values: [
+          {
+            name: 'u1',
+            age: 1,
+            tags: [
+              { name: 't1', score: 1 },
+              { name: 't2', score: 2 },
+            ],
+          },
+          {
+            name: 'u2',
+            age: 2,
+            tags: [
+              { name: 't3', score: 3 },
+              { name: 't4', score: 4 },
+              { name: 't5', score: 4 },
+            ],
+          },
+        ],
+      });
     });
 
-    const PostRepository = await db.getRepository<HasManyRepository>('users.posts', user1.get('id'));
-    const sumResult = await PostRepository.aggregate({
-      field: 'readCount',
-      method: 'sum',
+    it('should sum field', async () => {
+      const user1 = await User.repository.findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      const TagRepository = await db.getRepository<BelongsToManyRepository>('users.tags', user1.get('id'));
+
+      const sumResult = await TagRepository.aggregate({
+        field: 'score',
+        method: 'sum',
+      });
+
+      expect(sumResult).toEqual(3);
     });
 
-    expect(sumResult).toEqual(3);
+    it('should sum with filter', async () => {
+      const user1 = await User.repository.findOne({
+        filter: {
+          name: 'u2',
+        },
+      });
+
+      const TagRepository = await db.getRepository<BelongsToManyRepository>('users.tags', user1.get('id'));
+
+      const sumResult = await TagRepository.aggregate({
+        field: 'score',
+        method: 'sum',
+        filter: {
+          score: 4,
+        },
+      });
+
+      expect(sumResult).toEqual(8);
+    });
+
+    it('should sum with distinct', async () => {
+      const user1 = await User.repository.findOne({
+        filter: {
+          name: 'u2',
+        },
+      });
+
+      const TagRepository = await db.getRepository<BelongsToManyRepository>('users.tags', user1.get('id'));
+
+      const sumResult = await TagRepository.aggregate({
+        field: 'score',
+        method: 'sum',
+        distinct: true,
+        filter: {
+          score: 4,
+        },
+      });
+
+      expect(sumResult).toEqual(4);
+    });
+  });
+
+  describe('has many', () => {
+    beforeEach(async () => {
+      await User.repository.create({
+        values: [
+          {
+            name: 'u1',
+            age: 1,
+            posts: [
+              { title: 'p1', category: 'c1', readCount: 1 },
+              { title: 'p2', category: 'c2', readCount: 2 },
+            ],
+          },
+          {
+            name: 'u2',
+            age: 2,
+            posts: [
+              { title: 'p3', category: 'c3', readCount: 3 },
+              { title: 'p4', category: 'c4', readCount: 4 },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should sum field', async () => {
+      const user1 = await User.repository.findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      const PostRepository = await db.getRepository<HasManyRepository>('users.posts', user1.get('id'));
+      const sumResult = await PostRepository.aggregate({
+        field: 'readCount',
+        method: 'sum',
+      });
+
+      expect(sumResult).toEqual(3);
+    });
+
+    it('should sum with filter', async () => {
+      const user1 = await User.repository.findOne({
+        filter: {
+          name: 'u1',
+        },
+      });
+
+      const PostRepository = await db.getRepository<HasManyRepository>('users.posts', user1.get('id'));
+      const sumResult = await PostRepository.aggregate({
+        field: 'readCount',
+        method: 'sum',
+      });
+
+      expect(sumResult).toEqual(3);
+    });
   });
 });
 

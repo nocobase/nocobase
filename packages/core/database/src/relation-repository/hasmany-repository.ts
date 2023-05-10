@@ -58,6 +58,7 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     const addFilter = {
       [this.association.foreignKey]: this.sourceKeyValue,
     };
+
     if (options?.filterByTk) {
       addFilter[this.associationField.targetKey] = options.filterByTk;
     }

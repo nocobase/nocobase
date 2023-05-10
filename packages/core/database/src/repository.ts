@@ -208,6 +208,7 @@ interface AggregateOptions {
   field?: string;
   filter?: Filter;
   distinct?: boolean;
+  optionsTransformer?: (options: any) => any;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -277,6 +278,8 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       ...options,
       fields: [],
     });
+
+    options.optionsTransformer?.(queryOptions);
 
     const results = await this.model.findAll({
       ...queryOptions,
