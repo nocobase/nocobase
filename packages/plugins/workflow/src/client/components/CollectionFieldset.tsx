@@ -48,7 +48,7 @@ export default observer(({ value, disabled, onChange }: any) => {
       !['formula'].includes(field.type),
   );
 
-  const unassignedFields = fields.filter((field) => !(field.name in value));
+  const unassignedFields = fields.filter((field) => !value || !(field.name in value));
   const scope = useWorkflowVariableOptions();
   const mergedDisabled = disabled || form.disabled;
 
@@ -69,7 +69,7 @@ export default observer(({ value, disabled, onChange }: any) => {
       {fields.length ? (
         <CollectionProvider collection={getCollection(collectionName)}>
           {fields
-            .filter((field) => field.name in value)
+            .filter((field) => value && field.name in value)
             .map((field) => {
               // constant for associations to use Input, others to use CollectionField
               // dynamic values only support belongsTo/hasOne association, other association type should disable
