@@ -186,12 +186,12 @@ const InternalRemoteSelect = connect(
             : [normalizeOptions(value)]
           : [];
       }
-      return uniqBy(
-        data?.data
-          ?.map(getOptionsByFieldNames)
-          .concat(Array.isArray(value) ? value.map(normalizeOptions) : [normalizeOptions(value)]) || [],
-        fieldNames.value,
-      );
+      const valueOptions =
+        (value !== undefined &&
+          value !== null &&
+          (Array.isArray(value) ? value.map(normalizeOptions) : [normalizeOptions(value)])) ||
+        [];
+      return uniqBy(data?.data?.map(getOptionsByFieldNames).concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
