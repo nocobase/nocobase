@@ -559,6 +559,7 @@ FormItem.Designer = function Designer() {
             filter = removeNullCondition(filter);
             _.set(field.componentProps, 'service.params.filter', filter);
             fieldSchema['x-component-props'] = field.componentProps;
+            field.componentProps=field.componentProps;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
