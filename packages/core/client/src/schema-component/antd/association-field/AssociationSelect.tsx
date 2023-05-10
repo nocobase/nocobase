@@ -1,16 +1,14 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, RecursionField, useFieldSchema, useField, observer } from '@formily/react';
+import { RecursionField, connect, mapProps, observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Input } from 'antd';
-import _ from 'lodash';
-import { ActionContext } from '../action';
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { useFieldTitle } from '../../hooks';
+import { ActionContext } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
-import { useInsertSchema } from './hooks';
-import useServiceOptions from './hooks';
-import { useCollection } from '../../../collection-manager';
+import useServiceOptions, { useInsertSchema } from './hooks';
 import schema from './schema';
-import { CollectionProvider } from '../../../collection-manager';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -28,7 +26,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
   const isAllowAddNew = fieldSchema['x-add-new'];
   const insertAddNewer = useInsertSchema('AddNewer');
-  useFieldTitle();
+  const { t } = useTranslation();
   const normalizeValues = useCallback(
     (obj) => {
       if (!objectValue && typeof obj === 'object') {
@@ -70,7 +68,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
               setVisibleAddNewer(true);
             }}
           >
-            Add new
+            {t('Add new')}
           </Button>
         )}
       </Input.Group>
