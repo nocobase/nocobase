@@ -676,7 +676,8 @@ FormItem.Designer = function Designer() {
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
             if (mode === 'Nester') {
-              field.value = field.value || {};
+              const initValue = ['o2m', 'm2m'].includes(collectionField.interface) ? [] : {};
+              field.value = field.value || initValue;
             }
             dn.emit('patch', {
               schema,

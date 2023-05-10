@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema, useField } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import moment from 'moment';
 import { uniqBy } from 'lodash';
@@ -38,6 +38,8 @@ const InternalRemoteSelect = connect(
     const compile = useCompile();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
+    const field = useField();
+    console.log(field.componentProps?.service?.params?.filter);
     const { getField } = useCollection();
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
@@ -117,7 +119,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([service?.params?.filter]),
+          filter: mergeFilter([field.componentProps?.service?.params?.filter || service?.params?.filter]),
         },
       },
       {
@@ -150,7 +152,7 @@ const InternalRemoteSelect = connect(
               [operator]: search,
             },
           },
-          service?.params?.filter,
+          field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
     };
@@ -187,7 +189,6 @@ const InternalRemoteSelect = connect(
       run();
       firstRun.current = true;
     };
-
     return (
       <Select
         autoClearSearchValue
