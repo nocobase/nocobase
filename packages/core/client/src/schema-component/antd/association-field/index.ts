@@ -1,10 +1,10 @@
 import { connect, mapReadPretty } from '@formily/react';
 import { Action } from '../action';
 import { Editable } from './Editable';
+import { InternalPicker } from './InternalPicker';
 import { Nester } from './Nester';
 import { ReadPretty } from './ReadPretty';
 import { SubTable } from './SubTable';
-import { InternalPicker } from './InternalPicker';
 
 export const AssociationField: any = connect(Editable, mapReadPretty(ReadPretty));
 

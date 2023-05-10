@@ -20,8 +20,13 @@ import {
 import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { extractIndex, getIdsWithChildren, isCollectionFieldComponent, isColumnComponent } from './utils';
 
-const useTableColumns = () => {
+const useArrayField = (props) => {
   const field = useField<ArrayField>();
+  return (props.field || field) as ArrayField;
+};
+
+const useTableColumns = (props) => {
+  const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
@@ -52,7 +57,11 @@ const useTableColumns = () => {
           return (
             <RecordIndexProvider index={record.__index || index}>
               <RecordProvider record={record}>
-                <RecursionField schema={s} name={record.__index || index} onlyRenderProperties />
+                <RecursionField
+                  basePath={field.address.concat(record.__index || index)}
+                  schema={s}
+                  onlyRenderProperties
+                />
               </RecordProvider>
             </RecordIndexProvider>
           );
@@ -155,8 +164,6 @@ const useValidator = (validator: (value: any) => string) => {
 };
 
 export const Table: any = observer((props: any) => {
-  const field = useField<ArrayField>();
-  const columns = useTableColumns();
   const { pagination: pagination1, useProps, onChange, ...others1 } = props;
   const { pagination: pagination2, onClickRow, ...others2 } = useProps?.() || {};
   const {
@@ -170,6 +177,8 @@ export const Table: any = observer((props: any) => {
     onExpand,
     ...others
   } = { ...others1, ...others2 } as any;
+  const field = useArrayField(others);
+  const columns = useTableColumns(others);
   const schema = useFieldSchema();
   const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
   const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();

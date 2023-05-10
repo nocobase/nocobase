@@ -119,24 +119,21 @@ export default {
   },
   SubTable: {
     type: 'void',
-    'x-decorator': 'TableBlockProvider',
     'x-component': 'AssociationField.SubTable',
+    'x-initializer': 'TableColumnInitializers',
     properties: {
-      actions: {
+      indexCol: {
         type: 'void',
-        'x-initializer': 'SubTableActionInitializers',
-        'x-component': 'AssociationField.SubTable.ActionBar',
-        'x-component-props': {},
-      },
-      table: {
-        type: 'array',
-        'x-initializer': 'TableColumnInitializers',
-        'x-component': 'TableV2',
+        'x-component': 'TableV2.Column',
         'x-component-props': {
-          rowSelection: {
-            type: 'checkbox',
+          width: 80,
+        },
+        properties: {
+          __index__: {
+            type: 'void',
+            'x-component': 'TableV2.Index',
+            'x-read-pretty': true,
           },
-          useProps: '{{ useTableBlockProps }}',
         },
       },
     },
