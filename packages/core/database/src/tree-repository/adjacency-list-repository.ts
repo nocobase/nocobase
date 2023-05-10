@@ -10,20 +10,22 @@ export class AdjacencyListRepository extends Repository {
   }
 
   async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
-    const parentNodes = await super.find(lodash.omit(options));
-
-    if (options.raw) {
-      return parentNodes;
+    if (options.raw || !options.tree) {
+      return await super.find(options);
     }
 
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+
+    if (options.fields && !options.fields.includes(primaryKey)) {
+      options.fields.push(primaryKey);
+    }
+
+    const parentNodes = await super.find(options);
     if (parentNodes.length === 0) {
       return [];
     }
 
-    const templateModel = parentNodes[0];
-
-    const collection = this.collection;
-    const primaryKey = collection.model.primaryKeyAttribute;
     const { treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
 
