@@ -236,7 +236,7 @@ export const ActionDesigner = (props) => {
             components={{ ArrayItems, Space, JSONInput }}
             title={t('Request settings')}
             schema={requestSettingsSchema}
-            initialValues={{ name: defaultCustomRequestName }}
+            initialValues={customRequestSettings}
             onSubmit={async (requestSettings) => {
               const tempRequestSettings = cloneDeep(requestSettings);
               await api.request({

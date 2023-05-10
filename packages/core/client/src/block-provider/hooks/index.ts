@@ -2,7 +2,6 @@ import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from 
 import { Modal, message } from 'antd';
 import { parse } from '@nocobase/utils/client';
 import { cloneDeep } from 'lodash';
-import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -21,7 +20,6 @@ import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { formatParamsIntoObject } from '../../schema-component/antd/action/utils';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -31,13 +29,6 @@ export const usePickActionProps = () => {
     },
   };
 };
-
-function renderTemplate(str: string, data: any) {
-  const re = /\{\{\s*((\w+\.?)+)\s*\}\}/g;
-  return str.replace(re, function (_, key) {
-    return get(data, key) || '';
-  });
-}
 
 function isURL(string) {
   let url;
@@ -135,7 +126,6 @@ export const useCreateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, fieldSchema } = useActionContext();
   const history = useHistory();
-  const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
   const { fields, getField, getTreeParentField } = useCollection();
@@ -564,64 +554,28 @@ export const useCustomizeBulkEditActionProps = () => {
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
   const history = useHistory();
-  const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
   const form = useForm();
-  const { fields, getField } = useCollection();
   const { field, resource, __parent, service } = useBlockRequestContext();
-  const currentRecord = useRecord();
-  const currentUserContext = useCurrentUserContext();
-  const currentUser = currentUserContext?.data?.data;
   const actionField = useField();
   const { setVisible } = useActionContext();
   const uid = actionSchema['x-uid'];
-  const { t } = useTranslation();
 
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
 
-      const requestSettings = (await apiClient.request({ url: `/customRequest:get/${uid}` }))?.data.data?.options;
-      if (!requestSettings?.['url']) {
-        return;
-      }
-      const roles = await apiClient.request({ url: 'customrequestRoles:list' });
-      const currentRoles = currentUser.roles.map((item) => item.name);
-      const disabled = !roles?.data.data
-        ?.filter((item) => currentRoles.includes(item.roleName))
-        ?.map((item) => item.customRequestKey)
-        ?.includes(uid);
-      if (disabled) return message.error(t('The current role has no request permission'));
-
       if (skipValidator !== true && xAction === 'customize:form:request') {
         await form.submit();
       }
-      const headers = requestSettings['headers'] || {};
-      const params = requestSettings['params'] || {};
-      const data = requestSettings['data'] || {};
-      const methods = ['POST', 'PUT', 'PATCH'];
-      if (xAction === 'customize:form:request' && methods.includes(requestSettings['method'])) {
-        const fieldNames = fields.map((field) => field.name);
-        const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
-        Object.assign(data, values);
-      }
-      const requestBody = {
-        url: renderTemplate(requestSettings['url'], { currentRecord, currentUser }),
-        method: requestSettings['method'],
-        headers: parse(formatParamsIntoObject(headers))({ currentRecord, currentUser }),
-        params: parse(formatParamsIntoObject(params))({ currentRecord, currentUser }),
-        data: parse(data)({ currentRecord, currentUser }),
-        timeout: requestSettings?.timeout,
-      };
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
         await apiClient.request({
-          url: 'customRequest:send',
+          url: `customRequest:send/${uid}`,
           method: 'post',
-          data: requestBody,
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

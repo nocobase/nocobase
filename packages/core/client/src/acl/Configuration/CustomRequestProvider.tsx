@@ -8,7 +8,7 @@ export const useCustomRequest = () => {
 };
 
 export const CustomRequestProvider = (props) => {
-  const options = { url: `/customRequest:list` };
+  const options = { url: '/customRequest:list' };
   const roleService = useRequest({ url: '/customrequestRoles:list' }, { manual: true });
   const service = useRequest(options, { manual: true });
   const items = service.data?.data || [];
