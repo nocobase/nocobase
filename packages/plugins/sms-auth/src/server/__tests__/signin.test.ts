@@ -30,6 +30,7 @@ describe('signin', () => {
     const VerificationProviderRepo = db.getRepository('verifications_providers');
     await VerificationProviderRepo.create({
       values: {
+        id: 'fake1',
         type: 'fake',
         default: true,
       },
