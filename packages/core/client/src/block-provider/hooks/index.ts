@@ -983,7 +983,6 @@ export const useAssociationFilterBlockProps = () => {
       const param = block.service.params?.[0] || {};
       // 保留原有的 filter
       const storedFilter = block.service.params?.[1]?.filters || {};
-
       if (value.length) {
         storedFilter[key] = {
           [filterKey]: value,
@@ -1033,6 +1032,7 @@ export const useAssociationNames = (collection) => {
     }
   }
   const fieldSchema = useFieldSchema();
+  const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
     if (['FormV2', 'Details'].includes(schema['x-component'])) {
       return schema;
@@ -1047,6 +1047,9 @@ export const useAssociationNames = (collection) => {
         s['x-component'] === 'CollectionField' &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
       ) {
+        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+          associationValues.push(s.name);
+        }
         buf.push(s.name);
         if (s['x-component-props'].mode === 'Nester') {
           return getAssociationAppends(s, buf);
@@ -1089,5 +1092,5 @@ export const useAssociationNames = (collection) => {
   const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
-  return { appends, updateAssociationValues: appends };
+  return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };

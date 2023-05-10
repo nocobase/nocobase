@@ -116,7 +116,7 @@ export const useFormBlockProps = () => {
 
   useEffect(() => {
     if (!ctx?.service?.loading) {
-      const isInit = Object.values(ctx.form.values).filter((v) => v).length === 0;
+      const isInit = Object.values(ctx.form.values).filter((v) => v && Object.keys(v).length > 0).length === 0;
       if (isInit) {
         ctx.form?.setInitialValues(ctx.service?.data?.data);
       }
