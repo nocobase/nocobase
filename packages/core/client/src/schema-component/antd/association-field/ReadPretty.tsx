@@ -33,9 +33,8 @@ export const ReadPretty = observer((props: any) => {
   }
   return (
     <AssociationFieldProvider>
-      {['Select', 'Picker'].includes(currentMode) && enableLink !== false && <ReadPrettyInternalViewer {...props} />}
+      {['Select', 'Picker'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}
       {currentMode === 'Nester' && <InternalNester {...props} />}
-      {['Select', 'Picker'].includes(currentMode) && enableLink === false && <AssociationSelectReadPretty {...props} />}
       {currentMode === 'SubTable' && <InternalSubTable {...props} />}
       {currentMode === 'FileManager' && <FileManageReadPretty {...props} />}
     </AssociationFieldProvider>

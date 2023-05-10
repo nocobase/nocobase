@@ -25,6 +25,7 @@ const toValue = (value, placeholder) => {
 export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const recordCtx = useRecord();
+  const { enableLink } = fieldSchema['x-component-props'];
   const { getCollectionJoinField } = useCollectionManager();
   // value 做了转换，但 props.value 和原来 useField().value 的值不一致
   const field = useField();
@@ -50,7 +51,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
           <span>
             {snapshot || isTagsMode ? (
               text
-            ) : (
+            ) : enableLink!==false ? (
               <a
                 onClick={(e) => {
                   e.stopPropagation();
@@ -63,6 +64,8 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
               >
                 {text}
               </a>
+            ) : (
+              text
             )}
           </span>
           {index < arr.length - 1 ? <span style={{ marginRight: 4, color: '#aaa' }}>,</span> : null}
