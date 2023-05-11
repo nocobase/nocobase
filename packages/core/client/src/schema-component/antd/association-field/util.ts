@@ -30,9 +30,10 @@ const toArr = (v) => {
 };
 
 export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false): any => {
-  if (Array.isArray(labelUiSchema?.enum) && value) {
+  const options = labelUiSchema?.enum;
+  if (Array.isArray(options) && value) {
     const values = toArr(value).map((val) => {
-      const opt: any = labelUiSchema.enum.find((option: any) => option.value === val);
+      const opt: any = options.find((option: any) => option.value === val);
       if (isTag) {
         return React.createElement(Tag, { color: opt?.color }, opt?.label);
       }
