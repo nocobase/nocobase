@@ -1,6 +1,6 @@
-import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm, Schema } from '@formily/react';
-import { Modal, message } from 'antd';
+import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
+import { Modal, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
@@ -1114,8 +1114,8 @@ export const useAssociationNames = (collection) => {
         return buf;
       } else {
         if (s['x-component'] === 'Grid' || s['x-component'] === 'TableV2') {
-          let kk = buf?.concat();
-          return getNesterAppends(s, kk);
+          const kk = buf?.concat?.();
+          return getNesterAppends(s, kk || []);
         } else {
           return !s['x-component']?.includes('Action.') && getAssociationAppends(s, buf);
         }

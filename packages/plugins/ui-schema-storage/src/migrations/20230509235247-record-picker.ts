@@ -33,8 +33,10 @@ export default class extends Migration {
         if (!['AssociationField', 'RecordPicker'].includes(component)) {
           continue;
         }
-        console.log(component, schema['x-collection-field']);
-        if (['hasOne', 'belongsTo'].includes(field.type)) {
+        console.log(field.options.interface, component, schema['x-collection-field']);
+        if (['createdBy', 'updatedBy'].includes(field?.options?.interface)) {
+          // TODO
+        } else if (['hasOne', 'belongsTo'].includes(field.type)) {
           schema['type'] = 'object';
         } else if (['hasMany', 'belongsToMany'].includes(field.type)) {
           schema['type'] = 'array';
