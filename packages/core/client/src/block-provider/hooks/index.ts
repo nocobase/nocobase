@@ -1097,7 +1097,7 @@ export const useAssociationNames = (collection) => {
   }, new Schema({}));
 
   const getAssociationAppends = (schema, arr = []) => {
-    return schema.reduceProperties((buf, s) => {
+    const data = schema.reduceProperties((buf, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (
         collectionfield &&
@@ -1121,7 +1121,9 @@ export const useAssociationNames = (collection) => {
         }
       }
     }, arr);
+    return data || [];
   };
+
   function flattenNestedList(nestedList) {
     const flattenedList = [];
     function flattenHelper(list, prefix) {
@@ -1146,7 +1148,7 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-  const data = getAssociationAppends(formSchema)||[];
+  const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
