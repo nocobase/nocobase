@@ -1,24 +1,24 @@
-import { RecursionField, useField, useFieldSchema, observer,useForm } from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Input, Select } from 'antd';
-import React, { useState, useEffect, useContext } from 'react';
 import { differenceBy, unionBy } from 'lodash';
-import { ActionContext } from '../action';
-import { useInsertSchema, useFieldNames } from './hooks';
-import schema from './schema';
-import { useCompile } from '../../hooks';
-import { useCollection, CollectionProvider } from '../../../collection-manager';
+import React, { useContext, useEffect, useState } from 'react';
 import {
+  FormProvider,
+  RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
-  RecordPickerContext,
   useActionContext,
-  FormProvider,
 } from '../..';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { getLabelFormatValue, useLabelUiSchema, flatData } from './util';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { useCompile } from '../../hooks';
+import { ActionContext } from '../action';
+import { useFieldNames, useInsertSchema } from './hooks';
+import schema from './schema';
+import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -98,7 +98,7 @@ export const InternalPicker = observer((props: any) => {
         const label = option[fieldNames.label];
         return {
           ...option,
-          [fieldNames.label]: getLabelFormatValue(labelUiSchema, compile(label)),
+          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
         };
       });
       setOptions(opts);

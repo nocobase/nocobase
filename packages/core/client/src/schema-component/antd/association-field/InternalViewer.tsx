@@ -1,4 +1,4 @@
-import { RecursionField, useField, observer, useFieldSchema } from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
@@ -8,9 +8,9 @@ import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { useInsertSchema, useFieldNames } from './hooks';
+import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
+import { getLabelFormatValue, useLabelUiSchema } from './util';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -45,13 +45,13 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const renderRecords = () =>
     toArr(props.value).map((record, index, arr) => {
       const val = toValue(compile(record?.[fieldNames?.label || 'label']), 'N/A');
-      const text = getLabelFormatValue(labelUiSchema, val, true);
+      const text = getLabelFormatValue(compile(labelUiSchema), val, true);
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
             {snapshot || isTagsMode ? (
               text
-            ) : enableLink!==false ? (
+            ) : enableLink !== false ? (
               <a
                 onClick={(e) => {
                   e.stopPropagation();

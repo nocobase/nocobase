@@ -22,13 +22,23 @@ export const getDatePickerLabels = (props): string => {
   return isArr(labels) ? labels.join('~') : labels;
 };
 
+const toArr = (v) => {
+  if (!v) {
+    return [];
+  }
+  return Array.isArray(v) ? v : [v];
+};
+
 export const getLabelFormatValue = (labelUiSchema: ISchema, value: any, isTag = false): any => {
   if (Array.isArray(labelUiSchema?.enum) && value) {
-    const opt: any = labelUiSchema.enum.find((option: any) => option.value === value);
-    if (isTag) {
-      return React.createElement(Tag, { color: opt?.color, children: opt?.label });
-    }
-    return opt?.label;
+    const values = toArr(value).map((val) => {
+      const opt: any = labelUiSchema.enum.find((option: any) => option.value === val);
+      if (isTag) {
+        return React.createElement(Tag, { color: opt?.color }, opt?.label);
+      }
+      return opt?.label;
+    });
+    return isTag ? values : values.join(', ');
   }
   switch (labelUiSchema?.['x-component']) {
     case 'DatePicker':

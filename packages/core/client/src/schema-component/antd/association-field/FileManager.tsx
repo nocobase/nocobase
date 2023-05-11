@@ -1,25 +1,25 @@
-import { RecursionField, useField, useFieldSchema, connect } from '@formily/react';
-import React, { useState, useEffect, useContext } from 'react';
+import { RecursionField, connect, useField, useFieldSchema } from '@formily/react';
 import { differenceBy, unionBy } from 'lodash';
-import { ActionContext } from '../action';
-import { useInsertSchema, useFieldNames } from './hooks';
-import schema from './schema';
-import { useCompile } from '../../hooks';
-import { useCollection, CollectionProvider } from '../../../collection-manager';
+import React, { useContext, useEffect, useState } from 'react';
 import {
+  FormProvider,
+  RecordPickerContext,
   RecordPickerProvider,
   SchemaComponentOptions,
-  RecordPickerContext,
   useActionContext,
-  FormProvider,
 } from '../..';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { getLabelFormatValue, useLabelUiSchema, flatData, isShowFilePicker } from './util';
+import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { useCompile } from '../../hooks';
+import { ActionContext } from '../action';
 import { FileSelector, Preview } from '../preview';
 import { ReadPrettyInternalViewer } from './InternalViewer';
+import { useFieldNames, useInsertSchema } from './hooks';
+import schema from './schema';
+import { flatData, getLabelFormatValue, isShowFilePicker, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -90,7 +90,7 @@ const InternalFileManager = (props) => {
         const label = option[fieldNames.label];
         return {
           ...option,
-          [fieldNames.label]: getLabelFormatValue(labelUiSchema, compile(label)),
+          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
         };
       });
       setOptions(opts);
