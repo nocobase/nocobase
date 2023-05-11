@@ -1146,7 +1146,7 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-  const data = getAssociationAppends(formSchema);
+  const data = getAssociationAppends(formSchema)||[];
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
