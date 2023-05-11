@@ -6,6 +6,7 @@ import authActions from './actions/auth';
 import authenticatorsActions from './actions/authenticators';
 import { enUS, zhCN } from './locale';
 import { namespace } from '../preset';
+import { AuthModel } from './model/authenticator';
 
 export class AuthPlugin extends Plugin {
   afterAdd() {}
@@ -13,6 +14,8 @@ export class AuthPlugin extends Plugin {
   async beforeLoad() {
     this.app.i18n.addResources('zh-CN', namespace, zhCN);
     this.app.i18n.addResources('en-US', namespace, enUS);
+
+    this.app.db.registerModels({ AuthModel });
   }
 
   async load() {

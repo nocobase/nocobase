@@ -2,6 +2,7 @@ import { Context } from '@nocobase/actions';
 import { BaseAuth } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
 import VerificationPlugin from '@nocobase/plugin-verification';
+import { AuthModel } from '@nocobase/plugin-auth';
 
 export class SMSAuth extends BaseAuth {
   constructor(config: { options: { [key: string]: any }; ctx: Context }) {
@@ -25,9 +26,18 @@ export class SMSAuth extends BaseAuth {
       const {
         values: { phone },
       } = ctx.action.params;
-      const authName = ctx.headers['x-authenticator'] as string;
+      const name = ctx.headers['x-authenticator'] as string;
       try {
-        user = await this.findOrCreateUser(authName, phone, {
+        const repo = ctx.db.getRepository('authenticators');
+        const authenticator: AuthModel = await repo.findOne({
+          filter: {
+            name,
+          },
+        });
+        if (!authenticator) {
+          throw new Error(`sms-auth: Authenticator [${name}] not found`);
+        }
+        user = await authenticator.findOrCreateUser(phone, {
           nickname: phone,
           phone,
         });
