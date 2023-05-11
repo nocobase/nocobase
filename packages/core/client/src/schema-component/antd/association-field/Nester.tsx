@@ -5,6 +5,7 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import React, { useContext } from 'react';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
+import { useTranslation } from 'react-i18next';
 // import { useRemoveActionProps } from '../../../block-provider/hooks';
 
 export const Nester = (props) => {
@@ -36,6 +37,7 @@ const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
   const values = toArr(field.value);
+  const { t } = useTranslation();
   // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
@@ -66,7 +68,7 @@ const ToManyNester = observer((props) => {
             field.value.push({});
           }}
         >
-          Add new
+            {t('Add new')}
         </Button>
       )}
     </Card>
