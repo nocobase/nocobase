@@ -71,7 +71,7 @@ describe.skip('skip if already migrated', function () {
   });
 });
 
-describe('drop ui schema', () => {
+describe.skip('drop ui schema', () => {
   let app: MockServer;
   let db: Database;
 

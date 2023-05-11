@@ -4,7 +4,7 @@ import { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {
-    const result = await this.app.version.satisfies('<0.9.2-alpha.2');
+    const result = await this.app.version.satisfies('<=0.9.2-alpha.5');
 
     if (!result) {
       return;
@@ -15,22 +15,18 @@ export default class extends Migration {
     const migrateFieldsSchema = async (collection: Collection) => {
       this.app.log.info(`Start to migrate ${collection.name} collection's ui schema`);
 
-      const field = collection.setField('uiSchemaUid', {
-        type: 'string',
-      });
-
-      const exists = await field.existsInDb({ transaction });
-
-      if (!exists) {
-        return;
-      }
-
       const fieldRecords: Array<FieldModel> = await collection.repository.find({
         transaction,
+        filter: {
+          type: ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'],
+        },
       });
 
       const fieldsCount = await collection.repository.count({
         transaction,
+        filter: {
+          type: ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'],
+        },
       });
 
       this.app.log.info(`Total ${fieldsCount} fields need to be migrated`);
@@ -44,32 +40,21 @@ export default class extends Migration {
           `Migrate field ${fieldRecord.get('collectionName')}.${fieldRecord.get('name')}, ${i}/${fieldsCount}`,
         );
 
-        const uiSchemaUid = fieldRecord.get('uiSchemaUid');
+        const uiSchema = fieldRecord.get('uiSchema');
 
-        if (!uiSchemaUid) {
+        if (uiSchema?.['x-component'] !== 'RecordPicker') {
           continue;
         }
 
-        const uiSchemaRecord = await this.db.getRepository('uiSchemas').findOne({
-          filterByTk: uiSchemaUid,
-          transaction,
-        });
+        console.log(`${fieldRecord.get('collectionName')}.${fieldRecord.get('name')}: ${uiSchema['x-component']}`);
 
-        if (!uiSchemaRecord) {
-          continue;
-        }
-
-        const uiSchema = uiSchemaRecord.get('schema');
-
+        uiSchema['x-component'] = 'AssociationField';
         fieldRecord.set('uiSchema', uiSchema);
 
         await fieldRecord.save({
           transaction,
         });
       }
-
-      collection.removeField('uiSchemaUid');
-      this.app.log.info('Migrate uiSchema to options field done');
     };
 
     try {

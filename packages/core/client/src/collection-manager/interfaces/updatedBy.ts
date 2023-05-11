@@ -17,7 +17,7 @@ export const updatedBy: IField = {
     uiSchema: {
       type: 'object',
       title: '{{t("Last updated by")}}',
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         fieldNames: {
           value: 'id',

@@ -1,18 +1,18 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
-import isEmpty from 'lodash/isEmpty';
+import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useAssociationNames } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty } = props;
+  const { action, readPretty, params, updateAssociationValues } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -24,18 +24,19 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  if (service.loading) {
-    return <Spin />;
-  }
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   return (
     <FormBlockContext.Provider
       value={{
+        params,
         action,
         form,
         field,
         service,
         resource,
-        updateAssociationValues: [],
+        updateAssociationValues,
         formBlockRef,
       }}
     >
@@ -67,9 +68,14 @@ export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
   const { __collection } = record;
+  const params = { ...props.params };
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
+  const { appends, updateAssociationValues } = useAssociationNames(collection);
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
   let detailFlag = false;
   if (isEmptyRecord) {
     detailFlag = true;
@@ -81,8 +87,8 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+      <BlockProvider {...props} block={'form'} params={params}>
+        <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
       </BlockProvider>
     )
   );
@@ -107,8 +113,10 @@ export const useFormBlockProps = () => {
   });
 
   useEffect(() => {
-    ctx.form?.setInitialValues(ctx.service?.data?.data);
-  }, []);
+    if (!ctx?.service?.loading) {
+      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    }
+  }, [ctx?.service?.loading]);
   return {
     form: ctx.form,
   };
