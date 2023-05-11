@@ -11,16 +11,12 @@ import { InternalFileManager } from './FileManager';
 import { useAssociationFieldContext } from './hooks';
 
 const EditableAssociationField = observer((props: any) => {
-  useEffect(() => {
-    props.mode && setCurrentMode(props.mode);
-  }, [props.mode]);
   const { multiple } = props;
   const field: any = useField();
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  console.log(useAssociationFieldContext());
-  const { options: collectionField, isFileCollection } = useAssociationFieldContext();
-  const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
+  const { options: collectionField, currentMode } = useAssociationFieldContext();
+
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField: any = useField();

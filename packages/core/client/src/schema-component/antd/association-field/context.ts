@@ -4,7 +4,7 @@ import { createContext } from 'react';
 export interface AssociationFieldContextProps {
   options?: any;
   field?: GeneralField;
-  isFileCollection?: boolean;
+  currentMode?:string;
 }
 
 export const AssociationFieldContext = createContext<AssociationFieldContextProps>({});

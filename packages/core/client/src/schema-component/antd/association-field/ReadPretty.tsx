@@ -8,11 +8,8 @@ import { FileManageReadPretty } from './FileManager';
 import { useAssociationFieldContext } from './hooks';
 
 const ReadPrettyAssociationField = observer((props: any) => {
-  const { isFileCollection } = useAssociationFieldContext();
-  const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
-  useEffect(() => {
-    props.mode && setCurrentMode(props.mode);
-  }, [props.mode]);
+  const { currentMode } = useAssociationFieldContext();
+
   return (
     <>
       {['Select', 'Picker'].includes(currentMode) && <ReadPrettyInternalViewer {...props} />}
