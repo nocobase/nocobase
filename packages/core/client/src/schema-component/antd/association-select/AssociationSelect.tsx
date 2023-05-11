@@ -501,7 +501,7 @@ AssociationSelect.Designer = function Designer() {
         fieldSchema['x-component'] !== 'TableField' && (
           <SchemaSettings.SwitchItem
             key="multiple"
-            title={t('Multiple')}
+            title={t('Allow multiple')}
             checked={
               fieldSchema['x-component-props']?.multiple === undefined
                 ? true
