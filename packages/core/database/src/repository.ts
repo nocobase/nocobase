@@ -9,6 +9,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
+  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -276,6 +277,47 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     options.optionsTransformer?.(queryOptions);
+
+    const hasAssociationFilter = () => {
+      if (queryOptions.include && queryOptions.include.length > 0) {
+        const filterInclude = queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        });
+        return filterInclude.length > 0;
+      }
+      return false;
+    };
+
+    if (hasAssociationFilter()) {
+      const primaryKeyField = this.model.primaryKeyAttribute;
+      const queryInterface = this.database.sequelize.getQueryInterface();
+
+      const findOptions = {
+        ...queryOptions,
+        raw: true,
+        includeIgnoreAttributes: false,
+        attributes: [
+          [
+            Sequelize.literal(
+              `DISTINCT ${queryInterface.quoteIdentifiers(`${this.collection.name}.${primaryKeyField}`)}`,
+            ),
+            primaryKeyField,
+          ],
+        ],
+      };
+
+      const ids = await this.model.findAll(findOptions);
+
+      return await this.model.aggregate(field, method, {
+        ...lodash.omit(queryOptions, ['where', 'include']),
+        where: {
+          [primaryKeyField]: ids.map((node) => node[primaryKeyField]),
+        },
+      });
+    }
 
     return await this.model.aggregate(field, method, queryOptions);
   }

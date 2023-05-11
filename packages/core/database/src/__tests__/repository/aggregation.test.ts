@@ -151,6 +151,17 @@ describe('association aggregation', () => {
 
       expect(sumResult).toEqual(4);
     });
+    it('should sum with association filter', async () => {
+      const sumResult = await User.repository.aggregate({
+        field: 'age',
+        method: 'sum',
+        filter: {
+          'tags.score': 4,
+        },
+      });
+
+      expect(sumResult).toEqual(2);
+    });
   });
 
   describe('has many', () => {
