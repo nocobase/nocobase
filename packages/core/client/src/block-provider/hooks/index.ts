@@ -1108,16 +1108,16 @@ export const useAssociationNames = (collection) => {
         }
 
         buf.push(s.name);
-        if (s['x-component-props'].mode === 'Nester') {
+        if (s['x-component-props'].mode === 'Nester' || s['x-component'] === 'TableField') {
           return getAssociationAppends(s, buf);
         }
         return buf;
       } else {
-        if (s['x-component'] === 'Grid') {
-          let kk = buf.concat();
+        if (s['x-component'] === 'Grid' || s['x-component'] === 'TableV2') {
+          let kk = buf?.concat();
           return getNesterAppends(s, kk);
         } else {
-          return s['x-component'] !== 'TableV2' && getAssociationAppends(s, buf);
+          return !s['x-component']?.includes('Action.') && getAssociationAppends(s, buf);
         }
       }
     }, arr);
