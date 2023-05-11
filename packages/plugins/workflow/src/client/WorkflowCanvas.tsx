@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Dropdown, Menu, Button, Tag, Switch, message, Breadcrumb } from 'antd';
+import { Dropdown, Button, Tag, Switch, message, Breadcrumb, Modal } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import classnames from 'classnames';
@@ -95,6 +95,24 @@ export function WorkflowCanvas() {
     history.push(`${revision.id}`);
   }
 
+  async function onDelete() {
+    const content = workflow.current
+      ? lang('Delete a main version will cause all other revisions to be deleted too.')
+      : '';
+    Modal.confirm({
+      title: t('Are you sure you want to delete it?'),
+      content,
+      async onOk() {
+        await resource.destroy({
+          filterByTk: workflow.id,
+        });
+        message.success(t('Operation succeeded'));
+
+        history.push(`${revisions.find((item) => item.current)?.id}`);
+      },
+    });
+  }
+
   async function onMenuCommand({ key }) {
     switch (key) {
       case 'history':
@@ -102,6 +120,8 @@ export function WorkflowCanvas() {
         return;
       case 'revision':
         return onRevision();
+      case 'delete':
+        return onDelete();
       default:
         break;
     }
@@ -134,31 +154,29 @@ export function WorkflowCanvas() {
           <div className="workflow-versions">
             <Dropdown
               trigger={['click']}
-              overlay={
-                <Menu
-                  onClick={onSwitchVersion}
-                  defaultSelectedKeys={[`${workflow.id}`]}
-                  className={cx(workflowVersionDropdownClass)}
-                  items={revisions
-                    .sort((a, b) => b.id - a.id)
-                    .map((item, index) => ({
-                      key: `${item.id}`,
-                      icon: item.current ? <RightOutlined /> : null,
-                      label: (
-                        <span
-                          className={classnames({
-                            executed: item.executed,
-                            unexecuted: !item.executed,
-                            enabled: item.enabled,
-                          })}
-                        >
-                          <strong>{`#${item.id}`}</strong>
-                          <time>{new Date(item.createdAt).toLocaleString()}</time>
-                        </span>
-                      ),
-                    }))}
-                />
-              }
+              menu={{
+                onClick: onSwitchVersion,
+                defaultSelectedKeys: [`${workflow.id}`],
+                className: cx(workflowVersionDropdownClass),
+                items: revisions
+                  .sort((a, b) => b.id - a.id)
+                  .map((item, index) => ({
+                    key: `${item.id}`,
+                    icon: item.current ? <RightOutlined /> : null,
+                    label: (
+                      <span
+                        className={classnames({
+                          executed: item.executed,
+                          unexecuted: !item.executed,
+                          enabled: item.enabled,
+                        })}
+                      >
+                        <strong>{`#${item.id}`}</strong>
+                        <time>{new Date(item.createdAt).toLocaleString()}</time>
+                      </span>
+                    ),
+                  })),
+              }}
             >
               <Button type="text">
                 <label>{lang('Version')}</label>
@@ -174,15 +192,14 @@ export function WorkflowCanvas() {
             unCheckedChildren={lang('Off')}
           />
           <Dropdown
-            overlay={
-              <Menu
-                items={[
-                  { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
-                  { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
-                ]}
-                onClick={onMenuCommand}
-              />
-            }
+            menu={{
+              items: [
+                { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
+                { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
+                { key: 'delete', label: t('Delete') },
+              ],
+              onClick: onMenuCommand,
+            }}
           >
             <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
