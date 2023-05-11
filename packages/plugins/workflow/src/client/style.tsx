@@ -1,12 +1,19 @@
 import { css } from '@emotion/css';
 
 export const workflowPageClass = css`
+  flex-grow: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
   .workflow-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
     padding: 0.5rem 1rem;
     background: #fff;
+    border-bottom: 1px solid #e7e7e7;
 
     header {
       display: flex;
@@ -28,6 +35,8 @@ export const workflowPageClass = css`
   }
 
   .workflow-canvas {
+    flex-grow: 1;
+    overflow-y: auto;
     width: min-content;
     min-width: 100%;
     display: flex;
