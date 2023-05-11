@@ -122,20 +122,6 @@ export default {
     'x-component': 'AssociationField.SubTable',
     'x-initializer': 'TableColumnInitializers',
     properties: {
-      indexCol: {
-        type: 'void',
-        'x-component': 'TableV2.Column',
-        'x-component-props': {
-          width: 80,
-        },
-        properties: {
-          __index__: {
-            type: 'void',
-            'x-component': 'TableV2.Index',
-            'x-read-pretty': true,
-          },
-        },
-      },
     },
   },
 };

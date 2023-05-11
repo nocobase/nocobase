@@ -252,7 +252,6 @@ export const Table: any = observer((props: any) => {
                 props.className,
                 css`
                   max-width: 300px;
-                  overflow: auto;
                   white-space: nowrap;
                   &:hover .general-schema-designer {
                     display: block;
@@ -416,7 +415,7 @@ export const Table: any = observer((props: any) => {
     ({ children }) => {
       return dragSort
         ? React.createElement(SortableContext, {
-            items: field.value.map(getRowKey),
+            items: field.value?.map(getRowKey),
             children: children,
           })
         : React.createElement(React.Fragment, {
