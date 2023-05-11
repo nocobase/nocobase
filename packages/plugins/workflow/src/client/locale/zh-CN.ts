@@ -151,6 +151,16 @@ export default {
   'Please add at least one condition': '请添加至少一个条件',
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.':
     '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
+
+  Aggregate: '聚合查询',
+  'Aggregator function': '聚合函数',
+  'Target type': '目标类型',
+  'Data of collection': '数据表数据',
+  'Data of associated collection': '关联数据表数据',
+  'Field to aggregate': '聚合字段',
+  Distinct: '去重',
+  'Query result': '查询结果',
+
   'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
   'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
   'Can not delete': '无法删除',

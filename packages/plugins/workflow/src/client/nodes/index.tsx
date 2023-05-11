@@ -32,6 +32,8 @@ import query from './query';
 import create from './create';
 import update from './update';
 import destroy from './destroy';
+import aggregate from './aggregate';
+
 import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
 import { lang, NAMESPACE } from '../locale';
 import request from './request';
@@ -66,6 +68,8 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+instructions.register('aggregate', aggregate);
+
 instructions.register('request', request);
 
 function useUpdateAction() {

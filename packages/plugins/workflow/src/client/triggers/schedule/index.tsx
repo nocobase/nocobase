@@ -39,7 +39,7 @@ export default {
     ScheduleConfig,
     FieldsSelect,
   },
-  getOptions(config, types) {
+  getOptions(config, { types }) {
     const { t } = useWorkflowTranslation();
     const options: any[] = [];
     if (!types || types.includes('date')) {

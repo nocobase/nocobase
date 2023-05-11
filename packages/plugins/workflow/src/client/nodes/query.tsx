@@ -45,12 +45,14 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  getOptions(config, types) {
-    return useCollectionFieldOptions({
+  getOptions(config, options) {
+    const result = useCollectionFieldOptions({
       collection: config.collection,
-      types,
-      depth: config.params?.appends?.length ? 1 : 0,
+      ...options,
+      depth: options?.depth ?? config.params?.appends?.length ? 1 : 0,
     });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {

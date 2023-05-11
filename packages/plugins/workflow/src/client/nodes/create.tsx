@@ -40,11 +40,11 @@ export default {
     CollectionFieldset,
     FieldsSelect,
   },
-  getOptions(config, types) {
+  getOptions(config, options) {
     return useCollectionFieldOptions({
       collection: config.collection,
-      types,
-      depth: config.params?.appends?.length ? 1 : 0,
+      ...options,
+      depth: options?.depth ?? config.params?.appends?.length ? 1 : 0,
     });
   },
   useInitializers(node): SchemaInitializerItemOptions | null {

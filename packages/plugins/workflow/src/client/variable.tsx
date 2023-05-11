@@ -13,6 +13,39 @@ export type VariableOption = {
 
 export type VariableOptions = VariableOption[] | null;
 
+export const nodesOptions = {
+  label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+  value: '$jobsMapByNodeId',
+  useOptions(options) {
+    const current = useNodeContext();
+    const upstreams = useAvailableUpstreams(current);
+    const result: VariableOption[] = [];
+    upstreams.forEach((node) => {
+      const instruction = instructions.get(node.type);
+      const subOptions = instruction.getOptions?.(node.config, options);
+      if (subOptions) {
+        result.push({
+          key: node.id.toString(),
+          value: node.id.toString(),
+          label: node.title ?? `#${node.id}`,
+          children: subOptions,
+        });
+      }
+    });
+    return result;
+  },
+};
+
+export const triggerOptions = {
+  label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$context',
+  useOptions(options) {
+    const { workflow } = useFlowContext();
+    const trigger = triggers.get(workflow.type);
+    return trigger?.getOptions?.(workflow.config, options) ?? null;
+  },
+};
+
 const VariableTypes = [
   {
     title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
@@ -87,7 +120,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type): boolean {
+function matchFieldType(field, type, depth): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -109,7 +142,7 @@ function matchFieldType(field, type): boolean {
   }
 
   if (inputType === 'function') {
-    return type(field);
+    return type(field, depth);
   }
 
   return false;
@@ -131,7 +164,7 @@ export function filterTypedFields(fields, types, depth = 1) {
     ) {
       return true;
     }
-    return types.some((type) => matchFieldType(field, type));
+    return types.some((type) => matchFieldType(field, type, depth));
   });
 }
 
@@ -152,12 +185,8 @@ export function useWorkflowVariableOptions(types?) {
 
 function useNormalizedFields(collectionName) {
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(collectionName);
-  if (!collection) {
-    return [];
-  }
-  const { fields } = collection;
+  const { getCollectionFields } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
   fields.forEach((field) => {
@@ -227,6 +256,7 @@ export function useCollectionFieldOptions(options): VariableOption[] {
           isAssociationField(field) && depth
             ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
             : null,
+        field,
       };
     });
 
