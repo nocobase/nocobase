@@ -2,7 +2,7 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
+import { CollectionProvider, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -32,8 +32,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const insertViewer = useInsertSchema('Viewer');
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');

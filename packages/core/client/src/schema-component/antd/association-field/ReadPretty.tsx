@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { useField, observer } from '@formily/react';
+import { useFieldSchema, observer } from '@formily/react';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
 import { InternalNester } from './InternalNester';
 import { ReadPrettyInternalViewer } from './InternalViewer';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { InternalSubTable } from './InternalSubTable';
 import { FileManageReadPretty } from './FileManager';
 
 export const ReadPretty = observer((props: any) => {
-  const field: any = useField();
-  const { getField } = useCollection();
-  const { getCollection } = useCollectionManager();
-  const collectionField = getField(field.props.name);
+  const fieldSchema = useFieldSchema();
+  const { getCollection, getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const isFileCollection = getCollection(collectionField?.target)?.template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
   useEffect(() => {

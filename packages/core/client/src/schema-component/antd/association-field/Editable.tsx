@@ -5,7 +5,7 @@ import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { AssociationSelect } from './AssociationSelect';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 import { InternalFileManager } from './FileManager';
@@ -18,9 +18,8 @@ export const Editable = observer((props: any) => {
   const field: any = useField();
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollection } = useCollectionManager();
-  const collectionField = getField(field.props.name);
+  const { getCollection, getCollectionJoinField } = useCollectionManager();
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const isFileCollection = getCollection(collectionField?.target)?.template === 'file';
   const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
   const useCreateActionProps = () => {
