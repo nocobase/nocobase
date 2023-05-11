@@ -75,7 +75,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </Input.Group>
 
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-        <CollectionProvider name={collectionField.target}>
+        <CollectionProvider name={collectionField?.target}>
           <RecursionField
             onlyRenderProperties
             basePath={field.address}
