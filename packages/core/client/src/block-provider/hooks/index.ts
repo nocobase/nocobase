@@ -1074,6 +1074,7 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useAssociationNames = (collection) => {
   const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -1098,7 +1099,8 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const collectionfield =
+        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
       if (
         collectionfield &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
