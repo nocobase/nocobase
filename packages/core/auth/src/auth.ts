@@ -1,12 +1,15 @@
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 
-export type AuthExtend<T extends Auth> = new (config: {
+export type AuthConfig = {
+  authenticator: Model;
   options: {
     [key: string]: any;
   };
   ctx: Context;
-}) => T;
+};
+
+export type AuthExtend<T extends Auth> = new (config: AuthConfig) => T;
 
 interface IAuth {
   user: Model;
@@ -19,14 +22,17 @@ interface IAuth {
 
 export abstract class Auth implements IAuth {
   abstract user: Model;
+  protected authenticator: Model;
   protected options: {
     [key: string]: any;
   };
   protected ctx: Context;
 
-  constructor(config: { options: { [key: string]: any }; ctx: Context }) {
-    this.options = config.options;
-    this.ctx = config.ctx;
+  constructor(config: AuthConfig) {
+    const { authenticator, options, ctx } = config;
+    this.authenticator = authenticator;
+    this.options = options;
+    this.ctx = ctx;
   }
 
   // The abstract methods are required to be implemented by all authentications.

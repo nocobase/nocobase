@@ -1,5 +1,4 @@
-import { Context } from '@nocobase/actions';
-import { Auth } from '../auth';
+import { Auth, AuthConfig } from '../auth';
 import { JwtOptions, JwtService } from './jwt-service';
 import { Collection, Model } from '@nocobase/database';
 
@@ -10,25 +9,16 @@ import { Collection, Model } from '@nocobase/database';
 export class BaseAuth extends Auth {
   protected jwt: JwtService;
   protected userCollection: Collection;
-  protected authenticatorCollection?: Collection;
-  protected roleCollection?: Collection;
 
-  constructor(config: {
-    ctx: Context;
-    options: {
-      jwt?: JwtOptions;
-      [key: string]: any;
-    };
-    userCollection: Collection;
-    authenticatorCollction?: Collection;
-    roleCollection?: Collection;
-  }) {
-    const { options, userCollection, authenticatorCollction, roleCollection } = config;
+  constructor(
+    config: AuthConfig & {
+      userCollection: Collection;
+    },
+  ) {
+    const { options, userCollection } = config;
     super(config);
     this.userCollection = userCollection;
-    this.authenticatorCollection = authenticatorCollction;
-    this.roleCollection = roleCollection;
-    this.jwt = new JwtService(options.jwt);
+    this.jwt = new JwtService(options.jwt as JwtOptions);
   }
 
   set user(user: Model) {

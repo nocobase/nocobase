@@ -1,11 +1,10 @@
-import { Context } from '@nocobase/actions';
-import { BaseAuth } from '@nocobase/auth';
+import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { namespace } from '../preset';
 import { PasswordField } from '@nocobase/database';
 import crypto from 'crypto';
 
 export class BasicAuth extends BaseAuth {
-  constructor(config: { options: { [key: string]: any }; ctx: Context }) {
+  constructor(config: AuthConfig) {
     const userCollection = config.ctx.db.getCollection('users');
     super({ ...config, userCollection });
   }

@@ -1,17 +1,14 @@
-import { Context } from '@nocobase/actions';
-import { BaseAuth } from '@nocobase/auth';
+import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
 import VerificationPlugin from '@nocobase/plugin-verification';
 import { AuthModel } from '@nocobase/plugin-auth';
 
 export class SMSAuth extends BaseAuth {
-  constructor(config: { options: { [key: string]: any }; ctx: Context }) {
+  constructor(config: AuthConfig) {
     const { ctx } = config;
     super({
       ...config,
       userCollection: ctx.db.getCollection('users'),
-      roleCollection: ctx.db.getCollection('roles'),
-      authenticatorCollction: ctx.db.getCollection('authenticators'),
     });
   }
 
@@ -26,18 +23,22 @@ export class SMSAuth extends BaseAuth {
       const {
         values: { phone },
       } = ctx.action.params;
-      const name = ctx.headers['x-authenticator'] as string;
       try {
-        const repo = ctx.db.getRepository('authenticators');
-        const authenticator: AuthModel = await repo.findOne({
-          filter: {
-            name,
-          },
+        // History data compatible processing
+        const userRepo = this.userCollection.repository;
+        user = await userRepo.findOne({
+          filter: { phone },
         });
-        if (!authenticator) {
-          throw new Error(`sms-auth: Authenticator [${name}] not found`);
+        if (user) {
+          await this.authenticator.addUser(user, {
+            through: {
+              uuid: phone,
+            },
+          });
+          return;
         }
-        user = await authenticator.findOrCreateUser(phone, {
+        // New data
+        user = await (this.authenticator as AuthModel).findOrCreateUser(phone, {
           nickname: phone,
           phone,
         });

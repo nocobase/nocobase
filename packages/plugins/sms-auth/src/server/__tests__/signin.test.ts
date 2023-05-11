@@ -102,4 +102,33 @@ describe('signin', () => {
     expect(res.body.data.user).toBeDefined();
     expect(res.body.data.user.nickname).toBe('2');
   });
+
+  it('should sign in via phone number with history data', async () => {
+    const phone = '3';
+    const userRepo = db.getRepository('users');
+    const user = await userRepo.create({
+      values: {
+        nickname: phone,
+        phone: phone,
+      },
+    });
+    let res = await agent.resource('verifications').create({
+      values: {
+        type: 'auth:signIn',
+        phone: '3',
+      },
+    });
+    const verification = await verificationModel.findByPk(res.body.data.id);
+    res = await agent.post('/auth:signIn').set({ 'X-Authenticator': 'sms-auth' }).send({
+      phone: '3',
+      code: verification.content,
+    });
+    expect(res.statusCode).toEqual(200);
+    const data = res.body.data;
+    const token = data.token;
+    expect(token).toBeDefined();
+    expect(res.body.data.user).toBeDefined();
+    expect(res.body.data.user.id).toBe(user.id);
+    expect(res.body.data.user.nickname).toBe('3');
+  });
 });
