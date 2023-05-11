@@ -91,6 +91,12 @@ export const createFormSchema: ISchema = {
           'x-component-props': {
             options: '{{ types }}',
           },
+          'x-reactions': {
+            effects: ['onFieldValueChange'],
+            fulfill: {
+              run: 'setType($self.value)',
+            },
+          },
         },
         description: {
           'x-component': 'CollectionField',
@@ -306,6 +312,15 @@ export const authenticatorsSchema: ISchema = {
                         options: {
                           type: 'object',
                           'x-component': 'Options',
+                          'x-decorator': 'AuthTypeContextProvider',
+                          'x-reactions': {
+                            dependencies: ['authType'],
+                            fulfill: {
+                              schema: {
+                                'x-decorator-props.value.type': '{{ $deps[0] }}',
+                              },
+                            },
+                          },
                         },
                         footer: {
                           type: 'void',

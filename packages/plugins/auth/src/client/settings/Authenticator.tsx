@@ -12,7 +12,7 @@ import { authenticatorsSchema, createFormSchema } from './schemas/authenticators
 import { Button, Dropdown } from 'antd';
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { AuthTypeContext, AuthTypesContext, useAuthTypes } from './authType';
-import { Options, useValuesFromOptions } from './Options';
+import { useValuesFromOptions, Options } from './Options';
 import { useTranslation } from 'react-i18next';
 
 const useCloseAction = () => {
@@ -45,7 +45,7 @@ const AddNew = () => {
             {t('Add new')} <DownOutlined />
           </Button>
         </Dropdown>
-        <SchemaComponent scope={{ useCloseAction, types }} schema={createFormSchema} />
+        <SchemaComponent scope={{ useCloseAction, types, setType }} schema={createFormSchema} />
       </AuthTypeContext.Provider>
     </ActionContext.Provider>
   );
@@ -86,7 +86,7 @@ export const Authenticator = () => {
       <AuthTypesContext.Provider value={{ types }}>
         <SchemaComponent
           schema={authenticatorsSchema}
-          components={{ AddNew, Options }}
+          components={{ AddNew, Options, AuthTypeContextProvider: AuthTypeContext.Provider }}
           scope={{ types, useValuesFromOptions, useCanNotDelete }}
         />
       </AuthTypesContext.Provider>

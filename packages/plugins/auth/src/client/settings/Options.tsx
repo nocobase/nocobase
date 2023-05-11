@@ -1,7 +1,7 @@
 import { useRequest, useRecord, useActionContext } from '@nocobase/client';
-import { useEffect } from 'react';
-import { useForm } from '@formily/react';
+import { useEffect, useContext } from 'react';
 import { useOptionsComponent } from '@nocobase/client';
+import { AuthTypeContext } from './authType';
 
 export const useValuesFromOptions = (options) => {
   const record = useRecord();
@@ -28,8 +28,7 @@ export const useValuesFromOptions = (options) => {
 };
 
 export const Options = () => {
-  const record = useRecord();
-  const form = useForm();
-  const component = useOptionsComponent(record.authType || form.values.authType);
+  const ctx = useContext(AuthTypeContext);
+  const component = useOptionsComponent(ctx?.type);
   return component;
 };
