@@ -108,7 +108,7 @@ export function WorkflowCanvas() {
         });
         message.success(t('Operation succeeded'));
 
-        history.push(`${revisions.find((item) => item.current)?.id}`);
+        history.push(workflow.current ? '..' : `${revisions.find((item) => item.current)?.id}`);
       },
     });
   }
