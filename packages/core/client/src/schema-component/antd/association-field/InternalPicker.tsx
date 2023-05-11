@@ -2,6 +2,7 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import { Button, Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FormProvider,
   RecordPickerContext,
@@ -69,6 +70,7 @@ export const InternalPicker = observer((props: any) => {
   const insertAddNewer = useInsertSchema('AddNewer');
   const insertSelector = useInsertSchema('Selector');
   const { getField } = useCollection();
+  const { t } = useTranslation();
   const collectionField = getField(field.props.name);
   const addbuttonClick = () => {
     insertAddNewer(schema.AddNewer);
@@ -173,7 +175,7 @@ export const InternalPicker = observer((props: any) => {
               addbuttonClick();
             }}
           >
-            Add new
+            {t('Add new')}
           </Button>
         )}
       </Input.Group>
