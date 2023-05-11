@@ -76,6 +76,10 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
 export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface, getCollection } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const isSubTable=fieldSchema['x-component']==='AssociationField.SubTable';
+  const form=useForm();
+  const isReadPretty=isSubTable?form.readPretty:true
   return currentFields
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
@@ -86,7 +90,7 @@ export const useTableColumnInitializerFields = () => {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
-        'x-read-pretty': true,
+        'x-read-pretty': isReadPretty,
         'x-component-props': {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
@@ -99,7 +103,7 @@ export const useTableColumnInitializerFields = () => {
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
             field,
-            readPretty: true,
+            readPretty: isReadPretty,
             block: 'Table',
             targetCollection: getCollection(field.target),
           });
