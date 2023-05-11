@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, FormLayout, FormItem as Item, ArrayItems } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -13,20 +13,20 @@ import {
   Collection,
   CollectionFieldOptions,
   useCollection,
+  useCollectionFilterOptions,
   useCollectionManager,
   useSortFields,
-  useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
-import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
-import { removeNullCondition } from '../filter';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
+import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
@@ -712,7 +712,7 @@ FormItem.Designer = function Designer() {
         fieldSchema['x-component'] !== 'TableField' && (
           <SchemaSettings.SwitchItem
             key="multiple"
-            title={t('Multiple')}
+            title={t('Allow multiple')}
             checked={
               fieldSchema['x-component-props']?.multiple === undefined
                 ? true
