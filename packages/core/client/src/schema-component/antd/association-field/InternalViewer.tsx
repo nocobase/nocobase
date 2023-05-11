@@ -38,8 +38,6 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
   const { snapshot } = useActionContext();
-  const isTagsMode = fieldSchema['x-component-props']?.mode === 'tags';
-
   const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
 
   const renderRecords = () =>
@@ -49,7 +47,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
       return (
         <Fragment key={`${record.id}_${index}`}>
           <span>
-            {snapshot || isTagsMode ? (
+            {snapshot ? (
               text
             ) : enableLink !== false ? (
               <a

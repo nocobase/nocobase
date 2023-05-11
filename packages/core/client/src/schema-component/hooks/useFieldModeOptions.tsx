@@ -22,9 +22,9 @@ export const useFieldModeOptions = () => {
     if (collection?.template === 'file') {
       return isReadPretty?[
         { label: t('Title'), value: 'Select' },
-        { label: t('File Manager'), value: 'FileManager' },
+        { label: t('File manager'), value: 'FileManager' },
       ]:[
-        { label: t('File Manager'), value: 'FileManager' },
+        { label: t('File manager'), value: 'FileManager' },
         { label: t('Record picker'), value: 'Picker' },
         { label: t('Select'), value: 'Select' },
       ];

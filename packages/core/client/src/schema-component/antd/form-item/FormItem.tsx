@@ -687,7 +687,7 @@ FormItem.Designer = function Designer() {
         />
       )}
 
-      {!field.readPretty && isAssociationField && (
+      {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"
           title={t('Allow add new data')}
