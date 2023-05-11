@@ -14,7 +14,7 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { useFieldNames, useInsertSchema } from './hooks';
@@ -71,7 +71,8 @@ export const InternalPicker = observer((props: any) => {
   const insertSelector = useInsertSchema('Selector');
   const { getField } = useCollection();
   const { t } = useTranslation();
-  const collectionField = getField(field.props.name);
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getField(field.props.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const addbuttonClick = () => {
     insertAddNewer(schema.AddNewer);
     setVisibleAddNewer(true);
