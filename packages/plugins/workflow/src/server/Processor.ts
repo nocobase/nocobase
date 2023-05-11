@@ -195,7 +195,7 @@ export default class Processor {
 
   // parent node should take over the control
   public async end(node, job) {
-    this.logger.debug(`branch ended at node (${node.id})})`);
+    this.logger.debug(`branch ended at node (${node.id})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {

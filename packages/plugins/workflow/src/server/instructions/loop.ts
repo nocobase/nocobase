@@ -46,7 +46,7 @@ export default {
 
     await processor.run(branch, job);
 
-    return processor.end(node, job);
+    return null;
   },
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
@@ -64,27 +64,23 @@ export default {
 
     const target = processor.getParsedValue(loop.config.target, node);
     // branchJob.status === JOB_STATUS.RESOLVED means branchJob is done, try next loop or exit as resolved
-    const length = getTargetLength(target);
-    if (branchJob.status > JOB_STATUS.PENDING && nextIndex < length) {
+    if (branchJob.status > JOB_STATUS.PENDING) {
       job.set({ result: nextIndex });
-      await processor.saveJob(job);
-      await processor.run(branch, job);
 
-      return null;
+      const length = getTargetLength(target);
+      if (nextIndex < length) {
+        await processor.saveJob(job);
+        await processor.run(branch, job);
+        return null;
+      }
     }
 
-    // branchJob.status !== JOB_STATUS.PENDING means branchJob is done (resolved / rejected)
     // branchJob.status < JOB_STATUS.PENDING means branchJob is rejected, any rejection should cause loop rejected
-    if (branchJob.status) {
-      job.set({
-        result: nextIndex,
-        status: branchJob.status,
-      });
+    job.set({
+      status: branchJob.status,
+    });
 
-      return job;
-    }
-
-    return processor.end(node, job);
+    return job;
   },
 
   getScope(node, index, processor) {

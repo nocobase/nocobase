@@ -55,6 +55,40 @@ describe('workflow > instructions > loop', () => {
       expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
       expect(jobs[0].result).toBe(0);
     });
+
+    it('should exit when branch meets error', async () => {
+      const n1 = await workflow.createNode({
+        type: 'loop',
+        config: {
+          target: 2,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'error',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n3);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
+      const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(jobs.length).toBe(2);
+      expect(jobs[0].status).toBe(JOB_STATUS.ERROR);
+      expect(jobs[0].result).toBe(0);
+      expect(jobs[1].status).toBe(JOB_STATUS.ERROR);
+    });
   });
 
   describe('config', () => {
