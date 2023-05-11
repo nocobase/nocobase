@@ -677,24 +677,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     const result = await this.sequelize.sync(options);
-    // await this.validateAndSync(options);
 
     if (isMySQL) {
       await this.sequelize.query('SET FOREIGN_KEY_CHECKS = 1', null);
     }
 
     return result;
-    // return this.sequelize;
-  }
-
-  async validateAndSync(options?: SyncOptions) {
-    for (let collection of this.collections.values()) {
-      // if (!collection.validateBeforeSync()) {
-      //   continue;
-      // }
-      await collection.model.sync(options);
-      collection.saveAfterSync();
-    }
   }
 
   async clean(options: CleanOptions) {

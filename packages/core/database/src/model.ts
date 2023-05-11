@@ -4,6 +4,9 @@ import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import { SyncRunner } from './sync-runner';
+import mkdirp from 'mkdirp';
+import path from 'path';
+import fs from 'fs';
 
 const _ = lodash;
 
@@ -197,6 +200,57 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return SyncRunner.syncInheritModel(model, options);
     }
 
-    return SequelizeModel.sync.call(this, options);
+    // @ts-ignore
+    if(!this.validateBeforeSync()) {
+      return this;
+    }
+    let modelResult = await SequelizeModel.sync.call(this, options);
+    this.saveAfterSync();
+
+    return modelResult;
+  }
+
+  static validateBeforeSync() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
+    const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
+    if (!fs.existsSync(snapshotFile)) {
+      return true;
+    }
+
+    const snapshotFromFile = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
+    let snapshot = {
+      fields: this.getAttributes(),
+    };
+
+    // remove undefined values recursively which lodash can't
+    snapshot = JSON.parse(JSON.stringify(snapshot)); 
+
+    if (!_.isEqual(snapshotFromFile, snapshot)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  static saveAfterSync() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
+    if (!fs.existsSync(snapshotDir)) {
+      mkdirp.sync(snapshotDir);
+    }
+
+    const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
+    const snapshot = {
+      fields: this.getAttributes(),
+    };
+
+    fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
+  }
+
+  static afterDestroy1() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
+    const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
+    if (fs.existsSync(snapshotFile)) {
+      fs.unlinkSync(snapshotFile);
+    }
   }
 }
