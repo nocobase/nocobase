@@ -312,6 +312,13 @@ export class OptionsParser {
           attributes,
         };
       } else {
+        const existInclude = queryParams['include'][existIncludeIndex];
+        if (existInclude.attributes && Array.isArray(existInclude.attributes) && existInclude.attributes.length == 0) {
+          existInclude.attributes = {
+            include: [],
+          };
+        }
+
         setInclude(
           model.associations[queryParams['include'][existIncludeIndex].association].target,
           queryParams['include'][existIncludeIndex],

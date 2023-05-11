@@ -35,12 +35,12 @@ export const useFieldModeOptions = () => {
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },
-              { label: t('Subtable'), value: 'SubTable' },
+              // { label: t('Subtable'), value: 'SubTable' },
               { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
-              { label: t('Subtable'), value: 'SubTable' },
+              // { label: t('Subtable'), value: 'SubTable' },
               { label: t('Select'), value: 'Select' },
               { label: t('Subform'), value: 'Nester' },
             ];
