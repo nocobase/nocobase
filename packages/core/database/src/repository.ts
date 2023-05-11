@@ -203,12 +203,11 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 }
 
-interface AggregateOptions {
+export interface AggregateOptions {
   method: 'avg' | 'count' | 'min' | 'max' | 'sum';
   field?: string;
   filter?: Filter;
   distinct?: boolean;
-  optionsTransformer?: (options: any) => any;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -268,7 +267,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
-  async aggregate(options: AggregateOptions): Promise<any> {
+  async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
     const { method, field } = options;
 
     const queryOptions = this.buildQueryOptions({

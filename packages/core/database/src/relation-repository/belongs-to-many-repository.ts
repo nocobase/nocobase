@@ -1,7 +1,15 @@
 import lodash from 'lodash';
 import { BelongsToMany, Op, Transaction } from 'sequelize';
 import { Model } from '../model';
-import { CreateOptions, DestroyOptions, FindOneOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
+import {
+  AggregateOptions,
+  CreateOptions,
+  DestroyOptions,
+  FindOneOptions,
+  FindOptions,
+  TargetKey,
+  UpdateOptions,
+} from '../repository';
 import { updateThroughTableValue } from '../update-associations';
 import { FindAndCountOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
@@ -38,7 +46,7 @@ interface IBelongsToManyRepository<M extends Model> {
 }
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
-  async aggregate(options) {
+  async aggregate(options: AggregateOptions) {
     const targetRepository = this.targetCollection.repository;
 
     const sourceModel = await this.getSourceModel();
