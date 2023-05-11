@@ -62,7 +62,7 @@ const traverseJSON = (data, options: TraverseOptions) => {
   const { collection, exclude = [], include = [] } = options;
   const map = parseInclude(include);
   const result = {};
-  for (const key of Object.keys(data)) {
+  for (const key of Object.keys(data || {})) {
     const subInclude = map[key];
     if (include.length > 0 && !subInclude) {
       continue;

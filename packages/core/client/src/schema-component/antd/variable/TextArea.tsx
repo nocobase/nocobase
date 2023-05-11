@@ -187,7 +187,6 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
 export function TextArea(props) {
   const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
-  const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
@@ -291,7 +290,7 @@ export function TextArea(props) {
     if (ev.key === 'Enter') {
       ev.preventDefault();
     }
-    setIME(ev.keyCode === 229);
+    setIME(ev.keyCode === 229 && ![' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Enter'].includes(ev.key));
     // if (ev.key === 'Control') {
     //   console.debug(getSelection().getRangeAt(0));
     // }
@@ -381,7 +380,7 @@ export function TextArea(props) {
   );
 }
 
-TextArea.ReadPretty = (props) => {
+TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
   const { value, multiline = true, scope } = props;
   const compile = useCompile();
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);

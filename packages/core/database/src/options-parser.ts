@@ -249,6 +249,11 @@ export class OptionsParser {
       }
 
       if (appendFields.length == 2) {
+        const association = associations[appendFields[0]];
+        if (!association) {
+          throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
+        }
+
         const associationModel = associations[appendFields[0]].target;
         if (associationModel.rawAttributes[appendFields[1]]) {
           lastLevel = true;
@@ -307,6 +312,13 @@ export class OptionsParser {
           attributes,
         };
       } else {
+        const existInclude = queryParams['include'][existIncludeIndex];
+        if (existInclude.attributes && Array.isArray(existInclude.attributes) && existInclude.attributes.length == 0) {
+          existInclude.attributes = {
+            include: [],
+          };
+        }
+
         setInclude(
           model.associations[queryParams['include'][existIncludeIndex].association].target,
           queryParams['include'][existIncludeIndex],

@@ -110,7 +110,7 @@ export const BaseTypeSets = {
 function matchFieldType(field, type): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
-    return Boolean(BaseTypeSets[type]?.has(field.interface));
+    return BaseTypeSets[type]?.has(field.interface);
   }
 
   if (inputType === 'object' && type.type === 'reference') {

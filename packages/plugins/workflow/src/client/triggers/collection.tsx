@@ -55,6 +55,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-component-props': {
+        dropdownMatchSelectWidth: false,
         options: collectionModeOptions,
         placeholder: `{{t("Trigger on", { ns: "${NAMESPACE}" })}}`,
       },

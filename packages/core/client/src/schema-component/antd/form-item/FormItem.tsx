@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, FormLayout, FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -9,15 +9,24 @@ import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFilterByTk, useFormBlockContext } from '../../../block-provider';
-import { Collection, CollectionFieldOptions, useCollection, useCollectionManager } from '../../../collection-manager';
+import {
+  Collection,
+  CollectionFieldOptions,
+  useCollection,
+  useCollectionFilterOptions,
+  useCollectionManager,
+  useSortFields,
+} from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { isVariable, parseVariables, useVariablesCtx } from '../../common/utils/uitls';
 import { SchemaComponent } from '../../core';
-import { useCompile, useDesignable, useFieldComponentOptions } from '../../hooks';
+import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
 import { BlockItem } from '../block-item';
+import { removeNullCondition } from '../filter';
 import { HTMLEncode } from '../input/shared';
+import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
@@ -98,7 +107,6 @@ FormItem.Designer = function Designer() {
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const variablesCtx = useVariablesCtx();
-
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -107,8 +115,10 @@ FormItem.Designer = function Designer() {
   const targetFields = collectionField?.target
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
-  const fieldComponentOptions = useFieldComponentOptions();
-  const isSubFormAssociationField = field.address.segments.includes('__form_grid');
+  const fieldModeOptions = useFieldModeOptions();
+  const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const isTableField = fieldSchema['x-component'] === 'TableField';
+  const isFileField = isFileCollection(targetCollection);
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -131,6 +141,23 @@ FormItem.Designer = function Designer() {
   if (fieldSchema['x-read-pretty'] === true) {
     readOnlyMode = 'read-pretty';
   }
+  const dataSource = useCollectionFilterOptions(collectionField?.target);
+  const defaultFilter = field.componentProps?.service?.params?.filter || {};
+  const sortFields = useSortFields(collectionField?.target);
+  const defaultSort = field.componentProps?.service?.params?.sort || [];
+  const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
+  const isSelectFieldMode = fieldMode === 'Select';
+  const sort = defaultSort?.map((item: string) => {
+    return item.startsWith('-')
+      ? {
+          field: item.substring(1),
+          direction: 'desc',
+        }
+      : {
+          field: item,
+          direction: 'asc',
+        };
+  });
 
   return (
     <GeneralSchemaDesigner>
@@ -252,11 +279,11 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {!form?.readPretty && isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileField ? (
         <SchemaSettings.SwitchItem
           key="quick-upload"
           title={t('Quick upload')}
-          checked={fieldSchema['x-component-props']?.quickUpload as boolean}
+          checked={fieldSchema['x-component-props']?.quickUpload !== (false as boolean)}
           onChange={(value) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -272,11 +299,11 @@ FormItem.Designer = function Designer() {
           }}
         />
       ) : null}
-      {!form?.readPretty && isFileCollection(targetCollection) ? (
+      {!form?.readPretty && isFileField ? (
         <SchemaSettings.SwitchItem
           key="select-file"
           title={t('Select file')}
-          checked={fieldSchema['x-component-props']?.selectFile as boolean}
+          checked={fieldSchema['x-component-props']?.selectFile !== (false as boolean)}
           onChange={(value) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
@@ -508,48 +535,174 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {form && !isSubFormAssociationField && fieldComponentOptions && (
-        <SchemaSettings.SelectItem
-          title={t('Field component')}
-          options={fieldComponentOptions}
-          value={fieldSchema['x-component']}
-          onChange={(type) => {
-            const schema: ISchema = {
-              name: collectionField?.name,
-              type: 'void',
-              required: fieldSchema['required'],
-              description: fieldSchema['description'],
-              default: fieldSchema['default'],
-              'x-decorator': 'FormItem',
-              'x-designer': 'FormItem.Designer',
-              'x-component': type,
-              'x-validator': fieldSchema['x-validator'],
-              'x-collection-field': fieldSchema['x-collection-field'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-              'x-component-props': {
-                ...collectionField?.uiSchema?.['x-component-props'],
-                ...fieldSchema['x-component-props'],
-              },
-            };
-
-            interfaceConfig?.schemaInitialize?.(schema, {
-              field: collectionField,
-              block: 'Form',
-              readPretty: field.readPretty,
-              action: tk ? 'get' : null,
-              targetCollection,
-            });
-
-            insertAdjacent('beforeBegin', divWrap(schema), {
-              onSuccess: () => {
-                dn.remove(null, {
-                  removeParentsIfNoChildren: true,
-                  breakRemoveOn: {
-                    'x-component': 'Grid',
+      {isSelectFieldMode && !field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Set the data scope')}
+          schema={
+            {
+              type: 'object',
+              title: t('Set the data scope'),
+              properties: {
+                filter: {
+                  default: defaultFilter,
+                  // title: '数据范围',
+                  enum: dataSource,
+                  'x-component': 'Filter',
+                  'x-component-props': {
+                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
                   },
-                });
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ filter }) => {
+            filter = removeNullCondition(filter);
+            _.set(field.componentProps, 'service.params.filter', filter);
+            fieldSchema['x-component-props'] = field.componentProps;
+            field.componentProps = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
               },
             });
+          }}
+        />
+      )}
+      {isSelectFieldMode && !field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Set default sorting rules')}
+          components={{ ArrayItems }}
+          schema={
+            {
+              type: 'object',
+              title: t('Set default sorting rules'),
+              properties: {
+                sort: {
+                  type: 'array',
+                  default: sort,
+                  'x-component': 'ArrayItems',
+                  'x-decorator': 'FormItem',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      space: {
+                        type: 'void',
+                        'x-component': 'Space',
+                        properties: {
+                          sort: {
+                            type: 'void',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'ArrayItems.SortHandle',
+                          },
+                          field: {
+                            type: 'string',
+                            enum: sortFields,
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Select',
+                            'x-component-props': {
+                              style: {
+                                width: 260,
+                              },
+                            },
+                          },
+                          direction: {
+                            type: 'string',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'Radio.Group',
+                            'x-component-props': {
+                              optionType: 'button',
+                            },
+                            enum: [
+                              {
+                                label: t('ASC'),
+                                value: 'asc',
+                              },
+                              {
+                                label: t('DESC'),
+                                value: 'desc',
+                              },
+                            ],
+                          },
+                          remove: {
+                            type: 'void',
+                            'x-decorator': 'FormItem',
+                            'x-component': 'ArrayItems.Remove',
+                          },
+                        },
+                      },
+                    },
+                  },
+                  properties: {
+                    add: {
+                      type: 'void',
+                      title: t('Add sort field'),
+                      'x-component': 'ArrayItems.Addition',
+                    },
+                  },
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ sort }) => {
+            const sortArr = sort.map((item) => {
+              return item.direction === 'desc' ? `-${item.field}` : item.field;
+            });
+
+            _.set(field.componentProps, 'service.params.sort', sortArr);
+            fieldSchema['x-component-props'] = field.componentProps;
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
+              },
+            });
+          }}
+        />
+      )}
+      {isAssociationField && fieldModeOptions && !isTableField && (
+        <SchemaSettings.SelectItem
+          key="field-mode"
+          title={t('Field mode')}
+          options={fieldModeOptions}
+          value={fieldMode}
+          onChange={(mode) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['mode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.mode = mode;
+            if (mode === 'Nester') {
+              const initValue = ['o2m', 'm2m'].includes(collectionField.interface) ? [] : {};
+              field.value = field.value || initValue;
+            }
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+
+      {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
+        <SchemaSettings.SwitchItem
+          key="allowAddNew"
+          title={t('Allow add new data')}
+          checked={fieldSchema['x-add-new'] as boolean}
+          onChange={(allowAddNew) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field['x-add-new'] = allowAddNew;
+            fieldSchema['x-add-new'] = allowAddNew;
+            schema['x-add-new'] = allowAddNew;
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
           }}
         />
       )}
@@ -559,7 +712,7 @@ FormItem.Designer = function Designer() {
         fieldSchema['x-component'] !== 'TableField' && (
           <SchemaSettings.SwitchItem
             key="multiple"
-            title={t('Multiple')}
+            title={t('Allow multiple')}
             checked={
               fieldSchema['x-component-props']?.multiple === undefined
                 ? true
@@ -583,15 +736,16 @@ FormItem.Designer = function Designer() {
             }}
           />
         )}
-      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+      {field.readPretty && options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && !isFileField && (
         <SchemaSettings.SwitchItem
           title={t('Enable link')}
-          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
+          checked={fieldSchema['x-component-props']?.enableLink !== false}
           onChange={(flag) => {
             fieldSchema['x-component-props'] = {
               ...fieldSchema?.['x-component-props'],
-              mode: flag ? 'links' : 'tags',
+              enableLink: flag,
             };
+            field.componentProps['enableLink'] = flag;
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
@@ -674,6 +828,7 @@ FormItem.Designer = function Designer() {
             fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
             fieldSchema['x-component-props']['fieldNames'] = fieldNames;
             schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps.fieldNames = fieldSchema['x-component-props'].fieldNames;
             dn.emit('patch', {
               schema,
             });
@@ -696,7 +851,7 @@ FormItem.Designer = function Designer() {
   );
 };
 
-function isFileCollection(collection: Collection) {
+export function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
 }
 
