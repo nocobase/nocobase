@@ -30,15 +30,15 @@ export const useInsertSchema = (component) => {
 };
 
 export function useAssociationFieldContext<F extends GeneralField>() {
-  return useContext(AssociationFieldContext) as { options: any; field: F };
+  return useContext(AssociationFieldContext) as { options: any; field: F; currentMode: string };
 }
 
 export default function useServiceOptions(props) {
   const { action = 'list', service, fieldNames } = props;
   const params = service?.params || {};
   const fieldSchema = useFieldSchema();
-  const { getField, fields } = useCollection();
-  const { getCollectionFields } = useCollectionManager();
+  const { getField } = useCollection();
+  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
   const record = useRecord();
 
   const normalizeValues = useCallback(
@@ -63,8 +63,9 @@ export default function useServiceOptions(props) {
   }, [props.value, normalizeValues]);
 
   const collectionField = useMemo(() => {
-    return getField(fieldSchema.name);
+    return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   }, [fieldSchema.name]);
+
   const sourceValue = record?.[collectionField?.sourceKey];
   const filter = useMemo(() => {
     const isOToAny = ['oho', 'o2m'].includes(collectionField?.interface);
