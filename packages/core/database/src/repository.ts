@@ -9,7 +9,6 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
-  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -269,10 +268,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async aggregate(options: AggregateOptions): Promise<any> {
-    const transaction = await this.getTransaction(options);
     const { method, field } = options;
-
-    const fieldAttribute = this.collection.model.rawAttributes[field];
 
     const queryOptions = this.buildQueryOptions({
       ...options,
@@ -281,23 +277,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     options.optionsTransformer?.(queryOptions);
 
-    const results = await this.model.findAll({
-      ...queryOptions,
-      attributes: [
-        [
-          Sequelize.literal(
-            `${method}(${options.distinct ? 'distinct' : ''} ${this.database.sequelize
-              .getQueryInterface()
-              .quoteIdentifiers(`${this.collection.name}.${fieldAttribute.field}`)})`,
-          ),
-          `${method}`,
-        ],
-      ],
-      raw: true,
-      transaction,
-    });
-
-    return results[0][method];
+    return await this.model.aggregate(field, method, queryOptions);
   }
   /**
    * find
