@@ -3,7 +3,7 @@ import { RecursionField, connect, mapProps, observer, useField, useFieldSchema }
 import { Button, Input } from 'antd';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useFieldTitle } from '../../hooks';
 import { ActionContext } from '../action';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -18,11 +18,12 @@ export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
 const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { fieldNames, objectValue = true } = props;
   const field: any = useField();
+  const fieldSchema = useFieldSchema();
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const { getField } = useCollection();
-  const collectionField = getField(field.props.name);
+  const { getCollectionJoinField } = useCollectionManager();
+  const collectionField = getField(field.props.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const service = useServiceOptions(props);
-  const fieldSchema = useFieldSchema();
   const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
   const isAllowAddNew = fieldSchema['x-add-new'];
   const insertAddNewer = useInsertSchema('AddNewer');
@@ -74,7 +75,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       </Input.Group>
 
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-        <CollectionProvider name={collectionField?.target}>
+        <CollectionProvider name={collectionField.target}>
           <RecursionField
             onlyRenderProperties
             basePath={field.address}
