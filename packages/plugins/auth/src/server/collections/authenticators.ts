@@ -48,6 +48,16 @@ export default {
       },
     },
     {
+      interface: 'input',
+      type: 'string',
+      name: 'title',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Title")}}',
+        'x-component': 'Input',
+      },
+    },
+    {
       interface: 'textarea',
       type: 'string',
       name: 'description',

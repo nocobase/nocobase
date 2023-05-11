@@ -44,7 +44,7 @@ describe('actions', () => {
         ],
       });
       const res = await agent.resource('authenticators').publicList();
-      expect(res.body.data).toEqual([{ name: 'test', authType: 'testType' }]);
+      expect(res.body.data).toEqual([{ name: 'test', authType: 'testType', title: null }]);
     });
 
     it('should keep at least one authenticator', async () => {

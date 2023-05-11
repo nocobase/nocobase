@@ -35,6 +35,16 @@ const collection = {
       },
     },
     {
+      interface: 'input',
+      type: 'string',
+      name: 'title',
+      uiSchema: {
+        type: 'string',
+        title: '{{t("Title")}}',
+        'x-component': 'Input',
+      },
+    },
+    {
       interface: 'textarea',
       type: 'string',
       name: 'description',
@@ -97,6 +107,10 @@ export const createFormSchema: ISchema = {
               run: 'setType($self.value)',
             },
           },
+        },
+        title: {
+          'x-component': 'CollectionField',
+          'x-decorator': 'FormItem',
         },
         description: {
           'x-component': 'CollectionField',
@@ -237,6 +251,18 @@ export const authenticatorsSchema: ISchema = {
             },
           },
         },
+        title: {
+          type: 'void',
+          'x-decorator': 'Table.Column.Decorator',
+          'x-component': 'Table.Column',
+          properties: {
+            title: {
+              type: 'string',
+              'x-component': 'CollectionField',
+              'x-read-pretty': true,
+            },
+          },
+        },
         description: {
           type: 'void',
           'x-decorator': 'Table.Column.Decorator',
@@ -300,6 +326,10 @@ export const authenticatorsSchema: ISchema = {
                           'x-component-props': {
                             options: '{{ types }}',
                           },
+                        },
+                        title: {
+                          'x-component': 'CollectionField',
+                          'x-decorator': 'FormItem',
                         },
                         description: {
                           'x-component': 'CollectionField',

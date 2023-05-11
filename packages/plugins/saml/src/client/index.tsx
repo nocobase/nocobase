@@ -1,6 +1,5 @@
 import { OptionsComponentProvider, PluginManagerContext, SigninPageExtensionProvider } from '@nocobase/client';
-import React, { useContext } from 'react';
-import { useSamlTranslation } from './locale';
+import React from 'react';
 import { SAMLList } from './SAMLList';
 import { Options } from './Options';
 

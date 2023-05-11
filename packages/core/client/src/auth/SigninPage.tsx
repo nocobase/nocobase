@@ -35,6 +35,14 @@ export const SigninPageProvider: React.FC<{
   return <SigninPageContext.Provider value={components}>{props.children}</SigninPageContext.Provider>;
 };
 
+type Authenticator = {
+  name: string;
+  authType: string;
+  title?: string;
+};
+
+export const AuthenticatorsContext = createContext<Authenticator[]>([]);
+
 export function useRedirect(next = '/admin') {
   const location = useLocation<any>();
   const history = useHistory();
@@ -64,23 +72,23 @@ export const SigninPage = () => {
   const signupPages = useContext(SignupPageContext);
   const signinExtension = useSigninPageExtension();
   const api = useAPIClient();
-  const [authenticators, setAuthenticators] = useState<
-    {
+  const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);
+  const [tabs, setTabs] = useState<
+    (Authenticator & {
       component: FunctionComponentElement<{ name: string }>;
       allowSignup: boolean;
       tabTitle: string;
-      authType: string;
-      name: string;
-    }[]
+    })[]
   >([]);
 
   const handleAuthenticators = (
-    data: {
+    authenticators: {
       name: string;
       authType: string;
+      title?: string;
     }[],
   ) => {
-    const authenticators = data
+    const tabs = authenticators
       .map((item) => {
         const page = signInPages[item.authType];
         if (!page) {
@@ -91,13 +99,14 @@ export const SigninPage = () => {
             name: string;
           }>(page.component, { name: item.name }),
           allowSignup: !!signupPages[item.authType],
-          tabTitle: page.tabTitle || item.name,
+          tabTitle: item.title || page.tabTitle || item.name,
           ...item,
         };
       })
       .filter((i) => i);
 
     setAuthenticators(authenticators);
+    setTabs(tabs);
   };
 
   useRequest(
@@ -120,38 +129,40 @@ export const SigninPage = () => {
   }
 
   return (
-    <Space
-      direction="vertical"
-      className={css`
-        display: flex;
-      `}
-    >
-      {authenticators.length > 1 ? (
-        <Tabs>
-          {authenticators.map((item) => (
-            <Tabs.TabPane tab={item.tabTitle} key={item.name}>
-              {item.component}
-              {item.allowSignup && (
+    <AuthenticatorsContext.Provider value={authenticators}>
+      <Space
+        direction="vertical"
+        className={css`
+          display: flex;
+        `}
+      >
+        {tabs.length > 1 ? (
+          <Tabs>
+            {tabs.map((tab) => (
+              <Tabs.TabPane tab={tab.tabTitle} key={tab.name}>
+                {tab.component}
+                {tab.allowSignup && (
+                  <div>
+                    <Link to={`/signup?authType=${tab.authType}&name=${tab.name}`}>{t('Create an account')}</Link>
+                  </div>
+                )}
+              </Tabs.TabPane>
+            ))}
+          </Tabs>
+        ) : (
+          tabs.length && (
+            <div>
+              {tabs[0].component}
+              {tabs[0].allowSignup && (
                 <div>
-                  <Link to={`/signup?authType=${item.authType}&name=${item.name}`}>{t('Create an account')}</Link>
+                  <Link to={`/signup?authType=${tabs[0].authType}&name=${tabs[0].name}`}>{t('Create an account')}</Link>
                 </div>
               )}
-            </Tabs.TabPane>
-          ))}
-        </Tabs>
-      ) : (
-        <div>
-          {authenticators[0].component}
-          {authenticators[0].allowSignup && (
-            <div>
-              <Link to={`/signup?authType=${authenticators[0].authType}&name=${authenticators[0].name}`}>
-                {t('Create an account')}
-              </Link>
             </div>
-          )}
-        </div>
-      )}
-      <div>{signinExtension}</div>
-    </Space>
+          )
+        )}
+        <div>{signinExtension}</div>
+      </Space>
+    </AuthenticatorsContext.Provider>
   );
 };

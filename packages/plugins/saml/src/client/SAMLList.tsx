@@ -1,8 +1,8 @@
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { useAPIClient, useRedirect, useRequest } from '@nocobase/client';
+import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/client';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 
 export interface SAMLProvider {
   title: string;
@@ -15,20 +15,17 @@ export const SAMLList = () => {
   const api = useAPIClient();
   const redirect = useRedirect();
 
-  const { data, loading } = useRequest({
-    resource: 'saml',
-    action: 'getEnabledProviders',
-  });
+  const authenticators = useContext(AuthenticatorsContext);
 
   /**
    * 打开登录弹出框
    */
-  const handleOpen = async (item: SAMLProvider) => {
+  const handleOpen = async (name: string) => {
     const response = await api.request({
       method: 'post',
       url: 'saml:getAuthUrl',
-      data: {
-        clientId: item.clientId,
+      headers: {
+        'X-Authenticator': name,
       },
     });
 
@@ -74,11 +71,13 @@ export const SAMLList = () => {
         display: flex;
       `}
     >
-      {data?.data?.map?.((item) => (
-        <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          {item.title}
-        </Button>
-      ))}
+      {authenticators
+        .filter((i) => i.authType === 'SAML')
+        .map((item) => (
+          <Button shape="round" block key={item.name} icon={<LoginOutlined />} onClick={() => handleOpen(item.name)}>
+            {item.title}
+          </Button>
+        ))}
     </Space>
   );
 };

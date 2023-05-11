@@ -25,7 +25,7 @@ export default {
   publicList: async (ctx: Context, next: Next) => {
     const repo = ctx.db.getRepository('authenticators');
     ctx.body = await repo.find({
-      fields: ['name', 'authType'],
+      fields: ['name', 'authType', 'title'],
       filter: {
         enabled: true,
       },
