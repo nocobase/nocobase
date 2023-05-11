@@ -221,15 +221,15 @@ export const useFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
-      const component =
-        field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-          ? 'TableField'
-          : 'CollectionField';
+      // const component =
+      //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+      //     ? 'TableField'
+      //     : 'CollectionField';
       const schema = {
         type: 'string',
         name: field.name,
         'x-designer': 'FormItem.Designer',
-        'x-component': component,
+        'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -277,16 +277,16 @@ export const useFilterFormItemInitializerFields = (options?: any) => {
     ?.map((field) => {
       const interfaceConfig = getInterface(field.interface);
       const targetCollection = getCollection(field.target);
-      const component =
-        field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-          ? 'TableField'
-          : 'CollectionField';
+      // const component =
+      //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+      //     ? 'TableField'
+      //     : 'CollectionField';
       let schema = {
         type: 'string',
         name: field.name,
         required: false,
         'x-designer': 'FormItem.FilterFormDesigner',
-        'x-component': component,
+        'x-component': 'CollectionField',
         'x-decorator': 'FormItem',
         'x-collection-field': `${name}.${field.name}`,
         'x-component-props': {},
@@ -464,16 +464,16 @@ export const useInheritsFormItemInitializerFields = (options?) => {
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
-          const component =
-            field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-              ? 'TableField'
-              : 'CollectionField';
+          // const component =
+          //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+          //     ? 'TableField'
+          //     : 'CollectionField';
           const schema = {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
-            'x-component': component,
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
@@ -517,17 +517,17 @@ export const useFilterInheritsFormItemInitializerFields = (options?) => {
         ?.map((field) => {
           const interfaceConfig = getInterface(field.interface);
           const targetCollection = getCollection(field.target);
-          const component =
-            field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
-              ? 'TableField'
-              : 'CollectionField';
+          // const component =
+          //   field.interface === 'o2m' && targetCollection?.template !== 'file' && !snapshot
+          //     ? 'TableField'
+          //     : 'CollectionField';
           const schema = {
             type: 'string',
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             required: false,
             'x-designer': 'FormItem.FilterFormDesigner',
-            'x-component': component,
+            'x-component': 'CollectionField',
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},
