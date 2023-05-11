@@ -32,8 +32,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const insertViewer = useInsertSchema('Viewer');
-  const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');

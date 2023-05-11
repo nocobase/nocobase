@@ -20,9 +20,8 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const field: any = useField();
   const fieldSchema = useFieldSchema();
   const [visibleAddNewer, setVisibleAddNewer] = useState(false);
-  const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getField(field.props.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
   const service = useServiceOptions(props);
   const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
   const isAllowAddNew = fieldSchema['x-add-new'];
