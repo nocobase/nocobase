@@ -30,7 +30,7 @@ export const useInsertSchema = (component) => {
 };
 
 export function useAssociationFieldContext<F extends GeneralField>() {
-  return useContext(AssociationFieldContext) as { options: any; field: F };
+  return useContext(AssociationFieldContext) as { options: any; field: F; isFileCollection: boolean };
 }
 
 export default function useServiceOptions(props) {

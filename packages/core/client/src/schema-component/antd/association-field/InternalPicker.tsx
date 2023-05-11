@@ -19,6 +19,7 @@ import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
+import { useAssociationFieldContext } from './hooks';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
@@ -69,11 +70,9 @@ export const InternalPicker = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const insertAddNewer = useInsertSchema('AddNewer');
   const insertSelector = useInsertSchema('Selector');
-  const { getField } = useCollection();
   const { t } = useTranslation();
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getField(field.props.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);
-  const addbuttonClick = () => {
+  const { options: collectionField } = useAssociationFieldContext();
+   const addbuttonClick = () => {
     insertAddNewer(schema.AddNewer);
     setVisibleAddNewer(true);
   };

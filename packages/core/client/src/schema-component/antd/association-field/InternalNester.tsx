@@ -3,15 +3,15 @@ import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { CollectionProvider } from '../../../collection-manager';
 import { useInsertSchema } from './hooks';
-import { useCollectionManager } from '../../../';
+import { useAssociationFieldContext } from './hooks';
 import schema from './schema';
 
 export const InternalNester = () => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const insertNester = useInsertSchema('Nester');
-  const { getCollectionJoinField } = useCollectionManager();
-  const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+  const { options: collectionField } = useAssociationFieldContext();
+
   useEffect(() => {
     insertNester(schema.Nester);
   }, []);

@@ -2,7 +2,7 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
+import { CollectionProvider } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
@@ -11,6 +11,7 @@ import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { useAssociationFieldContext } from './hooks';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -26,13 +27,12 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const recordCtx = useRecord();
   const { enableLink } = fieldSchema['x-component-props'];
-  const { getCollectionJoinField } = useCollectionManager();
   // value 做了转换，但 props.value 和原来 useField().value 的值不一致
   const field = useField();
   const fieldNames = useFieldNames(props);
   const [visible, setVisible] = useState(false);
   const insertViewer = useInsertSchema('Viewer');
-  const collectionField = getCollectionJoinField(fieldSchema?.['x-collection-field']);
+  const { options: collectionField } = useAssociationFieldContext();
   const [record, setRecord] = useState({});
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
@@ -97,7 +97,7 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
     );
   };
 
-  return collectionField ? (
+  return (
     <div>
       <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
         <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
@@ -112,5 +112,5 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
         </CollectionProvider>
       </BlockAssociationContext.Provider>
     </div>
-  ) : null;
+  );
 });
