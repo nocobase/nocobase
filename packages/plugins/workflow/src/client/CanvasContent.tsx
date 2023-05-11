@@ -1,15 +1,15 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext } from 'react';
 import { useForm } from '@formily/react';
-import { Alert, message, Tag } from "antd";
+import { Alert, message, Tag } from 'antd';
 import { cx, css } from '@emotion/css';
 
-import { Branch } from "./Branch";
-import { lang, NAMESPACE } from "./locale";
-import { branchBlockClass, nodeCardClass, nodeMetaClass } from "./style";
-import { TriggerConfig } from "./triggers";
-import { ActionContext, SchemaComponent, useAPIClient, useRequest, useResourceActionContext } from "@nocobase/client";
-import { useFlowContext } from "./FlowContext";
-import { instructions, NodeContext } from "./nodes";
+import { Branch } from './Branch';
+import { lang, NAMESPACE } from './locale';
+import { branchBlockClass, nodeCardClass, nodeMetaClass } from './style';
+import { TriggerConfig } from './triggers';
+import { ActionContext, SchemaComponent, useAPIClient, useRequest, useResourceActionContext } from '@nocobase/client';
+import { useFlowContext } from './FlowContext';
+import { instructions, NodeContext } from './nodes';
 
 function useUpdateAction(data) {
   const form = useForm();
@@ -53,7 +53,6 @@ function NodeDrawer() {
         <SchemaComponent
           scope={instruction?.scope}
           components={instruction?.components}
-          onlyRenderProperties
           schema={{
             type: 'void',
             name: `${instruction?.type}_${viewNode?.id}`,
