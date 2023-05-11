@@ -86,7 +86,7 @@ export const Authenticator = () => {
       <AuthTypesContext.Provider value={{ types }}>
         <SchemaComponent
           schema={authenticatorsSchema}
-          components={{ AddNew, Options, AuthTypeContextProvider: AuthTypeContext.Provider }}
+          components={{ AddNew, Options }}
           scope={{ types, useValuesFromOptions, useCanNotDelete }}
         />
       </AuthTypesContext.Provider>

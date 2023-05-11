@@ -2,9 +2,9 @@ import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { SAML, SamlConfig } from '@node-saml/node-saml';
 
 interface SAMLOptions {
-  issuer?: string; // issuer/entity
   ssoUrl?: string;
   certificate?: string;
+  idpIssuer?: string;
 }
 
 export class SAMLAuth extends BaseAuth {
@@ -17,13 +17,13 @@ export class SAMLAuth extends BaseAuth {
   }
 
   getOptions() {
-    const { issuer, ssoUrl, certificate }: SAMLOptions = this.options?.saml || {};
+    const { ssoUrl, certificate, idpIssuer }: SAMLOptions = this.options?.saml || {};
     return {
       entryPoint: ssoUrl,
-      issuer: issuer,
+      issuer: this.authenticator.get('name'),
       cert: certificate,
       wantAuthnResponseSigned: true,
-      audience: this.authenticator.get('name'),
+      idpIssuer,
     } as SamlConfig;
   }
 

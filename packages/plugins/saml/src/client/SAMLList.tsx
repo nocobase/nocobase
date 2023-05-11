@@ -4,12 +4,6 @@ import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/clie
 import { Button, Space } from 'antd';
 import React, { useEffect, useState, useContext } from 'react';
 
-export interface SAMLProvider {
-  title: string;
-  clientId: string;
-  loginUrl: string;
-}
-
 export const SAMLList = () => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
@@ -44,25 +38,23 @@ export const SAMLList = () => {
   };
 
   /**
-   * 从弹出窗口，发消息回来进行登录
-   */
-  const handleOIDCLogin = async (event: MessageEvent) => {
-    await api.auth.signIn(event.data, 'saml');
-    windowHandler.close();
-    setWindowHandler(undefined);
-    redirect();
-  };
-
-  /**
    * 监听弹出窗口的消息
    */
   useEffect(() => {
-    if (!windowHandler) return;
-    window.addEventListener('message', handleOIDCLogin);
-    return () => {
-      window.removeEventListener('message', handleOIDCLogin);
+    const handleSAMLLogin = async (event: MessageEvent) => {
+      await api.auth.signIn(event.data, event.data?.authenticator);
+      windowHandler.close();
+      setWindowHandler(undefined);
+      redirect();
     };
-  }, [windowHandler]);
+
+    if (!windowHandler) return;
+
+    window.addEventListener('message', handleSAMLLogin);
+    return () => {
+      window.removeEventListener('message', handleSAMLLogin);
+    };
+  }, [windowHandler, api, redirect]);
 
   return (
     <Space
