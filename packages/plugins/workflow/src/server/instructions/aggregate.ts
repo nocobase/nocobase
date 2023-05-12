@@ -36,7 +36,7 @@ export default {
     });
 
     return {
-      result,
+      result: options.dataType === DataTypes.DOUBLE ? Number(result) : result,
       status: JOB_STATUS.RESOLVED,
     };
   },
