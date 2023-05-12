@@ -15,8 +15,7 @@ import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
-import path from 'path';
-import fs from 'fs';
+import { deleteSnapshot } from './snapshot';
 
 export type RepositoryType = typeof Repository;
 
@@ -36,12 +35,12 @@ export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> 
    * @prop {any} [delayRestore] - A function to execute after all collections are restored
    */
   duplicator?:
-    | dumpable
-    | {
-        dumpable: dumpable;
-        with?: string[] | string;
-        delayRestore?: any;
-      };
+  | dumpable
+  | {
+    dumpable: dumpable;
+    with?: string[] | string;
+    delayRestore?: any;
+  };
 
   tableName?: string;
   inherits?: string[] | string;
@@ -208,7 +207,7 @@ export class Collection<
     }
 
     // @ts-ignore
-    this.model = class extends M {};
+    this.model = class extends M { };
     this.model.init(null, this.sequelizeModelOptions());
 
     if (!autoGenId) {
@@ -221,7 +220,7 @@ export class Collection<
     this.model.collection = this;
 
     this.model.afterDestroy((instance, options) => {
-      this.afterDestroy();
+      deleteSnapshot(this.db, this.model);
     });
   }
 
@@ -488,7 +487,7 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
-  addIndex(index: string | string[] | { fields: string[]; unique?: boolean; [key: string]: any }) {
+  addIndex(index: string | string[] | { fields: string[]; unique?: boolean;[key: string]: any }) {
     if (!index) {
       return;
     }
@@ -683,13 +682,5 @@ export class Collection<
 
   public isView() {
     return false;
-  }
-
-  afterDestroy() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.dialect || 'default', this.db.options.schema || 'public');
-    const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
-    if (fs.existsSync(snapshotFile)) {
-      fs.unlinkSync(snapshotFile);
-    }
   }
 }

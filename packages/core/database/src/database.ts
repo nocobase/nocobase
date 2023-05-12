@@ -70,8 +70,7 @@ import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ViewCollection } from './view-collection';
-import fs from 'fs';
-import path from 'path';
+import { cleanupSnapshots } from './snapshot';
 
 export type MergeOptions = merge.Options;
 
@@ -413,8 +412,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
           findOptions.raw
             ? (row['__collection'] = rowCollectionName)
             : row.set('__collection', rowCollectionName, {
-                raw: true,
-              });
+              raw: true,
+            });
         }
       }
     });
@@ -691,7 +690,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    this.cleanupSnapshots();
+    cleanupSnapshots(this);
 
     if (this.options.schema) {
       const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
@@ -711,13 +710,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
     }
 
     await this.queryInterface.dropAll(options);
-  }
-
-  cleanupSnapshots() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.options.dialect || 'default', this.options.schema || 'public');
-    if (fs.existsSync(snapshotDir)) {
-      fs.rmSync(snapshotDir, { recursive: true, force: true });
-    }
   }
 
   async collectionExistsInDb(name: string, options?: Transactionable) {
@@ -783,7 +775,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async close() {
     if (this.isSqliteMemory()) {
-      this.cleanupSnapshots();
       return;
     }
 
