@@ -46,6 +46,22 @@ export class SAMLAuth extends BaseAuth {
     const fullName = firstName && lastName && `${firstName} ${lastName}`;
     const name = nickname ?? username ?? fullName ?? nameID;
 
+    // Compatible processing
+    // When nameID is email, use email to find user
+    // If found, associate the user with the current authenticator
+    const userRepo = this.userCollection.repository;
+    const user = await userRepo.findOne({
+      filter: { email: nameID },
+    });
+    if (user) {
+      await this.authenticator.addUser(user, {
+        through: {
+          uuid: nameID,
+        },
+      });
+      return user;
+    }
+
     return await this.authenticator.findOrCreateUser(nameID, {
       nickname: name,
       email: email ?? null,
