@@ -79,7 +79,7 @@ describe('workflow > instructions > aggregate', () => {
 
       await sleep(500);
 
-      const [e2] = await workflow.getExecutions({ order: [['createdAt', 'desc']] });
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(3);
     });
@@ -108,7 +108,7 @@ describe('workflow > instructions > aggregate', () => {
 
       await sleep(500);
 
-      const [e2] = await workflow.getExecutions({ order: [['createdAt', 'desc']] });
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(1.5);
     });
@@ -137,7 +137,7 @@ describe('workflow > instructions > aggregate', () => {
 
       await sleep(500);
 
-      const [e2] = await workflow.getExecutions({ order: [['createdAt', 'desc']] });
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(1);
     });
@@ -166,7 +166,7 @@ describe('workflow > instructions > aggregate', () => {
 
       await sleep(500);
 
-      const [e2] = await workflow.getExecutions({ order: [['createdAt', 'desc']] });
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(2);
     });
@@ -217,7 +217,7 @@ describe('workflow > instructions > aggregate', () => {
       await sleep(500);
 
       const [e1] = await workflow.getExecutions();
-      const [j1, j2] = await e1.getJobs({ order: [['createdAt', 'ASC']] });
+      const [j1, j2] = await e1.getJobs({ order: [['id', 'ASC']] });
       expect(j1.result).toBe(2);
       expect(j2.result).toBe(1);
     });
@@ -282,7 +282,7 @@ describe('workflow > instructions > aggregate', () => {
       await sleep(500);
 
       const [e1] = await workflow.getExecutions();
-      const [j1, j2, j3] = await e1.getJobs({ order: [['createdAt', 'ASC']] });
+      const [j1, j2, j3] = await e1.getJobs({ order: [['id', 'ASC']] });
       expect(j2.result).toBe(3);
       expect(j3.result).toBe(1);
     });
