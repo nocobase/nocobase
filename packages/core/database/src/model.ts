@@ -201,7 +201,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     }
 
     // @ts-ignore
-    if(!this.validateBeforeSync(options)) {
+    if (!this.validateBeforeSync(options)) {
       return this;
     }
     let modelResult = await SequelizeModel.sync.call(this, options);
@@ -214,7 +214,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     if (options?.force) {
       return true;
     }
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
+    if (this.database.isSqliteMemory()) {
+      return true;
+    }
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.dialect || 'default', this.database.options.schema || 'public');
     const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
     if (!fs.existsSync(snapshotFile)) {
       return true;
@@ -226,7 +229,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     };
 
     // remove undefined values recursively which lodash can't
-    snapshot = JSON.parse(JSON.stringify(snapshot)); 
+    snapshot = JSON.parse(JSON.stringify(snapshot));
 
     if (!_.isEqual(snapshotFromFile, snapshot)) {
       return true;
@@ -236,7 +239,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
   }
 
   static saveAfterSync() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
+    if (this.database.isSqliteMemory()) {
+      return true;
+    }
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.dialect || 'default', this.database.options.schema || 'public');
     if (!fs.existsSync(snapshotDir)) {
       mkdirp.sync(snapshotDir);
     }

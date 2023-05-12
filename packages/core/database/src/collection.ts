@@ -686,7 +686,7 @@ export class Collection<
   }
 
   afterDestroy() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.schema || 'public');
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.db.options.dialect || 'default', this.db.options.schema || 'public');
     const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
     if (fs.existsSync(snapshotFile)) {
       fs.unlinkSync(snapshotFile);

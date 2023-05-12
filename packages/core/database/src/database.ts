@@ -691,7 +691,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    this.beforeClean();
+    this.cleanupSnapshots();
 
     if (this.options.schema) {
       const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
@@ -713,8 +713,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
     await this.queryInterface.dropAll(options);
   }
 
-  beforeClean() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.options.schema || 'public');
+  cleanupSnapshots() {
+    const snapshotDir = path.join('storage', 'db', 'snapshots', this.options.dialect || 'default', this.options.schema || 'public');
     if (fs.existsSync(snapshotDir)) {
       fs.rmSync(snapshotDir, { recursive: true, force: true });
     }
@@ -783,6 +783,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   async close() {
     if (this.isSqliteMemory()) {
+      this.cleanupSnapshots();
       return;
     }
 
