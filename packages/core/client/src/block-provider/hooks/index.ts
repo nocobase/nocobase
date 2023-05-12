@@ -1074,6 +1074,7 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useAssociationNames = (collection) => {
   const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -1097,8 +1098,9 @@ export const useAssociationNames = (collection) => {
   }, new Schema({}));
 
   const getAssociationAppends = (schema, arr = []) => {
-    return schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+    const data = schema.reduceProperties((buf, s) => {
+      const collectionfield =
+        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
       if (
         collectionfield &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
@@ -1125,7 +1127,9 @@ export const useAssociationNames = (collection) => {
         }
       }
     }, arr);
+    return data || [];
   };
+
   function flattenNestedList(nestedList) {
     const flattenedList = [];
     function flattenHelper(list, prefix) {

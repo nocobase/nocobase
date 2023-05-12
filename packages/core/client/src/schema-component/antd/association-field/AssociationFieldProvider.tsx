@@ -1,19 +1,28 @@
-import { useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 
-export function AssociationFieldProvider(props) {
+export const AssociationFieldProvider = observer((props) => {
   const field = useField();
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
+
   const collectionField = useMemo(
-    () => getCollectionField(fieldSchema['x-collection-field']),
+    () => getCollectionJoinField(fieldSchema['x-collection-field']),
+    [fieldSchema['x-collection-field'], fieldSchema.name],
+  );
+  const isFileCollection = useMemo(
+    () => getCollection(collectionField?.target)?.template === 'file',
     [fieldSchema['x-collection-field']],
   );
-  return (
-    <AssociationFieldContext.Provider value={{ options: collectionField, field }}>
+  const currentMode = useMemo(
+    () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
+    [fieldSchema['x-component-props']?.mode],
+  );
+  return collectionField ? (
+    <AssociationFieldContext.Provider value={{ options: collectionField, field, currentMode }}>
       {props.children}
     </AssociationFieldContext.Provider>
-  );
-}
+  ) : null;
+});
