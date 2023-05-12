@@ -1099,27 +1099,25 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield =
-        (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']))|| getField(s.name);
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (
         collectionfield &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
       ) {
+        buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
-
-        buf.push(s.name);
-        if (s['x-component-props'].mode === 'Nester' || s['x-component'] === 'TableField') {
+        if (s['x-component-props'].mode === 'Nester') {
           return getAssociationAppends(s, buf);
         }
         return buf;
       } else {
-        if (s['x-component'] === 'Grid' || s['x-component'] === 'TableV2') {
+        if (s['x-component'] === 'Grid') {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
-          return !s['x-component']?.includes('Action.') && getAssociationAppends(s, buf);
+          return !s['x-component']?.includes('Action.') ? getAssociationAppends(s, buf) : buf;
         }
       }
     }, arr);
@@ -1153,6 +1151,5 @@ export const useAssociationNames = (collection) => {
   const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
-  console.log(appends,associations)
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
