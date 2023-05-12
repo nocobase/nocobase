@@ -23,8 +23,8 @@ export function validateSnapshot(database: Database, model: ModelStatic<Model>, 
   let snapshot = {
     fields: model.getAttributes(),
     // @ts-ignore
-    indexes: model._indexes,
-    // indexes: model.options.indexes,
+    _indexes: model._indexes,
+    indexes: model.options.indexes,
   };
 
   // remove undefined values recursively which lodash can't
@@ -50,8 +50,8 @@ export function saveSnapshot(database: Database, model: ModelStatic<Model>) {
   const snapshot = {
     fields: model.getAttributes(),
     // @ts-ignore
-    indexes: model._indexes,
-    // indexes: model.options.indexes,
+    _indexes: model._indexes,
+    indexes: model.options.indexes,
   };
 
   fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
