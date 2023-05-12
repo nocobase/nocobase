@@ -11,7 +11,15 @@ export const SubTable: any = observer((props: any) => {
   const { t } = useTranslation();
   return (
     <div>
-      <Table size={'small'} field={field} showIndex dragSort={field.editable} pagination={false} rowSelection={{type:'none'}}  />
+      <Table
+        size={'small'}
+        field={field}
+        showIndex
+        dragSort={field.editable}
+        showDel={field.editable}
+        pagination={false}
+        rowSelection={{ type: 'none' }}
+      />
       {field.editable && (
         <Button
           type={'dashed'}

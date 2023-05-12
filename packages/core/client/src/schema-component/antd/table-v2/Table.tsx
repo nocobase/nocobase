@@ -1,4 +1,4 @@
-import { MenuOutlined } from '@ant-design/icons';
+import { MenuOutlined, DeleteOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
@@ -71,12 +71,36 @@ const useTableColumns = (props) => {
   if (!exists) {
     return columns;
   }
-  return columns.concat({
+
+  const tableColumns = columns.concat({
     title: render(),
     dataIndex: 'TABLE_COLUMN_INITIALIZER',
     key: 'TABLE_COLUMN_INITIALIZER',
     render: designable ? () => <div style={{ minWidth: 300 }} /> : null,
   });
+
+  if (props.showDel) {
+    tableColumns.push({
+      title: '',
+      key: 'delete',
+      width: 80,
+      align: 'center',
+      fixed:'right',
+      render: (v, record, index) => {
+        return (
+          <DeleteOutlined
+            style={{ cursor: 'grab' }}
+            onClick={() => {
+              const data = field.value;
+              data.splice(index, 1);
+              field.value = data;
+            }}
+          />
+        );
+      },
+    });
+  }
+  return tableColumns;
 };
 
 const topActiveClass = css`
