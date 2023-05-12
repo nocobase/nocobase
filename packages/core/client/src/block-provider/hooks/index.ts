@@ -1100,7 +1100,7 @@ export const useAssociationNames = (collection) => {
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
       const collectionfield =
-        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
+        (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']))|| getField(s.name);
       if (
         collectionfield &&
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
@@ -1153,5 +1153,6 @@ export const useAssociationNames = (collection) => {
   const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
+  console.log(appends,associations)
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
