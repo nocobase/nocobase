@@ -1,3 +1,5 @@
+import { DataTypes } from 'sequelize';
+
 import FlowNodeModel from '../models/FlowNode';
 import Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
@@ -22,6 +24,10 @@ export default {
           processor.getParsedValue(association?.associatedKey),
         )
       : database.getRepository(collection);
+
+    if (!options.dataType && aggregator === 'avg') {
+      options.dataType = DataTypes.DOUBLE;
+    }
 
     const result = await repo.aggregate({
       ...options,
