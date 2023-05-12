@@ -12,6 +12,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { useCompile, useComponent } from '../../../schema-component';
+import { DeletedField } from '../DeletedField';
 
 const DYNAMIC_RECORD_REG = /\{\{\s*currentRecord\.(.*)\s*\}\}/;
 const DYNAMIC_USER_REG = /\{\{\s*currentUser\.(.*)\s*\}\}/;
@@ -74,7 +75,7 @@ const InternalField: React.FC = (props) => {
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name}>
+    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -123,12 +124,11 @@ export const AssignedField = (props: any) => {
         title: t('Current user'),
       },
     ];
-    if (dateTimeFields.includes(collectionField.interface)) {
+    if (dateTimeFields.includes(collectionField?.interface)) {
       opt.unshift({
         name: 'currentTime',
         title: t('Current time'),
       });
-    } else {
     }
     setOptions(compile(opt));
   }, []);
