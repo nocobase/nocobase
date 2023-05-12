@@ -448,8 +448,11 @@ SELECT * FROM numbers;
 
     const viewName = `test_view_${uid(6)}`;
     await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+    const queryInterface = db.sequelize.getQueryInterface();
 
-    const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
+    const createSQL = `CREATE VIEW ${queryInterface.quoteIdentifier(
+      viewName,
+    )} AS SELECT id, ${queryInterface.quoteIdentifier(foreignField)}, name FROM ${db
       .getCollection('users')
       .quotedTableName()}`;
 
