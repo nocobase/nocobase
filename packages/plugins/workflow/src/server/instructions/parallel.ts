@@ -77,14 +77,14 @@ export default {
       (promise: Promise<any>, branch, i) =>
         promise.then((previous) => {
           if (i && !Modes[mode].next(previous)) {
-            return Promise.resolve(previous);
+            return previous;
           }
           return processor.run(branch, job);
         }),
       Promise.resolve(),
     );
 
-    return processor.end(node, job);
+    return null;
   },
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {

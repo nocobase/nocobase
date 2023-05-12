@@ -175,7 +175,7 @@ export default class Processor {
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
-      this.logger.debug(`run next node (${node.id})`);
+      this.logger.debug(`run next node (${node.downstreamId})`);
       return this.run(node.downstream, savedJob);
     }
 
