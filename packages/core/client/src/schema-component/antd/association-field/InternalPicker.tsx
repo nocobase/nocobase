@@ -14,11 +14,12 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection } from '../../../collection-manager';
+import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
+import { useAssociationFieldContext } from './hooks';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
@@ -69,10 +70,9 @@ export const InternalPicker = observer((props: any) => {
   const fieldSchema = useFieldSchema();
   const insertAddNewer = useInsertSchema('AddNewer');
   const insertSelector = useInsertSchema('Selector');
-  const { getField } = useCollection();
   const { t } = useTranslation();
-  const collectionField = getField(field.props.name);
-  const addbuttonClick = () => {
+  const { options: collectionField } = useAssociationFieldContext();
+   const addbuttonClick = () => {
     insertAddNewer(schema.AddNewer);
     setVisibleAddNewer(true);
   };
