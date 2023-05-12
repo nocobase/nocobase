@@ -22,7 +22,7 @@ export class SAMLAuth extends BaseAuth {
       entryPoint: ssoUrl,
       issuer: this.authenticator.get('name'),
       cert: certificate,
-      wantAuthnResponseSigned: true,
+      wantAuthnResponseSigned: false,
       idpIssuer,
     } as SamlConfig;
   }
@@ -34,7 +34,6 @@ export class SAMLAuth extends BaseAuth {
         values: { samlResponse },
       },
     } = ctx.action;
-
     const saml = new SAML(this.getOptions());
 
     const { profile } = await saml.validatePostResponseAsync(samlResponse);

@@ -1,6 +1,6 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { enUS, zhCN } from './locale';
-import { namespace } from '..';
+import { authType, namespace } from '../constants';
 import { SMSAuth } from './sms-auth';
 import VerificationPlugin from '@nocobase/plugin-verification';
 
@@ -34,7 +34,7 @@ export class SmsAuthPlugin extends Plugin {
   }
 
   async load() {
-    this.app.authManager.registerTypes('sms', {
+    this.app.authManager.registerTypes(authType, {
       auth: SMSAuth,
     });
   }

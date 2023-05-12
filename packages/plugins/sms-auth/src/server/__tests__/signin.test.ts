@@ -2,6 +2,7 @@ import { Database, Model, ModelStatic } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
 import SmsAuthPlugin from '../plugin';
 import VerificationPlugin from '@nocobase/plugin-verification';
+import { authType } from '../../constants';
 
 class Provider {
   constructor(protected plugin: VerificationPlugin, protected options) {}
@@ -41,7 +42,7 @@ describe('signin', () => {
     authenticator = await authenticatorRepo.create({
       values: {
         name: 'sms-auth',
-        authType: 'sms',
+        authType: authType,
         enabled: 1,
       },
     });

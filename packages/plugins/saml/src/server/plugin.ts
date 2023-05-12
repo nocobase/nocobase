@@ -3,6 +3,7 @@ import { getAuthUrl } from './actions/getAuthUrl';
 import { metadata } from './actions/metadata';
 import { redirect } from './actions/redirect';
 import { SAMLAuth } from './saml-auth';
+import { authType } from '../constants';
 
 export class SAMLPlugin extends Plugin {
   afterAdd() {}
@@ -10,7 +11,7 @@ export class SAMLPlugin extends Plugin {
   beforeLoad() {}
 
   async load() {
-    this.app.authManager.registerTypes('SAML', {
+    this.app.authManager.registerTypes(authType, {
       auth: SAMLAuth,
     });
 

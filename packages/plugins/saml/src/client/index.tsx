@@ -2,11 +2,12 @@ import { OptionsComponentProvider, PluginManagerContext, SigninPageExtensionProv
 import React from 'react';
 import { SAMLList } from './SAMLList';
 import { Options } from './Options';
+import { authType } from '../constants';
 
 export default function (props) {
   return (
     <SigninPageExtensionProvider component={SAMLList}>
-      <OptionsComponentProvider authType="SAML" component={Options}>
+      <OptionsComponentProvider authType={authType} component={Options}>
         {props.children}
       </OptionsComponentProvider>
     </SigninPageExtensionProvider>

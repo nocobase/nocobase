@@ -4,6 +4,7 @@ import { Card, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { observer, useForm } from '@formily/react';
 import { useRecord, FormItem, Input } from '@nocobase/client';
+import { useSamlTranslation } from './locale';
 
 const schema = {
   type: 'object',
@@ -12,13 +13,13 @@ const schema = {
       type: 'object',
       properties: {
         ssoUrl: {
-          title: 'SSO URL',
+          title: '{{t("SSO URL")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
         certificate: {
-          title: 'Certificate',
+          title: '{{t("Public Certificate")}}',
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
           required: true,
@@ -40,6 +41,7 @@ const schema = {
 const Usage = observer(() => {
   const form = useForm();
   const record = useRecord();
+  const { t } = useSamlTranslation();
 
   const name = form.values.name ?? record.name;
   const { protocol, host } = window.location;
@@ -47,15 +49,15 @@ const Usage = observer(() => {
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
-    message.success('Copied');
+    message.success(t('Copied'));
   };
 
   return (
-    <Card title="Usage" type="inner">
-      <FormItem label="Issuer">
+    <Card title={t('Usage')} type="inner">
+      <FormItem label={t('SP Issuer/EntityID')}>
         <Input value={name} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(name)} />} />
       </FormItem>
-      <FormItem label="ACS URL">
+      <FormItem label={t('ACS URL')}>
         <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
       </FormItem>
     </Card>
@@ -63,5 +65,6 @@ const Usage = observer(() => {
 });
 
 export const Options = () => {
-  return <SchemaComponent components={{ Usage, Card }} schema={schema} />;
+  const { t } = useSamlTranslation();
+  return <SchemaComponent scope={{ t }} components={{ Usage, Card }} schema={schema} />;
 };
