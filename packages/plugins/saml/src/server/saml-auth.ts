@@ -21,13 +21,12 @@ export class SAMLAuth extends BaseAuth {
     const { ssoUrl, certificate, idpIssuer }: SAMLOptions = this.options?.saml || {};
     const name = this.authenticator.get('name');
     return {
-      callbackUrl: `${ctx.protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}`,
+      callbackUrl: `https://${ctx.host}/api/saml:redirect?authenticator=${name}`,
       entryPoint: ssoUrl,
       issuer: name,
       cert: certificate,
-      wantAuthnResponseSigned: true,
-      wantAssertionsSigned: false,
       idpIssuer,
+      wantAssertionsSigned: false,
     } as SamlConfig;
   }
 
