@@ -201,7 +201,7 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     }
 
     // @ts-ignore
-    if(!this.validateBeforeSync()) {
+    if(!this.validateBeforeSync(options)) {
       return this;
     }
     let modelResult = await SequelizeModel.sync.call(this, options);
@@ -210,7 +210,10 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     return modelResult;
   }
 
-  static validateBeforeSync() {
+  static validateBeforeSync(options) {
+    if (options?.force) {
+      return true;
+    }
     const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
     const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
     if (!fs.existsSync(snapshotFile)) {
@@ -244,13 +247,5 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     };
 
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
-  }
-
-  static afterDestroy1() {
-    const snapshotDir = path.join('storage', 'db', 'snapshots', this.database.options.schema || 'public');
-    const snapshotFile = path.join(snapshotDir, `${this.tableName}.json`);
-    if (fs.existsSync(snapshotFile)) {
-      fs.unlinkSync(snapshotFile);
-    }
   }
 }
