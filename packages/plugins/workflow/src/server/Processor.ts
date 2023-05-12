@@ -31,6 +31,7 @@ export default class Processor {
 
   nodes: FlowNodeModel[] = [];
   nodesMap = new Map<number, FlowNodeModel>();
+  jobs: JobModel[] = [];
   jobsMap = new Map<number, JobModel>();
   jobsMapByNodeId: { [key: number]: any } = {};
 
@@ -58,6 +59,7 @@ export default class Processor {
   }
 
   private makeJobs(jobs: Array<JobModel>) {
+    this.jobs = jobs;
     jobs.forEach((job) => {
       this.jobsMap.set(job.id, job);
       // TODO: should consider cycle, and from previous job
@@ -252,6 +254,7 @@ export default class Processor {
         },
       );
     }
+    this.jobs.push(job);
     this.jobsMap.set(job.id, job);
     this.jobsMapByNodeId[job.nodeId] = job.result;
 
@@ -290,10 +293,31 @@ export default class Processor {
     return null;
   }
 
+  findBranchEndNode(node: FlowNodeModel): FlowNodeModel | null {
+    for (let n = node; n; n = n.downstream) {
+      if (!n.downstream) {
+        return n;
+      }
+    }
+    return null;
+  }
+
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
     for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
       if (j.nodeId === node.id) {
         return j;
+      }
+    }
+    return null;
+  }
+
+  findBranchLastJob(node: FlowNodeModel): JobModel | null {
+    for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
+      const jobs = this.jobs
+        .filter((item) => item.nodeId === n.id)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      if (jobs.length) {
+        return jobs[jobs.length - 1];
       }
     }
     return null;

@@ -75,11 +75,14 @@ export default {
     const { mode = PARALLEL_MODE.ALL } = node.config;
     await branches.reduce(
       (promise: Promise<any>, branch, i) =>
-        promise.then((previous) => {
+        promise.then(async (previous) => {
           if (i && !Modes[mode].next(previous)) {
             return previous;
           }
-          return processor.run(branch, job);
+          await processor.run(branch, job);
+
+          // find last job of the branch
+          return processor.findBranchLastJob(branch);
         }),
       Promise.resolve(),
     );
