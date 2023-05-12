@@ -2,7 +2,7 @@ import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/client';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState, useContext, useCallback } from 'react';
 
 export const SAMLList = () => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
@@ -37,24 +37,32 @@ export const SAMLList = () => {
     setWindowHandler(win);
   };
 
+  const handleSAMLLogin = useCallback(
+    async (event: MessageEvent) => {
+      try {
+        await api.auth.signIn(event.data, event.data?.authenticator);
+        redirect();
+      } catch (err) {
+        console.error(err);
+      } finally {
+        windowHandler.close();
+        setWindowHandler(undefined);
+      }
+    },
+    [api, redirect, windowHandler],
+  );
+
   /**
    * 监听弹出窗口的消息
    */
   useEffect(() => {
-    const handleSAMLLogin = async (event: MessageEvent) => {
-      await api.auth.signIn(event.data, event.data?.authenticator);
-      windowHandler.close();
-      setWindowHandler(undefined);
-      redirect();
-    };
-
     if (!windowHandler) return;
 
     window.addEventListener('message', handleSAMLLogin);
     return () => {
       window.removeEventListener('message', handleSAMLLogin);
     };
-  }, [windowHandler, api, redirect]);
+  }, [windowHandler, handleSAMLLogin]);
 
   return (
     <Space

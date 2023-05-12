@@ -17,12 +17,16 @@ export class SAMLAuth extends BaseAuth {
   }
 
   getOptions() {
+    const ctx = this.ctx;
     const { ssoUrl, certificate, idpIssuer }: SAMLOptions = this.options?.saml || {};
+    const name = this.authenticator.get('name');
     return {
+      callbackUrl: `${ctx.protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}`,
       entryPoint: ssoUrl,
-      issuer: this.authenticator.get('name'),
+      issuer: name,
       cert: certificate,
-      wantAuthnResponseSigned: false,
+      wantAuthnResponseSigned: true,
+      wantAssertionsSigned: false,
       idpIssuer,
     } as SamlConfig;
   }
@@ -40,7 +44,8 @@ export class SAMLAuth extends BaseAuth {
 
     const { nameID, nickname, username, email, firstName, lastName, phone } = profile as Record<string, string>;
 
-    const name = nickname ?? username ?? `${firstName} ${lastName}` ?? nameID;
+    const fullName = firstName && lastName && `${firstName} ${lastName}`;
+    const name = nickname ?? username ?? fullName ?? nameID;
 
     return await this.authenticator.findOrCreateUser(nameID, {
       nickname: name,
