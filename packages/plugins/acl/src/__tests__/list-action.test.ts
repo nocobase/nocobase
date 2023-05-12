@@ -404,7 +404,7 @@ describe('list association action with acl', () => {
             foreignKey: 'parentId',
             uiSchema: {
               title: '{{t("Parent")}}',
-              'x-component': 'RecordPicker',
+              'x-component': 'AssociationField',
               'x-component-props': { multiple: false, fieldNames: { label: 'id', value: 'id' } },
             },
             target: 'table_a',

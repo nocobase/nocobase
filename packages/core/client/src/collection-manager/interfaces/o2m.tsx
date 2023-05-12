@@ -22,7 +22,7 @@ export const o2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -38,7 +38,7 @@ export const o2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -52,82 +52,14 @@ export const o2m: IField = {
   },
   availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
+    schema['type'] = 'array';
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
-
-    if (block === 'Form') {
-      if (schema['x-component'] === 'TableField') {
-        const association = `${field.collectionName}.${field.name}`;
-        schema['type'] = 'void';
-        schema['properties'] = {
-          block: {
-            type: 'void',
-            'x-decorator': 'TableFieldProvider',
-            'x-acl-action': `${association}:list`,
-            'x-decorator-props': {
-              collection: field.target,
-              association: association,
-              resource: association,
-              action: 'list',
-              params: {
-                paginate: false,
-              },
-              showIndex: true,
-              dragSort: false,
-              fieldName: field.name,
-            },
-            properties: {
-              actions: {
-                type: 'void',
-                'x-initializer': 'SubTableActionInitializers',
-                'x-component': 'TableField.ActionBar',
-                'x-component-props': {},
-              },
-              [field.name]: {
-                type: 'array',
-                'x-initializer': 'TableColumnInitializers',
-                'x-component': 'TableV2',
-                'x-component-props': {
-                  rowSelection: {
-                    type: 'checkbox',
-                  },
-                  useProps: '{{ useTableFieldProps }}',
-                },
-              },
-            },
-          },
-        };
-      } else if (schema['x-component'] === 'AssociationSelect') {
-        Object.assign(schema, {
-          type: 'string',
-          'x-designer': 'AssociationSelect.Designer',
-        });
-      } else {
-        schema.type = 'string';
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
-      return schema;
-    }
-
-    if (readPretty) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
-    } else {
-      schema['properties'] = {
-        selector: cloneDeep(recordPickerSelector),
-      };
-    }
-
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
-
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }

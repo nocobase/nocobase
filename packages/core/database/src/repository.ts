@@ -9,6 +9,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
+  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -202,6 +203,13 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
   }
 }
 
+export interface AggregateOptions {
+  method: 'avg' | 'count' | 'min' | 'max' | 'sum';
+  field?: string;
+  filter?: Filter;
+  distinct?: boolean;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   implements IRepository
 {
@@ -259,11 +267,64 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
+  async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
+    const { method, field } = options;
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    options.optionsTransformer?.(queryOptions);
+
+    const hasAssociationFilter = () => {
+      if (queryOptions.include && queryOptions.include.length > 0) {
+        const filterInclude = queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        });
+        return filterInclude.length > 0;
+      }
+      return false;
+    };
+
+    if (hasAssociationFilter()) {
+      const primaryKeyField = this.model.primaryKeyAttribute;
+      const queryInterface = this.database.sequelize.getQueryInterface();
+
+      const findOptions = {
+        ...queryOptions,
+        raw: true,
+        includeIgnoreAttributes: false,
+        attributes: [
+          [
+            Sequelize.literal(
+              `DISTINCT ${queryInterface.quoteIdentifiers(`${this.collection.name}.${primaryKeyField}`)}`,
+            ),
+            primaryKeyField,
+          ],
+        ],
+      };
+
+      const ids = await this.model.findAll(findOptions);
+
+      return await this.model.aggregate(field, method, {
+        ...lodash.omit(queryOptions, ['where', 'include']),
+        where: {
+          [primaryKeyField]: ids.map((node) => node[primaryKeyField]),
+        },
+      });
+    }
+
+    return await this.model.aggregate(field, method, queryOptions);
+  }
   /**
    * find
    * @param options
    */
-  async find(options?: FindOptions) {
+  async find(options: FindOptions = {}) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 
@@ -278,6 +339,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
 
+      // find all ids
       const ids = (
         await model.findAll({
           ...opts,
@@ -299,6 +361,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
+      // find template model
       const templateModel = await model.findOne({
         ...opts,
         includeIgnoreAttributes: false,
@@ -318,7 +381,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       rows = await handleAppendsQuery({
         queryPromises: opts.include.map((include) => {
           const options = {
-            ...omit(opts, ['limit', 'offset']),
+            ...omit(opts, ['limit', 'offset', 'filter']),
             include: include,
             where,
             transaction,
@@ -351,10 +414,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
-    const transaction = await this.getTransaction(options);
     options = {
       ...options,
-      transaction,
+      transaction: await this.getTransaction(options),
     };
 
     const count = await this.count(options);
@@ -472,6 +534,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });

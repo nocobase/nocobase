@@ -11,6 +11,7 @@ export const collection = {
   'x-decorator': 'FormItem',
   'x-component': 'Select',
   'x-component-props': {
+    dropdownMatchSelectWidth: false,
     placeholder: '{{t("Select collection")}}',
   },
 };

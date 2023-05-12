@@ -253,26 +253,14 @@ export default class WorkflowPlugin extends Plugin {
         const executed = await workflow.countExecutions({ transaction });
 
         // NOTE: not to trigger afterUpdate hook here
-        await workflow.update({ executed }, { transaction, hooks: false });
+        await workflow.increment('executed', { transaction });
 
-        const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+        await (<typeof WorkflowModel>workflow.constructor).increment('allExecuted', {
           where: {
             key: workflow.key,
           },
           transaction,
         });
-        await (<typeof WorkflowModel>workflow.constructor).update(
-          {
-            allExecuted,
-          },
-          {
-            where: {
-              key: workflow.key,
-            },
-            individualHooks: true,
-            transaction,
-          },
-        );
 
         execution.workflow = workflow;
 
