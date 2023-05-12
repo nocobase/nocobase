@@ -9,6 +9,7 @@ export default {
   Version: '版本',
   'Copy to new version': '复制到新版本',
   Duplicate: '复制',
+  'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
   Trigger: '触发器',

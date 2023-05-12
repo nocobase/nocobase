@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { Dropdown, Button, Switch, message, Breadcrumb } from 'antd';
+import { Dropdown, Button, Tag, Switch, message, Breadcrumb, Modal } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
 import classnames from 'classnames';
@@ -94,6 +94,24 @@ export function WorkflowCanvas() {
     history.push(`${revision.id}`);
   }
 
+  async function onDelete() {
+    const content = workflow.current
+      ? lang('Delete a main version will cause all other revisions to be deleted too.')
+      : '';
+    Modal.confirm({
+      title: t('Are you sure you want to delete it?'),
+      content,
+      async onOk() {
+        await resource.destroy({
+          filterByTk: workflow.id,
+        });
+        message.success(t('Operation succeeded'));
+
+        history.push(workflow.current ? '..' : `${revisions.find((item) => item.current)?.id}`);
+      },
+    });
+  }
+
   async function onMenuCommand({ key }) {
     switch (key) {
       case 'history':
@@ -101,6 +119,8 @@ export function WorkflowCanvas() {
         return;
       case 'revision':
         return onRevision();
+      case 'delete':
+        return onDelete();
       default:
         break;
     }
@@ -154,7 +174,7 @@ export function WorkflowCanvas() {
                         <time>{new Date(item.createdAt).toLocaleString()}</time>
                       </span>
                     ),
-                  }))
+                  })),
               }}
             >
               <Button type="text">
@@ -175,6 +195,7 @@ export function WorkflowCanvas() {
               items: [
                 { key: 'history', label: lang('Execution history'), disabled: !workflow.allExecuted },
                 { key: 'revision', label: lang('Copy to new version'), disabled: !revisionable },
+                { key: 'delete', label: t('Delete') },
               ],
               onClick: onMenuCommand,
             }}
