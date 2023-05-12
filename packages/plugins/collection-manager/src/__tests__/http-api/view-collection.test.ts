@@ -421,6 +421,10 @@ SELECT * FROM numbers;
   });
 
   it('should create view collection with belongs to field', async () => {
+    // not support sqlite
+    if (db.inDialect('sqlite')) {
+      return;
+    }
     await collectionRepository.create({
       values: {
         name: 'groups',
