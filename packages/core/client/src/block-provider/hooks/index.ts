@@ -1074,7 +1074,6 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useAssociationNames = (collection) => {
   const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -1105,6 +1104,9 @@ export const useAssociationNames = (collection) => {
         ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface) &&
         s['x-component'] !== 'TableField'
       ) {
+        if (s.name === 'material') {
+          console.log(s);
+        }
         buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
@@ -1118,7 +1120,9 @@ export const useAssociationNames = (collection) => {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
-          return !s['x-component']?.includes('Action.') ? getAssociationAppends(s, buf) : buf;
+          return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
+            ? getAssociationAppends(s, buf)
+            : buf;
         }
       }
     }, arr);
@@ -1152,5 +1156,6 @@ export const useAssociationNames = (collection) => {
   const data = getAssociationAppends(formSchema);
   const associations = data.filter((g) => g.length);
   const appends = flattenNestedList(associations);
+
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
