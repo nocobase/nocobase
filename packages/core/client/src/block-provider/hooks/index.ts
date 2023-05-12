@@ -1102,7 +1102,8 @@ export const useAssociationNames = (collection) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (
         collectionfield &&
-        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
+        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface) &&
+        s['x-component'] !== 'TableField'
       ) {
         buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
