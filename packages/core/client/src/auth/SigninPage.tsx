@@ -149,17 +149,17 @@ export const SigninPage = () => {
               </Tabs.TabPane>
             ))}
           </Tabs>
+        ) : tabs.length ? (
+          <div>
+            {tabs[0].component}
+            {tabs[0].allowSignup && (
+              <div>
+                <Link to={`/signup?authType=${tabs[0].authType}&name=${tabs[0].name}`}>{t('Create an account')}</Link>
+              </div>
+            )}
+          </div>
         ) : (
-          tabs.length && (
-            <div>
-              {tabs[0].component}
-              {tabs[0].allowSignup && (
-                <div>
-                  <Link to={`/signup?authType=${tabs[0].authType}&name=${tabs[0].name}`}>{t('Create an account')}</Link>
-                </div>
-              )}
-            </div>
-          )
+          <></>
         )}
         <div>{signinExtension}</div>
       </Space>
