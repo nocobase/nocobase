@@ -1,4 +1,4 @@
-import { useField, useFieldSchema, observer } from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
@@ -17,8 +17,8 @@ export const AssociationFieldProvider = observer((props) => {
     [fieldSchema['x-collection-field']],
   );
   const currentMode = useMemo(
-    () => fieldSchema['x-component-props'].mode || (isFileCollection ? 'FileManager' : 'Select'),
-    [fieldSchema['x-component-props'].mode],
+    () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
+    [fieldSchema['x-component-props']?.mode],
   );
   return collectionField ? (
     <AssociationFieldContext.Provider value={{ options: collectionField, field, currentMode }}>
