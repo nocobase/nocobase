@@ -44,6 +44,7 @@ describe('oidc', () => {
   });
 
   it('should get auth url', async () => {
+    agent = app.agent();
     jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       authorizationUrl: ({ state }) => state,
     } as any);
@@ -58,6 +59,7 @@ describe('oidc', () => {
   });
 
   it('should sign in', async () => {
+    agent = app.agent();
     jest.spyOn(OIDCAuth.prototype, 'createOIDCClient').mockResolvedValue({
       callback: (uri, { code }) => ({
         access_token: 'access_token',
