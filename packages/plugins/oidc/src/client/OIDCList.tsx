@@ -1,9 +1,9 @@
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { useAPIClient, useRedirect, useRequest } from '@nocobase/client';
+import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 
 export interface OIDCProvider {
   clientId: string;
@@ -14,21 +14,17 @@ export const OIDCList = () => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
-
-  const { data, loading } = useRequest({
-    resource: 'oidc',
-    action: 'getEnabledProviders',
-  });
+  const authenticators = useContext(AuthenticatorsContext);
 
   /**
    * 打开登录弹出框
    */
-  const handleOpen = useMemoizedFn(async (item: OIDCProvider) => {
+  const handleOpen = async (name: string) => {
     const response = await api.request({
       method: 'post',
       url: 'oidc:getAuthUrl',
-      data: {
-        clientId: item.clientId,
+      headers: {
+        'X-Authenticator': name,
       },
     });
 
@@ -44,13 +40,16 @@ export const OIDCList = () => {
     );
 
     setWindowHandler(win);
-  });
+  };
 
   /**
    * 从弹出窗口，发消息回来进行登录
    */
   const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
-    await api.auth.signIn(event.data, 'oidc');
+    const { state } = event.data;
+    const search = new URLSearchParams(state);
+    const authenticator = search.get('name');
+    await api.auth.signIn(event.data, authenticator);
     windowHandler.close();
     setWindowHandler(undefined);
     redirect();
@@ -61,11 +60,12 @@ export const OIDCList = () => {
    */
   useEffect(() => {
     if (!windowHandler) return;
+
     window.addEventListener('message', handleOIDCLogin);
     return () => {
       window.removeEventListener('message', handleOIDCLogin);
     };
-  }, [windowHandler]);
+  }, [windowHandler, handleOIDCLogin]);
 
   return (
     <Space
@@ -74,11 +74,13 @@ export const OIDCList = () => {
         display: flex;
       `}
     >
-      {data?.data?.map?.((item: OIDCProvider) => (
-        <Button shape="round" block key={item.clientId} icon={<LoginOutlined />} onClick={() => handleOpen(item)}>
-          {item.title}
-        </Button>
-      ))}
+      {authenticators
+        .filter((i) => i.authType === 'OIDC')
+        .map((item) => (
+          <Button shape="round" block key={item.name} icon={<LoginOutlined />} onClick={() => handleOpen(item.name)}>
+            {item.title}
+          </Button>
+        ))}
     </Space>
   );
 };

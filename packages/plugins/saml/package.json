@@ -12,5 +12,6 @@
   },
   "dependencies": {
     "@node-saml/node-saml": "^4.0.2"
-  }
+  },
+  "displayName": "SAML"
 }

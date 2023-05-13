@@ -49,17 +49,19 @@ export class SAMLAuth extends BaseAuth {
     // Compatible processing
     // When email is provided or nameID is email, use email to find user
     // If found, associate the user with the current authenticator
-    const userRepo = this.userCollection.repository;
-    const user = await userRepo.findOne({
-      filter: { email: email || nameID },
-    });
-    if (user) {
-      await this.authenticator.addUser(user, {
-        through: {
-          uuid: nameID,
-        },
+    if (email || nameID.match(/^.+@.+\..+$/)) {
+      const userRepo = this.userCollection.repository;
+      const user = await userRepo.findOne({
+        filter: { email: email || nameID },
       });
-      return user;
+      if (user) {
+        await this.authenticator.addUser(user, {
+          through: {
+            uuid: nameID,
+          },
+        });
+        return user;
+      }
     }
 
     return await this.authenticator.findOrCreateUser(nameID, {

@@ -2,9 +2,9 @@ import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { Card, message } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
-import { observer, useForm } from '@formily/react';
-import { useRecord, FormItem, Input } from '@nocobase/client';
-import { useSamlTranslation } from './locale';
+import { observer } from '@formily/react';
+import { FormItem, Input } from '@nocobase/client';
+import { useOidcTranslation } from './locale';
 
 const schema = {
   type: 'object',
@@ -12,22 +12,23 @@ const schema = {
     saml: {
       type: 'object',
       properties: {
-        ssoUrl: {
-          title: '{{t("SSO URL")}}',
+        issuer: {
+          title: '{{t("Issuer")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
-        certificate: {
-          title: '{{t("Public Certificate")}}',
-          'x-component': 'Input.TextArea',
+        clientId: {
+          title: '{{t("Client ID")}}',
+          'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
-        idpIssuer: {
-          title: 'idP Issuer',
+        clientSecret: {
+          title: '{{t("Client Secret")}}',
           'x-component': 'Input',
           'x-decorator': 'FormItem',
+          required: true,
         },
         usage: {
           type: 'void',
@@ -39,13 +40,10 @@ const schema = {
 };
 
 const Usage = observer(() => {
-  const form = useForm();
-  const record = useRecord();
-  const { t } = useSamlTranslation();
+  const { t } = useOidcTranslation();
 
-  const name = form.values.name ?? record.name;
   const { protocol, host } = window.location;
-  const url = `${protocol}//${host}/api/saml:redirect?authenticator=${name}`;
+  const url = `${protocol}//${host}/api/oidc:redirect`;
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -54,10 +52,7 @@ const Usage = observer(() => {
 
   return (
     <Card title={t('Usage')} type="inner">
-      <FormItem label={t('SP Issuer/EntityID')}>
-        <Input value={name} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(name)} />} />
-      </FormItem>
-      <FormItem label={t('ACS URL')}>
+      <FormItem label={t('Redirect URL')}>
         <Input value={url} disabled={true} addonBefore={<CopyOutlined onClick={() => copy(url)} />} />
       </FormItem>
     </Card>
@@ -65,6 +60,6 @@ const Usage = observer(() => {
 });
 
 export const Options = () => {
-  const { t } = useSamlTranslation();
+  const { t } = useOidcTranslation();
   return <SchemaComponent scope={{ t }} components={{ Usage }} schema={schema} />;
 };
