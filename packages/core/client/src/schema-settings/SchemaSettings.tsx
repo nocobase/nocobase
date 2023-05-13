@@ -146,7 +146,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Template = function Template(props) {
-  const { componentName, collectionName, resourceName } = props;
+  const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
@@ -154,7 +154,7 @@ SchemaSettings.Template = function Template(props) {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
-  if (!collectionName) {
+  if (!collectionName && !needRender) {
     return null;
   }
   if (template) {
@@ -180,7 +180,7 @@ SchemaSettings.Template = function Template(props) {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -192,7 +192,7 @@ SchemaSettings.Template = function Template(props) {
                     name: {
                       title: t('Template name'),
                       required: true,
-                      default: `${compile(title)}_${t(componentName)}`,
+                      default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },

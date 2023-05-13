@@ -72,6 +72,8 @@ export const PageDesigner = (props) => {
           dn.refresh();
         }}
       />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Template componentName="MPage" needRender />
     </GeneralSchemaDesigner>
   );
 };
