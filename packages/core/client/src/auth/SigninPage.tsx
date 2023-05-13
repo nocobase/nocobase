@@ -161,7 +161,14 @@ export const SigninPage = () => {
         ) : (
           <></>
         )}
-        <div>{signinExtension}</div>
+        <Space
+          direction="vertical"
+          className={css`
+            display: flex;
+          `}
+        >
+          {signinExtension}
+        </Space>
       </Space>
     </AuthenticatorsContext.Provider>
   );

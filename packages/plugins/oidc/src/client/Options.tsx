@@ -9,7 +9,7 @@ import { useOidcTranslation } from './locale';
 const schema = {
   type: 'object',
   properties: {
-    saml: {
+    oidc: {
       type: 'object',
       properties: {
         issuer: {
