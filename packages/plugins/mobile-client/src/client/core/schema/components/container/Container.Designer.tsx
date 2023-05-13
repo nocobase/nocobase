@@ -5,7 +5,7 @@ import { SSSwitchItem } from '../../settings';
 import { Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useHistory } from 'react-router-dom';
-import { findGridSchema } from '../../helpers';
+import { findGridSchema, findSchema } from '../../helpers';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();
@@ -18,14 +18,14 @@ export const ContainerDesigner = () => {
   const history = useHistory();
   return (
     <GeneralSchemaDesigner draggable={false}>
-      <SSSwitchItem name="application" title={t('Enable application info')} />
       <SchemaSettings.SwitchItem
         checked={!!tabBarSchema}
         title={t('Enable TabBar')}
         onChange={async (v) => {
           if (v) {
-            const gridSchema = findGridSchema(fieldSchema);
-            await dn.remove(gridSchema);
+            const pageSchema = findSchema(fieldSchema, 'MPage');
+            if (!pageSchema) return;
+            await dn.remove(pageSchema);
             await dn.insertBeforeEnd({
               type: 'void',
               'x-component': 'MTabBar',
@@ -41,15 +41,16 @@ export const ContainerDesigner = () => {
                     title: t('Home'),
                   },
                   properties: {
-                    grid: gridSchema,
+                    page: pageSchema.toJSON(),
                   },
                 },
               },
             });
           } else {
-            const gridSchema = findGridSchema(tabBarSchema.properties[Object.keys(tabBarSchema.properties)[0]]);
+            const pageSchema = findSchema(tabBarSchema.properties[Object.keys(tabBarSchema.properties)[0]], 'MPage');
+            if (!pageSchema) return;
             await dn.remove(tabBarSchema);
-            await dn.insertBeforeEnd(gridSchema, {
+            await dn.insertBeforeEnd(pageSchema, {
               onSuccess() {
                 history.push('../');
               },

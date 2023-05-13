@@ -10,9 +10,12 @@ export const gridItemWrap = (schema: ISchema) => {
   };
 };
 
-export const findGridSchema = (schema: Schema) => {
+export const findSchema = (schema: Schema, component: string) => {
   const gridSchema = schema.reduceProperties(
-    (schema, next) => schema || (next['x-component'] === 'Grid' && next),
+    (schema, next) => schema || (next['x-component'] === component && next),
   ) as Schema;
   return gridSchema;
+};
+export const findGridSchema = (schema: Schema) => {
+  return findSchema(schema, 'Grid');
 };

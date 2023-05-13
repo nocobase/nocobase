@@ -1,10 +1,10 @@
 import React from 'react';
 import { css, cx } from '@emotion/css';
 import { PageDesigner } from './Page.Designer';
-import { SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
-import { useFieldSchema } from '@formily/react';
+import { SortableItem, useDesigner } from '@nocobase/client';
+import { RecursionField, useFieldSchema } from '@formily/react';
 
-const InternalPage: React.FC = () => {
+const InternalPage: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
   const tabsSchema = fieldSchema.properties?.['tabs'];
@@ -26,7 +26,7 @@ const InternalPage: React.FC = () => {
         `,
       )}
     >
-      <Designer></Designer>
+      <Designer {...fieldSchema?.['x-designer-props']}></Designer>
       <div
         style={{
           marginBottom: tabsSchema ? null : 'var(--nb-spacing)',
@@ -43,21 +43,21 @@ const InternalPage: React.FC = () => {
           `,
         )}
       >
-        <SchemaComponent
+        <RecursionField
           schema={fieldSchema}
           filterProperties={(s) => {
             return ['MHeader', 'Tabs'].includes(s['x-component']);
           }}
-        ></SchemaComponent>
+        ></RecursionField>
       </div>
 
       {!tabsSchema && (
-        <SchemaComponent
+        <RecursionField
           schema={fieldSchema}
           filterProperties={(s) => {
             return s['x-component'] !== 'MHeader';
           }}
-        ></SchemaComponent>
+        ></RecursionField>
       )}
     </SortableItem>
   );

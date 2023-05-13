@@ -10,19 +10,26 @@ export class MobileClientPlugin extends Plugin {
         type: 'route',
         path: '/mobile/:name(.+)?',
         component: 'MApplication',
-        title: 'NocoBase Mobile',
         uiSchema: {
           type: 'void',
           'x-component': 'MContainer',
           'x-designer': 'MContainer.Designer',
           'x-component-props': {},
           properties: {
-            grid: {
+            page: {
               type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'MBlockInitializers',
+              'x-component': 'MPage',
+              'x-designer': 'MPage.Designer',
+              'x-component-props': {},
               properties: {
-                showDivider: false,
+                grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-initializer': 'MBlockInitializers',
+                  'x-component-props': {
+                    showDivider: false,
+                  },
+                },
               },
             },
           },

@@ -28,7 +28,7 @@ export const InternalTabBar: React.FC = (props) => {
   const params = useParams<{ name: string }>();
 
   const onAddTab = () => {
-    FormDialog({ title: t('Add tab') }, () => {
+    return FormDialog({ title: t('Add tab') }, () => {
       return (
         <SchemaComponentOptions scope={options.scope} components={options.components}>
           <FormLayout layout={'vertical'}>
@@ -58,7 +58,7 @@ export const InternalTabBar: React.FC = (props) => {
     })
       .open({})
       .then(async (values) => {
-        await insertBeforeEnd({
+        return insertBeforeEnd({
           type: 'void',
           'x-component': 'MTabBar.Item',
           'x-component-props': values,
@@ -66,15 +66,22 @@ export const InternalTabBar: React.FC = (props) => {
           properties: {
             [uid()]: {
               type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'MBlockInitializers',
-              'x-component-props': {
-                showDivider: false,
+              'x-component': 'MPage',
+              'x-designer': 'MPage.Designer',
+              'x-component-props': {},
+              properties: {
+                grid: {
+                  type: 'void',
+                  'x-component': 'Grid',
+                  'x-initializer': 'MBlockInitializers',
+                  'x-component-props': {
+                    showDivider: false,
+                  },
+                },
               },
             },
           },
         });
-        dn.refresh();
       });
   };
   return (

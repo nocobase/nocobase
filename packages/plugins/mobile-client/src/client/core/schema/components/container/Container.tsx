@@ -20,7 +20,7 @@ const findGrid = (schema, uid) => {
 const TabContentComponent = () => {
   const { name } = useParams<{ name: string }>();
   const fieldSchema = useFieldSchema();
-  if (!name) return;
+  if (!name) return <></>;
   const gridSchema = findGrid(fieldSchema.properties['tabBar'], name.replace('tab_', ''));
   return <SchemaComponent schema={gridSchema} />;
 };
@@ -30,28 +30,29 @@ const InternalContainer: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const params = useParams<{ name: string }>();
   const match = useRouteMatch();
+  const tabBarSchema = fieldSchema?.properties?.['tabBar'];
+  const redirectToUid = tabBarSchema?.properties[Object.keys(tabBarSchema.properties)[0]]['x-uid'];
 
   const tabRoutes = useMemo<RouteProps[]>(() => {
-    const tabBarSchema = fieldSchema?.properties?.['tabBar'];
-    if (tabBarSchema) {
-      return [
-        !params.name
-          ? {
-              type: 'redirect',
-              to: `${match.url}/tab_${tabBarSchema.properties[Object.keys(tabBarSchema.properties)[0]]['x-uid']}`,
-              from: match.url,
-              exact: true,
-            }
-          : null,
-        {
-          type: 'route',
-          path: match.path,
-          component: TabContentComponent,
-        },
-      ].filter(Boolean) as any[];
+    if (!redirectToUid) {
+      return [];
     }
-    return [];
-  }, [Object.keys(fieldSchema.properties), match.url, params.name]);
+    return [
+      !params.name
+        ? {
+            type: 'redirect',
+            to: `${match.url}/tab_${redirectToUid}`,
+            from: match.url,
+            exact: true,
+          }
+        : null,
+      {
+        type: 'route',
+        path: match.path,
+        component: TabContentComponent,
+      },
+    ].filter(Boolean) as any[];
+  }, [redirectToUid, params.name, match.url, match.path]);
 
   return (
     <SortableItem
@@ -59,7 +60,10 @@ const InternalContainer: React.FC = (props) => {
       className={cx(
         'nb-mobile-container',
         css`
-          padding: var(--nb-spacing) 0;
+          & > .general-schema-designer > .general-schema-designer-icons {
+            right: unset;
+            left: 2px;
+          }
           background: #f0f2f5;
           display: flex;
           flex-direction: column;

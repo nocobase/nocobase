@@ -1,13 +1,11 @@
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { SSSwitchItem } from '../../settings';
-import { Schema, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
-import { useHistory } from 'react-router-dom';
+import { useFieldSchema } from '@formily/react';
 import { findGridSchema } from '../../helpers';
 
-export const PageDesigner = () => {
+export const PageDesigner = (props) => {
+  const { showBack } = props;
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -28,12 +26,13 @@ export const PageDesigner = () => {
               'x-designer': 'MHeader.Designer',
               'x-component-props': {
                 title: fieldSchema.parent['x-component-props']?.name,
-                showBack: true,
+                showBack,
               },
             });
           } else {
             await dn.remove(headerSchema);
           }
+          dn.refresh();
         }}
       />
       <SchemaSettings.SwitchItem
@@ -70,6 +69,7 @@ export const PageDesigner = () => {
             await dn.remove(tabsSchema);
             await dn.insertBeforeEnd(gridSchema, {});
           }
+          dn.refresh();
         }}
       />
     </GeneralSchemaDesigner>
