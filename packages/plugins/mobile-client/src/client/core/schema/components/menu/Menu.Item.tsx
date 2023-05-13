@@ -37,6 +37,10 @@ const InternalMenuItem: React.FC<MMenuItemProps> = (props) => {
       className={cx(
         'nb-mobile-menu-item',
         css`
+          & > .general-schema-designer > .general-schema-designer-icons {
+            top: unset;
+            bottom: 2px;
+          }
           width: 100%;
           background: var(--adm-color-background);
           > .adm-list-item {

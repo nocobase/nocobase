@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { MenuItem } from './Menu.Item';
 import {
+  DndContext,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaInitializer,
@@ -24,7 +25,7 @@ const InternalMenu: React.FC = (props) => {
   const { t } = useTranslation();
 
   const onAddMenuItem = () => {
-    FormDialog({ title: t('Add menu item') }, () => {
+    return FormDialog({ title: t('Add menu item') }, () => {
       return (
         <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
           <FormLayout layout={'vertical'}>
@@ -59,7 +60,7 @@ const InternalMenu: React.FC = (props) => {
     })
       .open({})
       .then((values) => {
-        insertBeforeEnd({
+        return insertBeforeEnd({
           type: 'void',
           title: values.name,
           'x-component': 'MMenu.Item',
@@ -109,7 +110,9 @@ const InternalMenu: React.FC = (props) => {
     >
       <Designer />
       <List>
-        <SchemaComponent onlyRenderProperties schema={fieldSchema}></SchemaComponent>
+        <DndContext>
+          <SchemaComponent onlyRenderProperties schema={fieldSchema}></SchemaComponent>
+        </DndContext>
       </List>
       {designable ? (
         <SchemaInitializer.Button onClick={onAddMenuItem}>{t('Add menu item')}</SchemaInitializer.Button>
