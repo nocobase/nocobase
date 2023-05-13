@@ -133,6 +133,7 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -692,6 +693,28 @@ FormItem.Designer = function Designer() {
           title={t('Allow add new data')}
           checked={fieldSchema['x-add-new'] as boolean}
           onChange={(allowAddNew) => {
+            const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
+              if (schema['x-component'] === 'Action') {
+                return schema;
+              }
+              return buf;
+            }, null);
+
+            if (!hasAddNew) {
+              const addNewActionschema = {
+                'x-action': 'create',
+                title: "{{t('Add new')}}",
+                'x-designer': 'Action.Designer',
+                'x-component': 'Action',
+                'x-decorator': 'ACLActionProvider',
+                'x-component-props': {
+                  openMode: 'drawer',
+                  type: 'default',
+                  component: 'CreateRecordAction',
+                },
+              };
+              insertAdjacent('afterBegin', addNewActionschema);
+            }
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
