@@ -49,10 +49,15 @@ export const OIDCList = () => {
     const { state } = event.data;
     const search = new URLSearchParams(state);
     const authenticator = search.get('name');
-    await api.auth.signIn(event.data, authenticator);
-    windowHandler.close();
-    setWindowHandler(undefined);
-    redirect();
+    try {
+      await api.auth.signIn(event.data, authenticator);
+      redirect();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      windowHandler.close();
+      setWindowHandler(undefined);
+    }
   });
 
   /**
