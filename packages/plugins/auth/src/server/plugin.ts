@@ -34,7 +34,7 @@ export class AuthPlugin extends Plugin {
     this.app.authManager.setStorer({
       get: async (name: string) => {
         const repo = this.db.getRepository('authenticators');
-        return await repo.findOne({ filter: { name } });
+        return await repo.findOne({ filter: { name, enabled: true } });
       },
     });
     this.app.authManager.registerTypes(presetAuthType, {
