@@ -9,6 +9,7 @@ import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
+import * as process from 'process';
 
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
@@ -115,6 +116,7 @@ export class ClientPlugin extends Plugin {
             version: await ctx.app.version.get(),
             lang,
             theme: currentUser?.systemSettings?.theme || systemSetting?.options?.theme || 'default',
+            advanceCollectionManagement: process.env.ADVANCE_COLLECTION_MANAGEMENT === 'true',
           };
           await next();
         },

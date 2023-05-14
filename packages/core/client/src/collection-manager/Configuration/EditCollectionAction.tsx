@@ -11,10 +11,12 @@ import { ActionContext, SchemaComponent, useActionContext, useCompile } from '..
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
+import { useCurrentAppInfo } from '../../appInfo/CurrentAppInfoProvider';
+
 import { IField } from '../interfaces/types';
 import * as components from './components';
 
-const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {
+const getSchema = (schema: IField, record: any, compile, appInfo): ISchema => {
   if (!schema) {
     return;
   }
@@ -26,10 +28,13 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     name: {
       'x-component': 'CollectionField',
       'x-decorator': 'FormItem',
-      // 'x-disabled': true,
+      'x-disabled': !appInfo.data.advanceCollectionManagement,
     },
   };
-  // properties.name['x-disabled'] = true;
+
+  properties.name['x-disabled'] = !appInfo.data.advanceCollectionManagement;
+  properties.inherits['x-disabled'] = !appInfo.data.advanceCollectionManagement;
+
   if (schema.hasDefaultValue === true) {
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
@@ -120,6 +125,8 @@ export const EditCollection = (props) => {
 
 export const EditCollectionAction = (props) => {
   const { scope, getContainer, item: record, children } = props;
+  const appInfo = useCurrentAppInfo();
+
   const { getTemplate } = useCollectionManager();
   const [visible, setVisible] = useState(false);
   const [schema, setSchema] = useState({});
@@ -138,7 +145,7 @@ export const EditCollectionAction = (props) => {
               },
               record,
               compile,
-              getContainer,
+              appInfo,
             );
             setSchema(schema);
             setVisible(true);
