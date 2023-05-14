@@ -1,6 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
+import { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
@@ -37,6 +38,7 @@ const InternalRemoteSelect = connect(
     const compile = useCompile();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
+    const field = useField();
     const { getField } = useCollection();
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
@@ -94,6 +96,7 @@ const InternalRemoteSelect = connect(
               });
             }
             return {
+              ...option,
               [fieldNames.label]: label || option[fieldNames.value],
               [fieldNames.value]: option[fieldNames.value],
             };
@@ -115,7 +118,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([service?.params?.filter]),
+          filter: mergeFilter([field.componentProps?.service?.params?.filter || service?.params?.filter]),
         },
       },
       {
@@ -148,7 +151,7 @@ const InternalRemoteSelect = connect(
               [operator]: search,
             },
           },
-          service?.params?.filter,
+          field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
     };
@@ -156,12 +159,6 @@ const InternalRemoteSelect = connect(
     const getOptionsByFieldNames = useCallback(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
-          const value = item[fieldNames[key]];
-          if (value) {
-            // support hidden, disabled, etc.
-            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
-              key === 'label' ? compile(value) : value;
-          }
           return obj;
         }, {} as any);
       },
@@ -179,15 +176,11 @@ const InternalRemoteSelect = connect(
 
     const options = useMemo(() => {
       if (!data?.data?.length) {
-        return value !== undefined && value !== null
-          ? Array.isArray(value)
-            ? value.map(normalizeOptions)
-            : [normalizeOptions(value)]
-          : [];
+        return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      return data?.data?.map(getOptionsByFieldNames) || [];
+      const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
+      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
-
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
         return;
@@ -198,6 +191,7 @@ const InternalRemoteSelect = connect(
 
     return (
       <Select
+        dropdownMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}

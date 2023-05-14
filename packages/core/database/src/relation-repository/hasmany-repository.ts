@@ -2,6 +2,7 @@ import { omit } from 'lodash';
 import { HasMany, Op } from 'sequelize';
 import { Model } from '../model';
 import {
+  AggregateOptions,
   CreateOptions,
   DestroyOptions,
   FindOneOptions,
@@ -51,6 +52,22 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     };
 
     return await targetRepository.find(findOptions);
+  }
+
+  async aggregate(options: AggregateOptions) {
+    const targetRepository = this.targetCollection.repository;
+    const addFilter = {
+      [this.association.foreignKey]: this.sourceKeyValue,
+    };
+
+    const aggOptions = {
+      ...options,
+      filter: {
+        $and: [options.filter || {}, addFilter],
+      },
+    };
+
+    return await targetRepository.aggregate(aggOptions);
   }
 
   @transaction((args, transaction) => {

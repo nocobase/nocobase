@@ -71,10 +71,16 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
+// 当字段被删除时，显示一个提示占位符
+const DeletedField = () => {
+  const { t } = useTranslation();
+  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
+};
+
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name}>
+    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -123,7 +129,7 @@ export const AssignedField = (props: any) => {
         title: t('Current user'),
       },
     ];
-    if (dateTimeFields.includes(collectionField.interface)) {
+    if (dateTimeFields.includes(collectionField?.interface)) {
       opt.unshift({
         name: 'currentTime',
         title: t('Current time'),
