@@ -35,6 +35,7 @@
     "@nocobase/plugin-users": "0.9.3-alpha.1",
     "@nocobase/plugin-verification": "0.9.3-alpha.1",
     "@nocobase/plugin-workflow": "0.9.3-alpha.1",
+    "@nocobase/plugin-localization-management": "0.9.3-alpha.1",
     "@nocobase/server": "0.9.3-alpha.1"
   },
   "repository": {
