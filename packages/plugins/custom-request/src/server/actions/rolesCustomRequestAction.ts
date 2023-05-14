@@ -1,11 +1,10 @@
 import { Context } from '@nocobase/actions';
-import { ROLE_NAMESPACE } from '../constants';
 
 const getRepositoryFromCtx = (ctx: Context) => {
-  return ctx.db.getCollection(ROLE_NAMESPACE).repository;
+  return ctx.db.getCollection('rolesCustomRequest').repository;
 };
 
-export const customRequestRolesActions = {
+export const rolesCustomRequestActions = {
   get: async (ctx: Context, next) => {
     const { params: values } = ctx.action;
     const repo = getRepositoryFromCtx(ctx);

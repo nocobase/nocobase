@@ -1,10 +1,9 @@
 import { defineCollection } from '@nocobase/database';
-import { NAMESPACE } from '../constants';
 
 export default defineCollection({
   namespace: 'custom-request.customRequest',
   duplicator: 'required',
-  name: NAMESPACE,
+  name: 'customRequest',
   autoGenId: false,
   timestamps: false,
   title: '自定义请求',
@@ -27,6 +26,9 @@ export default defineCollection({
       type: 'belongsToMany',
       name: 'roles',
       target: 'roles',
+      through: 'rolesCustomRequest',
+      foreignKey: 'customRequestKey',
+      otherKey: 'roleName',
     },
   ],
 });

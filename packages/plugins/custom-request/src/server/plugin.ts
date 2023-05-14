@@ -1,8 +1,8 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { NAMESPACE, ROLE_NAMESPACE } from './constants';
 import { customRequestActions } from './actions';
 import { resolve } from 'path';
-import { customRequestRolesActions } from './actions/customRequestRolesAction';
+import { rolesCustomRequestActions } from './actions/rolesCustomRequestAction';
+import { checkSendPermission } from './send-middleware';
 
 export class CustomRequestPlugin extends Plugin {
   afterAdd() {}
@@ -14,16 +14,24 @@ export class CustomRequestPlugin extends Plugin {
     });
 
     this.app.resourcer.define({
-      name: NAMESPACE,
+      name: 'customRequest',
       actions: customRequestActions,
     });
     this.app.resourcer.define({
-      name: ROLE_NAMESPACE,
-      actions: customRequestRolesActions,
+      name: 'rolesCustomRequest',
+      actions: rolesCustomRequestActions,
     });
 
-    this.app.acl.allow(NAMESPACE, ['get', 'list', 'send'], 'loggedIn');
-    this.app.acl.allow(ROLE_NAMESPACE, ['get', 'set', 'list'], 'loggedIn');
+    this.app.resourcer.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'customRequest' && actionName === 'send') {
+        return checkSendPermission(ctx, next);
+      } else {
+        await next();
+      }
+    });
+    this.app.acl.allow('customRequest', ['get', 'list', 'set', 'send'], 'loggedIn');
+    this.app.acl.allow('rolesCustomRequest', ['get', 'set', 'list'], 'loggedIn');
   }
 
   async load() {

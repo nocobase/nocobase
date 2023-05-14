@@ -28,7 +28,7 @@ export const CustomRequestConfigure = () => {
 
   const handleChange = async (checked, record) => {
     await api.request({
-      url: `/customrequestRoles:set/${record.key}`,
+      url: `/rolesCustomRequest:set/${record.key}`,
       method: 'post',
       data: {
         value: !checked,

@@ -1,9 +1,9 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Menu, message } from 'antd';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCustomRequestSchema, useDesignable } from '../..';
+import { useDesignable } from '../..';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
@@ -14,7 +14,7 @@ import { cloneDeep } from 'lodash';
 import { JSONInput } from '../variable/JSONInput';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
-import { findTableOrFormBlockProviderByActionFieldSchema } from './utils';
+import { findTableOrFormBlockProviderByActionFieldSchema, getCustomRequestSchema } from './utils';
 import isEmpty from 'lodash/isEmpty';
 
 const MenuGroup = (props) => {
@@ -50,12 +50,9 @@ export const ActionDesigner = (props) => {
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const requestSettingsSchema = useCustomRequestSchema();
+  const requestSettingsSchema = getCustomRequestSchema();
   const api = useAPIClient();
   const record = useRecord();
-  const customRequestCache = useRef<Record<string, any>>(
-    JSON.parse(localStorage.getItem('customRequestCache') || '{}'),
-  );
 
   const isAction = useLinkageAction();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
@@ -89,25 +86,11 @@ export const ActionDesigner = (props) => {
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
     ),
   };
-  useEffect(() => {
-    if (!customRequestCache.current[fieldSchema?.['x-uid']]) {
-      customRequestService.run();
-    } else {
-      setCustomRequestSettings(customRequestCache.current[fieldSchema?.['x-uid']]);
-    }
-    return () => {
-      customRequestCache.current = {};
-      localStorage.setItem('customRequestCache', '');
-    };
-  }, []);
-  const updateLocalCustomRequestSettings = (params: Record<string, any>) => {
-    customRequestCache.current[fieldSchema?.['x-uid']] = params;
-    localStorage.setItem('customRequestCache', JSON.stringify(customRequestCache.current));
-  };
-  const customRequestService = useRequest(
+
+  useRequest(
     { url: `/customRequest:get/${fieldSchema?.['x-uid']}` },
     {
-      manual: true,
+      cacheKey: fieldSchema?.['x-uid'],
       onSuccess(data) {
         if (!isEmpty(data?.data)) {
           const params = {
@@ -116,7 +99,6 @@ export const ActionDesigner = (props) => {
             ...data.data.options,
           };
           setCustomRequestSettings(params);
-          updateLocalCustomRequestSettings(params);
         }
       },
     },
@@ -249,7 +231,6 @@ export const ActionDesigner = (props) => {
                 },
               });
               message.success(t('Saved successfully'), 0.2);
-              updateLocalCustomRequestSettings(tempRequestSettings);
             }}
           />
         )}

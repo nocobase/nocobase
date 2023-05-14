@@ -1,10 +1,9 @@
 import { Context } from '@nocobase/actions';
-import { NAMESPACE, ROLE_NAMESPACE } from '../constants';
 import axios from 'axios';
 import { formatParamsIntoObject } from './utils';
 
-const getRepositoryFromCtx = (ctx: Context, nameSpace = NAMESPACE) => {
-  return ctx.db.getCollection(nameSpace).repository;
+export const getRepositoryFromCtx = (ctx: Context, name = 'customRequest') => {
+  return ctx.db.getCollection(name).repository;
 };
 
 export const customRequestActions = {
@@ -22,7 +21,7 @@ export const customRequestActions = {
   set: async (ctx: Context, next) => {
     const { params: values } = ctx.action;
     const repo = getRepositoryFromCtx(ctx);
-    const rolesRepo = getRepositoryFromCtx(ctx, ROLE_NAMESPACE);
+    const rolesRepo = getRepositoryFromCtx(ctx, 'rolesCustomRequest');
     const key = values.values?.key;
     const options = values.values?.options;
     const record = await repo.findOne({
@@ -49,7 +48,7 @@ export const customRequestActions = {
       await rolesRepo.create({
         values: {
           customRequestKey: key,
-          roleName: ctx.request.headers['x-role'],
+          roleName: ctx.state.currentRole,
         },
       });
     }
@@ -71,30 +70,9 @@ export const customRequestActions = {
     const record = await repo.findOne({
       filter: { key },
     });
-    if (!record) {
-      ctx.status = 404;
-      ctx.body = {
-        message: 'request not find',
-        code: 404,
-      };
-      return next();
-    }
 
-    const rolesRepo = getRepositoryFromCtx(ctx, ROLE_NAMESPACE);
-    const roleRecords = await rolesRepo.find({
-      filter: { customRequestKey: key },
-    });
-    if (!roleRecords) {
-      ctx.status = 401;
-      ctx.body = 'Unauthorized';
-      return next();
-    }
-    const roles = roleRecords.map((roleRecord) => roleRecord?.roleName);
-    const currentRole = ctx.request.headers['x-role'];
-    if (!roles.includes(currentRole)) {
-      ctx.status = 401;
-      ctx.body = 'Unauthorized';
-      return next();
+    if (!record) {
+      ctx.throw(404);
     }
 
     const { data, method, headers, params, url, timeout = 5000 } = record.options;
