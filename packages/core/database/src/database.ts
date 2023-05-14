@@ -70,7 +70,7 @@ import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import { ViewCollection } from './view-collection';
-import { cleanupSnapshots } from './snapshot';
+import { DatabaseSnapshot } from './snapshot';
 
 export type MergeOptions = merge.Options;
 
@@ -190,6 +190,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   collectionGroupManager = new CollectionGroupManager(this);
 
+  snapshot: DatabaseSnapshot;
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -293,6 +295,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.initListener();
     patchSequelizeQueryInterface(this);
+
+    this.snapshot = new DatabaseSnapshot(this);
   }
 
   setLogger(logger: Logger) {
@@ -412,8 +416,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
           findOptions.raw
             ? (row['__collection'] = rowCollectionName)
             : row.set('__collection', rowCollectionName, {
-              raw: true,
-            });
+                raw: true,
+              });
         }
       }
     });
@@ -690,7 +694,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    cleanupSnapshots(this);
+    this.snapshot.cleanupSnapshots();
 
     if (this.options.schema) {
       const tableNames = (await this.sequelize.getQueryInterface().showAllTables()).map((table) => {
@@ -736,6 +740,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         console.log('Connection has been established successfully.');
         return true;
       } catch (error) {
+        // @ts-ignore
         if (count >= retry) {
           throw new Error('Connection failed, please check your database connection credentials and try again.');
         }

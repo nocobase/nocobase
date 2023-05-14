@@ -545,14 +545,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     await this.emitAsync('beforeUpgrade', this, options);
-    // const force = false;
     await this.db.migrator.up();
-    // await this.db.sync({
-    //   force,
-    //   alter: {
-    //     drop: force,
-    //   },
-    // });
     await this.version.update();
     await this.emitAsync('afterUpgrade', this, options);
   }

@@ -15,7 +15,6 @@ import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
-import { deleteSnapshot } from './snapshot';
 
 export type RepositoryType = typeof Repository;
 
@@ -218,10 +217,6 @@ export class Collection<
     this.model.database = this.context.database;
     // @ts-ignore
     this.model.collection = this;
-
-    this.model.afterDestroy((instance, options) => {
-      deleteSnapshot(this.db, this.model);
-    });
   }
 
   setRepository(repository?: RepositoryType | string) {

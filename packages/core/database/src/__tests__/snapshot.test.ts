@@ -1,13 +1,12 @@
 import { Database } from '../database';
 import { mockDatabase } from './index';
-import { cleanupSnapshots } from '../snapshot';
 
 describe('snapshot test', () => {
   let db: Database;
 
   beforeEach(async () => {
     db = mockDatabase();
-    cleanupSnapshots(db);
+    db.snapshot.cleanupSnapshots();
   });
 
   afterEach(async () => {
@@ -99,7 +98,7 @@ describe('snapshot test', () => {
 
       collection.addIndex({
         fields: ['test'],
-        unique: true
+        unique: true,
       });
 
       await db.sync();

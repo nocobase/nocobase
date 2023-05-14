@@ -4,7 +4,6 @@ import { Collection } from './collection';
 import { Database } from './database';
 import { Field } from './fields';
 import { SyncRunner } from './sync-runner';
-import { validateSnapshot, saveSnapshot } from './snapshot';
 
 const _ = lodash;
 
@@ -22,7 +21,8 @@ interface JSONTransformerOptions {
 
 export class Model<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   extends SequelizeModel<TModelAttributes, TCreationAttributes>
-  implements IModel {
+  implements IModel
+{
   public static database: Database;
   public static collection: Collection;
 
@@ -198,11 +198,11 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
     }
 
     // @ts-ignore
-    if (!validateSnapshot(this.database, this, options)) {
+    if (!this.database.snapshot.validateSnapshot(this, options)) {
       return this;
     }
     let modelResult = await SequelizeModel.sync.call(this, options);
-    saveSnapshot(this.database, this);
+    this.database.snapshot.saveSnapshot(this);
 
     return modelResult;
   }
