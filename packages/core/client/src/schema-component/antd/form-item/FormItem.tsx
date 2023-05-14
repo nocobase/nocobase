@@ -677,6 +677,8 @@ FormItem.Designer = function Designer() {
             if (mode === 'Nester') {
               const initValue = ['o2m', 'm2m'].includes(collectionField.interface) ? [] : {};
               field.value = field.value || initValue;
+            }else if(mode==='SubTable'){
+              field.value = field.value || [];
             }
             dn.emit('patch', {
               schema,
