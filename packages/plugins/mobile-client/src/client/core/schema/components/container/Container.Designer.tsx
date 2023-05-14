@@ -1,11 +1,10 @@
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { SSSwitchItem } from '../../settings';
 import { Schema, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useHistory } from 'react-router-dom';
-import { findGridSchema, findSchema } from '../../helpers';
+import { findSchema } from '../../helpers';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();
