@@ -16,7 +16,7 @@ export const PageDesigner = (props) => {
     <GeneralSchemaDesigner draggable={false}>
       <SchemaSettings.SwitchItem
         checked={!!headerSchema}
-        title={t('Enable header')}
+        title={t('Enable Header')}
         onChange={async (v) => {
           if (v) {
             await dn.insertAfterBegin({

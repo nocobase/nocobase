@@ -71,7 +71,7 @@ const MenuItemDesigner: React.FC = () => {
           properties: {
             name: {
               type: 'string',
-              title: t('Menu item name'),
+              title: t('Menu name'),
               required: true,
               'x-component': 'Input',
               'x-decorator': 'FormItem',

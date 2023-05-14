@@ -37,7 +37,7 @@ export const InternalTabBar: React.FC = (props) => {
                 properties: {
                   title: {
                     type: 'string',
-                    title: t('Tab title'),
+                    title: t('Title'),
                     required: true,
                     'x-component': 'Input',
                     'x-decorator': 'FormItem',

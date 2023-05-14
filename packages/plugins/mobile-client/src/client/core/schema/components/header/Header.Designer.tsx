@@ -12,21 +12,21 @@ export const HeaderDesigner = () => {
   return (
     <GeneralSchemaDesigner draggable={false}>
       <SchemaSettings.ModalItem
-        title={t('Edit header info')}
+        title={t('Edit info')}
         components={{ Switch }}
         initialValues={field.componentProps}
         schema={{
           properties: {
             title: {
               type: 'string',
-              title: t('Menu header title'),
+              title: t('Title'),
               required: true,
               'x-component': 'Input',
               'x-decorator': 'FormItem',
             },
             showBack: {
               type: 'boolean',
-              title: t('Show back button'),
+              title: t('Display back button'),
               'x-component': 'Switch',
               'x-decorator': 'FormItem',
             },

@@ -1,4 +1,5 @@
 import { gridRowColWrap } from '@nocobase/client';
+import { generateNTemplate } from '../../../locale';
 
 // 页面里添加区块
 export const MBlockInitializers = {
@@ -51,7 +52,7 @@ export const MBlockInitializers = {
         {
           key: 'menu',
           type: 'item',
-          title: '{{t("Menu")}}',
+          title: generateNTemplate('Menu'),
           component: 'MMenuBlockInitializer',
           sort: 100,
         },

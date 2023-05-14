@@ -8,7 +8,6 @@ import {
   SortableItem,
   useDesignable,
   useDesigner,
-  useSchemaTemplate,
   useSchemaTemplateManager,
 } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
@@ -46,7 +45,7 @@ const InternalMenu: React.FC = (props) => {
                 properties: {
                   name: {
                     type: 'string',
-                    title: t('Menu item name'),
+                    title: t('Menu name'),
                     required: true,
                     'x-component': 'Input',
                     'x-decorator': 'FormItem',
@@ -72,8 +71,8 @@ const InternalMenu: React.FC = (props) => {
                     'x-component': 'Radio.Group',
                     default: 'copy',
                     enum: [
-                      { value: 'copy', label: t('Copy template') },
-                      { value: 'reference', label: t('Reference Template') },
+                      { value: 'copy', label: t('Duplicate template') },
+                      { value: 'reference', label: t('Reference template') },
                     ],
                     'x-reactions': {
                       dependencies: ['.templateUid'],

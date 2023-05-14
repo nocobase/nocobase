@@ -37,7 +37,7 @@ export const ContainerDesigner = () => {
                   'x-designer': 'MTabBar.Item.Designer',
                   'x-component-props': {
                     icon: 'HomeOutlined',
-                    title: t('Home'),
+                    title: t('Untitled'),
                   },
                   properties: {
                     page: pageSchema.toJSON(),

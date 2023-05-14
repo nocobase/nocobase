@@ -38,13 +38,13 @@ export const Designer = () => {
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.ModalItem
-        title={t('Edit tab info')}
+        title={t('Edit info')}
         initialValues={field.componentProps}
         schema={{
           properties: {
             title: {
               type: 'string',
-              title: t('Tab title'),
+              title: t('Title'),
               required: true,
               'x-component': 'Input',
               'x-decorator': 'FormItem',
@@ -64,7 +64,7 @@ export const Designer = () => {
           key="remove"
           removeParentsIfNoChildren
           confirm={{
-            title: t('Delete tab item'),
+            title: t('Delete tab item?'),
           }}
           breakRemoveOn={{
             'x-component': 'MTabBar',

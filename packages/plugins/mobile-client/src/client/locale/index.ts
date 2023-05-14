@@ -3,9 +3,9 @@ import { useTranslation as useT } from 'react-i18next';
 import enUS from './en-US';
 import zhCN from './zh-CN';
 
-export const NAMESPACE = 'map';
+export const NAMESPACE = 'mobile-client';
 
-i18n.addResources('zh-CN', NAMESPACE, zhCN);
+i18n.addResources('zh-CN', NAMESPACE, { ...zhCN, ...i18n.getResource('zh-CN') });
 i18n.addResources('en-US', NAMESPACE, enUS);
 
 export function lang(key: string) {
@@ -17,5 +17,7 @@ export function generateNTemplate(key: string) {
 }
 
 export function useTranslation() {
-  return useT(NAMESPACE);
+  return useT([NAMESPACE, 'client'], {
+    nsMode: 'fallback',
+  });
 }
