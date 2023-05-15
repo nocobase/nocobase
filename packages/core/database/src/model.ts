@@ -197,12 +197,11 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       return SyncRunner.syncInheritModel(model, options);
     }
 
-    // @ts-ignore
-    if (!this.database.snapshot.validateSnapshot(this, options)) {
+    if (!this.database.snapshot.hasChanged(this, options)) {
       return this;
     }
-    let modelResult = await SequelizeModel.sync.call(this, options);
-    this.database.snapshot.saveSnapshot(this);
+    const modelResult = await SequelizeModel.sync.call(this, options);
+    this.database.snapshot.save(this);
 
     return modelResult;
   }

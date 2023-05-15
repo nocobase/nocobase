@@ -24,7 +24,7 @@ export class DatabaseSnapshot {
     );
   }
 
-  validateSnapshot(model: ModelStatic<Model>, options) {
+  hasChanged(model: ModelStatic<Model>, options) {
     if (options?.force) {
       return true;
     }
@@ -37,12 +37,7 @@ export class DatabaseSnapshot {
     }
 
     const snapshotFromFile = JSON.parse(fs.readFileSync(snapshotFile, 'utf8'));
-    let snapshot = {
-      fields: model.getAttributes(),
-      // @ts-ignore
-      _indexes: model._indexes,
-      indexes: model.options.indexes,
-    };
+    let snapshot = this.snapshotFromModel(model);
 
     // remove undefined values recursively which lodash can't
     snapshot = JSON.parse(JSON.stringify(snapshot));
@@ -54,7 +49,7 @@ export class DatabaseSnapshot {
     return false;
   }
 
-  saveSnapshot(model: ModelStatic<Model>) {
+  save(model: ModelStatic<Model>) {
     if (this.db.isSqliteMemory()) {
       return true;
     }
@@ -64,26 +59,31 @@ export class DatabaseSnapshot {
     }
 
     const snapshotFile = path.join(this.snapshotDir, `${model.tableName}.json`);
-    const snapshot = {
-      fields: model.getAttributes(),
-      // @ts-ignore
-      _indexes: model._indexes,
-      indexes: model.options.indexes,
-    };
+    const snapshot = this.snapshotFromModel(model);
 
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
   }
 
-  deleteSnapshot(model: ModelStatic<Model>) {
+  remove(model: ModelStatic<Model>) {
     const snapshotFile = path.join(this.snapshotDir, `${model.tableName}.json`);
     if (fs.existsSync(snapshotFile)) {
       fs.unlinkSync(snapshotFile);
     }
   }
 
-  cleanupSnapshots() {
+  removeAll() {
     if (fs.existsSync(this.snapshotDir)) {
       fs.rmSync(this.snapshotDir, { recursive: true, force: true });
     }
+  }
+
+  private snapshotFromModel(model: ModelStatic<Model>) {
+    const snapshot = {
+      fields: model.getAttributes(),
+      // @ts-ignore
+      _indexes: model._indexes,
+      indexes: model.options.indexes,
+    };
+    return snapshot;
   }
 }

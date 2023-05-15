@@ -6,7 +6,7 @@ describe('snapshot test', () => {
 
   beforeEach(async () => {
     db = mockDatabase();
-    db.snapshot.cleanupSnapshots();
+    db.snapshot.removeAll();
   });
 
   afterEach(async () => {
