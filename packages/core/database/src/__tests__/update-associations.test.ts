@@ -4,6 +4,63 @@ import { updateAssociations } from '../update-associations';
 import { mockDatabase } from './';
 
 describe('update associations', () => {
+  describe('update hook', function () {
+    let db: Database;
+    beforeEach(async () => {
+      db = mockDatabase();
+      await db.clean({ drop: true });
+    });
+
+    afterEach(async () => {
+      await db.close();
+    });
+
+    it('should calls afterCreate in stack order', async () => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'hasMany',
+            name: 'posts',
+          },
+        ],
+      });
+
+      const Post = db.collection({
+        name: 'posts',
+        fields: [
+          { type: 'string', name: 'title' },
+          {
+            type: 'belongsTo',
+            name: 'user',
+          },
+        ],
+      });
+
+      await db.sync();
+
+      const postAfterCreate = jest.fn();
+      const userAfterCreate = jest.fn();
+      db.on('users.afterCreate', userAfterCreate);
+      db.on('posts.afterCreate', postAfterCreate);
+
+      await User.repository.create({
+        values: {
+          name: 'u1',
+          posts: [
+            {
+              title: 'p1',
+            },
+          ],
+        },
+      });
+
+      expect(postAfterCreate).toHaveBeenNthCalledWith(1);
+      expect(userAfterCreate).toHaveBeenNthCalledWith(2);
+    });
+  });
+
   describe('belongsTo', () => {
     let db: Database;
     beforeEach(async () => {
