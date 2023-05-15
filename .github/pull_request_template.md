@@ -1,8 +1,5 @@
----
-name: Feature
-about: A template for submitting a new feature.
-
----
+> **Note**
+> This is a template for submitting a new feature. Use the bug fix template if you're submitting a bug fix pull request by adding `template=bug_fix.md` to your pull request URL.
 
 # Description (需求描述)
 Describe the new feature or modification to an existing feature clearly and consciously.

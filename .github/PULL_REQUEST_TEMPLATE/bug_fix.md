@@ -1,9 +1,3 @@
----
-name: Bug fix
-about: A template for submitting a bug fix pull request.
-
----
-
 # Description (Bug描述）
 
 ## Steps to reproduce (复现步骤)   
