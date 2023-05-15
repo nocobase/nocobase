@@ -36,9 +36,8 @@ export const workflowPageClass = css`
 
   .workflow-canvas {
     flex-grow: 1;
-    overflow-y: auto;
-    width: min-content;
-    min-width: 100%;
+    overflow: auto;
+    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
