@@ -72,12 +72,6 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
-// 当字段被删除时，显示一个提示占位符
-const DeletedField = () => {
-  const { t } = useTranslation();
-  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
-};
-
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
