@@ -83,7 +83,7 @@ const useTableColumns = (props) => {
     tableColumns.push({
       title: '',
       key: 'delete',
-      width: 80,
+      width: 60,
       align: 'center',
       fixed:'right',
       render: (v, record, index) => {
