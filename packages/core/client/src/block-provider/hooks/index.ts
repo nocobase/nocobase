@@ -1098,8 +1098,7 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield =
-        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)) {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
