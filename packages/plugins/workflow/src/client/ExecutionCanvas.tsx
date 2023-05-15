@@ -3,7 +3,13 @@ import { Tag, Breadcrumb } from 'antd';
 import { css } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
-import { ActionContext, SchemaComponent, useCompile, useDocumentTitle, useResourceActionContext } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  useCompile,
+  useDocumentTitle,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
 import { FlowContext, useFlowContext } from './FlowContext';
@@ -24,6 +30,9 @@ function attachJobs(nodes, jobs: any[] = []): void {
     const node = nodesMap.get(item.nodeId);
     node.jobs.push(item);
     item.node = node;
+  });
+  nodes.forEach((item) => {
+    item.jobs = item.jobs.sort((a, b) => a.id - b.id);
   });
 }
 

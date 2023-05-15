@@ -271,32 +271,30 @@ export function JobButton() {
   return jobs.length > 1 ? (
     <Dropdown
       menu={{
-        items: jobs
-          .sort((a, b) => a.updatedAt - b.updatedAt)
-          .map((job) => {
-            const { icon, color } = JobStatusOptionsMap[job.status];
-            return {
-              key: job.id,
-              label: (
-                <div
-                  className={css`
-                    display: flex;
-                    gap: 0.5em;
+        items: jobs.map((job) => {
+          const { icon, color } = JobStatusOptionsMap[job.status];
+          return {
+            key: job.id,
+            label: (
+              <div
+                className={css`
+                  display: flex;
+                  gap: 0.5em;
 
-                    time {
-                      color: #999;
-                      font-size: 0.8em;
-                    }
-                  `}
-                >
-                  <span className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
-                    <Tag color={color}>{icon}</Tag>
-                  </span>
-                  <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-                </div>
-              ),
-            };
-          }),
+                  time {
+                    color: #999;
+                    font-size: 0.8em;
+                  }
+                `}
+              >
+                <span className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
+                  <Tag color={color}>{icon}</Tag>
+                </span>
+                <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+              </div>
+            ),
+          };
+        }),
         onClick: onOpenJob,
       }}
     >
