@@ -1136,8 +1136,12 @@ export const useAssociationNames = (collection) => {
         if (Array.isArray(list[i])) {
           `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
         } else {
-          const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
-          !list.includes(str) && flattenedList.push(`${str}${list[i]}`);
+          const str = prefix.replaceAll(`.${list[i]}`, '').trim();
+          if (!str) {
+            !list.includes(str) && flattenedList.push(`${list[i]}`);
+          } else {
+            !list.includes(str) ? flattenedList.push(`${str}.${list[i]}`) : flattenedList.push(str);
+          }
         }
       }
     }
@@ -1153,9 +1157,7 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-  const data = getAssociationAppends(formSchema);
-  const associations = data.filter((g) => g.length);
+  const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
-
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
