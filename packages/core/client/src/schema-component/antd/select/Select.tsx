@@ -41,6 +41,7 @@ const ObjectSelect = (props: Props) => {
       options={options}
       fieldNames={fieldNames}
       showSearch
+      dropdownMatchSelectWidth={false}
       filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
       filterSort={(optionA, optionB) =>
         (optionA?.[fieldNames.label || 'label'] ?? '')
@@ -82,6 +83,7 @@ const InternalSelect = connect(
         showSearch
         filterOption={filterOption}
         allowClear
+        dropdownMatchSelectWidth={false}
         value={value}
         {...others}
         onChange={(changed) => {

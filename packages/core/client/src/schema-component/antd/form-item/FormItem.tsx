@@ -133,7 +133,6 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
-
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -810,7 +809,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {options.length > 0 && fieldSchema['x-component'] === 'CollectionField' && (
+      {options.length > 0 && isAssociationField && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
