@@ -1100,6 +1100,7 @@ export const useAssociationNames = (collection) => {
     const data = schema.reduceProperties((buf, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)) {
+        buf.push(s.name)
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
@@ -1151,5 +1152,6 @@ export const useAssociationNames = (collection) => {
   };
   const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
+  console.log(appends,associations)
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
