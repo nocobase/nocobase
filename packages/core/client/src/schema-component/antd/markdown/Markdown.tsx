@@ -9,6 +9,7 @@ import {
   useField,
   useFieldSchema,
 } from '@formily/react';
+import { css } from '@emotion/css';
 import { Input as AntdInput, Spin } from 'antd';
 import React from 'react';
 import { createForm } from '@formily/core';
@@ -58,7 +59,13 @@ const InputMarkdown = (props) => {
               field.title = value;
               targetField.value = value;
             }}
-            component={[Editable.Popover]}
+            component={[Editable.Popover,{
+              overlayClassName: css`
+                .ant-popover-title {
+                  display: none;
+                }
+              `,
+            },]}
           >
             <Field component={[AntdInput.TextArea]} {...props} name="markDowm" />
           </ObjectField>

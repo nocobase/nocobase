@@ -3,6 +3,8 @@ import React from 'react';
 import { createForm } from '@formily/core';
 import { Editable } from '@formily/antd';
 import ReactQuill from 'react-quill';
+import { css } from '@emotion/css';
+
 import { ReadPretty as InputReadPretty } from '../input';
 import './style.less';
 
@@ -46,7 +48,16 @@ const InputRichText = (props) => {
               field.title = value;
               targetField.value = value;
             }}
-            component={[Editable.Popover]}
+            component={[
+              Editable.Popover,
+              {
+                overlayClassName: css`
+                  .ant-popover-title {
+                    display: none;
+                  }
+                `,
+              },
+            ]}
           >
             <Field
               component={[

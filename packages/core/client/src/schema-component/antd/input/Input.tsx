@@ -9,6 +9,7 @@ import {
   Field,
   useField,
 } from '@formily/react';
+import { css } from '@emotion/css';
 import { Editable } from '@formily/antd';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
@@ -69,7 +70,13 @@ const InputTextArea = (props) => {
               field.title = value;
               targetField.value = value;
             }}
-            component={[Editable.Popover]}
+            component={[Editable.Popover,{
+              overlayClassName: css`
+                .ant-popover-title {
+                  display: none;
+                }
+              `,
+            }]}
           >
             <Field component={[AntdInput.TextArea]} {...props} name="textArea" />
           </ObjectField>
