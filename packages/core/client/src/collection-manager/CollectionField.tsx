@@ -101,7 +101,7 @@ export const InternalFallbackField = () => {
 // 当字段被删除时，显示一个提示占位符
 const DeletedField = () => {
   const { t } = useTranslation();
-  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
+  return <div style={{ color: '#ccc' }}>{t('The field has been deleted')}</div>;
 };
 
 export const CollectionField = connect((props) => {

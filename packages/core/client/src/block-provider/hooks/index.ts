@@ -1098,16 +1098,9 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (
-        collectionfield &&
-        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface) &&
-        s['x-component'] !== 'TableField'
-      ) {
-        if (s.name === 'material') {
-          console.log(s);
-        }
-        buf.push(s.name);
+      const collectionfield =
+        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
+      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)) {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
