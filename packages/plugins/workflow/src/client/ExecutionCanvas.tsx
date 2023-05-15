@@ -29,7 +29,11 @@ function attachJobs(nodes, jobs: any[] = []): void {
   jobs.forEach((item) => {
     const node = nodesMap.get(item.nodeId);
     node.jobs.push(item);
-    item.node = node;
+    item.node = {
+      id: node.id,
+      title: node.title,
+      type: node.type,
+    };
   });
   nodes.forEach((item) => {
     item.jobs = item.jobs.sort((a, b) => a.id - b.id);
