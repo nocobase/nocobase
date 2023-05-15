@@ -1,9 +1,3 @@
----
-name: Feature
-about: A template for submitting a new feature.
-
----
-
 # Description (需求描述)
 Describe the new feature or modification to an existing feature clearly and consciously.
 
