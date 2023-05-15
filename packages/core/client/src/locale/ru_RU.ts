@@ -363,7 +363,7 @@ export default {
   "Skip required validation": "Пропустить обязатеьную проверку",
   "Form values": "Значения формы",
   "Fields values": "Значения полей",
-  'The field has bee deleted': 'Поле было удалено',
+  'The field has been deleted': 'Поле было удалено',
   "When submitting the following fields, the saved values are": "При отправке следующих полей, сохраненные значения такие",
   "After successful submission": "После удачной отправки",
   "Then": "Затем",

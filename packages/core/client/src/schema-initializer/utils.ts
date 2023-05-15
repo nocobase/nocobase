@@ -456,7 +456,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
 
   return inherits?.map((v) => {
     const fields = getParentCollectionFields(v, name);
-    const { readPretty = form.readPretty, block = 'Form' } = options || {};
+    const { readPretty = form.readPretty, block = 'Form', component = 'CollectionField' } = options || {};
     const targetCollection = getCollection(v);
     return {
       [targetCollection?.title]: fields
@@ -473,7 +473,7 @@ export const useInheritsFormItemInitializerFields = (options?) => {
             name: field.name,
             title: field?.uiSchema?.title || field.name,
             'x-designer': 'FormItem.Designer',
-            'x-component': 'CollectionField',
+            'x-component': component,
             'x-decorator': 'FormItem',
             'x-collection-field': `${name}.${field.name}`,
             'x-component-props': {},

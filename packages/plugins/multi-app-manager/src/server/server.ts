@@ -177,10 +177,22 @@ export class PluginMultiAppManager extends Plugin {
 
     this.app.on('afterUpgrade', async (app, options) => {
       const cliArgs = options?.cliArgs;
+
       const repository = this.db.getRepository('applications');
-      const instances = await repository.find();
+      const findOptions = {};
+
+      const appManager = this.app.appManager;
+
+      if (appManager.runningMode == 'single') {
+        findOptions['filter'] = {
+          name: appManager.singleAppName,
+        };
+      }
+
+      const instances = await repository.find(findOptions);
+
       for (const instance of instances) {
-        const subApp = await this.app.appManager.getApplication(instance.name, {
+        const subApp = await appManager.getApplication(instance.name, {
           upgrading: true,
         });
 
