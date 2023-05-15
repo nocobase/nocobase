@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { Cascader, Select, Space } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider';
 import {
@@ -12,6 +12,7 @@ import {
   useCollectionFilterOptions,
 } from '../../../collection-manager';
 import { useCompile, useComponent } from '../../../schema-component';
+import { DeletedField } from '../DeletedField';
 
 const DYNAMIC_RECORD_REG = /\{\{\s*currentRecord\.(.*)\s*\}\}/;
 const DYNAMIC_USER_REG = /\{\{\s*currentUser\.(.*)\s*\}\}/;
@@ -71,12 +72,6 @@ const InternalField: React.FC = (props) => {
   return React.createElement(component, props, props.children);
 };
 
-// 当字段被删除时，显示一个提示占位符
-const DeletedField = () => {
-  const { t } = useTranslation();
-  return <div style={{ color: '#ccc' }}>{t('The field has bee deleted')}</div>;
-};
-
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
@@ -134,7 +129,6 @@ export const AssignedField = (props: any) => {
         name: 'currentTime',
         title: t('Current time'),
       });
-    } else {
     }
     setOptions(compile(opt));
   }, []);
@@ -178,16 +172,15 @@ export const AssignedField = (props: any) => {
   const userChangeHandler = (val) => {
     setUserValue(val);
   };
-  return (
-    <Space>
-      <Select defaultValue={type} value={type} style={{ width: 150 }} onChange={typeChangeHandler}>
-        <Select.Option value={AssignedFieldValueType.ConstantValue}>{t('Constant value')}</Select.Option>
-        <Select.Option value={AssignedFieldValueType.DynamicValue}>{t('Dynamic value')}</Select.Option>
-      </Select>
 
-      {type === AssignedFieldValueType.ConstantValue ? (
-        <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
-      ) : (
+  const useFieldMemo = useMemo(() => {
+    if (!collectionField) {
+      return <DeletedField />;
+    }
+    if (type === AssignedFieldValueType.ConstantValue) {
+      return <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />;
+    } else {
+      return (
         <Select defaultValue={fieldType} value={fieldType} style={{ minWidth: 150 }} onChange={fieldTypeChangeHandler}>
           {options?.map((opt) => {
             return (
@@ -197,7 +190,19 @@ export const AssignedField = (props: any) => {
             );
           })}
         </Select>
-      )}
+      );
+    }
+  }, [collectionField, type, value, fieldType]);
+
+  return (
+    <Space>
+      <Select defaultValue={type} value={type} style={{ width: 150 }} onChange={typeChangeHandler}>
+        <Select.Option value={AssignedFieldValueType.ConstantValue}>{t('Constant value')}</Select.Option>
+        <Select.Option value={AssignedFieldValueType.DynamicValue}>{t('Dynamic value')}</Select.Option>
+      </Select>
+
+      {useFieldMemo}
+
       {fieldType === 'currentRecord' && (
         <Cascader
           fieldNames={{
