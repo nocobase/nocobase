@@ -7,19 +7,29 @@
 ### 认证器管理
 页面：系统设置 - 认证
 
+
+<img src="https://s2.loli.net/2023/05/15/NdriQZvBuE6hGRS.png" width="800px" />
+
 #### 内置认证器
 - 名称：basic
 - 认证类型：邮箱密码登录
 
+<img src="https://s2.loli.net/2023/05/15/HC4gtx9fQPrqvac.png" width="300px" />
+
+<img src="https://s2.loli.net/2023/05/15/fcLqypdhOxnksbg.png" width="300px" />
+
 #### 增加认证器
 Add new - 选择认证类型
+
+<img src="https://s2.loli.net/2023/05/15/CR7UTDt2WzbEfgs.png" width="300px" />
 
 #### 启用/禁用
 Actions - Edit - 勾选/取消Enabled
 
+<img src="https://s2.loli.net/2023/05/15/2utpSHly9fzCKX5.png" width="400px" />
+
 #### 配置认证器
-Actions - Configure
-认证类型无配置项时不显示。
+Actions - Edit
 
 ## 开发一个登录插件
 ### 接口
