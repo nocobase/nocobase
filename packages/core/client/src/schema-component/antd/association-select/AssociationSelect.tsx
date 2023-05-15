@@ -15,6 +15,7 @@ import {
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -102,6 +103,8 @@ AssociationSelect.Designer = function Designer() {
   const tk = useFilterByTk();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
+  const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssociationField = field.address.segments.includes('__form_grid');
@@ -495,36 +498,31 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {form &&
-        !form?.readPretty &&
-        ['o2m', 'm2m'].includes(collectionField.interface) &&
-        fieldSchema['x-component'] !== 'TableField' && (
-          <SchemaSettings.SwitchItem
-            key="multiple"
-            title={t('Allow multiple')}
-            checked={
-              fieldSchema['x-component-props']?.multiple === undefined
-                ? true
-                : fieldSchema['x-component-props'].multiple
-            }
-            onChange={(value) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              field.componentProps = field.componentProps || {};
+      {IsShowMultipleSwitch() ? (
+        <SchemaSettings.SwitchItem
+          key="multiple"
+          title={t('Allow multiple')}
+          checked={
+            fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple
+          }
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            field.componentProps = field.componentProps || {};
 
-              fieldSchema['x-component-props'].multiple = value;
-              field.componentProps.multiple = value;
+            fieldSchema['x-component-props'].multiple = value;
+            field.componentProps.multiple = value;
 
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              dn.emit('patch', {
-                schema,
-              });
-              refresh();
-            }}
-          />
-        )}
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
