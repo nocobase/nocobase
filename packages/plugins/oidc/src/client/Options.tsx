@@ -5,6 +5,7 @@ import { CopyOutlined } from '@ant-design/icons';
 import { observer } from '@formily/react';
 import { FormItem, Input } from '@nocobase/client';
 import { useOidcTranslation } from './locale';
+import { ArrayItems } from '@formily/antd';
 
 const schema = {
   type: 'object',
@@ -29,6 +30,71 @@ const schema = {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
+        },
+        scope: {
+          title: '{{t("scope")}}',
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            tooltip: '{{t("Default: openid profile email")}}',
+          },
+        },
+        fieldMap: {
+          title: '{{t("Field Map")}}',
+          type: 'array',
+          'x-decorator': 'FormItem',
+          'x-component': 'ArrayItems',
+          items: {
+            type: 'object',
+            'x-decorator': 'ArrayItems.Item',
+            properties: {
+              source: {
+                type: 'string',
+                title: '{{t("source")}}',
+                'x-decorator': 'Editable',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("source")}}',
+                },
+                'x-decorator-props': {
+                  style: {
+                    width: '45%',
+                  },
+                },
+              },
+              target: {
+                type: 'string',
+                title: '{{t("target")}}',
+                'x-decorator': 'Editable',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("target")}}',
+                },
+                'x-decorator-props': {
+                  style: {
+                    width: '45%',
+                  },
+                },
+                enum: [
+                  { label: 'Nickname', value: 'nickname' },
+                  { label: 'Email', value: 'email' },
+                  { label: 'Phone', value: 'phone' },
+                ],
+              },
+              remove: {
+                type: 'void',
+                'x-decorator': 'FormItem',
+                'x-component': 'ArrayItems.Remove',
+              },
+            },
+          },
+          properties: {
+            add: {
+              type: 'void',
+              title: 'Add',
+              'x-component': 'ArrayItems.Addition',
+            },
+          },
         },
         usage: {
           type: 'void',
@@ -61,5 +127,5 @@ const Usage = observer(() => {
 
 export const Options = () => {
   const { t } = useOidcTranslation();
-  return <SchemaComponent scope={{ t }} components={{ Usage }} schema={schema} />;
+  return <SchemaComponent scope={{ t }} components={{ Usage, ArrayItems }} schema={schema} />;
 };

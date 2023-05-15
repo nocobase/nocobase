@@ -16,8 +16,26 @@ export class OIDCAuth extends BaseAuth {
     return `https://${ctx.host}/api/oidc:redirect`;
   }
 
+  getOptions() {
+    return this.options?.oidc || {};
+  }
+
+  mapField(userInfo: { [source: string]: any }) {
+    const { fieldMap } = this.getOptions();
+    if (!fieldMap) {
+      return userInfo;
+    }
+    fieldMap.forEach((item: { source: string; target: string }) => {
+      const { source, target } = item;
+      if (userInfo[source]) {
+        userInfo[target] = userInfo[source];
+      }
+    });
+    return userInfo;
+  }
+
   async createOIDCClient() {
-    const { issuer, clientId, clientSecret } = this.options?.oidc || {};
+    const { issuer, clientId, clientSecret } = this.getOptions();
     const oidc = await Issuer.discover(issuer);
     return new oidc.Client({
       client_id: clientId,
@@ -40,9 +58,10 @@ export class OIDCAuth extends BaseAuth {
     const tokens = await client.callback(this.getRedirectUri(), {
       code: values.code,
     });
-    const userInfo = await client.userinfo(tokens.access_token);
-    const { nickname, name, sub, email } = userInfo;
-    const username = nickname || name || sub;
+    const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
+    const mappedUserInfo = this.mapField(userInfo);
+    const { nickname, sub, email, phone } = mappedUserInfo;
+    const username = nickname || sub;
     // Compatible processing
     // When email is provided, use email to find user
     // If found, associate the user with the current authenticator
@@ -64,6 +83,7 @@ export class OIDCAuth extends BaseAuth {
     return await this.authenticator.findOrCreateUser(sub, {
       nickname: username,
       email: email ?? null,
+      phone: phone ?? null,
     });
   }
 }

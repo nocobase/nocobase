@@ -4,4 +4,5 @@ export default {
   Delete: '删除',
   Edit: '编辑',
   Copied: '已复制',
+  'Field Map': '字段映射',
 };

@@ -83,3 +83,33 @@ describe('oidc', () => {
     expect(res.body.data.user.nickname).toBe('user1');
   });
 });
+
+it('field mapping', () => {
+  const auth = new OIDCAuth({
+    authenticator: null,
+    ctx: {
+      db: {
+        getCollection: () => ({}),
+      } as any,
+    } as any,
+    options: {
+      oidc: {
+        fieldMap: [
+          {
+            source: 'username',
+            target: 'nickname',
+          },
+        ],
+      },
+    },
+  });
+  const userInfo = auth.mapField({
+    sub: 1,
+    username: 'user1',
+  });
+  expect(userInfo).toEqual({
+    sub: 1,
+    username: 'user1',
+    nickname: 'user1',
+  });
+});
