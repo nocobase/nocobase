@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../block-provider';
 import { CollectionFieldProvider, useCollection, useCollectionField } from '../../collection-manager';
 import { useCompile, useComponent } from '../../schema-component';
+import { DeletedField } from './DeletedField';
 
 const InternalField: React.FC = (props) => {
   const field = useField<Field>();
@@ -65,7 +66,7 @@ const InternalField: React.FC = (props) => {
 const CollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
   return (
-    <CollectionFieldProvider name={fieldSchema.name}>
+    <CollectionFieldProvider name={fieldSchema.name} fallback={<DeletedField />}>
       <InternalField {...props} />
     </CollectionFieldProvider>
   );
@@ -85,7 +86,7 @@ export const BulkEditField = (props: any) => {
   const [type, setType] = useState<number>(BulkEditFormItemValueType.RemainsTheSame);
   const [value, setValue] = useState(null);
   const { getField } = useCollection();
-  const collectionField = getField(fieldSchema.name);
+  const collectionField = getField(fieldSchema.name) || {};
 
   useEffect(() => {
     field.value = { [type]: value };
