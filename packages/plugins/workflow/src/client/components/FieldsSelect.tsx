@@ -14,6 +14,7 @@ export const FieldsSelect = observer((props: any) => {
   return (
     <Select
       className="full-width"
+      dropdownMatchSelectWidth={false}
       {...others}
       options={fields.filter(filter).map((field) => ({
         label: compile(field.uiSchema?.title),

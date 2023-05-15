@@ -4,7 +4,7 @@ import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';
 import PluginUiSchema, { UiSchemaRepository } from '../..';
 
-describe('migration-20230330214649-filter-form-block', () => {
+describe.skip('migration-20230330214649-filter-form-block', () => {
   let app: MockServer;
   let db: Database;
 

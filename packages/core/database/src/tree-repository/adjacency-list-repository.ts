@@ -9,25 +9,36 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async find(options?: FindOptions & { addIndex?: boolean }): Promise<any> {
-    const parentNodes = await super.find(lodash.omit(options));
+  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    if (options.raw || !options.tree) {
+      return await super.find(options);
+    }
 
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+
+    if (options.fields && !options.fields.includes(primaryKey)) {
+      options.fields.push(primaryKey);
+    }
+
+    const parentNodes = await super.find(options);
     if (parentNodes.length === 0) {
       return [];
     }
 
-    const templateModel = parentNodes[0];
-    const collection = this.database.modelCollection.get(templateModel.constructor);
-    const primaryKey = collection.model.primaryKeyAttribute;
     const { treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
 
     const childrenKey = collection.treeChildrenField?.name ?? 'children';
 
-    const sql = this.querySQL(
-      parentNodes.map((node) => node.id),
-      collection,
-    );
+    const parentIds = parentNodes.map((node) => node[primaryKey]);
+
+    if (parentIds.length == 0) {
+      this.database.logger.warn('parentIds is empty');
+      return parentNodes;
+    }
+
+    const sql = this.querySQL(parentIds, collection);
 
     const childNodes = await this.database.sequelize.query(sql, {
       type: 'SELECT',
@@ -71,7 +82,10 @@ export class AdjacencyListRepository extends Repository {
       }
 
       return children.map((child) => {
-        child.setDataValue(childrenKey, buildTree(child.id));
+        const childrenValues = buildTree(child.id);
+        if (childrenValues.length > 0) {
+          child.setDataValue(childrenKey, childrenValues);
+        }
         return child;
       });
     }
@@ -79,7 +93,9 @@ export class AdjacencyListRepository extends Repository {
     for (const parent of parentNodes) {
       const parentId = parent[primaryKey];
       const children = buildTree(parentId);
-      parent.setDataValue(childrenKey, children);
+      if (children.length > 0) {
+        parent.setDataValue(childrenKey, children);
+      }
     }
 
     this.addIndex(parentNodes, childrenKey, options);
@@ -100,7 +116,7 @@ export class AdjacencyListRepository extends Repository {
 
       const children = node.getDataValue(childrenKey);
 
-      if (children.length === 0) {
+      if (children && children.length === 0) {
         node.setDataValue(childrenKey, undefined);
       }
 
@@ -117,7 +133,7 @@ export class AdjacencyListRepository extends Repository {
   }
 
   private querySQL(rootIds, collection) {
-    const { treeChildrenField, treeParentField } = collection;
+    const { treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
     const foreignKeyField = collection.model.rawAttributes[foreignKey].field;
 
