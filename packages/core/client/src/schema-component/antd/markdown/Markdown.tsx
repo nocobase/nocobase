@@ -1,7 +1,18 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import {
+  connect,
+  mapProps,
+  mapReadPretty,
+  ObjectField,
+  FormProvider,
+  Field,
+  useField,
+  useFieldSchema,
+} from '@formily/react';
 import { Input as AntdInput, Spin } from 'antd';
 import React from 'react';
+import { createForm } from '@formily/core';
+import { Editable } from '@formily/antd';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
 import { convertToText, useParseMarkdown } from './util';
@@ -9,7 +20,7 @@ import { convertToText, useParseMarkdown } from './util';
 import './style.less';
 
 export const Markdown: any = connect(
-  AntdInput.TextArea,
+  (props) => <InputMarkdown {...props} />,
   mapProps((props: any, field) => {
     return {
       autoSize: {
@@ -30,6 +41,34 @@ export const Markdown: any = connect(
     return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
   }),
 );
+
+const InputMarkdown = (props) => {
+  const fieldSchema = useFieldSchema();
+  const targetField = useField();
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
+  const form = createForm();
+  const FieldWithEditable = React.useMemo(() => {
+    return (
+      <div>
+        <FormProvider form={form}>
+          <ObjectField
+            name={fieldSchema.name}
+            reactions={(field) => {
+              const value = field.value?.markDowm || props?.value;
+              field.title = value;
+              targetField.value = value;
+            }}
+            component={[Editable.Popover]}
+          >
+            <Field component={[AntdInput.TextArea]} {...props} name="markDowm" />
+          </ObjectField>
+        </FormProvider>
+      </div>
+    );
+  }, []);
+
+  return isDisplayInTable ? FieldWithEditable : <AntdInput.TextArea {...props} />;
+};
 
 Markdown.Void = MarkdownVoid;
 

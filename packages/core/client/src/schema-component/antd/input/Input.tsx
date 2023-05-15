@@ -1,8 +1,19 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import {
+  connect,
+  mapProps,
+  mapReadPretty,
+  useFieldSchema,
+  ObjectField,
+  FormProvider,
+  Field,
+  useField,
+} from '@formily/react';
+import { Editable } from '@formily/antd';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/lib/input';
 import React from 'react';
+import { createForm } from '@formily/core';
 import { ReadPretty } from './ReadPretty';
 import { Json, JSONTextAreaProps } from './Json';
 
@@ -25,7 +36,7 @@ export const Input: ComposedInput = Object.assign(
   ),
   {
     TextArea: connect(
-      AntdInput.TextArea,
+      (props) => <InputTextArea {...props} />,
       mapProps((props, field) => {
         return {
           autoSize: {
@@ -42,4 +53,31 @@ export const Input: ComposedInput = Object.assign(
   },
 );
 
+const InputTextArea = (props) => {
+  const fieldSchema = useFieldSchema();
+  const targetField = useField();
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
+  const form = createForm();
+  const FieldWithEditable = React.useMemo(() => {
+    return (
+      <div>
+        <FormProvider form={form}>
+          <ObjectField
+            name={fieldSchema.name}
+            reactions={(field) => {
+              const value = field.value?.textArea || props?.value;
+              field.title = value;
+              targetField.value = value;
+            }}
+            component={[Editable.Popover]}
+          >
+            <Field component={[AntdInput.TextArea]} {...props} name="textArea" />
+          </ObjectField>
+        </FormProvider>
+      </div>
+    );
+  }, []);
+
+  return isDisplayInTable ? FieldWithEditable : <AntdInput.TextArea {...props} />;
+};
 export default Input;

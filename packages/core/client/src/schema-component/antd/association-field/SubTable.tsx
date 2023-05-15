@@ -15,7 +15,13 @@ export const SubTable: any = observer((props: any) => {
       <Table
         className={css`
           .ant-select-selector {
-            height: 100%;
+            min-height: 31px;
+          }
+          .ant-formily-item {
+            margin-bottom: 0px;
+          }
+          .ant-formily-editable {
+            vertical-align: sub;
           }
         `}
         size={'small'}
