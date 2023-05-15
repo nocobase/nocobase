@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 import { FormLayout } from '@formily/antd';
 import { css } from '@emotion/css';
+import { useAssociationNames } from '../../../block-provider/hooks';
 
 export const GridCardBlockContext = createContext<any>({});
 
@@ -56,8 +57,15 @@ const InternalGridCardBlockProvider = (props) => {
 };
 
 export const GridCardBlockProvider = (props) => {
+  const params = { ...props.params };
+  const { collection } = props;
+  const { appends } = useAssociationNames(collection);
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
+
   return (
-    <BlockProvider {...props}>
+    <BlockProvider {...props} params={params}>
       <InternalGridCardBlockProvider {...props} />
     </BlockProvider>
   );

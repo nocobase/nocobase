@@ -160,11 +160,8 @@ export const MaybeCollectionProvider = (props) => {
 };
 
 const BlockRequestProvider = (props) => {
-  const { params, appendsOnDemand } = props;
   const field = useField();
   const resource = useBlockResource();
-  const fieldSchema = useFieldSchema();
-  const { dn } = useDesignable();
   const [allowedActions, setAllowedActions] = useState({});
 
   const service = useResourceAction(
@@ -183,29 +180,10 @@ const BlockRequestProvider = (props) => {
     });
   }, [serviceAllowedActions]);
 
-  const patchAppends = (name, action) => {
-    // appends on demand
-    if (!appendsOnDemand) return;
-
-    const appends = new Set(params?.appends || []);
-    action === 'add' ? appends.add(name) : appends.delete(name);
-    field.decoratorProps.params = {
-      ...field.decoratorProps.params,
-      appends: [...appends.keys()],
-    };
-    _.set(fieldSchema['x-decorator-props'], 'params.appends', field.decoratorProps?.params?.appends);
-    dn.emit('patch', {
-      schema: {
-        'x-uid': fieldSchema['x-uid'],
-        'x-decorator-props': fieldSchema['x-decorator-props'],
-      },
-    });
-  };
-
   const __parent = useContext(BlockRequestContext);
   return (
     <BlockRequestContext.Provider
-      value={{ allowedActions, block: props.block, props, field, service, resource, patchAppends, __parent }}
+      value={{ allowedActions, block: props.block, props, field, service, resource, __parent }}
     >
       {props.children}
     </BlockRequestContext.Provider>

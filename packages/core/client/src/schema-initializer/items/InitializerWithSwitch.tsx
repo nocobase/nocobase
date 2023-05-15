@@ -8,8 +8,6 @@ import { useCollection } from '../../collection-manager';
 
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, insert, remove: passInRemove } = props;
-  const { patchAppends } = useBlockRequestContext();
-  const { getField } = useCollection();
   const { exists, remove } = useCurrentSchema(
     schema?.[type] || item?.schema?.[type],
     type,
@@ -21,12 +19,6 @@ export const InitializerWithSwitch = (props) => {
       checked={exists}
       title={item.title}
       onClick={() => {
-        if (item.schema.name) {
-          const collectionField = getField(item.schema.name);
-          if (['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField.type)) {
-            patchAppends(item.schema.name, exists ? 'remove' : 'add');
-          }
-        }
         if (exists) {
           return remove();
         }

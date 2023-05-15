@@ -974,10 +974,8 @@ export const createListBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize: 10,
-        appends: [],
       },
       runWhenParamsChanged: true,
-      appendsOnDemand: true,
       ...others,
     },
     'x-component': 'CardItem',
@@ -1062,10 +1060,8 @@ export const createGridCardBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize: 12,
-        appends: [],
       },
       runWhenParamsChanged: true,
-      appendsOnDemand: true,
       ...others,
     },
     'x-component': 'BlockItem',
