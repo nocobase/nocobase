@@ -31,7 +31,7 @@ export class DatabaseSnapshot {
     if (this.db.isSqliteMemory()) {
       return true;
     }
-    const snapshotFile = path.join(this.snapshotDir, `${model.tableName}.json`);
+    const snapshotFile = this.snapshotFilePath(model);
     if (!fs.existsSync(snapshotFile)) {
       return true;
     }
@@ -58,14 +58,14 @@ export class DatabaseSnapshot {
       mkdirp.sync(this.snapshotDir);
     }
 
-    const snapshotFile = path.join(this.snapshotDir, `${model.tableName}.json`);
+    const snapshotFile = this.snapshotFilePath(model);
     const snapshot = this.snapshotFromModel(model);
 
     fs.writeFileSync(snapshotFile, JSON.stringify(snapshot, null, 2), 'utf8');
   }
 
   remove(model: ModelStatic<Model>) {
-    const snapshotFile = path.join(this.snapshotDir, `${model.tableName}.json`);
+    const snapshotFile = this.snapshotFilePath(model);
     if (fs.existsSync(snapshotFile)) {
       fs.unlinkSync(snapshotFile);
     }
@@ -85,5 +85,9 @@ export class DatabaseSnapshot {
       indexes: model.options.indexes,
     };
     return snapshot;
+  }
+
+  private snapshotFilePath(model: ModelStatic<Model>) {
+    return path.join(this.snapshotDir, `${model.tableName}.json`);
   }
 }
