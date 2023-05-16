@@ -6,7 +6,7 @@ export default {
     const { collection, params = {} } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
-    const options = processor.getParsedValue(params);
+    const options = processor.getParsedValue(params, node);
     const result = await repo.destroy({
       ...options,
       context: {
