@@ -1,7 +1,7 @@
 import { useCollectionManager, useCompile } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
 import { NAMESPACE } from './locale';
-import { instructions, useAvailableUpstreams, useNodeContext } from './nodes';
+import { instructions, useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './nodes';
 import { triggers } from './triggers';
 
 export type VariableOption = {
@@ -13,17 +13,37 @@ export type VariableOption = {
 
 export type VariableOptions = VariableOption[] | null;
 
-const VariableTypes = [
+export const VariableTypes = [
+  {
+    title: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
+    value: '$scopes',
+    useOptions(current, types) {
+      const scopes = useUpstreamScopes(current);
+      const options: VariableOption[] = [];
+      scopes.forEach((node) => {
+        const instruction = instructions.get(node.type);
+        const subOptions = instruction.useScopeVariables?.(node, types);
+        if (subOptions) {
+          options.push({
+            key: node.id.toString(),
+            value: node.id.toString(),
+            label: node.title ?? `#${node.id}`,
+            children: subOptions,
+          });
+        }
+      });
+      return options;
+    },
+  },
   {
     title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
     value: '$jobsMapByNodeId',
-    options(types) {
-      const current = useNodeContext();
+    useOptions(current, types) {
       const upstreams = useAvailableUpstreams(current);
       const options: VariableOption[] = [];
       upstreams.forEach((node) => {
         const instruction = instructions.get(node.type);
-        const subOptions = instruction.getOptions?.(node.config, types);
+        const subOptions = instruction.useVariables?.(node, types);
         if (subOptions) {
           options.push({
             key: node.id.toString(),
@@ -39,7 +59,7 @@ const VariableTypes = [
   {
     title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
     value: '$context',
-    options(types) {
+    useOptions(current, types) {
       const { workflow } = useFlowContext();
       const trigger = triggers.get(workflow.type);
       return trigger?.getOptions?.(workflow.config, types) ?? null;
@@ -48,7 +68,7 @@ const VariableTypes = [
   {
     title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
     value: '$system',
-    options(types) {
+    useOptions(current, types) {
       return [
         ...(!types || types.includes('date')
           ? [
@@ -137,8 +157,9 @@ export function filterTypedFields(fields, types, depth = 1) {
 
 export function useWorkflowVariableOptions(types?) {
   const compile = useCompile();
+  const current = useNodeContext();
   const options = VariableTypes.map((item: any) => {
-    const opts = typeof item.options === 'function' ? item.options(types).filter(Boolean) : item.options;
+    const opts = typeof item.useOptions === 'function' ? item.useOptions(current, types).filter(Boolean) : null;
     return {
       label: compile(item.title),
       value: item.value,
@@ -214,8 +235,9 @@ function useNormalizedFields(collectionName) {
 export function useCollectionFieldOptions(options): VariableOption[] {
   const { fields, collection, types, depth = 1 } = options;
   const compile = useCompile();
-  const normalizedFields = fields ?? useNormalizedFields(collection);
-  const result: VariableOption[] = filterTypedFields(normalizedFields, types, depth)
+  const normalizedFields = useNormalizedFields(collection);
+  const computedFields = fields ?? normalizedFields;
+  const result: VariableOption[] = filterTypedFields(computedFields, types, depth)
     .filter((field) => !isAssociationField(field) || depth)
     .map((field) => {
       const label = compile(field.uiSchema?.title || field.name);

@@ -2,6 +2,7 @@ import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
+  GeneralSchemaItems,
   SchemaSettings,
   isPatternDisabled,
   useCollection,
@@ -40,122 +41,7 @@ const Designer = () => {
 
   return (
     <GeneralSchemaDesigner>
-      <SchemaSettings.ModalItem
-        key="edit-field-title"
-        title={t('Edit field title')}
-        schema={
-          {
-            type: 'object',
-            title: t('Edit field title'),
-            properties: {
-              title: {
-                title: t('Field title'),
-                default: field?.title,
-                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-                'x-component-props': {},
-              },
-            },
-          } as ISchema
-        }
-        onSubmit={({ title }) => {
-          if (title) {
-            field.title = title;
-            fieldSchema.title = title;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                title: fieldSchema.title,
-              },
-            });
-          }
-          dn.refresh();
-        }}
-      />
-      {!field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-description"
-          title={t('Edit description')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                description: {
-                  // title: t('Description'),
-                  default: field?.description,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ description }) => {
-            field.description = description;
-            fieldSchema.description = description;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                description: fieldSchema.description,
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-tooltip"
-          title={t('Edit tooltip')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                tooltip: {
-                  default: fieldSchema?.['x-decorator-props']?.tooltip,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ tooltip }) => {
-            field.decoratorProps.tooltip = tooltip;
-            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
-            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && (
-        <SchemaSettings.SwitchItem
-          key="required"
-          title={t('Required')}
-          checked={fieldSchema.required as boolean}
-          onChange={(required) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.required = required;
-            fieldSchema['required'] = required;
-            schema['required'] = required;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
+      <GeneralSchemaItems />
       {form && !form?.readPretty && !isPatternDisabled(fieldSchema) && (
         <SchemaSettings.SelectItem
           key="pattern"

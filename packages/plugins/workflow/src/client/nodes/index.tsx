@@ -2,10 +2,10 @@ import React, { useState, useContext } from 'react';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Button, message, Modal, Tag, Alert, Input } from 'antd';
+import { Button, message, Modal, Tag, Alert, Input, Dropdown } from 'antd';
 import { useTranslation } from 'react-i18next';
 
-import { Registry, parse } from '@nocobase/utils/client';
+import { Registry, parse, str2moment } from '@nocobase/utils/client';
 import {
   ActionContext,
   SchemaComponent,
@@ -17,13 +17,14 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 
 import calculation from './calculation';
 import condition from './condition';
 import parallel from './parallel';
+import loop from './loop';
 import delay from './delay';
 
 import manual from './manual';
@@ -32,8 +33,8 @@ import query from './query';
 import create from './create';
 import update from './update';
 import destroy from './destroy';
-import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
-import { lang, NAMESPACE } from '../locale';
+import { JobStatusOptionsMap } from '../constants';
+import { NAMESPACE, lang } from '../locale';
 import request from './request';
 import { VariableOptions } from '../variable';
 
@@ -48,16 +49,18 @@ export interface Instruction {
   components?: { [key: string]: any };
   render?(props): React.ReactNode;
   endding?: boolean;
-  getOptions?(config, types?): VariableOptions;
+  useVariables?(node, types?): VariableOptions;
+  useScopeVariables?(node, types?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 }
 
 export const instructions = new Registry<Instruction>();
 
+instructions.register('calculation', calculation);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
-instructions.register('calculation', calculation);
+instructions.register('loop', loop);
 instructions.register('delay', delay);
 
 instructions.register('manual', manual);
@@ -107,6 +110,21 @@ export function useAvailableUpstreams(node) {
   }
   for (let current = node.upstream; current; current = current.upstream) {
     stack.push(current);
+  }
+
+  return stack;
+}
+
+export function useUpstreamScopes(node) {
+  const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
+
+  for (let current = node; current; current = current.upstream) {
+    if (current.upstream && current.branchIndex != null) {
+      stack.push(current.upstream);
+    }
   }
 
   return stack;
@@ -212,18 +230,28 @@ export function RemoveButton() {
   );
 }
 
+function InnerJobButton({ job, ...props }) {
+  const { icon, color } = JobStatusOptionsMap[job.status];
+
+  return (
+    <Button {...props} shape="circle" className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
+      <Tag color={color}>{icon}</Tag>
+    </Button>
+  );
+}
+
 export function JobButton() {
-  const compile = useCompile();
-  const { execution } = useFlowContext();
-  const { id, type, title, job } = useNodeContext() ?? {};
+  const { execution, setViewJob } = useFlowContext();
+  const { jobs } = useNodeContext() ?? {};
   if (!execution) {
     return null;
   }
 
-  if (!job) {
+  if (!jobs.length) {
     return (
       <span
         className={cx(
+          nodeJobButtonClass,
           'workflow-node-job-button',
           css`
             border: 2px solid #d9d9d9;
@@ -235,87 +263,45 @@ export function JobButton() {
     );
   }
 
-  const instruction = instructions.get(type);
-  const { value, icon, color } = JobStatusOptionsMap[job.status];
+  function onOpenJob({ key }) {
+    const job = jobs.find((item) => item.id == key);
+    setViewJob(job);
+  }
 
-  return (
-    <SchemaComponent
-      schema={{
-        type: 'void',
-        properties: {
-          [`${job.id}-button`]: {
-            type: 'void',
-            'x-component': 'Action',
-            'x-component-props': {
-              title: <Tag color={color}>{icon}</Tag>,
-              shape: 'circle',
-              className: [
-                'workflow-node-job-button',
-                css`
-                  .ant-tag {
-                    padding: 0;
-                    width: 100%;
-                    line-height: 18px;
-                    margin-right: 0;
-                    border-radius: 50%;
+  return jobs.length > 1 ? (
+    <Dropdown
+      menu={{
+        items: jobs.map((job) => {
+          const { icon, color } = JobStatusOptionsMap[job.status];
+          return {
+            key: job.id,
+            label: (
+              <div
+                className={css`
+                  display: flex;
+                  gap: 0.5em;
+
+                  time {
+                    color: #999;
+                    font-size: 0.8em;
                   }
-                `,
-              ],
-            },
-            properties: {
-              [`${job.id}-modal`]: {
-                type: 'void',
-                'x-decorator': 'Form',
-                'x-decorator-props': {
-                  initialValue: job,
-                },
-                'x-component': 'Action.Modal',
-                title: (
-                  <div className={cx(nodeTitleClass)}>
-                    <Tag>{compile(instruction.title)}</Tag>
-                    <strong>{title}</strong>
-                    <span className="workflow-node-id">#{id}</span>
-                  </div>
-                ),
-                properties: {
-                  status: {
-                    type: 'number',
-                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Select',
-                    enum: JobStatusOptions,
-                    'x-read-pretty': true,
-                  },
-                  updatedAt: {
-                    type: 'string',
-                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'DatePicker',
-                    'x-component-props': {
-                      showTime: true,
-                    },
-                    'x-read-pretty': true,
-                  },
-                  result: {
-                    type: 'object',
-                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.JSON',
-                    'x-component-props': {
-                      className: css`
-                        padding: 1em;
-                        background-color: #eee;
-                      `,
-                    },
-                    'x-read-pretty': true,
-                  },
-                },
-              },
-            },
-          },
-        },
+                `}
+              >
+                <span className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
+                  <Tag color={color}>{icon}</Tag>
+                </span>
+                <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+              </div>
+            ),
+          };
+        }),
+        onClick: onOpenJob,
       }}
-    />
+    >
+      <InnerJobButton job={jobs[jobs.length - 1]} />
+    </Dropdown>
+  ) : (
+    <InnerJobButton job={jobs[0]} onClick={() => setViewJob(jobs[0])} />
   );
 }
 
@@ -353,7 +339,7 @@ export function NodeDefaultView(props) {
       return;
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
-    for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
+    for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
       if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
@@ -445,7 +431,6 @@ export function NodeDefaultView(props) {
                               min-width: 6em;
                             }
                           }
-
                           .ant-input-affix-wrapper {
                             &:not(.full-width) {
                               .ant-input {

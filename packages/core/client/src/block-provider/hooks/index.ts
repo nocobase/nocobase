@@ -1077,7 +1077,7 @@ export const useAssociationNames = (collection) => {
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (['FormV2', 'Details'].includes(schema['x-component'])) {
+    if (['FormV2', 'Details', 'List', 'GridCard'].includes(schema['x-component'])) {
       return schema;
     }
     return buf;

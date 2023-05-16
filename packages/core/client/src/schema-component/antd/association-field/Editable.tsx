@@ -9,6 +9,7 @@ import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 import { InternalFileManager } from './FileManager';
 import { useAssociationFieldContext } from './hooks';
+import {CreateRecordAction} from './components/CreateRecordAction'
 
 const EditableAssociationField = observer((props: any) => {
   const { multiple } = props;
@@ -44,7 +45,7 @@ const EditableAssociationField = observer((props: any) => {
     };
   };
   return (
-    <SchemaComponentOptions scope={{ useCreateActionProps }}>
+    <SchemaComponentOptions scope={{ useCreateActionProps }} components={{CreateRecordAction}}>
       {currentMode === 'Picker' && <InternalPicker {...props} />}
       {currentMode === 'Nester' && <InternalNester {...props} />}
       {currentMode === 'Select' && <AssociationSelect {...props} />}
