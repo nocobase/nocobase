@@ -1092,10 +1092,8 @@ export const useAssociationNames = (collection) => {
         s['x-component'] !== 'TableField'
       ) {
         buf.push(s.name);
-        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+        if (['Nester', 'SubTable'].includes(s['x-component-props'].mode)) {
           associationValues.push(s.name);
-        }
-        if (['Nester','SubTable'].includes(s['x-component-props'].mode )) {
           return getAssociationAppends(s, buf);
         }
         return buf;
