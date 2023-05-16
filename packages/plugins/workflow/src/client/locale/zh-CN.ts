@@ -9,6 +9,7 @@ export default {
   Version: '版本',
   'Copy to new version': '复制到新版本',
   Duplicate: '复制',
+  'Delete a main version will cause all other revisions to be deleted too.': '删除主版本将导致其他版本一并被删除。',
   Loading: '加载中',
   'Load failed': '加载失败',
   Trigger: '触发器',
@@ -115,6 +116,15 @@ export default {
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
   'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
+  Loop: '循环',
+  'Loop target': '循环对象',
+  'Loop index': '当前索引',
+  'Loop length': '循环长度',
+  'Loop will cause performance issue based on the quantity, please use with caution.':
+    '循环次数过高可能引起性能问题，请谨慎使用。',
+  'Scope variables': '局域变量',
+  'Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.':
+    '单一数字值将被视为次数，单一字符串值将被视为字符数组，其他非数组值将被转换为值数组。',
   Delay: '延时',
   Duration: '时长',
   'End Status': '到时状态',

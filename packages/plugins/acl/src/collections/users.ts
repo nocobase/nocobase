@@ -17,7 +17,7 @@ export default extend({
       uiSchema: {
         type: 'array',
         title: '{{t("Roles")}}',
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           multiple: true,
           fieldNames: {

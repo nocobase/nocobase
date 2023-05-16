@@ -1,7 +1,7 @@
 import { useFieldSchema } from '@formily/react';
 import { isPlainObj } from '@formily/shared';
 import get from 'lodash/get';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { SchemaComponentOptions } from '../schema-component';
 import { SchemaInitializer } from './SchemaInitializer';
 import * as globals from './buttons';
@@ -22,20 +22,32 @@ export const useSchemaInitializer = (name: string, props = {}) => {
     return component && React.createElement(component, props);
   };
 
-  if (!name) {
-    return { exists: false, render: (props?: any) => render(null) };
-  }
-
-  const initializer = get(initializers, name || fieldSchema?.['x-initializer']);
+  const initializerPropsRef = useRef({});
+  const initializer = name ? get(initializers, name || fieldSchema?.['x-initializer']) : null;
   const initializerProps = { ...props, ...fieldSchema?.['x-initializer-props'] };
+  initializerPropsRef.current = initializerProps;
+
+  const InitializerComponent = useMemo(() => {
+    let C = React.Fragment;
+    if (!initializer) {
+      return C;
+    } else if (isPlainObj(initializer)) {
+      C = (initializer as any).component || SchemaInitializer.Button;
+      return (p) => <C {...initializer} {...initializerPropsRef.current} {...p} />;
+    } else {
+      C = initializer;
+      return (p) => <C {...initializerPropsRef.current} {...p} />;
+    }
+  }, [initializer]);
 
   if (!initializer) {
-    return { exists: false, render: (props?: any) => render(null) };
+    return { exists: false, InitializerComponent, render: (props?: any) => render(null) };
   }
 
   if (isPlainObj(initializer)) {
     return {
       exists: true,
+      InitializerComponent,
       render: (props?: any) => {
         const component = (initializer as any).component || SchemaInitializer.Button;
         return render(component, { ...initializer, ...initializerProps, ...props });
@@ -45,6 +57,7 @@ export const useSchemaInitializer = (name: string, props = {}) => {
 
   return {
     exists: true,
+    InitializerComponent,
     render: (props?: any) => render(initializer, { ...initializerProps, ...props }),
   };
 };
