@@ -47,7 +47,6 @@ const InternalRemoteSelect = connect(
       (collectionField?.target &&
         fieldNames?.label &&
         getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
-
     const operator = useMemo(() => {
       if (targetField?.interface) {
         return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
@@ -146,11 +145,13 @@ const InternalRemoteSelect = connect(
     const onSearch = async (search) => {
       run({
         filter: mergeFilter([
-          {
-            [fieldNames.label]: {
-              [operator]: search,
-            },
-          },
+          search
+            ? {
+                [fieldNames.label]: {
+                  [operator]: search,
+                },
+              }
+            : {},
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
@@ -175,6 +176,7 @@ const InternalRemoteSelect = connect(
     );
 
     const options = useMemo(() => {
+      console.log(data);
       if (!data?.data?.length) {
         return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
       }
@@ -188,7 +190,7 @@ const InternalRemoteSelect = connect(
       run();
       firstRun.current = true;
     };
-
+    console.log(options);
     return (
       <Select
         dropdownMatchSelectWidth={false}
