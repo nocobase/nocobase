@@ -181,6 +181,7 @@ describe('workflow > instructions > aggregate', () => {
           collection: 'comments',
           associated: true,
           association: {
+            name: 'comments',
             associatedKey: '{{$context.data.id}}',
             associatedCollection: 'posts',
           },
@@ -197,6 +198,7 @@ describe('workflow > instructions > aggregate', () => {
           collection: 'comments',
           associated: true,
           association: {
+            name: 'comments',
             associatedKey: '{{$context.data.id}}',
             associatedCollection: 'posts',
           },
@@ -245,6 +247,7 @@ describe('workflow > instructions > aggregate', () => {
           collection: 'posts',
           associated: true,
           association: {
+            name: 'posts',
             associatedKey: `{{$jobsMapByNodeId.${n1.id}.id}}`,
             associatedCollection: 'tags',
           },
@@ -262,6 +265,7 @@ describe('workflow > instructions > aggregate', () => {
           collection: 'posts',
           associated: true,
           association: {
+            name: 'posts',
             associatedKey: `{{$jobsMapByNodeId.${n1.id}.id}}`,
             associatedCollection: 'tags',
           },
