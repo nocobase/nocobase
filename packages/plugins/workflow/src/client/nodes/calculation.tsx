@@ -171,7 +171,7 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  getOptions(config, types) {
+  useVariables(current, types) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))

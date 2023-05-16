@@ -5,24 +5,19 @@ import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { AssociationSelect } from './AssociationSelect';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
 import { InternalFileManager } from './FileManager';
+import { useAssociationFieldContext } from './hooks';
+import {CreateRecordAction} from './components/CreateRecordAction'
 
-export const Editable = observer((props: any) => {
-  useEffect(() => {
-    props.mode && setCurrentMode(props.mode);
-  }, [props.mode]);
+const EditableAssociationField = observer((props: any) => {
   const { multiple } = props;
   const field: any = useField();
   const form = useForm();
   const fieldSchema = useFieldSchema();
-  const { getField } = useCollection();
-  const { getCollection } = useCollectionManager();
-  const collectionField = getField(field.props.name);
-  const isFileCollection = getCollection(collectionField?.target)?.template === 'file';
-  const [currentMode, setCurrentMode] = useState(props.mode || (isFileCollection ? 'FileManager' : 'Select'));
+  const { options: collectionField, currentMode } = useAssociationFieldContext();
+
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
     const actionField: any = useField();
@@ -50,14 +45,20 @@ export const Editable = observer((props: any) => {
     };
   };
   return (
+    <SchemaComponentOptions scope={{ useCreateActionProps }} components={{CreateRecordAction}}>
+      {currentMode === 'Picker' && <InternalPicker {...props} />}
+      {currentMode === 'Nester' && <InternalNester {...props} />}
+      {currentMode === 'Select' && <AssociationSelect {...props} />}
+      {currentMode === 'SubTable' && <InternalSubTable {...props} />}
+      {currentMode === 'FileManager' && <InternalFileManager {...props} />}
+    </SchemaComponentOptions>
+  );
+});
+
+export const Editable = observer((props) => {
+  return (
     <AssociationFieldProvider>
-      <SchemaComponentOptions scope={{ useCreateActionProps }}>
-        {currentMode === 'Picker' && <InternalPicker {...props} />}
-        {currentMode === 'Nester' && <InternalNester {...props} />}
-        {currentMode === 'Select' && <AssociationSelect {...props} />}
-        {currentMode === 'SubTable' && <InternalSubTable {...props} />}
-        {currentMode === 'FileManager' && <InternalFileManager {...props} />}
-      </SchemaComponentOptions>
+      <EditableAssociationField {...props} />
     </AssociationFieldProvider>
   );
 });

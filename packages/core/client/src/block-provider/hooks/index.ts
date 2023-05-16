@@ -1074,6 +1074,7 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useAssociationNames = (collection) => {
   const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
+  const { getField } = useCollection();
   const collectionFields = getCollectionFields(collection);
   const associationFields = new Set();
   for (const collectionField of collectionFields) {
@@ -1090,7 +1091,7 @@ export const useAssociationNames = (collection) => {
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (['FormV2', 'Details'].includes(schema['x-component'])) {
+    if (['FormV2', 'Details', 'List', 'GridCard'].includes(schema['x-component'])) {
       return schema;
     }
     return buf;
@@ -1098,11 +1099,9 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (
-        collectionfield &&
-        ['createdBy', 'updatedBy', 'o2m', 'obo', 'oho', 'm2o', 'm2m'].includes(collectionfield.interface)
-      ) {
+      const collectionfield =
+        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
+      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)) {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }

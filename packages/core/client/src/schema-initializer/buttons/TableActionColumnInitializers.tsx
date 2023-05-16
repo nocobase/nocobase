@@ -191,7 +191,7 @@ export const TableActionColumnInitializers = (props: any) => {
               title: '{{t("Update record")}}',
               component: 'CustomizeActionInitializer',
               schema: {
-                title: '{{ t("Update record") }}',
+                title: '{{t("Update record")}}',
                 'x-component': 'Action.Link',
                 'x-action': 'customize:update',
                 'x-decorator': 'ACLActionProvider',

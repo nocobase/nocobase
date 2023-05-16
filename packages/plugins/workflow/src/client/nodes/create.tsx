@@ -40,7 +40,7 @@ export default {
     CollectionFieldset,
     FieldsSelect,
   },
-  getOptions(config, options) {
+  useVariables({ config }, options) {
     return useCollectionFieldOptions({
       collection: config.collection,
       ...options,

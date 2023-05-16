@@ -17,7 +17,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import { nodeCardClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { useFlowContext } from '../FlowContext';
 import collection from './collection';
 import schedule from './schedule/';
@@ -86,7 +86,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: 'workflow-node-job-button',
+          className: cx(nodeJobButtonClass, 'workflow-node-job-button'),
           type: 'primary',
         },
         properties: {

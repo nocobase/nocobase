@@ -6,7 +6,7 @@ export default {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
 
     const { repository, model } = (<typeof FlowNodeModel>node.constructor).database.getCollection(collection);
-    const options = processor.getParsedValue(params);
+    const options = processor.getParsedValue(params, node);
     const result = await repository.create({
       ...options,
       context: {
