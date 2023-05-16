@@ -12,6 +12,10 @@ export const RecordProvider: React.FC<{ record: any; parent?: any }> = (props) =
   return <RecordContext.Provider value={value}>{children}</RecordContext.Provider>;
 };
 
+export const RecordSimpleProvider: React.FC<{ value: Record<string, any>; children: React.ReactNode }> = (props) => {
+  return <RecordContext.Provider {...props} />;
+};
+
 export const RecordIndexProvider: React.FC<{ index: any }> = (props) => {
   const { index, children } = props;
   return <RecordIndexContext.Provider value={index}>{children}</RecordIndexContext.Provider>;

@@ -24,6 +24,8 @@ export interface Instruction {
 
   // for start node in main flow (or branch) to resume when manual sub branch triggered
   resume?: Runner;
+
+  getScope?: (node: FlowNodeModel, job: any, processor: Processor) => any;
 }
 
 type InstructionConstructor<T> = { new (p: Plugin): T };
@@ -35,6 +37,7 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'calculation',
     'condition',
     'parallel',
+    'loop',
     'delay',
     'manual',
     'query',

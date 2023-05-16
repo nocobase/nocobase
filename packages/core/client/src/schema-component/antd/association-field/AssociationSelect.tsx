@@ -1,15 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Input } from 'antd';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { CollectionProvider } from '../../../collection-manager';
+import { Input } from 'antd';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFieldTitle } from '../../hooks';
-import { ActionContext } from '../action';
-import { useAssociationFieldContext } from './hooks';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
-import useServiceOptions, { useInsertSchema } from './hooks';
-import schema from './schema';
+import useServiceOptions from './hooks';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -20,13 +15,8 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { fieldNames, objectValue = true } = props;
   const field: any = useField();
   const fieldSchema = useFieldSchema();
-  const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const service = useServiceOptions(props);
-  const { options: collectionField } = useAssociationFieldContext();
-  const isFilterForm = fieldSchema['x-designer'] === 'FormItem.FilterFormDesigner';
   const isAllowAddNew = fieldSchema['x-add-new'];
-  const insertAddNewer = useInsertSchema('AddNewer');
-  const { t } = useTranslation();
   const normalizeValues = useCallback(
     (obj) => {
       if (!objectValue && typeof obj === 'object') {
@@ -36,7 +26,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
     },
     [objectValue, fieldNames?.value],
   );
-
   const value = useMemo(() => {
     if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
       return;
@@ -60,31 +49,18 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           value={value}
           service={service}
         ></RemoteSelect>
-        {isAllowAddNew && !field.readPretty && !isFilterForm && (
-          <Button
-            type={'default'}
-            onClick={() => {
-              insertAddNewer(schema.AddNewer);
-              setVisibleAddNewer(true);
-            }}
-          >
-            {t('Add new')}
-          </Button>
-        )}
-      </Input.Group>
 
-      <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-        <CollectionProvider name={collectionField.target}>
+        {isAllowAddNew && (
           <RecursionField
             onlyRenderProperties
             basePath={field.address}
             schema={fieldSchema}
             filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.AddNewer';
+              return s['x-component'] === 'Action';
             }}
           />
-        </CollectionProvider>
-      </ActionContext.Provider>
+        )}
+      </Input.Group>
     </div>
   );
 });

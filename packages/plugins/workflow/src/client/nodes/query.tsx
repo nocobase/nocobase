@@ -14,15 +14,12 @@ export default {
   group: 'collection',
   fieldset: {
     collection,
-    // multiple: {
-    //   type: 'boolean',
-    //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
+    multiple: {
+      type: 'boolean',
+      title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
     params: {
       type: 'object',
       properties: {
@@ -45,7 +42,7 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  getOptions(config, types) {
+  useVariables({ config }, types) {
     return useCollectionFieldOptions({
       collection: config.collection,
       types,

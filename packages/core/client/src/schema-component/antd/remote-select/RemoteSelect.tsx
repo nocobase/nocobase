@@ -1,8 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useFieldSchema, useField } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
-import moment from 'moment';
 import { uniqBy } from 'lodash';
+import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -191,6 +191,7 @@ const InternalRemoteSelect = connect(
 
     return (
       <Select
+        dropdownMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}

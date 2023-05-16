@@ -65,7 +65,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   );
 };
 
-const useRequestProps = (props: any) => {
+const getRequestParams = (props: any) => {
   const { request, initialValue } = props;
   if (request) {
     return request;
@@ -77,14 +77,14 @@ const useRequestProps = (props: any) => {
   };
 };
 
-const useDef = (opts: any = {}, props: FormProps = {}) => {
-  return useRequest(useRequestProps(props), opts);
+const useDefaultValues = (opts: any = {}, props: FormProps = {}) => {
+  return useRequest(getRequestParams(props), opts);
 };
 
 const FormBlockContext = createContext<any>(null);
 
 export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
-  const { request, effects, initialValue, useValues = useDef, ...others } = props;
+  const { request, effects, initialValue, useValues = useDefaultValues, ...others } = props;
   const fieldSchema = useFieldSchema();
   const field = useField();
   const form = useMemo(() => createForm({ effects }), []);
