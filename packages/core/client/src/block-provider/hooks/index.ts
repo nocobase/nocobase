@@ -1073,20 +1073,7 @@ export const useAssociationFilterBlockProps = () => {
 };
 
 export const useAssociationNames = (collection) => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const collectionFields = getCollectionFields(collection);
-  const associationFields = new Set();
-  for (const collectionField of collectionFields) {
-    if (collectionField.target) {
-      associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
-      for (const field of fields) {
-        if (field.target) {
-          associationFields.add(`${collectionField.name}.${field.name}`);
-        }
-      }
-    }
-  }
+  const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -1099,8 +1086,12 @@ export const useAssociationNames = (collection) => {
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)&& s['x-component'] !== 'TableField') {
-        buf.push(s.name)
+      if (
+        collectionfield &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
+        s['x-component'] !== 'TableField'
+      ) {
+        buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
@@ -1152,6 +1143,6 @@ export const useAssociationNames = (collection) => {
   };
   const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
-  console.log(appends,associations)
+  console.log(appends, associations);
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
