@@ -19,6 +19,18 @@ export const BlockInitializers = {
           component: 'TableBlockInitializer',
         },
         {
+          key: 'List',
+          type: 'item',
+          title: '{{t("List")}}',
+          component: 'ListBlockInitializer',
+        },
+        {
+          key: 'GridCard',
+          type: 'item',
+          title: '{{t("Grid Card")}}',
+          component: 'GridCardBlockInitializer',
+        },
+        {
           key: 'form',
           type: 'item',
           title: '{{t("Form")}}',
