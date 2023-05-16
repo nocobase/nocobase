@@ -1,0 +1,9 @@
+{
+  "name": "@nocobase/plugin-charts-v2",
+  "version": "0.9.3-alpha.1",
+  "main": "lib/server/index.js",
+  "devDependencies": {
+    "@nocobase/server": "0.9.3-alpha.1",
+    "@nocobase/test": "0.9.3-alpha.1"
+  }
+}
