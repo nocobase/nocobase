@@ -36,6 +36,13 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
     };
   });
 
+  const { associatedKey = '', name: fieldName } = value ?? {};
+  let p = [];
+  const matched = associatedKey.match(/^{{(.*)}}$/);
+  if (matched) {
+    p = [...matched[1].trim().split('.').slice(0, -1), fieldName];
+  }
+
   const onSelectChange = useCallback(
     (path, option) => {
       if (!path?.length) {
@@ -57,7 +64,6 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
       setValuesIn('collection', target);
 
       onChange({
-        path,
         name,
         // primary key data path
         associatedKey: `{{${path.slice(0, -1).join('.')}.${primaryKeyField.name}}}`,
@@ -68,7 +74,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
     [onChange],
   );
 
-  return <Cascader {...props} value={value?.path} options={options} onChange={onSelectChange} />;
+  return <Cascader {...props} value={p} options={options} onChange={onSelectChange} />;
 }
 
 // based on collection:
