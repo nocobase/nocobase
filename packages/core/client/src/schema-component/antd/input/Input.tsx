@@ -19,7 +19,7 @@ import { ReadPretty } from './ReadPretty';
 import { Json, JSONTextAreaProps } from './Json';
 
 type ComposedInput = React.FC<InputProps> & {
-  TextArea: React.FC<TextAreaProps>;
+  TextArea: React.FC<any>;
   URL: React.FC<InputProps>;
   JSON: React.FC<JSONTextAreaProps>;
 };
@@ -56,7 +56,7 @@ export const Input: ComposedInput = Object.assign(
 
 const InputTextArea = (props) => {
   const fieldSchema = useFieldSchema();
-  const targetField = useField();
+  const targetField:any = useField();
   const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const form = createForm();
   const FieldWithEditable = React.useMemo(() => {

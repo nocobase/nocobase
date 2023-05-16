@@ -34,7 +34,7 @@ const InputRichText = (props) => {
   ];
   const { value, onChange, disabled } = props;
   const fieldSchema = useFieldSchema();
-  const targetField = useField();
+  const targetField:any = useField();
   const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const form = createForm();
   const FieldWithEditable = React.useMemo(() => {

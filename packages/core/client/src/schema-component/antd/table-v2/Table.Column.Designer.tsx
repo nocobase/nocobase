@@ -26,7 +26,7 @@ const useLabelFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { getInterface, getCollection } = useCollectionManager();
-  const field = useField();
+  const field:any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
   const { dn } = useDesignable();
