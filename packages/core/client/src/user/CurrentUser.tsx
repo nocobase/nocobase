@@ -1,9 +1,9 @@
 import { css } from '@emotion/css';
-import { Dropdown, Menu } from 'antd';
+import { Dropdown, Menu, Modal } from 'antd';
 import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
-import { useAPIClient, useCurrentUserContext } from '..';
+import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { ChangePassword } from './ChangePassword';
 import { EditProfile } from './EditProfile';
@@ -28,6 +28,8 @@ export const CurrentUser = () => {
   const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
+  const { allowAll, snippets } = useACLRoleContext();
+  const allowReload = allowAll || snippets?.includes('app');
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
@@ -45,6 +47,26 @@ export const CurrentUser = () => {
               <SwitchRole />
               <LanguageSettings />
               <ThemeSettings />
+              {allowReload && (
+                <Menu.Item
+                  key="reload"
+                  onClick={async () => {
+                    Modal.warn({
+                      title: t('Application reloading'),
+                      content: t('The application is reloading, please do not close the page.'),
+                      okButtonProps: {
+                        style: {
+                          display: 'none',
+                        },
+                      },
+                    });
+                    await api.resource('app').reload();
+                    window.location.reload();
+                  }}
+                >
+                  {t('Reload Application')}
+                </Menu.Item>
+              )}
               <Menu.Divider />
               <Menu.Item
                 key="signout"

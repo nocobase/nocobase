@@ -94,6 +94,10 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', '*', 'public');
+    this.app.acl.registerSnippet({
+      name: 'app',
+      actions: ['app:reload'],
+    });
     const dialect = this.app.db.sequelize.getDialect();
     const locales = require('./locale').default;
     this.app.resource({
@@ -159,6 +163,10 @@ export class ClientPlugin extends Plugin {
               return false;
             })
             .map((item) => item.name);
+          await next();
+        },
+        async reload(ctx, next) {
+          await ctx.app.reload();
           await next();
         },
       },
