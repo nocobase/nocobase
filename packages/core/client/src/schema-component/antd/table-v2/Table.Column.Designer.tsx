@@ -166,8 +166,6 @@ export const TableColumnDesigner = (props) => {
             field.query(`.*.${fieldSchema.name}`).take((f) => {
               f.componentProps.fieldNames = fieldNames;
             });
-            field.componentProps.fieldNames=fieldNames
-            console.log(field.props.name)
             dn.emit('patch', {
               schema: {
                 'x-uid': fieldSchema['x-uid'],
