@@ -14,7 +14,7 @@ import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
 } from '../../../block-provider/TableSelectorProvider';
-import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
+import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
 import { useFieldNames, useInsertSchema } from './hooks';
@@ -65,17 +65,10 @@ export const InternalPicker = observer((props: any) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
   const field: any = useField();
   const fieldNames = useFieldNames(props);
-  const [visibleAddNewer, setVisibleAddNewer] = useState(false);
   const [visibleSelector, setVisibleSelector] = useState(false);
   const fieldSchema = useFieldSchema();
-  const insertAddNewer = useInsertSchema('AddNewer');
   const insertSelector = useInsertSchema('Selector');
-  const { t } = useTranslation();
   const { options: collectionField } = useAssociationFieldContext();
-   const addbuttonClick = () => {
-    insertAddNewer(schema.AddNewer);
-    setVisibleAddNewer(true);
-  };
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
   const isAllowAddNew = fieldSchema['x-add-new'];
@@ -168,29 +161,16 @@ export const InternalPicker = observer((props: any) => {
           />
         </div>
         {isAllowAddNew && (
-          <Button
-            style={{ width: 'auto' }}
-            type={'default'}
-            onClick={() => {
-              addbuttonClick();
-            }}
-          >
-            {t('Add new')}
-          </Button>
-        )}
-      </Input.Group>
-      <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
-        <CollectionProvider name={collectionField.target}>
           <RecursionField
             onlyRenderProperties
             basePath={field.address}
             schema={fieldSchema}
             filterProperties={(s) => {
-              return s['x-component'] === 'AssociationField.AddNewer';
+              return s['x-component'] === 'Action';
             }}
           />
-        </CollectionProvider>
-      </ActionContext.Provider>
+        )}
+      </Input.Group>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
         <RecordPickerProvider {...pickerProps}>
           <CollectionProvider name={collectionField.target}>

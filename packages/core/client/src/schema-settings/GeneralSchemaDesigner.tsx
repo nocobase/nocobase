@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { useField, useFieldSchema } from '@formily/react';
 import { Space } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DragHandler, useCompile, useDesignable, useGridContext, useGridRowContext } from '../schema-component';
 import { gridRowColWrap } from '../schema-initializer/utils';
@@ -43,14 +43,24 @@ export const GeneralSchemaDesigner = (props: any) => {
     field,
     fieldSchema,
   };
-  if (!designable) {
-    return null;
-  }
+
   const rowCtx = useGridRowContext();
   const ctx = useGridContext();
   const templateName = ['FormItem', 'ReadPrettyFormItem'].includes(template?.componentName)
     ? `${template?.name} ${t('(Fields only)')}`
     : template?.name;
+  const initializerProps = useMemo(() => {
+    return {
+      insertPosition: 'afterEnd',
+      wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
+      component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 14 }} />,
+    };
+  }, [rowCtx?.cols?.length]);
+
+  if (!designable) {
+    return null;
+  }
+
   return (
     <div className={'general-schema-designer'}>
       {title && (
@@ -73,11 +83,11 @@ export const GeneralSchemaDesigner = (props: any) => {
             </DragHandler>
           )}
           {!disableInitializer &&
-            ctx?.renderSchemaInitializer?.({
-              insertPosition: 'afterEnd',
-              wrap: rowCtx?.cols?.length > 1 ? undefined : gridRowColWrap,
-              component: <PlusOutlined style={{ cursor: 'pointer', fontSize: 14 }} />,
-            })}
+            (ctx?.InitializerComponent ? (
+              <ctx.InitializerComponent {...initializerProps} />
+            ) : (
+              ctx?.renderSchemaInitializer?.(initializerProps)
+            ))}
           <SchemaSettings title={<MenuOutlined style={{ cursor: 'pointer', fontSize: 12 }} />} {...schemaSettingsProps}>
             {props.children}
           </SchemaSettings>

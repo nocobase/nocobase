@@ -421,7 +421,7 @@ export default {
   "Skip required validation": "必須のバリデーションをスキップ",
   "Form values": "フォームの値",
   "Fields values": "フィールドの値",
-  'The field has bee deleted': 'フィールドが削除されました',
+  'The field has been deleted': 'フィールドが削除されました',
   "When submitting the following fields, the saved values are": "次のフィールドを送信すると、保存された値は",
   "After successful submission": "送信が成功した後",
   "Then": "その後",
