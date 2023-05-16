@@ -17,23 +17,23 @@ import { TextAreaProps } from 'antd/lib/input';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
 
-export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
+export const Json = React.forwardRef<JSONTextAreaProps>(
   ({ value, onChange, space = 2, ...props }: JSONTextAreaProps, ref: Ref<any>) => {
     const fieldSchema = useFieldSchema();
     const targetField: any = useField();
     const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
     const form = createForm();
-    const field = useField<Field>();
+    const field: any = useField();
     const JSONWithEditable = React.useMemo(() => {
       return (
         <div>
           <FormProvider form={form}>
             <ObjectField
               name={fieldSchema.name}
-              reactions={(field) => {
-                const value = field.value?.json || props?.value;
-                field.title = value;
-                targetField.value = value;
+              reactions={(field: any) => {
+                const fieldValue = field.value?.json || value;
+                field.title = fieldValue;
+                targetField.value = fieldValue;
               }}
               component={[
                 Editable.Popover,

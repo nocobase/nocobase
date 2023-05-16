@@ -16,12 +16,12 @@ import { InputProps } from 'antd/lib/input';
 import React from 'react';
 import { createForm } from '@formily/core';
 import { ReadPretty } from './ReadPretty';
-import { Json, JSONTextAreaProps } from './Json';
+import { Json } from './Json';
 
 type ComposedInput = React.FC<InputProps> & {
   TextArea: React.FC<any>;
   URL: React.FC<InputProps>;
-  JSON: React.FC<JSONTextAreaProps>;
+  JSON: React.FC<any>;
 };
 
 export const Input: ComposedInput = Object.assign(
