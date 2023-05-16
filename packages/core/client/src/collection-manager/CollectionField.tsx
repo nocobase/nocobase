@@ -56,7 +56,7 @@ const InternalField: React.FC = (props: Props) => {
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
     }
-    if (fieldSchema['x-read-pretty'] === true) {
+    if (fieldSchema['x-read-pretty'] === true||uiSchema['x-read-pretty']===true) {
       field.readPretty = true;
     }
     setRequired();
