@@ -1095,7 +1095,7 @@ export const useAssociationNames = (collection) => {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
-        if (s['x-component-props'].mode === 'Nester') {
+        if (['Nester','SubTable'].includes(s['x-component-props'].mode )) {
           return getAssociationAppends(s, buf);
         }
         return buf;
@@ -1143,11 +1143,6 @@ export const useAssociationNames = (collection) => {
   };
   const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
-<<<<<<< HEAD
-  console.log(data, associations, appends);
-  console.log(formSchema);
-=======
   console.log(appends, associations);
->>>>>>> fix/sub-table-appends
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
