@@ -70,7 +70,9 @@ const InternalGridCard = (props) => {
           new Schema({
             type: 'object',
             properties: {
-              [key]: fieldSchema.properties['item'],
+              [key]: {
+                ...fieldSchema.properties['item'],
+              },
             },
           }),
         );

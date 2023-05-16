@@ -5,6 +5,10 @@ import { css, cx } from '@emotion/css';
 import { useInterfaceContext } from './InterfaceProvider';
 import { DrawerProps, ModalProps } from 'antd';
 
+const commonCSSVariables = css`
+  --nb-spacing: 14px;
+`;
+const commonCSSOverride = css``;
 const commonDesignerCSS = css`
   --nb-designer-top: 2px;
   --nb-designer-right: 2px;
@@ -75,6 +79,8 @@ const MApplication: React.FC = (props) => {
           className={cx(
             'nb-mobile-application',
             commonDesignerCSS,
+            commonCSSVariables,
+            commonCSSOverride,
             css`
               display: flex;
               flex-direction: column;

@@ -13,10 +13,10 @@ export const MBlockInitializers = {
       title: '{{t("Data blocks")}}',
       children: [
         {
-          key: 'DetailsList',
+          key: 'GridCard',
           type: 'item',
-          title: '{{t("Details List")}}',
-          component: 'DetailsListBlockInitializer',
+          title: '{{t("Grid Card")}}',
+          component: 'GridCardBlockInitializer',
         },
         {
           key: 'table',

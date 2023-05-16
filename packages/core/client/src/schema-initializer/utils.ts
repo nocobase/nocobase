@@ -1065,6 +1065,9 @@ export const createGridCardBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'BlockItem',
+    'x-component-props': {
+      useProps: '{{ useGridCardBlockItemProps }}',
+    },
     'x-designer': 'GridCard.Designer',
     properties: {
       actionBar: {

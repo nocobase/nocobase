@@ -23,9 +23,9 @@ export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
 
   return (
     <InterfaceProvider>
-    <HashRouter>
-      <RouteSwitch routes={routes}></RouteSwitch>
-    </HashRouter>
+      <HashRouter>
+        <RouteSwitch routes={routes}></RouteSwitch>
+      </HashRouter>
     </InterfaceProvider>
   );
 };
