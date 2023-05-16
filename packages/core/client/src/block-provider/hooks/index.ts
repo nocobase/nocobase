@@ -1073,21 +1073,7 @@ export const useAssociationFilterBlockProps = () => {
 };
 
 export const useAssociationNames = (collection) => {
-  const { getCollectionFields, getCollectionJoinField } = useCollectionManager();
-  const { getField } = useCollection();
-  const collectionFields = getCollectionFields(collection);
-  const associationFields = new Set();
-  for (const collectionField of collectionFields) {
-    if (collectionField.target) {
-      associationFields.add(collectionField.name);
-      const fields = getCollectionFields(collectionField.target);
-      for (const field of fields) {
-        if (field.target) {
-          associationFields.add(`${collectionField.name}.${field.name}`);
-        }
-      }
-    }
-  }
+  const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -1099,19 +1085,17 @@ export const useAssociationNames = (collection) => {
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
-      const collectionfield =
-        getField(s.name) || (s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']));
-      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)) {
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      if (
+        collectionfield &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
+        s['x-component'] !== 'TableField'
+      ) {
+        buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
-
-        buf.push(s.name);
-        if (
-          s['x-component-props'].mode === 'Nester' ||
-          s['x-component'] === 'TableField' ||
-          s['x-component-props'].mode === 'SubTable'
-        ) {
+        if (s['x-component-props'].mode === 'Nester') {
           return getAssociationAppends(s, buf);
         }
         return buf;
@@ -1120,7 +1104,9 @@ export const useAssociationNames = (collection) => {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
-          return !s['x-component']?.includes('Action.') && getAssociationAppends(s, buf);
+          return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
+            ? getAssociationAppends(s, buf)
+            : buf;
         }
       }
     }, arr);
@@ -1134,8 +1120,12 @@ export const useAssociationNames = (collection) => {
         if (Array.isArray(list[i])) {
           `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
         } else {
-          const str = prefix.replaceAll(`${list[i]}`, '').replace('..', '.').trim();
-          !list.includes(str) && flattenedList.push(`${str}${list[i]}`);
+          const str = prefix.replaceAll(`.${list[i]}`, '').trim();
+          if (!str) {
+            !list.includes(str) && flattenedList.push(`${list[i]}`);
+          } else {
+            !list.includes(str) ? flattenedList.push(`${str}.${list[i]}`) : flattenedList.push(str);
+          }
         }
       }
     }
@@ -1151,10 +1141,13 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-  const data = getAssociationAppends(formSchema);
-  const associations = data.filter((g) => g.length);
+  const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
+<<<<<<< HEAD
   console.log(data, associations, appends);
   console.log(formSchema);
+=======
+  console.log(appends, associations);
+>>>>>>> fix/sub-table-appends
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };

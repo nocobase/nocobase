@@ -46,7 +46,7 @@ export const DetailsBlockProvider = (props) => {
     params['appends'] = appends;
   }
   return (
-    <BlockProvider {...props} params={params}>
+    <BlockProvider {...props} params={params} runWhenParamsChanged>
       <InternalDetailsBlockProvider {...props} params={params} />
     </BlockProvider>
   );
