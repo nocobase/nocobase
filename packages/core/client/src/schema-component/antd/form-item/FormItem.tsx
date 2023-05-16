@@ -357,7 +357,7 @@ FormItem.Designer = function Designer() {
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
                           component:
-                            collectionField?.target && collectionField.interface !== 'chinaRegion'
+                            collectionField?.target && collectionField?.interface !== 'chinaRegion'
                               ? 'AssociationSelect'
                               : undefined,
                           service: {
@@ -572,7 +572,7 @@ FormItem.Designer = function Designer() {
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
             if (mode === 'Nester') {
-              const initValue = ['o2m', 'm2m'].includes(collectionField.interface) ? [] : {};
+              const initValue = ['o2m', 'm2m'].includes(collectionField?.interface) ? [] : {};
               field.value = field.value || initValue;
             }
             dn.emit('patch', {
