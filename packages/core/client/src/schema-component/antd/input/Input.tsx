@@ -12,7 +12,7 @@ import {
 import { css } from '@emotion/css';
 import { Editable } from '@formily/antd';
 import { Input as AntdInput } from 'antd';
-import { InputProps, TextAreaProps } from 'antd/lib/input';
+import { InputProps } from 'antd/lib/input';
 import React from 'react';
 import { createForm } from '@formily/core';
 import { ReadPretty } from './ReadPretty';
@@ -50,13 +50,13 @@ export const Input: ComposedInput = Object.assign(
       mapReadPretty(ReadPretty.TextArea),
     ),
     URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
-    JSON: connect(Json, mapReadPretty(ReadPretty.JSON)),
+    JSON: connect((props) => <Json {...props} />, mapReadPretty(ReadPretty.JSON)),
   },
 );
 
-const InputTextArea = (props) => {
+const InputTextArea = React.forwardRef((props: any) => {
   const fieldSchema = useFieldSchema();
-  const targetField:any = useField();
+  const targetField: any = useField();
   const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const form = createForm();
   const FieldWithEditable = React.useMemo(() => {
@@ -70,15 +70,18 @@ const InputTextArea = (props) => {
               field.title = value;
               targetField.value = value;
             }}
-            component={[Editable.Popover,{
-              overlayClassName: css`
-                .ant-popover-title {
-                  display: none;
-                }
-              `,
-            }]}
+            component={[
+              Editable.Popover,
+              {
+                overlayClassName: css`
+                  .ant-popover-title {
+                    display: none;
+                  }
+                `,
+              },
+            ]}
           >
-            <Field component={[AntdInput.TextArea]} {...props} name="textArea" />
+            <Field component={[AntdInput.TextArea, { ...props }]} name="textArea" />
           </ObjectField>
         </FormProvider>
       </div>
@@ -86,5 +89,5 @@ const InputTextArea = (props) => {
   }, []);
 
   return isDisplayInTable ? FieldWithEditable : <AntdInput.TextArea {...props} />;
-};
+});
 export default Input;

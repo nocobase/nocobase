@@ -45,7 +45,7 @@ export const Markdown: any = connect(
 
 const InputMarkdown = (props) => {
   const fieldSchema = useFieldSchema();
-  const targetField:any = useField();
+  const targetField: any = useField();
   const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const form = createForm();
   const FieldWithEditable = React.useMemo(() => {
@@ -59,15 +59,18 @@ const InputMarkdown = (props) => {
               field.title = value;
               targetField.value = value;
             }}
-            component={[Editable.Popover,{
-              overlayClassName: css`
-                .ant-popover-title {
-                  display: none;
-                }
-              `,
-            },]}
+            component={[
+              Editable.Popover,
+              {
+                overlayClassName: css`
+                  .ant-popover-title {
+                    display: none;
+                  }
+                `,
+              },
+            ]}
           >
-            <Field component={[AntdInput.TextArea]} {...props} name="markDowm" />
+            <Field component={[AntdInput.TextArea, { ...props }]} name="markDowm" />
           </ObjectField>
         </FormProvider>
       </div>
