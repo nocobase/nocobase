@@ -58,6 +58,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
 
       onChange({
         path,
+        name,
         // primary key data path
         associatedKey: `{{${path.slice(0, -1).join('.')}.${primaryKeyField.name}}}`,
         // data associated collection name

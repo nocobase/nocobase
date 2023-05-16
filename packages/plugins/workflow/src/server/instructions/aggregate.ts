@@ -20,7 +20,7 @@ export default {
     const { database } = <typeof FlowNodeModel>node.constructor;
     const repo = associated
       ? database.getRepository<HasManyRepository | BelongsToManyRepository>(
-          `${association?.associatedCollection}.${collection}`,
+          `${association?.associatedCollection}.${association.name}`,
           processor.getParsedValue(association?.associatedKey),
         )
       : database.getRepository(collection);
