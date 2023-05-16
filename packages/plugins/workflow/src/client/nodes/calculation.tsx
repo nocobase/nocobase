@@ -25,7 +25,7 @@ function useDynamicExpressionCollectionFieldMatcher(field): boolean {
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions([useDynamicExpressionCollectionFieldMatcher]);
+  const scope = useWorkflowVariableOptions({ types: [useDynamicExpressionCollectionFieldMatcher] });
 
   return (
     <FormLayout layout="vertical">
@@ -50,7 +50,7 @@ const DynamicConfig = ({ value, onChange }) => {
 };
 
 function useWorkflowVariableEntityOptions() {
-  return useWorkflowVariableOptions([{ type: 'reference', options: { collection: '*', entity: true } }]);
+  return useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: '*', entity: true } }] });
 }
 
 export default {
@@ -171,7 +171,8 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  useVariables(current, types) {
+  useVariables(current, options) {
+    const { types } = options ?? {};
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))

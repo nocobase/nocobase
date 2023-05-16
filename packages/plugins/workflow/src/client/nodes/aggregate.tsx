@@ -64,7 +64,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
         associatedCollection: collectionName,
       });
     },
-    [onChange, setValuesIn],
+    [onChange],
   );
 
   return <Cascader {...props} value={value?.path} options={options} onChange={onSelectChange} />;
@@ -286,7 +286,7 @@ export default {
     ValueBlock,
     AssociatedConfig,
   },
-  getOptions(config, types) {
+  useVariables(current, { types }) {
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))

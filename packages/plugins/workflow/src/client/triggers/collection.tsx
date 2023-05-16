@@ -134,7 +134,7 @@ export default {
   components: {
     FieldsSelect,
   },
-  getOptions(config, options) {
+  useVariables(config, options) {
     const { t } = useWorkflowTranslation();
     const rootFields = [
       {

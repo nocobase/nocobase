@@ -22,7 +22,7 @@ export const nodesOptions = {
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
       const instruction = instructions.get(node.type);
-      const subOptions = instruction.useVariables?.(node.config, options);
+      const subOptions = instruction.useVariables?.(node, options);
       if (subOptions) {
         result.push({
           key: node.id.toString(),
@@ -42,80 +42,49 @@ export const triggerOptions = {
   useOptions(options) {
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
-    return trigger?.getOptions?.(workflow.config, options) ?? null;
+    return trigger?.useVariables?.(workflow.config, options) ?? null;
   },
 };
 
-const VariableTypes = [
-  {
-    title: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$scopes',
-    useOptions(current, types) {
-      const scopes = useUpstreamScopes(current);
-      const options: VariableOption[] = [];
-      scopes.forEach((node) => {
-        const instruction = instructions.get(node.type);
-        const subOptions = instruction.useScopeVariables?.(node, types);
-        if (subOptions) {
-          options.push({
-            key: node.id.toString(),
-            value: node.id.toString(),
-            label: node.title ?? `#${node.id}`,
-            children: subOptions,
-          });
-        }
-      });
-      return options;
-    },
+export const scopeOptions = {
+  label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$scopes',
+  useOptions(current, types) {
+    const scopes = useUpstreamScopes(current);
+    const options: VariableOption[] = [];
+    scopes.forEach((node) => {
+      const instruction = instructions.get(node.type);
+      const subOptions = instruction.useScopeVariables?.(node, types);
+      if (subOptions) {
+        options.push({
+          key: node.id.toString(),
+          value: node.id.toString(),
+          label: node.title ?? `#${node.id}`,
+          children: subOptions,
+        });
+      }
+    });
+    return options;
   },
-  {
-    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-    value: '$jobsMapByNodeId',
-    useOptions(current, types) {
-      const upstreams = useAvailableUpstreams(current);
-      const options: VariableOption[] = [];
-      upstreams.forEach((node) => {
-        const instruction = instructions.get(node.type);
-        const subOptions = instruction.useVariables?.(node, types);
-        if (subOptions) {
-          options.push({
-            key: node.id.toString(),
-            value: node.id.toString(),
-            label: node.title ?? `#${node.id}`,
-            children: subOptions,
-          });
-        }
-      });
-      return options;
-    },
+};
+
+export const systemOptions = {
+  label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$system',
+  useOptions(current, { types }) {
+    return [
+      ...(!types || types.includes('date')
+        ? [
+            {
+              key: 'now',
+              value: 'now',
+              label: `{{t("System time")}}`,
+            },
+          ]
+        : []),
+    ];
   },
-  {
-    title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$context',
-    useOptions(current, types) {
-      const { workflow } = useFlowContext();
-      const trigger = triggers.get(workflow.type);
-      return trigger?.getOptions?.(workflow.config, types) ?? null;
-    },
-  },
-  {
-    title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$system',
-    useOptions(current, types) {
-      return [
-        ...(!types || types.includes('date')
-          ? [
-              {
-                key: 'now',
-                value: 'now',
-                label: `{{t("System time")}}`,
-              },
-            ]
-          : []),
-      ];
-    },
-  },
-];
+};
 
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
@@ -188,20 +157,21 @@ export function filterTypedFields(fields, types, depth = 1) {
   });
 }
 
-export function useWorkflowVariableOptions(types?) {
+export function useWorkflowVariableOptions(options = {}) {
   const compile = useCompile();
   const current = useNodeContext();
-  const options = VariableTypes.map((item: any) => {
-    const opts = typeof item.useOptions === 'function' ? item.useOptions(current, types).filter(Boolean) : null;
+  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
+    const opts = typeof item.useOptions === 'function' ? item.useOptions(current, options).filter(Boolean) : null;
     return {
-      label: compile(item.title),
+      label: compile(item.label),
       value: item.value,
       key: item.value,
       children: compile(opts),
       disabled: opts && !opts.length,
     };
   });
-  return options;
+
+  return result;
 }
 
 function useNormalizedFields(collectionName) {
