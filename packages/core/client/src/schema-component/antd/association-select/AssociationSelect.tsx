@@ -14,6 +14,7 @@ import {
   useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
+import { GeneralSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
@@ -23,7 +24,6 @@ import { defaultFieldNames } from '../select';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { ReadPretty } from './ReadPretty';
 import useServiceOptions from './useServiceOptions';
-import { GeneralSchemaItems } from '../../../schema-items';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -112,7 +112,7 @@ AssociationSelect.Designer = function Designer() {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -310,7 +310,7 @@ AssociationSelect.Designer = function Designer() {
                     },
                     name: 'default',
                     title: t('Default value'),
-                    default: fieldSchema.default || collectionField.defaultValue,
+                    default: fieldSchema.default || collectionField?.defaultValue,
                     'x-read-pretty': false,
                     'x-disabled': false,
                   },
@@ -340,7 +340,7 @@ AssociationSelect.Designer = function Designer() {
           value={fieldSchema['x-component']}
           onChange={(type) => {
             const schema: ISchema = {
-              name: collectionField.name,
+              name: collectionField?.name,
               type: 'void',
               required: fieldSchema['required'],
               description: fieldSchema['description'],
@@ -362,7 +362,7 @@ AssociationSelect.Designer = function Designer() {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
-              targetCollection: getCollection(collectionField.target),
+              targetCollection: getCollection(collectionField?.target),
             });
 
             if (type === 'CollectionField') {
@@ -637,7 +637,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -812,11 +812,11 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
               title: t('Set default value'),
               properties: {
                 default: {
-                  ...collectionField.uiSchema,
+                  ...collectionField?.uiSchema,
                   name: 'default',
                   title: t('Default value'),
                   'x-decorator': 'FormItem',
-                  default: fieldSchema.default || collectionField.defaultValue,
+                  default: fieldSchema.default || collectionField?.defaultValue,
                 },
               },
             } as ISchema
