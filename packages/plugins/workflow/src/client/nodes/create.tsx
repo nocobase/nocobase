@@ -41,11 +41,13 @@ export default {
     FieldsSelect,
   },
   useVariables({ config }, options) {
-    return useCollectionFieldOptions({
+    const result = useCollectionFieldOptions({
       collection: config?.collection,
       ...options,
       depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
     });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
