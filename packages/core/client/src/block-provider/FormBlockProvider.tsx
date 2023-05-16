@@ -74,7 +74,6 @@ export const FormBlockProvider = (props) => {
   const isEmptyRecord = useIsEmptyRecord();
   const { appends, updateAssociationValues } = useAssociationNames(collection);
   if (!Object.keys(params).includes('appends')) {
-    console.log(appends)
     params['appends'] = appends;
   }
   let detailFlag = false;
