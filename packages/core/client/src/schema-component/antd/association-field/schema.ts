@@ -121,7 +121,9 @@ export default {
     type: 'void',
     'x-component': 'AssociationField.SubTable',
     'x-initializer': 'TableColumnInitializers',
-    properties: {
+    'x-initializer-props': {
+      action: false,
     },
+    properties: {},
   },
 };

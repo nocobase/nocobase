@@ -11,7 +11,7 @@ import { useCompile } from '../../schema-component';
 
 // 表格列配置
 export const TableColumnInitializers = (props: any) => {
-  const { items = [] } = props;
+  const { items = [], action = true } = props;
   const { t } = useTranslation();
   const associatedFields = useAssociatedTableColumnInitializerFields();
   const inheritFields = useInheritsTableColumnInitializerFields();
@@ -50,16 +50,19 @@ export const TableColumnInitializers = (props: any) => {
       },
     );
   }
-  fieldItems.push(
-    {
-      type: 'divider',
-    },
-    {
-      type: 'item',
-      title: t('Action column'),
-      component: 'TableActionColumnInitializer',
-    },
-  );
+  if (action) {
+    fieldItems.push(
+      {
+        type: 'divider',
+      },
+      {
+        type: 'item',
+        title: t('Action column'),
+        component: 'TableActionColumnInitializer',
+      },
+    );
+  }
+
   return (
     <SchemaInitializer.Button
       insertPosition={'beforeEnd'}
