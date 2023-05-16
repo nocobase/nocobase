@@ -3,7 +3,6 @@ import { css } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
@@ -85,11 +84,48 @@ export const CreateRecordAction = observer((props: any) => {
   const [visible, setVisible] = useState(false);
   const collection = useCollection();
   const fieldSchema = useFieldSchema();
+  const field: any = useField();
+  const [currentCollection, setCurrentCollection] = useState(collection.name);
+  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+  const values = useRecord();
+  const ctx = useActionContext();
+  useEffect(() => {
+    field.linkageProperty = {};
+    linkageRules
+      .filter((k) => !k.disabled)
+      .map((v) => {
+        return v.actions?.map((h) => {
+          linkageAction(h.operator, field, v.condition, values);
+        });
+      });
+  }, [linkageRules, values]);
+  return (
+    <div className={actionDesignerCss}>
+      <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
+        <CreateAction
+          {...props}
+          onClick={(name) => {
+            setVisible(true);
+            setCurrentCollection(name);
+          }}
+        />
+        <CollectionProvider name={currentCollection}>
+          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+        </CollectionProvider>
+      </ActionContext.Provider>
+    </div>
+  );
+});
+
+export const CreateAction = observer((props: any) => {
+  const { onClick } = props;
+  const collection = useCollection();
+  const fieldSchema = useFieldSchema();
   const enableChildren = fieldSchema['x-enable-children'] || [];
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   const field: any = useField();
-  const { t } = useTranslation();
   const componentType = field.componentProps.type || 'primary';
+  console.log(componentType)
   const { getChildrenCollections } = useCollectionManager();
   const totalChildCollections = getChildrenCollections(collection.name);
   const inheritsCollections = enableChildren
@@ -109,10 +145,8 @@ export const CreateRecordAction = observer((props: any) => {
     .filter((v) => {
       return v && actionAclCheck(`${v.name}:create`);
     });
-  const [currentCollection, setCurrentCollection] = useState(collection.name);
   const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
   const values = useRecord();
-  const ctx = useActionContext();
   const compile = useCompile();
   const { designable } = useDesignable();
   const icon = props.icon || <PlusOutlined />;
@@ -123,8 +157,7 @@ export const CreateRecordAction = observer((props: any) => {
           <Menu.Item
             key={option.name}
             onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(option.name);
+              onClick?.(option.name);
             }}
           >
             {compile(option.title)}
@@ -145,56 +178,49 @@ export const CreateRecordAction = observer((props: any) => {
   }, [linkageRules, values]);
   return (
     <div className={actionDesignerCss}>
-      <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
-        {inheritsCollections?.length > 0 ? (
-          allowAddToCurrent === undefined || allowAddToCurrent ? (
-            <Dropdown.Button
-              type={componentType}
-              icon={<DownOutlined />}
-              buttonsRender={([leftButton, rightButton]) => [
-                leftButton,
-                React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
-              ]}
-              overlay={menu}
-              onClick={(info) => {
-                setVisible(true);
-                setCurrentCollection(collection.name);
-              }}
-            >
-              {icon}
-              {props.children}
-            </Dropdown.Button>
-          ) : (
-            <Dropdown overlay={menu}>
-              {
-                <Button icon={icon} type={'primary'}>
-                  {props.children} <DownOutlined />
-                </Button>
-              }
-            </Dropdown>
-          )
-        ) : (
-          <Button
+      {inheritsCollections?.length > 0 ? (
+        allowAddToCurrent === undefined || allowAddToCurrent ? (
+          <Dropdown.Button
             type={componentType}
-            disabled={field.disabled}
-            danger={componentType === 'danger'}
-            icon={icon}
+            icon={<DownOutlined />}
+            buttonsRender={([leftButton, rightButton]) => [
+              leftButton,
+              React.cloneElement(rightButton as React.ReactElement<any, string>, { loading: false }),
+            ]}
+            overlay={menu}
             onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(collection.name);
-            }}
-            style={{
-              display: !designable && field?.data?.hidden && 'none',
-              opacity: designable && field?.data?.hidden && 0.1,
+              onClick?.(collection.name);
             }}
           >
+            {icon}
             {props.children}
-          </Button>
-        )}
-        <CollectionProvider name={currentCollection}>
-          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-        </CollectionProvider>
-      </ActionContext.Provider>
+          </Dropdown.Button>
+        ) : (
+          <Dropdown overlay={menu}>
+            {
+              <Button icon={icon} type={componentType}>
+                {props.children} <DownOutlined />
+              </Button>
+            }
+          </Dropdown>
+        )
+      ) : (
+        <Button
+          type={componentType}
+          disabled={field.disabled}
+          danger={componentType === 'danger'}
+          icon={icon}
+          onClick={(info) => {
+            onClick?.(collection.name);
+          }}
+          style={{
+            display: !designable && field?.data?.hidden && 'none',
+            opacity: designable && field?.data?.hidden && 0.1,
+          }}
+        >
+          {props.children}
+        </Button>
+      )}
     </div>
   );
 });

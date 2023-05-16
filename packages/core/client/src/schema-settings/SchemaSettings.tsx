@@ -1111,13 +1111,13 @@ SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(prop
         fieldSchema['x-enable-children'] = enableChildren;
         fieldSchema['x-allow-add-to-current'] = v.allowAddToCurrent;
         fieldSchema['x-component-props'] = {
-          openMode: 'drawer',
+          ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
         };
         schema['x-enable-children'] = enableChildren;
         schema['x-allow-add-to-current'] = v.allowAddToCurrent;
         schema['x-component-props'] = {
-          openMode: 'drawer',
+          ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
         };
         dn.emit('patch', {
