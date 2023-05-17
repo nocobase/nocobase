@@ -12,7 +12,7 @@ export interface HeaderProps extends NavBarProps {
 }
 const InternalHeader = (props: HeaderProps) => {
   const field = useField();
-  const { title = '{{ t("Untitled") }}', showBack } = { ...props, ...field?.componentProps };
+  const { title = '{{ t("Untitled") }}', showBack = false } = { ...props, ...field?.componentProps };
   const Designer = useDesigner();
   const compile = useCompile();
   const history = useHistory();
