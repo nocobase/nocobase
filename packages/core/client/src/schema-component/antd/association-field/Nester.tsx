@@ -25,7 +25,7 @@ const ToOneNester = (props) => {
 
 const toArr = (value,isReadpretty) => {
   if (!value) {
-    return [];
+    return isReadpretty?[]:[{}];
   }
   if (Array.isArray(value)) {
     return value.length > 0 ? value : isReadpretty?[]:[{}];
