@@ -9,6 +9,7 @@ export default defineConfig({
     setupFiles: './scripts/setupVitest.ts',
     css: true,
     threads: false,
+    maxThreads: 1,
     alias: [
       { find: /^@nocobase\/app-(.*)/, replacement: 'packages/$1/src' },
       { find: /^@nocobase\/plugin-sample-(.*)/, replacement: 'packages/samples/$1/src' },

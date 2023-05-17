@@ -1,5 +1,5 @@
-import path from 'path';
 import { requireModule } from '@nocobase/utils';
+import path from 'path';
 
 import Plugin from '..';
 import WorkflowModel from '../models/Workflow';
