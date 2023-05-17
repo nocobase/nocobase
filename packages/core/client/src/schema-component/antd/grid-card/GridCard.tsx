@@ -5,7 +5,7 @@ import { List as AntdList, PaginationProps, Col } from 'antd';
 import { useGridCardActionBarProps } from './hooks';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
-import { useDesigner } from '../../hooks';
+import { useDesigner, useProps } from '../../hooks';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardBlockContext, useGridCardItemProps, GridCardBlockProvider } from './GridCard.Decorator';
 import { GridCardDesigner } from './GridCard.Designer';
@@ -55,7 +55,9 @@ const designerCss = css`
 `;
 
 const InternalGridCard = (props) => {
-  const { service, columnCount = defaultColumnCount } = useGridCardBlockContext();
+  const { columnCount: columnCountProp } = useProps(props);
+  const { service, _columnCount = defaultColumnCount } = useGridCardBlockContext();
+  const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
   const meta = service?.data?.meta;
   const fieldSchema = useFieldSchema();

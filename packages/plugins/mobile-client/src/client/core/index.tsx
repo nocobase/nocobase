@@ -10,6 +10,7 @@ import {
   MPage,
   MHeader,
   useGridCardBlockItemProps,
+  useGridCardBlockProps,
 } from './schema';
 
 export const MobileCore: React.FC = (props) => {
@@ -31,6 +32,7 @@ export const MobileCore: React.FC = (props) => {
         }}
         scope={{
           useGridCardBlockItemProps,
+          useGridCardBlockProps,
         }}
       >
         {props.children}

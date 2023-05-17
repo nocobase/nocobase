@@ -51,14 +51,7 @@ export const ActionBar = observer((props: any) => {
       {...others}
       className={cx(others.className, 'nb-action-bar')}
     >
-      <div
-        className={css`
-          .ant-space:last-child {
-            margin-left: 8px;
-          }
-        `}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
         <DndContext>
           <Space {...spaceProps}>
             {fieldSchema.mapProperties((schema, key) => {

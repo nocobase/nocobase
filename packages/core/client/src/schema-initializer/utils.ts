@@ -1085,7 +1085,7 @@ export const createGridCardBlockSchema = (options) => {
         type: 'array',
         'x-component': 'GridCard',
         'x-component-props': {
-          props: '{{ useGridCardBlockProps }}',
+          useProps: '{{ useGridCardBlockProps }}',
         },
         properties: {
           item: {
