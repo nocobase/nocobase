@@ -29,7 +29,7 @@ const InternalPage: React.FC = (props) => {
       <Designer {...fieldSchema?.['x-designer-props']}></Designer>
       <div
         style={{
-          marginBottom: tabsSchema ? null : 'var(--nb-spacing)',
+          paddingBottom: tabsSchema ? null : 'var(--nb-spacing)',
         }}
         className={cx(
           'nb-mobile-page-header',
