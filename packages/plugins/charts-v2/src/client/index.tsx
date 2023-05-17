@@ -1,6 +1,6 @@
 import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { ChartBlockInitializer as ChartV2BlockInitializer } from './ChartBlockInitializer';
+import { ChartRendererInitializer, ChartRenderer, ChartBlockDesigner } from './renderer';
 
 const Chart: React.FC = (props) => {
   const initializers = useContext(SchemaInitializerContext);
@@ -11,11 +11,11 @@ const Chart: React.FC = (props) => {
       key: 'chart-v2',
       type: 'item',
       title: 'ChartV2',
-      component: 'ChartV2BlockInitializer',
+      component: 'ChartRendererInitializer',
     });
   }
   return (
-    <SchemaComponentOptions components={{ ChartV2BlockInitializer }}>
+    <SchemaComponentOptions components={{ ChartRendererInitializer, ChartRenderer, ChartBlockDesigner }}>
       <SchemaInitializerProvider initializers={initializers}>{props.children}</SchemaInitializerProvider>
     </SchemaComponentOptions>
   );
