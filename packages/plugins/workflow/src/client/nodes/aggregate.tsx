@@ -28,7 +28,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { getCollection } = useCollectionManager();
   const current = useNodeContext();
   const options = [nodesOptions, triggerOptions].map((item) => {
-    const children = item.useOptions(current, { types: [matchToManyField] })?.filter(Boolean);
+    const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
     return {
       label: compile(item.label),
       value: item.value,
