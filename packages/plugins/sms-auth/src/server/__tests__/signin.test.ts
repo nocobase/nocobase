@@ -66,6 +66,14 @@ describe('signin', () => {
     });
     expect(res.statusCode).toBe(401);
 
+    await db.getCollection('verifications').repository.update({
+      filter: {
+        id: verification.id,
+      },
+      values: {
+        status: 0,
+      },
+    });
     const repo = db.getRepository('authenticators');
     await repo.update({
       filter: {

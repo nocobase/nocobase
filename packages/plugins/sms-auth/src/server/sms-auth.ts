@@ -40,6 +40,7 @@ export class SMSAuth extends BaseAuth {
         }
         // New data
         const { autoSignup } = this.authenticator.options?.public || {};
+        console.log(autoSignup);
         const authenticator = this.authenticator as AuthModel;
         if (autoSignup) {
           user = await authenticator.findOrCreateUser(phone, {
