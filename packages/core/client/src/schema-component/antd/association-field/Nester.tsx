@@ -64,7 +64,12 @@ const ToManyNester = observer((props) => {
           type={'dashed'}
           block
           onClick={() => {
-            field.value = field.value || [];
+            const v = field.value || [];
+            if (values.length > v.length) {
+              field.value = values;
+            } else {
+              field.value = v;
+            }
             field.value.push({});
           }}
         >
