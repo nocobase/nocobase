@@ -411,7 +411,7 @@ export default {
       value: { rejectOnFalse: false },
     },
   ],
-  render(data) {
+  render: function Renderer(data) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const {

@@ -49,7 +49,7 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
+  render?(props): JSX.Element;
   endding?: boolean;
   useVariables?(node, options?): VariableOptions;
   useScopeVariables?(node, options?): VariableOptions;
