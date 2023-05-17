@@ -1,7 +1,7 @@
 import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, uniq } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -1100,7 +1100,7 @@ export const useAssociationNames = (collection) => {
         }
         return buf;
       } else {
-        if (s['x-component'] === 'Grid') {
+        if (s['x-component'] === 'Grid.Row') {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
@@ -1132,7 +1132,7 @@ export const useAssociationNames = (collection) => {
     for (let i = 0; i < nestedList.length; i++) {
       flattenHelper(nestedList[i], nestedList[i][0]);
     }
-    return flattenedList.filter((obj) => !obj.startsWith('.'));
+    return uniq(flattenedList.filter((obj) => !obj.startsWith('.')));
   }
   const getNesterAppends = (gridSchema, data) => {
     gridSchema.reduceProperties((buf, s) => {
@@ -1141,8 +1141,8 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
+
   const associations = getAssociationAppends(formSchema);
   const appends = flattenNestedList(associations);
-  console.log(appends, associations);
   return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
 };
