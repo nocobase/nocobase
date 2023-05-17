@@ -16,6 +16,7 @@ import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { BaseTypeSets, nodesOptions, triggerOptions, useWorkflowVariableOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 import { ValueBlock } from '../components/ValueBlock';
+import { useNodeContext } from '.';
 
 function matchToManyField(field, depth): boolean {
   return ['hasMany', 'belongsToMany'].includes(field.type) && depth;
@@ -25,8 +26,9 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { setValuesIn } = useForm();
   const compile = useCompile();
   const { getCollection } = useCollectionManager();
+  const current = useNodeContext();
   const options = [nodesOptions, triggerOptions].map((item) => {
-    const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
+    const children = item.useOptions(current, { types: [matchToManyField] })?.filter(Boolean);
     return {
       label: compile(item.label),
       value: item.value,
