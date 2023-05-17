@@ -5,7 +5,7 @@ import zhCN from './zh-CN';
 
 export const NAMESPACE = 'mobile-client';
 
-i18n.addResources('zh-CN', NAMESPACE, { ...zhCN, ...i18n.getResource('zh-CN') });
+i18n.addResources('zh-CN', NAMESPACE, zhCN);
 i18n.addResources('en-US', NAMESPACE, enUS);
 
 export function lang(key: string) {

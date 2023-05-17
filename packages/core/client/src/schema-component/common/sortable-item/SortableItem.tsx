@@ -59,19 +59,23 @@ const useSortableItemId = (props) => {
   return field.address.toString();
 };
 
-export const SortableItem: React.FC<HTMLAttributes<HTMLDivElement> & { eid?: string; schema?: Schema }> = observer(
-  (props) => {
-    const { schema, id, eid, ...others } = useSortableItemProps(props);
-    const removeParentsIfNoChildren = others.removeParentsIfNoChildren ?? true;
-    return (
-      <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema, removeParentsIfNoChildren }}>
-        <Sortable id={eid} {...others}>
-          {props.children}
-        </Sortable>
-      </SortableProvider>
-    );
-  },
-);
+interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
+  eid?: string;
+  schema?: Schema;
+  removeParentsIfNoChildren?: boolean;
+}
+
+export const SortableItem: React.FC<SortableItemProps> = observer((props) => {
+  const { schema, id, eid, ...others } = useSortableItemProps(props);
+  const removeParentsIfNoChildren = others.removeParentsIfNoChildren ?? true;
+  return (
+    <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema, removeParentsIfNoChildren }}>
+      <Sortable id={eid} {...others}>
+        {props.children}
+      </Sortable>
+    </SortableProvider>
+  );
+});
 
 export const DragHandler = (props) => {
   const { draggable } = useContext(SortableContext);
