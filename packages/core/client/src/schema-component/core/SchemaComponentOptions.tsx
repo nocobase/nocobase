@@ -1,16 +1,23 @@
-import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import { ExpressionScope, SchemaComponentsContext, SchemaOptionsContext } from '@formily/react';
+import { lazyMerge } from '@formily/shared';
 import React, { useContext } from 'react';
 import { ISchemaComponentOptionsProps } from '../types';
 
-export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
-  const { inherit } = props;
+const useSchemaOptionsContext = () => {
   const options = useContext(SchemaOptionsContext);
-  const expressionScope = useContext(SchemaExpressionScopeContext);
-  const scope = { ...options?.scope, ...expressionScope, ...props.scope };
-  const components = { ...options?.components, ...props.components };
+  return options || {};
+};
+
+export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
+  const { children } = props;
+  const options = useSchemaOptionsContext();
+  const components = lazyMerge(options.components, props.components);
+  const scope = lazyMerge(options.scope, props.scope);
   return (
     <SchemaOptionsContext.Provider value={{ scope, components }}>
-      <SchemaExpressionScopeContext.Provider value={scope}>{props.children}</SchemaExpressionScopeContext.Provider>
+      <SchemaComponentsContext.Provider value={components}>
+        <ExpressionScope value={scope}>{children}</ExpressionScope>
+      </SchemaComponentsContext.Provider>
     </SchemaOptionsContext.Provider>
   );
 };
