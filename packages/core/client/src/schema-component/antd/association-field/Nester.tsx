@@ -1,11 +1,11 @@
+import { CloseCircleOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
-import { CloseCircleOutlined } from '@ant-design/icons';
 import React, { useContext } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
-import { useTranslation } from 'react-i18next';
 // import { useRemoveActionProps } from '../../../block-provider/hooks';
 
 export const Nester = (props) => {
@@ -23,12 +23,12 @@ const ToOneNester = (props) => {
   return <Card bordered={true}>{props.children}</Card>;
 };
 
-const toArr = (value,isReadpretty) => {
+const toArr = (value, isReadpretty) => {
   if (!value) {
-    return isReadpretty?[]:[{}];
+    return isReadpretty ? [] : [{}];
   }
   if (Array.isArray(value)) {
-    return value.length > 0 ? value : isReadpretty?[]:[{}];
+    return value.length > 0 ? value : isReadpretty ? [] : [{}];
   }
   return [value];
 };
@@ -36,7 +36,7 @@ const toArr = (value,isReadpretty) => {
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
-  const values = toArr(field.value,field.readPretty);
+  const values = toArr(field.value, field.readPretty);
   const { t } = useTranslation();
   // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
