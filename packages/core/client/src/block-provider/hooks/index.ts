@@ -1098,11 +1098,7 @@ export const useAssociationNames = (collection) => {
         }
         return buf;
       } else {
-<<<<<<< HEAD
-        if (s['x-component'] === 'Grid' || ['TableV2', 'AssociationField.SubTable'].includes(s['x-component'])) {
-=======
-        if (s['x-component'] === 'Grid.Row') {
->>>>>>> fix/sub-table-appends
+        if (s['x-component'] === 'Grid.Row' || ['TableV2', 'AssociationField.SubTable'].includes(s['x-component'])) {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
