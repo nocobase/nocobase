@@ -1,8 +1,7 @@
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
-import { Button, Input, Select } from 'antd';
+import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
   FormProvider,
   RecordPickerContext,
@@ -17,9 +16,8 @@ import {
 import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
-import { useFieldNames, useInsertSchema } from './hooks';
+import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
-import { useAssociationFieldContext } from './hooks';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
@@ -173,7 +171,7 @@ export const InternalPicker = observer((props: any) => {
       </Input.Group>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
         <RecordPickerProvider {...pickerProps}>
-          <CollectionProvider name={collectionField.target}>
+          <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
                 <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>

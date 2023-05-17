@@ -6,9 +6,9 @@ import cls from 'classnames';
 import React, { ChangeEvent, MouseEvent, useMemo, useState } from 'react';
 import { SortableItem } from '../../common';
 import { useCompile, useDesigner, useProps } from '../../hooks';
+import { EllipsisWithTooltip } from '../input';
 import { getLabelFormatValue, useLabelUiSchema } from '../record-picker';
 import { AssociationFilter } from './AssociationFilter';
-import { EllipsisWithTooltip } from '../input';
 
 const { Panel } = Collapse;
 
@@ -32,7 +32,10 @@ export const AssociationFilterItem = (props) => {
 
   const [searchVisible, setSearchVisible] = useState(false);
 
-  const defaultActiveKeyCollapse = useMemo<React.Key[]>(() => (defaultCollapse ? [collectionField.name] : []), []);
+  const defaultActiveKeyCollapse = useMemo<React.Key[]>(
+    () => (defaultCollapse && collectionField?.name ? [collectionField.name] : []),
+    [],
+  );
   const valueKey = _valueKey || collectionField?.targetKey || 'id';
   const labelKey = _labelKey || fieldSchema['x-component-props']?.fieldNames?.label || valueKey;
 
@@ -79,7 +82,7 @@ export const AssociationFilterItem = (props) => {
     _handleSearchInput(e);
   };
 
-  const title = fieldSchema.title ?? collectionField.uiSchema?.title;
+  const title = fieldSchema.title ?? collectionField?.uiSchema?.title;
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.title || 'label');
 
   return (

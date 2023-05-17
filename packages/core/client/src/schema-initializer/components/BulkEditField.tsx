@@ -131,13 +131,13 @@ export const BulkEditField = (props: any) => {
         <Select.Option value={BulkEditFormItemValueType.RemainsTheSame}>{t('Remains the same')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.ChangedTo}>{t('Changed to')}</Select.Option>
         <Select.Option value={BulkEditFormItemValueType.Clear}>{t('Clear')}</Select.Option>
-        {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField.interface) && (
+        {['subTable', 'linkTo', 'm2m', 'o2m', 'o2o', 'oho', 'obo', 'm2o'].includes(collectionField?.interface) && (
           <Select.Option value={BulkEditFormItemValueType.AddAttach}>{t('Add attach')}</Select.Option>
         )}
       </Select>
       {/* XXX: Not a best practice */}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
-        collectionField.interface !== 'checkbox' && (
+        collectionField?.interface !== 'checkbox' && (
           <CollectionField {...props} value={value} onChange={valueChangeHandler} style={{ minWidth: 150 }} />
           // <SchemaComponent
           //   schema={collectionSchema}
@@ -146,7 +146,7 @@ export const BulkEditField = (props: any) => {
           // />
         )}
       {[BulkEditFormItemValueType.ChangedTo, BulkEditFormItemValueType.AddAttach].includes(type) &&
-        collectionField.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />}
+        collectionField?.interface === 'checkbox' && <Checkbox checked={value} onChange={valueChangeHandler} />}
     </Space>
   );
 };

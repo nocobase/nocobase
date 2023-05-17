@@ -160,6 +160,13 @@ export class PluginMultiAppManager extends Plugin {
           },
         })) as ApplicationModel | null;
 
+        const instanceOptions = applicationRecord.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment) {
+          return;
+        }
+
         if (!applicationRecord) {
           return;
         }
@@ -192,6 +199,13 @@ export class PluginMultiAppManager extends Plugin {
       const instances = await repository.find(findOptions);
 
       for (const instance of instances) {
+        const instanceOptions = instance.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment) {
+          continue;
+        }
+
         const subApp = await appManager.getApplication(instance.name, {
           upgrading: true,
         });
