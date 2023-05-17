@@ -1,5 +1,5 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
-import { Issuer } from 'openid-client';
+import { Issuer, custom } from 'openid-client';
 import { cookieName } from '../constants';
 
 export class OIDCAuth extends BaseAuth {
@@ -8,6 +8,9 @@ export class OIDCAuth extends BaseAuth {
     super({
       ...config,
       userCollection: ctx.db.getCollection('users'),
+    });
+    custom.setHttpOptionsDefaults({
+      timeout: 10000,
     });
   }
 
