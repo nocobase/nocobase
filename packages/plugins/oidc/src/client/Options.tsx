@@ -39,6 +39,11 @@ const schema = {
             tooltip: '{{t("Default: openid profile email")}}',
           },
         },
+        http: {
+          title: '{{t("http")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+        },
         fieldMap: {
           title: '{{t("Field Map")}}',
           type: 'array',

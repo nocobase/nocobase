@@ -5,6 +5,7 @@ interface SAMLOptions {
   ssoUrl?: string;
   certificate?: string;
   idpIssuer?: string;
+  http?: boolean;
 }
 
 export class SAMLAuth extends BaseAuth {
@@ -18,10 +19,11 @@ export class SAMLAuth extends BaseAuth {
 
   getOptions() {
     const ctx = this.ctx;
-    const { ssoUrl, certificate, idpIssuer }: SAMLOptions = this.options?.saml || {};
+    const { ssoUrl, certificate, idpIssuer, http }: SAMLOptions = this.options?.saml || {};
     const name = this.authenticator.get('name');
+    const protocol = http ? 'http' : 'https';
     return {
-      callbackUrl: `https://${ctx.host}/api/saml:redirect?authenticator=${name}`,
+      callbackUrl: `${protocol}://${ctx.host}/api/saml:redirect?authenticator=${name}`,
       entryPoint: ssoUrl,
       issuer: name,
       cert: certificate,

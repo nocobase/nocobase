@@ -13,7 +13,9 @@ export class OIDCAuth extends BaseAuth {
 
   getRedirectUri() {
     const ctx = this.ctx;
-    return `https://${ctx.host}/api/oidc:redirect`;
+    const { http } = this.getOptions();
+    const protocol = http ? 'http' : 'https';
+    return `${protocol}://${ctx.host}/api/oidc:redirect`;
   }
 
   getOptions() {

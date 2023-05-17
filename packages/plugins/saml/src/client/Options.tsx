@@ -29,6 +29,11 @@ const schema = {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
         },
+        http: {
+          title: '{{t("http")}}',
+          'x-component': 'Checkbox',
+          'x-decorator': 'FormItem',
+        },
         usage: {
           type: 'void',
           'x-component': 'Usage',
