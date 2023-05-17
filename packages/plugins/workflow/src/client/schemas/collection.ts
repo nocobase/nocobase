@@ -7,12 +7,11 @@ export const collection = {
   type: 'string',
   title: '{{t("Collection")}}',
   required: true,
-  'x-reactions': ['{{useCollectionDataSource()}}'],
+  'x-reactions': [],
   'x-decorator': 'FormItem',
-  'x-component': 'Select',
+  'x-component': 'CollectionSelect',
   'x-component-props': {
     dropdownMatchSelectWidth: false,
-    placeholder: '{{t("Select collection")}}',
   },
 };
 

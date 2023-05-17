@@ -14,15 +14,12 @@ export default {
   group: 'collection',
   fieldset: {
     collection,
-    // multiple: {
-    //   type: 'boolean',
-    //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
+    multiple: {
+      type: 'boolean',
+      title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
     params: {
       type: 'object',
       properties: {
@@ -45,12 +42,14 @@ export default {
     FilterDynamicComponent,
     FieldsSelect,
   },
-  getOptions(config, types) {
-    return useCollectionFieldOptions({
-      collection: config.collection,
-      types,
-      depth: config.params?.appends?.length ? 1 : 0,
+  useVariables({ config }, options) {
+    const result = useCollectionFieldOptions({
+      collection: config?.collection,
+      ...options,
+      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
     });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {

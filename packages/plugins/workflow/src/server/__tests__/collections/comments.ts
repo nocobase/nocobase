@@ -8,6 +8,10 @@ export default {
       name: 'post',
     },
     {
+      type: 'text',
+      name: 'content',
+    },
+    {
       type: 'integer',
       name: 'status',
       defaultValue: 0,

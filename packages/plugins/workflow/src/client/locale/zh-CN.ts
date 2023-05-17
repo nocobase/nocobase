@@ -116,6 +116,15 @@ export default {
   'Continue after all branches succeeded': '全部分支都成功后才能继续',
   'Continue after any branch succeeded': '任意分支成功后就继续',
   'Continue after any branch succeeded, or exit after any branch failed': '任意分支成功继续，或失败后退出',
+  Loop: '循环',
+  'Loop target': '循环对象',
+  'Loop index': '当前索引',
+  'Loop length': '循环长度',
+  'Loop will cause performance issue based on the quantity, please use with caution.':
+    '循环次数过高可能引起性能问题，请谨慎使用。',
+  'Scope variables': '局域变量',
+  'Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.':
+    '单一数字值将被视为次数，单一字符串值将被视为字符数组，其他非数组值将被转换为值数组。',
   Delay: '延时',
   Duration: '时长',
   'End Status': '到时状态',
@@ -151,6 +160,16 @@ export default {
   'Please add at least one condition': '请添加至少一个条件',
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.':
     '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
+
+  Aggregate: '聚合查询',
+  'Aggregator function': '聚合函数',
+  'Target type': '目标类型',
+  'Data of collection': '数据表数据',
+  'Data of associated collection': '关联数据表数据',
+  'Field to aggregate': '聚合字段',
+  Distinct: '去重',
+  'Query result': '查询结果',
+
   'Trigger in executed workflow cannot be modified': '已经执行过工作流的触发器不能被修改',
   'Node in executed workflow cannot be modified': '已经执行过工作流中的节点不能被修改',
   'Can not delete': '无法删除',

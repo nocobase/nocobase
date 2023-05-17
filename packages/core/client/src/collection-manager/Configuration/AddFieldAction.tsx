@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { useForm, useField } from '@formily/react';
+import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -9,11 +9,11 @@ import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
-import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import * as components from './components';
 import { getOptions } from './interfaces';
 
@@ -249,7 +249,7 @@ export const AddFieldAction = (props) => {
                     option.children.length > 0 && (
                       <Menu.ItemGroup key={option.label} title={compile(option.label)}>
                         {option.children
-                          .filter((child) => !['o2o', 'subTable'].includes(child.name))
+                          .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
                           .map((child) => {
                             return (
                               <Menu.Item key={child.name} data-targetScope={child.targetScope}>

@@ -1,35 +1,117 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tag, Breadcrumb } from 'antd';
-import { cx } from '@emotion/css';
+import { css } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
-import { useCompile, useDocumentTitle, useResourceActionContext } from '@nocobase/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  useCompile,
+  useDocumentTitle,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { FlowContext } from './FlowContext';
-import { branchBlockClass, nodeCardClass, nodeMetaClass } from './style';
-import { TriggerConfig } from './triggers';
-import { Branch } from './Branch';
-import { ExecutionStatusOptionsMap } from './constants';
-import { lang } from './locale';
+import { FlowContext, useFlowContext } from './FlowContext';
+import { nodeTitleClass } from './style';
+import { ExecutionStatusOptionsMap, JobStatusOptions } from './constants';
+import { lang, NAMESPACE } from './locale';
 import { linkNodes } from './utils';
+import { instructions } from './nodes';
+import { CanvasContent } from './CanvasContent';
 
 function attachJobs(nodes, jobs: any[] = []): void {
   const nodesMap = new Map();
-  nodes.forEach((item) => nodesMap.set(item.id, item));
-  const jobsMap = new Map();
-  jobs.forEach((item) => jobsMap.set(item.nodeId, item));
-  for (const node of nodesMap.values()) {
-    if (jobsMap.has(node.id)) {
-      node.job = jobsMap.get(node.id);
-    }
-  }
+  nodes.forEach((item) => {
+    item.jobs = [];
+    nodesMap.set(item.id, item);
+  });
+  jobs.forEach((item) => {
+    const node = nodesMap.get(item.nodeId);
+    node.jobs.push(item);
+    item.node = {
+      id: node.id,
+      title: node.title,
+      type: node.type,
+    };
+  });
+  nodes.forEach((item) => {
+    item.jobs = item.jobs.sort((a, b) => a.id - b.id);
+  });
+}
+
+function JobModal() {
+  const compile = useCompile();
+  const { viewJob: job, setViewJob } = useFlowContext();
+  const { node = {} } = job ?? {};
+  const instruction = instructions.get(node.type);
+
+  return (
+    <ActionContext.Provider value={{ visible: Boolean(job), setVisible: setViewJob }}>
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          properties: {
+            [`${job?.id}-modal`]: {
+              type: 'void',
+              'x-decorator': 'Form',
+              'x-decorator-props': {
+                initialValue: job,
+              },
+              'x-component': 'Action.Modal',
+              title: (
+                <div className={nodeTitleClass}>
+                  <Tag>{compile(instruction?.title)}</Tag>
+                  <strong>{node.title}</strong>
+                  <span className="workflow-node-id">#{node.id}</span>
+                </div>
+              ),
+              properties: {
+                status: {
+                  type: 'number',
+                  title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Select',
+                  enum: JobStatusOptions,
+                  'x-read-pretty': true,
+                },
+                updatedAt: {
+                  type: 'string',
+                  title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'DatePicker',
+                  'x-component-props': {
+                    showTime: true,
+                  },
+                  'x-read-pretty': true,
+                },
+                result: {
+                  type: 'object',
+                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input.JSON',
+                  'x-component-props': {
+                    className: css`
+                      padding: 1em;
+                      background-color: #eee;
+                    `,
+                  },
+                  'x-read-pretty': true,
+                },
+              },
+            },
+          },
+        }}
+      />
+    </ActionContext.Provider>
+  );
 }
 
 export function ExecutionCanvas() {
   const compile = useCompile();
   const { data, loading } = useResourceActionContext();
   const { setTitle } = useDocumentTitle();
+  const [viewJob, setViewJob] = useState(null);
   useEffect(() => {
     const { workflow } = data?.data ?? {};
     setTitle?.(`${workflow?.title ? `${workflow.title} - ` : ''}${lang('Execution history')}`);
@@ -58,6 +140,8 @@ export function ExecutionCanvas() {
         workflow: workflow.type ? workflow : null,
         nodes,
         execution,
+        viewJob,
+        setViewJob
       }}
     >
       <div className="workflow-toolbar">
@@ -79,17 +163,8 @@ export function ExecutionCanvas() {
           <time>{str2moment(execution.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
         </aside>
       </div>
-      <div className="workflow-canvas">
-        <TriggerConfig />
-        <div className={branchBlockClass}>
-          <Branch entry={entry} />
-        </div>
-        <div className={cx(nodeCardClass)}>
-          <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{lang('End')}</Tag>
-          </div>
-        </div>
-      </div>
+      <CanvasContent entry={entry} />
+      <JobModal />
     </FlowContext.Provider>
   );
 }

@@ -80,12 +80,12 @@ function migrateConfig(config, oldToNew) {
       case 'array':
         return value.map((item) => migrate(item));
       case 'string':
-        return value.replace(/(\{\{\$jobsMapByNodeId\.)([\w-]+)/g, (_, jobVar, oldNodeId) => {
+        return value.replace(/({{\$jobsMapByNodeId|{{\$scopes)\.([\w-]+)/g, (_, jobVar, oldNodeId) => {
           const newNode = oldToNew.get(Number.parseInt(oldNodeId, 10));
           if (!newNode) {
             throw new Error('node configurated for result is not existed');
           }
-          return `{{$jobsMapByNodeId.${newNode.id}`;
+          return `${jobVar}.${newNode.id}`;
         });
       default:
         return value;

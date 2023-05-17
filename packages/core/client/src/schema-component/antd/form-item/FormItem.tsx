@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
@@ -18,6 +18,7 @@ import {
   useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
+import { GeneralSchemaItems } from '../../../schema-items/GeneralSchemaItems';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
 import { VariableInput } from '../../../schema-settings/VariableInput/VariableInput';
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
@@ -70,15 +71,25 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
+  const { showTitle = true } = props;
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>
         <Item
-          className={`${css`
-            & .ant-space {
-              flex-wrap: wrap;
-            }
-          `}`}
+          className={cx(
+            css`
+              & .ant-space {
+                flex-wrap: wrap;
+              }
+            `,
+            {
+              [css`
+                & .ant-formily-item-label {
+                  display: none;
+                }
+              `]: showTitle === false,
+            },
+          )}
           {...props}
           extra={
             typeof field.description === 'string' ? (
@@ -104,7 +115,7 @@ FormItem.Designer = function Designer() {
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { dn, refresh } = useDesignable();
+  const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
   const variablesCtx = useVariablesCtx();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
@@ -135,6 +146,7 @@ FormItem.Designer = function Designer() {
       value: field?.name,
       label: compile(field?.uiSchema?.title) || field?.name,
     }));
+
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -162,124 +174,7 @@ FormItem.Designer = function Designer() {
 
   return (
     <GeneralSchemaDesigner>
-      {collectionField && (
-        <SchemaSettings.ModalItem
-          key="edit-field-title"
-          title={t('Edit field title')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit field title'),
-              properties: {
-                title: {
-                  title: t('Field title'),
-                  default: field?.title,
-                  description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ title }) => {
-            if (title) {
-              field.title = title;
-              fieldSchema.title = title;
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  title: fieldSchema.title,
-                },
-              });
-            }
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-description"
-          title={t('Edit description')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                description: {
-                  // title: t('Description'),
-                  default: field?.description,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ description }) => {
-            field.description = description;
-            fieldSchema.description = description;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                description: fieldSchema.description,
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-tooltip"
-          title={t('Edit tooltip')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                tooltip: {
-                  default: fieldSchema?.['x-decorator-props']?.tooltip,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ tooltip }) => {
-            field.decoratorProps.tooltip = tooltip;
-            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
-            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && fieldSchema['x-component'] !== 'FormField' && (
-        <SchemaSettings.SwitchItem
-          key="required"
-          title={t('Required')}
-          checked={fieldSchema.required as boolean}
-          onChange={(required) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.required = required;
-            fieldSchema['required'] = required;
-            schema['required'] = required;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
+      <GeneralSchemaItems />
       {!form?.readPretty && isFileField ? (
         <SchemaSettings.SwitchItem
           key="quick-upload"
@@ -462,7 +357,7 @@ FormItem.Designer = function Designer() {
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
                           component:
-                            collectionField?.target && collectionField.interface !== 'chinaRegion'
+                            collectionField?.target && collectionField?.interface !== 'chinaRegion'
                               ? 'AssociationSelect'
                               : undefined,
                           service: {
@@ -677,7 +572,7 @@ FormItem.Designer = function Designer() {
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
             if (mode === 'Nester') {
-              const initValue = ['o2m', 'm2m'].includes(collectionField.interface) ? [] : {};
+              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
               field.value = field.value || initValue;
             }
             dn.emit('patch', {
@@ -694,6 +589,28 @@ FormItem.Designer = function Designer() {
           title={t('Allow add new data')}
           checked={fieldSchema['x-add-new'] as boolean}
           onChange={(allowAddNew) => {
+            const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
+              if (schema['x-component'] === 'Action') {
+                return schema;
+              }
+              return buf;
+            }, null);
+
+            if (!hasAddNew) {
+              const addNewActionschema = {
+                'x-action': 'create',
+                title: "{{t('Add new')}}",
+                'x-designer': 'Action.Designer',
+                'x-component': 'Action',
+                'x-decorator': 'ACLActionProvider',
+                'x-component-props': {
+                  openMode: 'drawer',
+                  type: 'default',
+                  component: 'CreateRecordAction',
+                },
+              };
+              insertAdjacent('afterBegin', addNewActionschema);
+            }
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
