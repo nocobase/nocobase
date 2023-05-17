@@ -28,7 +28,7 @@ const toArr = (value) => {
     return [];
   }
   if (Array.isArray(value)) {
-    return value;
+    return value.length > 0 ? value : [{}];
   }
   return [value];
 };
@@ -68,7 +68,7 @@ const ToManyNester = observer((props) => {
             field.value.push({});
           }}
         >
-            {t('Add new')}
+          {t('Add new')}
         </Button>
       )}
     </Card>
