@@ -1102,7 +1102,9 @@ export const useAssociationNames = (collection) => {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
-          return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
+          return !s['x-component']?.includes('Action.') &&
+            s['x-component'] !== 'TableField' &&
+            s['x-component'] !== 'AssociationField.Viewer'
             ? getAssociationAppends(s, buf)
             : buf;
         }
