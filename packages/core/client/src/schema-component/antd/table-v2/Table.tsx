@@ -89,7 +89,7 @@ const useTableColumns = (props) => {
       render: (v, record, index) => {
         return (
           <DeleteOutlined
-            style={{ cursor: 'grab' }}
+            style={{ cursor: 'pointer' }}
             onClick={() => {
               const data = field.value;
               data.splice(index, 1);
