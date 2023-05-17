@@ -11,13 +11,14 @@ const ReadPretty = (props) => {
   const mapType = props.mapType || collectionField?.uiSchema['x-component-props']?.mapType;
   const field = useField();
   const form = useForm();
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   useEffect(() => {
     if (!field.title && collectionField?.uiSchema?.title) {
       field.title = collectionField?.uiSchema.title;
     }
   }, collectionField?.title);
 
-  if (!form.readPretty) {
+  if (!form.readPretty || isDisplayInTable) {
     return (
       <div>
         <EllipsisWithTooltip ellipsis={true}>
