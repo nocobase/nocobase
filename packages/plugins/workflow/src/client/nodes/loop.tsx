@@ -116,7 +116,7 @@ export default {
     useWorkflowVariableOptions,
   },
   components: {},
-  useScopeVariables(node, types) {
+  useScopeVariables(node, options) {
     const compile = useCompile();
     const { target } = node.config;
     if (!target) {
@@ -137,8 +137,8 @@ export default {
         .split('.')
         .map((path) => path.trim());
 
-      const options = [nodesOptions, triggerOptions].map((item: any) => {
-        const opts = typeof item.useOptions === 'function' ? item.useOptions(node, { types }).filter(Boolean) : null;
+      const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
+        const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
         return {
           label: compile(item.title),
           value: item.value,
@@ -148,7 +148,7 @@ export default {
         };
       });
 
-      targetOption.children = findOption(options, paths);
+      targetOption.children = findOption(targetOptions, paths);
     }
 
     return [
