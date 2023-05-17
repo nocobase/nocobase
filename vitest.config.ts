@@ -13,7 +13,8 @@ export default defineConfig({
       '@nocobase/client': path.resolve('packages/core/client/src'),
       '@nocobase/sdk': path.resolve('packages/core/sdk/src'),
     },
-    include: ['packages/**/src/**/*.test.tsx|ts'],
+    include: ['packages/**/src/**/*.test.(tsx|ts)'],
+    exclude: ['packages/**/node_modules', 'packages/**/lib', 'packages/**/dist', 'packages/**/es'],
     testTimeout: 300000,
   },
 });
