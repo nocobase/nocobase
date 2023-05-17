@@ -2,12 +2,12 @@ import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
-import type { CheckboxGroupProps, CheckboxProps } from 'antd/lib/checkbox';
+import type { CheckboxGroupProps } from 'antd/lib/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 
-type ComposedCheckbox = React.FC<CheckboxProps> & {
+type ComposedCheckbox = any & {
   Group?: React.FC<CheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
 };
@@ -34,7 +34,11 @@ export const Checkbox: ComposedCheckbox = connect(
 Checkbox.__ANT_CHECKBOX = true;
 
 Checkbox.Group = connect(
-  AntdCheckbox.Group,
+  (props) => (
+    <div style={{ width: '100%', overflow: 'auto' }}>
+      <AntdCheckbox.Group {...props} />
+    </div>
+  ) ,
   mapProps({
     dataSource: 'options',
   }),
