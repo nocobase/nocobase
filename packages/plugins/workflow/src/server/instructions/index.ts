@@ -44,6 +44,7 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'create',
     'update',
     'destroy',
+    'aggregate',
     'request',
   ].reduce(
     (result, key) =>
