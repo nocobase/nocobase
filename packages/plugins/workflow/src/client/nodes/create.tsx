@@ -40,12 +40,14 @@ export default {
     CollectionFieldset,
     FieldsSelect,
   },
-  useVariables({ config }, types) {
-    return useCollectionFieldOptions({
-      collection: config.collection,
-      types,
-      depth: config.params?.appends?.length ? 1 : 0,
+  useVariables({ config }, options) {
+    const result = useCollectionFieldOptions({
+      collection: config?.collection,
+      ...options,
+      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
     });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
