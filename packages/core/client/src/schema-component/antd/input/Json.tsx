@@ -31,7 +31,8 @@ export const Json = React.forwardRef<JSONTextAreaProps>(
             <ObjectField
               name={fieldSchema.name}
               reactions={(field: any) => {
-                const fieldValue = field.value?.json || value;
+                const fieldValue =
+                  field.value?.json || value !== null ? JSON.stringify(field.value?.json || value, null, space) : '';
                 field.title = fieldValue;
                 targetField.value = fieldValue;
               }}
