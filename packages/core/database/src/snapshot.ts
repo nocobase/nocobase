@@ -5,23 +5,17 @@ import { default as _ } from 'lodash';
 import { ModelStatic } from 'sequelize';
 import { Database } from './database';
 import { Model } from './model';
-
 export class DatabaseSnapshot {
   private db: Database;
-  private snapshotDir: string;
+  private dialect: string;
+  private dbIdentifier: string;
 
   constructor(database: Database) {
     this.db = database;
-    if (this.db.isSqliteMemory()) {
-      return;
-    }
-    this.snapshotDir = path.join(
-      'storage',
-      'db',
-      'snapshots',
-      this.db.options.dialect || 'default',
-      this.db.options.schema || 'public',
-    );
+    this.dialect = database.options.dialect || 'default';
+    this.dbIdentifier = `${database.options.host || 'host'}_${database.options.port || 'port'}_${
+      database.options.database || 'sqlite'
+    }`;
   }
 
   hasChanged(model: ModelStatic<Model>, options) {
@@ -54,8 +48,9 @@ export class DatabaseSnapshot {
       return true;
     }
 
-    if (!fs.existsSync(this.snapshotDir)) {
-      mkdirp.sync(this.snapshotDir);
+    const dir = this.snapshotDir(model);
+    if (!fs.existsSync(dir)) {
+      mkdirp.sync(dir);
     }
 
     const snapshotFile = this.snapshotFilePath(model);
@@ -72,8 +67,9 @@ export class DatabaseSnapshot {
   }
 
   removeAll() {
-    if (fs.existsSync(this.snapshotDir)) {
-      fs.rmSync(this.snapshotDir, { recursive: true, force: true });
+    const dir = this.snapshotDir(null);
+    if (fs.existsSync(dir)) {
+      fs.rmSync(dir, { recursive: true, force: true });
     }
   }
 
@@ -87,7 +83,18 @@ export class DatabaseSnapshot {
     return snapshot;
   }
 
+  private snapshotDir(model: ModelStatic<Model>) {
+    return path.join(
+      'storage',
+      'db',
+      'snapshots',
+      this.dialect,
+      this.dbIdentifier,
+      model?.options?.schema || this.db.options.schema || 'public',
+    );
+  }
+
   private snapshotFilePath(model: ModelStatic<Model>) {
-    return path.join(this.snapshotDir, `${model.tableName}.json`);
+    return path.join(this.snapshotDir(model), `${model.tableName}.json`);
   }
 }
