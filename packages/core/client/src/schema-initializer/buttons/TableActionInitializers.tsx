@@ -1,4 +1,4 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { useCollection } from '../../';
 
 // 表格操作配置
@@ -81,33 +81,33 @@ export const TableActionInitializers = {
         return (collection as any).template !== 'view';
       },
     },
-    {
-      type: 'item',
-      title: "{{t('Association fields filter')}}",
-      component: 'ActionBarAssociationFilterAction',
-      schema: {
-        'x-align': 'left',
-      },
-      find: (schema: Schema) => {
-        const resultSchema = Object.entries(schema.parent.properties).find(
-          ([, value]) => value['x-component'] === 'AssociationFilter',
-        )?.[1];
-        return resultSchema;
-      },
-      visible: () => {
-        const collection = useCollection();
-        const schema = useFieldSchema();
-        return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
-      },
-    },
-    {
-      type: 'divider',
-      visible: () => {
-        const collection = useCollection();
-        const schema = useFieldSchema();
-        return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
-      },
-    },
+    // {
+    //   type: 'item',
+    //   title: "{{t('Association fields filter')}}",
+    //   component: 'ActionBarAssociationFilterAction',
+    //   schema: {
+    //     'x-align': 'left',
+    //   },
+    //   find: (schema: Schema) => {
+    //     const resultSchema = Object.entries(schema.parent.properties).find(
+    //       ([, value]) => value['x-component'] === 'AssociationFilter',
+    //     )?.[1];
+    //     return resultSchema;
+    //   },
+    //   visible: () => {
+    //     const collection = useCollection();
+    //     const schema = useFieldSchema();
+    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
+    //   },
+    // },
+    // {
+    //   type: 'divider',
+    //   visible: () => {
+    //     const collection = useCollection();
+    //     const schema = useFieldSchema();
+    //     return (collection as any).template !== 'view' && schema['x-initializer'] !== 'GanttActionInitializers';
+    //   },
+    // },
     {
       type: 'subMenu',
       title: '{{t("Customize")}}',

@@ -572,7 +572,7 @@ FormItem.Designer = function Designer() {
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
             if (mode === 'Nester') {
-              const initValue = ['o2m', 'm2m'].includes(collectionField?.interface) ? [] : {};
+              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
               field.value = field.value || initValue;
             }else if(mode==='SubTable'){
               field.value = field.value || [];
