@@ -142,7 +142,7 @@ describe('create view', () => {
       ],
     });
 
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     db.on('beforeSync', jestFn);
 

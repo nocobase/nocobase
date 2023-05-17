@@ -21,7 +21,7 @@ describe('skip', () => {
       throw() {},
     };
 
-    const nextFunc = jest.fn();
+    const nextFunc = vi.fn();
 
     await middlewareFunc(ctx, nextFunc);
     expect(nextFunc).toHaveBeenCalledTimes(0);
@@ -49,7 +49,7 @@ describe('skip', () => {
       throw() {},
     };
 
-    const nextFunc = jest.fn();
+    const nextFunc = vi.fn();
 
     let skip = false;
 
@@ -68,7 +68,7 @@ describe('skip', () => {
   it('should skip action with registered condition', async () => {
     const middlewareFunc = acl.middleware();
 
-    const conditionFn = jest.fn();
+    const conditionFn = vi.fn();
     acl.allowManager.registerAllowCondition('superUser', async () => {
       conditionFn();
       return true;
@@ -89,7 +89,7 @@ describe('skip', () => {
       throw() {},
     };
 
-    const nextFunc = jest.fn();
+    const nextFunc = vi.fn();
 
     acl.allow('users', 'login', 'superUser');
 

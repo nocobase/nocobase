@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   name: 'demo',
   actions: {
     async list(ctx, next) {

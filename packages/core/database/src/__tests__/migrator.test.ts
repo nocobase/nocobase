@@ -40,7 +40,7 @@ describe('migrator', () => {
   });
 
   test('up and down', async () => {
-    const spy = jest.fn();
+    const spy = vi.fn();
     db.addMigration({
       name: 'migration1',
       migration: class extends Migration {

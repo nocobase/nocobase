@@ -1,6 +1,10 @@
 import path from 'path';
 import Resourcer, { Action, ResourcerContext } from '..';
 import Resource from '../resource';
+import actionsDemo0 from './actions/demo0';
+import actionDemo1 from './actions/demo1';
+import middlewaresDemo0 from './middlewares/demo0';
+import middlewareDemo1 from './middlewares/demo1';
 
 describe('resourcer', () => {
   it('action', async () => {
@@ -639,9 +643,9 @@ describe('resourcer', () => {
 
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo0'),
+      middleware: middlewaresDemo0,
       actions: {
-        list: require('./actions/demo0'),
+        list: actionsDemo0,
       },
     });
 
@@ -665,9 +669,9 @@ describe('resourcer', () => {
 
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo1'),
+      middleware: middlewareDemo1,
       actions: {
-        list: require('./actions/demo1'),
+        list: actionDemo1,
       },
     });
 
@@ -691,10 +695,10 @@ describe('resourcer', () => {
 
     resourcer.define({
       name: 'test',
-      middleware: require('./middlewares/demo1'),
+      middleware: middlewareDemo1,
       actions: {
         list: {
-          handler: require('./actions/demo1'),
+          handler: actionDemo1,
         },
       },
     });

@@ -101,7 +101,7 @@ describe('database', () => {
   });
 
   test('collection beforeBulkCreate event', async () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
 
     db.on('posts.beforeBulkUpdate', listener);
 
@@ -132,8 +132,8 @@ describe('database', () => {
   });
 
   test('global model event', async () => {
-    const listener = jest.fn();
-    const listener2 = jest.fn();
+    const listener = vi.fn();
+    const listener2 = vi.fn();
 
     const Post = db.collection({
       name: 'posts',
@@ -156,8 +156,8 @@ describe('database', () => {
   });
 
   test('collection multiple model event', async () => {
-    const listener = jest.fn();
-    const listener2 = jest.fn();
+    const listener = vi.fn();
+    const listener2 = vi.fn();
 
     const Post = db.collection({
       name: 'posts',
@@ -180,7 +180,7 @@ describe('database', () => {
   });
 
   test('collection afterCreate model event', async () => {
-    const postAfterCreateListener = jest.fn();
+    const postAfterCreateListener = vi.fn();
 
     db.on('posts.afterCreate', postAfterCreateListener);
 
@@ -203,7 +203,7 @@ describe('database', () => {
   });
 
   test('collection event', async () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     db.on('beforeDefineCollection', listener);
 
     const Post = db.collection({
@@ -220,7 +220,7 @@ describe('database', () => {
       fields: [{ type: 'string', name: 'title' }],
     });
 
-    const postAfterCreateListener = jest.fn();
+    const postAfterCreateListener = vi.fn();
 
     db.on('posts.afterCreate', postAfterCreateListener);
 
@@ -243,7 +243,7 @@ describe('database', () => {
       fields: [{ type: 'string', name: 'title' }],
     });
 
-    const postAfterCreateListener = jest.fn();
+    const postAfterCreateListener = vi.fn();
 
     db.on('posts.afterCreate', postAfterCreateListener);
     db.on('afterCreate', postAfterCreateListener);

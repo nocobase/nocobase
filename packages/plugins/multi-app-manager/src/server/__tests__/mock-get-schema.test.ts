@@ -5,8 +5,8 @@ import { PluginMultiAppManager } from '../server';
 
 describe('test with start', () => {
   it('should load subApp on create', async () => {
-    const loadFn = jest.fn();
-    const installFn = jest.fn();
+    const loadFn = vi.fn();
+    const installFn = vi.fn();
 
     class TestPlugin extends Plugin {
       getName(): string {
@@ -22,7 +22,7 @@ describe('test with start', () => {
       }
     }
 
-    const mockGetPluginByName = jest.fn();
+    const mockGetPluginByName = vi.fn();
     mockGetPluginByName.mockReturnValue(TestPlugin);
     PluginManager.resolvePlugin = mockGetPluginByName;
 
@@ -97,7 +97,7 @@ describe('test with start', () => {
 
     const db = app.db;
 
-    const mockGetPluginByName = jest.fn();
+    const mockGetPluginByName = vi.fn();
     mockGetPluginByName.mockReturnValue(TestPlugin);
     PluginManager.resolvePlugin = mockGetPluginByName;
 

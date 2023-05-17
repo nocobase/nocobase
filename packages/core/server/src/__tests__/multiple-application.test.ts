@@ -6,7 +6,7 @@ import Application from '../application';
 
 describe('multiple apps', () => {
   it('should emit beforeGetApplication event', async () => {
-    const beforeGetApplicationFn = jest.fn();
+    const beforeGetApplicationFn = vi.fn();
 
     const app = mockServer();
 
@@ -40,7 +40,7 @@ describe('multiple apps', () => {
       }),
     );
 
-    const subApp1StopFn = jest.fn();
+    const subApp1StopFn = vi.fn();
 
     subApp1.on('afterStop', subApp1StopFn);
 

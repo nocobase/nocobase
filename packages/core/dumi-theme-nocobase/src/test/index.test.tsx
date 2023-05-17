@@ -1,21 +1,21 @@
 import '@testing-library/jest-dom';
-import React from 'react';
-import { render, queryByAttribute, queryAllByAttribute, fireEvent } from '@testing-library/react';
-import type { MemoryHistory} from '@umijs/runtime';
-import { createMemoryHistory, Router } from '@umijs/runtime';
+import { fireEvent, queryAllByAttribute, queryByAttribute, render } from '@testing-library/react';
+import type { MemoryHistory } from '@umijs/runtime';
+import { Router, createMemoryHistory } from '@umijs/runtime';
 import { context as Context } from 'dumi/theme';
-import SourceCode from '../builtins/SourceCode';
+import React from 'react';
+import API from '../builtins/API';
 import Alert from '../builtins/Alert';
 import Badge from '../builtins/Badge';
-import Tree from '../builtins/Tree';
 import Previewer from '../builtins/Previewer';
-import API from '../builtins/API';
+import SourceCode from '../builtins/SourceCode';
+import Tree from '../builtins/Tree';
 import Layout from '../layout';
 
 let history: MemoryHistory;
 
 // mock history location which import from 'dumi'
-jest.mock('dumi', () => ({
+vi.mock('dumi', () => ({
   history: { location: { pathname: '/' } },
 }));
 

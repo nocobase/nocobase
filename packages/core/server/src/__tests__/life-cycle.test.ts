@@ -10,8 +10,8 @@ describe('application life cycle', () => {
       },
     });
 
-    const loadFn = jest.fn();
-    const installFn = jest.fn();
+    const loadFn = vi.fn();
+    const installFn = vi.fn();
 
     // register plugin
     class TestPlugin extends Plugin {

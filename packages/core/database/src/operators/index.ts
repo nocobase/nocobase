@@ -1,12 +1,23 @@
+import array from './array';
+import association from './association';
+import boolean from './boolean';
+import childCollection from './child-collection';
+import date from './date';
+import empty from './empty';
+import eq from './eq';
+import ne from './ne';
+import notIn from './notIn';
+import string from './string';
+
 export default {
-  ...require('./association').default,
-  ...require('./date').default,
-  ...require('./array').default,
-  ...require('./empty').default,
-  ...require('./string').default,
-  ...require('./eq').default,
-  ...require('./ne').default,
-  ...require('./notIn').default,
-  ...require('./boolean').default,
-  ...require('./child-collection').default,
+  ...association,
+  ...date,
+  ...array,
+  ...empty,
+  ...string,
+  ...eq,
+  ...ne,
+  ...notIn,
+  ...boolean,
+  ...childCollection,
 };

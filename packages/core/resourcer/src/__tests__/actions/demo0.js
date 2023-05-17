@@ -1,5 +1,5 @@
-module.exports = async function (ctx, next) {
+export default async function (ctx, next) {
   ctx.arr.push(7);
   await next();
   ctx.arr.push(8);
-};
+}

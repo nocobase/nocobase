@@ -357,7 +357,7 @@ describe('acl', () => {
   });
 
   it('should clone can result deeply', () => {
-    jest.spyOn(acl, 'can').mockReturnValue({
+    vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
       resource: 'Test',
       action: 'test',

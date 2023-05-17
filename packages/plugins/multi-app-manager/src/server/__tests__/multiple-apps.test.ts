@@ -21,7 +21,7 @@ describe('multiple apps create', () => {
   });
 
   it('should register db creator', async () => {
-    const fn = jest.fn();
+    const fn = vi.fn();
 
     const appPlugin = app.getPlugin<PluginMultiAppManager>('PluginMultiAppManager');
     const defaultDbCreator = appPlugin.appDbCreator;
@@ -140,7 +140,7 @@ describe('multiple apps create', () => {
     });
 
     const subApp = await app.appManager.getApplication(subAppName);
-    const jestFn = jest.fn();
+    const jestFn = vi.fn();
 
     subApp.on('afterUpgrade', () => {
       jestFn();
