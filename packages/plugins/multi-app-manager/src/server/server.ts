@@ -163,7 +163,7 @@ export class PluginMultiAppManager extends Plugin {
         const instanceOptions = applicationRecord.get('options');
 
         // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment) {
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
           return;
         }
 
@@ -202,7 +202,7 @@ export class PluginMultiAppManager extends Plugin {
         const instanceOptions = instance.get('options');
 
         // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment) {
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
           continue;
         }
 
