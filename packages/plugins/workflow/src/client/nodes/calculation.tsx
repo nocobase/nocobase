@@ -11,9 +11,10 @@ import { RadioWithTooltip } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
 import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
+import { ValueBlock } from '../components/ValueBlock';
 
-function matchDynamicExpressionCollectionField(field): boolean {
-  const { getCollectionFields, getCollection } = useCollectionManager();
+function useDynamicExpressionCollectionFieldMatcher(field): boolean {
+  const { getCollectionFields } = useCollectionManager();
   if (field.type !== 'belongsTo') {
     return false;
   }
@@ -24,7 +25,7 @@ function matchDynamicExpressionCollectionField(field): boolean {
 
 const DynamicConfig = ({ value, onChange }) => {
   const { t } = useTranslation();
-  const scope = useWorkflowVariableOptions([matchDynamicExpressionCollectionField]);
+  const scope = useWorkflowVariableOptions({ types: [useDynamicExpressionCollectionFieldMatcher] });
 
   return (
     <FormLayout layout="vertical">
@@ -49,7 +50,7 @@ const DynamicConfig = ({ value, onChange }) => {
 };
 
 function useWorkflowVariableEntityOptions() {
-  return useWorkflowVariableOptions([{ type: 'reference', options: { collection: '*', entity: true } }]);
+  return useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: '*', entity: true } }] });
 }
 
 export default {
@@ -170,7 +171,8 @@ export default {
     RadioWithTooltip,
     DynamicConfig,
   },
-  useVariables(current, types) {
+  useVariables(current, options) {
+    const { types } = options ?? {};
     if (
       types &&
       !types.some((type) => type in BaseTypeSets || Object.values(BaseTypeSets).some((set) => set.has(type)))
@@ -185,38 +187,9 @@ export default {
     return {
       type: 'item',
       title: node.title ?? `#${node.id}`,
-      component: CalculationInitializer,
+      component: ValueBlock.Initializer,
       node,
+      resultTitle: lang('Calculation result'),
     };
   },
 };
-
-function CalculationInitializer({ node, insert, ...props }) {
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        insert({
-          type: 'void',
-          name: node.id,
-          title: node.title,
-          'x-component': 'CardItem',
-          'x-component-props': {
-            title: node.title ?? `#${node.id}`,
-          },
-          'x-designer': 'SimpleDesigner',
-          properties: {
-            result: {
-              type: 'void',
-              'x-component': 'CalculationResult',
-              'x-component-props': {
-                // NOTE: as same format as other reference for migration of revision
-                dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
-              },
-            },
-          },
-        });
-      }}
-    />
-  );
-}
