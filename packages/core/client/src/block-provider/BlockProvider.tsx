@@ -51,16 +51,17 @@ const useResource = (props: UseResourceProps) => {
   const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
+  const { fieldSchema } = useActionContext();
+  const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'],
+      sourceId: !isCreateAction ? sourceId || record[association?.sourceKey || 'id'] : undefined,
     };
     return new TableFieldResource(options);
   }
