@@ -1,5 +1,5 @@
 const { Command } = require('commander');
-const { nodeCheck, runAppCommand, promptForTs } = require('../util');
+const { nodeCheck, runAppCommand, promptForTs, run } = require('../util');
 
 /**
  *
@@ -24,7 +24,8 @@ module.exports = (cli) => {
       if (index > 0) {
         process.argv.splice(index, 1);
       }
-      process.argv.splice(2, 1, '-i');
-      require('jest-cli/bin/jest');
+      process.argv.splice(2, 1, '');
+      // require('jest-cli/bin/jest');
+      run('vitest', [process.argv[process.argv.length - 1]]);
     });
 };

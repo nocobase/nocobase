@@ -1,4 +1,4 @@
-import Migration from '../../migrations/20230330214649-filter-form-block';
+import Migration from '../../migrations/20230330214649-filter-form-block.mjs';
 
 import { Database } from '@nocobase/database';
 import { mockServer, MockServer } from '@nocobase/test';

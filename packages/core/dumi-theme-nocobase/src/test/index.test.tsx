@@ -1,4 +1,3 @@
-import '@testing-library/jest-dom';
 import { fireEvent, queryAllByAttribute, queryByAttribute, render } from '@testing-library/react';
 import type { MemoryHistory } from '@umijs/runtime';
 import { Router, createMemoryHistory } from '@umijs/runtime';

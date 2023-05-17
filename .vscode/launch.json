@@ -6,11 +6,17 @@
       "request": "launch",
       "name": "Debug Server",
       "runtimeArgs": [
-        "-r", "dotenv/config",
-        "-r", "tsconfig-paths/register",
-        "-r", "ts-node/register"
+        "-r",
+        "dotenv/config",
+        "-r",
+        "tsconfig-paths/register",
+        "-r",
+        "ts-node/register"
       ],
-      "args": ["${workspaceRoot}/packages/app/server/src/index.ts", "start"],
+      "args": [
+        "${workspaceRoot}/packages/app/server/src/index.ts",
+        "start"
+      ],
       "skipFiles": [
         "<node_internals>/**"
       ],
@@ -26,7 +32,6 @@
         "run",
         "--inspect-brk",
         "test",
-        "--runInBand",
         "${file}"
       ],
       "skipFiles": [
@@ -39,8 +44,7 @@
           "run",
           "--inspect-brk",
           "test",
-          "--runInBand",
-          "/${fileBasename}"
+          "${relativeFile}"
         ],
       }
     },

@@ -1,5 +1,4 @@
 import react from '@vitejs/plugin-react';
-import path from 'path';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -9,20 +8,17 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './scripts/setupVitest.ts',
     css: true,
-    alias: {
-      '@nocobase/client': path.resolve('packages/core/client/src'),
-      '@nocobase/sdk': path.resolve('packages/core/sdk/src'),
-      '@nocobase/actions': path.resolve('packages/core/actions/src'),
-      '@nocobase/acl': path.resolve('packages/core/acl/src'),
-      '@nocobase/cache': path.resolve('packages/core/cache/src'),
-      '@nocobase/database': path.resolve('packages/core/database/src'),
-      '@nocobase/logger': path.resolve('packages/core/logger/src'),
-      '@nocobase/resourcer': path.resolve('packages/core/resourcer/src'),
-      '@nocobase/server': path.resolve('packages/core/server/src'),
-      '@nocobase/utils': path.resolve('packages/core/utils/src'),
-      '@nocobase/cli': path.resolve('packages/cli/src'),
-      '@nocobase/test': path.resolve('packages/test/src'),
-    },
+    threads: false,
+    alias: [
+      { find: /^@nocobase\/app-(.*)/, replacement: 'packages/$1/src' },
+      { find: /^@nocobase\/plugin-sample-(.*)/, replacement: 'packages/samples/$1/src' },
+      { find: /^@nocobase\/plugin-pro-(.*)/, replacement: 'packages/pro-plugins/$1/src' },
+      { find: /^@nocobase\/plugin-(.*)/, replacement: 'packages/plugins/$1/src' },
+      { find: /^@nocobase\/preset-(.*)/, replacement: 'packages/presets/$1/src' },
+      { find: /^@nocobase\/(.*)/, replacement: 'packages/core/$1/src' },
+      { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
+      { find: '@nocobase/utils/client', replacement: 'packages/core/utils/src/client' },
+    ],
     include: ['packages/**/src/**/*.test.(tsx|ts)'],
     exclude: ['packages/**/node_modules', 'packages/**/lib', 'packages/**/dist', 'packages/**/es'],
     testTimeout: 300000,

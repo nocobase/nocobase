@@ -49,7 +49,7 @@
     "types": [
       "node",
       "vitest/globals"
-    ],
+    ]
   },
   "ts-node": {
     "compilerOptions": {

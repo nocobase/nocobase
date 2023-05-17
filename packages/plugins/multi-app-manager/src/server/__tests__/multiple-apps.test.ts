@@ -140,14 +140,14 @@ describe('multiple apps create', () => {
     });
 
     const subApp = await app.appManager.getApplication(subAppName);
-    const jestFn = vi.fn();
+    const vitestFn = vi.fn();
 
     subApp.on('afterUpgrade', () => {
-      jestFn();
+      vitestFn();
     });
 
     await app.upgrade();
 
-    expect(jestFn).toBeCalled();
+    expect(vitestFn).toBeCalled();
   });
 });

@@ -250,11 +250,11 @@ describe('server hooks', () => {
 
     const serverHooks = uiSchemaPlugin.serverHooks;
 
-    const jestFn = vi.fn();
+    const vitestFn = vi.fn();
 
     serverHooks.register('onCollectionFieldDestroy', 'preventDestroy', async ({ options }) => {
       await options.transaction.rollback();
-      jestFn();
+      vitestFn();
       throw new Error('cant delete field');
     });
 
@@ -268,7 +268,7 @@ describe('server hooks', () => {
       });
     } catch (e) {}
 
-    expect(jestFn).toHaveBeenCalled();
+    expect(vitestFn).toHaveBeenCalled();
     expect(
       await db.getRepository('fields').findOne({
         filter: {
@@ -310,10 +310,10 @@ describe('server hooks', () => {
 
     const serverHooks = uiSchemaPlugin.serverHooks;
 
-    const jestFn = vi.fn();
+    const vitestFn = vi.fn();
 
     serverHooks.register('onSelfMove', 'testOnSelfMove', async ({ options }) => {
-      jestFn();
+      vitestFn();
     });
 
     await uiSchemaRepository.insert(schema);
@@ -338,6 +338,6 @@ describe('server hooks', () => {
       },
     );
 
-    expect(jestFn).toHaveBeenCalled();
+    expect(vitestFn).toHaveBeenCalled();
   });
 });

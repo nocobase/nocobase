@@ -1,7 +1,6 @@
-import '@testing-library/jest-dom';
-import { render, fireEvent, act } from '@testing-library/react';
-import Table from '../builtins/Table';
+import { act, fireEvent, render } from '@testing-library/react';
 import React from 'react';
+import Table from '../builtins/Table';
 
 describe('test Table', () => {
   it('should render folded shadows', async () => {

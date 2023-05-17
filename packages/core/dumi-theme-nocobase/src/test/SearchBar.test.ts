@@ -1,5 +1,3 @@
-import '@testing-library/jest-dom';
-
 import { highlight } from '../components/SearchBar';
 
 describe('test highlight', () => {

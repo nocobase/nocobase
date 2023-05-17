@@ -142,12 +142,12 @@ describe('create view', () => {
       ],
     });
 
-    const jestFn = vi.fn();
+    const vitestFn = vi.fn();
 
-    db.on('beforeSync', jestFn);
+    db.on('beforeSync', vitestFn);
 
     await viewCollection.sync();
-    expect(jestFn).not.toBeCalled();
+    expect(vitestFn).not.toBeCalled();
   });
 
   it('should create view collection with source field options', async () => {
