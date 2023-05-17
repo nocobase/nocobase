@@ -143,7 +143,9 @@ export const TriggerConfig = () => {
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
   useEffect(() => {
-    setEditingTitle(workflow.title ?? typeTitle);
+    if (workflow) {
+      setEditingTitle(workflow.title ?? typeTitle);
+    }
   }, [workflow]);
 
   if (!workflow || !workflow.type) {
