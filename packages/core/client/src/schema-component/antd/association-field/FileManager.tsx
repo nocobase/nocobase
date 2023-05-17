@@ -78,6 +78,7 @@ const InternalFileManager = (props) => {
     const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
     return filter;
   };
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const handleSelect = () => {
     insertSelector(schema.Selector);
     setVisibleSelector(true);
@@ -132,8 +133,9 @@ const InternalFileManager = (props) => {
     };
   };
   return (
-    <div>
+    <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
+        isDisplayInTable={isDisplayInTable}
         value={options}
         multiple={multiple}
         quickUpload={quickUpload !== false}

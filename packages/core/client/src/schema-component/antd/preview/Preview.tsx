@@ -2,6 +2,7 @@ import { DeleteOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icon
 import { connect, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,7 @@ type Props = UploadProps & {
   selectFile: boolean;
   onRemove?: (file) => void;
   onSelect?: () => void;
+  isDisplayInTable?: boolean;
 };
 
 export const Preview = connect((props) => {
@@ -26,7 +28,7 @@ export const Preview = connect((props) => {
 }, mapReadPretty(ReadPretty.File));
 
 export const FileSelector = (props: Props) => {
-  const { disabled, multiple, value, quickUpload, selectFile, onRemove, onSelect } = props;
+  const { disabled, multiple, value, quickUpload, selectFile, onRemove, onSelect, isDisplayInTable } = props;
   const uploadProps = useUploadProps({ ...props });
   const [fileList, setFileList] = useState([]);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -54,7 +56,36 @@ export const FileSelector = (props: Props) => {
   const list = fileList.length ? (multiple ? fileList : [fileList[fileList.length - 1]]) : [];
 
   return (
-    <div>
+    <div
+      className={
+        isDisplayInTable
+          ? css`
+              .nb-upload {
+                margin-bottom: 0px;
+                .ant-upload-list-picture-card-container {
+                  width: 45px;
+                  height: 38px;
+                  margin: 0px;
+                  margin-right: 10px;
+                }
+                .ant-upload.ant-upload-select-picture-card {
+                  width: 45px;
+                  height: 38px;
+                  margin: 0px;
+                  font-size: 12px;
+                }
+                .ant-upload.ant-upload-select-picture-card > .ant-upload {
+                  font-size: 10px;
+                }
+                .ant-btn-icon-only.ant-btn-sm{
+                  width:18px;
+                  height:18px;
+                }
+              }
+            `
+          : ''
+      }
+    >
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
           {list.map((file) => {
