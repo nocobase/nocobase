@@ -1,4 +1,4 @@
-import { Association, Includeable, ModelStatic } from 'sequelize';
+import { Association, BelongsToMany, HasMany, Includeable, Model, ModelStatic } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
@@ -6,7 +6,10 @@ interface EagerLoadingNode {
   association: Association;
   attributes: Array<string>;
   children: Array<EagerLoadingNode>;
+  parent?: EagerLoadingNode;
+  instances?: Array<Model>;
 }
+
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
   constructor(root: EagerLoadingNode) {
@@ -31,7 +34,8 @@ export class EagerLoadingTree {
         const child = {
           model: association.target,
           association,
-          attributes: [include.attributes],
+          attributes: include.attributes,
+          parent: eagerLoadingTreeParent,
           children: [],
         };
 
@@ -46,6 +50,78 @@ export class EagerLoadingTree {
     traverseIncludeOption(includeOption, root);
 
     return new EagerLoadingTree(root);
+  }
+
+  async load(pks: Array<string | number>) {
+    const result = {};
+
+    const loadRecursive = async (node, ids) => {
+      const modelPrimaryKey = node.model.primaryKeyAttribute;
+
+      let instances = [];
+
+      // 根节点
+      if (!node.parent) {
+        instances = await node.model.findAll({
+          where: { [modelPrimaryKey]: ids },
+          attributes: node.attributes,
+        });
+      } else {
+        const association = node.association;
+        const associationType = association.associationType;
+
+        if (associationType == 'HasOne' || associationType == 'HasMany') {
+          const foreignKey = association.foreignKey;
+          const findOptions = {
+            where: { [foreignKey]: ids },
+            attributes: node.attributes,
+          };
+
+          instances = await node.model.findAll(findOptions);
+        }
+
+        if (associationType == 'BelongsTo') {
+          instances = await node.model.findAll({
+            include: [
+              {
+                association: new HasMany(association.target, association.source, {
+                  foreignKey: association.foreignKey,
+                }),
+                where: {
+                  [association.target.primaryKeyAttribute]: ids,
+                },
+              },
+            ],
+          });
+        }
+
+        if (associationType == 'BelongsToMany') {
+          instances = await node.model.findAll({
+            include: [
+              {
+                association: association.oneFromTarget,
+                where: {
+                  [association.foreignKey]: ids,
+                },
+              },
+            ],
+          });
+        }
+      }
+
+      node.instances = instances;
+
+      for (const child of node.children) {
+        await loadRecursive(
+          child,
+          node.instances.map((instance) => instance.get(modelPrimaryKey)),
+        );
+      }
+    };
+
+    await loadRecursive(this.root, pks);
+
+    return result;
   }
 
   printTree(indent = '') {

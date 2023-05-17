@@ -99,5 +99,11 @@ describe('Eager loading tree', () => {
     expect(eagerLoadingTree.root.children[0].model).toBe(Post.model);
     expect(eagerLoadingTree.root.children[0].children[0].model).toBe(Tag.model);
     expect(eagerLoadingTree.root.children[0].children[0].children[0].model).toBe(TagCategory.model);
+
+    const result = await eagerLoadingTree.load(
+      (await User.model.findAll()).map((item) => item[User.model.primaryKeyAttribute]),
+    );
+
+    console.log({ result });
   });
 });
