@@ -118,6 +118,9 @@ export const useResourceAction = (props, opts = {}) => {
             return Promise.resolve({});
           }
           const actionParams = { ...params, ...opts };
+          if (params?.appends) {
+            actionParams.appends = params.appends;
+          }
           return resource[action](actionParams).then((res) => res.data);
         },
     {
@@ -129,7 +132,7 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [runWhenParamsChanged ? JSON.stringify(params.appends) : null],
+      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
 
