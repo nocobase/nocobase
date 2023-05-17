@@ -58,7 +58,7 @@ export class BaseAuth extends Auth {
       user = await this.validate();
     } catch (err) {
       console.log(err);
-      this.ctx.throw(500, err.message);
+      this.ctx.throw(401, err.message);
     }
     if (!user) {
       this.ctx.throw(401, 'Unauthorized');

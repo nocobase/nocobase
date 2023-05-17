@@ -66,7 +66,7 @@ export const SignupPage = () => {
   if (!signUpPages[authType]) {
     return (
       <div>
-        <div style={{ color: '#ccc' }}>Oops! The authentication type doesn not allow sign-up.</div>
+        <div style={{ color: '#ccc' }}>{t('Oops! The authentication type does not allow sign-up.')}</div>
         <Link to="/signin">{t('Return')}</Link>
       </div>
     );

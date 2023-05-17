@@ -64,6 +64,25 @@ describe('signin', () => {
       phone: '1',
       code: verification.content,
     });
+    expect(res.statusCode).toBe(401);
+
+    const repo = db.getRepository('authenticators');
+    await repo.update({
+      filter: {
+        name: 'sms-auth',
+      },
+      values: {
+        options: {
+          public: {
+            autoSignup: true,
+          },
+        },
+      },
+    });
+    res = await agent.set({ 'X-Authenticator': 'sms-auth' }).post('/auth:signIn').send({
+      phone: '1',
+      code: verification.content,
+    });
     expect(res.statusCode).toBe(200);
     const data = res.body.data;
     const token = data.token;

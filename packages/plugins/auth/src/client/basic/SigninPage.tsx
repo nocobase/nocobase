@@ -1,6 +1,6 @@
-import { SchemaComponent, useSignIn } from '@nocobase/client';
+import { Authenticator, SchemaComponent, SignupPageContext, useSignIn } from '@nocobase/client';
 import { ISchema } from '@formily/react';
-import React from 'react';
+import React, { useContext } from 'react';
 
 const passwordForm: ISchema = {
   type: 'object',
@@ -40,11 +40,26 @@ const passwordForm: ISchema = {
         },
       },
     },
+    signup: {
+      type: 'void',
+      'x-component': 'Link',
+      'x-component-props': {
+        to: '{{ signupLink }}',
+      },
+      'x-content': '{{t("Create an account")}}',
+      'x-visible': '{{ allowSignUp }}',
+    },
   },
 };
-export default (props: { name: string }) => {
+export default (props: { authenticator: Authenticator }) => {
+  const authenticator = props.authenticator;
+  const { authType, name, options } = authenticator;
+  const signupPages = useContext(SignupPageContext);
+  const allowSignUp = !!signupPages[authType] && !options?.disabledSignup;
+  const signupLink = `/signup?authType=${authType}&name=${name}`;
+
   const useBasicSignIn = () => {
-    return useSignIn(props.name);
+    return useSignIn(name);
   };
-  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn }} />;
+  return <SchemaComponent schema={passwordForm} scope={{ useBasicSignIn, allowSignUp, signupLink }} />;
 };

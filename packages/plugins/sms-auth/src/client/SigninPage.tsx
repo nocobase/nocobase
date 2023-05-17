@@ -1,4 +1,4 @@
-import { SchemaComponent, useSignIn } from '@nocobase/client';
+import { Authenticator, SchemaComponent, useSignIn } from '@nocobase/client';
 import { ISchema } from '@formily/react';
 import React from 'react';
 import VerificationCode from './VerificationCode';
@@ -43,13 +43,17 @@ const phoneForm: ISchema = {
       'x-component': 'div',
       'x-content': '{{t("User will be registered automatically if not exists.", {ns: "sms-auth"})}}',
       'x-component-props': { style: { color: '#ccc' } },
+      'x-visible': '{{ autoSignup }}',
     },
   },
 };
 
-export const SigninPage = (props: { name: string }) => {
+export const SigninPage = (props: { authenticator: Authenticator }) => {
+  const authenticator = props.authenticator;
+  const { name, options } = authenticator;
+  const autoSignup = !!options?.autoSignup;
   const useSMSSignIn = () => {
-    return useSignIn(props.name);
+    return useSignIn(name);
   };
-  return <SchemaComponent schema={phoneForm} scope={{ useSMSSignIn }} components={{ VerificationCode }} />;
+  return <SchemaComponent schema={phoneForm} scope={{ useSMSSignIn, autoSignup }} components={{ VerificationCode }} />;
 };

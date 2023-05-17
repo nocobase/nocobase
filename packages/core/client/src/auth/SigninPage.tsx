@@ -10,8 +10,8 @@ import React, {
 } from 'react';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation } from 'react-router-dom';
-import { SignupPageContext, useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
+import { useHistory, useLocation } from 'react-router-dom';
+import { useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import { useForm } from '@formily/react';
 
@@ -24,7 +24,7 @@ const SigninPageContext = createContext<{
 
 export const SigninPageProvider: React.FC<{
   authType: string;
-  component: FunctionComponent<{ name: string }>;
+  component: FunctionComponent<{ authenticator: Authenticator }>;
   tabTitle?: string;
 }> = (props) => {
   const components = useContext(SigninPageContext);
@@ -35,10 +35,13 @@ export const SigninPageProvider: React.FC<{
   return <SigninPageContext.Provider value={components}>{props.children}</SigninPageContext.Provider>;
 };
 
-type Authenticator = {
+export type Authenticator = {
   name: string;
   authType: string;
   title?: string;
+  options?: {
+    [key: string]: any;
+  };
 };
 
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
@@ -69,38 +72,29 @@ export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const signInPages = useContext(SigninPageContext);
-  const signupPages = useContext(SignupPageContext);
   const signinExtension = useSigninPageExtension();
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);
   const [tabs, setTabs] = useState<
     (Authenticator & {
-      component: FunctionComponentElement<{ name: string }>;
-      allowSignup: boolean;
+      component: FunctionComponentElement<{ authenticator: Authenticator }>;
       tabTitle: string;
     })[]
   >([]);
 
-  const handleAuthenticators = (
-    authenticators: {
-      name: string;
-      authType: string;
-      title?: string;
-    }[],
-  ) => {
+  const handleAuthenticators = (authenticators: Authenticator[]) => {
     const tabs = authenticators
-      .map((item) => {
-        const page = signInPages[item.authType];
+      .map((authenticator) => {
+        const page = signInPages[authenticator.authType];
         if (!page) {
           return;
         }
         return {
           component: createElement<{
-            name: string;
-          }>(page.component, { name: item.name }),
-          allowSignup: !!signupPages[item.authType],
-          tabTitle: item.title || page.tabTitle || item.name,
-          ...item,
+            authenticator: Authenticator;
+          }>(page.component, { authenticator }),
+          tabTitle: authenticator.title || page.tabTitle || authenticator.name,
+          ...authenticator,
         };
       })
       .filter((i) => i);
@@ -141,23 +135,11 @@ export const SigninPage = () => {
             {tabs.map((tab) => (
               <Tabs.TabPane tab={tab.tabTitle} key={tab.name}>
                 {tab.component}
-                {tab.allowSignup && (
-                  <div>
-                    <Link to={`/signup?authType=${tab.authType}&name=${tab.name}`}>{t('Create an account')}</Link>
-                  </div>
-                )}
               </Tabs.TabPane>
             ))}
           </Tabs>
         ) : tabs.length ? (
-          <div>
-            {tabs[0].component}
-            {tabs[0].allowSignup && (
-              <div>
-                <Link to={`/signup?authType=${tabs[0].authType}&name=${tabs[0].name}`}>{t('Create an account')}</Link>
-              </div>
-            )}
-          </div>
+          <div>{tabs[0].component}</div>
         ) : (
           <></>
         )}

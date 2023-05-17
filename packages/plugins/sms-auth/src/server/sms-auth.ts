@@ -2,6 +2,7 @@ import { AuthConfig, BaseAuth } from '@nocobase/auth';
 import { Model } from '@nocobase/database';
 import VerificationPlugin from '@nocobase/plugin-verification';
 import { AuthModel } from '@nocobase/plugin-auth';
+import { namespace } from '../constants';
 
 export class SMSAuth extends BaseAuth {
   constructor(config: AuthConfig) {
@@ -38,10 +39,19 @@ export class SMSAuth extends BaseAuth {
           return;
         }
         // New data
-        user = await (this.authenticator as AuthModel).findOrCreateUser(phone, {
-          nickname: phone,
-          phone,
-        });
+        const { autoSignup } = this.authenticator.options?.public || {};
+        const authenticator = this.authenticator as AuthModel;
+        if (autoSignup) {
+          user = await authenticator.findOrCreateUser(phone, {
+            nickname: phone,
+            phone,
+          });
+          return;
+        }
+        user = await authenticator.findUser(phone);
+        if (!user) {
+          throw new Error(ctx.t('The phone number is not registered, please register first', { ns: namespace }));
+        }
       } catch (err) {
         console.log(err);
         throw new Error(err.message);

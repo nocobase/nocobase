@@ -35,16 +35,18 @@ describe('actions', () => {
       expect(res.body.data).toEqual(['Email/Password']);
     });
 
-    it('should return enabled authenticators', async () => {
-      const repo = db.getRepository('authenticators');
+    it('should return enabled authenticators with public options', async () => {
+      await repo.destroy({
+        truncate: true,
+      });
       await repo.createMany({
         records: [
-          { name: 'test', authType: 'testType', enabled: true },
+          { name: 'test', authType: 'testType', enabled: true, options: { public: { test: 1 }, private: { test: 2 } } },
           { name: 'test2', authType: 'testType' },
         ],
       });
       const res = await agent.resource('authenticators').publicList();
-      expect(res.body.data).toEqual([{ name: 'test', authType: 'testType', title: null }]);
+      expect(res.body.data).toEqual([{ name: 'test', authType: 'testType', title: null, options: { test: 1 } }]);
     });
 
     it('should keep at least one authenticator', async () => {
@@ -107,6 +109,33 @@ describe('actions', () => {
 
       res = await agent.get('/auth:check').set({ Authorization: `Bearer ${token}`, 'X-Authenticator': 'basic' });
       expect(res.body.data.id).toBeDefined();
+    });
+
+    it('should disable sign up', async () => {
+      let res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: 'new',
+        password: 'new',
+      });
+      expect(res.statusCode).toEqual(200);
+
+      const repo = db.getRepository('authenticators');
+      await repo.update({
+        filter: {
+          name: 'basic',
+        },
+        values: {
+          options: {
+            public: {
+              disabledSignUp: true,
+            },
+          },
+        },
+      });
+      res = await agent.post('/auth:signUp').set({ 'X-Authenticator': 'basic' }).send({
+        email: process.env.INIT_ROOT_EMAIL,
+        password: process.env.INIT_ROOT_PASSWORD,
+      });
+      expect(res.statusCode).toEqual(403);
     });
   });
 });
