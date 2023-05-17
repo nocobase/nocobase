@@ -16,8 +16,7 @@ export type VariableOptions = VariableOption[] | null;
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeId',
-  useOptions(options) {
-    const current = useNodeContext();
+  useOptions(current, options) {
     const upstreams = useAvailableUpstreams(current);
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
@@ -39,7 +38,7 @@ export const nodesOptions = {
 export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
-  useOptions(options) {
+  useOptions(current, options) {
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
     return trigger?.useVariables?.(workflow.config, options) ?? null;
@@ -49,14 +48,14 @@ export const triggerOptions = {
 export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
-  useOptions(current, types) {
+  useOptions(current, options) {
     const scopes = useUpstreamScopes(current);
-    const options: VariableOption[] = [];
+    const result: VariableOption[] = [];
     scopes.forEach((node) => {
       const instruction = instructions.get(node.type);
-      const subOptions = instruction.useScopeVariables?.(node, types);
+      const subOptions = instruction.useScopeVariables?.(node, options);
       if (subOptions) {
-        options.push({
+        result.push({
           key: node.id.toString(),
           value: node.id.toString(),
           label: node.title ?? `#${node.id}`,
@@ -64,7 +63,7 @@ export const scopeOptions = {
         });
       }
     });
-    return options;
+    return result;
   },
 };
 
