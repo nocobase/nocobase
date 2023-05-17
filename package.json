@@ -48,6 +48,7 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
+    "esm": "^3.2.25",
     "ghooks": "^2.0.4",
     "prettier": "^2.8.8",
     "pretty-format": "^24.0.0",
