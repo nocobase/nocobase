@@ -10,7 +10,11 @@ import Designer from './Designer';
 
 type MapProps = AMapComponentProps;
 
-const MapCom = (props: MapProps) => {
+const InternalMap = connect((props: MapProps) => {
+  return <InputMapComponent {...props} />;
+}, mapReadPretty(ReadPretty));
+
+const MapCom = (props) => {
   return (
     <div
       className={css`
@@ -21,15 +25,10 @@ const MapCom = (props: MapProps) => {
         }
       `}
     >
-      {props.mapType ? <AMapComponent {...props} /> : null}
+      {props.mapType ? <AMapComponent {...props} value={props.data} /> : null}
     </div>
   );
 };
-
-const InternalMap = connect((props: MapProps) => {
-  return <InputMapComponent {...props} />;
-}, mapReadPretty(ReadPretty));
-
 const InputMapComponent = React.forwardRef((props: any) => {
   const fieldSchema = useFieldSchema();
   const targetField: any = useField();
@@ -37,6 +36,7 @@ const InputMapComponent = React.forwardRef((props: any) => {
   const collectionField = getField(fieldSchema?.name);
   const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
   const form = createForm();
+
   const FieldWithEditable = React.useMemo(() => {
     return (
       <div>
@@ -64,14 +64,17 @@ const InputMapComponent = React.forwardRef((props: any) => {
             ]}
           >
             <Field
-              component={[MapCom, { ...props, type: collectionField?.interface, style: { height: 400 } }]}
+              component={[
+                MapCom,
+                { ...props, data: props.value, type: collectionField?.interface, style: { height: 400 } },
+              ]}
               name="map"
             />
           </ObjectField>
         </FormProvider>
       </div>
     );
-  }, []);
+  }, [collectionField]);
 
   return isDisplayInTable ? FieldWithEditable : <MapCom {...props} />;
 });
