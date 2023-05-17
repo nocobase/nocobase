@@ -23,12 +23,12 @@ const ToOneNester = (props) => {
   return <Card bordered={true}>{props.children}</Card>;
 };
 
-const toArr = (value) => {
+const toArr = (value,isReadpretty) => {
   if (!value) {
     return [];
   }
   if (Array.isArray(value)) {
-    return value.length > 0 ? value : [{}];
+    return value.length > 0 ? value : isReadpretty?[]:[{}];
   }
   return [value];
 };
@@ -36,7 +36,7 @@ const toArr = (value) => {
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
-  const values = toArr(field.value);
+  const values = toArr(field.value,field.readPretty);
   const { t } = useTranslation();
   // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
