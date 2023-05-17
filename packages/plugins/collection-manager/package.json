@@ -4,11 +4,11 @@
   "main": "lib/index.js",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@hapi/topo": "^6.0.0",
+    "@hapi/topo": "^6.0.2",
     "@nocobase/database": "0.9.3-alpha.1",
     "@nocobase/plugin-error-handler": "0.9.3-alpha.1",
     "@nocobase/server": "0.9.3-alpha.1",
-    "sequelize": "^6.26.0",
+    "sequelize": "^6.31.1",
     "toposort": "^2.0.2"
   },
   "devDependencies": {

@@ -5,8 +5,8 @@
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@hapi/topo": "^6.0.0",
-    "@koa/cors": "^3.1.0",
+    "@hapi/topo": "^6.0.2",
+    "@koa/cors": "^3.4.3",
     "@koa/router": "^9.4.0",
     "@nocobase/acl": "0.9.3-alpha.1",
     "@nocobase/actions": "0.9.3-alpha.1",
@@ -15,19 +15,19 @@
     "@nocobase/resourcer": "0.9.3-alpha.1",
     "@nocobase/utils": "0.9.3-alpha.1",
     "chalk": "^4.1.1",
-    "commander": "^9.2.0",
+    "commander": "^9.5.0",
     "find-package-json": "^1.2.0",
-    "i18next": "^22.4.9",
-    "koa": "^2.13.4",
-    "koa-bodyparser": "^4.3.0",
+    "i18next": "^22.4.15",
+    "koa": "^2.14.2",
+    "koa-bodyparser": "^4.4.0",
     "koa-static": "^5.0.0",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
-    "semver": "^7.3.7",
+    "moment": "^2.29.4",
+    "semver": "^7.5.1",
     "xpipe": "^1.0.5"
   },
   "devDependencies": {
-    "@types/semver": "^7.3.9"
+    "@types/semver": "^7.5.0"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

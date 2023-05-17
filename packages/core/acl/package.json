@@ -8,7 +8,7 @@
   "dependencies": {
     "@nocobase/resourcer": "0.9.3-alpha.1",
     "@nocobase/utils": "0.9.3-alpha.1",
-    "minimatch": "^5.1.1"
+    "minimatch": "^5.1.6"
   },
   "repository": {
     "type": "git",

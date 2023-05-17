@@ -6,7 +6,7 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "mathjs": "^10.6.0"
+    "mathjs": "^10.6.4"
   },
   "devDependencies": {
     "@nocobase/server": "0.9.3-alpha.1",

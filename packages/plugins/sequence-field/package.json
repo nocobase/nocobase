@@ -12,9 +12,9 @@
     "@nocobase/plugin-collection-manager": "0.9.3-alpha.1",
     "@nocobase/server": "0.9.3-alpha.1",
     "@nocobase/utils": "0.9.3-alpha.1",
-    "classnames": "^2.3.1",
+    "classnames": "^2.3.2",
     "cron-parser": "4.4.0",
-    "react-js-cron": "^3.1.0"
+    "react-js-cron": "^3.2.0"
   },
   "devDependencies": {
     "@nocobase/test": "0.9.3-alpha.1"

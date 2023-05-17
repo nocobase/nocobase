@@ -7,10 +7,10 @@
   "typings": "es/index.d.ts",
   "dependencies": {
     "axios": "^0.26.1",
-    "qs": "^6.10.1"
+    "qs": "^6.11.2"
   },
   "devDependencies": {
-    "axios-mock-adapter": "^1.20.0"
+    "axios-mock-adapter": "^1.21.4"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

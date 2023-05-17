@@ -13,7 +13,7 @@
     "@nocobase/resourcer": "0.9.3-alpha.1",
     "@nocobase/server": "0.9.3-alpha.1",
     "@nocobase/utils": "0.9.3-alpha.1",
-    "tencentcloud-sdk-nodejs": "^4.0.525"
+    "tencentcloud-sdk-nodejs": "^4.0.600"
   },
   "devDependencies": {
     "@nocobase/test": "0.9.3-alpha.1"

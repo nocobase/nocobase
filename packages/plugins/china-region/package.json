@@ -6,7 +6,7 @@
   "dependencies": {
     "@nocobase/client": "0.9.3-alpha.1",
     "@nocobase/server": "0.9.3-alpha.1",
-    "china-division": "^2.4.0"
+    "china-division": "^2.6.1"
   },
   "devDependencies": {
     "@nocobase/test": "0.9.3-alpha.1"

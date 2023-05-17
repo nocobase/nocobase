@@ -44,7 +44,7 @@
     },
     "lib": [
       "dom",
-      "esnext",
+      "esnext"
     ],
     "types": [
       "node",
@@ -58,7 +58,7 @@
   },
   "include": [
     "packages/**/*",
-    "scripts/setupVitest.ts",
+    "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",

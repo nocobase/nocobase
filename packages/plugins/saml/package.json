@@ -10,6 +10,6 @@
     "@nocobase/test": "0.9.3-alpha.1"
   },
   "dependencies": {
-    "@node-saml/node-saml": "^4.0.2"
+    "@node-saml/node-saml": "^4.0.4"
   }
 }

@@ -11,7 +11,7 @@
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {
-    "@types/node-xlsx": "^0.15.1"
+    "@types/node-xlsx": "^0.15.3"
   },
   "peerDependencies": {
     "@nocobase/client": "*",

@@ -10,15 +10,15 @@
     "@nocobase/utils": "0.9.3-alpha.1",
     "async-mutex": "^0.3.2",
     "cron-parser": "4.4.0",
-    "deepmerge": "^4.2.2",
+    "deepmerge": "^4.3.1",
     "excel-date-to-js": "^1.1.5",
     "flat": "^5.0.2",
-    "glob": "^7.1.6",
-    "mathjs": "^10.6.1",
-    "moment": "2.x",
-    "semver": "^7.3.7",
-    "sequelize": "^6.26.0",
-    "umzug": "^3.1.1"
+    "glob": "^7.2.3",
+    "mathjs": "^10.6.4",
+    "moment": "^2.29.4",
+    "semver": "^7.5.1",
+    "sequelize": "^6.31.1",
+    "umzug": "^3.2.1"
   },
   "devDependencies": {
     "@types/glob": "^7.2.0"
