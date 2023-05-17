@@ -18,6 +18,7 @@
     "start": "nocobase start",
     "build": "nocobase build",
     "test": "nocobase test",
+    "test:vi": "vitest",
     "doc": "nocobase doc",
     "postinstall": "nocobase postinstall",
     "lint": "eslint .",
@@ -44,11 +45,15 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
     "ghooks": "^2.0.4",
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",
-    "pretty-quick": "^3.1.0"
+    "pretty-quick": "^3.1.0",
+    "vite": "^4.3.7",
+    "vitest": "^0.31.0"
   },
   "volta": {
     "node": "18.14.2",

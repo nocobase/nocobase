@@ -41,7 +41,15 @@
       "@nocobase/*": [
         "packages/core/*/src"
       ]
-    }
+    },
+    "lib": [
+      "dom",
+      "esnext",
+    ],
+    "types": [
+      "node",
+      "vitest/globals"
+    ],
   },
   "ts-node": {
     "compilerOptions": {
@@ -49,7 +57,8 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    "scripts/setupVitest.ts",
   ],
   "exclude": [
     "packages/**/node_modules",
