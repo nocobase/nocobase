@@ -155,6 +155,7 @@ export const GridCardDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
+                            required:true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {
