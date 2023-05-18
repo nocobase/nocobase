@@ -184,21 +184,35 @@ describe('Eager loading tree', () => {
 
     await db.sync();
 
+    const tags = await Tag.repository.create({
+      values: [
+        {
+          name: 't1',
+        },
+        {
+          name: 't2',
+        },
+        {
+          name: 't3',
+        },
+      ],
+    });
+
     await Post.repository.create({
       values: [
         {
           title: 'p1',
-          tags: [{ name: 't1' }, { name: 't2' }],
+          tags: [{ id: tags[0].id }, { id: tags[1].id }],
         },
         {
           title: 'p2',
-          tags: [{ name: 't1' }, { name: 't3' }],
+          tags: [{ id: tags[1].id }, { id: tags[2].id }],
         },
       ],
     });
 
     const findOptions = Post.repository.buildQueryOptions({
-      fields: ['tags', 'title'],
+      appends: ['tags'],
     });
 
     const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
@@ -208,10 +222,18 @@ describe('Eager loading tree', () => {
     });
     await eagerLoadingTree.load([1, 2]);
     const root = eagerLoadingTree.root;
+
     const p1 = root.instances.find((item) => item.get('title') === 'p1');
-    const p1Tags = p1.get('tags');
-    console.log(p1Tags);
-    // const p2 = root.instances.find((item) => item.get('title') === 'p2');
+    const p1Tags = p1.get('tags') as any;
+    expect(p1Tags).toBeDefined();
+    expect(p1Tags.length).toBe(2);
+    expect(p1Tags.map((t) => t.get('name'))).toEqual(['t1', 't2']);
+
+    const p2 = root.instances.find((item) => item.get('title') === 'p2');
+    const p2Tags = p2.get('tags') as any;
+    expect(p2Tags).toBeDefined();
+    expect(p2Tags.length).toBe(2);
+    expect(p2Tags.map((t) => t.get('name'))).toEqual(['t2', 't3']);
   });
 
   it('should build eager loading tree', async () => {

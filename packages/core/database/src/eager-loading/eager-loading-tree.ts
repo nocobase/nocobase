@@ -172,6 +172,29 @@ export class EagerLoadingTree {
             }
           }
         }
+
+        if (associationType == 'BelongsToMany') {
+          const sourceKey = association.sourceKey;
+          const foreignKey = association.foreignKey;
+
+          const oneFromTarget = association.oneFromTarget;
+
+          for (const instance of node.instances) {
+            const parentInstance = node.parent.instances.find(
+              (parentInstance) => parentInstance.get(sourceKey) == instance.get(oneFromTarget.as).get(foreignKey),
+            );
+
+            if (parentInstance) {
+              const children = parentInstance.getDataValue(association.as);
+
+              if (!children) {
+                parentInstance.setDataValue(association.as, [instance]);
+              } else {
+                children.push(instance);
+              }
+            }
+          }
+        }
       }
     };
 
