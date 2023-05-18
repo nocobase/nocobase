@@ -80,9 +80,10 @@ export class EagerLoadingTree {
 
         if (associationType == 'HasOne' || associationType == 'HasMany') {
           const foreignKey = association.foreignKey;
+          const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           const findOptions = {
-            where: { [foreignKey]: ids },
+            where: { [foreignKey]: foreignKeyValues },
             attributes: node.attributes,
             transaction,
           };
@@ -135,7 +136,6 @@ export class EagerLoadingTree {
         const associationType = association.associationType;
 
         const setParentAccessor = (parentInstance) => {
-          console.log({ setParentAccessor });
           const key = association.as;
 
           const children = parentInstance.getDataValue(association.as);
