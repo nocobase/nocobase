@@ -21,6 +21,7 @@ import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { useSchemaTemplateManager } from '../../schema-templates';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -1074,6 +1075,8 @@ export const useAssociationFilterBlockProps = () => {
 
 export const useAssociationNames = (collection) => {
   const { getCollectionJoinField } = useCollectionManager();
+  const { getTemplateById } = useSchemaTemplateManager();
+
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -1103,6 +1106,9 @@ export const useAssociationNames = (collection) => {
         if (s['x-component'] === 'Grid.Row') {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
+        } else if (s['x-component'] === 'BlockTemplate') {
+          const templateSchema = getTemplateById(s['x-component-props']?.templateId);
+          return getAssociationAppends(templateSchema, buf);
         } else {
           return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
             ? getAssociationAppends(s, buf)
