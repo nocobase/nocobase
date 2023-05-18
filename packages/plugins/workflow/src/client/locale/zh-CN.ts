@@ -87,6 +87,8 @@ export default {
   Control: '流程控制',
   'Collection operations': '数据表操作',
   Manual: '人工处理',
+  'Could be used for manually submitting data, and determain whether continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.':
+    '可用于人工提交数据，并决定是否继续或退出流程。工作流在执行到人工节点时会为被指派的用户生成待办事项，直到用户提交对应表单后继续处理该流程。',
   'Extended types': '扩展类型',
   'Node type': '节点类型',
   Calculation: '运算',
@@ -166,7 +168,7 @@ export default {
   'Update records of a collection. Could use variables in workflow context as filter and values.':
     '更新一个数据表中的数据。可以使用流程上下文中的变量作为查询条件和数据值。',
   'Query record': '查询数据',
-  'Query records of a collection. Could use variables in workflow context as filter.':
+  'Query records from a collection. Could use variables in workflow context as filter.':
     '查询数据表中的数据。可以使用流程上下文中的变量作为查询条件。',
   'Multiple records': '多条数据',
   'Result will be an array of records, could be manipulated in loop.':
