@@ -40,8 +40,7 @@ const InternalDetailsBlockProvider = (props) => {
 
 export const DetailsBlockProvider = (props) => {
   const params = { ...props.params };
-  const { collection } = props;
-  const { appends } = useAssociationNames(collection);
+  const { appends } = useAssociationNames();
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }

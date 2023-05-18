@@ -1073,10 +1073,20 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
-export const useAssociationNames = (collection) => {
+const getTemplateSchema = ({ uid }) => {
+  const conf = {
+    url: `/uiSchemas:getJsonSchema/${uid}`,
+  };
+  const { data, loading } = useRequest(conf);
+  if (loading) {
+    // return;
+  }
+  return new Schema(data?.data || {});
+};
+
+export const useAssociationNames = () => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getTemplateById } = useSchemaTemplateManager();
-
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -1085,6 +1095,13 @@ export const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
+
+  const templateSchema = formSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'BlockTemplate') {
+      return schema;
+    }
+    return buf;
+  }, null);
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
@@ -1106,9 +1123,6 @@ export const useAssociationNames = (collection) => {
         if (s['x-component'] === 'Grid.Row') {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
-        } else if (s['x-component'] === 'BlockTemplate') {
-          const templateSchema = getTemplateById(s['x-component-props']?.templateId);
-          return getAssociationAppends(templateSchema, buf);
         } else {
           return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
             ? getAssociationAppends(s, buf)
@@ -1138,7 +1152,7 @@ export const useAssociationNames = (collection) => {
     for (let i = 0; i < nestedList.length; i++) {
       flattenHelper(nestedList[i], nestedList[i][0]);
     }
-    return uniq(flattenedList.filter((obj) => !obj.startsWith('.')));
+    return uniq(flattenedList.filter((obj) => !obj?.startsWith('.')));
   }
   const getNesterAppends = (gridSchema, data) => {
     gridSchema.reduceProperties((buf, s) => {
@@ -1147,8 +1161,17 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-
-  const associations = getAssociationAppends(formSchema);
-  const appends = flattenNestedList(associations);
-  return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  if (templateSchema) {
+    const template = getTemplateById(templateSchema['x-component-props']?.templateId);
+    const schema = getTemplateSchema(template);
+    if (schema) {
+      const associations = getAssociationAppends(schema);
+      const appends = flattenNestedList(associations);
+      return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+    }
+  } else {
+    const associations = getAssociationAppends(formSchema);
+    const appends = flattenNestedList(associations);
+    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  }
 };

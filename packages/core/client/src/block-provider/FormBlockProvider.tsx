@@ -72,7 +72,7 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-  const { appends, updateAssociationValues } = useAssociationNames(collection);
+  const { appends, updateAssociationValues } = useAssociationNames();
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
