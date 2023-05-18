@@ -314,7 +314,7 @@ describe('Eager loading tree', () => {
     });
 
     const findOptions = User.repository.buildQueryOptions({
-      fields: ['posts.tags.tagCategory'],
+      appends: ['posts.tags.tagCategory'],
     });
 
     const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
@@ -328,10 +328,13 @@ describe('Eager loading tree', () => {
     expect(eagerLoadingTree.root.children[0].children[0].model).toBe(Tag.model);
     expect(eagerLoadingTree.root.children[0].children[0].children[0].model).toBe(TagCategory.model);
 
-    const result = await eagerLoadingTree.load(
-      (await User.model.findAll()).map((item) => item[User.model.primaryKeyAttribute]),
-    );
+    await eagerLoadingTree.load((await User.model.findAll()).map((item) => item[User.model.primaryKeyAttribute]));
 
-    console.log({ result });
+    expect(eagerLoadingTree.root.instances).toHaveLength(2);
+    const u1 = eagerLoadingTree.root.instances.find((item) => item.get('name') === 'u1');
+    expect(u1.get('posts')).toHaveLength(1);
+    expect(u1.get('posts')[0].get('tags')).toHaveLength(2);
+    expect(u1.get('posts')[0].get('tags')[0].get('tagCategory')).toBeDefined();
+    expect(u1.get('posts')[0].get('tags')[0].get('tagCategory').get('name')).toBe('c1');
   });
 });
