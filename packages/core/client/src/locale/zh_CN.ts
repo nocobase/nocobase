@@ -771,4 +771,7 @@ export default {
   'Reload Application': '重载应用',
   'The application is reloading, please do not close the page.': '应用正在重新加载，请勿关闭页面。',
   'Application reloading': '应用重新加载中',
+  'Reboot Application': '重启应用',
+  "Allows to reboot application": "允许重启应用",
+  'This operation will interrupt service, are you sure to continue?' : '重启将中断当前服务，确认要继续重启吗？',
 }

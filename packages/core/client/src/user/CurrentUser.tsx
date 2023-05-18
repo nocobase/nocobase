@@ -51,20 +51,16 @@ export const CurrentUser = () => {
                 <Menu.Item
                   key="reload"
                   onClick={async () => {
-                    Modal.warn({
-                      title: t('Application reloading'),
-                      content: t('The application is reloading, please do not close the page.'),
-                      okButtonProps: {
-                        style: {
-                          display: 'none',
-                        },
+                    Modal.confirm({
+                      title: t('Reboot Application'),
+                      content: t('This operation will interrupt service, are you sure to continue?'),
+                      onOk: async () => {
+                        await api.resource('app').reboot();
                       },
                     });
-                    await api.resource('app').reload();
-                    window.location.reload();
                   }}
                 >
-                  {t('Reload Application')}
+                  {t('Reboot Application')}
                 </Menu.Item>
               )}
               <Menu.Divider />
