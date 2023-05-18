@@ -12,7 +12,7 @@ export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
-  description: `{{t("Create new record of a collection. Could use variables in workflow context as value of the new record.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     // multiple: {

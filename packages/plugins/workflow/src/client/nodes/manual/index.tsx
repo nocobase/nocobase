@@ -33,7 +33,7 @@ export default {
   title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
   type: 'manual',
   group: 'manual',
-  description: `{{t("Could be used for manually submitting data, and determain whether continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}")}}`,
+  description: `{{t("Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     assignees: {
       type: 'array',

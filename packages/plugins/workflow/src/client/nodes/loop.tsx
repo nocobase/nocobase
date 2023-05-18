@@ -31,12 +31,12 @@ export default {
   title: `{{t("Loop", { ns: "${NAMESPACE}" })}}`,
   type: 'loop',
   group: 'control',
-  description: `{{t("Use loop for same manipulating on each of multiple records, which from query multiple result, or preload to-many association records. Also could be used for a number of times, or for each character of a string. Loop will cause performance issue based on the quantity, please use with caution.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     target: {
       type: 'string',
       title: `{{t("Loop target", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {

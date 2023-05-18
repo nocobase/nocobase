@@ -11,7 +11,7 @@ export default {
   title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
   type: 'update',
   group: 'collection',
-  description: `{{t("Update records of a collection. Could use variables in workflow context as filter and values.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Update records of a collection. You can use variables from upstream nodes as query conditions and field values.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     params: {

@@ -90,7 +90,7 @@ export default {
   title: `{{t("Aggregate", { ns: "${NAMESPACE}" })}}`,
   type: 'aggregate',
   group: 'collection',
-  description: `{{t("Aggregate multiple records in a collection for a specific field, to get a statistics value based on the aggregator function.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     aggregator: {
       type: 'string',

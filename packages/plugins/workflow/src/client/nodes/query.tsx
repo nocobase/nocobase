@@ -12,15 +12,15 @@ export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
   type: 'query',
   group: 'collection',
-  description: `{{t("Query records of a collection. Could use variables in workflow context as filter.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     multiple: {
       type: 'boolean',
-      title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Allow multiple records as result", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-      description: `{{t("Result will be an array of records, could be manipulated in loop.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.", { ns: "${NAMESPACE}" })}}`,
     },
     params: {
       type: 'object',
@@ -31,7 +31,7 @@ export default {
     },
     failOnEmpty: {
       type: 'boolean',
-      title: `{{t("Fail on no data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Exit when query result is null", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
     },
