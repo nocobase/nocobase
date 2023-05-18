@@ -91,19 +91,16 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsTo') {
+          const foreignKey = association.foreignKey;
+
+          const parentInstancesForeignKeyValues = node.parent.instances.map((instance) => instance.get(foreignKey));
+
           instances = await node.model.findAll({
             transaction,
-            include: [
-              {
-                association: new HasMany(association.target, association.source, {
-                  foreignKey: association.foreignKey,
-                  as: association.as + '_inverse',
-                }),
-                where: {
-                  [association.target.primaryKeyAttribute]: ids,
-                },
-              },
-            ],
+            where: {
+              [association.targetKey]: parentInstancesForeignKeyValues,
+            },
+            attributes: node.attributes,
           });
         }
 
