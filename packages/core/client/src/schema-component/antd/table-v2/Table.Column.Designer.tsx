@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { useAssociationFieldContext } from '../association-field/hooks';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -26,7 +27,7 @@ const useLabelFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { getInterface, getCollection } = useCollectionManager();
-  const field:any = useField();
+  const field: any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -36,6 +37,7 @@ export const TableColumnDesigner = (props) => {
   const intefaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
+  const { currentMode } = useAssociationFieldContext();
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -101,7 +103,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {intefaceCfg && intefaceCfg.sortable === true && (
+      {intefaceCfg && intefaceCfg.sortable === true && !currentMode && (
         <SchemaSettings.SwitchItem
           title={t('Sortable')}
           checked={field.componentProps.sorter}
