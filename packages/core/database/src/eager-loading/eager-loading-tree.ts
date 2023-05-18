@@ -151,6 +151,21 @@ export class EagerLoadingTree {
             }
           }
         }
+
+        if (associationType == 'BelongsTo') {
+          const foreignKey = association.foreignKey;
+          const targetKey = association.targetKey;
+
+          for (const instance of node.instances) {
+            const parentInstance = node.parent.instances.find(
+              (parentInstance) => parentInstance.get(foreignKey) == instance.get(targetKey),
+            );
+
+            if (parentInstance) {
+              parentInstance.setDataValue(association.as, instance);
+            }
+          }
+        }
       }
     };
 
