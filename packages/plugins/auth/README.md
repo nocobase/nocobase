@@ -98,6 +98,8 @@ async load() {
 <OptionsComponentProvider authType="custom-auth-type" component={Options} /> 
 ```
 
+`Options`组件使用的值是`authenticator`的`options`字段，如果有需要暴露在前端的配置，应该放在`options.public`字段中。`authenticators:publicList`接口会返回`options.public`字段的值。
+
 #### SigninPageProvider
 自定义登录页界面
 - authType 认证方式
@@ -108,3 +110,8 @@ async load() {
 自定义注册页界面
 - authType 认证方式
 - component 注册页组件 
+
+#### SigninPageExtensionProvider
+自定义登录页下方的扩展内容
+- authType 认证方式
+- component 扩展组件

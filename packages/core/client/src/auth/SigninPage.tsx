@@ -42,6 +42,7 @@ export type Authenticator = {
   options?: {
     [key: string]: any;
   };
+  sort?: number;
 };
 
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
@@ -72,7 +73,6 @@ export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
   const signInPages = useContext(SigninPageContext);
-  const signinExtension = useSigninPageExtension();
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);
   const [tabs, setTabs] = useState<
@@ -81,6 +81,7 @@ export const SigninPage = () => {
       tabTitle: string;
     })[]
   >([]);
+  const signinExtension = useSigninPageExtension(authenticators);
 
   const handleAuthenticators = (authenticators: Authenticator[]) => {
     const tabs = authenticators

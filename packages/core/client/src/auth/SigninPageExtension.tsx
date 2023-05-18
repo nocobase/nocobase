@@ -1,24 +1,40 @@
 import React, { createContext, FunctionComponent, useContext } from 'react';
+import { Authenticator, AuthenticatorsContext } from './SigninPage';
 
 export interface SigninPageExtensionContextValue {
-  components: FunctionComponent[];
+  components: {
+    [authType: string]: FunctionComponent<{
+      authenticator: Authenticator;
+      [key: string]: any;
+    }>;
+  };
 }
 
-export const SigninPageExtensionContext = createContext<SigninPageExtensionContextValue>({ components: [] });
+export const SigninPageExtensionContext = createContext<SigninPageExtensionContextValue>({ components: {} });
 
-export const useSigninPageExtension = () => {
+export const useSigninPageExtension = (authenticators = []) => {
   const { components } = useContext(SigninPageExtensionContext);
-  return components.map((component, index) => React.createElement(component, { key: index }));
+  const types = Object.keys(components);
+  return authenticators
+    .filter((authenticator) => types.includes(authenticator.authType))
+    .map((authenticator, index) =>
+      React.createElement(components[authenticator.authType], { key: index, authenticator }),
+    );
 };
 
-export const SigninPageExtensionProvider = (props: { component: FunctionComponent; children: JSX.Element }) => {
+export const SigninPageExtensionProvider: React.FC<{
+  authType: string;
+  component: FunctionComponent<{
+    authenticator: Authenticator;
+    [key: string]: any;
+  }>;
+}> = (props) => {
   const { components } = useContext(SigninPageExtensionContext);
-
-  const list = props.component ? [...components, props.component] : components;
+  if (!components[props.authType]) {
+    components[props.authType] = props.component;
+  }
 
   return (
-    <SigninPageExtensionContext.Provider value={{ components: list }}>
-      {props.children}
-    </SigninPageExtensionContext.Provider>
+    <SigninPageExtensionContext.Provider value={{ components }}>{props.children}</SigninPageExtensionContext.Provider>
   );
 };

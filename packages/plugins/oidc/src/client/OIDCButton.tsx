@@ -1,20 +1,19 @@
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export interface OIDCProvider {
   clientId: string;
   title: string;
 }
 
-export const OIDCList = () => {
+export const OIDCButton = (props: { authenticator: Authenticator }) => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
-  const authenticators = useContext(AuthenticatorsContext);
 
   /**
    * 打开登录弹出框
@@ -72,6 +71,7 @@ export const OIDCList = () => {
     };
   }, [windowHandler, handleOIDCLogin]);
 
+  const authenticator = props.authenticator;
   return (
     <Space
       direction="vertical"
@@ -79,13 +79,9 @@ export const OIDCList = () => {
         display: flex;
       `}
     >
-      {authenticators
-        .filter((i) => i.authType === 'OIDC')
-        .map((item) => (
-          <Button shape="round" block key={item.name} icon={<LoginOutlined />} onClick={() => handleOpen(item.name)}>
-            {item.title}
-          </Button>
-        ))}
+      <Button shape="round" block icon={<LoginOutlined />} onClick={() => handleOpen(authenticator.name)}>
+        {authenticator.title}
+      </Button>
     </Space>
   );
 };

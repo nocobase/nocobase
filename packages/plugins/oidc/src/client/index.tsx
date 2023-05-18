@@ -1,14 +1,12 @@
 import { OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
 import React from 'react';
-import { useOidcTranslation } from './locale';
-import { OIDCList } from './OIDCList';
+import { OIDCButton } from './OIDCButton';
 import { authType } from '../constants';
 import { Options } from './Options';
 
 export default function (props) {
-  const { t } = useOidcTranslation();
   return (
-    <SigninPageExtensionProvider component={OIDCList}>
+    <SigninPageExtensionProvider component={OIDCButton} authType={authType}>
       <OptionsComponentProvider authType={authType} component={Options}>
         {props.children}
       </OptionsComponentProvider>

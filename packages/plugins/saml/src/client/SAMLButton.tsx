@@ -1,15 +1,13 @@
 import { LoginOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { AuthenticatorsContext, useAPIClient, useRedirect } from '@nocobase/client';
+import { Authenticator, useAPIClient, useRedirect } from '@nocobase/client';
 import { Button, Space } from 'antd';
-import React, { useEffect, useState, useContext, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
-export const SAMLList = () => {
+export const SAMLButton = (props: { authenticator: Authenticator }) => {
   const [windowHandler, setWindowHandler] = useState<Window | undefined>();
   const api = useAPIClient();
   const redirect = useRedirect();
-
-  const authenticators = useContext(AuthenticatorsContext);
 
   /**
    * 打开登录弹出框
@@ -64,6 +62,7 @@ export const SAMLList = () => {
     };
   }, [windowHandler, handleSAMLLogin]);
 
+  const authenticator = props.authenticator;
   return (
     <Space
       direction="vertical"
@@ -71,13 +70,9 @@ export const SAMLList = () => {
         display: flex;
       `}
     >
-      {authenticators
-        .filter((i) => i.authType === 'SAML')
-        .map((item) => (
-          <Button shape="round" block key={item.name} icon={<LoginOutlined />} onClick={() => handleOpen(item.name)}>
-            {item.title}
-          </Button>
-        ))}
+      <Button shape="round" block icon={<LoginOutlined />} onClick={() => handleOpen(authenticator.name)}>
+        {authenticator.title}
+      </Button>
     </Space>
   );
 };
