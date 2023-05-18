@@ -29,6 +29,7 @@ export default {
       filter: {
         enabled: true,
       },
+      sort: 'sort',
     });
     ctx.body = authenticators.map((authenticator: Model) => ({
       name: authenticator.name,

@@ -3,9 +3,12 @@ import { ISchema } from '@formily/react';
 import { useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { useContext } from 'react';
 import { AuthTypeContext } from '../authType';
+import { message } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 const collection = {
   name: 'authenticators',
+  sortable: true,
   fields: [
     {
       name: 'id',
@@ -151,12 +154,13 @@ export const authenticatorsSchema: ISchema = {
   'x-decorator-props': {
     collection,
     resourceName: 'authenticators',
+    dragSort: true,
     request: {
       resource: 'authenticators',
       action: 'list',
       params: {
         pageSize: 50,
-        sort: ['id'],
+        sort: 'sort',
         appends: [],
       },
     },
@@ -207,6 +211,19 @@ export const authenticatorsSchema: ISchema = {
           type: 'checkbox',
         },
         useDataSource: '{{ cm.useDataSourceFromRAC }}',
+        useAction() {
+          const api = useAPIClient();
+          const { t } = useTranslation();
+          return {
+            async move(from, to) {
+              await api.resource('authenticators').move({
+                sourceId: from.id,
+                targetId: to.id,
+              });
+              message.success(t('Saved successfully'), 0.2);
+            },
+          };
+        },
       },
       properties: {
         id: {
