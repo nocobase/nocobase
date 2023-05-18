@@ -139,7 +139,7 @@ function getGroupCalculators(group) {
   return Array.from(calculators.getEntities()).filter(([key, value]) => value.group === group);
 }
 
-export function Calculation({ calculator, operands = [], onChange }) {
+function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
   const options = useWorkflowVariableOptions();
   return (
@@ -411,7 +411,7 @@ export default {
       value: { rejectOnFalse: false },
     },
   ],
-  render(data) {
+  render: function Renderer(data) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const {

@@ -1,15 +1,15 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { SchemaComponentOptions } from '../../';
+import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
+import { AssociationSelect } from './AssociationSelect';
+import { InternalFileManager } from './FileManager';
 import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
-import { AssociationSelect } from './AssociationSelect';
-import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
-import { SchemaComponentOptions } from '../../';
 import { InternalSubTable } from './InternalSubTable';
-import { InternalFileManager } from './FileManager';
+import { CreateRecordAction } from './components/CreateRecordAction';
 import { useAssociationFieldContext } from './hooks';
-import {CreateRecordAction} from './components/CreateRecordAction'
 
 const EditableAssociationField = observer((props: any) => {
   const { multiple } = props;
@@ -25,7 +25,7 @@ const EditableAssociationField = observer((props: any) => {
       async onClick() {
         await onClick();
         const { data } = actionField.data?.data?.data || {};
-        if (['m2m', 'o2m'].includes(collectionField.interface) && multiple !== false) {
+        if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
           const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
           values.push({
             ...data,
@@ -45,7 +45,7 @@ const EditableAssociationField = observer((props: any) => {
     };
   };
   return (
-    <SchemaComponentOptions scope={{ useCreateActionProps }} components={{CreateRecordAction}}>
+    <SchemaComponentOptions scope={{ useCreateActionProps }} components={{ CreateRecordAction }}>
       {currentMode === 'Picker' && <InternalPicker {...props} />}
       {currentMode === 'Nester' && <InternalNester {...props} />}
       {currentMode === 'Select' && <AssociationSelect {...props} />}

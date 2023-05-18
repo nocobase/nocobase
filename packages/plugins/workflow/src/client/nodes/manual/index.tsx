@@ -86,7 +86,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  useVariables({ config }, types) {
+  useVariables({ config }, { types }) {
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;

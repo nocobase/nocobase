@@ -122,6 +122,11 @@ export const tableActionColumnSchema = {
               'x-component': 'CollectionField',
               'x-decorator': 'FormItem',
             },
+            'options.standaloneDeployment': {
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              'x-content': '{{t("Standalone deployment")}}',
+            },
             cname: {
               title: i18nText('Custom domain'),
               'x-component': 'Input',
@@ -251,6 +256,11 @@ export const schema: ISchema = {
                     pinned: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                    },
+                    'options.standaloneDeployment': {
+                      'x-component': 'Checkbox',
+                      'x-decorator': 'FormItem',
+                      'x-content': '{{t("Standalone deployment")}}',
                     },
                     cname: {
                       title: i18nText('Custom domain'),

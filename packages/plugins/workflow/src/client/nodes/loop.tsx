@@ -8,7 +8,7 @@ import { useCompile } from '@nocobase/client';
 import { NodeDefaultView } from '.';
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions, VariableOption, VariableTypes } from '../variable';
+import { useWorkflowVariableOptions, VariableOption, nodesOptions, triggerOptions } from '../variable';
 import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
 
@@ -116,7 +116,7 @@ export default {
     useWorkflowVariableOptions,
   },
   components: {},
-  useScopeVariables(node, types) {
+  useScopeVariables(node, options) {
     const compile = useCompile();
     const { target } = node.config;
     if (!target) {
@@ -137,20 +137,18 @@ export default {
         .split('.')
         .map((path) => path.trim());
 
-      const options = VariableTypes.filter((item) => ['$context', '$jobsMapByNodeId'].includes(item.value)).map(
-        (item: any) => {
-          const opts = typeof item.useOptions === 'function' ? item.useOptions(node, types).filter(Boolean) : null;
-          return {
-            label: compile(item.title),
-            value: item.value,
-            key: item.value,
-            children: compile(opts),
-            disabled: opts && !opts.length,
-          };
-        },
-      );
+      const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
+        const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
+        return {
+          label: compile(item.title),
+          value: item.value,
+          key: item.value,
+          children: compile(opts),
+          disabled: opts && !opts.length,
+        };
+      });
 
-      targetOption.children = findOption(options, paths);
+      targetOption.children = findOption(targetOptions, paths);
     }
 
     return [
