@@ -32,6 +32,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { handleAppendsQuery } from './utils';
+import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 
 const debug = require('debug')('noco-database');
 
@@ -361,38 +362,19 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
-      // find template model
-      const templateModel = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [primaryKeyField],
-        group: `${model.name}.${primaryKeyField}`,
-        transaction,
-        limit: 1,
-        offset: 0,
-      } as any);
-
-      const where = {
-        [primaryKeyField]: {
-          [Op.in]: ids.map((id) => id['pk']),
-        },
-      };
-
-      rows = await handleAppendsQuery({
-        queryPromises: opts.include.map((include) => {
-          const options = {
-            ...omit(opts, ['limit', 'offset', 'filter']),
-            include: include,
-            where,
-            transaction,
-          };
-
-          return model.findAll(options).then((rows) => {
-            return { rows, include };
-          });
-        }),
-        templateModel: templateModel,
+      // find all rows
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model,
+        rootAttributes: opts.attributes,
+        includeOption: opts.include,
       });
+
+      await eagerLoadingTree.load(
+        ids.map((i) => i.pk),
+        transaction,
+      );
+
+      rows = eagerLoadingTree.root.instances;
     } else {
       rows = await model.findAll({
         ...opts,

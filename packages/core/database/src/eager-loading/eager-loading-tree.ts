@@ -1,4 +1,4 @@
-import { Association, BelongsToMany, HasMany, Includeable, Model, ModelStatic } from 'sequelize';
+import { Association, BelongsToMany, HasMany, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
@@ -55,7 +55,7 @@ export class EagerLoadingTree {
     return new EagerLoadingTree(root);
   }
 
-  async load(pks: Array<string | number>) {
+  async load(pks: Array<string | number>, transaction?: Transaction) {
     const result = {};
 
     const loadRecursive = async (node, ids) => {
@@ -67,11 +67,12 @@ export class EagerLoadingTree {
 
       let instances = [];
 
-      // 根节点
+      // load instances from database
       if (!node.parent) {
         instances = await node.model.findAll({
           where: { [modelPrimaryKey]: ids },
           attributes: node.attributes,
+          transaction,
         });
       } else {
         const association = node.association;
@@ -82,6 +83,7 @@ export class EagerLoadingTree {
           const findOptions = {
             where: { [foreignKey]: ids },
             attributes: node.attributes,
+            transaction,
           };
 
           instances = await node.model.findAll(findOptions);
@@ -89,6 +91,7 @@ export class EagerLoadingTree {
 
         if (associationType == 'BelongsTo') {
           instances = await node.model.findAll({
+            transaction,
             include: [
               {
                 association: new HasMany(association.target, association.source, {
@@ -104,6 +107,7 @@ export class EagerLoadingTree {
 
         if (associationType == 'BelongsToMany') {
           instances = await node.model.findAll({
+            transaction,
             include: [
               {
                 association: association.oneFromTarget,
