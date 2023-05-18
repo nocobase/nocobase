@@ -48,15 +48,15 @@ class CustomAuth extends Auth {
 }
 ```
 
-多数情况下，扩展的用户登录方式也将沿用现有的jwt逻辑来生成用户访问API的凭证，插件也可以继承`BaseAuth`类以便复用部分逻辑代码。
+多数情况下，扩展的用户登录方式也将沿用现有的jwt逻辑来生成用户访问API的凭证，插件也可以继承`BaseAuth`类以便复用部分逻辑代码，如`check`, `signIn`接口。
 
 ```TypeScript
 import { BaseAuth } from '@nocobase/auth';
 
 class CustomAuth extends BaseAuth {
-  constructor(options: { [key: string]: any }, ctx: Context) {
-    const userCollection = ctx.db.getCollection('users');
-    super(options, userCollection, ctx);
+  constructor(config: AuthConfig) {
+    const userCollection = config.ctx.db.getCollection('users');
+    super({ ...config, userCollection });
   }
   
   async validate() {}
@@ -73,6 +73,11 @@ class CustomAuth extends BaseAuth {
 - meta: JSON字段，其他需要保存的信息
 - userId: 用户id
 - authenticator：认证器名字
+
+对于用户操作，`Authenticator`模型也提供了几个封装的方法，可以在`CustomAuth`类中通过`this.authenticator[方法名]`使用：
+- `findUser(uuid: string): UserModel` - 查询用户
+- `newUser(uuid: string, values?: any): UserModel` - 创建新用户
+- `findOrCreateUser(uuid: string, userValues?: any): UserModel` - 查找或创建新用户
 
 ### 注册
 扩展的登录方式需要向内核注册。

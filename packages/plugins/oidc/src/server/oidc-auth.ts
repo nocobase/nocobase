@@ -1,5 +1,5 @@
 import { AuthConfig, BaseAuth } from '@nocobase/auth';
-import { Issuer, custom } from 'openid-client';
+import { Issuer } from 'openid-client';
 import { cookieName } from '../constants';
 
 export class OIDCAuth extends BaseAuth {
@@ -8,9 +8,6 @@ export class OIDCAuth extends BaseAuth {
     super({
       ...config,
       userCollection: ctx.db.getCollection('users'),
-    });
-    custom.setHttpOptionsDefaults({
-      timeout: 10000,
     });
   }
 
@@ -65,8 +62,8 @@ export class OIDCAuth extends BaseAuth {
     });
     const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
     const mappedUserInfo = this.mapField(userInfo);
-    const { nickname, sub, email, phone } = mappedUserInfo;
-    const username = nickname || sub;
+    const { nickname, name, sub, email, phone } = mappedUserInfo;
+    const username = nickname || name || sub;
     // Compatible processing
     // When email is provided, use email to find user
     // If found, associate the user with the current authenticator
