@@ -18,6 +18,10 @@ describe('migrator', () => {
     await db.close();
   });
 
+  test('migrations', async () => {
+    expect(db.getModel('migrations').tableName).toBe('test_migrations');
+  });
+
   test('addMigrations', async () => {
     db.addMigrations({
       directory: resolve(__dirname, './fixtures/migrations'),
