@@ -53,7 +53,7 @@ export const filter = {
 export const appends = {
   type: 'array',
   title: `{{t("Preload associations", { ns: "${NAMESPACE}" })}}`,
-  description: `{{t("Only configured association field could be accessed in following nodes", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Please select the associated fields that need to be accessed in subsequent nodes", { ns: "${NAMESPACE}" })}}`,
   'x-decorator': 'FormItem',
   'x-component': 'FieldsSelect',
   'x-component-props': {
