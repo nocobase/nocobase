@@ -16,14 +16,17 @@ export class EagerLoadingTree {
     this.root = root;
   }
 
-  static buildFromSequelizeOptions(
-    model: ModelStatic<any>,
-    includeOption: Includeable | Includeable[],
-  ): EagerLoadingTree {
+  static buildFromSequelizeOptions(options: {
+    model: ModelStatic<any>;
+    rootAttributes: Array<string>;
+    includeOption: Includeable | Includeable[];
+  }): EagerLoadingTree {
+    const { model, rootAttributes, includeOption } = options;
+
     const root = {
       model,
       association: null,
-      attributes: [model.primaryKeyAttribute],
+      attributes: rootAttributes,
       children: [],
     };
 
@@ -57,6 +60,10 @@ export class EagerLoadingTree {
 
     const loadRecursive = async (node, ids) => {
       const modelPrimaryKey = node.model.primaryKeyAttribute;
+
+      if (lodash.isArray(node.attributes) && !node.attributes.includes(modelPrimaryKey)) {
+        node.attributes.push(modelPrimaryKey);
+      }
 
       let instances = [];
 
@@ -116,6 +123,34 @@ export class EagerLoadingTree {
           child,
           node.instances.map((instance) => instance.get(modelPrimaryKey)),
         );
+      }
+
+      // merge instances to parent
+      if (!node.parent) {
+        return;
+      } else {
+        const association = node.association;
+        const associationType = association.associationType;
+
+        if (associationType == 'HasMany') {
+          const foreignKey = association.foreignKey;
+          const sourceKey = association.sourceKey;
+
+          for (const instance of node.instances) {
+            const parentInstance = node.parent.instances.find(
+              (parentInstance) => parentInstance.get(sourceKey) == instance.get(foreignKey),
+            );
+
+            if (parentInstance) {
+              const children = parentInstance.getDataValue(association.as);
+              if (!children) {
+                parentInstance.setDataValue(association.as, [instance]);
+              } else {
+                children.push(instance);
+              }
+            }
+          }
+        }
       }
     };
 
