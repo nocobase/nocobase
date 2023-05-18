@@ -1,8 +1,6 @@
-const esmImport = require('esm')(module);
-
 export function requireModule(m: any) {
   if (typeof m === 'string') {
-    m = esmImport(m);
+    m = require(m);
   }
   if (typeof m !== 'object') {
     return m;
