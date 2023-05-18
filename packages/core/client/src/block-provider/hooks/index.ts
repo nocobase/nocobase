@@ -254,6 +254,7 @@ export const useAssociationCreateActionProps = () => {
         }
         message.success(compile(onSuccess?.successMessage));
       } catch (error) {
+        actionField.data.data=null
         actionField.data.loading = false;
       }
     },
