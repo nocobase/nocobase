@@ -202,18 +202,4 @@ export class EagerLoadingTree {
 
     return result;
   }
-
-  printTree(indent = '') {
-    this._printTree(this.root, indent);
-  }
-
-  _printTree(node, indent) {
-    if (!node) return;
-
-    console.log(`${indent}Model: ${node.model.name}, Children: ${node.children.length}`);
-
-    for (const child of node.children) {
-      this._printTree(child, indent + '  ');
-    }
-  }
 }
