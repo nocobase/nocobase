@@ -132,7 +132,7 @@ export class EagerLoadingTree {
         const association = node.association;
         const associationType = association.associationType;
 
-        if (associationType == 'HasMany') {
+        if (associationType == 'HasMany' || associationType == 'HasOne') {
           const foreignKey = association.foreignKey;
           const sourceKey = association.sourceKey;
 
@@ -142,11 +142,17 @@ export class EagerLoadingTree {
             );
 
             if (parentInstance) {
-              const children = parentInstance.getDataValue(association.as);
-              if (!children) {
-                parentInstance.setDataValue(association.as, [instance]);
-              } else {
-                children.push(instance);
+              if (associationType == 'HasMany') {
+                const children = parentInstance.getDataValue(association.as);
+                if (!children) {
+                  parentInstance.setDataValue(association.as, [instance]);
+                } else {
+                  children.push(instance);
+                }
+              }
+
+              if (associationType == 'HasOne') {
+                parentInstance.setDataValue(association.as, instance);
               }
             }
           }

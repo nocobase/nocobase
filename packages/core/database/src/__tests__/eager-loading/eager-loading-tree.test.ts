@@ -65,6 +65,54 @@ describe('Eager loading tree', () => {
     expect(u1JSON['posts'].length).toBe(2);
   });
 
+  it('should load has one', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasOne', name: 'profile' },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [{ type: 'integer', name: 'age' }],
+    });
+
+    await db.sync();
+
+    const users = await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          profile: { age: 1 },
+        },
+        {
+          name: 'u2',
+          profile: { age: 2 },
+        },
+      ],
+    });
+
+    const findOptions = User.repository.buildQueryOptions({
+      appends: ['profile'],
+    });
+
+    const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+      model: User.model,
+      rootAttributes: findOptions.attributes,
+      includeOption: findOptions.include,
+    });
+
+    await eagerLoadingTree.load(users.map((u) => u.get('id')));
+
+    const root = eagerLoadingTree.root;
+    const u1 = root.instances.find((item) => item.get('name') === 'u1');
+    const u1Profile = u1.get('profile') as any;
+    expect(u1Profile).toBeDefined();
+    expect(u1Profile.get('age')).toBe(1);
+  });
+
   it('should load belongs to', async () => {
     const Post = db.collection({
       name: 'posts',
