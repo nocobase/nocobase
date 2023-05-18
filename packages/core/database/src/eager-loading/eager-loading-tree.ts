@@ -74,12 +74,13 @@ export class EagerLoadingTree {
           attributes: node.attributes,
           transaction,
         });
-      } else {
+      } else if (ids.length > 0) {
         const association = node.association;
         const associationType = association.associationType;
 
         if (associationType == 'HasOne' || associationType == 'HasMany') {
           const foreignKey = association.foreignKey;
+
           const findOptions = {
             where: { [foreignKey]: ids },
             attributes: node.attributes,
@@ -160,6 +161,18 @@ export class EagerLoadingTree {
               }
             }
           }
+
+          for (const parent of node.parent.instances) {
+            const children = parent.getDataValue(association.as);
+            if (!children) {
+              if (associationType == 'HasMany') {
+                parent.setDataValue(association.as, []);
+              }
+              if (associationType == 'HasOne') {
+                parent.setDataValue(association.as, null);
+              }
+            }
+          }
         }
 
         if (associationType == 'BelongsTo') {
@@ -173,6 +186,13 @@ export class EagerLoadingTree {
 
             if (parentInstance) {
               parentInstance.setDataValue(association.as, instance);
+            }
+          }
+
+          for (const parent of node.parent.instances) {
+            const child = parent.getDataValue(association.as);
+            if (!child) {
+              parent.setDataValue(association.as, null);
             }
           }
         }
@@ -196,6 +216,13 @@ export class EagerLoadingTree {
               } else {
                 children.push(instance);
               }
+            }
+          }
+
+          for (const parent of node.parent.instances) {
+            const children = parent.getDataValue(association.as);
+            if (!children) {
+              parent.setDataValue(association.as, []);
             }
           }
         }

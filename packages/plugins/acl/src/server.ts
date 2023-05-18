@@ -123,12 +123,14 @@ export class PluginACL extends Plugin {
   }
 
   async writeRolesToACL() {
+    console.log('find roles');
     const roles = (await this.app.db.getRepository('roles').find({
       appends: ['resources', 'resources.actions'],
     })) as RoleModel[];
 
     for (const role of roles) {
       role.writeToAcl({ acl: this.acl });
+
       for (const resource of role.get('resources') as RoleResourceModel[]) {
         await this.writeResourceToACL(resource, null);
       }
