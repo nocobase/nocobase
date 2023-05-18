@@ -2,12 +2,12 @@ import { GeneralField } from '@formily/core';
 import { useFieldSchema } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useContext, useMemo } from 'react';
-import { useDesignable } from '../../hooks';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { AssociationFieldContext } from './context';
-import { useRecord } from '../../../record-provider';
-import { isInFilterFormBlock } from '../../../filter-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { isInFilterFormBlock } from '../../../filter-provider';
+import { useRecord } from '../../../record-provider';
+import { useDesignable } from '../../hooks';
+import { AssociationFieldContext } from './context';
 
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
@@ -72,7 +72,7 @@ export default function useServiceOptions(props) {
     return mergeFilter(
       [
         mergeFilter([
-          isOToAny && !isInFilterFormBlock(fieldSchema)
+          isOToAny && !isInFilterFormBlock(fieldSchema) && collectionField?.foreignKey
             ? {
                 [collectionField.foreignKey]: {
                   $is: null,
@@ -81,7 +81,11 @@ export default function useServiceOptions(props) {
             : null,
           params?.filter,
         ]),
-        isOToAny && sourceValue !== undefined && sourceValue !== null && !isInFilterFormBlock(fieldSchema)
+        isOToAny &&
+        sourceValue !== undefined &&
+        sourceValue !== null &&
+        !isInFilterFormBlock(fieldSchema) &&
+        collectionField?.foreignKey
           ? {
               [collectionField.foreignKey]: {
                 $eq: sourceValue,

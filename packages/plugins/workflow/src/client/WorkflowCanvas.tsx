@@ -16,13 +16,12 @@ import {
 } from '@nocobase/client';
 
 import { FlowContext, useFlowContext } from './FlowContext';
-import { branchBlockClass, nodeCardClass, nodeMetaClass, workflowVersionDropdownClass } from './style';
-import { TriggerConfig } from './triggers';
-import { Branch } from './Branch';
+import { workflowVersionDropdownClass } from './style';
 import { executionSchema } from './schemas/executions';
 import { ExecutionLink } from './ExecutionLink';
 import { lang } from './locale';
 import { linkNodes } from './utils';
+import { CanvasContent } from './CanvasContent';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -214,17 +213,7 @@ export function WorkflowCanvas() {
           </ActionContext.Provider>
         </aside>
       </div>
-      <div className="workflow-canvas">
-        <TriggerConfig />
-        <div className={branchBlockClass}>
-          <Branch entry={entry} />
-        </div>
-        <div className={cx('end', nodeCardClass)}>
-          <div className={cx(nodeMetaClass)}>
-            <Tag color="#333">{lang('End')}</Tag>
-          </div>
-        </div>
-      </div>
+      <CanvasContent entry={entry} />
     </FlowContext.Provider>
   );
 }

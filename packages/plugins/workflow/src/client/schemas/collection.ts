@@ -7,12 +7,11 @@ export const collection = {
   type: 'string',
   title: '{{t("Collection")}}',
   required: true,
-  'x-reactions': ['{{useCollectionDataSource()}}'],
+  'x-reactions': [],
   'x-decorator': 'FormItem',
-  'x-component': 'Select',
+  'x-component': 'CollectionSelect',
   'x-component-props': {
     dropdownMatchSelectWidth: false,
-    placeholder: '{{t("Select collection")}}',
   },
 };
 
@@ -27,7 +26,7 @@ export const values = {
     `,
   },
   'x-component': 'CollectionFieldset',
-  description: `{{t("Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.", { ns: "${NAMESPACE}" })}}`,
+  description: `{{t("Unassigned fields will be set to default values, and those without default values will be set to null.", { ns: "${NAMESPACE}" })}}`,
 };
 
 export const filter = {

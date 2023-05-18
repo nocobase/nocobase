@@ -62,13 +62,13 @@ import {
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
-import DatabaseUtils from './database-utils';
-import { registerBuiltInListeners } from './listeners';
-import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
-import buildQueryInterface from './query-interface/query-interface-builder';
-import QueryInterface from './query-interface/query-interface';
 import { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
+import DatabaseUtils from './database-utils';
+import { registerBuiltInListeners } from './listeners';
+import QueryInterface from './query-interface/query-interface';
+import buildQueryInterface from './query-interface/query-interface-builder';
+import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 
 export type MergeOptions = merge.Options;
@@ -275,6 +275,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }),
     });
 
+    this.sequelize.beforeDefine((model, opts) => {
+      if (this.options.tablePrefix) {
+        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
+      }
+    });
+
     this.collection({
       name: 'migrations',
       autoGenId: false,
@@ -282,12 +288,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       namespace: 'core.migration',
       duplicator: 'required',
       fields: [{ type: 'string', name: 'name' }],
-    });
-
-    this.sequelize.beforeDefine((model, opts) => {
-      if (this.options.tablePrefix) {
-        opts.tableName = `${this.options.tablePrefix}${opts.tableName || opts.modelName || opts.name.plural}`;
-      }
     });
 
     this.initListener();

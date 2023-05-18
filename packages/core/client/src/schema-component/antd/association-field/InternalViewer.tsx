@@ -8,10 +8,9 @@ import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import { useFieldNames, useInsertSchema } from './hooks';
+import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
-import { useAssociationFieldContext } from './hooks';
 
 interface IEllipsisWithTooltipRef {
   setPopoverVisible: (boolean) => void;
@@ -99,13 +98,13 @@ export const ReadPrettyInternalViewer: React.FC = observer((props: any) => {
 
   return (
     <div>
-      <BlockAssociationContext.Provider value={`${collectionField.collectionName}.${collectionField.name}`}>
-        <CollectionProvider name={collectionField.target ?? collectionField.targetCollection}>
+      <BlockAssociationContext.Provider value={`${collectionField?.collectionName}.${collectionField?.name}`}>
+        <CollectionProvider name={collectionField?.target ?? collectionField?.targetCollection}>
           <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
             {renderRecords()}
           </EllipsisWithTooltip>
           <ActionContext.Provider
-            value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
+            value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
           >
             {renderRecordProvider()}
           </ActionContext.Provider>
