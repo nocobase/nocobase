@@ -16,12 +16,12 @@ import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
+import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { useSchemaTemplateManager } from '../../schema-templates';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -1073,105 +1073,108 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
-const getTemplateSchema = ({ uid }) => {
+const getTemplateSchema = async (api, { uid }) => {
   const conf = {
     url: `/uiSchemas:getJsonSchema/${uid}`,
   };
-  const { data, loading } = useRequest(conf);
-  if (loading) {
-    // return;
-  }
+  const { data } = await api.request(conf);
+  console.log('data?.data', data?.data);
   return new Schema(data?.data || {});
 };
 
 export const useAssociationNames = () => {
+  const api = useAPIClient();
   const { getCollectionJoinField } = useCollectionManager();
   const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
-  const associationValues = [];
-  const formSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (['FormV2', 'Details', 'List', 'GridCard'].includes(schema['x-component'])) {
-      return schema;
-    }
-    return buf;
-  }, new Schema({}));
-
-  const templateSchema = formSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'] === 'BlockTemplate') {
-      return schema;
-    }
-    return buf;
-  }, null);
-
-  const getAssociationAppends = (schema, arr = []) => {
-    const data = schema.reduceProperties((buf, s) => {
-      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (
-        collectionfield &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
-        s['x-component'] !== 'TableField'
-      ) {
-        buf.push(s.name);
-        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
-          associationValues.push(s.name);
-        }
-        if (s['x-component-props'].mode === 'Nester') {
-          return getAssociationAppends(s, buf);
-        }
-        return buf;
-      } else {
-        if (s['x-component'] === 'Grid.Row') {
-          const kk = buf?.concat?.();
-          return getNesterAppends(s, kk || []);
-        } else {
-          return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
-            ? getAssociationAppends(s, buf)
-            : buf;
-        }
+  const { loading, data } = useRequest(async () => {
+    const associationValues = [];
+    const formSchema = fieldSchema.reduceProperties((buf, schema) => {
+      if (['FormV2', 'Details', 'List', 'GridCard'].includes(schema['x-component'])) {
+        return schema;
       }
-    }, arr);
-    return data || [];
-  };
+      return buf;
+    }, new Schema({}));
 
-  function flattenNestedList(nestedList) {
-    const flattenedList = [];
-    function flattenHelper(list, prefix) {
-      for (let i = 0; i < list.length; i++) {
-        if (Array.isArray(list[i])) {
-          `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
+    const templateSchema = formSchema.reduceProperties((buf, schema) => {
+      if (schema['x-component'] === 'BlockTemplate') {
+        return schema;
+      }
+      return buf;
+    }, null);
+
+    const getAssociationAppends = (schema, arr = []) => {
+      const data = schema.reduceProperties((buf, s) => {
+        const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+        if (
+          collectionfield &&
+          ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
+          s['x-component'] !== 'TableField'
+        ) {
+          buf.push(s.name);
+          if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+            associationValues.push(s.name);
+          }
+          if (s['x-component-props'].mode === 'Nester') {
+            return getAssociationAppends(s, buf);
+          }
+          return buf;
         } else {
-          const str = prefix.replaceAll(`.${list[i]}`, '').trim();
-          if (!str) {
-            !list.includes(str) && flattenedList.push(`${list[i]}`);
+          if (s['x-component'] === 'Grid.Row') {
+            const kk = buf?.concat?.();
+            return getNesterAppends(s, kk || []);
           } else {
-            !list.includes(str) ? flattenedList.push(`${str}.${list[i]}`) : flattenedList.push(str);
+            return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
+              ? getAssociationAppends(s, buf)
+              : buf;
+          }
+        }
+      }, arr);
+      return data || [];
+    };
+
+    function flattenNestedList(nestedList) {
+      const flattenedList = [];
+      function flattenHelper(list, prefix) {
+        for (let i = 0; i < list.length; i++) {
+          if (Array.isArray(list[i])) {
+            `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
+          } else {
+            const str = prefix.replaceAll(`.${list[i]}`, '').trim();
+            if (!str) {
+              !list.includes(str) && flattenedList.push(`${list[i]}`);
+            } else {
+              !list.includes(str) ? flattenedList.push(`${str}.${list[i]}`) : flattenedList.push(str);
+            }
           }
         }
       }
+      for (let i = 0; i < nestedList.length; i++) {
+        flattenHelper(nestedList[i], nestedList[i][0]);
+      }
+      return uniq(flattenedList.filter((obj) => !obj?.startsWith('.')));
     }
-    for (let i = 0; i < nestedList.length; i++) {
-      flattenHelper(nestedList[i], nestedList[i][0]);
-    }
-    return uniq(flattenedList.filter((obj) => !obj?.startsWith('.')));
-  }
-  const getNesterAppends = (gridSchema, data) => {
-    gridSchema.reduceProperties((buf, s) => {
-      buf.push(getAssociationAppends(s));
-      return buf;
-    }, data);
-    return data.filter((g) => g.length);
-  };
-  if (templateSchema) {
-    const template = getTemplateById(templateSchema['x-component-props']?.templateId);
-    const schema = getTemplateSchema(template);
-    if (schema) {
-      const associations = getAssociationAppends(schema);
+    const getNesterAppends = (gridSchema, data) => {
+      gridSchema.reduceProperties((buf, s) => {
+        buf.push(getAssociationAppends(s));
+        return buf;
+      }, data);
+      return data.filter((g) => g.length);
+    };
+    if (templateSchema) {
+      const template = getTemplateById(templateSchema['x-component-props']?.templateId);
+      const schema = await getTemplateSchema(api, template);
+      if (schema) {
+        const associations = getAssociationAppends(schema);
+        const appends = flattenNestedList(associations);
+        return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+      }
+    } else {
+      const associations = getAssociationAppends(formSchema);
       const appends = flattenNestedList(associations);
       return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
     }
-  } else {
-    const associations = getAssociationAppends(formSchema);
-    const appends = flattenNestedList(associations);
-    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
-  }
+  });
+
+  return { appends: [], updateAssociationValues: [], loading, ...data };
 };

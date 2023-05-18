@@ -1,5 +1,6 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import { Spin } from 'antd';
 import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
@@ -72,7 +73,10 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-  const { appends, updateAssociationValues } = useAssociationNames();
+  const { loading, appends, updateAssociationValues } = useAssociationNames();
+  if (loading) {
+    return <Spin />;
+  }
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
