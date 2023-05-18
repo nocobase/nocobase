@@ -97,6 +97,7 @@ export class EagerLoadingTree {
               {
                 association: new HasMany(association.target, association.source, {
                   foreignKey: association.foreignKey,
+                  as: association.as + '_inverse',
                 }),
                 where: {
                   [association.target.primaryKeyAttribute]: ids,
