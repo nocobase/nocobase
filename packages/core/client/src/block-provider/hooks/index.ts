@@ -1,7 +1,7 @@
 import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, isEqual, omitBy } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -157,7 +157,8 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const formValues = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;
@@ -254,7 +255,7 @@ export const useAssociationCreateActionProps = () => {
         }
         message.success(compile(onSuccess?.successMessage));
       } catch (error) {
-        actionField.data.data=null
+        actionField.data.data = null;
         actionField.data.loading = false;
       }
     },
