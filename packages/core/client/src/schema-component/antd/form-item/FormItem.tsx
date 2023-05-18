@@ -124,6 +124,8 @@ FormItem.Designer = function Designer() {
     readOnlyMode = 'read-pretty';
   }
 
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+
   return (
     <GeneralSchemaDesigner>
       {collectionField && (
@@ -439,7 +441,7 @@ FormItem.Designer = function Designer() {
                         default: getFieldDefaultValue(fieldSchema, collectionField),
                       }
                     : {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
@@ -447,7 +449,7 @@ FormItem.Designer = function Designer() {
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
                           renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                             s.title = '';
 
                             return (
