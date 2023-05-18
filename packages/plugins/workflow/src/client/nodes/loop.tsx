@@ -31,21 +31,8 @@ export default {
   title: `{{t("Loop", { ns: "${NAMESPACE}" })}}`,
   type: 'loop',
   group: 'control',
+  description: `{{t("Use loop for same manipulating on each of multiple records, which from query multiple result, or preload to-many association records. Also could be used for a number of times, or for each character of a string. Loop will cause performance issue based on the quantity, please use with caution.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
-    warning: {
-      type: 'void',
-      'x-component': Alert,
-      'x-component-props': {
-        type: 'warning',
-        showIcon: true,
-        message: `{{t("Loop will cause performance issue based on the quantity, please use with caution.", { ns: "${NAMESPACE}" })}}`,
-        className: css`
-          width: 100%;
-          font-size: 85%;
-          margin-bottom: 2em;
-        `,
-      },
-    },
     target: {
       type: 'string',
       title: `{{t("Loop target", { ns: "${NAMESPACE}" })}}`,

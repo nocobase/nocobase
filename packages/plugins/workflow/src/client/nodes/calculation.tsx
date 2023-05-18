@@ -57,10 +57,12 @@ export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
   type: 'calculation',
   group: 'control',
+  description: `{{t("Calculate a expression based on a calculation engine and result as a value. Variables in workflow context could be used in expression. You can also use dynamic expression from record of expression collection.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     dynamic: {
       type: 'string',
       'x-component': 'DynamicConfig',
+      description: `{{t("Calculation by dynamic expression will based on loaded record of expression type collection from upstream nodes.", { ns: "${NAMESPACE}" })}}`,
       default: false,
     },
     engine: {

@@ -14,6 +14,7 @@ export default {
   title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
   type: 'parallel',
   group: 'control',
+  description: `{{t("Run multiple branch flows separately, the end status of branches will be different in different modes.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     mode: {
       type: 'string',

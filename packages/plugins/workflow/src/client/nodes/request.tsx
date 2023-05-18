@@ -8,6 +8,7 @@ export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
+  description: `{{t("Send HTTP request to a URL. Could use variables in workflow context in request headers, parameters and body.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     method: {
       type: 'string',

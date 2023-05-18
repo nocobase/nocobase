@@ -316,6 +316,7 @@ export default {
   title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
+  description: `{{t("Based on boolean result of a calculation to determine whether to continue or exit the workflow, or continue on each branch.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     rejectOnFalse: {
       type: 'boolean',

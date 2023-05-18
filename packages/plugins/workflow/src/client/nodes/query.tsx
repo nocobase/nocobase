@@ -12,6 +12,7 @@ export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
   type: 'query',
   group: 'collection',
+  description: `{{t("Query records of a collection. Could use variables in workflow context as filter.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     multiple: {
@@ -19,6 +20,7 @@ export default {
       title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
+      description: `{{t("Result will be an array of records, could be manipulated in loop.", { ns: "${NAMESPACE}" })}}`,
     },
     params: {
       type: 'object',

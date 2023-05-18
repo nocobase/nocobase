@@ -6,6 +6,7 @@ export default {
   title: `{{t("Delay", { ns: "${NAMESPACE}" })}}`,
   type: 'delay',
   group: 'control',
+  description: `{{t("Delay a period of time, then continue or exit. Could be used for waiting something in parallel or timeout.", { ns: "${NAMESPACE}}`,
   fieldset: {
     duration: {
       type: 'number',

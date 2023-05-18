@@ -59,7 +59,8 @@ export default {
   End: '结束',
   'Node result': '节点数据',
   Calculator: '运算',
-  'Arithmetic calculation': '算术运算',
+  'Calculate a expression based on a calculation engine and result as a value. Variables in workflow context could be used in expression. You can also use dynamic expression from record of expression collection.':
+    '基于计算引擎对一个表达式进行计算，并获得一个值作为结果。表达式中可以使用工作流上下文中的变量。也可以使用表达式类型表中的动态表达式。',
   'String operation': '字符串',
   'System variables': '系统变量',
   'System time': '系统时间',
@@ -93,6 +94,8 @@ export default {
   Static: '静态',
   Dynamic: '动态',
   'Select dynamic expression': '选择动态表达式',
+  'Calculation by dynamic expression will based on loaded record of expression type collectionCalculation by dynamic expression will based on loaded record of expression type collection from upstream nodes.':
+    '以动态表达式进行计算时，将基于上游节点中已加载的表达式类型表的记录内容。',
   'Variable datasource': '变量数据源',
   'Calculation engine': '运算引擎',
   Basic: '基础',
@@ -104,11 +107,15 @@ export default {
   False: '假',
   concat: '连接',
   Condition: '条件判断',
+  'Based on boolean result of a calculation to determine whether to continue or exit the workflow, or continue on each branch.':
+    '基于运算结果的真假来决定是否继续或退出流程，或者分别在是与否的分支上继续。',
   Mode: '模式',
   'Continue when "Yes"': '“是”则继续',
   'Branch into "Yes" and "No"': '“是”和“否”分别继续',
   'Condition expression': '条件表达式',
   'Parallel branch': '分支',
+  'Run multiple branch flows separately, the end status of branches will be different in different modes.':
+    '并行运行多个分支流程，分支的最终状态将根据不同的模式而不同。',
   'Add branch': '增加分支',
   'All succeeded': '全部成功',
   'Any succeeded': '任意成功',
@@ -120,12 +127,14 @@ export default {
   'Loop target': '循环对象',
   'Loop index': '当前索引',
   'Loop length': '循环长度',
-  'Loop will cause performance issue based on the quantity, please use with caution.':
-    '循环次数过高可能引起性能问题，请谨慎使用。',
+  'Use loop for same manipulating on each of multiple records, which from query multiple result, or preload to-many association records. Also could be used for a number of times, or for each character of a string. Loop will cause performance issue based on the quantity, please use with caution.':
+    '使用循环节点可以对多条数据进行同样的操作，多条数据的来源可以是查询节点的多条结果，或者单条数据的预加载对多的关系数据。也可以用于一定次数的循环，或者对字符串中每一个字符的循环处理。循环次数过高可能引起性能问题，请谨慎使用。',
   'Scope variables': '局域变量',
   'Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.':
     '单一数字值将被视为次数，单一字符串值将被视为字符数组，其他非数组值将被转换为值数组。',
   Delay: '延时',
+  'Delay a period of time, then continue or exit. Could be used for waiting something in parallel or timeout.':
+    '延时一段时间后继续或退出。可以用于并行分支中等待其他分支或超时。',
   Duration: '时长',
   'End Status': '到时状态',
   'Select status': '选择状态',
@@ -151,9 +160,17 @@ export default {
   'Data record': '数据记录',
 
   'Create record': '新增数据',
+  'Create new record of a collection. Could use variables in workflow context as value of the new record.':
+    '对一个数据表创建新的数据。可以使用流程上下文中的变量作为新数据的值。',
   'Update record': '更新数据',
+  'Update records of a collection. Could use variables in workflow context as filter and values.':
+    '更新一个数据表中的数据。可以使用流程上下文中的变量作为查询条件和数据值。',
   'Query record': '查询数据',
+  'Query records of a collection. Could use variables in workflow context as filter.':
+    '查询数据表中的数据。可以使用流程上下文中的变量作为查询条件。',
   'Multiple records': '多条数据',
+  'Result will be an array of records, could be manipulated in loop.':
+    '结果是多行数据组成的数组，可以通过循环逐条操作。',
   'Fail on no data': '无数据时报错',
   'Please select collection first': '请先选择数据表',
   'Only update records matching conditions': '只更新满足条件的数据',
@@ -161,7 +178,13 @@ export default {
   'Fields that are not assigned a value will be set to the default value, and those that do not have a default value are set to null.':
     '未被赋值的字段将被设置为默认值，没有默认值的设置为空值。',
 
+  'Delete record': '删除数据',
+  'Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.':
+    '删除数据表中的数据。可以使用流程上下文中的变量作为过滤条件。所有满足条件的数据都将被删除。',
+
   Aggregate: '聚合查询',
+  'Aggregate multiple records in a collection for a specific field, to get a statistics value based on the aggregator function.':
+    '对数据表中特定字段的多条数据进行聚合，获取基于聚合函数的统计值。',
   'Aggregator function': '聚合函数',
   'Target type': '目标类型',
   'Data of collection': '数据表数据',
@@ -177,6 +200,8 @@ export default {
     '该节点的执行结果已被其他节点（{{nodes}}）引用，删除前请先移除引用。',
 
   'HTTP request': 'HTTP 请求',
+  'Send HTTP request to a URL. Could use variables in workflow context in request headers, parameters and body.':
+    '向指定 URL 发送 HTTP 请求。可以使用流程上下文中的变量作为请求头、参数和请求体。',
   'HTTP method': 'HTTP 方法',
   URL: '地址',
   Headers: '请求头',

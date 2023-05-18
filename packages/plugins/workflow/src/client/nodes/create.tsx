@@ -12,6 +12,7 @@ export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
+  description: `{{t("Create new record of a collection. Could use variables in workflow context as value of the new record.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     // multiple: {
