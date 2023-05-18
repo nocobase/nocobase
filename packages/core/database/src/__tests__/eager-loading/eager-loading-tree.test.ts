@@ -104,8 +104,6 @@ describe('Eager loading tree', () => {
       includeOption: findOptions.include,
     });
 
-    await eagerLoadingTree.load(users.map((u) => u.get('id')));
-
     const root = eagerLoadingTree.root;
     const u1 = root.instances.find((item) => item.get('name') === 'u1');
     const u1Profile = u1.get('profile') as any;

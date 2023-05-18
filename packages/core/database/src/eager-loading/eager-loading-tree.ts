@@ -122,10 +122,9 @@ export class EagerLoadingTree {
       node.instances = instances;
 
       for (const child of node.children) {
-        await loadRecursive(
-          child,
-          node.instances.map((instance) => instance.get(modelPrimaryKey)),
-        );
+        const nodeIds = instances.map((instance) => instance.get(modelPrimaryKey));
+
+        await loadRecursive(child, nodeIds);
       }
 
       // merge instances to parent
@@ -134,6 +133,21 @@ export class EagerLoadingTree {
       } else {
         const association = node.association;
         const associationType = association.associationType;
+
+        const setParentAccessor = (parentInstance) => {
+          console.log({ setParentAccessor });
+          const key = association.as;
+
+          const children = parentInstance.getDataValue(association.as);
+
+          if (association.isSingleAssociation) {
+            const isEmpty = !children;
+            parentInstance[key] = parentInstance.dataValues[key] = isEmpty ? null : children;
+          } else {
+            const isEmpty = !children || children.length == 0;
+            parentInstance[key] = parentInstance.dataValues[key] = isEmpty ? [] : children;
+          }
+        };
 
         if (associationType == 'HasMany' || associationType == 'HasOne') {
           const foreignKey = association.foreignKey;
@@ -159,18 +173,6 @@ export class EagerLoadingTree {
               }
             }
           }
-
-          for (const parent of node.parent.instances) {
-            const children = parent.getDataValue(association.as);
-            if (!children) {
-              if (associationType == 'HasMany') {
-                parent.setDataValue(association.as, []);
-              }
-              if (associationType == 'HasOne') {
-                parent.setDataValue(association.as, null);
-              }
-            }
-          }
         }
 
         if (associationType == 'BelongsTo') {
@@ -184,13 +186,6 @@ export class EagerLoadingTree {
 
             if (parentInstance) {
               parentInstance.setDataValue(association.as, instance);
-            }
-          }
-
-          for (const parent of node.parent.instances) {
-            const child = parent.getDataValue(association.as);
-            if (!child) {
-              parent.setDataValue(association.as, null);
             }
           }
         }
@@ -216,13 +211,10 @@ export class EagerLoadingTree {
               }
             }
           }
+        }
 
-          for (const parent of node.parent.instances) {
-            const children = parent.getDataValue(association.as);
-            if (!children) {
-              parent.setDataValue(association.as, []);
-            }
-          }
+        for (const parent of node.parent.instances) {
+          setParentAccessor(parent);
         }
       }
     };
