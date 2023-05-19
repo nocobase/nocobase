@@ -1,4 +1,4 @@
-import { applyMixins, AsyncEmitter, requireModule } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, importModule } from '@nocobase/utils';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
@@ -395,7 +395,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.migrations.add(item);
   }
 
-  addMigrations(options: AddMigrationsOptions) {
+  async addMigrations(options: AddMigrationsOptions) {
     const { namespace, context, extensions = ['js', 'ts'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
     const files = glob.sync(patten, {
@@ -406,7 +406,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       filename = filename.substring(0, filename.lastIndexOf('.')) || filename;
       this.migrations.add({
         name: namespace ? `${namespace}/${filename}` : filename,
-        migration: requireModule(file),
+        migration: await importModule(file),
         context,
       });
     }

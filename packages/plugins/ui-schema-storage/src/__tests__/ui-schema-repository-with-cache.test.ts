@@ -25,7 +25,7 @@ describe('ui_schema repository with cache', () => {
 
     await db.clean({ drop: true });
 
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+    await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
     await db.sync({

@@ -22,7 +22,7 @@ describe('ui-schema', () => {
 
     await db.clean({ drop: true });
 
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+    await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.loadAndInstall();
     uiSchemaRepository = db.getCollection('uiSchemas').repository as UiSchemaRepository;

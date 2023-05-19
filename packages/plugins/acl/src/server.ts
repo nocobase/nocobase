@@ -137,7 +137,7 @@ export class PluginACL extends Plugin {
   }
 
   async beforeLoad() {
-    this.db.addMigrations({
+    await this.db.addMigrations({
       namespace: this.name,
       directory: resolve(__dirname, './migrations'),
       context: {

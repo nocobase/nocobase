@@ -29,7 +29,7 @@ describe('test with start', () => {
     const app = mockServer();
     await app.cleanDb();
 
-    app.plugin(PluginMultiAppManager);
+    await app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -58,7 +58,7 @@ describe('test with start', () => {
   it('should install into difference database', async () => {
     const app = mockServer();
     await app.cleanDb();
-    app.plugin(PluginMultiAppManager);
+    await app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -90,7 +90,7 @@ describe('test with start', () => {
     const app = mockServer();
     await app.cleanDb();
 
-    app.plugin(PluginMultiAppManager);
+    await app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
     await app.start();
@@ -122,7 +122,7 @@ describe('test with start', () => {
       database: app.db,
     });
 
-    newApp.plugin(PluginMultiAppManager);
+    await newApp.plugin(PluginMultiAppManager);
     await newApp.db.reconnect();
 
     await newApp.load();

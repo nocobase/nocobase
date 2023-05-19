@@ -1,8 +1,8 @@
-import { mockServer } from '@nocobase/test';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
-import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
 import PluginUser from '@nocobase/plugin-users';
+import { mockServer } from '@nocobase/test';
 import Plugin from '..';
 
 export async function createApp(options = {}) {
@@ -11,12 +11,12 @@ export async function createApp(options = {}) {
     ...options,
   });
 
-  app.plugin(PluginUser, { name: 'users' });
-  app.plugin(PluginErrorHandler, { name: 'error-handler' });
-  app.plugin(PluginCollectionManager, { name: 'collection-manager' });
+  await app.plugin(PluginUser, { name: 'users' });
+  await app.plugin(PluginErrorHandler, { name: 'error-handler' });
+  await app.plugin(PluginCollectionManager, { name: 'collection-manager' });
   await app.loadAndInstall({ clean: true });
-  app.plugin(PluginMultiAppManager, { name: 'multi-app-manager' });
-  app.plugin(Plugin, { name: 'multi-app-share-collection' });
+  await app.plugin(PluginMultiAppManager, { name: 'multi-app-manager' });
+  await app.plugin(Plugin, { name: 'multi-app-share-collection' });
 
   await app.reload();
   await app.install();

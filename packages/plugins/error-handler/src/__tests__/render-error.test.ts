@@ -9,7 +9,7 @@ describe('create with exception', () => {
       acl: false,
     });
     await app.cleanDb();
-    app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    await app.plugin(PluginErrorHandler, { name: 'error-handler' });
   });
 
   afterEach(async () => {

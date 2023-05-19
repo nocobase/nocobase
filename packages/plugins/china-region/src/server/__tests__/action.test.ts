@@ -12,7 +12,7 @@ describe('actions test', () => {
 
     await app.cleanDb();
 
-    app.plugin(Plugin);
+    await app.plugin(Plugin);
     await app.load();
     await app.db.sync();
 

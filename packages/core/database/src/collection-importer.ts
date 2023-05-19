@@ -1,7 +1,7 @@
-import path from 'path';
+import { importModule } from '@nocobase/utils';
 import { readdir } from 'fs/promises';
 import { cloneDeep, isPlainObject } from 'lodash';
-import { requireModule } from '@nocobase/utils';
+import path from 'path';
 
 export type ImportFileExtension = 'js' | 'ts' | 'json';
 
@@ -31,8 +31,8 @@ export class ImporterReader {
         const ext = path.parse(fileName).ext.replace('.', '');
         return this.extensions.has(ext);
       })
-      .map((fileName) => {
-        const mod = requireModule(path.join(this.directory, fileName));
+      .map(async (fileName) => {
+        const mod = await importModule(path.join(this.directory, fileName));
         return typeof mod === 'function' ? mod() : mod;
       });
 

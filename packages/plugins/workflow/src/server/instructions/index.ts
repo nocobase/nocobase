@@ -1,9 +1,8 @@
 import path from 'path';
 
-import { requireModule } from '@nocobase/utils';
-
 import FlowNodeModel from '../models/FlowNode';
 
+import { importModule } from '@nocobase/utils';
 import Plugin from '..';
 import Processor from '../Processor';
 
@@ -30,10 +29,13 @@ export interface Instruction {
 
 type InstructionConstructor<T> = { new (p: Plugin): T };
 
-export default function <T extends Instruction>(plugin, more: { [key: string]: T | InstructionConstructor<T> } = {}) {
+export default async function <T extends Instruction>(
+  plugin,
+  more: { [key: string]: T | InstructionConstructor<T> } = {},
+) {
   const { instructions } = plugin;
 
-  const natives = [
+  const keys = [
     'calculation',
     'condition',
     'parallel',
@@ -46,13 +48,11 @@ export default function <T extends Instruction>(plugin, more: { [key: string]: T
     'destroy',
     'aggregate',
     'request',
-  ].reduce(
-    (result, key) =>
-      Object.assign(result, {
-        [key]: requireModule(path.isAbsolute(key) ? key : path.join(__dirname, key)),
-      }),
-    {},
-  );
+  ];
+  const natives = {};
+  for (const key of keys) {
+    natives[key] = await importModule(path.isAbsolute(key) ? key : path.join(__dirname, key));
+  }
 
   for (const [name, instruction] of Object.entries({ ...more, ...natives })) {
     instructions.register(

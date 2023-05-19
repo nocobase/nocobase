@@ -36,7 +36,7 @@ export class CollectionManagerPlugin extends Plugin {
       FieldModel,
     });
 
-    this.db.addMigrations({
+    await this.db.addMigrations({
       namespace: 'collection-manager',
       directory: path.resolve(__dirname, './migrations'),
       context: {

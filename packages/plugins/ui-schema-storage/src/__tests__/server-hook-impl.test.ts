@@ -4,7 +4,7 @@ import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import PluginUsers from '@nocobase/plugin-users';
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
   let app: MockServer;
@@ -24,11 +24,11 @@ describe('server hooks', () => {
     await app.cleanDb();
     db = app.db;
 
-    app.plugin(UiSchemaStoragePlugin, { name: 'ui-schema-storage' });
-    app.plugin(PluginErrorHandler, { name: 'error-handler' });
-    app.plugin(PluginCollectionManager, { name: 'collection-manager' });
-    app.plugin(PluginUsers, { name: 'users' });
-    app.plugin(PluginACL, { name: 'acl' });
+    await app.plugin(UiSchemaStoragePlugin, { name: 'ui-schema-storage' });
+    await app.plugin(PluginErrorHandler, { name: 'error-handler' });
+    await app.plugin(PluginCollectionManager, { name: 'collection-manager' });
+    await app.plugin(PluginUsers, { name: 'users' });
+    await app.plugin(PluginACL, { name: 'acl' });
 
     await app.loadAndInstall();
 

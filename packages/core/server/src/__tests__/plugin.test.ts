@@ -26,7 +26,7 @@ describe('plugin', () => {
         }
       }
 
-      const plugin = app.plugin(MyPlugin, {
+      const plugin = await app.plugin(MyPlugin, {
         test: 'hello',
       });
 
@@ -46,7 +46,7 @@ describe('plugin', () => {
           return 'MyPlugin';
         }
       }
-      const plugin = app.plugin<Options>(MyPlugin, {
+      const plugin = await app.plugin<Options>(MyPlugin, {
         a: 'aa',
       });
       plugin.setOptions({
@@ -57,13 +57,13 @@ describe('plugin', () => {
     });
 
     it('plugin name', async () => {
-      const plugin = app.plugin(Plugin1);
+      const plugin = await app.plugin(Plugin1);
       expect(plugin).toBeInstanceOf(Plugin);
       expect(plugin.getName()).toBe('Plugin1');
     });
 
     it('plugin name', async () => {
-      const plugin = app.plugin(Plugin3);
+      const plugin = await app.plugin(Plugin3);
       expect(plugin).toBeInstanceOf(Plugin3);
       expect(plugin.getName()).toBe('Plugin3');
     });
@@ -71,7 +71,7 @@ describe('plugin', () => {
 
   describe('load', () => {
     it('plugin load', async () => {
-      app.plugin(
+      await app.plugin(
         class MyPlugin extends Plugin {
           async load() {
             this.app.collection({
@@ -90,21 +90,21 @@ describe('plugin', () => {
     });
 
     it('plugin load', async () => {
-      app.plugin(Plugin1);
+      await app.plugin(Plugin1);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
-      app.plugin(Plugin2);
+      await app.plugin(Plugin2);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
     });
 
     it('plugin load', async () => {
-      app.plugin(Plugin3);
+      await app.plugin(Plugin3);
       await app.load();
       const Test = app.db.getCollection('tests');
       expect(Test).toBeDefined();
@@ -121,7 +121,7 @@ describe('plugin', () => {
         }
       }
 
-      app.plugin(TestPlugin);
+      await app.plugin(TestPlugin);
       await app.pm.enable('TestPlugin');
       expect(beforeEnable).toBeCalled();
     });

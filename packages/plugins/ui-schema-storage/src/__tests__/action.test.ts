@@ -15,7 +15,7 @@ describe('action test', () => {
 
     await db.clean({ drop: true });
 
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+    await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
     await db.sync({

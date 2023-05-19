@@ -23,7 +23,7 @@ describe('migrator', () => {
   });
 
   test('addMigrations', async () => {
-    db.addMigrations({
+    await db.addMigrations({
       directory: resolve(__dirname, './fixtures/migrations'),
     });
     await db.migrator.up();
@@ -31,7 +31,7 @@ describe('migrator', () => {
   });
 
   test('addMigrations', async () => {
-    db.addMigrations({
+    await db.addMigrations({
       namespace: 'test',
       directory: resolve(__dirname, './fixtures/migrations'),
     });

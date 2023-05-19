@@ -16,9 +16,9 @@ export async function createApp(
 
   options.beforePlugin && options.beforePlugin(app);
 
-  app.plugin(PluginErrorHandler, { name: 'error-handler' });
-  app.plugin(Plugin, { name: 'collection-manager' });
-  app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+  await app.plugin(PluginErrorHandler, { name: 'error-handler' });
+  await app.plugin(Plugin, { name: 'collection-manager' });
+  await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
   if (options.beforeInstall) {
     await options.beforeInstall(app);

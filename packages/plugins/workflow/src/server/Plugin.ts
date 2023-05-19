@@ -1,23 +1,24 @@
 import path from 'path';
 
-import winston from 'winston';
 import LRUCache from 'lru-cache';
+import winston from 'winston';
 
 import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import initFields from './fields';
+import { Logger, LoggerOptions, createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
+import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
+import initFields from './fields';
+import initFunctions, { CustomFunction } from './functions';
 import initInstructions, { Instruction } from './instructions';
 import ExecutionModel from './models/Execution';
 import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
-import Processor from './Processor';
-import initTriggers, { Trigger } from './triggers';
-import initFunctions, { CustomFunction } from './functions';
-import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
+import initTriggers from './triggers';
+import { Trigger } from './triggers/trigger';
 
 type Pending = [ExecutionModel, JobModel?];
 
@@ -107,7 +108,7 @@ export default class WorkflowPlugin extends Plugin {
     initFields(this);
     initActions(this);
     initTriggers(this, options.triggers);
-    initInstructions(this, options.instructions);
+    await initInstructions(this, options.instructions);
     initFunctions(this, options.functions);
 
     this.loggerCache = new LRUCache({
@@ -136,7 +137,7 @@ export default class WorkflowPlugin extends Plugin {
       directory: path.resolve(__dirname, 'collections'),
     });
 
-    this.db.addMigrations({
+    await this.db.addMigrations({
       namespace: 'workflow',
       directory: path.resolve(__dirname, 'migrations'),
       context: {

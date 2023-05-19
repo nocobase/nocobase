@@ -18,7 +18,7 @@ export default class SequenceFieldPlugin extends Plugin {
       sequence: SequenceField,
     });
 
-    db.addMigrations({
+    await db.addMigrations({
       namespace: 'sequence-field',
       directory: path.resolve(__dirname, 'migrations'),
       context: {

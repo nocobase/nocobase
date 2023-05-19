@@ -21,7 +21,7 @@ describe('upgrade test', () => {
       registerActions: false,
     });
 
-    app.plugin(TestPlugin, { name: 'test-plugin' });
+    await app.plugin(TestPlugin, { name: 'test-plugin' });
   });
 
   it('should call upgrade', async () => {

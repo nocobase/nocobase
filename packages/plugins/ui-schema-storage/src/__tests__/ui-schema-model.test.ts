@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 import PluginUiSchema, { UiSchemaRepository } from '..';
 
 describe('ui schema model', () => {
@@ -20,7 +20,7 @@ describe('ui schema model', () => {
     db = app.db;
 
     await db.clean({ drop: true });
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+    await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
 

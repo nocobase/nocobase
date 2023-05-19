@@ -12,8 +12,8 @@ describe('role', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.cleanDb();
-    api.plugin(UsersPlugin, { name: 'users' });
-    api.plugin(PluginACL, { name: 'acl' });
+    await api.plugin(UsersPlugin, { name: 'users' });
+    await api.plugin(PluginACL, { name: 'acl' });
     await api.loadAndInstall();
 
     db = api.db;

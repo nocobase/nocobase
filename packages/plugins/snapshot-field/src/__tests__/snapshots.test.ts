@@ -22,7 +22,7 @@ describe('actions', () => {
       plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
     });
 
-    app.plugin(SnapshotFieldPlugin, { name: 'snapshot-field' });
+    await app.plugin(SnapshotFieldPlugin, { name: 'snapshot-field' });
 
     await app.loadAndInstall({ clean: true });
   });

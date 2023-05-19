@@ -11,7 +11,7 @@ describe('multiple apps create', () => {
     app = mockServer({});
     db = app.db;
     await app.cleanDb();
-    app.plugin(PluginMultiAppManager);
+    await app.plugin(PluginMultiAppManager);
 
     await app.loadAndInstall();
   });

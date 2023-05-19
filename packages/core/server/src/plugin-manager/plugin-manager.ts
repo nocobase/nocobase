@@ -1,5 +1,5 @@
 import { CleanOptions, Collection, SyncOptions } from '@nocobase/database';
-import { requireModule } from '@nocobase/utils';
+import { importModule } from '@nocobase/utils';
 import execa from 'execa';
 import fs from 'fs';
 import net from 'net';
@@ -195,7 +195,7 @@ export class PluginManager {
     return pm;
   }
 
-  addStatic(plugin?: any, options?: any) {
+  async addStatic(plugin?: any, options?: any) {
     if (!options?.async) {
       this._tmpPluginArgs.push([plugin, options]);
     }
@@ -203,7 +203,7 @@ export class PluginManager {
     let name: string;
     if (typeof plugin === 'string') {
       name = plugin;
-      plugin = PluginManager.resolvePlugin(plugin);
+      plugin = await PluginManager.resolvePlugin(plugin);
     } else {
       name = plugin.name;
       if (!name) {
@@ -267,7 +267,7 @@ export class PluginManager {
 
     await this.generateClientFile(plugin, packageName);
 
-    const instance = this.addStatic(plugin, {
+    const instance = await this.addStatic(plugin, {
       ...options,
       async: true,
     });
@@ -426,9 +426,9 @@ export class PluginManager {
     throw new Error(`No available packages found, ${name} plugin does not exist`);
   }
 
-  static resolvePlugin(pluginName: string) {
+  static async resolvePlugin(pluginName: string) {
     const packageName = this.getPackageName(pluginName);
-    return requireModule(packageName);
+    return await importModule(packageName);
   }
 }
 

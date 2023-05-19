@@ -1,5 +1,5 @@
 import { Collection, Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import { MockServer, mockServer } from '@nocobase/test';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
@@ -24,7 +24,7 @@ describe('ui_schema repository', () => {
 
     await db.clean({ drop: true });
 
-    app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
+    await app.plugin(PluginUiSchema, { name: 'ui-schema-storage' });
 
     await app.load();
     await db.sync({

@@ -1,5 +1,5 @@
-import path from 'path';
 import { get } from 'lodash';
+import path from 'path';
 
 import { ApplicationOptions } from '@nocobase/server';
 import { MockServer, mockServer } from '@nocobase/test';
@@ -21,7 +21,7 @@ interface MockAppOptions extends ApplicationOptions {
 export async function getApp({ manual, ...options }: MockAppOptions = {}): Promise<MockServer> {
   const app = mockServer(options);
 
-  app.plugin(Plugin, {
+  await app.plugin(Plugin, {
     name: 'workflow',
     instructions: {
       echo: {

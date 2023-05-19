@@ -15,7 +15,7 @@ export async function getApp(options = {}): Promise<MockServer> {
 
   await app.cleanDb();
 
-  app.plugin(plugin);
+  await app.plugin(plugin);
 
   app.db.import({
     directory: path.resolve(__dirname, './tables'),

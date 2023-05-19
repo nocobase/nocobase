@@ -28,7 +28,7 @@ describe('application life cycle', () => {
         });
       }
     }
-    app.plugin(TestPlugin);
+    await app.plugin(TestPlugin);
     await app.load();
     expect(loadFn).toHaveBeenCalledTimes(1);
     expect(installFn).toHaveBeenCalledTimes(0);

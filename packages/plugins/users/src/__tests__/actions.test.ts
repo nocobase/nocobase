@@ -17,7 +17,7 @@ describe('actions', () => {
     process.env.INIT_ROOT_EMAIL = 'test@nocobase.com';
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
-    app.plugin(PluginUsers, userPluginConfig);
+    await app.plugin(PluginUsers, userPluginConfig);
 
     await app.loadAndInstall();
     db = app.db;

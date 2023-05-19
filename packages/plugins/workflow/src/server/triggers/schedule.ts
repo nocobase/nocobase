@@ -1,7 +1,8 @@
 import parser from 'cron-parser';
 import { Op, fn, literal, where } from 'sequelize';
-import Plugin, { Trigger } from '..';
+import Plugin from '..';
 import WorkflowModel from '../models/Workflow';
+import { Trigger } from './trigger';
 
 export type ScheduleOnField =
   | string

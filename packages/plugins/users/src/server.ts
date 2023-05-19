@@ -125,7 +125,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       directory: resolve(__dirname, 'collections'),
     });
 
-    this.db.addMigrations({
+    await this.db.addMigrations({
       namespace: 'users',
       directory: resolve(__dirname, 'migrations'),
       context: {
@@ -133,7 +133,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       },
     });
 
-    initAuthenticators(this);
+    await initAuthenticators(this);
   }
 
   getInstallingData(options: any = {}) {

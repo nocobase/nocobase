@@ -309,7 +309,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return packageJson.version;
   }
 
-  plugin<O = any>(pluginClass: any, options?: O): Plugin {
+  async plugin<O = any>(pluginClass: any, options?: O): Promise<Plugin> {
     return this.pm.addStatic(pluginClass, options);
   }
 

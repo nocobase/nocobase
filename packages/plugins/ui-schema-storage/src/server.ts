@@ -89,7 +89,7 @@ export class UiSchemaStoragePlugin extends Plugin {
   }
 
   async load() {
-    this.db.addMigrations({
+    await this.db.addMigrations({
       namespace: 'ui-schema-storage',
       directory: path.resolve(__dirname, './migrations'),
       context: {

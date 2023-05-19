@@ -9,8 +9,8 @@ describe('createdBy/updatedBy', () => {
 
   beforeEach(async () => {
     api = mockServer();
-    api.plugin(UsersPlugin, userPluginConfig);
-    api.plugin(PluginACL, { name: 'acl' });
+    await api.plugin(UsersPlugin, userPluginConfig);
+    await api.plugin(PluginACL, { name: 'acl' });
     await api.loadAndInstall({ clean: true });
     db = api.db;
   });

@@ -9,7 +9,7 @@ describe('notifications', () => {
 
   beforeEach(async () => {
     const app = mockServer();
-    app.plugin(plugin);
+    await app.plugin(plugin);
     await app.load();
     db = app.db;
     await db.sync();
