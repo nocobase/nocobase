@@ -66,9 +66,11 @@ export const CurrentUser = () => {
               <Menu.Divider />
               <EditProfile />
               <ChangePassword />
+              <Menu.Divider />
               <SwitchRole />
               <LanguageSettings />
               <ThemeSettings />
+              <Menu.Divider />
               {allowReboot && (
                 <Menu.Item
                   key="reload"
