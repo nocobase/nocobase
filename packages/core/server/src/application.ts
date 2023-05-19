@@ -227,7 +227,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return this.options.name || 'main';
   }
 
-  protected init() {
+  protected async init() {
     const options = this.options;
 
     const logger = createAppLogger(options.logger);
@@ -263,7 +263,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.context.cache = this._cache;
 
     if (this._pm) {
-      this._pm = this._pm.clone();
+      this._pm = await this._pm.clone();
     } else {
       this._pm = new PluginManager({
         app: this,
@@ -361,7 +361,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (options?.reload) {
       console.log(`Reload the ${this.name} application configuration`);
       const oldDb = this._db;
-      this.init();
+      await this.init();
       await oldDb.close();
     }
 

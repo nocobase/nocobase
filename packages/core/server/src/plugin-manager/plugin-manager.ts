@@ -191,12 +191,12 @@ export class PluginManager {
     await run('yarn', ['install']);
   }
 
-  clone() {
+  async clone() {
     const pm = new PluginManager({
       app: this.app,
     });
     for (const arg of this._tmpPluginArgs) {
-      pm.addStatic(...arg);
+      await pm.addStatic(...arg);
     }
     return pm;
   }
