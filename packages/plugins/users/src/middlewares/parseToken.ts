@@ -24,7 +24,6 @@ async function findUserByToken(ctx: Context) {
       }
     }
 
-    console.log({ appends: ctx.state.currentUserAppends });
     const user = await ctx.db.getRepository('users').findOne({
       appends: ctx.state.currentUserAppends,
       filter: {
