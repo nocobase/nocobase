@@ -15,6 +15,59 @@ describe('Eager loading tree', () => {
     await db.close();
   });
 
+  it('should handle fields filter', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasOne', name: 'profile' },
+      ],
+    });
+
+    const Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'age' },
+        { type: 'string', name: 'address' },
+      ],
+    });
+
+    await db.sync();
+
+    const users = await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          profile: { age: 1, address: 'u1 address' },
+        },
+        {
+          name: 'u2',
+          profile: { age: 2, address: 'u2 address' },
+        },
+      ],
+    });
+
+    const findOptions = User.repository.buildQueryOptions({
+      fields: ['profile', 'profile.age', 'name'],
+    });
+
+    const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+      model: User.model,
+      rootAttributes: findOptions.attributes,
+      includeOption: findOptions.include,
+    });
+
+    await eagerLoadingTree.load(users.map((item) => item.id));
+    const root = eagerLoadingTree.root;
+
+    const u1 = root.instances.find((item) => item.get('name') === 'u1');
+    const data = u1.toJSON();
+    expect(data['id']).not.toBeDefined();
+    expect(data['name']).toBeDefined();
+    expect(data['profile']).toBeDefined();
+    expect(data['profile']['age']).toBeDefined();
+  });
+
   it('should load has many', async () => {
     const User = db.collection({
       name: 'users',

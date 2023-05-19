@@ -1,10 +1,11 @@
-import { Association, BelongsToMany, HasMany, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
+import { Association, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
   association: Association;
   attributes: Array<string>;
+  rawAttributes: Array<string>;
   children: Array<EagerLoadingNode>;
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
@@ -12,6 +13,7 @@ interface EagerLoadingNode {
 
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
+
   constructor(root: EagerLoadingNode) {
     this.root = root;
   }
@@ -26,21 +28,56 @@ export class EagerLoadingTree {
     const root = {
       model,
       association: null,
-      attributes: rootAttributes,
+      rawAttributes: lodash.cloneDeep(rootAttributes),
+      attributes: lodash.cloneDeep(rootAttributes),
       children: [],
     };
 
+    const pushAttribute = (node, attribute) => {
+      if (lodash.isArray(node.attributes) && !node.attributes.includes(attribute)) {
+        node.attributes.push(attribute);
+      }
+    };
+
     const traverseIncludeOption = (includeOption, eagerLoadingTreeParent) => {
-      for (const include of lodash.castArray(includeOption)) {
+      const includeOptions = lodash.castArray(includeOption);
+
+      if (includeOption.length > 0) {
+        const modelPrimaryKey = eagerLoadingTreeParent.model.primaryKeyAttribute;
+        pushAttribute(eagerLoadingTreeParent, modelPrimaryKey);
+      }
+
+      for (const include of includeOptions) {
+        // skip fromFilter include option
+        if (include.fromFilter) {
+          continue;
+        }
+
         const association = eagerLoadingTreeParent.model.associations[include.association];
+        const associationType = association.associationType;
 
         const child = {
           model: association.target,
           association,
-          attributes: include.attributes,
+          rawAttributes: lodash.cloneDeep(include.attributes),
+          attributes: lodash.cloneDeep(include.attributes),
           parent: eagerLoadingTreeParent,
           children: [],
         };
+
+        if (associationType == 'HasOne' || associationType == 'HasMany') {
+          const { sourceKey, foreignKey } = association;
+
+          pushAttribute(eagerLoadingTreeParent, sourceKey);
+          pushAttribute(child, foreignKey);
+        }
+
+        if (associationType == 'BelongsTo') {
+          const { sourceKey, foreignKey } = association;
+
+          pushAttribute(eagerLoadingTreeParent, foreignKey);
+          pushAttribute(child, sourceKey);
+        }
 
         eagerLoadingTreeParent.children.push(child);
 
@@ -60,10 +97,6 @@ export class EagerLoadingTree {
 
     const loadRecursive = async (node, ids) => {
       const modelPrimaryKey = node.model.primaryKeyAttribute;
-
-      if (lodash.isArray(node.attributes) && !node.attributes.includes(modelPrimaryKey)) {
-        node.attributes.push(modelPrimaryKey);
-      }
 
       let instances = [];
 
@@ -221,6 +254,32 @@ export class EagerLoadingTree {
 
     await loadRecursive(this.root, pks);
 
+    const setInstanceAttributes = (node) => {
+      const nodeRawAttributes = node.rawAttributes;
+
+      if (!lodash.isArray(nodeRawAttributes)) {
+        return;
+      }
+
+      const nodeChildrenAs = node.children.map((child) => child.association.as);
+      const includeAttributes = [...nodeRawAttributes, ...nodeChildrenAs];
+
+      for (const instance of node.instances) {
+        const attributes = lodash.pick(instance.dataValues, includeAttributes);
+        instance.dataValues = attributes;
+      }
+    };
+
+    // traverse tree and set instance attributes
+    const traverse = (node) => {
+      setInstanceAttributes(node);
+
+      for (const child of node.children) {
+        traverse(child);
+      }
+    };
+
+    traverse(this.root);
     return result;
   }
 }
