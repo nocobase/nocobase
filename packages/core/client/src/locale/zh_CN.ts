@@ -777,4 +777,12 @@ export default {
   'Add template': '添加模板',
   'Display data template selector': '显示数据模板选择框',
   'Form data templates': '表单数据模板',
+
+  'Reload Application': '重载应用',
+  'The application is reloading, please do not close the page.': '应用正在重新加载，请勿关闭页面。',
+  'Application reloading': '应用重新加载中',
+  'Reboot Application': '重启应用',
+  "Allows to reboot application": "允许重启应用",
+  'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
+  'Reboot': '重启',
 }
