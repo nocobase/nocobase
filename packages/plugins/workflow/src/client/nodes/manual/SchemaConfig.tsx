@@ -1,31 +1,33 @@
-import React, { useState, useContext } from 'react';
+import React, { useContext, useState } from 'react';
 
-import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
-import { get } from 'lodash';
+import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 
 import {
+  ActionContext,
+  GeneralSchemaDesigner,
+  InitializerWithSwitch,
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
   SchemaInitializerItemOptions,
-  InitializerWithSwitch,
   SchemaInitializerProvider,
-  useSchemaComponentContext,
-  gridRowColWrap,
-  ActionContext,
-  GeneralSchemaDesigner,
   SchemaSettings,
+  gridRowColWrap,
+  useAPIClient,
   useCompile,
+  useRequest,
+  useSchemaComponentContext,
 } from '@nocobase/client';
-import { Registry } from '@nocobase/utils/client';
+import { Registry, uid } from '@nocobase/utils/client';
 
-import { useTrigger } from '../../triggers';
+import { Spin } from 'antd';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
 import { useFlowContext } from '../../FlowContext';
-import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
-import customForm from './forms/custom';
+import { NAMESPACE, lang } from '../../locale';
+import { useTrigger } from '../../triggers';
 import createForm from './forms/create';
+import customForm from './forms/custom';
 import updateForm from './forms/update';
 
 export type ManualFormType = {
@@ -33,21 +35,21 @@ export type ManualFormType = {
   config: {
     useInitializer: () => SchemaInitializerItemOptions;
     initializers?: {
-      [key: string]: React.FC
+      [key: string]: React.FC;
     };
     components?: {
-      [key: string]: React.FC
+      [key: string]: React.FC;
     };
-    parseFormOptions: Function
-  },
+    parseFormOptions: Function;
+  };
   block: {
     scope?: {
-      [key: string]: Function
-    },
+      [key: string]: Function;
+    };
     components?: {
-      [key: string]: React.FC
-    }
-  }
+      [key: string]: React.FC;
+    };
+  };
 };
 
 export const manualFormTypes = new Registry<ManualFormType>();
@@ -125,7 +127,7 @@ function AddBlockButton(props: any) {
       children: Array.from(manualFormTypes.getValues()).map((item) => {
         const { useInitializer: getInitializer } = item.config;
         return getInitializer();
-      })
+      }),
     },
     {
       type: 'itemGroup',
@@ -255,6 +257,61 @@ function useFlowRecordFromBlock() {
   return {};
 }
 
+const regenerateUid = (s: ISchema) => {
+  s['name'] = s['x-uid'] = uid();
+  Object.keys(s.properties || {}).forEach((key) => {
+    regenerateUid(s.properties[key]);
+  });
+};
+
+function ManualUI() {
+  const form = useForm();
+  const api = useAPIClient();
+  const { data, loading } = useRequest(async () => {
+    let schema: ISchema;
+    if (!form.values.schemaUid) {
+      schema = {
+        type: 'void',
+        name: uid(),
+        'x-component': 'Tabs',
+        'x-component-props': {},
+        'x-initializer': 'TabPaneInitializers',
+        'x-initializer-props': {
+          gridInitializer: 'AddBlockButton',
+        },
+        properties: {
+          tab1: {
+            type: 'void',
+            title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
+            'x-component': 'Tabs.TabPane',
+            'x-designer': 'Tabs.Designer',
+            properties: {
+              grid: {
+                type: 'void',
+                'x-component': 'Grid',
+                'x-initializer': 'AddBlockButton',
+                properties: {},
+              },
+            },
+          },
+        },
+      };
+      regenerateUid(schema);
+      form.values.schemaUid = schema['x-uid'];
+      await api.resource('uiSchemas').insert({ values: schema });
+      return schema;
+    }
+    const { data } = await api.request({
+      url: `uiSchemas:getJsonSchema/${form.values.schemaUid}`,
+    });
+    return data?.data || {};
+  });
+  if (loading) {
+    return <Spin />;
+  }
+  return <SchemaComponent memoized schema={data} />;
+}
+
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
   const trigger = useTrigger();
@@ -276,7 +333,7 @@ export function SchemaConfig({ value, onChange }) {
       drawer: {
         type: 'void',
         title: '{{t("Configure form")}}',
-        'x-decorator': 'Form',
+        // 'x-decorator': 'Form',
         'x-component': 'Action.Drawer',
         'x-component-props': {
           className: 'nb-action-popup',
@@ -284,28 +341,7 @@ export function SchemaConfig({ value, onChange }) {
         properties: {
           tabs: {
             type: 'void',
-            'x-component': 'Tabs',
-            'x-component-props': {},
-            'x-initializer': 'TabPaneInitializers',
-            'x-initializer-props': {
-              gridInitializer: 'AddBlockButton',
-            },
-            properties: value ?? {
-              tab1: {
-                type: 'void',
-                title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
-                'x-component': 'Tabs.TabPane',
-                'x-designer': 'Tabs.Designer',
-                properties: {
-                  grid: {
-                    type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'AddBlockButton',
-                    properties: {},
-                  },
-                },
-              },
-            },
+            'x-component': 'ManualUI',
           },
         },
       },
@@ -320,40 +356,49 @@ export function SchemaConfig({ value, onChange }) {
           AddActionButton,
           ...trigger.initializers,
           ...nodeInitializers,
-          ...(Array.from(manualFormTypes.getValues())
-            .reduce((result, item) => Object.assign(result, item.config.initializers), {})),
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.config.initializers),
+            {},
+          ),
         }}
       >
-        <SchemaComponentRefreshProvider
+        {/* <SchemaComponentRefreshProvider
           onRefresh={() => {
             const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
 
-            const forms = Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.config.parseFormOptions(tabs)), {});
+            const forms = Array.from(manualFormTypes.getValues()).reduce(
+              (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+              {},
+            );
             form.setValuesIn('forms', forms);
 
             onChange(tabs.properties);
           }}
-        >
-          <SchemaComponent
-            schema={schema}
-            components={{
-              ...nodeComponents,
-              ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.config.components), {})),
-              // NOTE: fake provider component
-              ManualActionStatusProvider(props) {
-                return props.children;
-              },
-              ActionBarProvider(props) {
-                return props.children;
-              },
-              SimpleDesigner,
-            }}
-            scope={{
-              useSubmit,
-              useFlowRecordFromBlock,
-            }}
-          />
-        </SchemaComponentRefreshProvider>
+        > */}
+        <SchemaComponent
+          schema={schema}
+          components={{
+            ManualUI,
+            ...nodeComponents,
+            ...Array.from(manualFormTypes.getValues()).reduce(
+              (result, item) => Object.assign(result, item.config.components),
+              {},
+            ),
+            // NOTE: fake provider component
+            ManualActionStatusProvider(props) {
+              return props.children;
+            },
+            ActionBarProvider(props) {
+              return props.children;
+            },
+            SimpleDesigner,
+          }}
+          scope={{
+            useSubmit,
+            useFlowRecordFromBlock,
+          }}
+        />
+        {/* </SchemaComponentRefreshProvider> */}
       </SchemaInitializerProvider>
     </SchemaComponentContext.Provider>
   );
