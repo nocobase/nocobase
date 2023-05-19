@@ -76,7 +76,7 @@ export const CurrentUser = () => {
                     Modal.confirm({
                       title: t('Reboot Application'),
                       content: t(
-                        'The will interrupt service, it may take a few seconds to restart. are you sure to continue?',
+                        'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?',
                       ),
                       okText: t('Reboot'),
                       okButtonProps: {

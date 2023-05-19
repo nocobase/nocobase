@@ -783,6 +783,6 @@ export default {
   'Application reloading': '应用重新加载中',
   'Reboot Application': '重启应用',
   "Allows to reboot application": "允许重启应用",
-  'The will interrupt service, it may take a few seconds to restart. are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
+  'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
   'Reboot': '重启',
 }
