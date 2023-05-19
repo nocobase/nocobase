@@ -9,6 +9,7 @@ interface EagerLoadingNode {
   children: Array<EagerLoadingNode>;
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
+  order?: any;
 }
 
 export class EagerLoadingTree {
@@ -21,6 +22,7 @@ export class EagerLoadingTree {
   static buildFromSequelizeOptions(options: {
     model: ModelStatic<any>;
     rootAttributes: Array<string>;
+    rootOrder?: any;
     includeOption: Includeable | Includeable[];
   }): EagerLoadingTree {
     const { model, rootAttributes, includeOption } = options;
@@ -30,6 +32,7 @@ export class EagerLoadingTree {
       association: null,
       rawAttributes: lodash.cloneDeep(rootAttributes),
       attributes: lodash.cloneDeep(rootAttributes),
+      order: options.rootOrder,
       children: [],
     };
 
@@ -102,9 +105,17 @@ export class EagerLoadingTree {
 
       // load instances from database
       if (!node.parent) {
-        instances = await node.model.findAll({
+        const findOptions = {
           where: { [modelPrimaryKey]: ids },
           attributes: node.attributes,
+        };
+
+        if (node.order) {
+          findOptions['order'] = node.order;
+        }
+
+        instances = await node.model.findAll({
+          ...findOptions,
           transaction,
         });
       } else if (ids.length > 0) {

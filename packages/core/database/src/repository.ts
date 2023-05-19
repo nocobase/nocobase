@@ -366,6 +366,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         model,
         rootAttributes: opts.attributes,
         includeOption: opts.include,
+        rootOrder: opts.order,
       });
 
       await eagerLoadingTree.load(

@@ -65,6 +65,8 @@ export abstract class SingleRelationRepository extends RelationRepository {
         group: `${this.targetModel.name}.${this.targetModel.primaryKeyAttribute}`,
       });
 
+      if (!templateModel) return null;
+
       const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
         model: this.targetModel,
         rootAttributes: findOptions.attributes,
