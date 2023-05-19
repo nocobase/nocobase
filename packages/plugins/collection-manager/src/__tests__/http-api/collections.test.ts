@@ -292,6 +292,8 @@ describe('collections repository', () => {
       sort: ['-createdAt', '-id'],
     });
 
+    console.log(JSON.stringify(response1.body.data));
+
     expect(response1.body.data[0]['id']).toEqual(3);
   });
 
