@@ -7,12 +7,9 @@ export default {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
-    const options = processor.getParsedValue(params);
+    const options = processor.getParsedValue(params, node);
     const result = await (multiple ? repo.find : repo.findOne).call(repo, {
       ...options,
-      context: {
-        executionId: processor.execution.id,
-      },
       transaction: processor.transaction,
     });
 

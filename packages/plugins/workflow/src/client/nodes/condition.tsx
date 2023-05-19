@@ -139,7 +139,7 @@ function getGroupCalculators(group) {
   return Array.from(calculators.getEntities()).filter(([key, value]) => value.group === group);
 }
 
-export function Calculation({ calculator, operands = [], onChange }) {
+function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
   const options = useWorkflowVariableOptions();
   return (
@@ -161,6 +161,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
+        dropdownMatchSelectWidth={false}
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))
@@ -316,6 +317,7 @@ export default {
   title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
+  description: `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     rejectOnFalse: {
       type: 'boolean',
@@ -411,7 +413,7 @@ export default {
       value: { rejectOnFalse: false },
     },
   ],
-  render(data) {
+  render: function Renderer(data) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const {

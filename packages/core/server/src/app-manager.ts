@@ -8,9 +8,17 @@ type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSele
 export class AppManager {
   public applications: Map<string, Application> = new Map<string, Application>();
   public app: Application;
+  public runningMode: 'single' | 'multiple' = 'multiple';
+  public singleAppName: string | null = null;
 
   constructor(app: Application) {
     this.bindMainApplication(app);
+
+    // if STARTUP_SUBAPP is set, run in single mode
+    if (process.env.STARTUP_SUBAPP) {
+      this.singleAppName = process.env.STARTUP_SUBAPP;
+      this.runningMode = 'single';
+    }
   }
 
   bindMainApplication(mainApp: Application) {
@@ -72,7 +80,12 @@ export class AppManager {
     return async (req: IncomingMessage, res: ServerResponse) => {
       const appManager = this.app.appManager;
 
-      let handleApp: any = (await appManager.appSelector(req)) || appManager.app;
+      let handleApp;
+      if (this.runningMode === 'single') {
+        handleApp = this.singleAppName;
+      } else {
+        handleApp = (await appManager.appSelector(req)) || appManager.app;
+      }
 
       if (typeof handleApp === 'string') {
         handleApp = await appManager.getApplication(handleApp);

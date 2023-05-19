@@ -14,7 +14,9 @@ import {
   useSortFields,
 } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
+import { GeneralSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefaultValue } from '../../../schema-settings';
+import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
@@ -102,13 +104,15 @@ AssociationSelect.Designer = function Designer() {
   const tk = useFilterByTk();
   const { dn, refresh, insertAdjacent } = useDesignable();
   const compile = useCompile();
+  const IsShowMultipleSwitch = useIsShowMultipleSwitch();
+
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const fieldComponentOptions = useFieldComponentOptions();
   const isSubFormAssociationField = field.address.segments.includes('__form_grid');
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -158,124 +162,7 @@ AssociationSelect.Designer = function Designer() {
 
   return (
     <GeneralSchemaDesigner>
-      {collectionField && (
-        <SchemaSettings.ModalItem
-          key="edit-field-title"
-          title={t('Edit field title')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit field title'),
-              properties: {
-                title: {
-                  title: t('Field title'),
-                  default: field?.title,
-                  description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ title }) => {
-            if (title) {
-              field.title = title;
-              fieldSchema.title = title;
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  title: fieldSchema.title,
-                },
-              });
-            }
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-description"
-          title={t('Edit description')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                description: {
-                  // title: t('Description'),
-                  default: field?.description,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ description }) => {
-            field.description = description;
-            fieldSchema.description = description;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                description: fieldSchema.description,
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-tooltip"
-          title={t('Edit tooltip')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                tooltip: {
-                  default: fieldSchema?.['x-decorator-props']?.tooltip,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ tooltip }) => {
-            field.decoratorProps.tooltip = tooltip;
-            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
-            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && (
-        <SchemaSettings.SwitchItem
-          key="required"
-          title={t('Required')}
-          checked={fieldSchema.required as boolean}
-          onChange={(required) => {
-            const schema = {
-              ['x-uid']: fieldSchema['x-uid'],
-            };
-            field.required = required;
-            fieldSchema['required'] = required;
-            schema['required'] = required;
-            dn.emit('patch', {
-              schema,
-            });
-            refresh();
-          }}
-        />
-      )}
+      <GeneralSchemaItems />
       {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
@@ -423,7 +310,7 @@ AssociationSelect.Designer = function Designer() {
                     },
                     name: 'default',
                     title: t('Default value'),
-                    default: fieldSchema.default || collectionField.defaultValue,
+                    default: fieldSchema.default || collectionField?.defaultValue,
                     'x-read-pretty': false,
                     'x-disabled': false,
                   },
@@ -453,7 +340,7 @@ AssociationSelect.Designer = function Designer() {
           value={fieldSchema['x-component']}
           onChange={(type) => {
             const schema: ISchema = {
-              name: collectionField.name,
+              name: collectionField?.name,
               type: 'void',
               required: fieldSchema['required'],
               description: fieldSchema['description'],
@@ -475,7 +362,7 @@ AssociationSelect.Designer = function Designer() {
               block: 'Form',
               readPretty: field.readPretty,
               action: tk ? 'get' : null,
-              targetCollection: getCollection(collectionField.target),
+              targetCollection: getCollection(collectionField?.target),
             });
 
             if (type === 'CollectionField') {
@@ -495,36 +382,31 @@ AssociationSelect.Designer = function Designer() {
           }}
         />
       )}
-      {form &&
-        !form?.readPretty &&
-        ['o2m', 'm2m'].includes(collectionField.interface) &&
-        fieldSchema['x-component'] !== 'TableField' && (
-          <SchemaSettings.SwitchItem
-            key="multiple"
-            title={t('Multiple')}
-            checked={
-              fieldSchema['x-component-props']?.multiple === undefined
-                ? true
-                : fieldSchema['x-component-props'].multiple
-            }
-            onChange={(value) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              field.componentProps = field.componentProps || {};
+      {IsShowMultipleSwitch() ? (
+        <SchemaSettings.SwitchItem
+          key="multiple"
+          title={t('Allow multiple')}
+          checked={
+            fieldSchema['x-component-props']?.multiple === undefined ? true : fieldSchema['x-component-props'].multiple
+          }
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            field.componentProps = field.componentProps || {};
 
-              fieldSchema['x-component-props'].multiple = value;
-              field.componentProps.multiple = value;
+            fieldSchema['x-component-props'].multiple = value;
+            field.componentProps.multiple = value;
 
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              dn.emit('patch', {
-                schema,
-              });
-              refresh();
-            }}
-          />
-        )}
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
         schema={
@@ -755,7 +637,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
   const originalTitle = collectionField?.uiSchema?.title;
-  const targetFields = collectionField?.target ? getCollectionFields(collectionField.target) : [];
+  const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
   const initialValue = {
     title: field.title === originalTitle ? undefined : field.title,
   };
@@ -797,105 +679,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
 
   return (
     <GeneralSchemaDesigner>
-      {collectionField && (
-        <SchemaSettings.ModalItem
-          key="edit-field-title"
-          title={t('Edit field title')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit field title'),
-              properties: {
-                title: {
-                  title: t('Field title'),
-                  default: field?.title,
-                  description: `${t('Original field title: ')}${collectionField?.uiSchema?.title}`,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ title }) => {
-            if (title) {
-              field.title = title;
-              fieldSchema.title = title;
-              dn.emit('patch', {
-                schema: {
-                  'x-uid': fieldSchema['x-uid'],
-                  title: fieldSchema.title,
-                },
-              });
-            }
-            dn.refresh();
-          }}
-        />
-      )}
-      {!field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-description"
-          title={t('Edit description')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                description: {
-                  // title: t('Description'),
-                  default: field?.description,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ description }) => {
-            field.description = description;
-            fieldSchema.description = description;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                description: fieldSchema.description,
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
-      {field.readPretty && (
-        <SchemaSettings.ModalItem
-          key="edit-tooltip"
-          title={t('Edit tooltip')}
-          schema={
-            {
-              type: 'object',
-              title: t('Edit description'),
-              properties: {
-                tooltip: {
-                  default: fieldSchema?.['x-decorator-props']?.tooltip,
-                  'x-decorator': 'FormItem',
-                  'x-component': 'Input.TextArea',
-                  'x-component-props': {},
-                },
-              },
-            } as ISchema
-          }
-          onSubmit={({ tooltip }) => {
-            field.decoratorProps.tooltip = tooltip;
-            fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
-            fieldSchema['x-decorator-props']['tooltip'] = tooltip;
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-decorator-props': fieldSchema['x-decorator-props'],
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+      <GeneralSchemaItems required={false} />
       {form && !form?.readPretty && validateSchema && (
         <SchemaSettings.ModalItem
           title={t('Set validation rules')}
@@ -1028,11 +812,11 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
               title: t('Set default value'),
               properties: {
                 default: {
-                  ...collectionField.uiSchema,
+                  ...collectionField?.uiSchema,
                   name: 'default',
                   title: t('Default value'),
                   'x-decorator': 'FormItem',
-                  default: fieldSchema.default || collectionField.defaultValue,
+                  default: fieldSchema.default || collectionField?.defaultValue,
                 },
               },
             } as ISchema

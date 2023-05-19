@@ -18,7 +18,7 @@ export const createdBy: IField = {
     uiSchema: {
       type: 'object',
       title: '{{t("Created by")}}',
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         fieldNames: {
           value: 'id',
