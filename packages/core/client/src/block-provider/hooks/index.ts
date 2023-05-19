@@ -1073,15 +1073,19 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
-const getTemplateSchema = ({ uid }) => {
+const getTemplateSchema = (schema) => {
   const conf = {
-    url: `/uiSchemas:getJsonSchema/${uid}`,
+    url: `/uiSchemas:getJsonSchema/${schema?.uid}`,
   };
-  const { data, loading } = useRequest(conf);
+  const { data, loading, run } = useRequest(conf, { manual: true });
   if (loading) {
-    // return;
   }
-  return new Schema(data?.data || {});
+  useEffect(() => {
+    if (schema?.uid) {
+      run();
+    }
+  }, [schema?.uid]);
+  return schema?.uid ? new Schema(data?.data) : null;
 };
 
 export const useAssociationNames = (collection) => {
@@ -1161,15 +1165,15 @@ export const useAssociationNames = (collection) => {
     }, data);
     return data.filter((g) => g.length);
   };
-  if (templateSchema) {
-    const template = getTemplateById(templateSchema['x-component-props']?.templateId);
-    const schema = getTemplateSchema(template);
-    if (schema) {
-      const associations = getAssociationAppends(schema);
-      const appends = flattenNestedList(associations);
-      return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
-    }
-  } else {
+
+  const template = getTemplateById(templateSchema?.['x-component-props']?.templateId);
+  const schema = getTemplateSchema(template);
+  if (schema) {
+    const associations = getAssociationAppends(schema);
+    const appends = flattenNestedList(associations);
+    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  }
+  if (!schema) {
     const associations = getAssociationAppends(formSchema);
     const appends = flattenNestedList(associations);
     return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
