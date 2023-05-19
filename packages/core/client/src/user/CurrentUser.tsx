@@ -29,7 +29,29 @@ export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
   const { allowAll, snippets } = useACLRoleContext();
-  const allowReload = allowAll || snippets?.includes('app');
+  const allowReboot = allowAll || snippets?.includes('app');
+  const silenceApi = useAPIClient();
+  const check = async () => {
+    return await new Promise((resolve) => {
+      const heartbeat = setInterval(() => {
+        silenceApi
+          .silent()
+          .resource('app')
+          .getInfo()
+          .then((res) => {
+            console.log(res);
+            if (res?.status === 200) {
+              resolve('ok');
+              clearInterval(heartbeat);
+            }
+            return res;
+          })
+          .catch(() => {
+            // ignore
+          });
+      }, 5000);
+    });
+  };
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
@@ -47,15 +69,23 @@ export const CurrentUser = () => {
               <SwitchRole />
               <LanguageSettings />
               <ThemeSettings />
-              {allowReload && (
+              {allowReboot && (
                 <Menu.Item
                   key="reload"
                   onClick={async () => {
                     Modal.confirm({
                       title: t('Reboot Application'),
-                      content: t('This operation will interrupt service, are you sure to continue?'),
+                      content: t(
+                        'The will interrupt service, it may take a few seconds to restart. are you sure to continue?',
+                      ),
+                      okText: t('Reboot'),
+                      okButtonProps: {
+                        danger: true,
+                      },
                       onOk: async () => {
                         await api.resource('app').reboot();
+                        await check();
+                        window.location.reload();
                       },
                     });
                   }}
