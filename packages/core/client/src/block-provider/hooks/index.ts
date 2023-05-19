@@ -1084,7 +1084,7 @@ const getTemplateSchema = ({ uid }) => {
   return new Schema(data?.data || {});
 };
 
-export const useAssociationNames = () => {
+export const useAssociationNames = (collection) => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();

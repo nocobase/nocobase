@@ -72,7 +72,7 @@ export const FormBlockProvider = (props) => {
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-  const { appends, updateAssociationValues } = useAssociationNames();
+  const { appends, updateAssociationValues } = useAssociationNames(collection);
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
@@ -87,7 +87,7 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'} params={params} runWhenParamsChanged>
+      <BlockProvider {...props} block={'form'} params={params}>
         <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
       </BlockProvider>
     )
