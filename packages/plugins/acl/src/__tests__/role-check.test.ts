@@ -23,11 +23,13 @@ describe('role check action', () => {
         name: 'test',
       },
     });
+
     const user = await db.getRepository('users').create({
       values: {
         roles: ['test'],
       },
     });
+
     const userPlugin = app.getPlugin('users') as UsersPlugin;
     const agent = app.agent().auth(
       userPlugin.jwtService.sign({
