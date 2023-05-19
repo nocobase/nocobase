@@ -40,10 +40,15 @@ describe('update associations', () => {
 
       await db.sync();
 
-      const postAfterCreate = jest.fn();
-      const userAfterCreate = jest.fn();
-      db.on('users.afterCreate', userAfterCreate);
-      db.on('posts.afterCreate', postAfterCreate);
+      let order = [];
+
+      db.on('users.afterCreate', () => {
+        order.push(2);
+      });
+
+      db.on('posts.afterCreate', () => {
+        order.push(1);
+      });
 
       await User.repository.create({
         values: {
@@ -56,8 +61,7 @@ describe('update associations', () => {
         },
       });
 
-      expect(postAfterCreate).toHaveBeenNthCalledWith(1);
-      expect(userAfterCreate).toHaveBeenNthCalledWith(2);
+      expect(order).toEqual([1, 2]);
     });
   });
 
