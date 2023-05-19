@@ -1,4 +1,4 @@
-import lodash, { omit } from 'lodash';
+import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
@@ -31,7 +31,6 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { handleAppendsQuery } from './utils';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 
 const debug = require('debug')('noco-database');
@@ -191,16 +190,16 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  protected builder() {
-    return this.builderMap;
-  }
-
   of(id: string | number): R {
     if (!this.association) {
       return;
     }
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
+  }
+
+  protected builder() {
+    return this.builderMap;
   }
 }
 
@@ -277,7 +276,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     options.optionsTransformer?.(queryOptions);
-
     const hasAssociationFilter = () => {
       if (queryOptions.include && queryOptions.include.length > 0) {
         const filterInclude = queryOptions.include.filter((include) => {
@@ -321,6 +319,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     return await this.model.aggregate(field, method, queryOptions);
   }
+
   /**
    * find
    * @param options
