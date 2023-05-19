@@ -1,25 +1,17 @@
-import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
-import { getApp, sleep } from '.';
+import { sleep } from 'scripts/testUtils';
+import { getApp } from '.';
 import { BRANCH_INDEX, EXECUTION_STATUS, JOB_STATUS } from '../constants';
 
 describe('workflow > Processor', () => {
-  let app: Application;
-  let db: Database;
-  let PostRepo;
-  let WorkflowModel;
-  let workflow;
-  let plugin;
+  const getData = async () => {
+    const app = await getApp();
+    const plugin = app.pm.get('workflow');
 
-  beforeEach(async () => {
-    app = await getApp();
-    plugin = app.pm.get('workflow');
+    const db = app.db;
+    const WorkflowModel = db.getCollection('workflows').model;
+    const PostRepo = db.getCollection('posts').repository;
 
-    db = app.db;
-    WorkflowModel = db.getCollection('workflows').model;
-    PostRepo = db.getCollection('posts').repository;
-
-    workflow = await WorkflowModel.create({
+    const workflow = await WorkflowModel.create({
       enabled: true,
       type: 'collection',
       config: {
@@ -27,12 +19,14 @@ describe('workflow > Processor', () => {
         collection: 'posts',
       },
     });
-  });
 
-  afterEach(() => db.close());
+    return { app, plugin, db, WorkflowModel, PostRepo, workflow };
+  };
 
   describe('base', () => {
     it('empty workflow without any nodes', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       const post = await PostRepo.create({ values: { title: 't1' } });
 
       await sleep(500);
@@ -40,9 +34,13 @@ describe('workflow > Processor', () => {
       const [execution] = await workflow.getExecutions();
       expect(execution.context.data.title).toEqual(post.title);
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
+
+      db.close();
     });
 
     it('execute resolved workflow', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       await workflow.createNode({
         type: 'echo',
       });
@@ -58,9 +56,13 @@ describe('workflow > Processor', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(1);
+
+      db.close();
     });
 
     it('workflow with single simple node', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       await workflow.createNode({
         type: 'echo',
       });
@@ -78,9 +80,13 @@ describe('workflow > Processor', () => {
       const { status, result } = jobs[0].get();
       expect(status).toEqual(JOB_STATUS.RESOLVED);
       expect(result).toMatchObject({ data: JSON.parse(JSON.stringify(post.toJSON())) });
+
+      db.close();
     });
 
     it('workflow with multiple simple nodes', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       const n1 = await workflow.createNode({
         title: 'echo 1',
         type: 'echo',
@@ -107,9 +113,13 @@ describe('workflow > Processor', () => {
       const { status, result } = jobs[1].get();
       expect(status).toEqual(JOB_STATUS.RESOLVED);
       expect(result).toMatchObject({ data: JSON.parse(JSON.stringify(post.toJSON())) });
+
+      db.close();
     });
 
     it('workflow with error node', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       await workflow.createNode({
         type: 'error',
       });
@@ -126,9 +136,13 @@ describe('workflow > Processor', () => {
       const { status, result } = jobs[0].get();
       expect(status).toEqual(JOB_STATUS.ERROR);
       expect(result.message).toBe('definite error');
+
+      db.close();
     });
 
     it('workflow with customized success node', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       await workflow.createNode({
         type: 'customizedSuccess',
       });
@@ -144,9 +158,13 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
       expect(status).toEqual(100);
+
+      db.close();
     });
 
     it('workflow with customized error node', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       await workflow.createNode({
         type: 'customizedError',
       });
@@ -162,11 +180,15 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(1);
       const { status, result } = jobs[0].get();
       expect(status).toEqual(-100);
+
+      db.close();
     });
   });
 
   describe('manual nodes', () => {
     it('manual node should suspend execution, and could be manually resume', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'manual',
       });
@@ -193,6 +215,7 @@ describe('workflow > Processor', () => {
         result: 123,
       });
       pending.execution = execution;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
@@ -205,9 +228,13 @@ describe('workflow > Processor', () => {
       expect(jobs[0].result).toEqual(123);
       expect(jobs[1].status).toEqual(JOB_STATUS.RESOLVED);
       expect(jobs[1].result).toEqual(123);
+
+      db.close();
     });
 
     it('manual node should suspend execution, resuming with error should end execution', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'prompt->error',
       });
@@ -229,6 +256,7 @@ describe('workflow > Processor', () => {
 
       pending.set('result', 123);
       pending.execution = execution;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
@@ -239,11 +267,15 @@ describe('workflow > Processor', () => {
       expect(jobs.length).toEqual(1);
       expect(jobs[0].status).toEqual(JOB_STATUS.ERROR);
       expect(jobs[0].result.message).toEqual('input failed');
+
+      db.close();
     });
   });
 
   describe('branch: condition', () => {
     it('condition node link to different downstreams', async () => {
+      const { workflow, PostRepo, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'condition',
         // no config means always true
@@ -273,9 +305,13 @@ describe('workflow > Processor', () => {
       expect(jobs[0].nodeId).toEqual(n1.id);
       expect(jobs[1].nodeId).toEqual(n2.id);
       expect(jobs[1].result).toEqual(true);
+
+      db.close();
     });
 
     it('suspend downstream in condition branch, then go on', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'condition',
         // no config means always true
@@ -307,15 +343,20 @@ describe('workflow > Processor', () => {
         result: 123,
       });
       pending.execution = execution;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(3);
+
+      db.close();
     });
 
     it('resume error downstream in condition branch, should error', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'condition',
         // no config means always true
@@ -344,6 +385,7 @@ describe('workflow > Processor', () => {
       const [pending] = await execution.getJobs({ where: { nodeId: n2.id } });
       pending.set('result', 123);
       pending.execution = execution;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
@@ -352,11 +394,15 @@ describe('workflow > Processor', () => {
 
       const jobs = await execution.getJobs();
       expect(jobs.length).toEqual(2);
+
+      db.close();
     });
   });
 
   describe('branch: mixed', () => {
     it('condition branches contains parallel', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'condition',
       });
@@ -404,6 +450,7 @@ describe('workflow > Processor', () => {
         result: 123,
       });
       pending.execution = execution;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
@@ -411,9 +458,13 @@ describe('workflow > Processor', () => {
       expect(execution.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await execution.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
+
+      db.close();
     });
 
     it('parallel branches contains condition', async () => {
+      const { workflow, PostRepo, plugin, db } = await getData();
+
       const n1 = await workflow.createNode({
         type: 'parallel',
       });
@@ -461,6 +512,7 @@ describe('workflow > Processor', () => {
         result: 123,
       });
       pending.execution = e1;
+      // @ts-ignore
       await plugin.resume(pending);
 
       await sleep(500);
@@ -469,6 +521,8 @@ describe('workflow > Processor', () => {
       expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
       const jobs = await e2.getJobs({ order: [['id', 'ASC']] });
       expect(jobs.length).toEqual(5);
+
+      db.close();
     });
   });
 });

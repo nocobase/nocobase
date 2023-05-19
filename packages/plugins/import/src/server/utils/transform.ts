@@ -1,7 +1,7 @@
 import { str2moment } from '@nocobase/utils';
 import * as math from 'mathjs';
 import moment from 'moment';
-import { namespace } from '../../';
+import { namespace } from '../..';
 
 export async function _({ value, field }) {
   return value;

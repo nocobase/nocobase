@@ -29,6 +29,8 @@ export class PluginManager {
   plugins = new Map<string, Plugin>();
   server: net.Server;
   pmSock: string;
+  /** 插件的加载状态，当加载完成后会被 resolve */
+  _pluginsStatus: Promise<any>;
   _tmpPluginArgs = [];
 
   constructor(options: PluginManagerOptions) {
@@ -91,15 +93,19 @@ export class PluginManager {
       await this.collection.sync();
     });
 
-    this.addStaticMultiple(options.plugins);
+    this._pluginsStatus = this.addStaticMultiple(options.plugins);
   }
 
-  addStaticMultiple(plugins: any) {
+  async waitPluginsLoaded() {
+    return this._pluginsStatus;
+  }
+
+  async addStaticMultiple(plugins: any) {
     for (const plugin of plugins || []) {
       if (typeof plugin == 'string') {
-        this.addStatic(plugin);
+        await this.addStatic(plugin);
       } else {
-        this.addStatic(...plugin);
+        await this.addStatic(...plugin);
       }
     }
   }

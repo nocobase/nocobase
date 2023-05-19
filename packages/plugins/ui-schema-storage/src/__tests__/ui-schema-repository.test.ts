@@ -1,5 +1,7 @@
 import { Collection, Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
+import { importModule } from '@nocobase/utils';
+import path from 'path';
 import { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
@@ -1114,7 +1116,7 @@ describe('ui_schema repository', () => {
   });
 
   it('should insert big schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = await importModule(path.join(__dirname, './fixtures/data'));
 
     console.time('test');
     await repository.insertNewSchema(schema);
@@ -1193,7 +1195,7 @@ describe('ui_schema repository', () => {
       },
     };
     await repository.insert(tree);
-    const schema = require('./fixtures/data').default;
+    const schema = await importModule(path.join(__dirname, './fixtures/data'));
 
     await repository.insertAdjacent('afterEnd', 'A', schema);
     const rootUid = schema['x-uid'];

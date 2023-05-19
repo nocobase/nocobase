@@ -7,31 +7,31 @@ export class AsyncEmitter {
       return false;
     }
     // helper function to reuse as much code as possible
-    const run = (cb) => {
+    const run = async (cb) => {
       switch (args.length) {
         // fast cases
         case 0:
-          cb = cb.call(this);
+          cb = await cb.call(this);
           break;
         case 1:
-          cb = cb.call(this, args[0]);
+          cb = await cb.call(this, args[0]);
           break;
         case 2:
-          cb = cb.call(this, args[0], args[1]);
+          cb = await cb.call(this, args[0], args[1]);
           break;
         case 3:
-          cb = cb.call(this, args[0], args[1], args[2]);
+          cb = await cb.call(this, args[0], args[1], args[2]);
           break;
         // slower
         default:
-          cb = cb.apply(this, args);
+          cb = await cb.apply(this, args);
       }
 
       if (cb && (cb instanceof Promise || typeof cb.then === 'function')) {
         return cb;
       }
 
-      return Promise.resolve(true);
+      return true;
     };
 
     if (typeof callbacks === 'function') {

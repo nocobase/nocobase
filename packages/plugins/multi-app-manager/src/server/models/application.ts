@@ -8,7 +8,7 @@ export interface registerAppOptions extends Transactionable {
 }
 
 export class ApplicationModel extends Model {
-  registerToMainApp(mainApp: Application, options: registerAppOptions) {
+  async registerToMainApp(mainApp: Application, options: registerAppOptions) {
     const appName = this.get('name') as string;
     const appOptions = (this.get('options') as any) || {};
 
@@ -19,6 +19,7 @@ export class ApplicationModel extends Model {
     };
 
     const subApp = new Application(subAppOptions);
+    await subApp.pm.waitPluginsLoaded();
 
     mainApp.appManager.addSubApp(subApp);
 

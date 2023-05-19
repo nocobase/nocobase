@@ -2,16 +2,16 @@ import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
-  CountOptions as SequelizeCountOptions,
-  CreateOptions as SequelizeCreateOptions,
-  DestroyOptions as SequelizeDestroyOptions,
-  FindAndCountOptions as SequelizeAndCountOptions,
-  FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
   Sequelize,
-  Transactionable,
+  FindAndCountOptions as SequelizeAndCountOptions,
+  CountOptions as SequelizeCountOptions,
+  CreateOptions as SequelizeCreateOptions,
+  DestroyOptions as SequelizeDestroyOptions,
+  FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
+  Transactionable,
   WhereOperators,
 } from 'sequelize';
 import { Collection } from './collection';

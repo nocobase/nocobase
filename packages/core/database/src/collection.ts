@@ -1,6 +1,6 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
-import { default as lodash, default as _ } from 'lodash';
+import _ from 'lodash';
 import {
   ModelOptions,
   ModelStatic,
@@ -13,8 +13,8 @@ import { Database } from './database';
 import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
-import { checkIdentifier, md5, snakeCase } from './utils';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
+import { checkIdentifier, md5, snakeCase } from './utils';
 
 export type RepositoryType = typeof Repository;
 
@@ -80,7 +80,7 @@ export class Collection<
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   get filterTargetKey() {
-    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    const targetKey = _.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
     if (!targetKey && this.model.rawAttributes['id']) {
       return 'id';
     }
@@ -427,7 +427,7 @@ export class Collection<
    * TODO
    */
   updateOptions(options: CollectionOptions, mergeOptions?: any) {
-    let newOptions = lodash.cloneDeep(options);
+    let newOptions = _.cloneDeep(options);
     newOptions = merge(this.options, newOptions, mergeOptions);
 
     this.context.database.emit('beforeUpdateCollection', this, newOptions);
@@ -508,7 +508,7 @@ export class Collection<
       indexName = index.fields;
     }
 
-    if (lodash.isEqual(this.model.primaryKeyAttributes, indexName)) {
+    if (_.isEqual(this.model.primaryKeyAttributes, indexName)) {
       return;
     }
 
@@ -519,7 +519,7 @@ export class Collection<
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
+      if (_.isEqual(item.fields, indexName)) {
         return;
       }
       const name: string = item.fields.join(',');
@@ -557,7 +557,7 @@ export class Collection<
     const indexes: any[] = this.model._indexes;
     // @ts-ignore
     this.model._indexes = indexes.filter((item) => {
-      return !lodash.isEqual(item.fields, fields);
+      return !_.isEqual(item.fields, fields);
     });
     this.refreshIndexes();
   }
@@ -567,7 +567,7 @@ export class Collection<
     const indexes: any[] = this.model._indexes;
 
     // @ts-ignore
-    this.model._indexes = lodash.uniqBy(
+    this.model._indexes = _.uniqBy(
       indexes
         .filter((item) => {
           return item.fields.every((field) =>
@@ -631,7 +631,7 @@ export class Collection<
 
   public tableNameAsString(options?: { ignorePublicSchema: boolean }) {
     const tableNameWithSchema = this.getTableNameWithSchema();
-    if (lodash.isString(tableNameWithSchema)) {
+    if (_.isString(tableNameWithSchema)) {
       return tableNameWithSchema;
     }
 
