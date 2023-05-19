@@ -49,7 +49,7 @@ export const CurrentUser = () => {
           .catch(() => {
             // ignore
           });
-      }, 5000);
+      }, 3000);
     });
   };
   return (
