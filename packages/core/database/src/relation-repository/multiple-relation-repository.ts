@@ -1,5 +1,4 @@
-import { omit } from 'lodash';
-import { MultiAssociationAccessors, Op, Sequelize, Transaction, Transactionable } from 'sequelize';
+import { MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
 import {
   CommonFindOptions,
   CountOptions,
@@ -14,7 +13,7 @@ import {
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
-import { handleAppendsQuery } from '../utils';
+import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export type FindAndCountOptions = CommonFindOptions;
 
@@ -61,23 +60,19 @@ export abstract class MultipleRelationRepository extends RelationRepository {
         return [];
       }
 
-      return await handleAppendsQuery({
-        templateModel: ids[0].row,
-        queryPromises: findOptions.include.map((include) => {
-          return sourceModel[getAccessor]({
-            ...omit(findOptions, ['limit', 'offset']),
-            include: [include],
-            where: {
-              [this.targetKey()]: {
-                [Op.in]: ids.map((id) => id.pk),
-              },
-            },
-            transaction,
-          }).then((rows) => {
-            return { rows, include };
-          });
-        }),
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model: this.targetModel,
+        rootAttributes: findOptions.attributes,
+        includeOption: findOptions.include,
+        rootOrder: findOptions.order,
       });
+
+      await eagerLoadingTree.load(
+        ids.map((i) => i.pk),
+        transaction,
+      );
+
+      return eagerLoadingTree.root.instances;
     }
 
     const data = await sourceModel[getAccessor]({
