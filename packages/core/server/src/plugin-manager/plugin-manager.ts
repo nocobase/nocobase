@@ -328,42 +328,34 @@ export class PluginManager {
   }
 
   async enable(name: string | string[]) {
-    try {
-      const pluginNames = await this.repository.enable(name);
-      await this.app.reload();
+    const pluginNames = await this.repository.enable(name);
+    await this.app.reload();
 
-      await this.app.db.sync();
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        await plugin.install();
-        await plugin.afterEnable();
+    await this.app.db.sync();
+    for (const pluginName of pluginNames) {
+      const plugin = this.app.getPlugin(pluginName);
+      if (!plugin) {
+        throw new Error(`${name} plugin does not exist`);
       }
-
-      await this.app.emitAsync('afterEnablePlugin', name);
-    } catch (error) {
-      throw error;
+      await plugin.install();
+      await plugin.afterEnable();
     }
+
+    await this.app.emitAsync('afterEnablePlugin', name);
   }
 
   async disable(name: string | string[]) {
-    try {
-      const pluginNames = await this.repository.disable(name);
-      await this.app.reload();
-      for (const pluginName of pluginNames) {
-        const plugin = this.app.getPlugin(pluginName);
-        if (!plugin) {
-          throw new Error(`${name} plugin does not exist`);
-        }
-        await plugin.afterDisable();
+    const pluginNames = await this.repository.disable(name);
+    await this.app.reload();
+    for (const pluginName of pluginNames) {
+      const plugin = this.app.getPlugin(pluginName);
+      if (!plugin) {
+        throw new Error(`${name} plugin does not exist`);
       }
-
-      await this.app.emitAsync('afterDisablePlugin', name);
-    } catch (error) {
-      throw error;
+      await plugin.afterDisable();
     }
+
+    await this.app.emitAsync('afterDisablePlugin', name);
   }
 
   async remove(name: string | string[]) {

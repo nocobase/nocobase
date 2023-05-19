@@ -314,7 +314,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   // @ts-ignore
-  use<NewStateT = {}, NewContextT = {}>(
+  use<NewStateT = object, NewContextT = object>(
     middleware: Koa.Middleware<StateT & NewStateT, ContextT & NewContextT>,
     options?: ToposortOptions,
   ) {

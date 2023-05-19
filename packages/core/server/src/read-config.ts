@@ -1,5 +1,6 @@
-import lodash from 'lodash';
+import { importModule } from '@nocobase/utils';
 import fs from 'fs';
+import lodash from 'lodash';
 import path from 'path';
 
 export async function readConfig(dir: string) {
@@ -47,7 +48,7 @@ export async function loadConfiguration(configurationDir: string, repository: Co
 
         const filePath = path.join(dir, file.name);
         const keyName = path.parse(filePath).name;
-        const configuration = require(filePath).default;
+        const configuration = await importModule(filePath);
 
         repository.set([...prefix, keyName].join('.'), configuration);
       }

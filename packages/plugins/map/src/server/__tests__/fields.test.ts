@@ -122,23 +122,23 @@ describe('fields', () => {
     });
 
     expect(await findOne()).toMatchInlineSnapshot(`
-      Object {
-        "circle": Array [
+      {
+        "circle": [
           114.058996,
           22.549695,
           4171,
         ],
-        "lineString": Array [
-          Array [
+        "lineString": [
+          [
             114.047323,
             22.534158,
           ],
-          Array [
+          [
             114.120966,
             22.544146,
           ],
         ],
-        "point": Array [
+        "point": [
           1,
           2,
         ],
@@ -163,7 +163,7 @@ describe('fields', () => {
       });
 
     expect(await findOne()).toMatchInlineSnapshot(`
-      Object {
+      {
         "circle": null,
         "lineString": null,
         "point": null,

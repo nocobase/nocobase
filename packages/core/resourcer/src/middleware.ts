@@ -1,5 +1,4 @@
 import compose from 'koa-compose';
-import { requireModule } from '@nocobase/utils';
 import { ActionName } from './action';
 import { HandlerType } from './resourcer';
 
@@ -26,7 +25,6 @@ export class Middleware {
   private middlewares: HandlerType[] = [];
 
   constructor(options: MiddlewareOptions | Function) {
-    options = requireModule(options);
     if (typeof options === 'function') {
       this.options = { handler: options };
     } else {
@@ -35,11 +33,12 @@ export class Middleware {
   }
 
   getHandler() {
-    const handler = requireModule(this.options.handler);
+    // TODO: requireModule 好像不需要，先删除了
+    const handler = this.options.handler;
     if (typeof handler !== 'function') {
       throw new Error('Handler must be a function!');
     }
-    return (ctx, next) => compose([handler, ...this.middlewares])(ctx, next);
+    return (ctx, next) => compose([handler as any, ...this.middlewares])(ctx, next);
   }
 
   use(middleware: HandlerType) {

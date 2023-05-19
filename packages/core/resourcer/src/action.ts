@@ -1,4 +1,4 @@
-import { assign, MergeStrategies, requireModule } from '@nocobase/utils';
+import { assign, MergeStrategies } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import Middleware, { MiddlewareType } from './middleware';
@@ -209,7 +209,6 @@ export class Action {
   public readonly middlewares: Array<Middleware> = [];
 
   constructor(options: ActionOptions) {
-    options = requireModule(options);
     if (typeof options === 'function') {
       options = { handler: options };
     }
@@ -294,7 +293,8 @@ export class Action {
   }
 
   getHandler() {
-    const handler = requireModule(this.handler || this.resource.resourcer.getRegisteredHandler(this.name));
+    // TODO: requireModule 好像不需要，先删除了
+    const handler = this.handler || this.resource.resourcer.getRegisteredHandler(this.name);
     if (typeof handler !== 'function') {
       throw new Error('Handler must be a function!');
     }

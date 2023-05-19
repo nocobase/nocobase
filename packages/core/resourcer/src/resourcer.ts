@@ -1,4 +1,4 @@
-import { requireModule, Toposort, ToposortOptions } from '@nocobase/utils';
+import { importModule, Toposort, ToposortOptions } from '@nocobase/utils';
 import glob from 'glob';
 import compose from 'koa-compose';
 import _ from 'lodash';
@@ -177,18 +177,18 @@ export class Resourcer {
    * @param {string}   [options.directory] 指定配置所在路径
    * @param {array}    [options.extensions = ['js', 'ts', 'json']] 文件后缀
    */
-  public import(options: ImportOptions): Map<string, Resource> {
+  public async import(options: ImportOptions): Promise<Map<string, Resource>> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory}/*.{${extensions.join(',')}}`;
     const files = glob.sync(patten, {
       ignore: ['**/*.d.ts'],
     });
     const resources = new Map<string, Resource>();
-    files.forEach((file: string) => {
-      const options = requireModule(file);
+    for (const file of files) {
+      const options = await importModule(file);
       const table = this.define(typeof options === 'function' ? options(this) : options);
       resources.set(table.getName(), table);
-    });
+    }
     return resources;
   }
 
@@ -328,7 +328,7 @@ export class Resourcer {
             ...(_.isEmpty(ctx.request.body) ? {} : { values: ctx.request.body }),
           });
         }
-        return compose(ctx.action.getHandlers())(ctx, next);
+        return compose(await ctx.action.getHandlers())(ctx, next);
       } catch (error) {
         return next();
       }

@@ -571,7 +571,7 @@ describe('resourcer', () => {
 
   it('shound work', async () => {
     const resourcer = new Resourcer();
-    resourcer.import({
+    await resourcer.import({
       directory: path.resolve(__dirname, 'resources'),
     });
     const context = {

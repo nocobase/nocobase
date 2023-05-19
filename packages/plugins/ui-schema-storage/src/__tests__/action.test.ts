@@ -1,5 +1,7 @@
 import { Database } from '@nocobase/database';
 import { MockServer, mockServer } from '@nocobase/test';
+import { importModule } from '@nocobase/utils';
+import path from 'path';
 import PluginUiSchema from '../server';
 
 describe('action test', () => {
@@ -267,7 +269,7 @@ describe('action test', () => {
   });
 
   test('insert adjacent with bit schema', async () => {
-    const schema = require('./fixtures/data').default;
+    const schema = await importModule(path.join(__dirname, './fixtures/data'));
 
     await app
       .agent()

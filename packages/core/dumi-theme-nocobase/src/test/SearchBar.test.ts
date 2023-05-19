@@ -1,4 +1,9 @@
+import theme from '@umijs/preset-dumi/lib/theme';
 import { highlight } from '../components/SearchBar';
+
+vi.mock('dumi/theme', () => ({
+  ...theme,
+}));
 
 describe('test highlight', () => {
   it('should render right', () => {

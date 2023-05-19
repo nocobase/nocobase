@@ -1,4 +1,6 @@
+import { importModule } from '@nocobase/utils';
 import * as path from 'path';
+import { sleep } from 'scripts/testUtils';
 import Application from '../application';
 import { PluginManager } from '../plugin-manager';
 import { readConfig } from '../read-config';
@@ -18,10 +20,10 @@ describe('config', () => {
   });
 
   it('should create application from configuration', async () => {
-    const TestA = require('./plugins/test-a').default;
-    const TestB = require('./plugins/test-b').default;
+    const TestA = await importModule(path.join(__dirname, './plugins/test-a'));
+    const TestB = await importModule(path.join(__dirname, './plugins/test-b'));
 
-    PluginManager.resolvePlugin = (name) => {
+    PluginManager.resolvePlugin = async (name) => {
       if (name === 'test-a') {
         return TestA;
       }
@@ -34,6 +36,9 @@ describe('config', () => {
     const config = await readConfig(configurationDir);
 
     const app = new Application(config);
+
+    // 等待插件加载完成
+    await sleep();
 
     const appPluginA = app.getPlugin('test-a');
 

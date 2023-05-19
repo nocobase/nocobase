@@ -1,6 +1,6 @@
 import { MockServer } from '@nocobase/test';
-import createApp from './index';
 import { Dumper } from '../dumper';
+import createApp from './index';
 
 describe('dumper', () => {
   let app: MockServer;
@@ -13,7 +13,8 @@ describe('dumper', () => {
   });
 
   it('should get collection groups', async () => {
-    await app.db.getRepository('collections').create({
+    const collections = app.db.getRepository('collections');
+    await collections.create({
       values: {
         name: 'test_collection',
         fields: [
