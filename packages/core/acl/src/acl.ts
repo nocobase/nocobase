@@ -376,7 +376,11 @@ export class ACL extends EventEmitter {
     const { resourceName, actionName } = ctx.action;
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      return this.can({ role: roleName, ...options });
+      const can = this.can({ role: roleName, ...options });
+      if (!can) {
+        return null;
+      }
+      return lodash.cloneDeep(can);
     };
 
     ctx.permission = {

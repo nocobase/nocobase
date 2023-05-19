@@ -1,5 +1,4 @@
 import { gridRowColWrap } from '../utils';
-import * as chartConfig from './chart-config';
 
 // 页面里添加区块
 export const BlockInitializers = {
@@ -29,6 +28,18 @@ export const BlockInitializers = {
           type: 'item',
           title: '{{t("Details")}}',
           component: 'DetailsBlockInitializer',
+        },
+        {
+          key: 'List',
+          type: 'item',
+          title: '{{t("List")}}',
+          component: 'ListBlockInitializer',
+        },
+        {
+          key: 'GridCard',
+          type: 'item',
+          title: '{{t("Grid Card")}}',
+          component: 'GridCardBlockInitializer',
         },
         {
           key: 'calendar',

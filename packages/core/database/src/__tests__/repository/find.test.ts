@@ -176,7 +176,7 @@ describe('find with associations', () => {
       },
     });
 
-    expect(filterResult[0].user.department).toBeDefined();
+    expect(filterResult[0].get('user').get('department')).toBeDefined();
   });
 
   it('should filter by association field', async () => {

@@ -29,7 +29,7 @@ export const useCollection = () => {
   return {
     ...collection,
     resource,
-    getField(name: SchemaKey): CollectionFieldOptions {
+    getField(name: SchemaKey): CollectionFieldOptions | null {
       const fields = totalFields as any[];
       return fields?.find((field) => field.name === name);
     },

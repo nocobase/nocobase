@@ -28,7 +28,15 @@ export const CollectionSelect = connect(
     const options = useOptions(props);
     const { t } = useTranslation();
 
-    return <Select placeholder={t('Select collection')} {...others} options={options} />;
+    return (
+      <Select
+        placeholder={t('Select collection')}
+        {...others}
+        showSearch
+        filterOption={(input, option) => (option?.label ?? '').includes(input)}
+        options={options}
+      />
+    );
   },
   mapReadPretty(
     observer((props: CollectionSelectProps) => {

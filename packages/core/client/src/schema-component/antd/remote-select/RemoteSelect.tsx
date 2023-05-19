@@ -146,11 +146,13 @@ const InternalRemoteSelect = connect(
     const onSearch = async (search) => {
       run({
         filter: mergeFilter([
-          {
-            [fieldNames.label]: {
-              [operator]: search,
-            },
-          },
+          search
+            ? {
+                [fieldNames.label]: {
+                  [operator]: search,
+                },
+              }
+            : {},
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });

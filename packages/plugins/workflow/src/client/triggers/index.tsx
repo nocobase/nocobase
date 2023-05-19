@@ -17,7 +17,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import { nodeCardClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { useFlowContext } from '../FlowContext';
 import collection from './collection';
 import schedule from './schedule/';
@@ -53,7 +53,7 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any, types: any[]): VariableOptions;
+  useVariables?(config: any, options?): VariableOptions;
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
@@ -86,7 +86,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: 'workflow-node-job-button',
+          className: cx(nodeJobButtonClass, 'workflow-node-job-button'),
           type: 'primary',
         },
         properties: {
@@ -143,7 +143,9 @@ export const TriggerConfig = () => {
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
   useEffect(() => {
-    setEditingTitle(workflow.title ?? typeTitle);
+    if (workflow) {
+      setEditingTitle(workflow.title ?? typeTitle);
+    }
   }, [workflow]);
 
   if (!workflow || !workflow.type) {

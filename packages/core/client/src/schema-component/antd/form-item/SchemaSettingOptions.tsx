@@ -5,7 +5,7 @@ import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useFilterByTk, useFormBlockContext } from '../../../block-provider';
+import { useFormBlockContext } from '../../../block-provider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable, useFieldModeOptions } from '../../hooks';
@@ -344,11 +344,11 @@ export const EditDefaultValue = () => {
           title: t('Set default value'),
           properties: {
             default: {
-              ...collectionField.uiSchema,
+              ...collectionField?.uiSchema,
               name: 'default',
               title: t('Default value'),
               'x-decorator': 'FormItem',
-              default: fieldSchema.default || collectionField.defaultValue,
+              default: fieldSchema.default || collectionField?.defaultValue,
             },
           },
         } as ISchema
@@ -536,7 +536,7 @@ export const EditTitleField = () => {
   const compile = useCompile();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const targetFields = collectionField?.target
-    ? getCollectionFields(collectionField.target)
+    ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
