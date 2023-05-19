@@ -100,7 +100,7 @@ export class ClientPlugin extends Plugin {
     });
     const dialect = this.app.db.sequelize.getDialect();
     const locales = require('./locale').default;
-    const restartMark = resolve(process.env.LOCAL_STORAGE_BASE_URL || resolve(process.cwd(), 'storage'), 'restart');
+    const restartMark = resolve(process.cwd(), 'storage', 'restart');
     this.app.on('beforeStart', async () => {
       if (fs.existsSync(restartMark)) {
         fs.unlinkSync(restartMark);

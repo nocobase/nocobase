@@ -41,7 +41,7 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      const restartMark = resolve(process.env.LOCAL_STORAGE_BASE_URL || resolve(process.cwd(), 'storage'), 'restart');
+      const restartMark = resolve(process.cwd(), 'storage', 'restart');
       if (!existsSync(restartMark)) {
         if (opts.quickstart) {
           await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
