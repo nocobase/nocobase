@@ -1,7 +1,7 @@
 import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
 import React from 'react';
 
-export const ChartBlockDesigner: React.FC = () => {
+export const ChartV2BlockDesigner: React.FC = () => {
   return (
     <GeneralSchemaDesigner>
       <SchemaSettings.BlockTitleItem />
