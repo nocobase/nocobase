@@ -1,6 +1,6 @@
 import { importModule } from '@nocobase/utils';
 import * as path from 'path';
-import { sleep } from 'scripts/testUtils';
+import { sleep } from 'testUtils';
 import Application from '../application';
 import { PluginManager } from '../plugin-manager';
 import { readConfig } from '../read-config';

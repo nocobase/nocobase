@@ -45,16 +45,20 @@ export class Auth {
   }
 
   initKeys() {
-    if (!window) {
-      return;
+    try {
+      if (!window) {
+        return;
+      }
+      const match = window.location.pathname.match(/^\/apps\/([^/]*)\//);
+      if (!match) {
+        return;
+      }
+      const appName = match[1];
+      this.NOCOBASE_LOCALE_KEY = `${appName.toUpperCase()}_NOCOBASE_LOCALE`;
+      this.NOCOBASE_ROLE_KEY = `${appName.toUpperCase()}_NOCOBASE_ROLE`;
+    } catch (e) {
+      console.error(e);
     }
-    const match = window.location.pathname.match(/^\/apps\/([^/]*)\//);
-    if (!match) {
-      return;
-    }
-    const appName = match[1];
-    this.NOCOBASE_LOCALE_KEY = `${appName.toUpperCase()}_NOCOBASE_LOCALE`;
-    this.NOCOBASE_ROLE_KEY = `${appName.toUpperCase()}_NOCOBASE_ROLE`;
   }
 
   get locale() {

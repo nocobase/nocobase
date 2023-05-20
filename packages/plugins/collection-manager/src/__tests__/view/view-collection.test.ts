@@ -1,7 +1,7 @@
 import Database, { Repository, ViewCollection } from '@nocobase/database';
 import Application from '@nocobase/server';
-import { createApp } from '../index';
 import { uid } from '@nocobase/utils';
+import { createApp } from '../index';
 
 describe('view collection', function () {
   let db: Database;

@@ -1,39 +1,37 @@
-import path from 'path';
 import { defineConfig } from 'vitest/config';
-
-export const alias = [
-  { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
-  { find: '@nocobase/utils/client', replacement: 'packages/core/utils/src/client' },
-  { find: /^@nocobase\/app-(.*)/, replacement: 'packages/$1/src' },
-  { find: /^@nocobase\/plugin-sample-(.*)/, replacement: 'packages/samples/$1/src' },
-  { find: /^@nocobase\/plugin-pro-(.*)/, replacement: 'packages/pro-plugins/$1/src' },
-  { find: /^@nocobase\/plugin-(.*)/, replacement: 'packages/plugins/$1/src' },
-  { find: /^@nocobase\/preset-(.*)/, replacement: 'packages/presets/$1/src' },
-  { find: /^@nocobase\/(.*)/, replacement: 'packages/core/$1/src' },
-];
-
-export const resolveAliasByVitest = (name: string) => {
-  const item = alias.find((item) => (item.find instanceof RegExp ? item.find.test(name) : item.find === name));
-  if (item) {
-    if (item.find instanceof RegExp) {
-      return path.resolve('./', item.replacement.replace('$1', name.replace(item.find, '$1')));
-    }
-    return path.resolve('./', item.replacement);
-  }
-  return name;
-};
+import { alias } from './testUtils';
 
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'jsdom',
-    setupFiles: './scripts/setupVitest.ts',
-    css: false,
+    // 客户端运行测试时使用 jsdom 环境
+    environmentMatchGlobs: [
+      ['packages/**/*.test.tsx', 'jsdom'],
+      ['packages/**/{dumi-theme-nocobase,sdk,client}/**', 'jsdom'],
+    ],
+    // 为客户端打开多线程，以提高测试速度
+    poolMatchGlobs: [
+      ['packages/**/*.test.tsx', 'threads'],
+      ['packages/**/{dumi-theme-nocobase,sdk,client}/**', 'threads'],
+    ],
+    setupFiles: 'scripts/setupVitest.ts',
+    css: true,
+    // 默认关闭多线程，因为在 server 端运行测试时，多线程会导致测试失败
     threads: false,
-    maxThreads: 1,
+    singleThread: true,
     alias,
-    include: ['packages/**/src/**/*.test.(tsx|ts)'],
-    exclude: ['packages/**/node_modules', 'packages/**/lib', 'packages/**/dist', 'packages/**/es'],
+    include: ['packages/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/lib/**',
+      '**/es/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
+    ],
     testTimeout: 300000,
+    hookTimeout: 300000,
+    teardownTimeout: 300000,
   },
 });

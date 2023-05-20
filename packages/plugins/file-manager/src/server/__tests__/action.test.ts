@@ -97,7 +97,7 @@ describe('action', () => {
       expect(response.status).toBe(400);
     });
 
-    it.skip('upload with associatedIndex', async () => {
+    it('upload with associatedIndex', async () => {
       const User = db.getCollection('users').model;
       const user = await User.create();
 
@@ -130,7 +130,7 @@ describe('action', () => {
       expect(updatedUser.get('avatar').id).toBe(body.data.id);
     });
 
-    it.skip('upload to assoiciated field and storage with full base url should be ok', async () => {
+    it('upload to assoiciated field and storage with full base url should be ok', async () => {
       const BASE_URL = `http://localhost:${APP_PORT}/another-uploads`;
       const storageName = 'local_private';
       const urlPath = 'test/path';
@@ -163,7 +163,7 @@ describe('action', () => {
     });
 
     // TODO(bug): 没有 associatedIndex 时路径解析资源名称不对，无法进入 action
-    it.skip('upload without associatedIndex', async () => {
+    it('upload without associatedIndex', async () => {
       const { body } = await agent.resource('users.avatar').upload({
         file: path.resolve(__dirname, './files/image.png'),
         values: { width: 100, height: 100 },

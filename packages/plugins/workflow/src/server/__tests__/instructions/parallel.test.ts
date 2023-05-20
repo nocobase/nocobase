@@ -74,7 +74,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(800);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -131,7 +131,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(800);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -217,7 +217,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(800);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -245,7 +245,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(800);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -343,7 +343,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(1000);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -380,7 +380,7 @@ describe('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
+      await sleep(800);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
@@ -393,7 +393,7 @@ describe('workflow > instructions > parallel', () => {
       pending.execution = e1;
       plugin.resume(pending);
 
-      await sleep(500);
+      await sleep(800);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);

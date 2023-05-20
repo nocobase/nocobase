@@ -59,6 +59,8 @@
   },
   "include": [
     "packages/**/*",
+    "scripts/setupServer.ts",
+    "scripts/setupClient.ts",
     "scripts/setupVitest.ts"
   ],
   "exclude": [
