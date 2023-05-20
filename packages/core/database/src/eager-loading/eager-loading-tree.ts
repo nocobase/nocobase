@@ -76,10 +76,10 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsTo') {
-          const { sourceKey, foreignKey } = association;
+          const { targetKey, foreignKey } = association;
 
           pushAttribute(eagerLoadingTreeParent, foreignKey);
-          pushAttribute(child, sourceKey);
+          pushAttribute(child, targetKey);
         }
 
         eagerLoadingTreeParent.children.push(child);
