@@ -1,5 +1,5 @@
 import type { Collection, Database } from '@nocobase/database';
-import type { MockServer} from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { mockServer } from '@nocobase/test';
 import { importModule } from '@nocobase/utils';
 import path from 'path';

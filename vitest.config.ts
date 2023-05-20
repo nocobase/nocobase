@@ -1,7 +1,9 @@
+import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vitest/config';
 import { alias } from './testUtils';
 
 export default defineConfig({
+  plugins: [react()],
   test: {
     globals: true,
     // 客户端运行测试时使用 jsdom 环境
