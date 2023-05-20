@@ -1144,7 +1144,12 @@ export const useAssociationNames = (collection) => {
         if (Array.isArray(list[i])) {
           `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
         } else {
-          const str = prefix.replaceAll(`.${list[i]}`, '').trim();
+          const searchTerm = `.${list[i]}`;
+          const lastIndex = prefix.lastIndexOf(searchTerm);
+          let str = '';
+          if (lastIndex !== -1) {
+            str = prefix.slice(0, lastIndex) + prefix.slice(lastIndex + searchTerm.length);
+          }
           if (!str) {
             !list.includes(str) && flattenedList.push(`${list[i]}`);
           } else {
@@ -1171,6 +1176,7 @@ export const useAssociationNames = (collection) => {
   if (schema) {
     const associations = getAssociationAppends(schema);
     const appends = flattenNestedList(associations);
+    console.log(appends, associations);
     return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
   }
   if (!schema) {
