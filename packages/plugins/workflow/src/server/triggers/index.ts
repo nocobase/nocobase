@@ -3,6 +3,8 @@ import CollectionTrigger from './collection';
 import ScheduleTrigger from './schedule';
 import { Trigger } from './trigger';
 
+export { Trigger } from './trigger';
+
 export default function <T extends Trigger>(plugin, more: { [key: string]: { new (p: Plugin): T } } = {}) {
   const { triggers } = plugin;
 
