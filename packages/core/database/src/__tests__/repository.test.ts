@@ -144,6 +144,23 @@ describe('repository.find', () => {
     await db.close();
   });
 
+  it('should appends with filter', async () => {
+    const user2 = await User.repository.findOne({
+      filter: {
+        name: 'user2',
+      },
+    });
+
+    const posts = await Post.repository.find({
+      appends: ['user'],
+      filter: { $and: [{ user: { id: { $in: [user2.get('id')] } } }] },
+    });
+
+    posts.forEach((post) => {
+      expect(post.get('user').get('id')).toEqual(user2.get('id'));
+    });
+  });
+
   test('find pk with filter', async () => {
     const Test = db.collection({
       name: 'tests',
