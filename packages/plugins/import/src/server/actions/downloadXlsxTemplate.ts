@@ -2,7 +2,8 @@ import { Context, Next } from '@nocobase/actions';
 import xlsx from 'node-xlsx';
 
 export async function downloadXlsxTemplate(ctx: Context, next: Next) {
-  let { columns, explain, title } = ctx.request.body as any;
+  // eslint-disable-next-line prefer-const
+  let { columns, explain, title } = (ctx.request as any).body;
   if (typeof columns === 'string') {
     columns = JSON.parse(columns);
   }
