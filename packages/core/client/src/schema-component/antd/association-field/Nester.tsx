@@ -38,6 +38,7 @@ const ToManyNester = observer((props) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const values = toArr(field.value, field.readPretty);
   const { t } = useTranslation();
+  const allowMutiple = fieldSchema?.parent?.['x-component-props']?.multiple!==false
   // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
@@ -59,7 +60,7 @@ const ToManyNester = observer((props) => {
           </>
         );
       })}
-      {field.editable && (
+      {field.editable && allowMutiple && (
         <Button
           type={'dashed'}
           block

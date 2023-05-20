@@ -78,8 +78,17 @@ export const FormItem: any = observer((props: any) => {
         <Item
           className={cx(
             css`
+              margin-bottom: 5px;
               & .ant-space {
                 flex-wrap: wrap;
+              }
+              .ant-card-body{
+                padding-top:10px;
+                padding-bottom:10px;
+              }
+              .ant-divider-horizontal {
+                margin-top: 10px;
+                margin-bottom: 10px;
               }
             `,
             {
