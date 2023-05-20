@@ -18,6 +18,7 @@ import { Collection } from './collection';
 import { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
+import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
 import { ArrayField, RelationField } from './fields';
 import FilterParser from './filter-parser';
@@ -31,7 +32,6 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 
 const debug = require('debug')('noco-database');
 
@@ -41,7 +41,7 @@ interface CreateManyOptions extends BulkCreateOptions {
   records: Values[];
 }
 
-export { Transactionable } from 'sequelize';
+export type { Transactionable } from 'sequelize';
 
 export interface FilterAble {
   filter: Filter;

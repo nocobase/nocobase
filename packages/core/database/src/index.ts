@@ -1,5 +1,6 @@
-export { DataTypes, ModelStatic, Op, SyncOptions } from 'sequelize';
+export type { DataTypes, ModelStatic, Op, SyncOptions } from 'sequelize';
 export * from './collection';
+export * from './collection-group-manager';
 export * from './collection-importer';
 export * from './database';
 export { Database as default } from './database';
@@ -20,6 +21,6 @@ export * from './repository';
 export * from './update-associations';
 export { snakeCase } from './utils';
 export * from './value-parsers';
-export * from './collection-group-manager';
 export * from './view-collection';
 export * from './view/view-inference';
+
