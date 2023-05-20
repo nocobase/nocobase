@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "isolatedModules": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
     "jsx": "react",

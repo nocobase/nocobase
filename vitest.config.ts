@@ -31,7 +31,5 @@ export default defineConfig({
       '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
     ],
     testTimeout: 300000,
-    hookTimeout: 300000,
-    teardownTimeout: 300000,
   },
 });
