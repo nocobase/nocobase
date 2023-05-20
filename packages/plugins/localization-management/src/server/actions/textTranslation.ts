@@ -1,6 +1,6 @@
 import { Context } from '@nocobase/actions';
 import { getRepositoryFromCtx } from '../utils';
-import { TEXT_NAME_SPACE, TRANSLATION_NAME_SPACE } from '../constant';
+import { TEXTS_ALIAS, TRANSLATION_ALIAS } from '../constant';
 import { Sequelize } from 'sequelize';
 function totalPage(total, pageSize): number {
   return Math.ceil(total / pageSize);
@@ -11,8 +11,8 @@ export const textTranslationActions = {
     const offset = (page - 1) * pageSize;
     const limit = 1 * pageSize;
     const currentLocale = ctx.get('X-Locale');
-    const textRepo = getRepositoryFromCtx(ctx, TEXT_NAME_SPACE);
-    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_NAME_SPACE);
+    const textRepo = getRepositoryFromCtx(ctx, TEXTS_ALIAS);
+    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_ALIAS);
 
     const { rows, count } = await translationRepo.model.findAndCountAll({
       where: {
@@ -28,6 +28,7 @@ export const textTranslationActions = {
       ],
       include: [
         {
+          attributes: [],
           model: textRepo.model,
           as: 'texts',
           required: true,
@@ -48,9 +49,27 @@ export const textTranslationActions = {
   create: async (ctx: Context, next) => {
     const { values } = ctx.action.params;
     const { text, translation, module } = values;
-    const textRepo = getRepositoryFromCtx(ctx, TEXT_NAME_SPACE);
-    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_NAME_SPACE);
+    const textRepo = getRepositoryFromCtx(ctx, TEXTS_ALIAS);
+    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_ALIAS);
     const currentLocale = ctx.get('X-Locale');
+    const record = await textRepo.findOne({
+      filter: {
+        text,
+        module,
+      },
+    });
+    if (record) {
+      const transRecord = await translationRepo.findOne({
+        where: {
+          textId: record.id,
+          locale: currentLocale,
+        },
+      });
+      if (transRecord) {
+        ctx.throw(400, 'this record already exists');
+      }
+    }
+
     const res = await textRepo.create({
       values: {
         module,
@@ -70,7 +89,7 @@ export const textTranslationActions = {
   update: async (ctx: Context, next) => {
     const { values } = ctx.action.params;
     const { id, translation } = values;
-    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_NAME_SPACE);
+    const translationRepo = getRepositoryFromCtx(ctx, TRANSLATION_ALIAS);
 
     const record = translationRepo.findOne({
       filter: {

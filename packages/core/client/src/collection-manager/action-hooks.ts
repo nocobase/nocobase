@@ -292,11 +292,15 @@ export const useCreateAction = () => {
       await form.submit();
       field.data = field.data || {};
       field.data.loading = true;
-      await resource.create({ values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await resource.create({ values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (e) {
+        field.data.loading = false;
+      }
     },
   };
 };

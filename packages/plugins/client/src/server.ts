@@ -9,6 +9,8 @@ import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
+import { getLangFromLocalizationManagementPlugin } from '@nocobase/plugin-localization-management/src/server/utils';
+import merge from 'deepmerge';
 
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
@@ -130,24 +132,21 @@ export class ClientPlugin extends Plugin {
         },
         async getLang(ctx, next) {
           const lang = await getLang(ctx);
+          const langFromLocalizationManagement = await getLangFromLocalizationManagementPlugin(ctx);
           if (isEmpty(locales[lang])) {
             locales[lang] = {};
           }
-          if (isEmpty(locales[lang].resources)) {
-            locales[lang].resources = await getResourceLocale(lang, ctx.db);
-          }
-          if (isEmpty(locales[lang].antd)) {
-            locales[lang].antd = getAntdLocale(lang);
-          }
-          if (isEmpty(locales[lang].cronstrue)) {
-            locales[lang].cronstrue = getCronstrueLocale(lang);
-          }
-          if (isEmpty(locales[lang].cron)) {
-            locales[lang].cron = getCronLocale(lang);
-          }
+          locales[lang].resources = merge(
+            await getResourceLocale(lang, ctx.db),
+            langFromLocalizationManagement.resources,
+          );
+          locales[lang].antd = merge(getAntdLocale(lang), langFromLocalizationManagement.antd);
+          locales[lang].cronstrue = merge(getCronstrueLocale(lang), langFromLocalizationManagement.cronsture);
+          locales[lang].cron = merge(getCronLocale(lang), langFromLocalizationManagement.cron);
+
           ctx.body = {
             lang,
-            moment: getMomentLocale(lang),
+            moment: merge(getMomentLocale(lang), langFromLocalizationManagement.moment),
             ...locales[lang],
           };
           await next();

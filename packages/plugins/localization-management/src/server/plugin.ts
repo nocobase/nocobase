@@ -1,18 +1,18 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
 import path from 'path';
 import { textTranslationActions } from './actions/textTranslation';
-import { TEXT_TRANSLATION_NAME_SPACE } from './constant';
+import { TRANSLATION_ALIAS } from './constant';
 
 export class LocalizationManagementPlugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {
     this.app.resourcer.define({
-      name: TEXT_TRANSLATION_NAME_SPACE,
+      name: TRANSLATION_ALIAS,
       actions: textTranslationActions,
     });
 
-    this.app.acl.allow(TEXT_TRANSLATION_NAME_SPACE, '*', 'loggedIn');
+    this.app.acl.allow(TRANSLATION_ALIAS, '*', 'loggedIn');
   }
 
   async load() {

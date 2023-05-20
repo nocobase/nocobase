@@ -1,6 +1,4 @@
-import { uid } from '@formily/shared';
-import { useActionContext, useRequest } from '@nocobase/client';
-import { TEXT_TRANSLATION_NAME_SPACE } from '../../server/constant';
+import { TRANSLATION_ALIAS } from '../../server/constant';
 
 const collection = {
   name: 'localization_management_providers',
@@ -10,7 +8,7 @@ const collection = {
       name: 'module',
       interface: 'Select',
       uiSchema: {
-        title: 'module',
+        title: `{{ localManageLang("module") }}`,
         type: 'string',
         'x-component': 'Select',
         enum: '{{moduleEnum}}',
@@ -21,7 +19,7 @@ const collection = {
       name: 'text',
       interface: 'input',
       uiSchema: {
-        title: 'text',
+        title: `{{ localManageLang("text") }}`,
         type: 'string',
         'x-component': 'Input.TextArea',
         required: true,
@@ -32,7 +30,7 @@ const collection = {
       name: 'translation',
       interface: 'input',
       uiSchema: {
-        title: 'translation',
+        title: `{{ localManageLang("translation") }}`,
         type: 'string',
         'x-component': 'Input.TextArea',
       },
@@ -61,10 +59,10 @@ export default {
     },
     resourceName: 'localization_management_texts',
     request: {
-      resource: TEXT_TRANSLATION_NAME_SPACE,
+      resource: TRANSLATION_ALIAS,
       action: 'query',
       params: {
-        pageSize: 10,
+        pageSize: 50,
         sort: ['-default', 'id'],
         appends: [],
       },
@@ -84,11 +82,39 @@ export default {
         },
       },
       properties: {
+        description: {
+          type: 'void',
+          'x-align': 'left',
+          'x-component': 'div',
+          'x-component-props': {
+            style: {
+              display: 'flex',
+            },
+          },
+          properties: {
+            label: {
+              'x-component': 'span',
+              'x-content': `{{ localManageLang("current language") }}`,
+            },
+            separator: {
+              'x-component': 'span',
+              'x-content': '：',
+            },
+            currentLang: {
+              type: 'string',
+              'x-component': 'Select',
+              enum: '{{langEnum}}',
+              default: '{{langEnum?.[0].value}}',
+              'x-read-pretty': true,
+            },
+          },
+        },
         delete: {
           type: 'void',
           title: '{{t("Delete")}}',
           'x-component': 'Action',
           'x-component-props': {
+            resource: TRANSLATION_ALIAS,
             useAction: '{{ cm.useBulkDestroyAction }}',
             confirm: {
               title: "{{t('Delete')}}",
@@ -108,28 +134,12 @@ export default {
               type: 'void',
               'x-component': 'Action.Drawer',
               'x-decorator': 'Form',
-              'x-decorator-props': {
-                useValues(options) {
-                  const ctx = useActionContext();
-                  return useRequest(
-                    () =>
-                      Promise.resolve({
-                        data: {
-                          name: `s_${uid()}`,
-                        },
-                      }),
-                    { ...options, refreshDeps: [ctx.visible] },
-                  );
-                },
-              },
               title: '{{t("Add new")}}',
               properties: {
                 module: {
                   'x-decorator': 'FormItem',
                   'x-component': 'CollectionField',
-                  'x-component-props': {
-                    defaultValue: '{{moduleEnum?.[0]?.value}}',
-                  },
+                  default: '{{moduleEnum?.[0]?.value}}',
                   enum: '{{moduleEnum}}',
                 },
                 text: {
