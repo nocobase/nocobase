@@ -1,5 +1,6 @@
-import Database, { FindOneOptions, FindOptions, Model } from '@nocobase/database';
-import { Transaction } from 'sequelize';
+import type { FindOneOptions, FindOptions, Model } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import type { Transaction } from 'sequelize';
 
 async function destroyFields(db: Database, transaction: Transaction, fieldRecords: Model[]) {
   const fieldsRepo = db.getRepository('fields');

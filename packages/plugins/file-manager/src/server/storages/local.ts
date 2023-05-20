@@ -1,9 +1,9 @@
-import Application from '@nocobase/server';
+import type Application from '@nocobase/server';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
 import path from 'path';
-import { Transactionable } from 'sequelize/types';
+import type { Transactionable } from 'sequelize/types';
 import { URL } from 'url';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';

@@ -1,9 +1,12 @@
 import { CopyOutlined } from '@ant-design/icons';
-import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
-import { ArrayField } from '@formily/core';
-import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import type { ArrayBaseMixins } from '@formily/antd';
+import { ArrayBase } from '@formily/antd';
+import type { ArrayField } from '@formily/core';
+import type { ISchema} from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { toArr, uid } from '@formily/shared';
-import { Badge, Card, Collapse, CollapsePanelProps, CollapseProps, Empty, Input } from 'antd';
+import type { CollapsePanelProps, CollapseProps} from 'antd';
+import { Badge, Card, Collapse, Empty, Input } from 'antd';
 import cls from 'classnames';
 import { clone } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';

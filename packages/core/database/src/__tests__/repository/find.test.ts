@@ -1,6 +1,6 @@
 import { mockDatabase } from '../index';
-import Database from '@nocobase/database';
-import { Collection } from '../../collection';
+import type Database from '@nocobase/database';
+import type { Collection } from '../../collection';
 
 describe('find with associations', () => {
   let db: Database;

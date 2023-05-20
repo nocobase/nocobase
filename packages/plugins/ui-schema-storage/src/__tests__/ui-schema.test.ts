@@ -1,7 +1,9 @@
-import { ISchema } from '@formily/json-schema';
-import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import PluginUiSchema, { UiSchemaRepository } from '..';
+import type { ISchema } from '@formily/json-schema';
+import type { Database } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
+import type { UiSchemaRepository } from '..';
+import PluginUiSchema from '..';
 
 describe('ui-schema', () => {
   let app: MockServer;

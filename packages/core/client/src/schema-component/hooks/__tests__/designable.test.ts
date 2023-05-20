@@ -1,5 +1,6 @@
 import { Schema } from '@formily/react';
-import { createDesignable, Designable } from '../useDesignable';
+import type { Designable } from '../useDesignable';
+import { createDesignable } from '../useDesignable';
 
 describe('createDesignable', () => {
   let dn: Designable;

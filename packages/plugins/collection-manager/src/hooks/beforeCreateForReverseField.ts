@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 
 export function beforeCreateForReverseField(db: Database) {
   return async (model, { transaction }) => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { useEffect } from 'react';
 import { Input, useRecord } from '@nocobase/client';

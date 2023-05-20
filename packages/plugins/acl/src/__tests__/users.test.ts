@@ -1,5 +1,5 @@
-import Database from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import type Database from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
 
 describe('actions', () => {

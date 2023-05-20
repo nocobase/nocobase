@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, RecursionField, Schema, SchemaOptionsContext, useField, useForm } from '@formily/react';
 import {
   APIClientProvider,
@@ -13,9 +13,10 @@ import {
 import { Card } from 'antd';
 import JSON5 from 'json5';
 import React, { useContext, useEffect, useState } from 'react';
-import { ChartBlockEngineMetaData } from './ChartBlockEngine';
+import type { ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { jsonConfigDesc } from './ChartBlockEngineDesigner';
-import { ChartQueryBlockInitializer, ChartQueryMetadata } from './ChartQueryBlockInitializer';
+import type { ChartQueryMetadata } from './ChartQueryBlockInitializer';
+import { ChartQueryBlockInitializer } from './ChartQueryBlockInitializer';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { lang, useChartsTranslation } from './locale';
 import { templates } from './templates';

@@ -1,4 +1,5 @@
-import { getConfigurableProperties, ICollectionTemplate, registerTemplate } from '@nocobase/client';
+import type { ICollectionTemplate} from '@nocobase/client';
+import { getConfigurableProperties, registerTemplate } from '@nocobase/client';
 import React from 'react';
 
 const myCollectionTemplate: ICollectionTemplate = {

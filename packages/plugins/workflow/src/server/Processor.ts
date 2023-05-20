@@ -1,14 +1,14 @@
 import { Model } from '@nocobase/database';
 import { appendArrayColumn } from '@nocobase/evaluators';
-import { Logger } from '@nocobase/logger';
+import type { Logger } from '@nocobase/logger';
 import { parse } from '@nocobase/utils';
-import { Transaction, Transactionable } from 'sequelize';
-import Plugin from '.';
+import type { Transaction, Transactionable } from 'sequelize';
+import type Plugin from '.';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
-import { Runner } from './instructions';
-import ExecutionModel from './models/Execution';
-import FlowNodeModel from './models/FlowNode';
-import JobModel from './models/Job';
+import type { Runner } from './instructions';
+import type ExecutionModel from './models/Execution';
+import type FlowNodeModel from './models/FlowNode';
+import type JobModel from './models/Job';
 
 export interface ProcessorOptions extends Transactionable {
   plugin: Plugin;

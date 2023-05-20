@@ -1,4 +1,5 @@
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { Space, Tabs } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { css } from '@emotion/css';

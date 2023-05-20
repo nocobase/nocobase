@@ -1,4 +1,4 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { getSaml } from '../shared/getSaml';
 
 export const metadata = async (ctx: Context, next) => {

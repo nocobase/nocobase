@@ -2,7 +2,7 @@ import React from 'react';
 import { Card } from 'antd';
 import { css } from '@emotion/css';
 import { useField } from '@formily/react';
-import { ObjectField } from '@formily/core';
+import type { ObjectField } from '@formily/core';
 import { RecordSimpleProvider } from '../../../record-provider';
 
 const itemCss = css`

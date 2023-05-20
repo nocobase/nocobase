@@ -1,4 +1,5 @@
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
   APIClient,

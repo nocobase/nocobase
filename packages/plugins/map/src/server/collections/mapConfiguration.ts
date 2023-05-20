@@ -1,4 +1,4 @@
-import { CollectionOptions } from '@nocobase/client';
+import type { CollectionOptions } from '@nocobase/client';
 import { MapConfigurationCollectionName } from '../constants';
 
 export default {

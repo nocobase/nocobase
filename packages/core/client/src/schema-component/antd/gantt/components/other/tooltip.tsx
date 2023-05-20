@@ -1,8 +1,8 @@
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
 import { getYmd } from '../../helpers/other-helper';
-import { BarTask } from '../../types/bar-task';
-import { Task } from '../../types/public-types';
+import type { BarTask } from '../../types/bar-task';
+import type { Task } from '../../types/public-types';
 import {
   tooltipDefaultContainer,
   tooltipDefaultContainerParagraph,

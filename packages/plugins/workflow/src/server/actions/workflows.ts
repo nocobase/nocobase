@@ -1,5 +1,7 @@
-import actions, { Context, utils } from '@nocobase/actions';
-import { Op, Repository } from '@nocobase/database';
+import type { Context} from '@nocobase/actions';
+import actions, { utils } from '@nocobase/actions';
+import type { Repository } from '@nocobase/database';
+import { Op } from '@nocobase/database';
 
 export async function update(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context) as Repository;

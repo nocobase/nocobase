@@ -1,5 +1,5 @@
 import { createForm } from '@formily/core';
-import { Schema } from '@formily/react';
+import type { Schema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { useMemo } from 'react';
 import { useRequest } from '../../api-client';

@@ -1,7 +1,7 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { SAML, SamlConfig } from '@node-saml/node-saml';
 import { getSaml } from '../shared/getSaml';
-import { SAMLProvider } from '../shared/types';
+import type { SAMLProvider } from '../shared/types';
 
 export const saml = async (ctx: Context, next) => {
   const {

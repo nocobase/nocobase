@@ -1,5 +1,6 @@
-import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
   GeneralSchemaItems,

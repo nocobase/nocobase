@@ -4,7 +4,8 @@ import { promisify } from 'util';
 
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
-import { Pattern, SequenceField } from './fields/sequence-field';
+import type { Pattern} from './fields/sequence-field';
+import { SequenceField } from './fields/sequence-field';
 
 const asyncRandomInt = promisify(randomInt);
 

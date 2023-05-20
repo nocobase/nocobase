@@ -1,39 +1,43 @@
 import { applyMixins, AsyncEmitter, importModule } from '@nocobase/utils';
-import merge from 'deepmerge';
+import type merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import glob from 'glob';
 import lodash from 'lodash';
 import { basename, isAbsolute, resolve } from 'path';
 import semver from 'semver';
-import {
-  DataTypes,
+import type {
   ModelStatic,
-  Op,
   Options,
   QueryInterfaceDropAllTablesOptions,
   QueryOptions,
-  Sequelize,
   SyncOptions,
-  Transactionable,
+  Transactionable} from 'sequelize';
+import {
+  DataTypes,
+  Op,
+  Sequelize,
   Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
-import { Collection, CollectionOptions, RepositoryType } from './collection';
-import { ImporterReader, ImportFileExtension } from './collection-importer';
+import type { CollectionOptions, RepositoryType } from './collection';
+import { Collection } from './collection';
+import type { ImportFileExtension } from './collection-importer';
+import { ImporterReader } from './collection-importer';
 import ReferencesMap from './features/ReferencesMap';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
-import { ArrayFieldRepository } from './field-repository/array-field-repository';
+import type { ArrayFieldRepository } from './field-repository/array-field-repository';
 import * as FieldTypes from './fields';
-import { Field, FieldContext, RelationField } from './fields';
+import type { Field, FieldContext, RelationField } from './fields';
 import { InheritedCollection } from './inherited-collection';
 import InheritanceMap from './inherited-map';
-import { MigrationItem, Migrations } from './migration';
-import { Model } from './model';
+import type { MigrationItem} from './migration';
+import { Migrations } from './migration';
+import type { Model } from './model';
 import { ModelHook } from './model-hook';
 import extendOperators from './operators';
-import { RelationRepository } from './relation-repository/relation-repository';
-import { Repository } from './repository';
-import {
+import type { RelationRepository } from './relation-repository/relation-repository';
+import type { Repository } from './repository';
+import type {
   AfterDefineCollectionListener,
   BeforeDefineCollectionListener,
   CreateListener,
@@ -62,13 +66,14 @@ import {
 } from './types';
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 
-import { Logger } from '@nocobase/logger';
+import type { Logger } from '@nocobase/logger';
 import { CollectionGroupManager } from './collection-group-manager';
 import DatabaseUtils from './database-utils';
 import { registerBuiltInListeners } from './listeners';
-import QueryInterface from './query-interface/query-interface';
+import type QueryInterface from './query-interface/query-interface';
 import buildQueryInterface from './query-interface/query-interface-builder';
-import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
+import type { BaseValueParser} from './value-parsers';
+import { registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 
 export type MergeOptions = merge.Options;

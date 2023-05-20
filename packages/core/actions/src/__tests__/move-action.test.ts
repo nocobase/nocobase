@@ -1,6 +1,7 @@
-import { mockServer, MockServer } from './index';
+import type { MockServer } from './index';
+import { mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
-import { Database } from '@nocobase/database';
+import type { Database } from '@nocobase/database';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 describe('sort action', () => {

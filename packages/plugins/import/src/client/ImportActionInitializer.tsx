@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
-import type { ISchema } from '@formily/react';
-import { Schema, useFieldSchema } from '@formily/react';
+import type { ISchema , Schema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { SchemaInitializer, useCollection, useDesignable } from '@nocobase/client';
 import React from 'react';

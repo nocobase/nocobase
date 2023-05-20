@@ -1,4 +1,5 @@
-import { CacheOptions, caching, CachingConfig, multiCaching, StoreConfig, WrapArgsType } from 'cache-manager';
+import type { CacheOptions, CachingConfig, StoreConfig, WrapArgsType } from 'cache-manager';
+import { caching, multiCaching } from 'cache-manager';
 
 /**
  * be used for create cache {@link createCache}

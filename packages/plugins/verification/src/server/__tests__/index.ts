@@ -1,7 +1,8 @@
-import { MockServer, mockServer } from '@nocobase/test';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import path from 'path';
 
-import { ApplicationOptions } from '@nocobase/server';
+import type { ApplicationOptions } from '@nocobase/server';
 import Plugin from '..';
 
 export function sleep(ms: number) {

@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { mockDatabase } from '../';
-import { Database } from '../../';
+import type { Database } from '../../';
 
 describe('context field', () => {
   let db: Database;

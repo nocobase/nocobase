@@ -1,4 +1,4 @@
-import { Application } from '@nocobase/server';
+import type { Application } from '@nocobase/server';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import crypto from 'crypto';
 import EventEmitter from 'events';

@@ -1,5 +1,6 @@
-import { Context, utils } from '@nocobase/actions';
-import Plugin from '../..';
+import type { Context} from '@nocobase/actions';
+import { utils } from '@nocobase/actions';
+import type Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 export async function submit(context: Context, next) {

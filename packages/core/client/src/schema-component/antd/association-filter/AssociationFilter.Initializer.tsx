@@ -2,7 +2,8 @@ import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAssociatedFields } from '../../../filter-provider/utils';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
+import type { SchemaInitializerItemOptions } from '../../../schema-initializer';
+import { SchemaInitializer } from '../../../schema-initializer';
 
 export const AssociationFilterInitializer = () => {
   const { t } = useTranslation();

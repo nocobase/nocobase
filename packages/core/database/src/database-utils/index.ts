@@ -1,4 +1,4 @@
-import Database from '../database';
+import type Database from '../database';
 import lodash from 'lodash';
 
 export default class DatabaseUtils {

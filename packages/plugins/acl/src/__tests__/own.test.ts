@@ -1,7 +1,7 @@
-import { ACL } from '@nocobase/acl';
-import { Database } from '@nocobase/database';
-import PluginUser from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
+import type { ACL } from '@nocobase/acl';
+import type { Database } from '@nocobase/database';
+import type PluginUser from '@nocobase/plugin-users';
+import type { MockServer } from '@nocobase/test';
 
 import { prepareApp } from './prepare';
 

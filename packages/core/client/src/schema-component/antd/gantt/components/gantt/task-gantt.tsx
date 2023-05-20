@@ -1,8 +1,11 @@
 import React, { useRef, useEffect, forwardRef } from 'react';
 import { cx } from '@emotion/css';
-import { GridProps, Grid } from '../grid/grid';
-import { CalendarProps, Calendar } from '../calendar/calendar';
-import { TaskGanttContentProps, TaskGanttContent } from './task-gantt-content';
+import type { GridProps} from '../grid/grid';
+import { Grid } from '../grid/grid';
+import type { CalendarProps} from '../calendar/calendar';
+import { Calendar } from '../calendar/calendar';
+import type { TaskGanttContentProps} from './task-gantt-content';
+import { TaskGanttContent } from './task-gantt-content';
 import { ganttVerticalContainer, horizontalContainer } from './style';
 
 export type TaskGanttProps = {

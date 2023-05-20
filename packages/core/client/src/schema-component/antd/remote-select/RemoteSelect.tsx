@@ -1,10 +1,12 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { SelectProps, Tag } from 'antd';
+import type { SelectProps} from 'antd';
+import { Tag } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { ResourceActionOptions, useRequest } from '../../../api-client';
+import type { ResourceActionOptions} from '../../../api-client';
+import { useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';

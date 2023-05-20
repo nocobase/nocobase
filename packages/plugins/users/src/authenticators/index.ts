@@ -1,9 +1,9 @@
 import path from 'path';
 
-import { HandlerType } from '@nocobase/resourcer';
+import type { HandlerType } from '@nocobase/resourcer';
 import { importModule } from '@nocobase/utils';
 
-import Plugin from '..';
+import type Plugin from '..';
 
 interface Authenticators {
   [key: string]: HandlerType;

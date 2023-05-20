@@ -1,5 +1,6 @@
-import { Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import type { Database } from '@nocobase/database';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { importModule } from '@nocobase/utils';
 import path from 'path';
 import PluginUiSchema from '../server';

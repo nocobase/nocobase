@@ -1,4 +1,4 @@
-import { Context, Next } from '@nocobase/actions';
+import type { Context, Next } from '@nocobase/actions';
 import xlsx from 'node-xlsx';
 
 export async function downloadXlsxTemplate(ctx: Context, next: Next) {

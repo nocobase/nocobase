@@ -1,5 +1,5 @@
 import { Collection } from '../../collection';
-import Database from '../../database';
+import type Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
 import pgOnly from './helper';

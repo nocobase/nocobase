@@ -1,6 +1,7 @@
-import { Model } from '../model';
-import { CreateOptions } from '../repository';
-import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
+import type { Model } from '../model';
+import type { CreateOptions } from '../repository';
+import type { SingleRelationFindOption} from './single-relation-repository';
+import { SingleRelationRepository } from './single-relation-repository';
 
 interface IHasOneRepository<M extends Model> {
   // 不需要 findOne，find 就是 findOne

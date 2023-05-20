@@ -1,6 +1,6 @@
 import { getOptions } from '@nocobase/evaluators/client';
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import type { ICollectionTemplate } from './types';
 
 export const expression: ICollectionTemplate = {
   name: 'expression',

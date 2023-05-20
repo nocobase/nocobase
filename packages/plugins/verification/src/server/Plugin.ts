@@ -1,8 +1,8 @@
 import path from 'path';
 
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
+import type { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
@@ -10,7 +10,8 @@ import { namespace } from '.';
 import initActions from './actions';
 import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
 import { zhCN } from './locale';
-import initProviders, { Provider } from './providers';
+import type { Provider } from './providers';
+import initProviders from './providers';
 
 export interface Interceptor {
   manual?: boolean;

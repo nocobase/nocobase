@@ -1,6 +1,6 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { getSaml } from '../shared/getSaml';
-import { SAMLProvider } from '../shared/types';
+import type { SAMLProvider } from '../shared/types';
 
 export const getAuthUrl = async (ctx: Context, next) => {
   const {

@@ -1,5 +1,5 @@
-import { ISchema } from '@formily/react';
-import { CollectionOptions } from '../../types';
+import type { ISchema } from '@formily/react';
+import type { CollectionOptions } from '../../types';
 import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
 
 export const collection: CollectionOptions = {

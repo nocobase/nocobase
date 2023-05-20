@@ -1,9 +1,9 @@
-import Plugin from '..';
+import type Plugin from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
-import ExecutionModel from '../models/Execution';
-import JobModel from '../models/Job';
-import Processor from '../Processor';
-import { Instruction } from '.';
+import type ExecutionModel from '../models/Execution';
+import type JobModel from '../models/Job';
+import type Processor from '../Processor';
+import type { Instruction } from '.';
 
 type ValueOf<T> = T[keyof T];
 

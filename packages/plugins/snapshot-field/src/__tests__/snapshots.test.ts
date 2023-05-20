@@ -1,4 +1,5 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import SnapshotFieldPlugin from '../server';
 import { field_linkto } from './data/field_linkto';
 import { field_m2m } from './data/field_m2m';

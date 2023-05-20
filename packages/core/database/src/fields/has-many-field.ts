@@ -1,16 +1,18 @@
 import { omit } from 'lodash';
-import {
+import type {
   AssociationScope,
   DataType,
   ForeignKeyOptions,
   HasManyOptions,
-  HasManyOptions as SequelizeHasManyOptions,
+  HasManyOptions as SequelizeHasManyOptions} from 'sequelize';
+import {
   Utils,
 } from 'sequelize';
-import { Collection } from '../collection';
-import { Reference } from '../features/ReferencesMap';
+import type { Collection } from '../collection';
+import type { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
-import { MultipleRelationFieldOptions, RelationField } from './relation-field';
+import type { MultipleRelationFieldOptions} from './relation-field';
+import { RelationField } from './relation-field';
 
 export interface HasManyFieldOptions extends HasManyOptions {
   /**

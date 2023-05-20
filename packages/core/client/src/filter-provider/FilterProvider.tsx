@@ -1,8 +1,10 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider';
-import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
-import { CollectionFieldOptions, useCollection } from '../collection-manager';
+import type { SharedFilter} from '../block-provider/SharedFilterProvider';
+import { mergeFilter } from '../block-provider/SharedFilterProvider';
+import type { CollectionFieldOptions} from '../collection-manager';
+import { useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
 import { uniqBy } from 'lodash';

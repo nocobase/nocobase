@@ -1,6 +1,6 @@
 import { registerValidateRules } from '@formily/core';
 import { defaultProps } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 registerValidateRules({
   json(value) {

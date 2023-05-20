@@ -5,7 +5,7 @@ import { useCookieState } from 'ahooks';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaComponentContext } from '../context';
-import { ISchemaComponentProvider } from '../types';
+import type { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
 const randomString = (prefix = '') => {

@@ -1,5 +1,6 @@
 import { VerifiedOutlined } from '@ant-design/icons';
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { ActionContext, PluginManager, SchemaComponent, useActionContext } from '@nocobase/client';
 import React, { useState } from 'react';
 

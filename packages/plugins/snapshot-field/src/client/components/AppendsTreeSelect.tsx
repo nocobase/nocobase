@@ -2,7 +2,8 @@ import React from 'react';
 import { TreeSelect, Tag } from 'antd';
 import type { DefaultOptionType } from 'rc-tree-select/lib/TreeSelect';
 import { useForm } from '@formily/react';
-import { CollectionFieldOptions, useCollectionManager, useCompile, useRecord } from '@nocobase/client';
+import type { CollectionFieldOptions} from '@nocobase/client';
+import { useCollectionManager, useCompile, useRecord } from '@nocobase/client';
 import { useSnapshotTranslation } from '../locale';
 import { useTopRecord } from '../interface';
 

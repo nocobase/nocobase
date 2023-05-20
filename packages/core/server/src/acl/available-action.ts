@@ -1,4 +1,4 @@
-import { AvailableActionOptions } from '@nocobase/acl';
+import type { AvailableActionOptions } from '@nocobase/acl';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;

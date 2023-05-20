@@ -1,7 +1,8 @@
-import { Context } from '..';
+import type { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
+import type {
+  BelongsToManyRepository} from '@nocobase/database';
 import {
-  BelongsToManyRepository,
   MultipleRelationRepository,
   HasManyRepository,
   ArrayFieldRepository,

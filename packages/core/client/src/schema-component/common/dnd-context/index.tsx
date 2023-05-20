@@ -1,5 +1,6 @@
-import { DndContext as DndKitContext, DragEndEvent, DragOverlay, rectIntersection } from '@dnd-kit/core';
-import { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
+import type { DragEndEvent} from '@dnd-kit/core';
+import { DndContext as DndKitContext, DragOverlay, rectIntersection } from '@dnd-kit/core';
+import type { Props } from '@dnd-kit/core/dist/components/DndContext/DndContext';
 import { observer } from '@formily/react';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';

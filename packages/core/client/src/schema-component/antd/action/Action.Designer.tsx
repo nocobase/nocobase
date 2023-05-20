@@ -1,4 +1,5 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Menu } from 'antd';
 import React, { useEffect, useState } from 'react';

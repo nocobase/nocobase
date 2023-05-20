@@ -1,5 +1,5 @@
-import { Database, MigrationContext } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import type { Database, MigrationContext } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
 import lodash from 'lodash';
 import Migrator from '../../migrations/20221121111113-update-id-to-bigint.js';
 import { createApp } from '../index';

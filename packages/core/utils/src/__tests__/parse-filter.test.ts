@@ -1,4 +1,5 @@
-import { getDateVars, getDayRange, parseFilter, utc2unit, Utc2unitOptions } from '../parse-filter';
+import type { Utc2unitOptions } from '../parse-filter';
+import { getDateVars, getDayRange, parseFilter, utc2unit } from '../parse-filter';
 
 describe('utc to unit', () => {
   const expectUtc2unit = (options: Utc2unitOptions) => {

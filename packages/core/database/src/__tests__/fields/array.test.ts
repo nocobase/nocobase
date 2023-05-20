@@ -1,5 +1,5 @@
 import { mockDatabase } from '../';
-import { Database } from '../../database';
+import type { Database } from '../../database';
 
 describe('array field', () => {
   let db: Database;

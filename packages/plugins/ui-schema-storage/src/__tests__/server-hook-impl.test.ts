@@ -1,10 +1,12 @@
-import { BelongsToManyRepository, Database } from '@nocobase/database';
+import type { BelongsToManyRepository, Database } from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import PluginCollectionManager from '@nocobase/plugin-collection-manager';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import UiSchemaStoragePlugin, { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import type { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
+import UiSchemaStoragePlugin from '@nocobase/plugin-ui-schema-storage';
 import PluginUsers from '@nocobase/plugin-users';
-import { MockServer, mockServer } from '@nocobase/test';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
   let app: MockServer;

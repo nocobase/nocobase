@@ -13,7 +13,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { useOptions } from '../hooks/useOptions';
-import { IField } from '../interfaces/types';
+import type { IField } from '../interfaces/types';
 import * as components from './components';
 import { getOptions } from './interfaces';
 

@@ -1,5 +1,6 @@
 import { DragOutlined, MenuOutlined } from '@ant-design/icons';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Modal, Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

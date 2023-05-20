@@ -1,5 +1,5 @@
 import { mockDatabase } from '../';
-import { Database } from '../../database';
+import type { Database } from '../../database';
 import { Model } from '../../model';
 
 describe('hidden field options', () => {

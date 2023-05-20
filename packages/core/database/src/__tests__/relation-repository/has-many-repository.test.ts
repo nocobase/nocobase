@@ -1,7 +1,8 @@
 import { mockDatabase } from '../index';
 import { HasManyRepository } from '../../relation-repository/hasmany-repository';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
-import Database, { Collection } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { Collection } from '@nocobase/database';
 
 describe('has many with target key', function () {
   let db: Database;

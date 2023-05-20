@@ -1,7 +1,7 @@
 /**
  * title: Tabs
  */
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { Action, SchemaComponent, SchemaComponentProvider, Tabs } from '@nocobase/client';
 import React from 'react';
 import { AntdSchemaComponentProvider } from '../../AntdSchemaComponentProvider';

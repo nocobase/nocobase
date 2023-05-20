@@ -1,6 +1,6 @@
 import { Model } from '@nocobase/database';
-import { BelongsToGetAssociationMixin } from 'sequelize';
-import FlowNodeModel from './FlowNode';
+import type { BelongsToGetAssociationMixin } from 'sequelize';
+import type FlowNodeModel from './FlowNode';
 
 export default class JobModel extends Model {
   declare id: number;

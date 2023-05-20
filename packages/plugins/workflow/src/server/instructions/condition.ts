@@ -1,9 +1,9 @@
 import { evaluators } from '@nocobase/evaluators';
 import { Registry } from '@nocobase/utils';
-import { Instruction } from '.';
-import { Processor } from '..';
+import type { Instruction } from '.';
+import type { Processor } from '..';
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type FlowNodeModel from '../models/FlowNode';
 
 export const calculators = new Registry<Function>();
 

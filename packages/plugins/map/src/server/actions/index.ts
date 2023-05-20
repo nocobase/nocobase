@@ -1,4 +1,4 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { MapConfigurationCollectionName } from '../constants';
 
 export const getConfiguration = async (ctx: Context, next) => {

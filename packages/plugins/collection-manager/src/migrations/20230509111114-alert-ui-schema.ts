@@ -1,6 +1,6 @@
-import { Collection } from '@nocobase/database';
+import type { Collection } from '@nocobase/database';
 import { Migration } from '@nocobase/server';
-import { FieldModel } from '../models';
+import type { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {

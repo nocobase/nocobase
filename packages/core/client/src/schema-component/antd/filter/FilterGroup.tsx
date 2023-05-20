@@ -1,5 +1,5 @@
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { ObjectField as ObjectFieldModel } from '@formily/core';
+import type { ObjectField as ObjectFieldModel } from '@formily/core';
 import { ArrayField, connect, useField } from '@formily/react';
 import { Select, Space } from 'antd';
 import React, { useContext } from 'react';

@@ -1,4 +1,7 @@
 import { css } from '@emotion/css';
+import type {
+  TableProps,
+  TabsProps} from 'antd';
 import {
   Layout,
   Menu,
@@ -10,9 +13,7 @@ import {
   Space,
   Spin,
   Table,
-  TableProps,
   Tabs,
-  TabsProps,
   Tag,
   Typography,
 } from 'antd';

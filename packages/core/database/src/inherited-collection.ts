@@ -1,6 +1,7 @@
-import { Collection, CollectionContext, CollectionOptions } from './collection';
+import type { CollectionContext, CollectionOptions } from './collection';
+import { Collection } from './collection';
 import { default as lodash } from 'lodash';
-import { Field } from '.';
+import type { Field } from '.';
 
 export class InheritedCollection extends Collection {
   parents?: Collection[];

@@ -1,5 +1,8 @@
-import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppManager, Plugin } from '@nocobase/server';
+import type { IDatabaseOptions, Transactionable } from '@nocobase/database';
+import Database from '@nocobase/database';
+import type { AppManager} from '@nocobase/server';
+import type Application from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';

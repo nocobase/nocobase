@@ -7,7 +7,7 @@ import { useCollectionHistory } from './CollectionHistoryProvider';
 import { CollectionManagerSchemaComponentProvider } from './CollectionManagerSchemaComponentProvider';
 import { CollectionCategroriesContext, CollectionManagerContext } from './context';
 import * as defaultInterfaces from './interfaces';
-import { CollectionManagerOptions } from './types';
+import type { CollectionManagerOptions } from './types';
 
 export const CollectionManagerProvider: React.FC<CollectionManagerOptions> = (props) => {
   const { service, interfaces, collections = [], refreshCM, updateCollection, templates } = props;

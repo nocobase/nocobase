@@ -1,4 +1,4 @@
-import { CollectionOptions } from '../collection';
+import type { CollectionOptions } from '../collection';
 
 export const beforeDefineAdjacencyListCollection = (options: CollectionOptions) => {
   if (!options.tree) {

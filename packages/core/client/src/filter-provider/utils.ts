@@ -1,10 +1,13 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
 import { mergeFilter } from '../block-provider';
-import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
-import { Collection, CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
+import type { FilterTarget} from '../block-provider/hooks';
+import { findFilterTargets } from '../block-provider/hooks';
+import type { Collection, CollectionFieldOptions, FieldOptions} from '../collection-manager';
+import { useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';

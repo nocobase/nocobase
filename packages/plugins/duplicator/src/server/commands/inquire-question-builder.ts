@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import { CollectionGroup } from '@nocobase/database';
+import type { CollectionGroup } from '@nocobase/database';
 
 export default class InquireQuestionBuilder {
   static buildInquirerQuestions(options: {

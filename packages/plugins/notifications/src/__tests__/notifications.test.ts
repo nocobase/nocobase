@@ -1,7 +1,8 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 import { mockServer } from '@nocobase/test';
 import nodemailerMock from 'nodemailer-mock';
-import { Notification, NotificationService } from '../models';
+import type { Notification} from '../models';
+import { NotificationService } from '../models';
 import plugin from '../server';
 
 describe('notifications', () => {

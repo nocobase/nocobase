@@ -1,4 +1,4 @@
-import { MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { Dumper } from '../dumper';
 import createApp from './index';
 

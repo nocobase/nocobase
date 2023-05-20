@@ -2,7 +2,7 @@ import React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 import { RouteContext } from './context';
 import { useRouteComponent } from './hooks';
-import { RouteSwitchProps } from './types';
+import type { RouteSwitchProps } from './types';
 
 export function RouteSwitch(props: RouteSwitchProps) {
   const { routes = [] } = props;

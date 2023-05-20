@@ -8,7 +8,8 @@ import { useCompile } from '@nocobase/client';
 import { NodeDefaultView } from '.';
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions, VariableOption, nodesOptions, triggerOptions } from '../variable';
+import type { VariableOption} from '../variable';
+import { useWorkflowVariableOptions, nodesOptions, triggerOptions } from '../variable';
 import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
 

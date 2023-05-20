@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { useActionContext, useRequest } from '@nocobase/client';
 
 const collection = {

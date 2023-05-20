@@ -3,7 +3,7 @@
  */
 import React, { useRef } from 'react';
 import { Menu, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { Layout } from 'antd';
 
 const schema: ISchema = {

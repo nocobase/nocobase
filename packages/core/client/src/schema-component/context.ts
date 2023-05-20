@@ -1,4 +1,4 @@
 import { createContext } from 'react';
-import { ISchemaComponentContext } from './types';
+import type { ISchemaComponentContext } from './types';
 
 export const SchemaComponentContext = createContext<ISchemaComponentContext>({});

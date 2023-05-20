@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 
 export function beforeDestroyForeignKey(db: Database) {
   return async (model, opts) => {

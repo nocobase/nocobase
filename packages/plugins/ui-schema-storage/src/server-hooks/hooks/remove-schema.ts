@@ -1,4 +1,4 @@
-import { UiSchemaRepository } from '../../repository';
+import type { UiSchemaRepository } from '../../repository';
 
 export async function removeSchema({ schemaInstance, options, db, params }) {
   const { transaction } = options;

@@ -1,6 +1,7 @@
 import path from 'path';
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import type { InstallOptions} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 
 import SnowflakeField from './fields/SnowflakeField';
 

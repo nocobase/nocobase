@@ -1,4 +1,4 @@
-import { Database } from '../../database';
+import type { Database } from '../../database';
 import { mockDatabase } from '../';
 import { makeWatchHost } from 'ts-loader/dist/servicesHost';
 import { IdentifierError } from '../../errors/identifier-error';

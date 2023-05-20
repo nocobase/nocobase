@@ -1,9 +1,10 @@
-import { Cache } from '@nocobase/cache';
-import { Repository, Transactionable } from '@nocobase/database';
+import type { Cache } from '@nocobase/cache';
+import type { Transactionable } from '@nocobase/database';
+import { Repository } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import lodash from 'lodash';
-import { Transaction } from 'sequelize';
-import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
+import type { Transaction } from 'sequelize';
+import type { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 export interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;

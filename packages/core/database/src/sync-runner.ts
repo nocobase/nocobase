@@ -1,4 +1,4 @@
-import { InheritedCollection } from './inherited-collection';
+import type { InheritedCollection } from './inherited-collection';
 import lodash from 'lodash';
 
 export class SyncRunner {

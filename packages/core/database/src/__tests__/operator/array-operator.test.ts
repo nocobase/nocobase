@@ -1,5 +1,5 @@
 import { mockDatabase } from '../index';
-import Database from '../../database';
+import type Database from '../../database';
 
 describe('array field operator', function () {
   let db: Database;

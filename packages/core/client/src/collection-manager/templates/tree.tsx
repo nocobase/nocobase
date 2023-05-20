@@ -1,5 +1,5 @@
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import type { ICollectionTemplate } from './types';
 
 export const tree: ICollectionTemplate = {
   name: 'tree',

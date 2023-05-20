@@ -1,5 +1,5 @@
-import { Application } from './application';
-import { InstallOptions } from './plugin-manager';
+import type { Application } from './application';
+import type { InstallOptions } from './plugin-manager';
 
 export interface PluginInterface {
   beforeLoad?: () => void;

@@ -1,4 +1,5 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
+import type { InstallOptions} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 
 export class ExportPlugin extends Plugin {

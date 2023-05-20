@@ -1,6 +1,6 @@
-import { MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { createApp } from '..';
-import { Collection } from '@nocobase/database';
+import type { Collection } from '@nocobase/database';
 
 describe('field defaultValue', () => {
   let app: MockServer;

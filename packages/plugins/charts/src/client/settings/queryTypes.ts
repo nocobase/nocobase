@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
 export const json: ISchema = {
   type: 'object',

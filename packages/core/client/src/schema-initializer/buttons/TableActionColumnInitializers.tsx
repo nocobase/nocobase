@@ -1,5 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons';
-import { ISchema, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';

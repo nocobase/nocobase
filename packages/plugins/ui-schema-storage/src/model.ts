@@ -1,5 +1,5 @@
 import { MagicAttributeModel } from '@nocobase/database';
-import { HookType } from './server-hooks';
+import type { HookType } from './server-hooks';
 
 class UiSchemaModel extends MagicAttributeModel {
   getServerHooksByType(type: HookType) {

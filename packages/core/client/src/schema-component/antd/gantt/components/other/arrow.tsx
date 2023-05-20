@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarTask } from '../../types/bar-task';
+import type { BarTask } from '../../types/bar-task';
 
 type ArrowProps = {
   taskFrom: BarTask;

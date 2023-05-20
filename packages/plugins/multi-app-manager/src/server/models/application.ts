@@ -1,6 +1,7 @@
-import { Model, Transactionable } from '@nocobase/database';
+import type { Transactionable } from '@nocobase/database';
+import { Model } from '@nocobase/database';
 import { Application } from '@nocobase/server';
-import { AppOptionsFactory } from '../server';
+import type { AppOptionsFactory } from '../server';
 
 export interface registerAppOptions extends Transactionable {
   skipInstall?: boolean;

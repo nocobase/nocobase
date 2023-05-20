@@ -1,4 +1,5 @@
-import { Collection, Database, mockDatabase } from '@nocobase/database';
+import type { Collection, Database} from '@nocobase/database';
+import { mockDatabase } from '@nocobase/database';
 
 describe('update', () => {
   let db: Database;

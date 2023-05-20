@@ -1,4 +1,5 @@
-import { InstallOptions, Plugin } from '@nocobase/server';
+import type { InstallOptions} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { namespace } from '..';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { enUS, zhCN } from './locale';

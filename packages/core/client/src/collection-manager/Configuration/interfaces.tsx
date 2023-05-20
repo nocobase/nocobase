@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import set from 'lodash/set';
 import * as types from '../interfaces';
 

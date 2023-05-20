@@ -1,4 +1,4 @@
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import type { Result } from 'ahooks/lib/useRequest/src/types';
 import React, { createContext, useContext } from 'react';
 import { useRequest } from '../api-client';
 

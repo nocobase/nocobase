@@ -16,7 +16,7 @@ import { Card } from 'antd';
 import JSON5 from 'json5';
 import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChartBlockEngineMetaData } from './ChartBlockEngine';
+import type { ChartBlockEngineMetaData } from './ChartBlockEngine';
 import { Options } from './ChartBlockInitializer';
 import DataSetPreviewTable from './DataSetPreviewTable';
 import { useFieldsById } from './hooks';

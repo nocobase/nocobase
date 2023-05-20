@@ -1,7 +1,9 @@
 import { css } from '@emotion/css';
 import { FormLayout, FormItem } from '@formily/antd';
-import { SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
-import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
+import type { SchemaInitializerItemOptions} from '@nocobase/client';
+import { Variable, useCollectionManager } from '@nocobase/client';
+import type { Evaluator} from '@nocobase/evaluators/client';
+import { evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
 import React from 'react';

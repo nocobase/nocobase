@@ -1,6 +1,6 @@
-import { Database } from '@nocobase/database';
+import type { Database } from '@nocobase/database';
 import { hooks } from './hooks';
-import { ServerHookModel } from './model';
+import type { ServerHookModel } from './model';
 
 export type HookType =
   | 'onSelfDestroy'

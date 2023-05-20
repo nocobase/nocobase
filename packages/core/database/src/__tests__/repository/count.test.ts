@@ -1,6 +1,6 @@
 import { mockDatabase } from '../index';
-import { HasManyRepository } from '../../relation-repository/hasmany-repository';
-import { Collection } from '../../collection';
+import type { HasManyRepository } from '../../relation-repository/hasmany-repository';
+import type { Collection } from '../../collection';
 
 describe('count', () => {
   let db;

@@ -1,15 +1,17 @@
 import React, { useState, useContext } from 'react';
 import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { Button, message, Modal, Tag, Alert, Input, Dropdown } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   ActionContext,
   SchemaComponent,
-  SchemaInitializerItemOptions,
   useActionContext,
   useAPIClient,
   useCompile,
@@ -38,7 +40,7 @@ import aggregate from './aggregate';
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import request from './request';
-import { VariableOptions } from '../variable';
+import type { VariableOptions } from '../variable';
 import { NodeDescription } from '../components/NodeDescription';
 
 export interface Instruction {

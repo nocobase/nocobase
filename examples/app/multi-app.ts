@@ -8,7 +8,7 @@ curl http://localhost:13000/sub1/api/test:list
 */
 import { Application } from '@nocobase/server';
 import { uid } from '@nocobase/utils';
-import { IncomingMessage } from 'http';
+import type { IncomingMessage } from 'http';
 
 const app = new Application({
   database: {

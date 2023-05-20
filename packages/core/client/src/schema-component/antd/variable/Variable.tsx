@@ -1,6 +1,6 @@
 import { connect, mapReadPretty } from '@formily/react';
 
-import { IField } from '../../../collection-manager';
+import type { IField } from '../../../collection-manager';
 import { Input } from './Input';
 import { JSONInput } from './JSONInput';
 import { TextArea } from './TextArea';

@@ -1,7 +1,7 @@
-import { ArrayField, Field } from '@formily/core';
+import type { ArrayField, Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect } from 'react';
-import { APIClient } from '../api-client';
+import type { APIClient } from '../api-client';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useFormBlockContext } from './FormBlockProvider';
 import { useFormFieldContext } from './FormFieldProvider';

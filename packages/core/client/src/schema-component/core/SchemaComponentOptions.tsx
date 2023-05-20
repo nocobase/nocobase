@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 import React, { useContext } from 'react';
-import { ISchemaComponentOptionsProps } from '../types';
+import type { ISchemaComponentOptionsProps } from '../types';
 
 export const SchemaComponentOptions: React.FC<ISchemaComponentOptionsProps> = (props) => {
   const { inherit } = props;

@@ -1,4 +1,4 @@
-import { GeneralField } from '@formily/core';
+import type { GeneralField } from '@formily/core';
 import { useFieldSchema } from '@formily/react';
 import cloneDeep from 'lodash/cloneDeep';
 import { useCallback, useContext, useMemo } from 'react';

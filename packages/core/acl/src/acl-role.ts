@@ -1,5 +1,6 @@
-import { ACL, DefineOptions } from './acl';
-import { ACLAvailableStrategy, AvailableStrategyOptions } from './acl-available-strategy';
+import type { ACL, DefineOptions } from './acl';
+import type { AvailableStrategyOptions } from './acl-available-strategy';
+import { ACLAvailableStrategy } from './acl-available-strategy';
 import { ACLResource } from './acl-resource';
 import lodash from 'lodash';
 import minimatch from 'minimatch';

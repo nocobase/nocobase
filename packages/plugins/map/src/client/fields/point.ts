@@ -1,4 +1,4 @@
-import { IField } from '@nocobase/client';
+import type { IField } from '@nocobase/client';
 import { generateNTemplate } from '../locale';
 import { commonSchema } from './schema';
 

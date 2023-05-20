@@ -1,6 +1,6 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const select: IField = {
   name: 'select',

@@ -1,5 +1,5 @@
 import { APIClient as APIClientSDK } from '@nocobase/sdk';
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import type { Result } from 'ahooks/lib/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 

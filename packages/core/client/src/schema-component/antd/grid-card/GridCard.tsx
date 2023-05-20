@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { List as AntdList, PaginationProps, Col } from 'antd';
+import type { PaginationProps} from 'antd';
+import { List as AntdList, Col } from 'antd';
 import { useGridCardActionBarProps } from './hooks';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
@@ -9,7 +10,7 @@ import { useDesigner } from '../../hooks';
 import { GridCardItem } from './GridCard.Item';
 import { useGridCardBlockContext, useGridCardItemProps, GridCardBlockProvider } from './GridCard.Decorator';
 import { GridCardDesigner } from './GridCard.Designer';
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { defaultColumnCount, pageSizeOptions } from './options';
 
 const rowGutter = {

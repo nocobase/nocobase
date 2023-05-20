@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import { Application } from '@nocobase/server';
+import type { Application } from '@nocobase/server';
 import { Dumper } from '../dumper';
 import InquireQuestionBuilder from './inquire-question-builder';
 

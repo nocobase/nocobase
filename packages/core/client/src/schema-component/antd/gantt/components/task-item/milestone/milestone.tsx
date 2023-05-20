@@ -1,6 +1,6 @@
 import React from 'react';
 import { cx } from '@emotion/css';
-import { TaskItemProps } from '../task-item';
+import type { TaskItemProps } from '../task-item';
 import { milestoneWrapper, milestoneBackground } from './style';
 
 export const Milestone: React.FC<TaskItemProps> = ({ task, isDateChangeable, onEventStart, isSelected }) => {

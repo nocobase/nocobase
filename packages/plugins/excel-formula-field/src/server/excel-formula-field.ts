@@ -1,4 +1,5 @@
-import { BaseFieldOptions, Field } from '@nocobase/database';
+import type { BaseFieldOptions} from '@nocobase/database';
+import { Field } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 import { evaluate } from '../utils/evaluate';
 

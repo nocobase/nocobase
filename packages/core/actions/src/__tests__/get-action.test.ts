@@ -1,5 +1,6 @@
 import { registerActions } from '@nocobase/actions';
-import { MockServer, mockServer } from './';
+import type { MockServer} from './';
+import { mockServer } from './';
 
 describe('get action', () => {
   let app: MockServer;

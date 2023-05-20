@@ -1,5 +1,5 @@
 import { getConfigurableProperties } from './properties';
-import { ICollectionTemplate } from './types';
+import type { ICollectionTemplate } from './types';
 import { PreviewFields } from './components/PreviewFields';
 import { PreviewTable } from './components/PreviewTable';
 

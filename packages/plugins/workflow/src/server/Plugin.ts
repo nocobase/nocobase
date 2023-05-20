@@ -7,18 +7,21 @@ import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import { Logger, LoggerOptions, createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
+import type { Logger, LoggerOptions} from '@nocobase/logger';
+import { createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
 import { EXECUTION_STATUS } from './constants';
 import initFields from './fields';
-import initFunctions, { CustomFunction } from './functions';
-import initInstructions, { Instruction } from './instructions';
-import ExecutionModel from './models/Execution';
-import JobModel from './models/Job';
-import WorkflowModel from './models/Workflow';
+import type { CustomFunction } from './functions';
+import initFunctions from './functions';
+import type { Instruction } from './instructions';
+import initInstructions from './instructions';
+import type ExecutionModel from './models/Execution';
+import type JobModel from './models/Job';
+import type WorkflowModel from './models/Workflow';
 import initTriggers from './triggers';
-import { Trigger } from './triggers/trigger';
+import type { Trigger } from './triggers/trigger';
 
 type Pending = [ExecutionModel, JobModel?];
 

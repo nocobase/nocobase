@@ -1,7 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayCollapse, ArrayItems, FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
-import { ISchema, connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { ISchema} from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React, { useCallback, useEffect, useMemo } from 'react';
@@ -19,7 +20,8 @@ import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled, isShowDefault
 import { useIsShowMultipleSwitch } from '../../../schema-settings/hooks/useIsShowMultipleSwitch';
 import { useCompile, useDesignable, useFieldComponentOptions, useFieldTitle } from '../../hooks';
 import { removeNullCondition } from '../filter';
-import { RemoteSelect, RemoteSelectProps } from '../remote-select';
+import type { RemoteSelectProps } from '../remote-select';
+import { RemoteSelect } from '../remote-select';
 import { defaultFieldNames } from '../select';
 import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { ReadPretty } from './ReadPretty';

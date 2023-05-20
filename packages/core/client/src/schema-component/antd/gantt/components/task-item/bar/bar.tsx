@@ -1,7 +1,7 @@
 import { cx } from '@emotion/css';
 import React from 'react';
 import { getProgressPoint } from '../../../helpers/bar-helper';
-import { TaskItemProps } from '../task-item';
+import type { TaskItemProps } from '../task-item';
 import { BarDateHandle } from './bar-date-handle';
 import { BarDisplay } from './bar-display';
 import { BarProgressHandle } from './bar-progress-handle';

@@ -1,8 +1,10 @@
 import { onFormValuesChange } from '@formily/core';
 import { useFieldSchema, useFormEffects } from '@formily/react';
 import { Checkbox, DatePicker, InputNumber, Input as InputString, useCollection } from '@nocobase/client';
-import { Evaluator, evaluators } from '@nocobase/evaluators/client';
-import { Registry, toFixedByStep } from '@nocobase/utils/client';
+import type { Evaluator} from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
+import type { Registry} from '@nocobase/utils/client';
+import { toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
 import React from 'react';
 

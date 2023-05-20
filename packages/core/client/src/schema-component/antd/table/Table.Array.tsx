@@ -1,15 +1,17 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { ArrayField, Field } from '@formily/core';
+import type { ArrayField, Field } from '@formily/core';
+import type {
+  Schema} from '@formily/react';
 import {
   RecursionField,
-  Schema,
   SchemaExpressionScopeContext,
   observer,
   useField,
   useFieldSchema,
 } from '@formily/react';
-import { Table, TableColumnProps } from 'antd';
+import type { TableColumnProps } from 'antd';
+import { Table } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useContext, useState } from 'react';
 import ReactDragListView from 'react-drag-listview';

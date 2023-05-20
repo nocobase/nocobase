@@ -1,11 +1,13 @@
 import { randomInt, randomUUID } from 'crypto';
 import { promisify } from 'util';
 
-import actions, { Context, Next } from '@nocobase/actions';
+import type { Context, Next } from '@nocobase/actions';
+import actions from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 
 import moment from 'moment';
-import Plugin, { namespace } from '..';
+import type Plugin from '..';
+import { namespace } from '..';
 import { CODE_STATUS_UNUSED } from '../constants';
 
 const asyncRandomInt = promisify(randomInt);

@@ -1,4 +1,4 @@
-import { SpaceProps } from 'antd';
+import type { SpaceProps } from 'antd';
 
 const spaceProps: SpaceProps = {
   size: ['large', 'small'],

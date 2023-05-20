@@ -1,4 +1,4 @@
-import { Database } from '..';
+import type { Database } from '..';
 import { mockDatabase } from '.';
 
 describe('model hook', () => {

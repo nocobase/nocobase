@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
-import { Field, onFormSubmitValidateStart } from '@formily/core';
+import type { Field} from '@formily/core';
+import { onFormSubmitValidateStart } from '@formily/core';
 import { useField, useFormEffects } from '@formily/react';
 import { Dropdown, Menu } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';

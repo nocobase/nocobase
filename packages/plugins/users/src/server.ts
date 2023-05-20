@@ -1,5 +1,6 @@
-import { Collection, Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
+import type { Collection} from '@nocobase/database';
+import { Op } from '@nocobase/database';
+import type { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
 import { Registry, parse } from '@nocobase/utils';
 import { resolve } from 'path';
@@ -7,7 +8,8 @@ import { resolve } from 'path';
 import { namespace } from './';
 import * as actions from './actions/users';
 import initAuthenticators from './authenticators';
-import { JwtOptions, JwtService } from './jwt-service';
+import type { JwtOptions} from './jwt-service';
+import { JwtService } from './jwt-service';
 import { enUS, zhCN } from './locale';
 import { parseToken } from './middlewares';
 

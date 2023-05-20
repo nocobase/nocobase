@@ -2,7 +2,7 @@ import { Spin } from 'antd';
 import React from 'react';
 import { useRequest } from '../api-client';
 import { RouteSwitchContext } from './context';
-import { RouteSwitchProviderProps } from './types';
+import type { RouteSwitchProviderProps } from './types';
 
 export function RouteSwitchProvider(props: RouteSwitchProviderProps) {
   const { children, components, routes } = props;

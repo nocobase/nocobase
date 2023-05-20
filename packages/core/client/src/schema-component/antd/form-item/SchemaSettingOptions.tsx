@@ -1,6 +1,7 @@
 import { ArrayCollapse, FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
-import { ISchema, Schema, useField, useFieldSchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { ISchema, Schema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import React from 'react';

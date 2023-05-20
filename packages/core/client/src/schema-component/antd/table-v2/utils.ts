@@ -1,4 +1,4 @@
-import { ISchema, Schema } from '@formily/react';
+import type { ISchema, Schema } from '@formily/react';
 
 export const isCollectionFieldComponent = (schema: ISchema) => {
   return schema['x-component'] === 'CollectionField';

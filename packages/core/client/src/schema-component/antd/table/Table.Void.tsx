@@ -1,7 +1,8 @@
-import { createForm, Field } from '@formily/core';
+import type { Field } from '@formily/core';
+import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
-import { Options, Result } from 'ahooks/lib/useRequest/src/types';
-import { TablePaginationConfig, TableProps } from 'antd';
+import type { Options, Result } from 'ahooks/lib/useRequest/src/types';
+import type { TablePaginationConfig, TableProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useMemo } from 'react';
 import { AsyncDataProvider, useAsyncData, useRequest } from '../../../';

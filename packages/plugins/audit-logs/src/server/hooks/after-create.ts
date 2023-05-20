@@ -1,4 +1,4 @@
-import Application from '@nocobase/server';
+import type Application from '@nocobase/server';
 import { LOG_TYPE_CREATE } from '../constants';
 
 export function afterCreate(app: Application) {

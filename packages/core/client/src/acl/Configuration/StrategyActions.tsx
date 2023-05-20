@@ -1,4 +1,4 @@
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { connect, useField } from '@formily/react';
 import { Checkbox, Select, Table, Tag } from 'antd';
 import React from 'react';

@@ -1,5 +1,5 @@
 import { mockDatabase } from '../';
-import { Database, PasswordField } from '../../';
+import type { Database, PasswordField } from '../../';
 
 describe('password field', () => {
   let db: Database;

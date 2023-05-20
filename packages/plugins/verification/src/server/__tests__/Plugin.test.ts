@@ -1,7 +1,8 @@
-import Database from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import type Database from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
 
-import Plugin, { Provider } from '..';
+import type Plugin from '..';
+import { Provider } from '..';
 
 import { getApp, sleep } from '.';
 

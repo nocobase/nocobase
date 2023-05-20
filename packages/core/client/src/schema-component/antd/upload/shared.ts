@@ -1,9 +1,9 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
-import { UploadChangeParam } from 'antd/lib/upload';
-import { UploadFile } from 'antd/lib/upload/interface';
+import type { UploadChangeParam } from 'antd/lib/upload';
+import type { UploadFile } from 'antd/lib/upload/interface';
 import { useEffect } from 'react';
 import { useAPIClient } from '../../../api-client';
 import { UPLOAD_PLACEHOLDER } from './placeholder';

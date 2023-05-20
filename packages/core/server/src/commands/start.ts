@@ -1,4 +1,4 @@
-import Application from '../application';
+import type Application from '../application';
 
 export default (app: Application) => {
   app

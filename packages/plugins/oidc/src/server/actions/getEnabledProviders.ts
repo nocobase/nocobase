@@ -1,4 +1,4 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 
 export const getEnabledProviders = async (ctx: Context, next) => {
   const repository = ctx.db.getRepository('oidcProviders');

@@ -1,4 +1,4 @@
-import Database from '../database';
+import type Database from '../database';
 import FieldTypeMap from './field-type-map';
 import { isArray } from 'mathjs';
 

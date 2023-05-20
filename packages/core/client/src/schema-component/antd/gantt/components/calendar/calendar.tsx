@@ -1,6 +1,7 @@
-import React, { ReactChild } from 'react';
+import type { ReactChild } from 'react';
+import React from 'react';
 import { cx } from '@emotion/css';
-import { DateSetup } from '../../types/date-setup';
+import type { DateSetup } from '../../types/date-setup';
 import { ViewMode } from '../../types/public-types';
 import { TopPartOfCalendar } from './top-part-of-calendar';
 import {

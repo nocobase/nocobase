@@ -1,13 +1,15 @@
 import React, { useState, useContext } from 'react';
 
-import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm, Schema, useFieldSchema } from '@formily/react';
 import { get } from 'lodash';
 
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   SchemaComponent,
   SchemaComponentContext,
   SchemaInitializer,
-  SchemaInitializerItemOptions,
   InitializerWithSwitch,
   SchemaInitializerProvider,
   useSchemaComponentContext,

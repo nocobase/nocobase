@@ -1,4 +1,5 @@
-import { IRecursionFieldProps, ISchemaFieldProps, RecursionField, Schema } from '@formily/react';
+import type { IRecursionFieldProps, ISchemaFieldProps} from '@formily/react';
+import { RecursionField, Schema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 

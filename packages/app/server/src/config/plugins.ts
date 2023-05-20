@@ -1,3 +1,3 @@
-import { PluginConfiguration } from '@nocobase/server';
+import type { PluginConfiguration } from '@nocobase/server';
 
 export default ['nocobase'] as PluginConfiguration[];

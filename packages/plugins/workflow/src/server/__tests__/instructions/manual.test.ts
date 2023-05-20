@@ -1,6 +1,6 @@
-import Database from '@nocobase/database';
-import UserPlugin from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
+import type Database from '@nocobase/database';
+import type UserPlugin from '@nocobase/plugin-users';
+import type { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 

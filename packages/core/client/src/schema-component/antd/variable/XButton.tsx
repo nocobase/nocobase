@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
-import { Button, ButtonProps } from 'antd';
+import type { ButtonProps } from 'antd';
+import { Button } from 'antd';
 import { css } from '@emotion/css';
 
 export const XButton = forwardRef((props: ButtonProps, ref: any) => (

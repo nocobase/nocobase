@@ -1,4 +1,4 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';

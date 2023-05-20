@@ -1,4 +1,5 @@
-import Database, { mockDatabase } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { mockDatabase } from '@nocobase/database';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
 
 describe('Eager loading tree', () => {

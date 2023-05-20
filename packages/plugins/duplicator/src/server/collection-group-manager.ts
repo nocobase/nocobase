@@ -1,5 +1,5 @@
-import { Application } from '@nocobase/server';
-import { CollectionGroup } from '@nocobase/database';
+import type { Application } from '@nocobase/server';
+import type { CollectionGroup } from '@nocobase/database';
 
 export class CollectionGroupManager {
   static collectionGroups: CollectionGroup[] = [];

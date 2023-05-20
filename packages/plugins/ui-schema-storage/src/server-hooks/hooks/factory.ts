@@ -1,4 +1,4 @@
-import { HookType } from '../index';
+import type { HookType } from '../index';
 
 export function hookFactory(hookType: HookType, hookName: string, hookFunc) {
   return {

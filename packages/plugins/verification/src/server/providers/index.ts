@@ -2,7 +2,7 @@ import path from 'path';
 
 import { importModule } from '@nocobase/utils';
 
-import Plugin from '../Plugin';
+import type Plugin from '../Plugin';
 import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constants';
 
 export class Provider {

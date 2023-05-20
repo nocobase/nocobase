@@ -1,6 +1,6 @@
 import { uid } from '@formily/shared';
 import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const chinaRegion: IField = {
   name: 'chinaRegion',

@@ -1,5 +1,5 @@
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const phone: IField = {
   name: 'phone',

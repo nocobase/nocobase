@@ -1,4 +1,5 @@
-import { BaseFieldOptions, Field } from './field';
+import type { BaseFieldOptions} from './field';
+import { Field } from './field';
 
 export type BaseRelationFieldOptions = BaseFieldOptions;
 

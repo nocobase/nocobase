@@ -1,8 +1,9 @@
-import React, { Ref } from 'react';
-import { Field } from '@formily/core';
+import type { Ref } from 'react';
+import React from 'react';
+import type { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { Input } from 'antd';
-import { TextAreaProps } from 'antd/lib/input';
+import type { TextAreaProps } from 'antd/lib/input';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
 

@@ -1,4 +1,4 @@
-import { ACL } from './acl';
+import type { ACL } from './acl';
 
 export type ConditionFunc = (ctx: any) => Promise<boolean> | boolean;
 

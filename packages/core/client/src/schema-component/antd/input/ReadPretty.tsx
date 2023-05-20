@@ -1,5 +1,5 @@
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
-import { InputProps, TextAreaProps } from 'antd/lib/input';
+import type { InputProps, TextAreaProps } from 'antd/lib/input';
 import cls from 'classnames';
 import React from 'react';
 import { useCompile } from '../..';

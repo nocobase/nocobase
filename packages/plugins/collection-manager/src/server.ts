@@ -1,7 +1,7 @@
 import path from 'path';
 import { UniqueConstraintError } from 'sequelize';
 
-import PluginErrorHandler from '@nocobase/plugin-error-handler';
+import type PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import { Mutex } from 'async-mutex';
 
@@ -14,7 +14,7 @@ import {
   beforeInitOptions,
 } from './hooks';
 
-import { InheritedCollection } from '@nocobase/database';
+import type { InheritedCollection } from '@nocobase/database';
 import lodash, { castArray } from 'lodash';
 import * as process from 'process';
 import { CollectionModel, FieldModel } from './models';

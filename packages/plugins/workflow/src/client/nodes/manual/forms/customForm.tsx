@@ -1,10 +1,13 @@
 import React, { useState, useContext, useMemo } from 'react';
 
 import { cloneDeep, set } from 'lodash';
-import { Field, createForm } from '@formily/core';
+import type { Field} from '@formily/core';
+import { createForm } from '@formily/core';
 import { useForm, useFieldSchema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   ActionContext,
   CollectionContext,
@@ -12,7 +15,6 @@ import {
   gridRowColWrap,
   SchemaComponent,
   SchemaInitializer,
-  SchemaInitializerItemOptions,
   useCollectionManager,
   useCurrentUserContext,
   useRecord,

@@ -2,7 +2,7 @@
  * title: 勾选
  */
 import { FormItem } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { Action, Input, RecordPicker, SchemaComponent, SchemaComponentProvider, Table } from '@nocobase/client';
 import React from 'react';
 

@@ -1,4 +1,5 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import path from 'path';
 import Duplicator from '../server';
 

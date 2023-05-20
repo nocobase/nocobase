@@ -1,5 +1,5 @@
 import { ArrayField } from './array-field';
-import { BaseColumnFieldOptions } from './field';
+import type { BaseColumnFieldOptions } from './field';
 
 export interface SetFieldOptions extends BaseColumnFieldOptions {
   type: 'set';

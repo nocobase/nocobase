@@ -1,4 +1,5 @@
-import { useFieldSchema, useField, ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
+import { useFieldSchema, useField } from '@formily/react';
 import React, { useMemo } from 'react';
 import { ArrayItems } from '@formily/antd';
 import { Slider } from 'antd';

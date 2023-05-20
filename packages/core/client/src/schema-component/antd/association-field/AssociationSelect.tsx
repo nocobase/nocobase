@@ -3,7 +3,8 @@ import { RecursionField, connect, mapProps, observer, useField, useFieldSchema }
 import { Input } from 'antd';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useFieldTitle } from '../../hooks';
-import { RemoteSelect, RemoteSelectProps } from '../remote-select';
+import type { RemoteSelectProps } from '../remote-select';
+import { RemoteSelect } from '../remote-select';
 import useServiceOptions from './hooks';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { Page, DocumentTitleProvider, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 
 const schema: ISchema = {

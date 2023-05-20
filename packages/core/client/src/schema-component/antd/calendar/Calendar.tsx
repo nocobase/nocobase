@@ -1,6 +1,7 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
 import get from 'lodash/get';
 import moment from 'moment';

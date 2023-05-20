@@ -1,8 +1,10 @@
 import Migration from '../../migrations/20230330214649-filter-form-block.js';
 
-import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import PluginUiSchema, { UiSchemaRepository } from '../..';
+import type { Database } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
+import type { UiSchemaRepository } from '../..';
+import PluginUiSchema from '../..';
 
 describe('migration-20230330214649-filter-form-block', () => {
   let app: MockServer;

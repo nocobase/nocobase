@@ -1,4 +1,4 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import React, { useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';

@@ -1,6 +1,6 @@
 import type { DraggerProps as AntdDraggerProps, UploadProps as AntdUploadProps } from 'antd/lib/upload';
-import { UploadFile } from 'antd/lib/upload/interface';
-import React from 'react';
+import type { UploadFile } from 'antd/lib/upload/interface';
+import type React from 'react';
 
 export type UploadProps = Omit<AntdUploadProps, 'onChange'> & {
   onChange?: (fileList: UploadFile[]) => void;

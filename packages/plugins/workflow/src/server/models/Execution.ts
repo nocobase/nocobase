@@ -1,7 +1,8 @@
-import { Database, Model } from '@nocobase/database';
-import { BelongsToGetAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
-import WorkflowModel from './Workflow';
-import JobModel from './Job';
+import type { Database} from '@nocobase/database';
+import { Model } from '@nocobase/database';
+import type { BelongsToGetAssociationMixin, HasManyGetAssociationsMixin } from 'sequelize';
+import type WorkflowModel from './Workflow';
+import type JobModel from './Job';
 
 export default class ExecutionModel extends Model {
   declare static readonly database: Database;

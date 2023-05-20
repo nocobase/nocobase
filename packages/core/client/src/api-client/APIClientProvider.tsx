@@ -1,5 +1,5 @@
 import React from 'react';
-import { APIClient } from './APIClient';
+import type { APIClient } from './APIClient';
 import { APIClientContext } from './context';
 
 export interface APIClientProviderProps {

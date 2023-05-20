@@ -1,6 +1,7 @@
-import { Model } from '../model';
-import { CreateOptions, UpdateOptions } from '../repository';
-import { SingleRelationFindOption, SingleRelationRepository } from './single-relation-repository';
+import type { Model } from '../model';
+import type { CreateOptions, UpdateOptions } from '../repository';
+import type { SingleRelationFindOption} from './single-relation-repository';
+import { SingleRelationRepository } from './single-relation-repository';
 
 type BelongsToFindOptions = SingleRelationFindOption;
 

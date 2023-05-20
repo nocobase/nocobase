@@ -3,7 +3,7 @@ import { observer, RecursionField, SchemaExpressionScopeContext, useField, useFi
 import React, { useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useActionContext } from '.';
-import { ComposedActionDrawer } from './types';
+import type { ComposedActionDrawer } from './types';
 
 const useScope = (key: string) => {
   const scope = useContext(SchemaExpressionScopeContext);

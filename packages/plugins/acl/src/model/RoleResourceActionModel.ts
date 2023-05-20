@@ -1,6 +1,7 @@
-import { ACL, ACLRole } from '@nocobase/acl';
-import { Database, Model } from '@nocobase/database';
-import { AssociationFieldAction, AssociationFieldsActions, GrantHelper } from '../server';
+import type { ACL, ACLRole } from '@nocobase/acl';
+import type { Database} from '@nocobase/database';
+import { Model } from '@nocobase/database';
+import type { AssociationFieldAction, AssociationFieldsActions, GrantHelper } from '../server';
 
 export class RoleResourceActionModel extends Model {
   async writeToACL(options: {

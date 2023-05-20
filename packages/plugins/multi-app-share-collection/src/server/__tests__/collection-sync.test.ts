@@ -1,5 +1,6 @@
-import { BelongsToManyRepository, Database } from '@nocobase/database';
-import { MockServer, mockServer, pgOnly } from '@nocobase/test';
+import type { BelongsToManyRepository, Database } from '@nocobase/database';
+import type { MockServer} from '@nocobase/test';
+import { mockServer, pgOnly } from '@nocobase/test';
 
 pgOnly()('enable plugin', () => {
   let mainDb: Database;

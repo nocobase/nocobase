@@ -1,5 +1,5 @@
-import Plugin from '..';
-import WorkflowModel from '../models/Workflow';
+import type Plugin from '..';
+import type WorkflowModel from '../models/Workflow';
 
 export abstract class Trigger {
   constructor(public readonly plugin: Plugin) {}

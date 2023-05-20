@@ -1,8 +1,8 @@
-import { Collection } from '../collection';
+import type { Collection } from '../collection';
 import { mockDatabase } from './index';
 import { UpdateGuard } from '../update-guard';
 import lodash from 'lodash';
-import { Database } from '../database';
+import type { Database } from '../database';
 
 describe('update-guard', () => {
   let db: Database;

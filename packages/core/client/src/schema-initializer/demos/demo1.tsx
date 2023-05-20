@@ -1,5 +1,5 @@
 import { TableOutlined } from '@ant-design/icons';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import {
   SchemaComponent,

@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field, FieldContext } from './field';
+import type { BaseColumnFieldOptions, FieldContext } from './field';
+import { Field } from './field';
 
 export class UuidField extends Field {
   constructor(options?: any, context?: FieldContext) {

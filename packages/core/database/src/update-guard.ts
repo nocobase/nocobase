@@ -1,7 +1,7 @@
 import lodash from 'lodash';
-import { ModelStatic } from 'sequelize';
+import type { ModelStatic } from 'sequelize';
 import { Model } from './model';
-import { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
+import type { AssociationKeysToBeUpdate, BlackList, WhiteList } from './repository';
 
 type UpdateValueItem = string | number | UpdateValues;
 

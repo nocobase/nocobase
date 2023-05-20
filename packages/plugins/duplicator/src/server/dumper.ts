@@ -9,7 +9,7 @@ import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
-import { CollectionGroup } from '@nocobase/database';
+import type { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 

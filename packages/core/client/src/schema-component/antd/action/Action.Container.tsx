@@ -4,7 +4,7 @@ import { useActionContext } from '.';
 import { ActionDrawer } from './Action.Drawer';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
-import { ComposedActionDrawer } from './types';
+import type { ComposedActionDrawer } from './types';
 
 export const ActionContainer: ComposedActionDrawer = observer((props: any) => {
   const { openMode } = useActionContext();

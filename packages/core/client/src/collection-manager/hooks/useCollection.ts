@@ -1,9 +1,9 @@
-import { SchemaKey } from '@formily/react';
+import type { SchemaKey } from '@formily/react';
 import { reduce, unionBy } from 'lodash';
 import { useContext } from 'react';
 import { useAPIClient } from '../../api-client';
 import { CollectionContext } from '../context';
-import { CollectionFieldOptions } from '../types';
+import type { CollectionFieldOptions } from '../types';
 import { useCollectionManager } from './useCollectionManager';
 
 export type Collection = ReturnType<typeof useCollection>;

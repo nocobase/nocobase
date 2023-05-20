@@ -1,5 +1,5 @@
-import { Field } from '@formily/core';
-import { ISchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 export * as operators from './operators';
 

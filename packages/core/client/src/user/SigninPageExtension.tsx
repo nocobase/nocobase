@@ -1,4 +1,5 @@
-import React, { createContext, FunctionComponent, useContext } from 'react';
+import type { FunctionComponent} from 'react';
+import React, { createContext, useContext } from 'react';
 
 export interface SigninPageExtensionContextValue {
   components: FunctionComponent[];

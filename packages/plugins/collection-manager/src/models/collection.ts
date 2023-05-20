@@ -1,7 +1,9 @@
-import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import type { Collection} from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { MagicAttributeModel } from '@nocobase/database';
 import lodash from 'lodash';
-import { SyncOptions, Transactionable } from 'sequelize';
-import { FieldModel } from './field';
+import type { SyncOptions, Transactionable } from 'sequelize';
+import type { FieldModel } from './field';
 
 interface LoadOptions extends Transactionable {
   // TODO

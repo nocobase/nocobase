@@ -1,8 +1,8 @@
 import { cx } from '@emotion/css';
 import React, { useEffect, useRef, useState } from 'react';
 import { getYmd } from '../../helpers/other-helper';
-import { BarTask } from '../../types/bar-task';
-import { GanttContentMoveAction } from '../../types/gantt-task-actions';
+import type { BarTask } from '../../types/bar-task';
+import type { GanttContentMoveAction } from '../../types/gantt-task-actions';
 import { Bar } from './bar/bar';
 import { BarSmall } from './bar/bar-small';
 import { Milestone } from './milestone/milestone';

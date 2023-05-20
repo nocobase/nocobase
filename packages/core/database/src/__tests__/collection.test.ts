@@ -1,5 +1,5 @@
 import { Collection } from '../collection';
-import { Database } from '../database';
+import type { Database } from '../database';
 import { mockDatabase } from './index';
 import { IdentifierError } from '../errors/identifier-error';
 

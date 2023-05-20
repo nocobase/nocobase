@@ -1,4 +1,4 @@
-import { CollectionOptions } from '../../collection-manager';
+import type { CollectionOptions } from '../../collection-manager';
 
 export const uiSchemaTemplatesCollection: CollectionOptions = {
   name: 'uiSchemaTemplates',

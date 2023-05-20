@@ -1,7 +1,8 @@
-import { ACL, ACLResource, ACLRole } from '@nocobase/acl';
+import type { ACL, ACLRole } from '@nocobase/acl';
+import { ACLResource } from '@nocobase/acl';
 import { Model } from '@nocobase/database';
-import { AssociationFieldsActions, GrantHelper } from '../server';
-import { RoleResourceActionModel } from './RoleResourceActionModel';
+import type { AssociationFieldsActions, GrantHelper } from '../server';
+import type { RoleResourceActionModel } from './RoleResourceActionModel';
 
 export class RoleResourceModel extends Model {
   async revoke(options: { role: ACLRole; resourceName: string; grantHelper: GrantHelper }) {

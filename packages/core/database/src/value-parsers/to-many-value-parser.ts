@@ -1,5 +1,5 @@
 import { basename, extname } from 'path';
-import { Repository } from '../repository';
+import type { Repository } from '../repository';
 import { BaseValueParser } from './base-value-parser';
 
 export class ToManyValueParser extends BaseValueParser {

@@ -1,4 +1,5 @@
-import { Task, ViewMode } from '../types/public-types';
+import type { Task} from '../types/public-types';
+import { ViewMode } from '../types/public-types';
 
 const DateTimeFormat = Intl.DateTimeFormat;
 type DateTimeFormat = typeof DateTimeFormat;

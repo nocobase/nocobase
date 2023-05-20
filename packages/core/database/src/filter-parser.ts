@@ -1,9 +1,9 @@
 import { flatten, unflatten } from 'flat';
 import { default as lodash, default as _ } from 'lodash';
-import { ModelStatic } from 'sequelize';
-import { Collection } from './collection';
-import { Database } from './database';
-import { Model } from './model';
+import type { ModelStatic } from 'sequelize';
+import type { Collection } from './collection';
+import type { Database } from './database';
+import type { Model } from './model';
 
 const debug = require('debug')('noco-database');
 

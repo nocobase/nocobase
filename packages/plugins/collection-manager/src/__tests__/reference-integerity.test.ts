@@ -1,5 +1,5 @@
-import Database from '@nocobase/database';
-import Application from '@nocobase/server';
+import type Database from '@nocobase/database';
+import type Application from '@nocobase/server';
 import { createApp } from './index';
 
 describe('reference integrity check', () => {

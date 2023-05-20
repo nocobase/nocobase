@@ -1,5 +1,6 @@
 import path from 'path';
-import Resourcer, { Action, ResourcerContext } from '..';
+import type { ResourcerContext } from '..';
+import Resourcer, { Action } from '..';
 import Resource from '../resource';
 import actionsDemo0 from './actions/demo0';
 import actionDemo1 from './actions/demo1';

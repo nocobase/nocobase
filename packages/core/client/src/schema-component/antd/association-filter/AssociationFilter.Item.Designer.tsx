@@ -1,4 +1,5 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

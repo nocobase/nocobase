@@ -1,4 +1,4 @@
-import { Association, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
+import type { Association, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {

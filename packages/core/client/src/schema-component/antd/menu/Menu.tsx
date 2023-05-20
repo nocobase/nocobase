@@ -1,8 +1,9 @@
 import { css } from '@emotion/css';
+import type {
+  Schema} from '@formily/react';
 import {
   observer,
   RecursionField,
-  Schema,
   SchemaExpressionScopeContext,
   useField,
   useFieldSchema,

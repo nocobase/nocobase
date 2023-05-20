@@ -1,6 +1,7 @@
 import { observer } from '@formily/react';
 import { Pagination as AntdPagination } from 'antd';
-import React, { KeyboardEventHandler } from 'react';
+import type { KeyboardEventHandler } from 'react';
+import React from 'react';
 import { useProps } from '../../hooks/useProps';
 
 export const Pagination = observer((props: any) => {

@@ -3,7 +3,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useOptionalFieldList } from '../../../block-provider/hooks';
 import { useAssociatedFields } from '../../../filter-provider/utils';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
+import type { SchemaInitializerItemOptions } from '../../../schema-initializer';
+import { SchemaInitializer } from '../../../schema-initializer';
 
 export const AssociationFilterFilterBlockInitializer = () => {
   const { t } = useTranslation();

@@ -1,4 +1,4 @@
-import { ArrayField as ArrayFieldModel } from '@formily/core';
+import type { ArrayField as ArrayFieldModel } from '@formily/core';
 import { ObjectField, observer, useField } from '@formily/react';
 import React from 'react';
 import { RemoveConditionContext } from './context';

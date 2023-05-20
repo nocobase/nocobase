@@ -1,5 +1,5 @@
 import { operators } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const id: IField = {
   name: 'id',

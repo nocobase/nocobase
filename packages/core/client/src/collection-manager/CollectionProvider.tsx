@@ -1,7 +1,7 @@
 import React from 'react';
 import { CollectionContext } from './context';
 import { useCollectionManager } from './hooks';
-import { CollectionOptions } from './types';
+import type { CollectionOptions } from './types';
 
 export const CollectionProvider: React.FC<{ allowNull?: boolean; name?: string; collection?: CollectionOptions }> = (
   props,

@@ -1,7 +1,7 @@
-import Koa from 'koa';
-import { Database } from '@nocobase/database';
-import { Action } from '@nocobase/resourcer';
-import { Cache } from '@nocobase/cache';
+import type Koa from 'koa';
+import type { Database } from '@nocobase/database';
+import type { Action } from '@nocobase/resourcer';
+import type { Cache } from '@nocobase/cache';
 import lodash from 'lodash';
 import * as actions from './actions';
 

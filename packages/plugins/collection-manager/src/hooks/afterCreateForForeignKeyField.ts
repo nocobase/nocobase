@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 
 export function afterCreateForForeignKeyField(db: Database) {
   function generateFkOptions(collectionName: string, foreignKey: string) {

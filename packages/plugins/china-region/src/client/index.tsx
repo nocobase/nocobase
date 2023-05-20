@@ -1,4 +1,4 @@
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { SchemaComponentOptions, useAPIClient, useRequest } from '@nocobase/client';
 import React from 'react';

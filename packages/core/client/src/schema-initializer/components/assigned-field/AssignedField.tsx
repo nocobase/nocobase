@@ -1,4 +1,4 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { Cascader, Select, Space } from 'antd';

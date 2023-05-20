@@ -1,4 +1,4 @@
-import { ObjectField as ObjectFieldModel } from '@formily/core';
+import type { ObjectField as ObjectFieldModel } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useRequest } from '../../../api-client';

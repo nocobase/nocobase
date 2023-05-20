@@ -1,8 +1,9 @@
 import { observer, useForm } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import React, { createContext, useContext, useState } from 'react';
+import type {
+  CollectionOptions} from '../';
 import {
-  CollectionOptions,
   CollectionProvider,
   useActionContext,
   useCollectionManager,

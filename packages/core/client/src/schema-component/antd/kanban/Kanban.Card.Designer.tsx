@@ -1,13 +1,15 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Space } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { createDesignable, useDesignable } from '../../../schema-component';
-import { SchemaInitializer, SchemaInitializerItemOptions } from '../../../schema-initializer';
+import type { SchemaInitializerItemOptions } from '../../../schema-initializer';
+import { SchemaInitializer } from '../../../schema-initializer';
 import {
   useAssociatedFormItemInitializerFields,
   useFormItemInitializerFields,

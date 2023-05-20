@@ -1,4 +1,5 @@
-import { Database, Migration, mockDatabase } from '@nocobase/database';
+import type { Database} from '@nocobase/database';
+import { Migration, mockDatabase } from '@nocobase/database';
 import { resolve } from 'path';
 
 const names = (migrations: Array<{ name: string }>) => migrations.map((m) => m.name);

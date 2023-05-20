@@ -1,5 +1,6 @@
-import { Field } from '@formily/core';
-import { Schema, useField, useFieldSchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { Schema} from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
 import { Redirect } from 'react-router-dom';

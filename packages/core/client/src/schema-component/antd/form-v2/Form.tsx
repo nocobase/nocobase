@@ -1,5 +1,6 @@
 import { FormLayout } from '@formily/antd';
-import { Field, createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import type { Field} from '@formily/core';
+import { createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
 import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';

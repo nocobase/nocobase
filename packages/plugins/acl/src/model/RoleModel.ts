@@ -1,5 +1,5 @@
 import { Model } from '@nocobase/database';
-import { ACL } from '@nocobase/acl';
+import type { ACL } from '@nocobase/acl';
 
 export class RoleModel extends Model {
   writeToAcl(options: { acl: ACL }) {

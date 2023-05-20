@@ -1,6 +1,6 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { ArrayTable } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
@@ -11,7 +11,7 @@ import { RecordProvider } from '../../record-provider';
 import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { useOptions } from '../hooks/useOptions';
-import { IField } from '../interfaces/types';
+import type { IField } from '../interfaces/types';
 import * as components from './components';
 
 const getSchema = (schema: IField): ISchema => {

@@ -1,5 +1,6 @@
 import { mockDatabase } from '.';
-import { Database, MagicAttributeModel } from '..';
+import type { Database} from '..';
+import { MagicAttributeModel } from '..';
 
 describe('magic-attribute-model', () => {
   let db: Database;

@@ -3,12 +3,13 @@ import { i18n } from '@nocobase/client';
 import { css } from '@emotion/css';
 
 import { CollectionManagerContext, registerField, SchemaComponentOptions } from '@nocobase/client';
-import { evaluators, Evaluator } from '@nocobase/evaluators/client';
+import type { Evaluator } from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
 
 import { Formula } from './components';
 import formulaField from './interfaces/formula';
 import { NAMESPACE } from './locale';
-import { Registry } from '@nocobase/utils/client';
+import type { Registry } from '@nocobase/utils/client';
 
 registerField(formulaField.group, 'formula', formulaField);
 

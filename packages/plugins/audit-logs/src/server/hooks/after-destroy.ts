@@ -1,4 +1,4 @@
-import Application from '@nocobase/server';
+import type Application from '@nocobase/server';
 import { LOG_TYPE_DESTROY } from '../constants';
 
 export function afterDestroy(app: Application) {

@@ -1,8 +1,8 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
 import { defaultProps, recordPickerSelector, recordPickerViewer } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const linkTo: IField = {
   name: 'linkTo',

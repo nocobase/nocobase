@@ -1,16 +1,17 @@
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
 import _ from 'lodash';
-import {
+import type {
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,
   SyncOptions,
-  Transactionable,
+  Transactionable} from 'sequelize';
+import {
   Utils,
 } from 'sequelize';
-import { Database } from './database';
-import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
+import type { Database } from './database';
+import type { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';

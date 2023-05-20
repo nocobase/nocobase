@@ -1,6 +1,7 @@
 import { merge, uid } from '@nocobase/utils';
 import { resolve } from 'path';
-import { Database, IDatabaseOptions } from './database';
+import type { IDatabaseOptions } from './database';
+import { Database } from './database';
 
 export class MockDatabase extends Database {
   constructor(options: IDatabaseOptions) {

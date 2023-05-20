@@ -1,4 +1,5 @@
-import { MockServer, mockServer } from './index';
+import type { MockServer} from './index';
+import { mockServer } from './index';
 import { registerActions } from '@nocobase/actions';
 
 describe('update action', () => {

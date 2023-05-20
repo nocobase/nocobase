@@ -1,5 +1,6 @@
-import http, { IncomingMessage, ServerResponse } from 'http';
-import Application from './application';
+import type { IncomingMessage, ServerResponse } from 'http';
+import http from 'http';
+import type Application from './application';
 
 type AppSelectorReturn = Application | string | undefined | null;
 

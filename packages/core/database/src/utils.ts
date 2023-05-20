@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import Database from './database';
+import type Database from './database';
 import { IdentifierError } from './errors/identifier-error';
 import lodash from 'lodash';
 

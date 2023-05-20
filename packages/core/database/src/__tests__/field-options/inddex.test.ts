@@ -1,5 +1,5 @@
 import { mockDatabase } from '../';
-import { Database } from '../../database';
+import type { Database } from '../../database';
 import { md5 } from '../../utils';
 
 describe('index field options', () => {

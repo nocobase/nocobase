@@ -1,13 +1,13 @@
 import lodash from 'lodash';
-import { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelStatic, Transaction } from 'sequelize';
-import { Collection } from '../collection';
-import Database from '../database';
+import type { Association, BelongsTo, BelongsToMany, HasMany, HasOne, ModelStatic, Transaction } from 'sequelize';
+import type { Collection } from '../collection';
+import type Database from '../database';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
-import { RelationField } from '../fields/relation-field';
+import type { RelationField } from '../fields/relation-field';
 import FilterParser from '../filter-parser';
-import { Model } from '../model';
+import type { Model } from '../model';
 import { OptionsParser } from '../options-parser';
-import { CreateOptions, Filter, FindOptions } from '../repository';
+import type { CreateOptions, Filter, FindOptions } from '../repository';
 import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 

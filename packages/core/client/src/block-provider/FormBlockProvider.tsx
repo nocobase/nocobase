@@ -1,5 +1,6 @@
 import { createForm } from '@formily/core';
-import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';

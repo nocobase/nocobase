@@ -1,5 +1,5 @@
 import { mockDatabase } from '@nocobase/test';
-import { BelongsToManyRepository, Database } from '../../index';
+import type { BelongsToManyRepository, Database } from '../../index';
 
 describe('associated field order', () => {
   let db: Database;

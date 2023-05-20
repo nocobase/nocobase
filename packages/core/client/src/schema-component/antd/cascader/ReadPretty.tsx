@@ -1,4 +1,4 @@
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React from 'react';

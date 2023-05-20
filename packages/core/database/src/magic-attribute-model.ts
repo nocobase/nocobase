@@ -1,7 +1,7 @@
 import { merge } from '@nocobase/utils';
 import _ from 'lodash';
 import { Utils } from 'sequelize';
-import Database from './database';
+import type Database from './database';
 import { Model } from './model';
 const Dottie = require('dottie');
 

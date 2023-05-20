@@ -1,4 +1,5 @@
-export type { DataTypes, ModelStatic, Op, SyncOptions } from 'sequelize';
+export { DataTypes, Op } from 'sequelize';
+export type { ModelStatic, SyncOptions } from 'sequelize';
 export * from './collection';
 export * from './collection-group-manager';
 export * from './collection-importer';

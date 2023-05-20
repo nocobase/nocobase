@@ -1,6 +1,7 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
-import { IncomingMessage } from 'http';
+import type { IncomingMessage } from 'http';
 import * as url from 'url';
 import Application from '../application';
 

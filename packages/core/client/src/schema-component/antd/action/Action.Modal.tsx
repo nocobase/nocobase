@@ -1,11 +1,13 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Modal, ModalProps } from 'antd';
+import type { ModalProps } from 'antd';
+import { Modal } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { createPortal } from 'react-dom';
-import { OpenSize, useActionContext } from '.';
-import { ComposedActionDrawer } from './types';
+import type { OpenSize} from '.';
+import { useActionContext } from '.';
+import type { ComposedActionDrawer } from './types';
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '40%'],

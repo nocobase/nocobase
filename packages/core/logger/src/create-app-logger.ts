@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
-import Koa from 'koa';
+import type Koa from 'koa';
 import { pick } from 'lodash';
-import { createLogger, LoggerOptions } from './create-logger';
+import type { LoggerOptions } from './create-logger';
+import { createLogger } from './create-logger';
 
 const defaultRequestWhitelist = [
   'action',

@@ -1,8 +1,10 @@
 import { css, cx } from '@emotion/css';
 import { createForm } from '@formily/core';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import { message } from 'antd';
-import React, { SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { SyntheticEvent} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCurrentAppInfo } from '../../../../../appInfo';
 import { useBlockRequestContext, useGanttBlockContext, useTableBlockContext } from '../../../../../block-provider';
@@ -12,18 +14,18 @@ import { ActionContext } from '../../../action';
 import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
-import { BarTask } from '../../types/bar-task';
-import { DateSetup } from '../../types/date-setup';
-import { GanttEvent } from '../../types/gantt-task-actions';
-import { Task } from '../../types/public-types';
-import { CalendarProps } from '../calendar/calendar';
-import { GridProps } from '../grid/grid';
+import type { BarTask } from '../../types/bar-task';
+import type { DateSetup } from '../../types/date-setup';
+import type { GanttEvent } from '../../types/gantt-task-actions';
+import type { Task } from '../../types/public-types';
+import type { CalendarProps } from '../calendar/calendar';
+import type { GridProps } from '../grid/grid';
 import { HorizontalScroll } from '../other/horizontal-scroll';
 import { StandardTooltipContent, Tooltip } from '../other/tooltip';
 import { VerticalScroll } from '../other/vertical-scroll';
 import { wrapper } from './style';
 import { TaskGantt } from './task-gantt';
-import { TaskGanttContentProps } from './task-gantt-content';
+import type { TaskGanttContentProps } from './task-gantt-content';
 
 const getColumnWidth = (dataSetLength: any, clientWidth: any) => {
   const columnWidth = clientWidth / dataSetLength > 50 ? Math.floor(clientWidth / dataSetLength) + 20 : 50;

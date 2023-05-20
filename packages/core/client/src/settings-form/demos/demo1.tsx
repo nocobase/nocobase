@@ -1,4 +1,5 @@
-import { ISchema, observer, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { AntdSchemaComponentProvider, SchemaComponent, SchemaComponentProvider, SettingsForm } from '@nocobase/client';
 import React from 'react';
 

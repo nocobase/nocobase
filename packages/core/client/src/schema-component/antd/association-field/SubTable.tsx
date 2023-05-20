@@ -1,4 +1,4 @@
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { observer } from '@formily/react';
 import { Button } from 'antd';
 import React from 'react';

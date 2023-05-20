@@ -1,4 +1,5 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { Plugin } from '../plugin';
 import Plugin1 from './plugins/plugin1';
 import Plugin2 from './plugins/plugin2';

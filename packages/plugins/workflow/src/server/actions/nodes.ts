@@ -1,7 +1,8 @@
 import { Op } from 'sequelize';
-import { Context, utils } from '@nocobase/actions';
-import { MultipleRelationRepository } from '@nocobase/database';
-import WorkflowModel from '../models/Workflow';
+import type { Context} from '@nocobase/actions';
+import { utils } from '@nocobase/actions';
+import type { MultipleRelationRepository } from '@nocobase/database';
+import type WorkflowModel from '../models/Workflow';
 
 export async function create(context: Context, next) {
   const { db } = context;

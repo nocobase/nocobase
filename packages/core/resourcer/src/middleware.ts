@@ -1,6 +1,6 @@
 import compose from 'koa-compose';
-import { ActionName } from './action';
-import { HandlerType } from './resourcer';
+import type { ActionName } from './action';
+import type { HandlerType } from './resourcer';
 
 export type MiddlewareType = string | string[] | HandlerType | HandlerType[] | MiddlewareOptions | MiddlewareOptions[];
 

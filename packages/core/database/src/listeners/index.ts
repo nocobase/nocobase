@@ -1,4 +1,4 @@
-import { Database } from '../database';
+import type { Database } from '../database';
 import { beforeDefineAdjacencyListCollection } from './adjacency-list';
 import { appendChildCollectionNameAfterRepositoryFind } from './append-child-collection-name-after-repository-find';
 

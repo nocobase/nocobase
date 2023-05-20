@@ -1,4 +1,5 @@
-import { ISchema, useField, useFieldSchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useField, useFieldSchema, useForm } from '@formily/react';
 import React from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';

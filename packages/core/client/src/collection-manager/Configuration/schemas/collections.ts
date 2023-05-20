@@ -1,10 +1,11 @@
-import { ISchema, Schema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { i18n } from '../../../i18n';
-import { CollectionOptions } from '../../types';
+import type { CollectionOptions } from '../../types';
 import { CollectionCategory } from '../components/CollectionCategory';
 import { CollectionTemplate } from '../components/CollectionTemplate';
 const compile = (source) => {

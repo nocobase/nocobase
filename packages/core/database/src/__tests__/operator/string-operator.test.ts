@@ -1,4 +1,6 @@
-import Database, { Collection, mockDatabase } from '@nocobase/database';
+import type { Collection} from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { mockDatabase } from '@nocobase/database';
 
 describe('string operator', () => {
   let db: Database;

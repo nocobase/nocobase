@@ -1,6 +1,6 @@
 import { Migration as DbMigration } from '@nocobase/database';
-import Application from './application';
-import Plugin from './plugin';
+import type Application from './application';
+import type Plugin from './plugin';
 
 export class Migration extends DbMigration {
   get app() {

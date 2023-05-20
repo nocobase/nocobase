@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { css, cx } from '@emotion/css';
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { Registry } from '@nocobase/utils/client';
 import { message, Tag, Alert, Button, Input } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
 
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   ActionContext,
   SchemaComponent,
-  SchemaInitializerItemOptions,
   useActionContext,
   useAPIClient,
   useCompile,
@@ -22,7 +24,7 @@ import { useFlowContext } from '../FlowContext';
 import collection from './collection';
 import schedule from './schedule/';
 import { lang, NAMESPACE } from '../locale';
-import { VariableOptions } from '../variable';
+import type { VariableOptions } from '../variable';
 
 function useUpdateConfigAction() {
   const form = useForm();

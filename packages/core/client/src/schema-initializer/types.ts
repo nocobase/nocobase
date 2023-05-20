@@ -1,5 +1,5 @@
-import { ISchema, Schema } from '@formily/react';
-import { ButtonProps, DropDownProps, MenuItemProps } from 'antd';
+import type { ISchema, Schema } from '@formily/react';
+import type { ButtonProps, DropDownProps, MenuItemProps } from 'antd';
 
 export interface SchemaInitializerButtonProps extends ButtonProps {
   insert?: (s: ISchema) => void;

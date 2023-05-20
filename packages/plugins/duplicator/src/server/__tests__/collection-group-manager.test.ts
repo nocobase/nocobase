@@ -1,4 +1,5 @@
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { CollectionGroupManager } from '../collection-group-manager';
 
 describe('collection group manager', () => {

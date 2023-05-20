@@ -1,5 +1,6 @@
 import path from 'path';
-import { Database, Model } from '..';
+import type { Database} from '..';
+import { Model } from '..';
 import { ArrayFieldRepository } from '../field-repository/array-field-repository';
 import { mockDatabase } from './index';
 

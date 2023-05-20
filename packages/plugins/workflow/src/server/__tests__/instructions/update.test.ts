@@ -1,7 +1,7 @@
-import { Application } from '@nocobase/server';
-import Database from '@nocobase/database';
+import type { Application } from '@nocobase/server';
+import type Database from '@nocobase/database';
 import { getApp, sleep } from '..';
-import DefinedWorkflowModel from '../../models/Workflow';
+import type DefinedWorkflowModel from '../../models/Workflow';
 
 describe('workflow > instructions > update', () => {
   let app: Application;

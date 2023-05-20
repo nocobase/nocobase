@@ -4,7 +4,8 @@ import { Dropdown, Menu, Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { useFlowContext } from './FlowContext';
-import { Instruction, instructions } from './nodes';
+import type { Instruction} from './nodes';
+import { instructions } from './nodes';
 import { addButtonClass } from './style';
 import { NAMESPACE } from './locale';
 

@@ -1,7 +1,8 @@
 import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
-import { Field } from '@formily/core';
-import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import type { Field } from '@formily/core';
+import type { ISchema, Schema} from '@formily/react';
+import { observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import _ from 'lodash';
 import moment from 'moment';
@@ -9,9 +10,10 @@ import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { BlockRequestContext, useFormBlockContext } from '../../../block-provider';
-import {
+import type {
   Collection,
-  CollectionFieldOptions,
+  CollectionFieldOptions} from '../../../collection-manager';
+import {
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,

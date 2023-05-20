@@ -1,7 +1,9 @@
-import Database, { BelongsToManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository } from '@nocobase/database';
+import type Database from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import UsersPlugin from '@nocobase/plugin-users';
-import { MockServer, mockServer } from '@nocobase/test';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 
 describe('role', () => {
   let api: MockServer;

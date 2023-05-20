@@ -1,8 +1,9 @@
-import { Collection, Database } from '@nocobase/database';
-import { MockServer, mockServer } from '@nocobase/test';
+import type { Collection, Database } from '@nocobase/database';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { importModule } from '@nocobase/utils';
 import path from 'path';
-import { SchemaNode } from '../dao/ui_schema_node_dao';
+import type { SchemaNode } from '../dao/ui_schema_node_dao';
 import UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
 

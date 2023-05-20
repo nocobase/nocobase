@@ -1,4 +1,5 @@
-import { ISchema, observer } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { observer } from '@formily/react';
 import {
   ActionContext,
   AntdSchemaComponentProvider,

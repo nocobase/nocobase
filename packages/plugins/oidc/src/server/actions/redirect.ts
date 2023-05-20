@@ -1,4 +1,4 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 
 export const redirect = async (ctx: Context, next) => {
   const { params } = ctx.action;

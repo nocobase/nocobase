@@ -1,7 +1,8 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import UsersPlugin from '@nocobase/plugin-users';
-import { mockServer, MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { userPluginConfig } from './utils';
 describe('createdBy/updatedBy', () => {
   let api: MockServer;

@@ -1,6 +1,6 @@
 import { i18n } from '../../i18n';
 import { defaultProps, unique } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const password: IField = {
   name: 'password',

@@ -1,5 +1,5 @@
 import { dateTimeProps, defaultProps, operators } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const createdAt: IField = {
   name: 'createdAt',

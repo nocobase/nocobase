@@ -1,5 +1,6 @@
 import { FormButtonGroup, FormDialog, FormDrawer, FormItem, FormLayout, Reset, Submit } from '@formily/antd';
-import { createForm, Field, ObjectField, onFormValuesChange } from '@formily/core';
+import type { Field, ObjectField} from '@formily/core';
+import { createForm, onFormValuesChange } from '@formily/core';
 import {
   FieldContext,
   FormContext,

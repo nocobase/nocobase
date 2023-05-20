@@ -1,5 +1,5 @@
 import { ArrayTable } from '@formily/antd';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cloneDeep from 'lodash/cloneDeep';
 import set from 'lodash/set';
@@ -9,7 +9,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
 import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
+import type { IField } from '../interfaces/types';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {

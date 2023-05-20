@@ -1,5 +1,6 @@
-import { SAML, SamlConfig } from '@node-saml/node-saml';
-import { SAMLProvider } from './types';
+import type { SamlConfig } from '@node-saml/node-saml';
+import { SAML } from '@node-saml/node-saml';
+import type { SAMLProvider } from './types';
 
 export const getSaml = (provider: SAMLProvider) => {
   const options: SamlConfig = {

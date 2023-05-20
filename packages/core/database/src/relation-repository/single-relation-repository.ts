@@ -1,7 +1,7 @@
 import lodash from 'lodash';
-import { SingleAssociationAccessors, Transactionable } from 'sequelize';
-import { Model } from '../model';
-import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
+import type { SingleAssociationAccessors, Transactionable } from 'sequelize';
+import type { Model } from '../model';
+import type { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
 import { RelationRepository, transaction } from './relation-repository';
 import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';

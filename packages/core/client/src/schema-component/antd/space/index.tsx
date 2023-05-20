@@ -1,5 +1,6 @@
 import { useFormLayout } from '@formily/antd';
-import { Divider, Space as AntdSpace, SpaceProps } from 'antd';
+import type { SpaceProps } from 'antd';
+import { Divider, Space as AntdSpace } from 'antd';
 import React from 'react';
 
 export const Space: React.FC<SpaceProps> = (props) => {

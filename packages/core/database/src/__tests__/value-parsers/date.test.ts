@@ -1,5 +1,6 @@
 import moment from 'moment';
-import { Database, mockDatabase } from '../..';
+import type { Database} from '../..';
+import { mockDatabase } from '../..';
 import { DateValueParser } from '../../value-parsers';
 
 describe('number value parser', () => {

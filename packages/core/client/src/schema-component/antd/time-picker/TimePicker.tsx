@@ -1,8 +1,8 @@
 import { formatMomentValue, momentable } from '@formily/antd/lib/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { TimePicker as AntdTimePicker } from 'antd';
-import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/lib/time-picker';
-import moment from 'moment';
+import type { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/lib/time-picker';
+import type moment from 'moment';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedTimePicker = React.FC<AntdTimePickerProps> & {

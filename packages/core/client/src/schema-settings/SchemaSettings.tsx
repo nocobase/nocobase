@@ -1,17 +1,20 @@
 import { css } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
-import { Field, GeneralField, createForm } from '@formily/core';
-import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
+import type { Field, GeneralField} from '@formily/core';
+import { createForm } from '@formily/core';
+import type { ISchema, Schema} from '@formily/react';
+import { SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import type {
+  CascaderProps,
+  MenuItemProps} from 'antd';
 import {
   Alert,
   Button,
   Cascader,
-  CascaderProps,
   Dropdown,
   Empty,
   Menu,
-  MenuItemProps,
   Modal,
   Select,
   Space,
@@ -22,12 +25,13 @@ import _, { cloneDeep } from 'lodash';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import type {
+  CollectionFieldOptions,
+  Designable} from '..';
 import {
   APIClientProvider,
   ActionContext,
-  CollectionFieldOptions,
   CollectionManagerContext,
-  Designable,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
@@ -42,7 +46,8 @@ import {
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
-import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import type { FilterBlockType} from '../filter-provider/utils';
+import { isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';

@@ -1,5 +1,6 @@
 import { ArrayTable } from '@formily/antd';
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { omit, set } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
@@ -11,7 +12,7 @@ import { ActionContext, SchemaComponent, useActionContext, useCompile } from '..
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
-import { IField } from '../interfaces/types';
+import type { IField } from '../interfaces/types';
 import * as components from './components';
 
 const getSchema = (schema: IField, record: any, compile, getContainer): ISchema => {

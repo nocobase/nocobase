@@ -1,4 +1,5 @@
-import React, { SyntheticEvent, useRef, useEffect } from 'react';
+import type { SyntheticEvent} from 'react';
+import React, { useRef, useEffect } from 'react';
 import { cx } from '@emotion/css';
 import { verticalScroll } from './style';
 

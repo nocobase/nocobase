@@ -1,4 +1,5 @@
-import { ArrayField, createForm } from '@formily/core';
+import type { ArrayField} from '@formily/core';
+import { createForm } from '@formily/core';
 import { FormContext, Schema, useField, useFieldSchema } from '@formily/react';
 import uniq from 'lodash/uniq';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';

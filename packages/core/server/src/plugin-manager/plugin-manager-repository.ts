@@ -1,5 +1,5 @@
 import { Repository } from '@nocobase/database';
-import { PluginManager } from './plugin-manager';
+import type { PluginManager } from './plugin-manager';
 
 export class PluginManagerRepository extends Repository {
   pm: PluginManager;

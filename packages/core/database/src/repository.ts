@@ -1,10 +1,8 @@
 import lodash from 'lodash';
-import {
+import type {
   Association,
   BulkCreateOptions,
   ModelStatic,
-  Op,
-  Sequelize,
   FindAndCountOptions as SequelizeAndCountOptions,
   CountOptions as SequelizeCountOptions,
   CreateOptions as SequelizeCreateOptions,
@@ -12,24 +10,28 @@ import {
   FindOptions as SequelizeFindOptions,
   UpdateOptions as SequelizeUpdateOptions,
   Transactionable,
-  WhereOperators,
+  WhereOperators} from 'sequelize';
+import {
+  Op,
+  Sequelize
 } from 'sequelize';
-import { Collection } from './collection';
-import { Database } from './database';
+import type { Collection } from './collection';
+import type { Database } from './database';
 import mustHaveFilter from './decorators/must-have-filter-decorator';
 import { transactionWrapperBuilder } from './decorators/transaction-decorator';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
-import { ArrayField, RelationField } from './fields';
+import type { RelationField } from './fields';
+import { ArrayField } from './fields';
 import FilterParser from './filter-parser';
-import { Model } from './model';
-import operators from './operators';
+import type { Model } from './model';
+import type operators from './operators';
 import { OptionsParser } from './options-parser';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
-import { RelationRepository } from './relation-repository/relation-repository';
+import type { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 

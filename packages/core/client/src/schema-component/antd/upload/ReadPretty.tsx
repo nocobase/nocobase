@@ -1,5 +1,5 @@
 import DownloadOutlined from '@ant-design/icons/DownloadOutlined';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { useField } from '@formily/react';
 import { isString } from '@nocobase/utils/client';
 import { Button, Space } from 'antd';

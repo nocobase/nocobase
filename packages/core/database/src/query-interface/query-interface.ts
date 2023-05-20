@@ -1,6 +1,6 @@
-import Database from '../database';
-import { Collection } from '../collection';
-import { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequelize';
+import type Database from '../database';
+import type { Collection } from '../collection';
+import type { QueryInterface as SequelizeQueryInterface, Transactionable } from 'sequelize';
 
 export default abstract class QueryInterface {
   sequelizeQueryInterface: SequelizeQueryInterface;

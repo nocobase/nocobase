@@ -1,6 +1,7 @@
 import { connect, mapReadPretty } from '@formily/react';
 import React from 'react';
-import AMapComponent, { AMapComponentProps } from './AMap';
+import type { AMapComponentProps } from './AMap';
+import AMapComponent from './AMap';
 import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
 import Designer from './Designer';

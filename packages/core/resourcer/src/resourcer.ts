@@ -1,11 +1,15 @@
-import { importModule, Toposort, ToposortOptions } from '@nocobase/utils';
+import type { ToposortOptions } from '@nocobase/utils';
+import { importModule, Toposort } from '@nocobase/utils';
 import glob from 'glob';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
-import Action, { ActionName } from './action';
-import Resource, { ResourceOptions } from './resource';
-import { getNameByParams, ParsedParams, parseQuery, parseRequest } from './utils';
+import type { ActionName } from './action';
+import type Action from './action';
+import type { ResourceOptions } from './resource';
+import Resource from './resource';
+import type { ParsedParams} from './utils';
+import { getNameByParams, parseQuery, parseRequest } from './utils';
 
 export interface ResourcerContext {
   resourcer?: Resourcer;

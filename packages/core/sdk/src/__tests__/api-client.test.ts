@@ -1,4 +1,4 @@
-import { AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { APIClient, Storage } from '../';
 import { Auth } from '../APIClient';

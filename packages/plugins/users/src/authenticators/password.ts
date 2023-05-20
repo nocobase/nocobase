@@ -1,5 +1,5 @@
-import { PasswordField } from '@nocobase/database';
-import { Context, Next } from '@nocobase/actions';
+import type { PasswordField } from '@nocobase/database';
+import type { Context, Next } from '@nocobase/actions';
 import { namespace } from '..';
 
 export default async function (ctx: Context, next: Next) {

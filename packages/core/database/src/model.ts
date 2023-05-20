@@ -1,8 +1,9 @@
 import lodash from 'lodash';
-import { Model as SequelizeModel, ModelStatic } from 'sequelize';
-import { Collection } from './collection';
-import { Database } from './database';
-import { Field } from './fields';
+import type { ModelStatic } from 'sequelize';
+import { Model as SequelizeModel } from 'sequelize';
+import type { Collection } from './collection';
+import type { Database } from './database';
+import type { Field } from './fields';
 import { SyncRunner } from './sync-runner';
 
 const _ = lodash;

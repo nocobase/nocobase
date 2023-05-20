@@ -1,7 +1,9 @@
-import { Cache } from '@nocobase/cache';
-import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
-import UiSchemaRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
+import type { Cache } from '@nocobase/cache';
+import type { Database } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
+import type { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
+import type UiSchemaRepository from '../repository';
 import PluginUiSchema from '../server';
 
 describe('ui_schema repository with cache', () => {

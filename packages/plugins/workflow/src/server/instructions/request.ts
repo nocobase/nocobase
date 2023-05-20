@@ -1,9 +1,10 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import type { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
-import { Instruction } from './index';
+import type { Instruction } from './index';
 import { JOB_STATUS } from '../constants';
-import Processor from '../Processor';
-import FlowNodeModel from '../models/FlowNode';
+import type Processor from '../Processor';
+import type FlowNodeModel from '../models/FlowNode';
 
 export interface Header {
   name: string;

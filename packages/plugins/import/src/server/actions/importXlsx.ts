@@ -1,5 +1,5 @@
-import { Context, Next } from '@nocobase/actions';
-import { Collection, Repository } from '@nocobase/database';
+import type { Context, Next } from '@nocobase/actions';
+import type { Collection, Repository } from '@nocobase/database';
 import xlsx from 'node-xlsx';
 import XLSX from 'xlsx';
 import { namespace } from '../../';

@@ -1,5 +1,5 @@
-import Database from '@nocobase/database';
-import { Application } from '@nocobase/server';
+import type Database from '@nocobase/database';
+import type { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { BRANCH_INDEX, EXECUTION_STATUS } from '../../constants';
 

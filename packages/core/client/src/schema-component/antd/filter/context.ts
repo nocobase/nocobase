@@ -1,5 +1,5 @@
-import { ObjectField } from '@formily/core';
-import { Schema } from '@formily/react';
+import type { ObjectField } from '@formily/core';
+import type { Schema } from '@formily/react';
 import { createContext } from 'react';
 
 export interface FilterContextProps {

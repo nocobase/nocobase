@@ -1,4 +1,5 @@
-import { BaseColumnFieldOptions, CreateOptions, Field, Model } from '@nocobase/database';
+import type { BaseColumnFieldOptions, CreateOptions, Model } from '@nocobase/database';
+import { Field } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 
 export class SnapshotField extends Field {

@@ -1,4 +1,5 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';

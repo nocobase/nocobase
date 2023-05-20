@@ -1,7 +1,7 @@
-import { Application } from '@nocobase/server';
-import Database from '@nocobase/database';
+import type { Application } from '@nocobase/server';
+import type Database from '@nocobase/database';
 import { getApp, sleep } from '..';
-import { RequestConfig } from '../../instructions/request';
+import type { RequestConfig } from '../../instructions/request';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 const PORT = 12345;

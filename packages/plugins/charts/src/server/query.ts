@@ -1,4 +1,4 @@
-import { Database } from '@nocobase/database';
+import type { Database } from '@nocobase/database';
 
 export const query = {
   api: async (options) => {

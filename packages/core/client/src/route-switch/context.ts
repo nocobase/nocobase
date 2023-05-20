@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { RouteProps } from './types';
+import type { RouteProps } from './types';
 
 export const RouteSwitchContext = createContext({
   components: {},

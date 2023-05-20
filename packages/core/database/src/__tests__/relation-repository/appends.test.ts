@@ -1,4 +1,6 @@
-import Database, { BelongsToRepository, Collection, mockDatabase } from '@nocobase/database';
+import type { Collection} from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { BelongsToRepository, mockDatabase } from '@nocobase/database';
 
 describe('appends', () => {
   let db: Database;

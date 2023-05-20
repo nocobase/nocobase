@@ -1,8 +1,8 @@
 import { registerValidateRules } from '@formily/core';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { i18n } from '../../i18n';
 import { defaultProps, operators, unique } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 registerValidateRules({
   percentMode(value, rule) {

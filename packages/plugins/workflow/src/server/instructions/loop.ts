@@ -1,6 +1,6 @@
-import FlowNodeModel from '../models/FlowNode';
-import JobModel from '../models/Job';
-import Processor from '../Processor';
+import type FlowNodeModel from '../models/FlowNode';
+import type JobModel from '../models/Job';
+import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 
 function getTargetLength(target) {

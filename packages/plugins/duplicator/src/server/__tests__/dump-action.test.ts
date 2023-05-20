@@ -1,5 +1,6 @@
-import { mockServer, MockServer } from '@nocobase/test';
-import { Database } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
+import type { Database } from '@nocobase/database';
 import * as os from 'os';
 import path from 'path';
 import fsPromises from 'fs/promises';

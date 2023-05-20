@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { CollectionFieldOptions, CollectionManagerOptions, CollectionOptions } from './types';
+import type { CollectionFieldOptions, CollectionManagerOptions, CollectionOptions } from './types';
 
 export const CollectionManagerContext = createContext<CollectionManagerOptions>({
   collections: [],

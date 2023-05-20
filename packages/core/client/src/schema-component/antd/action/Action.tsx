@@ -18,7 +18,7 @@ import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
 import { ActionContext } from './context';
 import { useA } from './hooks';
-import { ComposedAction } from './types';
+import type { ComposedAction } from './types';
 import { linkageAction } from './utils';
 
 export const actionDesignerCss = css`

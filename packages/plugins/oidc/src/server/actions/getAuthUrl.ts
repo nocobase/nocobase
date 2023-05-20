@@ -1,6 +1,6 @@
-import { Context } from '@nocobase/actions';
+import type { Context } from '@nocobase/actions';
 import { createOIDCClient } from '../shared/createOIDCClient';
-import { OIDCProvider } from '../shared/types';
+import type { OIDCProvider } from '../shared/types';
 
 export const getAuthUrl = async (ctx: Context, next) => {
   const {

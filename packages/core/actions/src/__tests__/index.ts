@@ -1,10 +1,13 @@
-import Database, { CollectionOptions, DatabaseOptions } from '@nocobase/database';
-import { Handlers, ResourceOptions, Resourcer } from '@nocobase/resourcer';
+import type { CollectionOptions, DatabaseOptions } from '@nocobase/database';
+import Database from '@nocobase/database';
+import type { Handlers, ResourceOptions} from '@nocobase/resourcer';
+import { Resourcer } from '@nocobase/resourcer';
 import merge from 'deepmerge';
 import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import qs from 'qs';
-import supertest, { SuperAgentTest } from 'supertest';
+import type { SuperAgentTest } from 'supertest';
+import supertest from 'supertest';
 import db2resource from '../../../server/src/middlewares/db2resource';
 import { uid } from '@nocobase/utils';
 

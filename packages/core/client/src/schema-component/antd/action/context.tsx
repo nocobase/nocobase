@@ -1,4 +1,4 @@
-import { Schema } from '@formily/react';
+import type { Schema } from '@formily/react';
 import { createContext } from 'react';
 
 export const ActionContext = createContext<ActionContextProps>({});

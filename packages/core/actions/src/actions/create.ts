@@ -1,4 +1,4 @@
-import { Context } from '..';
+import type { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
 
 export async function create(ctx: Context, next) {

@@ -4,7 +4,8 @@
 # 执行测试
 yarn test examples/app/__tests__/app.test.ts
 */
-import { MockServer, mockServer } from '@nocobase/test';
+import type { MockServer} from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 
 describe('app test', () => {
   let app: MockServer;

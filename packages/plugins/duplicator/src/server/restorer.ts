@@ -2,11 +2,12 @@ import decompress from 'decompress';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import { AppMigrator, AppMigratorOptions } from './app-migrator';
+import type { AppMigratorOptions } from './app-migrator';
+import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
 import { FieldValueWriter } from './field-value-writer';
 import { readLines, sqlAdapter } from './utils';
-import { Application } from '@nocobase/server';
+import type { Application } from '@nocobase/server';
 
 export class Restorer extends AppMigrator {
   direction = 'restore' as const;

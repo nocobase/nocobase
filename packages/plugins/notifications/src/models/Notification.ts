@@ -1,5 +1,6 @@
-import Database, { Model } from '@nocobase/database';
-import { NotificationService } from './NotificationService';
+import type Database from '@nocobase/database';
+import { Model } from '@nocobase/database';
+import type { NotificationService } from './NotificationService';
 import _ from 'lodash';
 
 export class Notification extends Model {

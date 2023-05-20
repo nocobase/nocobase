@@ -1,5 +1,6 @@
-import Database from '@nocobase/database';
-import { getNameByParams, parseRequest, ResourcerContext, ResourceType } from '@nocobase/resourcer';
+import type Database from '@nocobase/database';
+import type { ResourcerContext, ResourceType } from '@nocobase/resourcer';
+import { getNameByParams, parseRequest } from '@nocobase/resourcer';
 
 export function db2resource(ctx: ResourcerContext & { db: Database }, next: () => Promise<any>) {
   const resourcer = ctx.resourcer;

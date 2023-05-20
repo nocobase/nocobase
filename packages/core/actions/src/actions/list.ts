@@ -1,5 +1,5 @@
 import { assign } from '@nocobase/utils';
-import { Context } from '..';
+import type { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
 
 export const DEFAULT_PAGE = 1;

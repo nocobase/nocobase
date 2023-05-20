@@ -1,4 +1,4 @@
-import { RouteRedirectProps } from '@nocobase/client';
+import type { RouteRedirectProps } from '@nocobase/client';
 
 export default [
   {

@@ -1,5 +1,5 @@
-import { Context, Next } from '@nocobase/actions';
-import { Repository } from '@nocobase/database';
+import type { Context, Next } from '@nocobase/actions';
+import type { Repository } from '@nocobase/database';
 
 export async function getHtml(ctx: Context, next: Next) {
   const { filterByTk } = ctx.action.params;

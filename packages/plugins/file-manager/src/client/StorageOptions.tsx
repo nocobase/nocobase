@@ -1,5 +1,5 @@
 import { FormLayout } from '@formily/antd';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, RecursionField, Schema, useField, useForm } from '@formily/react';
 import React, { useEffect, useState } from 'react';
 

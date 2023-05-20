@@ -1,10 +1,11 @@
 import { uid } from '@formily/shared';
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   ArrayTable,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  SchemaInitializerItemOptions,
   SchemaInitializerProvider,
 } from '@nocobase/client';
 import React from 'react';

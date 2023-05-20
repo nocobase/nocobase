@@ -1,5 +1,5 @@
-import Database from '../../database';
-import { Repository } from '../../repository';
+import type Database from '../../database';
+import type { Repository } from '../../repository';
 import { mockDatabase } from '../index';
 
 describe('date operator test', () => {

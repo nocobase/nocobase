@@ -1,5 +1,5 @@
 import { DatabaseOutlined } from '@ant-design/icons';
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Card } from 'antd';
 import React, { useState } from 'react';

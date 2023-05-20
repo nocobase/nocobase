@@ -1,7 +1,9 @@
-import { Op, Model } from 'sequelize';
+import type { Model } from 'sequelize';
+import { Op } from 'sequelize';
 
-import { Context } from '..';
-import { Collection, TargetKey, Repository, SortField } from '@nocobase/database';
+import type { Context } from '..';
+import type { Collection, TargetKey} from '@nocobase/database';
+import { Repository, SortField } from '@nocobase/database';
 import { getRepositoryFromParams } from '../utils';
 
 export async function move(ctx: Context, next) {

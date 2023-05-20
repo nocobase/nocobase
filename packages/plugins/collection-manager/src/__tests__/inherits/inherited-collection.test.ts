@@ -1,5 +1,6 @@
-import Database, { Repository } from '@nocobase/database';
-import Application from '@nocobase/server';
+import type { Repository } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import type Application from '@nocobase/server';
 import { createApp } from '..';
 import { pgOnly } from '@nocobase/test';
 

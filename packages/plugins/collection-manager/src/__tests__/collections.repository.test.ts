@@ -1,6 +1,8 @@
-import Database, { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
-import CollectionManagerPlugin, { CollectionRepository } from '@nocobase/plugin-collection-manager';
-import Application from '@nocobase/server';
+import type { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import type { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import type CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
+import type Application from '@nocobase/server';
 import { createApp } from '.';
 
 describe('collections repository', () => {

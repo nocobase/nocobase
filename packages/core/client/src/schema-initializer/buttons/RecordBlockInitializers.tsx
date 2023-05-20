@@ -1,7 +1,9 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaInitializer, useCollection, useCollectionManager, SchemaInitializerItemOptions } from '../..';
+import type { SchemaInitializerItemOptions } from '../..';
+import { SchemaInitializer, useCollection, useCollectionManager } from '../..';
 import { gridRowColWrap } from '../utils';
 
 const recursiveParent = (schema: Schema) => {

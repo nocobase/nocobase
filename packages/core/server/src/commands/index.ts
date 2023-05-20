@@ -1,4 +1,4 @@
-import Application from '../application';
+import type Application from '../application';
 import console from './console';
 import dbAuth from './db-auth';
 import dbClean from './db-clean';

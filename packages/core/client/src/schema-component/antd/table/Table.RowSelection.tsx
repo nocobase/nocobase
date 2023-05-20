@@ -1,7 +1,7 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isArr, isValid } from '@formily/shared';
-import { TableProps } from 'antd';
+import type { TableProps } from 'antd';
 import React from 'react';
 import { TableVoid } from './Table.Void';
 

@@ -1,10 +1,12 @@
 import { omit } from 'lodash';
-import { BelongsToManyOptions as SequelizeBelongsToManyOptions, Utils } from 'sequelize';
-import { Collection } from '../collection';
-import { Reference } from '../features/ReferencesMap';
+import type { BelongsToManyOptions as SequelizeBelongsToManyOptions} from 'sequelize';
+import { Utils } from 'sequelize';
+import type { Collection } from '../collection';
+import type { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
 import { BelongsToField } from './belongs-to-field';
-import { MultipleRelationFieldOptions, RelationField } from './relation-field';
+import type { MultipleRelationFieldOptions} from './relation-field';
+import { RelationField } from './relation-field';
 
 export class BelongsToManyField extends RelationField {
   get dataType() {

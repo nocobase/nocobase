@@ -1,4 +1,4 @@
-import Application from '@nocobase/server';
+import type Application from '@nocobase/server';
 import { LOG_TYPE_UPDATE } from '../constants';
 
 export function afterUpdate(app: Application) {

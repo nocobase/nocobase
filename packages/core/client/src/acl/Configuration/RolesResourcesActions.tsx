@@ -1,5 +1,5 @@
 import { FormItem, FormLayout } from '@formily/antd';
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { connect, useField, useForm } from '@formily/react';
 import { Checkbox, Table, Tag } from 'antd';
 import { isEmpty } from 'lodash';

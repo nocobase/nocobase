@@ -1,7 +1,9 @@
 import { css } from '@emotion/css';
-import { ArrayField, Field } from '@formily/core';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { Table, TableColumnProps } from 'antd';
+import type { ArrayField, Field } from '@formily/core';
+import type { Schema} from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import type { TableColumnProps } from 'antd';
+import { Table } from 'antd';
 import { default as classNames } from 'classnames';
 import { findIndex } from 'lodash';
 import React, { useState } from 'react';

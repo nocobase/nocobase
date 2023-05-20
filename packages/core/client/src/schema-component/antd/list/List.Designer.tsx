@@ -1,4 +1,5 @@
-import { useFieldSchema, useField, ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
+import { useFieldSchema, useField } from '@formily/react';
 import React from 'react';
 import { ArrayItems } from '@formily/antd';
 import { useListBlockContext } from './List.Decorator';

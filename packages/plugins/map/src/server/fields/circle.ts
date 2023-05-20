@@ -1,4 +1,5 @@
-import { BaseColumnFieldOptions, Field, FieldContext } from '@nocobase/database';
+import type { BaseColumnFieldOptions, FieldContext } from '@nocobase/database';
+import { Field } from '@nocobase/database';
 import { DataTypes } from 'sequelize';
 import { isPg, toValue } from '../helpers';
 

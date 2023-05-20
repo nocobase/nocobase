@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import * as types from '../templates';
 
 export const templates = new Map<string, ISchema>();

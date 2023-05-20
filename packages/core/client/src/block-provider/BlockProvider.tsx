@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
 import merge from 'deepmerge';

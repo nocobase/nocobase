@@ -1,7 +1,9 @@
 import { css } from '@emotion/css';
-import { Field, createForm } from '@formily/core';
+import type { Field} from '@formily/core';
+import { createForm } from '@formily/core';
 import { FieldContext, FormContext, useField } from '@formily/react';
-import { Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import type { TableColumnProps} from 'antd';
+import { Space, Switch, Table, Tag, Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider, useRecord } from '../../record-provider';

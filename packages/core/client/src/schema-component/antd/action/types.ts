@@ -1,4 +1,5 @@
-import { ButtonProps, DrawerProps, ModalProps } from 'antd';
+import type { ButtonProps, DrawerProps} from 'antd';
+import { ModalProps } from 'antd';
 
 export type ActionProps = ButtonProps & {
   component?: any;

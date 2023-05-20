@@ -1,7 +1,7 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import { defaultProps, operators, recordPickerViewer } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const createdBy: IField = {
   name: 'createdBy',

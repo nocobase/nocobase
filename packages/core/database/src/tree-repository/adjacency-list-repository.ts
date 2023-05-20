@@ -1,4 +1,5 @@
-import { FindOptions, Repository } from '../repository';
+import type { FindOptions} from '../repository';
+import { Repository } from '../repository';
 import lodash from 'lodash';
 
 export class AdjacencyListRepository extends Repository {

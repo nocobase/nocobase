@@ -1,4 +1,5 @@
-import { Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
 import { SchemaInitializer, useCollection, useCompile, useDesignable } from '@nocobase/client';
 import React from 'react';

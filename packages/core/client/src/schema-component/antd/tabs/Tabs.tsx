@@ -1,6 +1,7 @@
 import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
+import type { TabPaneProps, TabsProps } from 'antd';
+import { Tabs as AntdTabs } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
 import { Icon } from '../../../icon';

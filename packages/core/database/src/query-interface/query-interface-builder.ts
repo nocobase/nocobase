@@ -1,4 +1,4 @@
-import Database from '../database';
+import type Database from '../database';
 import MysqlQueryInterface from './mysql-query-interface';
 import PostgresQueryInterface from './postgres-query-interface';
 import SqliteQueryInterface from './sqlite-query-interface';

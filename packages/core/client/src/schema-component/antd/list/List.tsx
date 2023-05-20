@@ -3,13 +3,14 @@ import { ListBlockProvider, useListBlockContext, useListItemProps } from './List
 import React, { useCallback, useEffect, useState } from 'react';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { css, cx } from '@emotion/css';
-import { List as AntdList, PaginationProps } from 'antd';
+import type { PaginationProps } from 'antd';
+import { List as AntdList } from 'antd';
 import { useListActionBarProps } from './hooks';
 import { SortableItem } from '../../common';
 import { SchemaComponentOptions } from '../../core';
 import { useDesigner } from '../../hooks';
 import { ListItem } from './List.Item';
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 
 const designerCss = css`
   width: 100%;

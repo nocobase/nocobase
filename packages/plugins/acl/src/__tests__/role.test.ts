@@ -1,6 +1,6 @@
-import { ArrayFieldRepository, Database, Model } from '@nocobase/database';
-import UsersPlugin from '@nocobase/plugin-users';
-import { MockServer } from '@nocobase/test';
+import type { ArrayFieldRepository, Database, Model } from '@nocobase/database';
+import type UsersPlugin from '@nocobase/plugin-users';
+import type { MockServer } from '@nocobase/test';
 
 import { prepareApp } from './prepare';
 

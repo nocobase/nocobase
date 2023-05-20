@@ -1,6 +1,8 @@
-import { i18n, IField, interfacesProperties } from '@nocobase/client';
-import { Evaluator, evaluators } from '@nocobase/evaluators/client';
-import { Registry } from '@nocobase/utils/client';
+import type { IField} from '@nocobase/client';
+import { i18n, interfacesProperties } from '@nocobase/client';
+import type { Evaluator} from '@nocobase/evaluators/client';
+import { evaluators } from '@nocobase/evaluators/client';
+import type { Registry } from '@nocobase/utils/client';
 import { cloneDeep } from 'lodash';
 import { NAMESPACE } from '../locale';
 

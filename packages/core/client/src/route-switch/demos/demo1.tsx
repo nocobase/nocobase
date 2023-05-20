@@ -1,4 +1,5 @@
-import { RouteRedirectProps, RouteSwitch, RouteSwitchProvider } from '@nocobase/client';
+import type { RouteRedirectProps} from '@nocobase/client';
+import { RouteSwitch, RouteSwitchProvider } from '@nocobase/client';
 import React from 'react';
 import { Link, MemoryRouter as Router } from 'react-router-dom';
 

@@ -1,5 +1,6 @@
-import { MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
-import {
+import type { MultiAssociationAccessors, Transaction, Transactionable } from 'sequelize';
+import { Sequelize } from 'sequelize';
+import type {
   CommonFindOptions,
   CountOptions,
   DestroyOptions,

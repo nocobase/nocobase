@@ -1,4 +1,4 @@
-import { IDatabaseOptions } from '@nocobase/database';
+import type { IDatabaseOptions } from '@nocobase/database';
 
 export default {
   dialect: 'sqlite',

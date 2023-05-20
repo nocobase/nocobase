@@ -2,8 +2,9 @@ import React, { useCallback } from 'react';
 import { Cascader } from 'antd';
 import { useForm } from '@formily/react';
 
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
-  SchemaInitializerItemOptions,
   useCollectionDataSource,
   useCompile,
   SchemaComponentContext,

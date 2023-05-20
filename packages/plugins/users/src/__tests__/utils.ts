@@ -1,4 +1,4 @@
-import { UserPluginConfig } from '../server';
+import type { UserPluginConfig } from '../server';
 
 export const userPluginConfig: UserPluginConfig = {
   name: 'users',

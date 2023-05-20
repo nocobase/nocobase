@@ -1,9 +1,12 @@
-import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
-import { FieldOptions, useCollection, useCollectionManager } from '../collection-manager';
+import type { SchemaInitializerItemOptions } from '../';
+import { BlockRequestContext } from '../';
+import type { FieldOptions} from '../collection-manager';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { isAssocField } from '../filter-provider/utils';
 import { useActionContext, useDesignable } from '../schema-component';
 import { useSchemaTemplateManager } from '../schema-templates';

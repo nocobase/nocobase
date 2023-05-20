@@ -1,7 +1,8 @@
 import { Mutex } from 'async-mutex';
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
+import type { BaseColumnFieldOptions} from './field';
+import { Field } from './field';
 
 const sortFieldMutex = new Mutex();
 

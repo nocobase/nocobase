@@ -1,9 +1,10 @@
-import { Evaluator, evaluators } from '@nocobase/evaluators';
+import type { Evaluator} from '@nocobase/evaluators';
+import { evaluators } from '@nocobase/evaluators';
 import { parse } from '@nocobase/utils';
-import { Instruction } from '.';
-import { Processor } from '..';
+import type { Instruction } from '.';
+import type { Processor } from '..';
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type FlowNodeModel from '../models/FlowNode';
 
 interface CalculationConfig {
   dynamic?: boolean | string;

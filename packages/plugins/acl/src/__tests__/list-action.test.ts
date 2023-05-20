@@ -1,6 +1,6 @@
-import { Database } from '@nocobase/database';
+import type { Database } from '@nocobase/database';
 import { prepareApp } from './prepare';
-import { MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 
 describe('list action with acl', () => {
   let app: MockServer;

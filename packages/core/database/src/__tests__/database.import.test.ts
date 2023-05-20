@@ -1,6 +1,6 @@
 import { mockDatabase } from './index';
 import path from 'path';
-import Database from '../database';
+import type Database from '../database';
 
 describe('database', () => {
   let db: Database;

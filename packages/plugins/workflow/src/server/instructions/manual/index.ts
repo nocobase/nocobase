@@ -1,9 +1,9 @@
 import actions from '@nocobase/actions';
-import { HandlerType } from '@nocobase/resourcer';
+import type { HandlerType } from '@nocobase/resourcer';
 
-import Plugin from '../..';
+import type Plugin from '../..';
 import { JOB_STATUS } from '../../constants';
-import { Instruction } from '..';
+import type { Instruction } from '..';
 import jobsCollection from './collecions/jobs';
 import usersCollection from './collecions/users';
 import usersJobsCollection from './collecions/users_jobs';

@@ -1,4 +1,5 @@
-import { IField, interfacesProperties } from '@nocobase/client';
+import type { IField} from '@nocobase/client';
+import { interfacesProperties } from '@nocobase/client';
 const { defaultProps, operators } = interfacesProperties;
 
 export const mathFormula: IField = {

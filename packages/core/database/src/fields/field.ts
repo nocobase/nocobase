@@ -1,6 +1,6 @@
 import _ from 'lodash';
 
-import {
+import type {
   DataType,
   ModelAttributeColumnOptions,
   ModelIndexesOptions,
@@ -8,10 +8,10 @@ import {
   SyncOptions,
   Transactionable,
 } from 'sequelize';
-import { Collection } from '../collection';
-import { Database } from '../database';
-import { InheritedCollection } from '../inherited-collection';
-import { ModelEventTypes } from '../types';
+import type { Collection } from '../collection';
+import type { Database } from '../database';
+import type { InheritedCollection } from '../inherited-collection';
+import type { ModelEventTypes } from '../types';
 import { snakeCase } from '../utils';
 
 export interface FieldContext {

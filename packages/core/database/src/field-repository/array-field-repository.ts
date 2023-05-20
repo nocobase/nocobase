@@ -1,5 +1,5 @@
-import { Transactionable } from 'sequelize/types';
-import { Collection } from '../collection';
+import type { Transactionable } from 'sequelize/types';
+import type { Collection } from '../collection';
 import lodash from 'lodash';
 import { transactionWrapperBuilder } from '../decorators/transaction-decorator';
 import { ArrayField } from '../fields';

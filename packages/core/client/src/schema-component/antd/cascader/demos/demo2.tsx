@@ -1,5 +1,5 @@
 import { FormItem } from '@formily/antd';
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { useField } from '@formily/react';
 import { action } from '@formily/reactive';
 import {

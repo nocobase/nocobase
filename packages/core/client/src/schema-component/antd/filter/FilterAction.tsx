@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
-import { createForm, Field, Form } from '@formily/core';
+import type { Field, Form } from '@formily/core';
+import { createForm } from '@formily/core';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Popover, Space } from 'antd';
 import React, { createContext, useContext, useMemo, useState } from 'react';

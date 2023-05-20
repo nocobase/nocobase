@@ -1,6 +1,7 @@
 import { FormDrawer, FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
-import { FormContext, ISchema, SchemaOptionsContext } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { FormContext, SchemaOptionsContext } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   AntdSchemaComponentProvider,

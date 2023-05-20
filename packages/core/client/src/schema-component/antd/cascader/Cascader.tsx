@@ -1,5 +1,5 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { ArrayField } from '@formily/core';
+import type { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Cascader as AntdCascader, Space } from 'antd';

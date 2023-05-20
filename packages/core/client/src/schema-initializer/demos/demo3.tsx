@@ -1,3 +1,5 @@
+import type {
+  SchemaInitializerItemOptions} from '@nocobase/client';
 import {
   Form,
   FormItem,
@@ -5,7 +7,6 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
-  SchemaInitializerItemOptions,
   SchemaInitializerProvider,
   useSchemaInitializer,
 } from '@nocobase/client';

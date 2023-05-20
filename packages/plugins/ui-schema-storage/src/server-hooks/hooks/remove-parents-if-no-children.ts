@@ -1,4 +1,4 @@
-import { UiSchemaRepository } from '../../repository';
+import type { UiSchemaRepository } from '../../repository';
 
 export async function removeParentsIfNoChildren({ schemaInstance, db, options, params }) {
   const { transaction, oldParentUid } = options;

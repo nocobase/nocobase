@@ -1,6 +1,7 @@
 import type { Field } from '@formily/core';
-import { ISchema } from '@formily/react';
-import { IField, interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
+import type { ISchema } from '@formily/react';
+import type { IField} from '@nocobase/client';
+import { interfacesProperties, useCollectionManager, useRecord } from '@nocobase/client';
 import { cloneDeep } from 'lodash';
 import { NAMESPACE } from './locale';
 

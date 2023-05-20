@@ -1,4 +1,4 @@
-import { BarTask } from './bar-task';
+import type { BarTask } from './bar-task';
 
 export type BarMoveAction = 'progress' | 'end' | 'start' | 'move';
 export type GanttContentMoveAction =

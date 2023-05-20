@@ -1,11 +1,13 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
-import { ArrayField, Field } from '@formily/core';
-import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import type { ArrayField, Field } from '@formily/core';
+import type { Schema} from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import type { TableColumnProps } from 'antd';
+import { Table as AntdTable } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

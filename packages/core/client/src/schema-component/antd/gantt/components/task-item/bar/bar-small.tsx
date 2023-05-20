@@ -3,7 +3,7 @@ import { cx } from '@emotion/css';
 import { getProgressPoint } from '../../../helpers/bar-helper';
 import { BarDisplay } from './bar-display';
 import { BarProgressHandle } from './bar-progress-handle';
-import { TaskItemProps } from '../task-item';
+import type { TaskItemProps } from '../task-item';
 import { barWrapper } from './style';
 
 export const BarSmall: React.FC<TaskItemProps> = ({

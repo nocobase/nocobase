@@ -1,11 +1,13 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { RecursionField, Schema, useFieldSchema } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { RecursionField, useFieldSchema } from '@formily/react';
 import { ActionContext, RecordProvider, useCollection, useCompile, useFilterAPI, useProps } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import AMap, { AMapForwardedRefProps } from '../components/AMap';
+import type { AMapForwardedRefProps } from '../components/AMap';
+import AMap from '../components/AMap';
 import { useMapTranslation } from '../locale';
 
 const selectedImage =

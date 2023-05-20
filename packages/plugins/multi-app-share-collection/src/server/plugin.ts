@@ -1,5 +1,6 @@
 import PluginMultiAppManager from '@nocobase/plugin-multi-app-manager';
-import { Application, Plugin } from '@nocobase/server';
+import type { Application} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
 

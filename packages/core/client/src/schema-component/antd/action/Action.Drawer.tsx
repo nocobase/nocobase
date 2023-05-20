@@ -6,8 +6,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useActionContext } from './hooks';
-import { ComposedActionDrawer } from './types';
-import { OpenSize } from './';
+import type { ComposedActionDrawer } from './types';
+import type { OpenSize } from './';
 
 const openSizeWidthMap = new Map<OpenSize, string>([
   ['small', '30%'],

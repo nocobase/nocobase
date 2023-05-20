@@ -1,4 +1,5 @@
-import React, { createContext, FC, useState } from 'react';
+import type { FC} from 'react';
+import React, { createContext, useState } from 'react';
 
 export enum SHARED_FILTER_CONDITION {
   AND = '$and',

@@ -1,5 +1,7 @@
-import Database, { Repository, ViewCollection } from '@nocobase/database';
-import Application from '@nocobase/server';
+import type { Repository} from '@nocobase/database';
+import type Database from '@nocobase/database';
+import { ViewCollection } from '@nocobase/database';
+import type Application from '@nocobase/server';
 import { uid } from '@nocobase/utils';
 import { createApp } from '../index';
 

@@ -10,7 +10,7 @@ import 'react-image-lightbox/style.css'; // This only needs to be imported once 
 import { ReadPretty } from '../upload/ReadPretty';
 import { isImage, toFileList, useUploadProps } from '../upload/shared';
 import '../upload/style.less';
-import { UploadProps } from '../upload/type';
+import type { UploadProps } from '../upload/type';
 
 type Props = UploadProps & {
   /** 是否显示 Upload 按钮 */

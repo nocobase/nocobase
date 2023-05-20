@@ -1,7 +1,9 @@
 import { Database, mockDatabase } from '@nocobase/database';
-import Application, { ApplicationOptions, PluginManager } from '@nocobase/server';
+import type { ApplicationOptions} from '@nocobase/server';
+import Application, { PluginManager } from '@nocobase/server';
 import qs from 'qs';
-import supertest, { SuperAgentTest } from 'supertest';
+import type { SuperAgentTest } from 'supertest';
+import supertest from 'supertest';
 
 interface ActionParams {
   filterByTk?: any;

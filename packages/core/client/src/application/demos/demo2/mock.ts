@@ -1,5 +1,5 @@
 import { uid } from '@formily/shared';
-import { APIClient } from '@nocobase/client';
+import type { APIClient } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
 
 export default (apiClient: APIClient) => {

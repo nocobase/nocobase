@@ -1,8 +1,10 @@
 import { omit } from 'lodash';
-import { BelongsToOptions as SequelizeBelongsToOptions, Utils } from 'sequelize';
-import { Reference } from '../features/ReferencesMap';
+import type { BelongsToOptions as SequelizeBelongsToOptions} from 'sequelize';
+import { Utils } from 'sequelize';
+import type { Reference } from '../features/ReferencesMap';
 import { checkIdentifier } from '../utils';
-import { BaseRelationFieldOptions, RelationField } from './relation-field';
+import type { BaseRelationFieldOptions} from './relation-field';
+import { RelationField } from './relation-field';
 
 export class BelongsToField extends RelationField {
   get dataType() {

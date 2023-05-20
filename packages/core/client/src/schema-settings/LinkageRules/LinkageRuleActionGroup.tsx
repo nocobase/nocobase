@@ -1,4 +1,4 @@
-import { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
+import type { ArrayField as ArrayFieldModel, VoidField } from '@formily/core';
 import { ArrayField, ObjectField, observer, useField } from '@formily/react';
 import { Space } from 'antd';
 import React from 'react';

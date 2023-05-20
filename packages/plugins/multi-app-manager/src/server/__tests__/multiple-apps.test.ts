@@ -1,5 +1,6 @@
-import { Database } from '@nocobase/database';
-import { mockServer, MockServer } from '@nocobase/test';
+import type { Database } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
+import { mockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
 

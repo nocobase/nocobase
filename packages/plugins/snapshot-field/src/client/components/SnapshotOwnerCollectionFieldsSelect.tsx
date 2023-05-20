@@ -1,5 +1,6 @@
 import React from 'react';
-import { Select, SelectProps } from 'antd';
+import type { SelectProps } from 'antd';
+import { Select } from 'antd';
 import { useTopRecord } from '../interface';
 import { useCollectionManager, useCompile } from '@nocobase/client';
 

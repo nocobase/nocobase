@@ -1,10 +1,11 @@
 import moment from 'moment';
 
-import { Database } from '@nocobase/database';
-import { Application } from '@nocobase/server';
+import type { Database } from '@nocobase/database';
+import type { Application } from '@nocobase/server';
 import { mockServer } from '@nocobase/test';
 
-import Plugin, { SequenceField } from '..';
+import type { SequenceField } from '..';
+import Plugin from '..';
 
 describe('sequence field', () => {
   let app: Application;

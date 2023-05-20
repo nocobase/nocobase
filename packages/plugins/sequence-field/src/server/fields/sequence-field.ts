@@ -1,9 +1,11 @@
 import parser from 'cron-parser';
 import { escapeRegExp } from 'lodash';
 import moment from 'moment';
-import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
+import type { Transactionable} from 'sequelize';
+import { DataTypes, ValidationError, ValidationErrorItem } from 'sequelize';
 
-import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
+import type { BaseColumnFieldOptions, FieldContext, Model } from '@nocobase/database';
+import { Field } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
 
 export interface Pattern {

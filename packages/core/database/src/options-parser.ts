@@ -1,8 +1,9 @@
-import { FindAttributeOptions, ModelStatic, Op, Sequelize } from 'sequelize';
-import { Collection } from './collection';
-import { Database } from './database';
+import type { FindAttributeOptions, ModelStatic} from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
+import type { Collection } from './collection';
+import type { Database } from './database';
 import FilterParser from './filter-parser';
-import { Appends, Except, FindOptions } from './repository';
+import type { Appends, Except, FindOptions } from './repository';
 
 const debug = require('debug')('noco-database');
 

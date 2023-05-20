@@ -1,5 +1,6 @@
 import { Issuer } from 'openid-client';
-import { IDTOKEN_SIGN_ALG, OIDCProvider } from './types';
+import type { OIDCProvider } from './types';
+import { IDTOKEN_SIGN_ALG } from './types';
 
 export const createOIDCClient = async (provider: OIDCProvider) => {
   const issuer = await Issuer.discover(provider.issuer);

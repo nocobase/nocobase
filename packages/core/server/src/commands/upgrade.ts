@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import Application from '../application';
+import type Application from '../application';
 
 /**
  * TODO

@@ -1,4 +1,4 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField, useForm } from '@formily/react';
 import { Select } from 'antd';
 import React from 'react';

@@ -11,7 +11,8 @@ import {
   Submit,
 } from '@formily/antd';
 import { Select } from 'antd';
-import { createForm, Field, onFieldValueChange } from '@formily/core';
+import type { Field} from '@formily/core';
+import { createForm, onFieldValueChange } from '@formily/core';
 import { connect, createSchemaField, observer, useField, useForm, useFormEffects } from '@formily/react';
 import React from 'react';
 

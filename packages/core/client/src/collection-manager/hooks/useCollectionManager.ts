@@ -1,10 +1,10 @@
 import { clone } from '@formily/shared';
-import { CascaderProps } from 'antd';
+import type { CascaderProps } from 'antd';
 import _, { reduce, unionBy, uniq, uniqBy } from 'lodash';
 import { useContext } from 'react';
 import { useCompile } from '../../schema-component';
 import { CollectionManagerContext } from '../context';
-import { CollectionFieldOptions } from '../types';
+import type { CollectionFieldOptions } from '../types';
 
 export const useCollectionManager = () => {
   const { refreshCM, updateCollection, service, interfaces, collections, templates } =

@@ -1,7 +1,8 @@
-import { Context } from '@nocobase/actions';
-import { ActionParams } from '@nocobase/resourcer';
+import type { Context } from '@nocobase/actions';
+import type { ActionParams } from '@nocobase/resourcer';
 import lodash from 'lodash';
-import UiSchemaRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
+import type { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
+import type UiSchemaRepository from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
   const repo = ctx.db.getCollection('uiSchemas').repository as UiSchemaRepository;

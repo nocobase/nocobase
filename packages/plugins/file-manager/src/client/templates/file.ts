@@ -1,5 +1,5 @@
 import { getConfigurableProperties } from '@nocobase/client';
-import { CollectionOptions } from '@nocobase/database';
+import type { CollectionOptions } from '@nocobase/database';
 import { NAMESPACE } from '../locale';
 
 export const file = {

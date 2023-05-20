@@ -1,6 +1,6 @@
 import { cx } from '@emotion/css';
 import React from 'react';
-import { TaskItemProps } from '../task-item';
+import type { TaskItemProps } from '../task-item';
 import { projectBackground, projectWrapper } from './style';
 
 export const Project: React.FC<TaskItemProps> = ({ task, isSelected }) => {

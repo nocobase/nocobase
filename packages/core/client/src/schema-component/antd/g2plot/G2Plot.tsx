@@ -35,7 +35,7 @@ import {
   Waterfall,
   WordCloud,
 } from '@antv/g2plot';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { Spin } from 'antd';
 import cls from 'classnames';

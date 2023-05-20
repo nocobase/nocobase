@@ -1,4 +1,5 @@
-import { Schema, useFieldSchema, useForm } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { useFieldSchema, useForm } from '@formily/react';
 import {
   useActionContext,
   useAPIClient,

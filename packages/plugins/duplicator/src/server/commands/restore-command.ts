@@ -1,4 +1,4 @@
-import { Application } from '@nocobase/server';
+import type { Application } from '@nocobase/server';
 import { Restorer } from '../restorer';
 import inquirer from 'inquirer';
 import InquireQuestionBuilder from './inquire-question-builder';

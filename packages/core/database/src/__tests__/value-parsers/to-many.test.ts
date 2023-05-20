@@ -1,4 +1,5 @@
-import { Database, mockDatabase } from '../..';
+import type { Database} from '../..';
+import { mockDatabase } from '../..';
 import { ToManyValueParser } from '../../value-parsers';
 
 describe('number value parser', () => {

@@ -1,4 +1,4 @@
-import Database from './database';
+import type Database from './database';
 import { isString, castArray } from 'lodash';
 
 export interface CollectionGroup {

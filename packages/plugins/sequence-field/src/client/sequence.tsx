@@ -1,18 +1,20 @@
 import { css } from '@emotion/css';
 import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
 import { onFieldValueChange } from '@formily/core';
-import { SchemaOptionsContext, useForm, useFormEffects, ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
+import { SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import { Button, Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type {
+  IField} from '@nocobase/client';
 import {
   Cron,
   SchemaComponent,
   SchemaComponentOptions,
   useCompile,
   interfacesProperties,
-  IField,
   useCollectionField,
 } from '@nocobase/client';
 import { lang, NAMESPACE } from './locale';

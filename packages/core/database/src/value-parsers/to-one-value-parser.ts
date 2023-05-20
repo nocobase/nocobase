@@ -1,4 +1,4 @@
-import { Repository } from '../repository';
+import type { Repository } from '../repository';
 import { BaseValueParser } from './base-value-parser';
 
 export class ToOneValueParser extends BaseValueParser {

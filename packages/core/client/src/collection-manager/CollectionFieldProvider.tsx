@@ -1,8 +1,9 @@
-import { SchemaKey, useFieldSchema } from '@formily/react';
+import type { SchemaKey} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import React from 'react';
 import { CollectionFieldContext } from './context';
 import { useCollection, useCollectionManager } from './hooks';
-import { CollectionFieldOptions } from './types';
+import type { CollectionFieldOptions } from './types';
 
 export const CollectionFieldProvider: React.FC<{
   name?: SchemaKey;

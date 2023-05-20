@@ -1,5 +1,5 @@
-import { Collection } from '@nocobase/database';
-import Database from '../../database';
+import type { Collection } from '@nocobase/database';
+import type Database from '../../database';
 import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
 import { mockDatabase } from '../index';
 

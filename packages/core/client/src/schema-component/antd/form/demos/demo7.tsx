@@ -1,6 +1,8 @@
 import { FormItem, Input } from '@formily/antd';
-import { ISchema, observer, useForm } from '@formily/react';
-import { Action, Form, FormUseValues, SchemaComponent, SchemaComponentProvider, useRequest } from '@nocobase/client';
+import type { ISchema} from '@formily/react';
+import { observer, useForm } from '@formily/react';
+import type { FormUseValues} from '@nocobase/client';
+import { Action, Form, SchemaComponent, SchemaComponentProvider, useRequest } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
 

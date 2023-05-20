@@ -1,5 +1,5 @@
-import { HasManyRepository } from '@nocobase/database';
-import { MockServer } from '@nocobase/test';
+import type { HasManyRepository } from '@nocobase/database';
+import type { MockServer } from '@nocobase/test';
 import { createApp } from '..';
 
 describe('collections', () => {

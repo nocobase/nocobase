@@ -1,4 +1,5 @@
-import { ISchema, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Spin } from 'antd';
 import { cloneDeep } from 'lodash';

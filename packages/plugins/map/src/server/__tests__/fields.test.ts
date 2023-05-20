@@ -1,4 +1,4 @@
-import Database from '@nocobase/database';
+import type Database from '@nocobase/database';
 import { mockDatabase } from '@nocobase/test';
 import { PointField, CircleField, PolygonField, LineStringField } from '../fields';
 

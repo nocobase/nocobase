@@ -1,5 +1,6 @@
-import { Model } from '@nocobase/database';
-import { InstallOptions, Plugin } from '@nocobase/server';
+import type { Model } from '@nocobase/database';
+import type { InstallOptions} from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
 

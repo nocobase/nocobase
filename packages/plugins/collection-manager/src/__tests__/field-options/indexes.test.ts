@@ -1,4 +1,4 @@
-import { MockServer } from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { createApp } from '..';
 
 describe('field indexes', () => {

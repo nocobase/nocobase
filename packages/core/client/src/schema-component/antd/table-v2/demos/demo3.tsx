@@ -1,7 +1,9 @@
-import { ArrayField } from '@formily/core';
-import { connect, ISchema, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
+import type { ArrayField } from '@formily/core';
+import type { ISchema} from '@formily/react';
+import { connect, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
-import { Table, TableColumnType } from 'antd';
+import type { TableColumnType } from 'antd';
+import { Table } from 'antd';
 import React from 'react';
 
 const ArrayTable = observer((props: any) => {

@@ -1,6 +1,8 @@
 import { NoPermissionError } from '@nocobase/acl';
-import { Context, utils as actionUtils } from '@nocobase/actions';
-import { Collection, RelationField, snakeCase } from '@nocobase/database';
+import type { Context} from '@nocobase/actions';
+import { utils as actionUtils } from '@nocobase/actions';
+import type { Collection} from '@nocobase/database';
+import { RelationField, snakeCase } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';

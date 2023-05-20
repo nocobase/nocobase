@@ -1,6 +1,6 @@
-import Plugin from '..';
-import ExecutionModel from '../models/Execution';
-import FlowNodeModel from '../models/FlowNode';
+import type Plugin from '..';
+import type ExecutionModel from '../models/Execution';
+import type FlowNodeModel from '../models/FlowNode';
 
 export type CustomFunction = (this: { execution: ExecutionModel; node?: FlowNodeModel }) => any;
 

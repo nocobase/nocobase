@@ -1,6 +1,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { ConfigProvider, Menu, MenuItemProps, Tooltip } from 'antd';
+import type { MenuItemProps} from 'antd';
+import { ConfigProvider, Menu, Tooltip } from 'antd';
 import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';

@@ -1,10 +1,12 @@
 import { Registry } from '@nocobase/utils';
 
-import { evaluate, Evaluator } from '../utils';
-import mathjs from '../utils/mathjs';
+import type { Evaluator } from '../utils';
+import { evaluate } from '../utils';
 import formulajs from '../utils/formulajs';
+import mathjs from '../utils/mathjs';
 
-export { Evaluator, evaluate, appendArrayColumn } from '../utils';
+export { appendArrayColumn, evaluate } from '../utils';
+export type { Evaluator } from '../utils';
 
 export const evaluators = new Registry<Evaluator>();
 

@@ -1,5 +1,5 @@
 import { getRepositoryFromParams } from '../utils';
-import { Context } from '../index';
+import type { Context } from '../index';
 
 export async function destroy(ctx: Context, next) {
   const repository = getRepositoryFromParams(ctx);

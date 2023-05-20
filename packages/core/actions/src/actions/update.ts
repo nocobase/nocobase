@@ -1,4 +1,4 @@
-import { Context } from '..';
+import type { Context } from '..';
 import { getRepositoryFromParams } from '../utils';
 
 export async function update(ctx: Context, next) {

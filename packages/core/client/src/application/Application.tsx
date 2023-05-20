@@ -1,5 +1,5 @@
 import { Spin } from 'antd';
-import { i18n as i18next } from 'i18next';
+import type { i18n as i18next } from 'i18next';
 import React, { useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { I18nextProvider } from 'react-i18next';

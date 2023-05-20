@@ -1,5 +1,5 @@
 import { JOB_STATUS } from '../constants';
-import FlowNodeModel from '../models/FlowNode';
+import type FlowNodeModel from '../models/FlowNode';
 
 export default {
   async run(node: FlowNodeModel, input, processor) {

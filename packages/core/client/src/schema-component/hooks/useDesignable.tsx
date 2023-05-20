@@ -1,4 +1,5 @@
-import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
@@ -6,7 +7,8 @@ import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { APIClient, useAPIClient } from '../../api-client';
+import type { APIClient} from '../../api-client';
+import { useAPIClient } from '../../api-client';
 import { SchemaComponentContext } from '../context';
 
 interface CreateDesignableProps {

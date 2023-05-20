@@ -1,4 +1,5 @@
-import { useCollectionDataSource, SchemaInitializerItemOptions } from '@nocobase/client';
+import type { SchemaInitializerItemOptions } from '@nocobase/client';
+import { useCollectionDataSource } from '@nocobase/client';
 
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';

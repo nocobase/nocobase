@@ -1,7 +1,7 @@
-import Database from '../../database';
+import type Database from '../../database';
 import { InheritedCollection } from '../../inherited-collection';
 import { mockDatabase } from '../index';
-import { BelongsToManyRepository } from '@nocobase/database';
+import type { BelongsToManyRepository } from '@nocobase/database';
 import pgOnly from './helper';
 
 pgOnly()('collection inherits', () => {

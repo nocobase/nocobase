@@ -1,5 +1,6 @@
-import Database, { Collection as DBCollection } from '@nocobase/database';
-import Application from '@nocobase/server';
+import type { Collection as DBCollection } from '@nocobase/database';
+import type Database from '@nocobase/database';
+import type Application from '@nocobase/server';
 import { createApp } from '..';
 
 describe('belongsToMany', () => {

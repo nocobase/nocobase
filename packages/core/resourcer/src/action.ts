@@ -1,9 +1,11 @@
-import { assign, MergeStrategies } from '@nocobase/utils';
+import type { MergeStrategies } from '@nocobase/utils';
+import { assign } from '@nocobase/utils';
 import compose from 'koa-compose';
 import _ from 'lodash';
-import Middleware, { MiddlewareType } from './middleware';
-import Resource from './resource';
-import { HandlerType } from './resourcer';
+import type { MiddlewareType } from './middleware';
+import Middleware from './middleware';
+import type Resource from './resource';
+import type { HandlerType } from './resourcer';
 
 export type ActionType = string | HandlerType | ActionOptions;
 

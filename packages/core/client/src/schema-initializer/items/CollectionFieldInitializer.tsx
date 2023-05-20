@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import React from 'react';
 
 import { InitializerWithSwitch } from './InitializerWithSwitch';

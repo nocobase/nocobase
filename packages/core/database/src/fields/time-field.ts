@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
-import { BaseColumnFieldOptions, Field } from './field';
+import type { BaseColumnFieldOptions} from './field';
+import { Field } from './field';
 
 export class TimeField extends Field {
   get dataType() {

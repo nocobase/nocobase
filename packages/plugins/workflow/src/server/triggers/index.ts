@@ -1,7 +1,7 @@
-import Plugin from '..';
+import type Plugin from '..';
 import CollectionTrigger from './collection';
 import ScheduleTrigger from './schedule';
-import { Trigger } from './trigger';
+import type { Trigger } from './trigger';
 
 export { Trigger } from './trigger';
 

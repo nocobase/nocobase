@@ -1,5 +1,5 @@
 import { mockDatabase } from '../';
-import { Database } from '../../database';
+import type { Database } from '../../database';
 import { IdentifierError } from '../../errors/identifier-error';
 
 describe('belongs to many field', () => {

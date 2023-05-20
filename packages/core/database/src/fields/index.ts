@@ -1,30 +1,30 @@
-import { ArrayFieldOptions } from './array-field';
-import { BelongsToFieldOptions } from './belongs-to-field';
-import { BelongsToManyFieldOptions } from './belongs-to-many-field';
-import { BooleanFieldOptions } from './boolean-field';
-import { ContextFieldOptions } from './context-field';
-import { DateFieldOptions } from './date-field';
-import { BaseFieldOptions } from './field';
-import { HasManyFieldOptions } from './has-many-field';
-import { HasOneFieldOptions } from './has-one-field';
-import { JsonbFieldOptions, JsonFieldOptions } from './json-field';
-import {
+import type { ArrayFieldOptions } from './array-field';
+import type { BelongsToFieldOptions } from './belongs-to-field';
+import type { BelongsToManyFieldOptions } from './belongs-to-many-field';
+import type { BooleanFieldOptions } from './boolean-field';
+import type { ContextFieldOptions } from './context-field';
+import type { DateFieldOptions } from './date-field';
+import type { BaseFieldOptions } from './field';
+import type { HasManyFieldOptions } from './has-many-field';
+import type { HasOneFieldOptions } from './has-one-field';
+import type { JsonbFieldOptions, JsonFieldOptions } from './json-field';
+import type {
   DecimalFieldOptions,
   DoubleFieldOptions,
   FloatFieldOptions,
   IntegerFieldOptions,
   RealFieldOptions,
 } from './number-field';
-import { PasswordFieldOptions } from './password-field';
-import { RadioFieldOptions } from './radio-field';
-import { SetFieldOptions } from './set-field';
-import { SortFieldOptions } from './sort-field';
-import { StringFieldOptions } from './string-field';
-import { TextFieldOptions } from './text-field';
-import { TimeFieldOptions } from './time-field';
-import { UidFieldOptions } from './uid-field';
-import { UUIDFieldOptions } from './uuid-field';
-import { VirtualFieldOptions } from './virtual-field';
+import type { PasswordFieldOptions } from './password-field';
+import type { RadioFieldOptions } from './radio-field';
+import type { SetFieldOptions } from './set-field';
+import type { SortFieldOptions } from './sort-field';
+import type { StringFieldOptions } from './string-field';
+import type { TextFieldOptions } from './text-field';
+import type { TimeFieldOptions } from './time-field';
+import type { UidFieldOptions } from './uid-field';
+import type { UUIDFieldOptions } from './uuid-field';
+import type { VirtualFieldOptions } from './virtual-field';
 
 export * from './array-field';
 export * from './belongs-to-field';

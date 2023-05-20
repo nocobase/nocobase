@@ -1,4 +1,4 @@
-import { CollectionOptions } from '@nocobase/database';
+import type { CollectionOptions } from '@nocobase/database';
 import { Notification } from '../models';
 
 export default {

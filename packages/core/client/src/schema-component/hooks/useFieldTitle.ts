@@ -1,4 +1,4 @@
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useEffect } from 'react';
 import { useCompile } from './useCompile';

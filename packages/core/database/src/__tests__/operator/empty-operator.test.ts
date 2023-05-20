@@ -1,5 +1,5 @@
-import Database from '../../database';
-import { Collection } from '../../collection';
+import type Database from '../../database';
+import type { Collection } from '../../collection';
 
 import { mockDatabase } from '../index';
 

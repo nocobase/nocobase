@@ -1,5 +1,5 @@
-import { QueryInterface, Sequelize } from 'sequelize';
-import Database from './database';
+import type { QueryInterface, Sequelize } from 'sequelize';
+import type Database from './database';
 
 export interface MigrationContext {
   db: Database;

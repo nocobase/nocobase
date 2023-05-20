@@ -1,10 +1,11 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import { Tag } from 'antd';
-import moment from 'moment';
+import type moment from 'moment';
 import React from 'react';
-import { CollectionFieldOptions, useCollectionManager } from '../../../collection-manager';
+import type { CollectionFieldOptions} from '../../../collection-manager';
+import { useCollectionManager } from '../../../collection-manager';
 
 export const useLabelUiSchema = (collectionField: CollectionFieldOptions, label: string): ISchema => {
   const { getCollectionJoinField } = useCollectionManager();

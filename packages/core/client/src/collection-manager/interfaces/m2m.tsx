@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { cloneDeep } from 'lodash';
 import {
@@ -8,7 +8,7 @@ import {
   relationshipType,
   reverseFieldProperties,
 } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const m2m: IField = {
   name: 'm2m',

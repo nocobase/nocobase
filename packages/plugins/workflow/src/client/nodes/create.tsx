@@ -1,4 +1,5 @@
-import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
+import type { SchemaInitializerItemOptions} from '@nocobase/client';
+import { useCollectionDataSource } from '@nocobase/client';
 
 import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';

@@ -1,6 +1,7 @@
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
   ActionContext,

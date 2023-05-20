@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { Field } from '@formily/core';
+import type { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge, uid } from '@formily/shared';
 import { Checkbox, Select, Space } from 'antd';

@@ -1,5 +1,6 @@
 import React from 'react';
-import { observer, ISchema, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { observer, useForm } from '@formily/react';
 import {
   SchemaComponent,
   SchemaComponentProvider,

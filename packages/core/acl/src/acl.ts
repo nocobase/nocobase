@@ -1,14 +1,21 @@
-import { Action } from '@nocobase/resourcer';
-import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
+import type { Action } from '@nocobase/resourcer';
+import type { ToposortOptions } from '@nocobase/utils';
+import { assign, parseFilter, Toposort } from '@nocobase/utils';
 import EventEmitter from 'events';
 import compose from 'koa-compose';
 import lodash from 'lodash';
-import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
-import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
-import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
-import { AllowManager, ConditionFunc } from './allow-manager';
-import FixedParamsManager, { Merger } from './fixed-params-manager';
-import SnippetManager, { SnippetOptions } from './snippet-manager';
+import type { AvailableActionOptions } from './acl-available-action';
+import { ACLAvailableAction } from './acl-available-action';
+import type { AvailableStrategyOptions} from './acl-available-strategy';
+import { ACLAvailableStrategy, predicate } from './acl-available-strategy';
+import type { ResourceActionsOptions, RoleActionParams } from './acl-role';
+import { ACLRole } from './acl-role';
+import type { ConditionFunc } from './allow-manager';
+import { AllowManager } from './allow-manager';
+import type { Merger } from './fixed-params-manager';
+import FixedParamsManager from './fixed-params-manager';
+import type { SnippetOptions } from './snippet-manager';
+import SnippetManager from './snippet-manager';
 
 interface CanResult {
   role: string;

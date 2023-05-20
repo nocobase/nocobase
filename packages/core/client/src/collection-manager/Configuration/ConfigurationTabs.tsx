@@ -1,7 +1,8 @@
 import { MenuOutlined } from '@ant-design/icons';
+import type {
+  DragEndEvent} from '@dnd-kit/core';
 import {
   DndContext,
-  DragEndEvent,
   DragOverlay,
   MouseSensor,
   useDraggable,

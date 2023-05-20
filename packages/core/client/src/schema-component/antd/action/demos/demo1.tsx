@@ -1,5 +1,6 @@
 import { FormItem, Input } from '@formily/antd';
-import { ISchema, observer, useForm } from '@formily/react';
+import type { ISchema} from '@formily/react';
+import { observer, useForm } from '@formily/react';
 import { Action, Form, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
 import React from 'react';
 

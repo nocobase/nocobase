@@ -1,4 +1,5 @@
-import { Database, ViewFieldInference } from '@nocobase/database';
+import type { Database} from '@nocobase/database';
+import { ViewFieldInference } from '@nocobase/database';
 
 export default {
   name: 'dbViews',

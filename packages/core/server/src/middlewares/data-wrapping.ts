@@ -1,4 +1,4 @@
-import { Context, Next } from '@nocobase/actions';
+import type { Context, Next } from '@nocobase/actions';
 import stream from 'stream';
 
 export function dataWrapping() {

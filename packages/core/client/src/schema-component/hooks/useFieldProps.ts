@@ -1,5 +1,6 @@
 import { useContext, useRef } from 'react';
-import { Schema, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
+import type { Schema} from '@formily/react';
+import { SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
 
 export const useFieldProps = (schema: Schema) => {
   const options = useContext(SchemaOptionsContext);

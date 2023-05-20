@@ -1,4 +1,4 @@
-import { Database } from '../database';
+import type { Database } from '../database';
 import { ArrayValueParser } from './array-value-parser';
 import { BaseValueParser } from './base-value-parser';
 import { BooleanValueParser } from './boolean-value-parser';

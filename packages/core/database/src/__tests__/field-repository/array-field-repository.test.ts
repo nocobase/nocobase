@@ -1,5 +1,5 @@
 import { mockDatabase } from '../index';
-import Database from '../../database';
+import type Database from '../../database';
 import { ArrayFieldRepository } from '../../field-repository/array-field-repository';
 
 describe('Array field repository', () => {

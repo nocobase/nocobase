@@ -1,4 +1,5 @@
-import { Database, Model } from '..';
+import type { Database} from '..';
+import { Model } from '..';
 import { filterMatch } from '../filter-match';
 import { mockDatabase } from './index';
 

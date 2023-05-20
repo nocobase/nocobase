@@ -1,5 +1,6 @@
 import { connect, mapReadPretty, observer } from '@formily/react';
-import { Select, SelectProps, Tag } from 'antd';
+import type { SelectProps} from 'antd';
+import { Select, Tag } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager/hooks';

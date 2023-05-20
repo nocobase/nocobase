@@ -1,6 +1,6 @@
 import { Repository } from '@nocobase/database';
 import { CollectionsGraph } from '@nocobase/utils';
-import { CollectionModel } from '../models/collection';
+import type { CollectionModel } from '../models/collection';
 
 interface LoadOptions {
   filter?: any;

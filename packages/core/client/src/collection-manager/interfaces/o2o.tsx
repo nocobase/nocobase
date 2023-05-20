@@ -1,4 +1,4 @@
-import { ISchema } from '@formily/react';
+import type { ISchema } from '@formily/react';
 import { cloneDeep } from 'lodash';
 import {
   constraintsProps,
@@ -7,7 +7,7 @@ import {
   relationshipType,
   reverseFieldProperties,
 } from './properties';
-import { IField } from './types';
+import type { IField } from './types';
 
 export const o2o: IField = {
   name: 'o2o',

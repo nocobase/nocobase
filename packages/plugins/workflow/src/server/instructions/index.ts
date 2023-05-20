@@ -1,10 +1,10 @@
 import path from 'path';
 
-import FlowNodeModel from '../models/FlowNode';
+import type FlowNodeModel from '../models/FlowNode';
 
 import { importModule } from '@nocobase/utils';
-import Plugin from '..';
-import Processor from '../Processor';
+import type Plugin from '..';
+import type Processor from '../Processor';
 
 export type Job = {
   status: number;
