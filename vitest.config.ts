@@ -23,15 +23,11 @@ export default defineConfig({
     singleThread: true,
     alias,
     include: ['packages/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
-    exclude: [
-      '**/node_modules/**',
-      '**/dist/**',
-      '**/lib/**',
-      '**/es/**',
-      '**/cypress/**',
-      '**/.{idea,git,cache,output,temp}/**',
-      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
-    ],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
     testTimeout: 300000,
+    sequence: {
+      hooks: 'list',
+      setupFiles: 'list',
+    },
   },
 });
