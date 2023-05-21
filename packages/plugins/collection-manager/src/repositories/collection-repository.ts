@@ -1,6 +1,6 @@
 import { Repository } from '@nocobase/database';
-import { CollectionModel } from '../models/collection';
 import { CollectionsGraph } from '@nocobase/utils';
+import { CollectionModel } from '../models/collection';
 
 interface LoadOptions {
   filter?: any;
@@ -10,7 +10,7 @@ interface LoadOptions {
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
-    const instances = (await this.find({ filter })) as CollectionModel[];
+    const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
 
     const graphlib = CollectionsGraph.graphlib();
 
@@ -33,7 +33,7 @@ export class CollectionRepository extends Repository {
       nameMap[collectionName] = instance;
 
       // @ts-ignore
-      const fields = await instance.getFields();
+      const fields = instance.get('fields') || [];
       for (const field of fields) {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;

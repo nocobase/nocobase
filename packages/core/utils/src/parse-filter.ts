@@ -1,6 +1,6 @@
-import get from 'lodash/get';
 import set from 'lodash/set';
 import moment from 'moment';
+import { getValuesByPath } from './getValuesByPath';
 
 const re = /^\s*\{\{([\s\S]*)\}\}\s*$/;
 
@@ -59,9 +59,9 @@ export function flatten(target, opts?: any) {
 function unflatten(obj, opts: any = {}) {
   const parsed = {};
   const transformValue = opts.transformValue || keyIdentity;
-  Object.keys(obj).forEach((key) => {
+  for (const key of Object.keys(obj)) {
     set(parsed, key, transformValue(obj[key], key));
-  });
+  }
   return parsed;
 }
 
@@ -161,7 +161,7 @@ export const parseFilter = async (filter: any, opts: ParseFilterOptions = {}) =>
         const match = re.exec(value);
         if (match) {
           const key = match[1].trim();
-          const val = get(vars, key, null);
+          const val = getValuesByPath(vars, key, null);
           const field = getField?.(path);
           value = typeof val === 'function' ? val?.({ field, operator, timezone, now }) : val;
         }
@@ -292,4 +292,9 @@ export function getDateVars() {
     last90Days: toDays(-90),
     next90Days: toDays(90),
   };
+}
+
+export function splitPathToTwoParts(path: string) {
+  const parts = path.split('.');
+  return [parts.shift(), parts.join('.')];
 }

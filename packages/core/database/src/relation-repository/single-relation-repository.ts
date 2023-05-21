@@ -3,8 +3,8 @@ import { SingleAssociationAccessors, Transactionable } from 'sequelize';
 import { Model } from '../model';
 import { Appends, Except, Fields, Filter, TargetKey, UpdateOptions } from '../repository';
 import { updateModelByValues } from '../update-associations';
-import { handleAppendsQuery } from '../utils';
 import { RelationRepository, transaction } from './relation-repository';
+import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export interface SingleRelationFindOption extends Transactionable {
   fields?: Fields;
@@ -44,7 +44,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
     });
   }
 
-  async find(options?: SingleRelationFindOption): Promise<Model<any> | null> {
+  async find(options?: SingleRelationFindOption): Promise<any> {
     const transaction = await this.getTransaction(options);
 
     const findOptions = this.buildQueryOptions({
@@ -61,23 +61,21 @@ export abstract class SingleRelationRepository extends RelationRepository {
         ...findOptions,
         includeIgnoreAttributes: false,
         transaction,
-        attributes: [this.targetKey()],
-        group: `${this.targetModel.name}.${this.targetKey()}`,
+        attributes: [this.targetModel.primaryKeyAttribute],
+        group: `${this.targetModel.name}.${this.targetModel.primaryKeyAttribute}`,
       });
 
-      const results = await handleAppendsQuery({
-        templateModel,
-        queryPromises: findOptions.include.map((include) => {
-          return sourceModel[getAccessor]({
-            ...findOptions,
-            include: [include],
-          }).then((row) => {
-            return { rows: [row], include };
-          });
-        }),
+      if (!templateModel) return null;
+
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model: this.targetModel,
+        rootAttributes: findOptions.attributes,
+        includeOption: findOptions.include,
       });
 
-      return results[0];
+      await eagerLoadingTree.load([templateModel.get(this.targetModel.primaryKeyAttribute)], transaction);
+
+      return eagerLoadingTree.root.instances[0];
     }
 
     return await sourceModel[getAccessor]({
