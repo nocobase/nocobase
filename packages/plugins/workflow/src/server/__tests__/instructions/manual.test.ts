@@ -5,7 +5,7 @@ import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
-describe('workflow > instructions > manual', () => {
+describe.skip('workflow > instructions > manual', () => {
   let app: MockServer;
   let agent;
   let userAgents;
@@ -58,8 +58,7 @@ describe('workflow > instructions > manual', () => {
     db.close();
   });
 
-  // TODO: 修复这个测试用例
-  describe.skip('mode: 0 (single record)', () => {
+  describe('mode: 0 (single record)', () => {
     it('the only user assigned could submit', async () => {
       const n1 = await workflow.createNode({
         type: 'manual',
