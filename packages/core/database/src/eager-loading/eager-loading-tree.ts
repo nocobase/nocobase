@@ -76,10 +76,10 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsTo') {
-          const { sourceKey, foreignKey } = association;
+          const { targetKey, foreignKey } = association;
 
           pushAttribute(eagerLoadingTreeParent, foreignKey);
-          pushAttribute(child, sourceKey);
+          pushAttribute(child, targetKey);
         }
 
         eagerLoadingTreeParent.children.push(child);
@@ -224,11 +224,11 @@ export class EagerLoadingTree {
           const targetKey = association.targetKey;
 
           for (const instance of node.instances) {
-            const parentInstance = node.parent.instances.find(
+            const parentInstances = node.parent.instances.filter(
               (parentInstance) => parentInstance.get(foreignKey) == instance.get(targetKey),
             );
 
-            if (parentInstance) {
+            for (const parentInstance of parentInstances) {
               parentInstance.setDataValue(association.as, instance);
             }
           }
