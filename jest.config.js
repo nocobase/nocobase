@@ -8,7 +8,7 @@ module.exports = {
   verbose: true,
   testEnvironment: 'jsdom',
   preset: 'ts-jest',
-  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
+  testMatch: ['**/__tests__/**/*.test.[jt]s'],
   setupFiles: ['./jest.setup.ts'],
   setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
   moduleNameMapper: {
@@ -24,7 +24,16 @@ module.exports = {
       diagnostics: false,
     },
   },
-  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
+  modulePathIgnorePatterns: [
+    '/esm/',
+    '/es/',
+    '/dist/',
+    '/lib/',
+    '/client/',
+    '/sdk/',
+    '/dumi-theme-nocobase/',
+    '\\.test\\.tsx$',
+  ],
   // add .mjs .cjs for formula.js
   moduleFileExtensions: [...defaults.moduleFileExtensions, 'mjs', 'cjs'],
   coveragePathIgnorePatterns: [

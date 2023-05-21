@@ -41,7 +41,10 @@
       "@nocobase/*": [
         "packages/core/*/src"
       ]
-    }
+    },
+    "types": [
+      "vitest/globals"
+    ]
   },
   "ts-node": {
     "compilerOptions": {
@@ -49,7 +52,8 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",
