@@ -30,5 +30,6 @@ export default defineConfig({
       setupFiles: 'list',
     },
     allowOnly: true,
+    bail: 1,
   },
 });
