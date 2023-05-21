@@ -9,8 +9,76 @@ import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
-import { getLangFromLocalizationManagementPlugin } from '@nocobase/plugin-localization-management/src/server/utils';
 import merge from 'deepmerge';
+import { Sequelize } from 'sequelize';
+import { Context } from '@nocobase/actions';
+
+function getRepositoryFromCtx(ctx: Context, nameSpace = '') {
+  return ctx.db.getCollection(nameSpace).repository;
+}
+
+async function getLangFromLocalizationManagementPlugin(ctx) {
+  const currentLocale = ctx.get('X-Locale');
+  const textRepo = getRepositoryFromCtx(ctx, 'localization_management_texts');
+  const translationRepo = getRepositoryFromCtx(ctx, 'localization_management_translations');
+
+  const rows = await translationRepo.model.findAll({
+    where: {
+      locale: currentLocale,
+    },
+
+    attributes: [
+      'id',
+      'locale',
+      'translation',
+      [Sequelize.col('texts.module'), 'module'],
+      [Sequelize.col('texts.text'), 'text'],
+    ],
+    include: [
+      {
+        model: textRepo.model,
+        as: 'texts',
+        required: true,
+      },
+    ],
+  });
+
+  const tempObj = {
+    resources: {},
+    antd: {},
+    cronsture: {},
+    moment: {},
+    cron: {},
+  };
+
+  rows.forEach((row) => {
+    const { texts, translation } = row;
+    const text = texts.text;
+    const module = texts.module || 'resources.client';
+    const tempSplit = module.split('.');
+    let key: string;
+    if (tempSplit.length == 1) {
+      key = tempSplit[0];
+      if (key in tempObj) {
+        tempObj[key][text] = translation;
+      } else {
+        tempObj[key] = {
+          [text]: translation,
+        };
+      }
+    } else {
+      key = tempSplit[1];
+      if (key in tempObj.resources) {
+        tempObj.resources[key][text] = translation;
+      } else {
+        tempObj.resources[key] = {
+          [text]: translation,
+        };
+      }
+    }
+  });
+  return tempObj;
+}
 
 async function getReadMe(name: string, locale: string) {
   const packageName = PluginManager.getPackageName(name);
@@ -146,7 +214,7 @@ export class ClientPlugin extends Plugin {
 
           ctx.body = {
             lang,
-            moment: merge(getMomentLocale(lang), langFromLocalizationManagement.moment),
+            moment: getMomentLocale(lang),
             ...locales[lang],
           };
           await next();

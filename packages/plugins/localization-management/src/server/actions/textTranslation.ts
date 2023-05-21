@@ -67,24 +67,34 @@ export const textTranslationActions = {
       });
       if (transRecord) {
         ctx.throw(400, 'this record already exists');
+      } else {
+        await translationRepo.create({
+          values: {
+            locale: currentLocale,
+            translation,
+            textId: record.id,
+          },
+        });
+        ctx.body = 'ok';
+        await next();
       }
+    } else {
+      const res = await textRepo.create({
+        values: {
+          module,
+          text,
+        },
+      });
+      await translationRepo.create({
+        values: {
+          locale: currentLocale,
+          translation,
+          textId: res?.id,
+        },
+      });
+      ctx.body = 'ok';
+      await next();
     }
-
-    const res = await textRepo.create({
-      values: {
-        module,
-        text,
-      },
-    });
-    await translationRepo.create({
-      values: {
-        locale: currentLocale,
-        translation,
-        textId: res?.id,
-      },
-    });
-    ctx.body = 'ok';
-    await next();
   },
   update: async (ctx: Context, next) => {
     const { values } = ctx.action.params;
