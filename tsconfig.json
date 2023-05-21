@@ -41,10 +41,7 @@
       "@nocobase/*": [
         "packages/core/*/src"
       ]
-    },
-    "types": [
-      "vitest/globals"
-    ]
+    }
   },
   "ts-node": {
     "compilerOptions": {

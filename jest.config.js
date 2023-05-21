@@ -24,16 +24,7 @@ module.exports = {
       diagnostics: false,
     },
   },
-  modulePathIgnorePatterns: [
-    '/esm/',
-    '/es/',
-    '/dist/',
-    '/lib/',
-    '/client/',
-    '/sdk/',
-    '/dumi-theme-nocobase/',
-    '\\.test\\.tsx$',
-  ],
+  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/', '/client/', '/sdk/', '\\.test\\.tsx$'],
   // add .mjs .cjs for formula.js
   moduleFileExtensions: [...defaults.moduleFileExtensions, 'mjs', 'cjs'],
   coveragePathIgnorePatterns: [

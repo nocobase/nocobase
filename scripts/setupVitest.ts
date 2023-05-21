@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 
 // 解决 ypeError: window.matchMedia is not a function
