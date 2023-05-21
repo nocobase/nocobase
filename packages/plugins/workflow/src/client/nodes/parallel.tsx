@@ -14,6 +14,7 @@ export default {
   title: `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`,
   type: 'parallel',
   group: 'control',
+  description: `{{t("Run multiple branch processes in parallel.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     mode: {
       type: 'string',
@@ -35,7 +36,7 @@ export default {
           {
             value: 'race',
             label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
-            tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed.', { ns: "${NAMESPACE}" })}}`,
           },
         ],
       },

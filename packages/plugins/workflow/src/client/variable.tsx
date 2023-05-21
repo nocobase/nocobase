@@ -13,76 +13,79 @@ export type VariableOption = {
 
 export type VariableOptions = VariableOption[] | null;
 
-export const VariableTypes = [
-  {
-    title: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$scopes',
-    useOptions(current, types) {
-      const scopes = useUpstreamScopes(current);
-      const options: VariableOption[] = [];
-      scopes.forEach((node) => {
-        const instruction = instructions.get(node.type);
-        const subOptions = instruction.useScopeVariables?.(node, types);
-        if (subOptions) {
-          options.push({
-            key: node.id.toString(),
-            value: node.id.toString(),
-            label: node.title ?? `#${node.id}`,
-            children: subOptions,
-          });
-        }
-      });
-      return options;
-    },
+export const nodesOptions = {
+  label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+  value: '$jobsMapByNodeId',
+  useOptions(options) {
+    const current = useNodeContext();
+    const upstreams = useAvailableUpstreams(current);
+    const result: VariableOption[] = [];
+    upstreams.forEach((node) => {
+      const instruction = instructions.get(node.type);
+      const subOptions = instruction.useVariables?.(node, options);
+      if (subOptions) {
+        result.push({
+          key: node.id.toString(),
+          value: node.id.toString(),
+          label: node.title ?? `#${node.id}`,
+          children: subOptions,
+        });
+      }
+    });
+    return result;
   },
-  {
-    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-    value: '$jobsMapByNodeId',
-    useOptions(current, types) {
-      const upstreams = useAvailableUpstreams(current);
-      const options: VariableOption[] = [];
-      upstreams.forEach((node) => {
-        const instruction = instructions.get(node.type);
-        const subOptions = instruction.useVariables?.(node, types);
-        if (subOptions) {
-          options.push({
-            key: node.id.toString(),
-            value: node.id.toString(),
-            label: node.title ?? `#${node.id}`,
-            children: subOptions,
-          });
-        }
-      });
-      return options;
-    },
+};
+
+export const triggerOptions = {
+  label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$context',
+  useOptions(options) {
+    const { workflow } = useFlowContext();
+    const trigger = triggers.get(workflow.type);
+    return trigger?.useVariables?.(workflow.config, options) ?? null;
   },
-  {
-    title: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$context',
-    useOptions(current, types) {
-      const { workflow } = useFlowContext();
-      const trigger = triggers.get(workflow.type);
-      return trigger?.getOptions?.(workflow.config, types) ?? null;
-    },
+};
+
+export const scopeOptions = {
+  label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$scopes',
+  useOptions(options) {
+    const current = useNodeContext();
+    const scopes = useUpstreamScopes(current);
+    const result: VariableOption[] = [];
+    scopes.forEach((node) => {
+      const instruction = instructions.get(node.type);
+      const subOptions = instruction.useScopeVariables?.(node, options);
+      if (subOptions) {
+        result.push({
+          key: node.id.toString(),
+          value: node.id.toString(),
+          label: node.title ?? `#${node.id}`,
+          children: subOptions,
+        });
+      }
+    });
+    return result;
   },
-  {
-    title: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
-    value: '$system',
-    useOptions(current, types) {
-      return [
-        ...(!types || types.includes('date')
-          ? [
-              {
-                key: 'now',
-                value: 'now',
-                label: `{{t("System time")}}`,
-              },
-            ]
-          : []),
-      ];
-    },
+};
+
+export const systemOptions = {
+  label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
+  value: '$system',
+  useOptions({ types }) {
+    return [
+      ...(!types || types.includes('date')
+        ? [
+            {
+              key: 'now',
+              value: 'now',
+              label: `{{t("System time")}}`,
+            },
+          ]
+        : []),
+    ];
   },
-];
+};
 
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
@@ -107,7 +110,7 @@ export const BaseTypeSets = {
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type): boolean {
+function matchFieldType(field, type, depth): boolean {
   const inputType = typeof type;
   if (inputType === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
@@ -129,7 +132,7 @@ function matchFieldType(field, type): boolean {
   }
 
   if (inputType === 'function') {
-    return type(field);
+    return type(field, depth);
   }
 
   return false;
@@ -151,34 +154,30 @@ export function filterTypedFields(fields, types, depth = 1) {
     ) {
       return true;
     }
-    return types.some((type) => matchFieldType(field, type));
+    return types.some((type) => matchFieldType(field, type, depth));
   });
 }
 
-export function useWorkflowVariableOptions(types?) {
+export function useWorkflowVariableOptions(options = {}) {
   const compile = useCompile();
-  const current = useNodeContext();
-  const options = VariableTypes.map((item: any) => {
-    const opts = typeof item.useOptions === 'function' ? item.useOptions(current, types).filter(Boolean) : null;
+  const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
+    const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
     return {
-      label: compile(item.title),
+      label: compile(item.label),
       value: item.value,
       key: item.value,
       children: compile(opts),
       disabled: opts && !opts.length,
     };
   });
-  return options;
+
+  return result;
 }
 
 function useNormalizedFields(collectionName) {
   const compile = useCompile();
-  const { getCollection } = useCollectionManager();
-  const collection = getCollection(collectionName);
-  if (!collection) {
-    return [];
-  }
-  const { fields } = collection;
+  const { getCollectionFields } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
   const foreignKeyFields: any[] = [];
   const otherFields: any[] = [];
   fields.forEach((field) => {
@@ -249,6 +248,7 @@ export function useCollectionFieldOptions(options): VariableOption[] {
           isAssociationField(field) && depth
             ? useCollectionFieldOptions({ collection: field.target, types, depth: depth - 1 })
             : null,
+        field,
       };
     });
 

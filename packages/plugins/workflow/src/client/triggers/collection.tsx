@@ -134,7 +134,7 @@ export default {
   components: {
     FieldsSelect,
   },
-  getOptions(config, types) {
+  useVariables(config, options) {
     const { t } = useWorkflowTranslation();
     const rootFields = [
       {
@@ -147,8 +147,12 @@ export default {
         },
       },
     ];
-    const options = useCollectionFieldOptions({ fields: rootFields, types, depth: config.appends?.length ? 2 : 1 });
-    return options;
+    const result = useCollectionFieldOptions({
+      ...options,
+      fields: rootFields,
+      depth: options?.depth ?? (config.appends?.length ? 2 : 1),
+    });
+    return result;
   },
   useInitializers(config): SchemaInitializerItemOptions | null {
     if (!config.collection) {

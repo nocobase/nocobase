@@ -129,6 +129,7 @@ export class PluginACL extends Plugin {
 
     for (const role of roles) {
       role.writeToAcl({ acl: this.acl });
+
       for (const resource of role.get('resources') as RoleResourceModel[]) {
         await this.writeResourceToACL(resource, null);
       }

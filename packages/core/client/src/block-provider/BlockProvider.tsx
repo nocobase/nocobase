@@ -53,14 +53,13 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'],
+      sourceId: sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
     };
     return new TableFieldResource(options);
   }

@@ -1,5 +1,5 @@
-import { isPg } from './utils';
 import { Op } from 'sequelize';
+import { isPg } from './utils';
 
 export default {
   $includes(value, ctx) {

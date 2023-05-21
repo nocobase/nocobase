@@ -206,12 +206,6 @@ export const nodeCardClass = css`
     }
   }
 
-  > .workflow-node-job-button {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-  }
-
   .ant-input {
     font-weight: bold;
 
@@ -246,6 +240,9 @@ export const nodeCardClass = css`
 
 export const nodeJobButtonClass = css`
   display: flex;
+  position: absolute;
+  top: 1.25em;
+  right: 1.25em;
   width: 1.25rem;
   height: 1.25rem;
   min-width: 1.25rem;

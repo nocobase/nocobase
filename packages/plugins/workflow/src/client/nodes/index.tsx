@@ -17,7 +17,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 
@@ -33,24 +33,28 @@ import query from './query';
 import create from './create';
 import update from './update';
 import destroy from './destroy';
+import aggregate from './aggregate';
+
 import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import request from './request';
 import { VariableOptions } from '../variable';
+import { NodeDescription } from '../components/NodeDescription';
 
 export interface Instruction {
   title: string;
   type: string;
   group: string;
+  description?: string;
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
+  render?(props): JSX.Element;
   endding?: boolean;
-  useVariables?(node, types?): VariableOptions;
-  useScopeVariables?(node, types?): VariableOptions;
+  useVariables?(node, options?): VariableOptions;
+  useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
 }
@@ -69,6 +73,8 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+instructions.register('aggregate', aggregate);
+
 instructions.register('request', request);
 
 function useUpdateAction() {
@@ -234,7 +240,7 @@ function InnerJobButton({ job, ...props }) {
   const { icon, color } = JobStatusOptionsMap[job.status];
 
   return (
-    <Button {...props} shape="circle" className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
+    <Button {...props} shape="circle" className={nodeJobButtonClass}>
       <Tag color={color}>{icon}</Tag>
     </Button>
   );
@@ -252,7 +258,6 @@ export function JobButton() {
       <span
         className={cx(
           nodeJobButtonClass,
-          'workflow-node-job-button',
           css`
             border: 2px solid #d9d9d9;
             border-radius: 50%;
@@ -287,7 +292,7 @@ export function JobButton() {
                   }
                 `}
               >
-                <span className={cx(nodeJobButtonClass, 'workflow-node-job-button')}>
+                <span className={nodeJobButtonClass}>
                   <Tag color={color}>{icon}</Tag>
                 </span>
                 <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
@@ -385,7 +390,7 @@ export function NodeDefaultView(props) {
                 },
                 [`${instruction.type}_${data.id}`]: {
                   type: 'void',
-                  title: instruction.title,
+                  title: data.title,
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -412,6 +417,16 @@ export function NodeDefaultView(props) {
                                 font-size: 85%;
                                 margin-bottom: 2em;
                               `,
+                            },
+                          },
+                        }
+                      : instruction.description
+                      ? {
+                          description: {
+                            type: 'void',
+                            'x-component': NodeDescription,
+                            'x-component-props': {
+                              instruction,
                             },
                           },
                         }
