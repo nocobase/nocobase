@@ -7,6 +7,7 @@ import { isAbsolute, resolve } from 'path';
 import { getAntdLocale } from './antd';
 import { getCronLocale } from './cron';
 import { getCronstrueLocale } from './cronstrue';
+import locales from './locale';
 import { getMomentLocale } from './moment-locale';
 import { getResourceLocale } from './resource';
 
@@ -99,7 +100,6 @@ export class ClientPlugin extends Plugin {
       actions: ['app:reload', 'app:reboot'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const locales = require('./locale').default;
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
     this.app.on('beforeStart', async () => {
       if (fs.existsSync(restartMark)) {
