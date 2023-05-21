@@ -1,7 +1,6 @@
 import { Repository, Transactionable } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
 import { CollectionsGraph } from '@nocobase/utils';
-import { CollectionModel } from '../models/collection';
 
 interface LoadOptions extends Transactionable {
   filter?: any;
@@ -13,7 +12,7 @@ export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist, transaction, replaceCollection } = options;
     const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
-    
+
     if (replaceCollection) {
       instances.forEach((instance) => {
         this.database.removeCollection(instance.get('name'));
