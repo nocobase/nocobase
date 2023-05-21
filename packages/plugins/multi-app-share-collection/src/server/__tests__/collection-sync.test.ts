@@ -1,5 +1,5 @@
 import type { BelongsToManyRepository, Database } from '@nocobase/database';
-import type { MockServer} from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { mockServer, pgOnly } from '@nocobase/test';
 
 pgOnly()('enable plugin', () => {
@@ -23,8 +23,8 @@ pgOnly()('enable plugin', () => {
     mainDb = mainApp.db;
   });
 
-  afterEach(async () => {
-    await mainApp.destroy();
+  afterEach(() => {
+    mainApp.destroy();
   });
 
   it('should throw error when enable plugin, when multi-app plugin is not enabled', async () => {

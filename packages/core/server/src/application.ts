@@ -6,15 +6,15 @@ import type { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/
 import Database from '@nocobase/database';
 import type { AppLoggerOptions, Logger } from '@nocobase/logger';
 import { createAppLogger } from '@nocobase/logger';
-import type { ResourceOptions } from '@nocobase/resourcer';
 import type Resourcer from '@nocobase/resourcer';
+import type { ResourceOptions } from '@nocobase/resourcer';
 import type { ToposortOptions } from '@nocobase/utils';
-import { applyMixins, AsyncEmitter, Toposort } from '@nocobase/utils';
+import { AsyncEmitter, Toposort, applyMixins } from '@nocobase/utils';
 import chalk from 'chalk';
 import type { CommandOptions, ParseOptions } from 'commander';
 import { Command } from 'commander';
 import type { Server } from 'http';
-import type { i18n, InitOptions } from 'i18next';
+import type { InitOptions, i18n } from 'i18next';
 import type { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import Koa from 'koa';
 import compose from 'koa-compose';
@@ -25,10 +25,10 @@ import { AppManager } from './app-manager';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import type { Plugin } from './plugin';
-import type { InstallOptions} from './plugin-manager';
+import type { InstallOptions } from './plugin-manager';
 import { PluginManager } from './plugin-manager';
 
-const packageJson = require('../package.json');
+import packageJson from '../package.json' assert { type: 'json' };
 
 export type PluginConfiguration = string | [string, any];
 
