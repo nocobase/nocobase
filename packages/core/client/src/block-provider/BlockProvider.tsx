@@ -2,9 +2,10 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
+import merge from 'deepmerge';
 import { Col, Row } from 'antd';
 import template from 'lodash/template';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACLCollectionProvider,
@@ -19,6 +20,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../coll
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
+import _ from 'lodash';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -51,14 +53,13 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'],
+      sourceId: sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
     };
     return new TableFieldResource(options);
   }
@@ -92,17 +93,19 @@ export const useResourceAction = (props, opts = {}) => {
   /**
    * fieldName: 来自 TableFieldProvider
    */
-  const { resource, action, fieldName: tableFieldName } = props;
+  const { resource, action, fieldName: tableFieldName, runWhenParamsChanged = false } = props;
   const { fields } = useCollection();
-  const appends = fields?.filter((field) => field.target).map((field) => field.name);
   const params = useActionParams(props);
   const api = useAPIClient();
   const fieldSchema = useFieldSchema();
   const { snapshot } = useActionContext();
   const record = useRecord();
 
-  if (!Object.keys(params).includes('appends') && appends?.length) {
-    params['appends'] = appends;
+  if (!Reflect.has(params, 'appends')) {
+    const appends = fields?.filter((field) => field.target).map((field) => field.name);
+    if (appends?.length) {
+      params['appends'] = appends;
+    }
   }
   const result = useRequest(
     snapshot
@@ -113,8 +116,8 @@ export const useResourceAction = (props, opts = {}) => {
           if (!action) {
             return Promise.resolve({});
           }
-          const actionParams = { ...opts };
-          if (params.appends) {
+          const actionParams = { ...params, ...opts };
+          if (params?.appends) {
             actionParams.appends = params.appends;
           }
           return resource[action](actionParams).then((res) => res.data);
@@ -128,9 +131,22 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [JSON.stringify(params.appends)],
+      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
+
+  // automatic run service when params has changed
+  const firstRun = useRef(false);
+  useEffect(() => {
+    if (!runWhenParamsChanged) {
+      return;
+    }
+    if (firstRun.current) {
+      result?.run({ ...result?.params?.[0], ...params });
+    }
+    firstRun.current = true;
+  }, [JSON.stringify(params), runWhenParamsChanged]);
+
   return result;
 };
 
@@ -148,15 +164,29 @@ export const MaybeCollectionProvider = (props) => {
 const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
+  const [allowedActions, setAllowedActions] = useState({});
+
   const service = useResourceAction(
     { ...props, resource },
     {
       ...props.requestOptions,
     },
   );
+
+  // Infinite scroll support
+  const serviceAllowedActions = (service?.data as any)?.meta?.allowedActions;
+  useEffect(() => {
+    if (!serviceAllowedActions) return;
+    setAllowedActions((last) => {
+      return merge(last, serviceAllowedActions ?? {});
+    });
+  }, [serviceAllowedActions]);
+
   const __parent = useContext(BlockRequestContext);
   return (
-    <BlockRequestContext.Provider value={{ block: props.block, props, field, service, resource, __parent }}>
+    <BlockRequestContext.Provider
+      value={{ allowedActions, block: props.block, props, field, service, resource, __parent }}
+    >
       {props.children}
     </BlockRequestContext.Provider>
   );

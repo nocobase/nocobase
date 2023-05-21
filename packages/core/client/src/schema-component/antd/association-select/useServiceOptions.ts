@@ -44,7 +44,7 @@ export default function useServiceOptions(props) {
     return mergeFilter(
       [
         mergeFilter([
-          isOToAny && !isInFilterFormBlock(fieldSchema)
+          isOToAny && !isInFilterFormBlock(fieldSchema) && collectionField?.foreignKey
             ? {
                 [collectionField.foreignKey]: {
                   $is: null,
@@ -53,7 +53,11 @@ export default function useServiceOptions(props) {
             : null,
           params?.filter,
         ]),
-        isOToAny && sourceValue !== undefined && sourceValue !== null && !isInFilterFormBlock(fieldSchema)
+        isOToAny &&
+        sourceValue !== undefined &&
+        sourceValue !== null &&
+        !isInFilterFormBlock(fieldSchema) &&
+        collectionField?.foreignKey
           ? {
               [collectionField.foreignKey]: {
                 $eq: sourceValue,

@@ -1,6 +1,6 @@
 import QueryInterface from './query-interface';
 import { Collection } from '../collection';
-import sqlParser from '../sql-parser';
+import sqlParser from '../sql-parser/postgres';
 
 export default class PostgresQueryInterface extends QueryInterface {
   constructor(db) {
