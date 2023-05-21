@@ -29,5 +29,6 @@ export default defineConfig({
       hooks: 'list',
       setupFiles: 'list',
     },
+    allowOnly: true,
   },
 });

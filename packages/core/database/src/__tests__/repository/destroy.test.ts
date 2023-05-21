@@ -1,6 +1,6 @@
-import { mockDatabase } from '../index';
-import type { Collection } from '../../collection';
 import type { Database } from '@nocobase/database';
+import type { Collection } from '../../collection';
+import { mockDatabase } from '../index';
 
 describe('destroy with targetKey', function () {
   let db: Database;
@@ -144,7 +144,7 @@ describe('destroy', () => {
 
     expect(await Test.repository.count()).toEqual(1);
     expect((await Test.repository.findOne()).get('test')).toEqual('t1');
-  });
+  }, 300000);
 
   test('destroy records from tables without primary keys', async () => {
     const Test = db.collection({

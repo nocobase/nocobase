@@ -1,4 +1,4 @@
-import type { Database} from '../..';
+import type { Database } from '../..';
 import { mockDatabase } from '../..';
 import { ToManyValueParser } from '../../value-parsers';
 

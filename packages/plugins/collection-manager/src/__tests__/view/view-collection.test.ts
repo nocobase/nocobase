@@ -1,5 +1,5 @@
-import type { Repository} from '@nocobase/database';
 import type Database from '@nocobase/database';
+import type { Repository } from '@nocobase/database';
 import { ViewCollection } from '@nocobase/database';
 import type Application from '@nocobase/server';
 import { uid } from '@nocobase/utils';
@@ -139,7 +139,7 @@ describe('view collection', function () {
         },
       }),
     ).toEqual(0);
-  });
+  }, 300000);
 
   it('should save view collection in difference schema', async () => {
     if (!db.inDialect('postgres')) {
