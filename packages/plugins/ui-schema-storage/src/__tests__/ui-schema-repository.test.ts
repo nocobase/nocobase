@@ -40,7 +40,7 @@ describe('ui_schema repository', () => {
     treePathCollection = db.getCollection('uiSchemaTreePath');
   });
 
-  it('should be registered', async () => {
+  it('should be registered', () => {
     expect(db.getCollection('uiSchemas').repository).toBeInstanceOf(UiSchemaRepository);
   });
 
@@ -232,7 +232,7 @@ describe('ui_schema repository', () => {
       };
     });
 
-    it('should turn schema to single nodes', async () => {
+    it('should turn schema to single nodes', () => {
       const nodes = UiSchemaRepository.schemaToSingleNodes(schema);
       expect(nodes.length).toEqual(5);
     });
