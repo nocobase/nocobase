@@ -1,10 +1,10 @@
 import type Database from '@nocobase/database';
 import type { Application } from '@nocobase/server';
-import { getApp, sleep } from '..';
+import { sleep } from 'testUtils';
+import { getApp } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-// TODO: 偶先失败
-describe.skip('workflow > instructions > parallel', () => {
+describe('workflow > instructions > parallel', () => {
   let app: Application;
   let db: Database;
   let PostRepo;
@@ -30,7 +30,10 @@ describe.skip('workflow > instructions > parallel', () => {
     });
   });
 
-  afterEach(() => app.stop());
+  afterEach(async () => {
+    await sleep(500);
+    app.stop();
+  });
 
   describe('single all', () => {
     it('all resolved', async () => {
@@ -75,7 +78,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(800);
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -132,7 +135,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(800);
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -218,7 +221,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(800);
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -246,7 +249,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(800);
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.ERROR);
@@ -344,7 +347,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(1000);
+      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
@@ -381,7 +384,7 @@ describe.skip('workflow > instructions > parallel', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(800);
+      await sleep(500);
 
       const [e1] = await workflow.getExecutions();
       expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
@@ -392,9 +395,7 @@ describe.skip('workflow > instructions > parallel', () => {
         result: 123,
       });
       pending.execution = e1;
-      plugin.resume(pending);
-
-      await sleep(800);
+      await plugin.resume(pending);
 
       const [e2] = await workflow.getExecutions();
       expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);

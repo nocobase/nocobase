@@ -1,6 +1,6 @@
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import PluginUiSchema from '@nocobase/plugin-ui-schema-storage';
-import type { MockServer} from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { mockServer } from '@nocobase/test';
 import Plugin from '../';
 

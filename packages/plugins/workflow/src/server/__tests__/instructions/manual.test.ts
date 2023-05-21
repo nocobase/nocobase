@@ -5,8 +5,7 @@ import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
-// TODO: 修复测试错误
-describe.skip('workflow > instructions > manual', () => {
+describe('workflow > instructions > manual', () => {
   let app: MockServer;
   let agent;
   let userAgents;
@@ -54,7 +53,10 @@ describe.skip('workflow > instructions > manual', () => {
     });
   });
 
-  afterEach(() => db.close());
+  afterEach(async () => {
+    await sleep(500);
+    db.close();
+  });
 
   describe('mode: 0 (single record)', () => {
     it('the only user assigned could submit', async () => {
@@ -130,7 +132,7 @@ describe.skip('workflow > instructions > manual', () => {
       expect(res4.status).toBe(400);
     });
 
-    it.skip('any user assigned could submit', async () => {
+    it('any user assigned could submit', async () => {
       const n1 = await workflow.createNode({
         type: 'manual',
         config: {
@@ -177,7 +179,7 @@ describe.skip('workflow > instructions > manual', () => {
       expect(res2.status).toBe(400);
     });
 
-    it.skip('also could submit to users_jobs api', async () => {
+    it('also could submit to users_jobs api', async () => {
       const n1 = await workflow.createNode({
         type: 'manual',
         config: {

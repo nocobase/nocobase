@@ -7,7 +7,7 @@ import { Op } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 
-import type { Logger, LoggerOptions} from '@nocobase/logger';
+import type { Logger, LoggerOptions } from '@nocobase/logger';
 import { createLogger, getLoggerFilePath, getLoggerLevel } from '@nocobase/logger';
 import Processor from './Processor';
 import initActions from './actions';
@@ -294,7 +294,7 @@ export default class WorkflowPlugin extends Plugin {
     }
 
     this.pending.push([job.execution, job]);
-    this.dispatch();
+    await this.dispatch();
   }
 
   private async dispatch() {
@@ -318,7 +318,7 @@ export default class WorkflowPlugin extends Plugin {
       }
     }
     if (next) {
-      this.process(...next);
+      await this.process(...next);
     }
   }
 
@@ -344,7 +344,7 @@ export default class WorkflowPlugin extends Plugin {
 
     this.executing = null;
 
-    this.dispatch();
+    await this.dispatch();
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {

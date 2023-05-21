@@ -3,8 +3,7 @@ import type { Application } from '@nocobase/server';
 import { getApp, sleep } from '..';
 import { BRANCH_INDEX, EXECUTION_STATUS } from '../../constants';
 
-// TODO: 偶先失败
-describe.skip('workflow > instructions > condition', () => {
+describe('workflow > instructions > condition', () => {
   let app: Application;
   let db: Database;
   let PostRepo;

@@ -5,7 +5,7 @@ import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import type { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import UiSchemaStoragePlugin from '@nocobase/plugin-ui-schema-storage';
 import PluginUsers from '@nocobase/plugin-users';
-import type { MockServer} from '@nocobase/test';
+import type { MockServer } from '@nocobase/test';
 import { mockServer } from '@nocobase/test';
 
 describe('server hooks', () => {
