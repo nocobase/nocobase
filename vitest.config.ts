@@ -20,7 +20,6 @@ export default defineConfig({
     css: true,
     // 默认关闭多线程，因为在 server 端运行测试时，多线程会导致测试失败
     threads: false,
-    singleThread: true,
     alias,
     include: ['packages/**/__tests__/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],

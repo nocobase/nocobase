@@ -71,8 +71,8 @@ describe('collections repository', () => {
     });
   });
 
-  afterEach(async () => {
-    await app.destroy();
+  afterEach(() => {
+    app.destroy();
   });
 
   it('should skip sync when create empty collection', async () => {

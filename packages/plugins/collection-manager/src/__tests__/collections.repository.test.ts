@@ -1,7 +1,7 @@
-import type { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
 import type Database from '@nocobase/database';
-import type { CollectionRepository } from '@nocobase/plugin-collection-manager';
+import type { Collection as DBCollection, HasManyRepository } from '@nocobase/database';
 import type CollectionManagerPlugin from '@nocobase/plugin-collection-manager';
+import type { CollectionRepository } from '@nocobase/plugin-collection-manager';
 import type Application from '@nocobase/server';
 import { createApp } from '.';
 
@@ -18,8 +18,8 @@ describe('collections repository', () => {
     Field = db.getCollection('fields');
   });
 
-  afterEach(async () => {
-    await app.destroy();
+  afterEach(() => {
+    app.destroy();
   });
 
   it('should extend collections collection', async () => {
