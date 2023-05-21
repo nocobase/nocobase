@@ -28,7 +28,7 @@ import type { Plugin } from './plugin';
 import type { InstallOptions } from './plugin-manager';
 import { PluginManager } from './plugin-manager';
 
-import packageJson from '../package.json' assert { type: 'json' };
+import packageJson from '../package.json';
 
 export type PluginConfiguration = string | [string, any];
 

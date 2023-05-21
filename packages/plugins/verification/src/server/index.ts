@@ -1,4 +1,4 @@
-import pkg from '../../package.json' assert { type: 'json' };
+import pkg from '../../package.json';
 
 export { default } from './Plugin';
 export type { Interceptor } from './Plugin';
