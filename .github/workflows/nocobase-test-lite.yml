@@ -68,6 +68,7 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
+      - run: yarn build
       - name: Test with postgres
         run: yarn nocobase install -f && yarn test
         env:
