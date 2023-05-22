@@ -15,7 +15,7 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
   }
 
   const result = options.map((option) => {
-    if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
+    if (!option.target) {
       return {
         key: option.name,
         value: option.name,

@@ -176,7 +176,7 @@ describe('find with associations', () => {
       },
     });
 
-    expect(filterResult[0].user.department).toBeDefined();
+    expect(filterResult[0].get('user').get('department')).toBeDefined();
   });
 
   it('should filter by association field', async () => {
@@ -439,6 +439,15 @@ describe('repository find', () => {
       const data = user.toJSON();
       expect(Object.keys(data)).toEqual(['id', 'posts']);
       expect(Object.keys(data['posts'])).not.toContain('id');
+    });
+
+    test('find one with appends', async () => {
+      const profile = await Profile.repository.findOne({
+        filterByTk: 1,
+        appends: ['user.name'],
+      });
+
+      expect(profile.get('user').get('name')).toEqual('u1');
     });
   });
 
