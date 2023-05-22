@@ -213,6 +213,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           loadFromDatabase: true,
         },
       );
+      this.db.runnerRecord.resetRunnerToken();
     });
 
     this.app.on('afterDisablePlugin', async (pluginName) => {
@@ -225,6 +226,7 @@ export class MultiAppShareCollectionPlugin extends Plugin {
           loadFromDatabase: true,
         },
       );
+      this.db.runnerRecord.resetRunnerToken();
     });
 
     this.app.db.on('field.afterRemove', (removedField) => {

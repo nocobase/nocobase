@@ -193,6 +193,11 @@ export class Model<TModelAttributes extends {} = any, TCreationAttributes extend
       }
     }
 
+    if (!this.database.runnerRecord.hasChanged(this, options)) {
+      return this;
+    }
+    this.database.runnerRecord.save(this);
+
     if (this.collection.isInherited()) {
       return SyncRunner.syncInheritModel(model, options);
     }

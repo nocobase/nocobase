@@ -332,6 +332,7 @@ export class PluginManager {
       const pluginNames = await this.repository.enable(name);
       await this.app.reload();
 
+      this.app.db.runnerRecord.tryUpdateRunnerToken();
       await this.app.db.sync();
       for (const pluginName of pluginNames) {
         const plugin = this.app.getPlugin(pluginName);

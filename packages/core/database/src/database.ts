@@ -71,6 +71,7 @@ import buildQueryInterface from './query-interface/query-interface-builder';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
 import { DatabaseSnapshot } from './snapshot';
+import { DatabaseRunnerRecord } from './database-runner-record';
 
 export type MergeOptions = merge.Options;
 
@@ -192,6 +193,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   snapshot: DatabaseSnapshot;
 
+  runnerRecord: DatabaseRunnerRecord;
+
   constructor(options: DatabaseOptions) {
     super();
 
@@ -297,6 +300,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     patchSequelizeQueryInterface(this);
 
     this.snapshot = new DatabaseSnapshot(this);
+    this.runnerRecord = new DatabaseRunnerRecord(this);
   }
 
   setLogger(logger: Logger) {
