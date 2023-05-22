@@ -107,7 +107,7 @@ export const useCollectionState = (currentCollectionName: string) => {
         .filter(Boolean);
     };
     try {
-      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 3 });
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 10 });
     } catch (error) {
       console.error(error);
       return [];
