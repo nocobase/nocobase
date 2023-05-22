@@ -521,4 +521,5 @@ export default {
   'Display data template selector': 'Veri şablonu seçicisini görüntüle',
   'Form data templates': 'Form veri şablonları',
   "Data template": "Veri şablonu",
+  "Template fields have been removed and need to be reconfigured": "Şablon alanları kaldırıldı ve yeniden yapılandırılması gerekiyor",
 }
