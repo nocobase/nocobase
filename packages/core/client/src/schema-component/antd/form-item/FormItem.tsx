@@ -354,7 +354,7 @@ FormItem.Designer = function Designer() {
                 properties: {
                   default: isInvariable(interfaceConfig)
                     ? {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
