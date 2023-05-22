@@ -4,7 +4,7 @@ export type LocaleOptions = {
 
 export { default as cron } from '../schema-component/antd/cron/locale';
 
-export default {
+export const LocaleLabels = {
   'ar-EG': { label: 'العربية' },
   'az-AZ': { label: 'Azərbaycan dili' },
   'bg-BG': { label: 'Български' },
@@ -72,4 +72,5 @@ export default {
   'zh-CN': { label: '简体中文' },
   'zh-HK': { label: '繁體中文（香港）' },
   'zh-TW': { label: '繁體中文（台湾）' },
-};
+}
+export default  LocaleLabels;

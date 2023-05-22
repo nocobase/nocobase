@@ -28,3 +28,4 @@ export * from './schema-items';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
+export { LocaleLabels } from './locale';
