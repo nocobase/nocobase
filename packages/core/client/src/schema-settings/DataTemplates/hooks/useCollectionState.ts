@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
@@ -14,7 +14,7 @@ export const useCollectionState = (currentCollectionName: string) => {
     return collections.map((name) => ({ label: getCollection(name)?.title, value: name }));
   }
 
-  const getEnableFieldTree = (collectionName: string) => {
+  const getEnableFieldTree = useCallback((collectionName: string) => {
     if (!collectionName) {
       return [];
     }
@@ -112,7 +112,7 @@ export const useCollectionState = (currentCollectionName: string) => {
       console.error(error);
       return [];
     }
-  };
+  }, []);
 
   return {
     collectionList,
