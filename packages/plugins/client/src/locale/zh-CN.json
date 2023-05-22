@@ -506,6 +506,7 @@
       "Allows to configure interface": "允许配置界面",
       "Allows to install, activate, disable plugins": "允许安装、激活、禁用插件",
       "Allows to configure plugins": "允许配置插件",
+      "Allows to reload application": "允许重新加载应用",
       "Action display name": "操作名称",
       "Allow": "允许",
       "Data scope": "数据范围",
@@ -993,11 +994,26 @@
         "quarterPlaceholder": "请选择季度",
         "monthPlaceholder": "请选择月份",
         "weekPlaceholder": "请选择周",
-        "rangePlaceholder": ["开始日期", "结束日期"],
-        "rangeYearPlaceholder": ["开始年份", "结束年份"],
-        "rangeMonthPlaceholder": ["开始月份", "结束月份"],
-        "rangeQuarterPlaceholder": ["开始季度", "结束季度"],
-        "rangeWeekPlaceholder": ["开始周", "结束周"],
+        "rangePlaceholder": [
+          "开始日期",
+          "结束日期"
+        ],
+        "rangeYearPlaceholder": [
+          "开始年份",
+          "结束年份"
+        ],
+        "rangeMonthPlaceholder": [
+          "开始月份",
+          "结束月份"
+        ],
+        "rangeQuarterPlaceholder": [
+          "开始季度",
+          "结束季度"
+        ],
+        "rangeWeekPlaceholder": [
+          "开始周",
+          "结束周"
+        ],
         "locale": "zh_CN",
         "today": "今天",
         "now": "此刻",
@@ -1025,9 +1041,21 @@
         "previousCentury": "上一世纪",
         "nextCentury": "下一世纪"
       },
-      "timePickerLocale": { "placeholder": "请选择时间", "rangePlaceholder": ["开始时间", "结束时间"] }
+      "timePickerLocale": {
+        "placeholder": "请选择时间",
+        "rangePlaceholder": [
+          "开始时间",
+          "结束时间"
+        ]
+      }
     },
-    "TimePicker": { "placeholder": "请选择时间", "rangePlaceholder": ["开始时间", "结束时间"] },
+    "TimePicker": {
+      "placeholder": "请选择时间",
+      "rangePlaceholder": [
+        "开始时间",
+        "结束时间"
+      ]
+    },
     "Calendar": {
       "lang": {
         "placeholder": "请选择日期",
@@ -1035,11 +1063,26 @@
         "quarterPlaceholder": "请选择季度",
         "monthPlaceholder": "请选择月份",
         "weekPlaceholder": "请选择周",
-        "rangePlaceholder": ["开始日期", "结束日期"],
-        "rangeYearPlaceholder": ["开始年份", "结束年份"],
-        "rangeMonthPlaceholder": ["开始月份", "结束月份"],
-        "rangeQuarterPlaceholder": ["开始季度", "结束季度"],
-        "rangeWeekPlaceholder": ["开始周", "结束周"],
+        "rangePlaceholder": [
+          "开始日期",
+          "结束日期"
+        ],
+        "rangeYearPlaceholder": [
+          "开始年份",
+          "结束年份"
+        ],
+        "rangeMonthPlaceholder": [
+          "开始月份",
+          "结束月份"
+        ],
+        "rangeQuarterPlaceholder": [
+          "开始季度",
+          "结束季度"
+        ],
+        "rangeWeekPlaceholder": [
+          "开始周",
+          "结束周"
+        ],
         "locale": "zh_CN",
         "today": "今天",
         "now": "此刻",
@@ -1067,9 +1110,17 @@
         "previousCentury": "上一世纪",
         "nextCentury": "下一世纪"
       },
-      "timePickerLocale": { "placeholder": "请选择时间", "rangePlaceholder": ["开始时间", "结束时间"] }
+      "timePickerLocale": {
+        "placeholder": "请选择时间",
+        "rangePlaceholder": [
+          "开始时间",
+          "结束时间"
+        ]
+      }
     },
-    "global": { "placeholder": "请选择" },
+    "global": {
+      "placeholder": "请选择"
+    },
     "Table": {
       "filterTitle": "筛选",
       "filterConfirm": "确定",
@@ -1088,8 +1139,15 @@
       "triggerAsc": "点击升序",
       "cancelSort": "取消排序"
     },
-    "Modal": { "okText": "确定", "cancelText": "取消", "justOkText": "知道了" },
-    "Popconfirm": { "cancelText": "取消", "okText": "确定" },
+    "Modal": {
+      "okText": "确定",
+      "cancelText": "取消",
+      "justOkText": "知道了"
+    },
+    "Popconfirm": {
+      "cancelText": "取消",
+      "okText": "确定"
+    },
     "Transfer": {
       "searchPlaceholder": "请输入搜索内容",
       "itemUnit": "项",
@@ -1108,10 +1166,21 @@
       "previewFile": "预览文件",
       "downloadFile": "下载文件"
     },
-    "Empty": { "description": "暂无数据" },
-    "Icon": { "icon": "图标" },
-    "Text": { "edit": "编辑", "copy": "复制", "copied": "复制成功", "expand": "展开" },
-    "PageHeader": { "back": "返回" },
+    "Empty": {
+      "description": "暂无数据"
+    },
+    "Icon": {
+      "icon": "图标"
+    },
+    "Text": {
+      "edit": "编辑",
+      "copy": "复制",
+      "copied": "复制成功",
+      "expand": "展开"
+    },
+    "PageHeader": {
+      "back": "返回"
+    },
     "Form": {
       "optional": "（可选）",
       "defaultValidateMessages": {
@@ -1157,10 +1226,14 @@
           "max": "最多${max}个${label}",
           "range": "${label}数量须在${min}-${max}之间"
         },
-        "pattern": { "mismatch": "${label}与模式不匹配${pattern}" }
+        "pattern": {
+          "mismatch": "${label}与模式不匹配${pattern}"
+        }
       }
     },
-    "Image": { "preview": "预览" }
+    "Image": {
+      "preview": "预览"
+    }
   },
   "cronstrue": {
     "atX0SecondsPastTheMinuteGt20": null,
@@ -1213,7 +1286,15 @@
     "commaOnDayX0OfTheMonth": ", 限每月%s",
     "commaEveryX0Years": ", 每隔 %s 年",
     "commaStartingX0": ", %s开始",
-    "daysOfTheWeek": ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+    "daysOfTheWeek": [
+      "星期日",
+      "星期一",
+      "星期二",
+      "星期三",
+      "星期四",
+      "星期五",
+      "星期六"
+    ],
     "monthsOfTheYear": [
       "一月",
       "二月",
@@ -1257,9 +1338,51 @@
     "suffixMinutesForHourPeriod": "分钟",
     "errorInvalidCron": "不符合 cron 规则的表达式",
     "clearButtonText": "清空",
-    "weekDays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
-    "months": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
-    "altWeekDays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
-    "altMonths": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
+    "weekDays": [
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六"
+    ],
+    "months": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ],
+    "altWeekDays": [
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六"
+    ],
+    "altMonths": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ]
   }
 }

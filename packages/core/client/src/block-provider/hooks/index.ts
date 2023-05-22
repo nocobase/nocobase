@@ -21,6 +21,7 @@ import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
+import { useSchemaTemplateManager } from '../../schema-templates';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -1072,8 +1073,24 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
+const getTemplateSchema = (schema) => {
+  const conf = {
+    url: `/uiSchemas:getJsonSchema/${schema?.uid}`,
+  };
+  const { data, loading, run } = useRequest(conf, { manual: true });
+  if (loading) {
+  }
+  useEffect(() => {
+    if (schema?.uid) {
+      run();
+    }
+  }, [schema?.uid]);
+  return schema?.uid ? new Schema(data?.data) : null;
+};
+
 export const useAssociationNames = (collection) => {
   const { getCollectionJoinField } = useCollectionManager();
+  const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
   const associationValues = [];
   const formSchema = fieldSchema.reduceProperties((buf, schema) => {
@@ -1082,6 +1099,13 @@ export const useAssociationNames = (collection) => {
     }
     return buf;
   }, new Schema({}));
+
+  const templateSchema = formSchema.reduceProperties((buf, schema) => {
+    if (schema['x-component'] === 'BlockTemplate') {
+      return schema;
+    }
+    return buf;
+  }, null);
 
   const getAssociationAppends = (schema, arr = []) => {
     const data = schema.reduceProperties((buf, s) => {
@@ -1092,13 +1116,15 @@ export const useAssociationNames = (collection) => {
         s['x-component'] !== 'TableField'
       ) {
         buf.push(s.name);
-        if (['Nester', 'SubTable'].includes(s['x-component-props'].mode)) {
+        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
+        }
+        if (s['x-component-props'].mode === 'Nester') {
           return getAssociationAppends(s, buf);
         }
         return buf;
       } else {
-        if (s['x-component'] === 'Grid.Row' || ['TableV2', 'AssociationField.SubTable'].includes(s['x-component'])) {
+        if (s['x-component'] === 'Grid.Row') {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
@@ -1120,7 +1146,12 @@ export const useAssociationNames = (collection) => {
         if (Array.isArray(list[i])) {
           `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
         } else {
-          const str = prefix.replaceAll(`.${list[i]}`, '').trim();
+          const searchTerm = `.${list[i]}`;
+          const lastIndex = prefix.lastIndexOf(searchTerm);
+          let str = '';
+          if (lastIndex !== -1) {
+            str = prefix.slice(0, lastIndex) + prefix.slice(lastIndex + searchTerm.length);
+          }
           if (!str) {
             !list.includes(str) && flattenedList.push(`${list[i]}`);
           } else {
@@ -1132,7 +1163,7 @@ export const useAssociationNames = (collection) => {
     for (let i = 0; i < nestedList.length; i++) {
       flattenHelper(nestedList[i], nestedList[i][0]);
     }
-    return uniq(flattenedList.filter((obj) => !obj.startsWith('.')));
+    return uniq(flattenedList.filter((obj) => !obj?.startsWith('.')));
   }
   const getNesterAppends = (gridSchema, data) => {
     gridSchema.reduceProperties((buf, s) => {
@@ -1142,7 +1173,17 @@ export const useAssociationNames = (collection) => {
     return data.filter((g) => g.length);
   };
 
-  const associations = getAssociationAppends(formSchema);
-  const appends = flattenNestedList(associations);
-  return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  const template = getTemplateById(templateSchema?.['x-component-props']?.templateId);
+  const schema = getTemplateSchema(template);
+  if (schema) {
+    const associations = getAssociationAppends(schema);
+    const appends = flattenNestedList(associations);
+    console.log(appends, associations);
+    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  }
+  if (!schema) {
+    const associations = getAssociationAppends(formSchema);
+    const appends = flattenNestedList(associations);
+    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+  }
 };

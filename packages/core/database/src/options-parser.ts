@@ -269,6 +269,11 @@ export class OptionsParser {
         (include) => include['association'] == appendAssociation,
       );
 
+      // if include from filter, remove fromFilter attribute
+      if (existIncludeIndex != -1) {
+        delete queryParams['include'][existIncludeIndex]['fromFilter'];
+      }
+
       // if association not exist, create it
       if (existIncludeIndex == -1) {
         // association not exists
