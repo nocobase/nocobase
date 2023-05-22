@@ -19,7 +19,7 @@ import {
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useNavigate, useRouteMatch } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
@@ -317,9 +317,9 @@ const MarketplacePlugins = () => {
 };
 
 const PluginList = (props) => {
-  const match = useRouteMatch<any>();
+  const params = useParams<any>();
   const navigate = useNavigate();
-  const { tabName = 'local' } = match.params || {};
+  const { tabName = 'local' } = params;
   const { setTitle } = useDocumentTitle();
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
@@ -435,7 +435,7 @@ export const getPluginsTabs = (items, snippets) => {
 
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
-  const match = useRouteMatch<any>();
+  const params = useParams<any>();
   const navigate = useNavigate();
   const items = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(items, snippets);
@@ -445,7 +445,7 @@ const SettingsCenter = (props) => {
     const tabName = pluginsTabs[0].tabs[0].key;
     return `/admin/settings/${pluginName}/${tabName}`;
   }, [pluginsTabs]);
-  const { pluginName, tabName } = match.params || {};
+  const { pluginName, tabName } = params;
   const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
   const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {

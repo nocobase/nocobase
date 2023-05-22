@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { useNavigate, useRouteMatch, Outlet } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -58,8 +58,8 @@ const useMenuProps = () => {
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
-  const match = useRouteMatch<any>();
-  const defaultSelectedUid = match.params.name;
+  const params = useParams<any>();
+  const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const route = useRoute();

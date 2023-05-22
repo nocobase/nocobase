@@ -1,6 +1,6 @@
 import { Input, PageHeader as AntdPageHeader, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
-import { useNavigate, useRouteMatch } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
 import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
 
@@ -59,8 +59,8 @@ const EditableTitle = (props) => {
 
 export const BlockTemplateDetails = () => {
   const navigate = useNavigate();
-  const match = useRouteMatch<any>();
-  const key = match?.params?.key;
+  const params = useParams<any>();
+  const key = params?.key;
   const value = useContext(SchemaComponentContext);
   const { data, loading } = useRequest({
     resource: 'uiSchemaTemplates',
