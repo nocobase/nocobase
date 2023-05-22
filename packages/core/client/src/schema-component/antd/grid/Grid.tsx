@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import cls from 'classnames';
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useDesignable, useFormBlockContext, useSchemaInitializer } from '../../../';
 import { DndContext } from '../../common/dnd-context';
 
@@ -105,8 +105,14 @@ const ColDivider = (props) => {
       prevSchema['x-component-props'] = prevSchema['x-component-props'] || {};
       nextSchema['x-component-props'] = nextSchema['x-component-props'] || {};
       const dividerWidth = (el.clientWidth * (props.cols.length + 1)) / props.cols.length;
-      const preWidth = ((100 * (prev.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
-      const nextWidth = ((100 * (next.getBoundingClientRect().width + dividerWidth)) / el.parentElement.clientWidth).toFixed(2);
+      const preWidth = (
+        (100 * (prev.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
+      const nextWidth = (
+        (100 * (next.getBoundingClientRect().width + dividerWidth)) /
+        el.parentElement.clientWidth
+      ).toFixed(2);
 
       prevSchema['x-component-props']['width'] = preWidth;
       nextSchema['x-component-props']['width'] = nextWidth;
@@ -287,22 +293,26 @@ const wrapColSchema = (schema: Schema) => {
 
 const useRowProperties = () => {
   const fieldSchema = useFieldSchema();
-  return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'Grid.Row' && !s['x-hidden']) {
-      buf.push(s);
-    }
-    return buf;
-  }, []);
+  return useMemo(() => {
+    return fieldSchema.reduceProperties((buf, s) => {
+      if (s['x-component'] === 'Grid.Row' && !s['x-hidden']) {
+        buf.push(s);
+      }
+      return buf;
+    }, []);
+  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
 };
 
 const useColProperties = () => {
   const fieldSchema = useFieldSchema();
-  return fieldSchema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'Grid.Col' && !s['x-hidden']) {
-      buf.push(s);
-    }
-    return buf;
-  }, []);
+  return useMemo(() => {
+    return fieldSchema.reduceProperties((buf, s) => {
+      if (s['x-component'] === 'Grid.Col' && !s['x-hidden']) {
+        buf.push(s);
+      }
+      return buf;
+    }, []);
+  }, [Object.keys(fieldSchema.properties || {}).join(',')]);
 };
 
 const DndWrapper = (props) => {
@@ -324,7 +334,7 @@ export const Grid: any = observer((props: any) => {
   const gridRef = useRef(null);
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const { render, InitializerComponent } = useSchemaInitializer(fieldSchema['x-initializer']);
   const addr = field.address.toString();
   const rows = useRowProperties();
   const { setPrintContent } = useFormBlockContext();
@@ -332,8 +342,9 @@ export const Grid: any = observer((props: any) => {
   useEffect(() => {
     gridRef.current && setPrintContent?.(gridRef.current);
   }, [gridRef.current]);
+
   return (
-    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render }}>
+    <GridContext.Provider value={{ ref: gridRef, fieldSchema, renderSchemaInitializer: render, InitializerComponent }}>
       <div className={'nb-grid'} style={{ position: 'relative' }} ref={gridRef}>
         <DndWrapper dndContext={props.dndContext}>
           <RowDivider
@@ -349,7 +360,7 @@ export const Grid: any = observer((props: any) => {
           />
           {rows.map((schema, index) => {
             return (
-              <React.Fragment key={schema.name}>
+              <React.Fragment key={index}>
                 <RecursionField name={schema.name} schema={schema} />
                 <RowDivider
                   rows={rows}
@@ -366,7 +377,7 @@ export const Grid: any = observer((props: any) => {
             );
           })}
         </DndWrapper>
-        {render()}
+        <InitializerComponent />
       </div>
     </GridContext.Provider>
   );
@@ -405,7 +416,7 @@ Grid.Row = observer(() => {
         />
         {cols.map((schema, index) => {
           return (
-            <React.Fragment key={schema.name}>
+            <React.Fragment key={index}>
               <RecursionField name={schema.name} schema={schema} />
               <ColDivider
                 cols={cols}
@@ -431,11 +442,16 @@ Grid.Col = observer((props: any) => {
   const { cols = [] } = useContext(GridRowContext);
   const schema = useFieldSchema();
   const field = useField();
-  let width = '';
-  if (cols?.length) {
-    const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
-    width = `calc(${w}% - var(--nb-spacing) *  ${(cols.length + 1) / cols.length})`;
-  }
+
+  const width = useMemo(() => {
+    let width = '';
+    if (cols?.length) {
+      const w = schema?.['x-component-props']?.['width'] || 100 / cols.length;
+      width = `calc(${w}% - var(--nb-spacing) *  ${(cols.length + 1) / cols.length})`;
+    }
+    return width;
+  }, [cols?.length, schema?.['x-component-props']?.['width']]);
+
   const { setNodeRef } = useDroppable({
     id: field.address.toString(),
     data: {

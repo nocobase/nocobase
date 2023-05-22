@@ -1,11 +1,12 @@
-import Duration from "../components/Duration";
-import { JOB_STATUS } from "../constants";
-import { NAMESPACE } from "../locale";
+import Duration from '../components/Duration';
+import { JOB_STATUS } from '../constants';
+import { NAMESPACE } from '../locale';
 
 export default {
   title: `{{t("Delay", { ns: "${NAMESPACE}" })}}`,
   type: 'delay',
   group: 'control',
+  description: `{{t("Delay a period of time and then continue or exit the process. Can be used to set wait or timeout times in parallel branches.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     duration: {
       type: 'number',
@@ -13,7 +14,7 @@ export default {
       'x-decorator': 'FormItem',
       'x-component': 'Duration',
       default: 60000,
-      required: true
+      required: true,
     },
     endStatus: {
       type: 'number',
@@ -25,15 +26,12 @@ export default {
         { label: `{{t("Fail and exit", { ns: "${NAMESPACE}" })}}`, value: JOB_STATUS.FAILED },
       ],
       required: true,
-      default: JOB_STATUS.RESOLVED
-    }
+      default: JOB_STATUS.RESOLVED,
+    },
   },
-  view: {
-
-  },
-  scope: {
-  },
+  view: {},
+  scope: {},
   components: {
-    Duration
-  }
+    Duration,
+  },
 };

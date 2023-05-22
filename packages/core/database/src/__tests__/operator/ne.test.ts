@@ -45,11 +45,7 @@ describe('ne operator', () => {
 
   it('should ne with array', async () => {
     await db.getRepository('tests').create({
-      values: [
-        { name: '123' },
-        { name: '234' },
-        { name: '345' },
-      ]
+      values: [{ name: '123' }, { name: '234' }, { name: '345' }],
     });
 
     const results = await db.getRepository('tests').count({

@@ -17,7 +17,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context: ResourcerContext = {
+    const context: ResourcerContext = {
       arr: [],
     };
 
@@ -371,7 +371,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context = {
+    const context = {
       arr: [],
     };
 
@@ -418,7 +418,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context = {
+    const context = {
       arr: [],
     };
 
@@ -570,7 +570,7 @@ describe('resourcer', () => {
     resourcer.import({
       directory: path.resolve(__dirname, 'resources'),
     });
-    let context = {
+    const context = {
       arr: [],
     };
     await resourcer.execute(
@@ -621,7 +621,7 @@ describe('resourcer', () => {
         },
       },
     });
-    let context = {
+    const context = {
       arr: [],
     };
     await resourcer.execute(
@@ -645,7 +645,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context = {
+    const context = {
       arr: [],
     };
 
@@ -671,7 +671,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context = {
+    const context = {
       arr: [],
     };
 
@@ -699,7 +699,7 @@ describe('resourcer', () => {
       },
     });
 
-    let context = {
+    const context = {
       arr: [],
     };
 

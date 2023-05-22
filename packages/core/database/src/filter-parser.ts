@@ -56,7 +56,7 @@ export default class FilterParser {
     return filter;
   }
 
-  toSequelizeParams() {
+  toSequelizeParams(): any {
     debug('filter %o', this.filter);
 
     if (!this.filter) {
@@ -96,7 +96,7 @@ export default class FilterParser {
       }
 
       debug('handle filter key "%s: "%s"', key, value);
-      let keys = key.split('.');
+      const keys = key.split('.');
 
       // paths ?
       const paths = [];
@@ -230,13 +230,27 @@ export default class FilterParser {
       });
     };
     debug('where %o, include %o', where, include);
-    return { where, include: toInclude(include) };
+    const results = { where, include: toInclude(include) };
+
+    //traverse filter include, set fromFiler to true
+    const traverseInclude = (include) => {
+      for (const item of include) {
+        if (item.include) {
+          traverseInclude(item.include);
+        }
+        item.fromFilter = true;
+      }
+    };
+
+    traverseInclude(results.include);
+
+    return results;
   }
 
   private getFieldNameFromQueryPath(queryPath: string) {
     const paths = queryPath.split('.');
     let fieldName;
-    let fullPaths = [];
+    const fullPaths = [];
     for (const path of paths) {
       if (path.startsWith('$') || !lodash.isNaN(parseInt(path))) {
         continue;

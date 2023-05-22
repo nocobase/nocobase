@@ -21,8 +21,8 @@ describe('role', () => {
       db,
       state: {
         currentRole: '',
-      }
-    }
+      },
+    };
   });
 
   afterEach(async () => {
@@ -33,7 +33,7 @@ describe('role', () => {
     ctx.state.currentUser = await db.getRepository('users').findOne({
       appends: ['roles'],
     });
-    ctx.get = function(name) {
+    ctx.get = function (name) {
       if (name === 'X-Role') {
         return 'admin';
       }

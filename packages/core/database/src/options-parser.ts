@@ -74,7 +74,7 @@ export class OptionsParser {
     const orderParams = [];
     for (const sortKey of sort) {
       let direction = sortKey.startsWith('-') ? 'DESC' : 'ASC';
-      let sortField: Array<any> = sortKey.replace('-', '').split('.');
+      const sortField: Array<any> = sortKey.replace('-', '').split('.');
 
       if (this.database.inDialect('postgres', 'sqlite')) {
         direction = `${direction} NULLS LAST`;
@@ -192,7 +192,7 @@ export class OptionsParser {
       const association = exceptPath[0];
       const lastLevel = exceptPath.length <= 2;
 
-      let existIncludeIndex = queryParams['include'].findIndex((include) => include['association'] == association);
+      const existIncludeIndex = queryParams['include'].findIndex((include) => include['association'] == association);
 
       if (existIncludeIndex == -1) {
         // if include not exists, ignore this except
@@ -242,13 +242,18 @@ export class OptionsParser {
       //  appends: ['posts']
       //  appends: ['posts.title']
       //  All of these can be seen as last level
-      let lastLevel: boolean = false;
+      let lastLevel = false;
 
       if (appendFields.length == 1) {
         lastLevel = true;
       }
 
       if (appendFields.length == 2) {
+        const association = associations[appendFields[0]];
+        if (!association) {
+          throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
+        }
+
         const associationModel = associations[appendFields[0]].target;
         if (associationModel.rawAttributes[appendFields[1]]) {
           lastLevel = true;
@@ -263,6 +268,11 @@ export class OptionsParser {
       let existIncludeIndex = queryParams['include'].findIndex(
         (include) => include['association'] == appendAssociation,
       );
+
+      // if include from filter, remove fromFilter attribute
+      if (existIncludeIndex != -1) {
+        delete queryParams['include'][existIncludeIndex]['fromFilter'];
+      }
 
       // if association not exist, create it
       if (existIncludeIndex == -1) {
@@ -307,6 +317,13 @@ export class OptionsParser {
           attributes,
         };
       } else {
+        const existInclude = queryParams['include'][existIncludeIndex];
+        if (existInclude.attributes && Array.isArray(existInclude.attributes) && existInclude.attributes.length == 0) {
+          existInclude.attributes = {
+            include: [],
+          };
+        }
+
         setInclude(
           model.associations[queryParams['include'][existIncludeIndex].association].target,
           queryParams['include'][existIncludeIndex],

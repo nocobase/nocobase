@@ -23,7 +23,7 @@ describe('notifications', () => {
 
   it('create', async () => {
     const Notification = db.getCollection('notifications');
-    const notification = await Notification.repository.create({
+    const notification = (await Notification.repository.create({
       values: {
         subject: 'Subject',
         body: 'hell world',
@@ -48,7 +48,7 @@ describe('notifications', () => {
           },
         },
       },
-    }) as Notification;
+    })) as Notification;
     await notification.send();
   });
 });

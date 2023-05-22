@@ -160,6 +160,13 @@ export class PluginMultiAppManager extends Plugin {
           },
         })) as ApplicationModel | null;
 
+        const instanceOptions = applicationRecord.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+          return;
+        }
+
         if (!applicationRecord) {
           return;
         }
@@ -177,10 +184,29 @@ export class PluginMultiAppManager extends Plugin {
 
     this.app.on('afterUpgrade', async (app, options) => {
       const cliArgs = options?.cliArgs;
+
       const repository = this.db.getRepository('applications');
-      const instances = await repository.find();
+      const findOptions = {};
+
+      const appManager = this.app.appManager;
+
+      if (appManager.runningMode == 'single') {
+        findOptions['filter'] = {
+          name: appManager.singleAppName,
+        };
+      }
+
+      const instances = await repository.find(findOptions);
+
       for (const instance of instances) {
-        const subApp = await this.app.appManager.getApplication(instance.name, {
+        const instanceOptions = instance.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+          continue;
+        }
+
+        const subApp = await appManager.getApplication(instance.name, {
           upgrading: true,
         });
 

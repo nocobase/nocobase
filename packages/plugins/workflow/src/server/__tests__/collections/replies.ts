@@ -4,6 +4,6 @@ export default {
     {
       type: 'string',
       name: 'content',
-    }
-  ]
-}
+    },
+  ],
+};

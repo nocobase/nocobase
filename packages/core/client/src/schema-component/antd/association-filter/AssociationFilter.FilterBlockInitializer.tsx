@@ -58,10 +58,10 @@ export const AssociationFilterFilterBlockInitializer = () => {
     children,
   };
 
-  // 可选项字段
+  // 选项字段
   const optionalFieldGroup: SchemaInitializerItemOptions = {
     type: 'itemGroup',
-    title: t('Optional fields'),
+    title: t('Choices fields'),
     children: optionalChildren,
   };
 

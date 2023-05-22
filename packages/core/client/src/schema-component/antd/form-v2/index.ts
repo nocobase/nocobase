@@ -8,4 +8,3 @@ FormV2.ReadPrettyDesigner = ReadPrettyFormDesigner;
 
 export * from './FormField';
 export { FormV2, DetailsDesigner };
-

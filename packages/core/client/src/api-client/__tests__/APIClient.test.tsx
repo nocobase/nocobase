@@ -22,5 +22,5 @@ describe('APIClient', () => {
       const apiClient = new APIClient(instance);
       expect(apiClient.axios).toBe(instance);
     });
-  })
+  });
 });

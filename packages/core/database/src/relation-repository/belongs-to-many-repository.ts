@@ -1,7 +1,15 @@
 import lodash from 'lodash';
 import { BelongsToMany, Op, Transaction } from 'sequelize';
 import { Model } from '../model';
-import { CreateOptions, DestroyOptions, FindOneOptions, FindOptions, TargetKey, UpdateOptions } from '../repository';
+import {
+  AggregateOptions,
+  CreateOptions,
+  DestroyOptions,
+  FindOneOptions,
+  FindOptions,
+  TargetKey,
+  UpdateOptions,
+} from '../repository';
 import { updateThroughTableValue } from '../update-associations';
 import { FindAndCountOptions, MultipleRelationRepository } from './multiple-relation-repository';
 import { transaction } from './relation-repository';
@@ -23,7 +31,7 @@ interface IBelongsToManyRepository<M extends Model> {
   update(options?: UpdateOptions): Promise<M>;
 
   // 删除
-  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<Boolean>;
+  destroy(options?: number | string | number[] | string[] | DestroyOptions): Promise<boolean>;
 
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
@@ -38,6 +46,30 @@ interface IBelongsToManyRepository<M extends Model> {
 }
 
 export class BelongsToManyRepository extends MultipleRelationRepository implements IBelongsToManyRepository<any> {
+  async aggregate(options: AggregateOptions) {
+    const targetRepository = this.targetCollection.repository;
+
+    const sourceModel = await this.getSourceModel();
+
+    const association = this.association as any;
+
+    return await targetRepository.aggregate({
+      ...options,
+      optionsTransformer: (modelOptions) => {
+        modelOptions.include = modelOptions.include || [];
+        const throughWhere = {};
+        throughWhere[association.foreignKey] = sourceModel.get(association.sourceKey);
+
+        modelOptions.include.push({
+          association: association.oneFromTarget,
+          required: true,
+          attributes: [],
+          where: throughWhere,
+        });
+      },
+    });
+  }
+
   @transaction()
   async create(options?: CreateBelongsToManyOptions): Promise<any> {
     if (Array.isArray(options.values)) {
@@ -67,7 +99,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository implemen
       transaction,
     };
   })
-  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
     const association = <BelongsToMany>this.association;
 

@@ -35,11 +35,7 @@ export const DocumentTitleProvider: React.FC<{ addonBefore?: string; addonAfter?
 
 export const RemoteDocumentTitleProvider: React.FC = (props) => {
   const ctx = useSystemSettings();
-  return (
-    <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>
-      {props.children}
-    </DocumentTitleProvider>
-  );
+  return <DocumentTitleProvider addonAfter={ctx?.data?.data?.title}>{props.children}</DocumentTitleProvider>;
 };
 
 export const useDocumentTitle = () => {

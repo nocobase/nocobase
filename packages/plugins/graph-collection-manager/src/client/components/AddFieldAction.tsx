@@ -29,7 +29,7 @@ export const AddFieldAction = ({ item: record }) => {
       }}
       getContainer={() => document.getElementById('graph_container')}
     >
-      <PlusOutlined className="btn-add" id='graph_btn_add_field'/>
+      <PlusOutlined className="btn-add" id="graph_btn_add_field" />
     </AddCollectionFieldAction>
   );
 };

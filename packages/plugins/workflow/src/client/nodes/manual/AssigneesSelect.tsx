@@ -3,10 +3,8 @@ import React from 'react';
 import { Variable } from '@nocobase/client';
 import { useWorkflowVariableOptions } from '../../variable';
 
-
-
 export function AssigneesSelect({ multiple = false, value = [], onChange }) {
-  const scope = useWorkflowVariableOptions([{ type: 'reference', options: { collection: 'users' } }]);
+  const scope = useWorkflowVariableOptions({ types: [{ type: 'reference', options: { collection: 'users' } }] });
 
   return (
     <Variable.Input
@@ -22,7 +20,7 @@ export function AssigneesSelect({ multiple = false, value = [], onChange }) {
           value: 'id',
         }}
         service={{
-          resource: 'users'
+          resource: 'users',
         }}
         manual={false}
         value={value[0]}

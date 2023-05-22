@@ -107,6 +107,7 @@ export const TableVoidDesigner = () => {
                         field: {
                           type: 'string',
                           enum: sortFields,
+                          required:true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {
@@ -195,7 +196,7 @@ export const TableVoidDesigner = () => {
         }}
       />
       <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName={'Table'} collectionName={name}/>
+      <SchemaSettings.Template componentName={'Table'} collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

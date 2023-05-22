@@ -18,7 +18,7 @@ export const input: IField = {
       'x-component': 'Input',
     },
   },
-  availableTypes:['string'],
+  availableTypes: ['string'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -42,12 +42,14 @@ export const input: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': `{{(field) => {
           const targetValue = field.query('.min').value();
           field.selfErrors =
-            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t('Max length must greater than min length')}' : ''
+            !!targetValue && !!field.value && targetValue > field.value ? '${i18n.t(
+              'Max length must greater than min length',
+            )}' : ''
         }}}`,
       },
       min: {
@@ -57,13 +59,15 @@ export const input: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
         'x-reactions': {
           dependencies: ['.max'],
           fulfill: {
             state: {
-              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t('Min length must less than max length')}' : ''}}`,
+              selfErrors: `{{!!$deps[0] && !!$self.value && $deps[0] < $self.value ? '${i18n.t(
+                'Min length must less than max length',
+              )}' : ''}}`,
             },
           },
         },
@@ -75,7 +79,7 @@ export const input: IField = {
         'x-decorator': 'FormItem',
         'x-component': 'InputNumber',
         'x-component-props': {
-          precision: 0
+          precision: 0,
         },
       },
       format: {
@@ -86,46 +90,60 @@ export const input: IField = {
         'x-component-props': {
           allowClear: true,
         },
-        enum: [{
-          label: '{{ t("url") }}',
-          value: 'url',
-        }, {
-          label: '{{ t("email") }}',
-          value: 'email',
-        }, {
-          label: '{{ t("ipv6") }}',
-          value: 'ipv6',
-        }, {
-          label: '{{ t("ipv4") }}',
-          value: 'ipv4',
-        }, {
-          label: '{{ t("number") }}',
-          value: 'number',
-        }, {
-          label: '{{ t("integer") }}',
-          value: 'integer',
-        }, {
-          label: '{{ t("idcard") }}',
-          value: 'idcard',
-        }, {
-          label: '{{ t("qq") }}',
-          value: 'qq',
-        }, {
-          label: '{{ t("phone") }}',
-          value: 'phone',
-        }, {
-          label: '{{ t("money") }}',
-          value: 'money',
-        }, {
-          label: '{{ t("zh") }}',
-          value: 'zh',
-        }, {
-          label: '{{ t("date") }}',
-          value: 'date',
-        }, {
-          label: '{{ t("zip") }}',
-          value: 'zip',
-        }]
+        enum: [
+          {
+            label: '{{ t("url") }}',
+            value: 'url',
+          },
+          {
+            label: '{{ t("email") }}',
+            value: 'email',
+          },
+          {
+            label: '{{ t("ipv6") }}',
+            value: 'ipv6',
+          },
+          {
+            label: '{{ t("ipv4") }}',
+            value: 'ipv4',
+          },
+          {
+            label: '{{ t("number") }}',
+            value: 'number',
+          },
+          {
+            label: '{{ t("integer") }}',
+            value: 'integer',
+          },
+          {
+            label: '{{ t("idcard") }}',
+            value: 'idcard',
+          },
+          {
+            label: '{{ t("qq") }}',
+            value: 'qq',
+          },
+          {
+            label: '{{ t("phone") }}',
+            value: 'phone',
+          },
+          {
+            label: '{{ t("money") }}',
+            value: 'money',
+          },
+          {
+            label: '{{ t("zh") }}',
+            value: 'zh',
+          },
+          {
+            label: '{{ t("date") }}',
+            value: 'date',
+          },
+          {
+            label: '{{ t("zip") }}',
+            value: 'zip',
+          },
+        ],
       },
       pattern: {
         type: 'string',
@@ -135,8 +153,8 @@ export const input: IField = {
         'x-component-props': {
           prefix: '/',
           suffix: '/',
-        }
+        },
       },
     };
-  }
+  },
 };

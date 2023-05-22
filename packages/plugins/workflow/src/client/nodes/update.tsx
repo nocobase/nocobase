@@ -7,12 +7,11 @@ import { isValidFilter } from '../utils';
 import { NAMESPACE } from '../locale';
 import { collection, filter, values } from '../schemas/collection';
 
-
-
 export default {
   title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
   type: 'update',
   group: 'collection',
+  description: `{{t("Update records of a collection. You can use variables from upstream nodes as query conditions and field values.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     params: {
@@ -25,18 +24,16 @@ export default {
             return isValidFilter(value) ? '' : `{{t("Please add at least one condition", { ns: "${NAMESPACE}" })}}`;
           },
         },
-        values
-      }
-    }
+        values,
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     FilterDynamicComponent,
-    CollectionFieldset
-  }
+    CollectionFieldset,
+  },
 };

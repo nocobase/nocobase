@@ -160,7 +160,7 @@ export const Calendar: React.FC<CalendarProps> = ({
   const getCalendarValuesForWeek = () => {
     const topValues: ReactChild[] = [];
     const bottomValues: ReactChild[] = [];
-    let weeksCount: number = 1;
+    let weeksCount = 1;
     const topDefaultHeight = headerHeight * 0.5;
     const dates = dateSetup.dates;
     for (let i = dates.length - 1; i >= 0; i--) {

@@ -13,7 +13,7 @@ const ReadPretty = (props) => {
   const form = useForm();
   useEffect(() => {
     if (!field.title && collectionField?.uiSchema?.title) {
-      field.title = collectionField.uiSchema.title;
+      field.title = collectionField?.uiSchema.title;
     }
   }, collectionField?.title);
 

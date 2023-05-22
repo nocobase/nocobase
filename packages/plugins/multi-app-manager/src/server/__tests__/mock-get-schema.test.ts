@@ -87,7 +87,7 @@ describe('test with start', () => {
       }
     }
 
-    let app = mockServer();
+    const app = mockServer();
     await app.cleanDb();
 
     app.plugin(PluginMultiAppManager);
@@ -118,7 +118,7 @@ describe('test with start', () => {
     await app.appManager.applications.get(name).destroy();
     await app.stop();
 
-    let newApp = mockServer({
+    const newApp = mockServer({
       database: app.db,
     });
 

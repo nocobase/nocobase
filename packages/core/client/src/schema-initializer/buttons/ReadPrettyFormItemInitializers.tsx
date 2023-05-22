@@ -2,7 +2,12 @@ import { union } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer } from '../SchemaInitializer';
-import { gridRowColWrap, useAssociatedFormItemInitializerFields, useFormItemInitializerFields ,useInheritsFormItemInitializerFields} from '../utils';
+import {
+  gridRowColWrap,
+  useAssociatedFormItemInitializerFields,
+  useFormItemInitializerFields,
+  useInheritsFormItemInitializerFields,
+} from '../utils';
 import { useCompile } from '../../schema-component';
 
 export const ReadPrettyFormItemInitializers = (props: any) => {
@@ -20,16 +25,17 @@ export const ReadPrettyFormItemInitializers = (props: any) => {
   ];
   if (inheritFields?.length > 0) {
     inheritFields.forEach((inherit) => {
-      Object.values(inherit)[0]?.length&&fieldItems.push(
-        {
-          type: 'divider',
-        },
-        {
-          type: 'itemGroup',
-          title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
-          children: Object.values(inherit)[0],
-        },
-      );
+      Object.values(inherit)[0]?.length &&
+        fieldItems.push(
+          {
+            type: 'divider',
+          },
+          {
+            type: 'itemGroup',
+            title: t(`Parent collection fields`) + '(' + compile(`${Object.keys(inherit)[0]}`) + ')',
+            children: Object.values(inherit)[0],
+          },
+        );
     });
   }
   associationFields.length > 0 &&

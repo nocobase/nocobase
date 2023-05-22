@@ -33,5 +33,9 @@ TableField.ActionBar = observer((props) => {
   if (form.readPretty) {
     return null;
   }
-  return <div style={{ marginBottom: 8, marginTop: -32 }}><ActionBar {...props} /></div>;
+  return (
+    <div style={{ marginBottom: 8, marginTop: -32 }}>
+      <ActionBar {...props} />
+    </div>
+  );
 });

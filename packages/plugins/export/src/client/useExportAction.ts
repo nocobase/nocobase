@@ -4,7 +4,7 @@ import {
   useBlockRequestContext,
   useCollection,
   useCollectionManager,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { saveAs } from 'file-saver';
 import { cloneDeep } from 'lodash';
@@ -51,7 +51,7 @@ export const useExportAction = () => {
           responseType: 'blob',
         },
       );
-      let blob = new Blob([data], { type: 'application/x-xls' });
+      const blob = new Blob([data], { type: 'application/x-xls' });
       saveAs(blob, `${compile(title)}.xlsx`);
     },
   };

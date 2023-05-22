@@ -3,7 +3,7 @@ import {
   CollectionManagerProvider,
   registerField,
   SchemaComponentOptions,
-  SchemaInitializerProvider
+  SchemaInitializerProvider,
 } from '@nocobase/client';
 import React, { useEffect } from 'react';
 import { AppendsTreeSelect } from './components/AppendsTreeSelect';

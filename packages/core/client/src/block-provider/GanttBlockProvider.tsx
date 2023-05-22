@@ -12,7 +12,7 @@ const formatData = (
   fieldNames,
   tasks: any[] = [],
   projectId: any = undefined,
-  hideChildren: boolean = false,
+  hideChildren = false,
   checkPermassion?: Function,
 ) => {
   data.forEach((item: any) => {

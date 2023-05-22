@@ -61,7 +61,7 @@ const getValue = (str: string, values) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
-    return getVariableValue(str, values);
+    return getVariableValue(str, flat(values));
   } else {
     return str;
   }

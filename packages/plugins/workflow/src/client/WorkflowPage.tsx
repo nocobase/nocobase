@@ -5,8 +5,6 @@ import { SchemaComponent } from '@nocobase/client';
 import { workflowPageClass } from './style';
 import { WorkflowCanvas } from './WorkflowCanvas';
 
-
-
 export const WorkflowPage = () => {
   const { params } = useRouteMatch<any>();
 
@@ -30,11 +28,18 @@ export const WorkflowPage = () => {
                   action: 'get',
                   params: {
                     filter: params,
-                    appends: ['nodes', 'revisions.id', 'revisions.createdAt', 'revisions.current', 'revisions.executed', 'revisions.enabled'],
+                    appends: [
+                      'nodes',
+                      'revisions.id',
+                      'revisions.createdAt',
+                      'revisions.current',
+                      'revisions.executed',
+                      'revisions.enabled',
+                    ],
                   },
                 },
               },
-              'x-component': 'WorkflowCanvas'
+              'x-component': 'WorkflowCanvas',
             },
           },
         }}

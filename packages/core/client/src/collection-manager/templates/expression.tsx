@@ -35,9 +35,9 @@ export const expression: ICollectionTemplate = {
           title: '{{t("Collection")}}',
           'x-component': 'CollectionSelect',
           'x-component-props': {
-            multiple: true
+            // multiple: true,
           },
-        }
+        },
       },
       {
         name: 'expression',
@@ -47,12 +47,12 @@ export const expression: ICollectionTemplate = {
           type: 'string',
           title: '{{t("Expression")}}',
           'x-component': 'DynamicExpression',
-        }
-      }
+        },
+      },
     ],
   },
   availableFieldInterfaces: {
     include: [],
   },
-  configurableProperties: getConfigurableProperties('title', 'name', 'inherits','category'),
+  configurableProperties: getConfigurableProperties('title', 'name', 'inherits', 'category'),
 };

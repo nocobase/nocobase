@@ -27,7 +27,10 @@ export const RoleTable = () => {
   return (
     <div>
       <AvailableActionsProver>
-        <SchemaComponent schema={roleSchema} components={{ MenuItemsProvider, SettingCenterPermissionProvider,PermissionProvider }} />
+        <SchemaComponent
+          schema={roleSchema}
+          components={{ MenuItemsProvider, SettingCenterPermissionProvider, PermissionProvider }}
+        />
       </AvailableActionsProver>
     </div>
   );

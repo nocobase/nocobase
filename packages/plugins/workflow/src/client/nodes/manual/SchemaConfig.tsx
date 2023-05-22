@@ -15,7 +15,7 @@ import {
   ActionContext,
   GeneralSchemaDesigner,
   SchemaSettings,
-  useCompile
+  useCompile,
 } from '@nocobase/client';
 import { useTrigger } from '../../triggers';
 import { instructions, useAvailableUpstreams, useNodeContext } from '..';
@@ -24,17 +24,15 @@ import { lang, NAMESPACE } from '../../locale';
 import { JOB_STATUS } from '../../constants';
 import customForm from './forms/customForm';
 
-
-
 function useTriggerInitializers(): SchemaInitializerItemOptions | null {
   const { workflow } = useFlowContext();
   const trigger = useTrigger();
-  return trigger.useInitializers? trigger.useInitializers(workflow.config) : null;
-};
+  return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
+}
 
 const blockTypeNames = {
-  'customForm': customForm.title,
-  'record': `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
+  customForm: customForm.title,
+  record: `{{t("Data record", { ns: "${NAMESPACE}" })}}`,
 };
 
 function SimpleDesigner() {
@@ -59,26 +57,36 @@ function AddBlockButton(props: any) {
   const current = useNodeContext();
   const nodes = useAvailableUpstreams(current);
   const triggerInitializers = [useTriggerInitializers()].filter(Boolean);
-  const nodeBlockInitializers = nodes.map((node) => {
-    const instruction = instructions.get(node.type);
-    return instruction?.useInitializers?.(node);
-  }).filter(Boolean);
+  const nodeBlockInitializers = nodes
+    .map((node) => {
+      const instruction = instructions.get(node.type);
+      return instruction?.useInitializers?.(node);
+    })
+    .filter(Boolean);
   const dataBlockInitializers = [
     ...triggerInitializers,
-    ...(nodeBlockInitializers.length ? [{
-      key: 'nodes',
-      type: 'subMenu',
-      title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-      children: nodeBlockInitializers
-    }] : []),
+    ...(nodeBlockInitializers.length
+      ? [
+          {
+            key: 'nodes',
+            type: 'subMenu',
+            title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+            children: nodeBlockInitializers,
+          },
+        ]
+      : []),
   ].filter(Boolean);
 
   const items = [
-    ...(dataBlockInitializers.length ? [{
-      type: 'itemGroup',
-      title: '{{t("Data blocks")}}',
-      children: dataBlockInitializers
-    }] : []),
+    ...(dataBlockInitializers.length
+      ? [
+          {
+            type: 'itemGroup',
+            title: '{{t("Data blocks")}}',
+            children: dataBlockInitializers,
+          },
+        ]
+      : []),
     {
       type: 'itemGroup',
       title: '{{t("Form")}}',
@@ -111,15 +119,8 @@ function AddBlockButton(props: any) {
     },
   ] as SchemaInitializerItemOptions[];
 
-  return (
-    <SchemaInitializer.Button
-      {...props}
-      wrap={gridRowColWrap}
-      items={items}
-      title="{{t('Add block')}}"
-    />
-  );
-};
+  return <SchemaInitializer.Button {...props} wrap={gridRowColWrap} items={items} title="{{t('Add block')}}" />;
+}
 
 function findSchema(schema, filter, onlyLeaf = false) {
   const result = [];
@@ -134,7 +135,7 @@ function findSchema(schema, filter, onlyLeaf = false) {
   }
 
   if (schema.properties) {
-    Object.keys(schema.properties).forEach(key => {
+    Object.keys(schema.properties).forEach((key) => {
       result.push(...findSchema(schema.properties[key], filter));
     });
   }
@@ -156,7 +157,7 @@ function SchemaComponentRefreshProvider(props) {
       {props.children}
     </SchemaComponentContext.Provider>
   );
-};
+}
 
 function ActionInitializer({ action, actionProps, ...props }) {
   return (
@@ -167,7 +168,7 @@ function ActionInitializer({ action, actionProps, ...props }) {
         title: props.title,
         'x-decorator': 'ManualActionStatusProvider',
         'x-decorator-props': {
-          value: action
+          value: action,
         },
         'x-component': 'Action',
         'x-component-props': {
@@ -195,7 +196,7 @@ function AddActionButton(props) {
           action: JOB_STATUS.RESOLVED,
           actionProps: {
             type: 'primary',
-          }
+          },
         },
         {
           key: JOB_STATUS.REJECTED,
@@ -205,7 +206,7 @@ function AddActionButton(props) {
           action: JOB_STATUS.REJECTED,
           actionProps: {
             type: 'danger',
-          }
+          },
         },
         {
           key: JOB_STATUS.PENDING,
@@ -213,7 +214,7 @@ function AddActionButton(props) {
           title: `{{t("Save temporarily", { ns: "${NAMESPACE}" })}}`,
           component: ActionInitializer,
           action: JOB_STATUS.PENDING,
-        }
+        },
       ]}
       title="{{t('Configure actions')}}"
     />
@@ -225,8 +226,7 @@ function useSubmit() {
   // const { values, submit, id: formId } = useForm();
   // const formSchema = useFieldSchema();
   return {
-    run() {
-    }
+    run() {},
   };
 }
 
@@ -244,7 +244,7 @@ export function SchemaConfig({ value, onChange }) {
 
   const nodeInitializers = {};
   const nodeComponents = {};
-  nodes.forEach(item => {
+  nodes.forEach((item) => {
     const instruction = instructions.get(item.type);
     Object.assign(nodeInitializers, instruction.initializers);
     Object.assign(nodeComponents, instruction.components);
@@ -267,7 +267,7 @@ export function SchemaConfig({ value, onChange }) {
             'x-component-props': {},
             'x-initializer': 'TabPaneInitializers',
             'x-initializer-props': {
-              gridInitializer: 'AddBlockButton'
+              gridInitializer: 'AddBlockButton',
             },
             properties: value ?? {
               tab1: {
@@ -280,14 +280,14 @@ export function SchemaConfig({ value, onChange }) {
                     type: 'void',
                     'x-component': 'Grid',
                     'x-initializer': 'AddBlockButton',
-                    properties: {}
+                    properties: {},
                   },
                 },
-              }
-            }
-          }
-        }
-      }
+              },
+            },
+          },
+        },
+      },
     },
   });
 
@@ -306,18 +306,23 @@ export function SchemaConfig({ value, onChange }) {
           onRefresh={() => {
             const forms = {};
             const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
-            const formBlocks: any[] = findSchema(tabs, item => item['x-decorator'] === 'FormCollectionProvider');
-            formBlocks.forEach(formBlock => {
+            const formBlocks: any[] = findSchema(tabs, (item) => item['x-decorator'] === 'FormCollectionProvider');
+            formBlocks.forEach((formBlock) => {
               const [formKey] = Object.keys(formBlock.properties);
               const formSchema = formBlock.properties[formKey];
-              const fields = findSchema(formSchema.properties.grid, item => item['x-component'] === 'CollectionField', true);
-              formBlock['x-decorator-props'].collection.fields = fields.map(field => field['x-interface-options']);
+              const fields = findSchema(
+                formSchema.properties.grid,
+                (item) => item['x-component'] === 'CollectionField',
+                true,
+              );
+              formBlock['x-decorator-props'].collection.fields = fields.map((field) => field['x-interface-options']);
               forms[formKey] = {
                 type: 'custom',
                 title: formBlock['x-component-props']?.title || formKey,
-                actions: findSchema(formSchema.properties.actions, item => item['x-component'] === 'Action')
-                  .map(item => item['x-decorator-props'].value),
-                collection: formBlock['x-decorator-props'].collection
+                actions: findSchema(formSchema.properties.actions, (item) => item['x-component'] === 'Action').map(
+                  (item) => item['x-decorator-props'].value,
+                ),
+                collection: formBlock['x-decorator-props'].collection,
               };
             });
 
@@ -342,7 +347,7 @@ export function SchemaConfig({ value, onChange }) {
             }}
             scope={{
               useSubmit,
-              useFlowRecordFromBlock
+              useFlowRecordFromBlock,
             }}
           />
         </SchemaComponentRefreshProvider>
@@ -359,9 +364,7 @@ export function SchemaConfigButton(props) {
       <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </div>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        {props.children}
-      </ActionContext.Provider>
+      <ActionContext.Provider value={{ visible, setVisible }}>{props.children}</ActionContext.Provider>
     </>
   );
 }

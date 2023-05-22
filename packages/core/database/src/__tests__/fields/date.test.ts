@@ -10,9 +10,7 @@ describe('date-field', () => {
     db = mockDatabase();
     db.collection({
       name: 'tests',
-      fields: [
-        { name: 'date1', type: 'date' },
-      ],
+      fields: [{ name: 'date1', type: 'date' }],
     });
     await db.sync();
     repository = db.getRepository('tests');

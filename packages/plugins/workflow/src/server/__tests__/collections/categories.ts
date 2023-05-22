@@ -9,15 +9,15 @@ export default {
     },
     {
       type: 'string',
-      name: 'engine'
+      name: 'engine',
     },
     {
       type: 'string',
-      name: 'collection'
+      name: 'collection',
     },
     {
       type: 'text',
-      name: 'expression'
-    }
+      name: 'expression',
+    },
   ],
 } as CollectionOptions;

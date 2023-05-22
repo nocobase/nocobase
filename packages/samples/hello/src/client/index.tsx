@@ -2,7 +2,8 @@ import { TableOutlined } from '@ant-design/icons';
 import {
   SchemaComponentOptions,
   SchemaInitializer,
-  SchemaInitializerContext, SettingsCenterProvider
+  SchemaInitializerContext,
+  SettingsCenterProvider,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';

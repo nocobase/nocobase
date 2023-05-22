@@ -3,7 +3,7 @@ import {
   PinnedPluginListProvider,
   SchemaComponentOptions,
   SettingsCenterProvider,
-  useRequest
+  useRequest,
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React from 'react';
@@ -27,11 +27,15 @@ const MultiAppManager = () => {
   const menu = (
     <Menu>
       {(data?.data || []).map((app) => {
+        let link = `/apps/${app.name}/admin/`;
+        if (app.options?.standaloneDeployment && app.cname) {
+          link = `//${app.cname}`;
+        }
         return (
           <Menu.Item
             key={app.name}
             onClick={() => {
-              window.open(`/apps/${app.name}/admin/`, '_blank');
+              window.open(link, '_blank');
             }}
           >
             {app.displayName || app.name}
