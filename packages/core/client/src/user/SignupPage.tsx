@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import { message } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory } from 'react-router-dom';
+import { Navigate, useHistory } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
 
@@ -143,7 +143,7 @@ export const SignupPage = (props: SignupPageProps) => {
   const ctx = useSystemSettings();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
-    return <Redirect to={'/signin'} />;
+    return <Navigate replace to={'/signin'} />;
   }
   const { schema, components, scope } = props;
   return (

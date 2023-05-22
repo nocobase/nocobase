@@ -19,7 +19,7 @@ import {
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
+import { Navigate, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
@@ -449,14 +449,14 @@ const SettingsCenter = (props) => {
   const activePlugin = pluginsTabs.find((v) => v.key === pluginName);
   const aclPluginTabCheck = activePlugin?.isAllow && activePlugin.tabs.find((v) => v.key === tabName)?.isAllow;
   if (!pluginName) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!items[pluginName]) {
-    return <Redirect to={firstUri} />;
+    return <Navigate replace to={firstUri} />;
   }
   if (!tabName) {
     const firstTabName = Object.keys(items[pluginName]?.tabs).shift();
-    return <Redirect to={`/admin/settings/${pluginName}/${firstTabName}`} />;
+    return <Navigate replace to={`/admin/settings/${pluginName}/${firstTabName}`} />;
   }
   const component = items[pluginName]?.tabs?.[tabName]?.component;
   const plugin: any = pluginsTabs.find((v) => v.key === pluginName);

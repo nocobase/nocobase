@@ -1,4 +1,4 @@
-import { Redirect } from 'dumi';
+import { Navigate } from 'dumi';
 import React from 'react';
 
-export default (props) => <Redirect {...props} />;
+export default (props) => <Navigate replace {...props} />;
