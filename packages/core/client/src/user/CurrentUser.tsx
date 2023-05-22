@@ -80,13 +80,13 @@ export const CurrentUser = () => {
                       window.location.reload();
                     }}
                   >
-                    {t('Clear Cache')}
+                    {t('Clear cache')}
                   </Menu.Item>
                   <Menu.Item
                     key="reboot"
                     onClick={async () => {
                       Modal.confirm({
-                        title: t('Reboot Application'),
+                        title: t('Reboot application'),
                         content: t(
                           'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?',
                         ),
@@ -102,7 +102,7 @@ export const CurrentUser = () => {
                       });
                     }}
                   >
-                    {t('Reboot Application')}
+                    {t('Reboot application')}
                   </Menu.Item>
                   <Menu.Divider />
                 </>
