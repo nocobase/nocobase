@@ -1,10 +1,11 @@
 import { ISchema } from '@formily/react';
+import { lang } from '../../locale';
 
-const getArraySchema = (title: string, fields = {}) => ({
+const getArraySchema = (fields = {}) => ({
   type: 'array',
-  title,
   'x-decorator': 'FormItem',
   'x-component': 'ArrayItems',
+  'x-component-props': { style: { width: 550 } },
   items: {
     type: 'object',
     'x-decorator': 'ArrayItems.Item',
@@ -34,31 +35,111 @@ const getArraySchema = (title: string, fields = {}) => ({
 export const configSchema: ISchema = {
   type: 'object',
   properties: {
-    tabs: {
+    card: {
       type: 'void',
-      'x-component': 'Tabs',
-      'x-decorator': 'Form',
+      'x-component': 'Card',
       properties: {
-        query: {
-          title: '{{t("Query")}}',
-          type: 'object',
-          'x-component': 'Tabs.TabPane',
+        chartType: {
+          type: 'string',
+          title: '{{t("Chart type")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+        },
+        chartConfig: {
+          title: '{{t("Chart JSON config")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+          'x-component-props': {
+            autoSize: {
+              minRows: 5,
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export const querySchema: ISchema = {
+  type: 'object',
+  properties: {
+    collapse: {
+      type: 'void',
+      'x-decorator': 'FormItem',
+      'x-component': 'FormCollapse',
+      'x-component-props': {
+        formCollapse: '{{formCollapse}}',
+      },
+      properties: {
+        pane1: {
+          type: 'void',
+          'x-component': 'FormCollapse.CollapsePanel',
+          'x-component-props': {
+            header: lang('Measures'),
+            key: 'measures',
+          },
           properties: {
-            dimensions: getArraySchema('{{t("Dimensions")}}', {
+            measures: getArraySchema({
+              field: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Field")}}',
+                },
+              },
+              aggregation: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  placeholder: '{{t("Aggregation")}}',
+                },
+                enum: [
+                  { label: 'Sum', value: 'sum' },
+                  { label: 'Count', value: 'count' },
+                  { label: 'Avg', value: 'avg' },
+                  { label: 'Max', value: 'max' },
+                  { label: 'Min', value: 'min' },
+                ],
+              },
+              alias: {
+                type: 'string',
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                'x-component-props': {
+                  placeholder: '{{t("Alias")}}',
+                },
+              },
+            }),
+          },
+        },
+        pane2: {
+          type: 'void',
+          'x-component': 'FormCollapse.CollapsePanel',
+          'x-component-props': {
+            header: lang('Dimensions'),
+            key: 'dimensions',
+          },
+          properties: {
+            dimensions: getArraySchema({
               field: {
                 type: 'string',
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
               },
             }),
-            measures: getArraySchema('{{t("Measures")}}', {
-              field: {
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Input',
-              },
-            }),
-            sort: getArraySchema('{{t("Sort")}}', {
+          },
+        },
+        pane3: {
+          type: 'void',
+          'x-component': 'FormCollapse.CollapsePanel',
+          'x-component-props': {
+            header: lang('Sort'),
+            key: 'sort',
+          },
+          properties: {
+            sort: getArraySchema({
               field: {
                 type: 'string',
                 'x-decorator': 'FormItem',
@@ -74,39 +155,30 @@ export const configSchema: ISchema = {
                 enum: ['ASC', 'DESC'],
               },
             }),
+          },
+        },
+        pane4: {
+          type: 'void',
+          'x-component': 'FormCollapse.CollapsePanel',
+          'x-component-props': {
+            header: lang('Filter'),
+            key: 'filter',
+          },
+          properties: {
             filter: {
               type: 'object',
-              title: '{{t("Filter")}}',
               'x-decorator': 'FormItem',
               'x-component': 'Filter',
             },
           },
         },
-        config: {
-          title: 'Config',
-          type: 'object',
-          'x-component': 'Tabs.TabPane',
-          properties: {
-            chartType: {
-              type: 'string',
-              title: '{{t("Chart Type")}}',
-              'x-decorator': 'FormItem',
-              'x-component': 'Select',
-            },
-            chartConfig: {
-              title: '{{t("Chart Config")}}',
-              'x-decorator': 'FormItem',
-              'x-component': 'Input.TextArea',
-              'x-component-props': {
-                autoSize: {
-                  maxRows: 20,
-                  minRows: 10,
-                },
-              },
-            },
-          },
-        },
       },
+    },
+    cache: {
+      type: 'boolean',
+      title: '{{t("Enable cache")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Switch',
     },
   },
 };

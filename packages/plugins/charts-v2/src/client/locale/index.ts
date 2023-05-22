@@ -10,6 +10,10 @@ i18n.addResources('zh-CN', NAMESPACE, zhCN);
 // i18n.addResources('ru-RU', NAMESPACE, ruRU);
 // i18n.addResources('tr-TR', NAMESPACE, trTR);
 
+export function lang(key: string) {
+  return i18n.t(key, { ns: NAMESPACE });
+}
+
 export function useChartsTranslation() {
   return useTranslation(NAMESPACE);
 }

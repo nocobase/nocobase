@@ -1,8 +1,9 @@
 import { CardItem, GeneralSchemaDesigner, SchemaSettings, useDesigner } from '@nocobase/client';
-import React from 'react';
+import React, { useContext } from 'react';
 import { css } from '@emotion/css';
 import { Line } from '@ant-design/plots';
 import { useChartsTranslation } from '../locale';
+import { ChartConfigContext } from '../block/ChartConfigure';
 
 const designerCss = css`
   position: relative;
@@ -183,24 +184,29 @@ export const ChartRenderer: React.FC & {
     },
   };
   return (
-    <div className={designerCss}>
-      <CardItem>
-        <Line {...config} />
-      </CardItem>
-    </div>
+    // <div className={designerCss}>
+    <Line {...config} />
+    // </div>
   );
 };
 
 ChartRenderer.Designer = function Designer() {
   const { t } = useChartsTranslation();
+  const { setVisible } = useContext(ChartConfigContext);
   return (
     <GeneralSchemaDesigner disableInitializer>
-      <SchemaSettings.Item>{t('Configure')}</SchemaSettings.Item>
+      <SchemaSettings.Item
+        onClick={() => {
+          setVisible(true);
+        }}
+      >
+        {t('Configure')}
+      </SchemaSettings.Item>
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
-        removeParentsIfNoChildren
+        // removeParentsIfNoChildren
         breakRemoveOn={{
-          'x-component': 'Grid',
+          'x-component': 'ChartV2Block',
         }}
       />
     </GeneralSchemaDesigner>

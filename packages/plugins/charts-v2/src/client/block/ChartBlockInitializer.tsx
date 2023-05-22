@@ -28,13 +28,7 @@ export const ChartInitializers = () => {
     component: ConfigureButton,
   }));
   return (
-    <SchemaInitializer.Button
-      icon={'PlusOutlined'}
-      onClick={() => {
-        setVisible(true);
-      }}
-      items={collections as any}
-    >
+    <SchemaInitializer.Button icon={'PlusOutlined'} items={collections as any}>
       {t('Add chart')}
     </SchemaInitializer.Button>
   );
