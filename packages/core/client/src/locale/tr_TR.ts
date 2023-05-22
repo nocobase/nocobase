@@ -454,6 +454,7 @@ export default {
   "Constant value": "Sabit değer",
   "Dynamic value": "Dinamik değer",
   "Current user": "Seçili kullanıcı",
+  "Current form": "Seçili form",
   "Current record": "Seçili kayıt",
   "Popup close method": "Açılır pencere kapatma metodu",
   "Automatic close": "Otomatik kapat",

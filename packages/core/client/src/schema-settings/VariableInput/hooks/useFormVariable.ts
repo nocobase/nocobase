@@ -83,7 +83,7 @@ export const useFormVariable = ({
 
   return useMemo(() => {
     return compile({
-      label: '当前表单',
+      label: `{{t("Current form")}}`,
       value: '$form',
       key: '$form',
       disabled: children.every((option) => option.disabled),

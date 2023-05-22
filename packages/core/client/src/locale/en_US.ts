@@ -619,6 +619,7 @@ export default {
   "Constant value": "Constant value",
   "Dynamic value": "Dynamic value",
   "Current user": "Current user",
+  "Current form": "Current form",
   "Current record": "Current record",
   "Current time": "Current time",
   "System variables": "System variables",

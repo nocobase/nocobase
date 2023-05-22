@@ -602,6 +602,7 @@ export default {
     "Constant value": "Valor constante",
     "Dynamic value": "Valor dinámico",
     "Current user": "Usuario actual",
+    "Current form": "forma actual",
     "Current record": "Registro actual",
     "Current time": "Hora actual",
     "System variables": "Variables del sistema",

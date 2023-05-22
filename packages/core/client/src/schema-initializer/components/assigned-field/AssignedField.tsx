@@ -123,6 +123,10 @@ export const AssignedField = (props: any) => {
         name: 'currentUser',
         title: t('Current user'),
       },
+      {
+        name: 'currentForm',
+        title: t('Current form'),
+      },
     ];
     if (dateTimeFields.includes(collectionField?.interface)) {
       opt.unshift({

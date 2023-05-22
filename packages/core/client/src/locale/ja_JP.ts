@@ -518,6 +518,7 @@ export default {
   "Constant value": "定数値",
   "Dynamic value": "動的値",
   "Current user": "現在のユーザー",
+  "Current form": "現在のフォーム",
   "Current record": "現在のレコード",
   "Popup close method": "ポップアップを閉じる方法",
   "Automatic close": "自動で閉じる",

@@ -456,6 +456,7 @@ export default {
   "Constant value": "Постоянное значение",
   "Dynamic value": "Динамическое значение",
   "Current user": "Текущий пользователь",
+  "Current form": "текущая форма",
   "Current record": "Текущая запись",
   "Popup close method": "Метод закрытия всплывающего окна",
   "Automatic close": "Автоматическое закрытие",
