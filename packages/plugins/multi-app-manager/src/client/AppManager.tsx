@@ -4,11 +4,19 @@ import React from 'react';
 import { schema } from './settings/schemas/applications';
 import { usePluginUtils } from './utils';
 
-const AppVisitor = () => {
+const useLink = () => {
   const record = useRecord();
+  if (record.options?.standaloneDeployment && record.cname) {
+    return `//${record.cname}`;
+  }
+  return `/apps/${record.name}/admin/`;
+};
+
+const AppVisitor = () => {
   const { t } = usePluginUtils();
+  const link = useLink();
   return (
-    <a href={`/apps/${record.name}/admin/`} target={'_blank'} rel="noreferrer">
+    <a href={link} target={'_blank'} rel="noreferrer">
       {t('View', { ns: 'client' })}
     </a>
   );

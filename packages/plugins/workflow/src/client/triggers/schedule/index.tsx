@@ -39,15 +39,15 @@ export default {
     ScheduleConfig,
     FieldsSelect,
   },
-  getOptions(config, types) {
+  useVariables(config, { types }) {
     const { t } = useWorkflowTranslation();
     const options: any[] = [];
     if (!types || types.includes('date')) {
       options.push({ key: 'date', value: 'date', label: t('Trigger time') });
     }
-    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
-      const fieldOptions = useCollectionFieldOptions({ collection: config.collection });
 
+    const fieldOptions = useCollectionFieldOptions({ collection: config.collection });
+    if (config.mode === SCHEDULE_MODE.COLLECTION_FIELD) {
       if (fieldOptions.length) {
         options.push({
           key: 'data',

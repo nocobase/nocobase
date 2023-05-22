@@ -53,14 +53,13 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
-
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'],
+      sourceId: sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
     };
     return new TableFieldResource(options);
   }
@@ -118,6 +117,9 @@ export const useResourceAction = (props, opts = {}) => {
             return Promise.resolve({});
           }
           const actionParams = { ...params, ...opts };
+          if (params?.appends) {
+            actionParams.appends = params.appends;
+          }
           return resource[action](actionParams).then((res) => res.data);
         },
     {
@@ -129,7 +131,7 @@ export const useResourceAction = (props, opts = {}) => {
         }
       },
       defaultParams: [params],
-      refreshDeps: [runWhenParamsChanged ? JSON.stringify(params.appends) : null],
+      refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
 

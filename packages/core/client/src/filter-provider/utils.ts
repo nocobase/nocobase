@@ -80,7 +80,7 @@ export const transformToFilter = (
           key = `${key}.${collectionField.targetKey || 'id'}`;
         }
 
-        if (!value || value.length === 0) {
+        if (!value) {
           return null;
         }
 

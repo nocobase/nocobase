@@ -8,7 +8,7 @@ import { useCompile } from '@nocobase/client';
 import { NodeDefaultView } from '.';
 import { useFlowContext } from '../FlowContext';
 import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions, VariableOption, VariableTypes } from '../variable';
+import { useWorkflowVariableOptions, VariableOption, nodesOptions, triggerOptions } from '../variable';
 import { addButtonClass, branchBlockClass, branchClass, nodeSubtreeClass } from '../style';
 import { Branch } from '../Branch';
 
@@ -31,25 +31,12 @@ export default {
   title: `{{t("Loop", { ns: "${NAMESPACE}" })}}`,
   type: 'loop',
   group: 'control',
+  description: `{{t("By using a loop node, you can perform the same operation on multiple sets of data. The source of these sets can be either multiple records from a query node or multiple associated records of a single record. Loop node can also be used for iterating a certain number of times or for looping through each character in a string. However, excessive looping may cause performance issues, so use with caution.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
-    warning: {
-      type: 'void',
-      'x-component': Alert,
-      'x-component-props': {
-        type: 'warning',
-        showIcon: true,
-        message: `{{t("Loop will cause performance issue based on the quantity, please use with caution.", { ns: "${NAMESPACE}" })}}`,
-        className: css`
-          width: 100%;
-          font-size: 85%;
-          margin-bottom: 2em;
-        `,
-      },
-    },
     target: {
       type: 'string',
       title: `{{t("Loop target", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Single number will be treated as times, single string will be treated as chars, other non-array value will be turned into a single item array.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("A single number will be treated as a loop count, a single string will be treated as an array of characters, and other non-array values will be converted to arrays. The loop node ends when the loop count is reached, or when the array loop is completed. You can also add condition nodes to the loop to terminate it.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Variable.Input',
       'x-component-props': {
@@ -116,7 +103,7 @@ export default {
     useWorkflowVariableOptions,
   },
   components: {},
-  useScopeVariables(node, types) {
+  useScopeVariables(node, options) {
     const compile = useCompile();
     const { target } = node.config;
     if (!target) {
@@ -137,20 +124,18 @@ export default {
         .split('.')
         .map((path) => path.trim());
 
-      const options = VariableTypes.filter((item) => ['$context', '$jobsMapByNodeId'].includes(item.value)).map(
-        (item: any) => {
-          const opts = typeof item.useOptions === 'function' ? item.useOptions(node, types).filter(Boolean) : null;
-          return {
-            label: compile(item.title),
-            value: item.value,
-            key: item.value,
-            children: compile(opts),
-            disabled: opts && !opts.length,
-          };
-        },
-      );
+      const targetOptions = [nodesOptions, triggerOptions].map((item: any) => {
+        const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
+        return {
+          label: compile(item.title),
+          value: item.value,
+          key: item.value,
+          children: compile(opts),
+          disabled: opts && !opts.length,
+        };
+      });
 
-      targetOption.children = findOption(options, paths);
+      targetOption.children = findOption(targetOptions, paths);
     }
 
     return [

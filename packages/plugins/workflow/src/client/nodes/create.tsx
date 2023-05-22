@@ -12,6 +12,7 @@ export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
+  description: `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     // multiple: {
@@ -40,12 +41,14 @@ export default {
     CollectionFieldset,
     FieldsSelect,
   },
-  useVariables({ config }, types) {
-    return useCollectionFieldOptions({
-      collection: config.collection,
-      types,
-      depth: config.params?.appends?.length ? 1 : 0,
+  useVariables({ config }, options) {
+    const result = useCollectionFieldOptions({
+      collection: config?.collection,
+      ...options,
+      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
     });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
