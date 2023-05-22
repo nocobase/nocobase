@@ -815,6 +815,10 @@ SchemaSettings.ModalItem = function ModalItem(props) {
           })
           .then((values) => {
             onSubmit(values);
+            return values;
+          })
+          .catch((err) => {
+            console.error(err);
           });
       }}
     >

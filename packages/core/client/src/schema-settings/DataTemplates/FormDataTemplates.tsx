@@ -20,7 +20,7 @@ const Tree = connect(
 export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
-  const { collectionList, getEnableFieldTree } = useCollectionState(collectionName);
+  const { collectionList, getEnableFieldTree, onLoadData } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
@@ -129,6 +129,7 @@ export const FormDataTemplates = observer((props: any) => {
                       treeData: [],
                       checkable: true,
                       selectable: false,
+                      loadData: onLoadData,
                       rootStyle: {
                         padding: '8px 0',
                         border: '1px solid #d9d9d9',
@@ -145,7 +146,7 @@ export const FormDataTemplates = observer((props: any) => {
                           state: {
                             disabled: '{{ !$deps[0] }}',
                             componentProps: {
-                              treeData: '{{ getEnableFieldTree($deps[0]) }}',
+                              treeData: '{{ getEnableFieldTree($deps[0], $self) }}',
                             },
                           },
                         },
