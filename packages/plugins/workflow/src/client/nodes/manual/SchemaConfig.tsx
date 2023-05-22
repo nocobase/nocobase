@@ -33,21 +33,21 @@ export type ManualFormType = {
   config: {
     useInitializer: () => SchemaInitializerItemOptions;
     initializers?: {
-      [key: string]: React.FC
+      [key: string]: React.FC;
     };
     components?: {
-      [key: string]: React.FC
+      [key: string]: React.FC;
     };
-    parseFormOptions: Function
-  },
+    parseFormOptions: Function;
+  };
   block: {
     scope?: {
-      [key: string]: Function
-    },
+      [key: string]: Function;
+    };
     components?: {
-      [key: string]: React.FC
-    }
-  }
+      [key: string]: React.FC;
+    };
+  };
 };
 
 export const manualFormTypes = new Registry<ManualFormType>();
@@ -125,7 +125,7 @@ function AddBlockButton(props: any) {
       children: Array.from(manualFormTypes.getValues()).map((item) => {
         const { useInitializer: getInitializer } = item.config;
         return getInitializer();
-      })
+      }),
     },
     {
       type: 'itemGroup',
@@ -320,15 +320,20 @@ export function SchemaConfig({ value, onChange }) {
           AddActionButton,
           ...trigger.initializers,
           ...nodeInitializers,
-          ...(Array.from(manualFormTypes.getValues())
-            .reduce((result, item) => Object.assign(result, item.config.initializers), {})),
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.config.initializers),
+            {},
+          ),
         }}
       >
         <SchemaComponentRefreshProvider
           onRefresh={() => {
             const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
 
-            const forms = Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.config.parseFormOptions(tabs)), {});
+            const forms = Array.from(manualFormTypes.getValues()).reduce(
+              (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+              {},
+            );
             form.setValuesIn('forms', forms);
 
             onChange(tabs.properties);
@@ -338,7 +343,10 @@ export function SchemaConfig({ value, onChange }) {
             schema={schema}
             components={{
               ...nodeComponents,
-              ...(Array.from(manualFormTypes.getValues()).reduce((result, item) => Object.assign(result, item.config.components), {})),
+              ...Array.from(manualFormTypes.getValues()).reduce(
+                (result, item) => Object.assign(result, item.config.components),
+                {},
+              ),
               // NOTE: fake provider component
               ManualActionStatusProvider(props) {
                 return props.children;

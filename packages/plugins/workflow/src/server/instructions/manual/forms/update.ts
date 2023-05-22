@@ -7,16 +7,16 @@ export default async function (this: ManualInstruction, instance, { collection, 
     throw new Error(`collection ${collection} for update data on manual node not found`);
   }
 
-  const [values] = Object.values(instance.result);
+  const [values] = Object.values(instance.result as { [formKey: string]: { [key: string]: any } });
   await repo.update({
     filter: processor.getParsedValue(filter),
     values: {
-      ...(values as Object ?? {}),
-      updatedById: instance.userId
+      ...(values ?? {}),
+      updatedById: instance.userId,
     },
     context: {
-      executionId: processor.execution.id
+      executionId: processor.execution.id,
     },
-    transaction: processor.transaction
+    transaction: processor.transaction,
   });
 }

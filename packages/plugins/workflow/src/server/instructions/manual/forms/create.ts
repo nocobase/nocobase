@@ -10,13 +10,13 @@ export default async function (this: ManualInstruction, instance, { collection }
   const [values] = Object.values(instance.result);
   await repo.create({
     values: {
-      ...(values as Object ?? {}),
+      ...((values as { [key: string]: any }) ?? {}),
       createdById: instance.userId,
-      updatedById: instance.userId
+      updatedById: instance.userId,
     },
     context: {
-      executionId: processor.execution.id
+      executionId: processor.execution.id,
     },
-    transaction: processor.transaction
+    transaction: processor.transaction,
   });
 }

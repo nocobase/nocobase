@@ -33,11 +33,12 @@ export async function submit(context: Context, next) {
   const [formKey] = Object.keys(values.result ?? {});
 
   // NOTE: validate status
-  if (userJob.status !== JOB_STATUS.PENDING
-    || userJob.job.status !== JOB_STATUS.PENDING
-    || userJob.execution.status !== EXECUTION_STATUS.STARTED
-    || !userJob.workflow.enabled
-    || !forms[formKey]?.actions?.includes(values.status)
+  if (
+    userJob.status !== JOB_STATUS.PENDING ||
+    userJob.job.status !== JOB_STATUS.PENDING ||
+    userJob.execution.status !== EXECUTION_STATUS.STARTED ||
+    !userJob.workflow.enabled ||
+    !forms[formKey]?.actions?.includes(values.status)
   ) {
     return context.throw(400);
   }
