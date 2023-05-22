@@ -667,4 +667,6 @@ export default {
   'Add template': 'Adicionar modelo',
   'Display data template selector': 'Exibir seletor de modelo de dados',
   'Form data templates': 'Modelos de dados do formulário',
+  "Data template": "Modelo de dados",
+  "Template fields have been removed and need to be reconfigured": "Os campos do modelo foram removidos e precisam ser reconfigurados",
 };

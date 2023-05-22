@@ -216,7 +216,7 @@ export class CollectionManagerPlugin extends Plugin {
       if (options?.method === 'install') {
         return;
       }
-      if(options?.method === 'upgrade'){
+      if (options?.method === 'upgrade') {
         return;
       }
       const exists = await this.app.db.collectionExistsInDb('collections');

@@ -1,6 +1,6 @@
 const { Command } = require('commander');
 const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
-const { existsSync } = require('fs');
+const { existsSync, unlink } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
 
@@ -41,12 +41,15 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      if (opts.quickstart) {
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
-      }
-      if (opts.dbSync) {
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
+      const restartMark = resolve(process.cwd(), 'storage', 'restart');
+      if (!existsSync(restartMark)) {
+        if (opts.quickstart) {
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
+        }
+        if (opts.dbSync) {
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
+        }
       }
       if (opts.daemon) {
         run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);

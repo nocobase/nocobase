@@ -617,4 +617,6 @@ export default {
   'Add template': 'テンプレートを追加',
   'Display data template selector': 'データテンプレートセレクターを表示',
   'Form data templates': 'フォームデータテンプレート',
+  "Data template": "データテンプレート",
+  "Template fields have been removed and need to be reconfigured": "テンプレートフィールドが削除されました。再設定する必要があります",
 }

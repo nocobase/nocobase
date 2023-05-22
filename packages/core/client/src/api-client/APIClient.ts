@@ -16,6 +16,7 @@ const handleErrorMessage = (error) => {
 };
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
+  silence = false;
 
   service(uid: string) {
     return this.services[uid];
@@ -38,6 +39,9 @@ export class APIClient extends APIClientSDK {
     this.axios.interceptors.response.use(
       (response) => response,
       (error) => {
+        if (this.silence) {
+          throw error;
+        }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
           return (window.location.href = redirectTo);
@@ -54,5 +58,10 @@ export class APIClient extends APIClientSDK {
         throw error;
       },
     );
+  }
+
+  silent() {
+    this.silence = true;
+    return this;
   }
 }
