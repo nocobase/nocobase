@@ -43,12 +43,8 @@ const App = () => (
   <Router initialEntries={['/']}>
     <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
     <Switch>
-      <Route exact path="/">
-        <Home />
-      </Route>
-      <Route path="/about">
-        <About />
-      </Route>
+      <Route path="/" element={<Home />}></Route>
+      <Route path="/about" element={<About />}></Route>
     </Switch>
   </Router>
 );
@@ -168,11 +164,11 @@ const App: React.FC = () => {
       <Button type="primary" onClick={showDrawer}>
         Open
       </Button>
-      <Drawer 
-        title="Basic Drawer" 
-        placement="right" 
-        onClose={onClose} 
-        visible={visible} 
+      <Drawer
+        title="Basic Drawer"
+        placement="right"
+        onClose={onClose}
+        visible={visible}
         footer={
           <Button onClick={onClose}>关闭</Button>
         }
@@ -262,8 +258,8 @@ export default function App() {
     });
   };
   return (
-    <SchemaComponentProvider 
-      form={form} 
+    <SchemaComponentProvider
+      form={form}
       components={{ Drawer, Button }}
     >
       <SchemaComponent schema={schema} scope={{ showDrawer, onClose }} />
