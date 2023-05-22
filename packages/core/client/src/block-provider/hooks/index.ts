@@ -1118,13 +1118,11 @@ export const useAssociationNames = (collection) => {
         buf.push(s.name);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
-        }
-        if (s['x-component-props'].mode === 'Nester'|| ['TableV2', 'AssociationField.SubTable'].includes(s['x-component'])) {
           return getAssociationAppends(s, buf);
         }
         return buf;
       } else {
-        if (s['x-component'] === 'Grid.Row') {
+        if (s['x-component'] === 'Grid.Row' || ['TableV2', 'AssociationField.SubTable'].includes(s['x-component'])) {
           const kk = buf?.concat?.();
           return getNesterAppends(s, kk || []);
         } else {
@@ -1178,12 +1176,12 @@ export const useAssociationNames = (collection) => {
   if (schema) {
     const associations = getAssociationAppends(schema);
     const appends = flattenNestedList(associations);
-    console.log(appends, associations);
     return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
   }
   if (!schema) {
     const associations = getAssociationAppends(formSchema);
     const appends = flattenNestedList(associations);
+    console.log(appends, associations);
     return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
   }
 };
