@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { useHistory, useRouteMatch } from 'react-router-dom';
+import { useHistory, useRouteMatch, Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -280,7 +280,7 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? <Spin /> : props.children}
+        {service.contentLoading ? <Spin /> : <Outlet />}
       </Layout.Content>
     </Layout>
   );
