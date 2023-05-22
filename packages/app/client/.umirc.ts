@@ -1,4 +1,4 @@
-import { getUmiConfig, resolveNocobasePackagesAlias } from '@nocobase/devtools/umiConfig';
+import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { defineConfig } from 'umi';
 
 const umiConfig = getUmiConfig();
@@ -6,28 +6,25 @@ const umiConfig = getUmiConfig();
 process.env.MFSU_AD = 'none';
 
 export default defineConfig({
+  title: 'Loading...',
   hash: true,
+  alias: {
+    ...umiConfig.alias,
+  },
   define: {
     ...umiConfig.define,
   },
-  dynamicImportSyntax: {},
-  // only proxy when using `umi dev`
-  // if the assets are built, will not proxy
   proxy: {
     ...umiConfig.proxy,
   },
-  nodeModulesTransform: {
-    type: 'none',
-  },
-  routes: [{ path: '/', exact: false, component: '@/pages/index' }],
-  // fastRefresh: {},
+  fastRefresh: true,
+  srcTranspiler: 'esbuild',
+  routes: [{ path: '/*', component: 'index' }],
   chainWebpack(memo) {
-    resolveNocobasePackagesAlias(memo);
-
-    // 在引入 mermaid 之后，运行 yarn dev 的时候会报错，添加下面的代码可以解决。
+    // umi4 可能不需要这个配置，通过 debugger 没看到 mermaid，甚至没有 js-in-node_modules
     memo.module
       .rule('js-in-node_modules')
-      .test(/(react-error-boundary.*\.js|htmlparser2|(.*mermaid.*\.js$))/)
+      .test(/.*mermaid.*\.js$/)
       .include.clear();
     return memo;
   },
