@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { forEach } from '@nocobase/utils/client';
+import { forEach, showToast } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -25,12 +25,28 @@ const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const { getCollectionJoinField } = useCollectionManager();
+
+  // 过滤掉已经被删除的字段
+  items.forEach((item) => {
+    item.fields = item.fields
+      .map((field) => {
+        const joinField = getCollectionJoinField(`${item.collection}.${field}`);
+        if (joinField) {
+          return field;
+        }
+        return '';
+      })
+      .filter(Boolean);
+  });
+
   const templates: any = [
     {
       key: 'none',
       title: t('None'),
     },
   ].concat(items.map<any>((t, i) => ({ key: i, ...t })));
+
   const defaultTemplate = items.find((item) => item.default);
   return {
     templates,
@@ -42,14 +58,13 @@ const useDataTemplates = () => {
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const { getCollectionField } = useCollectionManager();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
 
   useEffect(() => {
     if (defaultTemplate) {
-      fetchTemplateData(api, defaultTemplate)
+      fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
           if (form) {
             forEach(data, (value, key) => {
@@ -58,6 +73,7 @@ export const Templates = ({ style = {}, form }) => {
               }
             });
           }
+          return data;
         })
         .catch((err) => {
           console.error(err);
@@ -68,15 +84,20 @@ export const Templates = ({ style = {}, form }) => {
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
     if (option.key !== 'none') {
-      fetchTemplateData(api, option).then((data) => {
-        if (form) {
-          forEach(data, (value, key) => {
-            if (value) {
-              form.values[key] = value;
-            }
-          });
-        }
-      });
+      fetchTemplateData(api, option, t)
+        .then((data) => {
+          if (form) {
+            forEach(data, (value, key) => {
+              if (value) {
+                form.values[key] = value;
+              }
+            });
+          }
+          return data;
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     } else {
       form?.reset();
     }
@@ -110,7 +131,10 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }) {
+async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+  if (template.fields.length === 0) {
+    return showToast(t('Template fields have been removed and need to be reconfigured'));
+  }
   return api
     .resource(template.collection)
     .get({
