@@ -172,6 +172,8 @@ FormItem.Designer = function Designer() {
         };
   });
 
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -352,7 +354,7 @@ FormItem.Designer = function Designer() {
                 properties: {
                   default: isInvariable(interfaceConfig)
                     ? {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
@@ -375,7 +377,7 @@ FormItem.Designer = function Designer() {
                         'x-disabled': false,
                       }
                     : {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
@@ -384,7 +386,7 @@ FormItem.Designer = function Designer() {
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                             s.title = '';
                             s['x-read-pretty'] = false;
                             s['x-disabled'] = false;
