@@ -161,7 +161,7 @@ FormItem.Designer = function Designer() {
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
   const isSelectFieldMode = fieldMode === 'Select';
   const sort = defaultSort?.map((item: string) => {
-    return item.startsWith('-')
+    return item?.startsWith('-')
       ? {
           field: item.substring(1),
           direction: 'desc',
@@ -494,6 +494,7 @@ FormItem.Designer = function Designer() {
                           field: {
                             type: 'string',
                             enum: sortFields,
+                            required: true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {
