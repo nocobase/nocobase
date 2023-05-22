@@ -1178,7 +1178,6 @@ export const useAssociationNames = (collection) => {
   if (schema) {
     const associations = getAssociationAppends(schema);
     const appends = flattenNestedList(associations);
-    console.log(appends, associations);
     return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
   }
   if (!schema) {
