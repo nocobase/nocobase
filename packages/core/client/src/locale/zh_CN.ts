@@ -777,6 +777,7 @@ export default {
   'Add template': '添加模板',
   'Display data template selector': '显示数据模板选择框',
   'Form data templates': '表单数据模板',
+  'Data template': '数据模板',
 
   'Reload Application': '重载应用',
   'The application is reloading, please do not close the page.': '应用正在重新加载，请勿关闭页面。',
