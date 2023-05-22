@@ -19,7 +19,7 @@ import {
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useHistory, useRouteMatch } from 'react-router-dom';
+import { Navigate, useNavigate, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { useAPIClient, useRequest } from '../api-client';
@@ -78,7 +78,7 @@ const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
 
 const PluginTable: React.FC<PluginTableProps> = (props) => {
   const { builtIn } = props;
-  const history = useHistory<any>();
+  const navigate = useNavigate();
   const api = useAPIClient();
   const [plugin, setPlugin] = useState<any>(null);
   const { t, i18n } = useTranslation();
@@ -145,7 +145,7 @@ const PluginTable: React.FC<PluginTableProps> = (props) => {
               {data.enabled && settingItems[data.name] ? (
                 <Link
                   onClick={() => {
-                    history.push(`/admin/settings/${data.name}`);
+                    navigate(`/admin/settings/${data.name}`);
                   }}
                 >
                   {t('Setting')}
@@ -318,7 +318,7 @@ const MarketplacePlugins = () => {
 
 const PluginList = (props) => {
   const match = useRouteMatch<any>();
-  const history = useHistory<any>();
+  const navigate = useNavigate();
   const { tabName = 'local' } = match.params || {};
   const { setTitle } = useDocumentTitle();
   const { t } = useTranslation();
@@ -340,7 +340,7 @@ const PluginList = (props) => {
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}`);
+              navigate(`/admin/pm/list/${activeKey}`);
             }}
           >
             <Tabs.TabPane tab={t('Local')} key={'local'} />
@@ -436,7 +436,7 @@ export const getPluginsTabs = (items, snippets) => {
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
   const match = useRouteMatch<any>();
-  const history = useHistory<any>();
+  const navigate = useNavigate();
   const items = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(items, snippets);
   const compile = useCompile();
@@ -505,7 +505,7 @@ const SettingsCenter = (props) => {
             onClick={(e) => {
               const item = items[e.key];
               const tabKey = Object.keys(item.tabs).shift();
-              history.push(`/admin/settings/${e.key}/${tabKey}`);
+              navigate(`/admin/settings/${e.key}/${tabKey}`);
             }}
             items={menuItems as any}
           />
@@ -519,7 +519,7 @@ const SettingsCenter = (props) => {
                 <Tabs
                   activeKey={tabName}
                   onChange={(activeKey) => {
-                    history.push(`/admin/settings/${pluginName}/${activeKey}`);
+                    navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
                 >
                   {plugin.tabs?.map((tab) => {

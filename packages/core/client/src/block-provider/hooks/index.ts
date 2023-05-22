@@ -6,7 +6,7 @@ import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 import { AssociationFilter, useFormBlockContext, useTableBlockContext } from '../..';
 import { useAPIClient, useRequest } from '../../api-client';
@@ -134,7 +134,7 @@ export const useCreateActionProps = () => {
   const form = useForm();
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible, fieldSchema } = useActionContext();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const actionSchema = useFieldSchema();
   const actionField = useField();
@@ -190,7 +190,7 @@ export const useCreateActionProps = () => {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
                 } else {
-                  history.push(onSuccess.redirectTo);
+                  navigate(onSuccess.redirectTo);
                 }
               }
             },
@@ -401,7 +401,7 @@ export const useCustomizeUpdateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
-  const history = useHistory();
+  const navigate = useNavigate();
   const compile = useCompile();
   const form = useForm();
 
@@ -435,7 +435,7 @@ export const useCustomizeUpdateActionProps = () => {
               if (isURL(onSuccess.redirectTo)) {
                 window.location.href = onSuccess.redirectTo;
               } else {
-                history.push(onSuccess.redirectTo);
+                navigate(onSuccess.redirectTo);
               }
             }
           },
@@ -457,7 +457,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
     tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
-  const history = useHistory();
+  const navigate = useNavigate();
   const compile = useCompile();
   const { t } = useTranslation();
   const actionField = useField();
@@ -515,7 +515,7 @@ export const useCustomizeBulkUpdateActionProps = () => {
                   if (isURL(onSuccess.redirectTo)) {
                     window.location.href = onSuccess.redirectTo;
                   } else {
-                    history.push(onSuccess.redirectTo);
+                    navigate(onSuccess.redirectTo);
                   }
                 }
               },
@@ -538,7 +538,7 @@ export const useCustomizeBulkEditActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const expressionScope = useContext(SchemaExpressionScopeContext);
   const actionContext = useActionContext();
-  const history = useHistory();
+  const navigate = useNavigate();
   const compile = useCompile();
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
@@ -603,7 +603,7 @@ export const useCustomizeBulkEditActionProps = () => {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
                 } else {
-                  history.push(onSuccess.redirectTo);
+                  navigate(onSuccess.redirectTo);
                 }
               }
             },
@@ -620,7 +620,7 @@ export const useCustomizeBulkEditActionProps = () => {
 
 export const useCustomizeRequestActionProps = () => {
   const apiClient = useAPIClient();
-  const history = useHistory();
+  const navigate = useNavigate();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
   const compile = useCompile();
@@ -685,7 +685,7 @@ export const useCustomizeRequestActionProps = () => {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
                 } else {
-                  history.push(onSuccess.redirectTo);
+                  navigate(onSuccess.redirectTo);
                 }
               }
             },
@@ -706,7 +706,7 @@ export const useUpdateActionProps = () => {
   const { field, resource, __parent } = useBlockRequestContext();
   const { setVisible } = useActionContext();
   const actionSchema = useFieldSchema();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { fields, getField } = useCollection();
   const compile = useCompile();
   const actionField = useField();
@@ -755,7 +755,7 @@ export const useUpdateActionProps = () => {
                 if (isURL(onSuccess.redirectTo)) {
                   window.location.href = onSuccess.redirectTo;
                 } else {
-                  history.push(onSuccess.redirectTo);
+                  navigate(onSuccess.redirectTo);
                 }
               }
             },

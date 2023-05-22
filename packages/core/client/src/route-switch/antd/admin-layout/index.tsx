@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { useHistory, useRouteMatch, Outlet } from 'react-router-dom';
+import { useNavigate, useRouteMatch, Outlet } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -57,7 +57,7 @@ const useMenuProps = () => {
 };
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
-  const history = useHistory();
+  const navigate = useNavigate();
   const match = useRouteMatch<any>();
   const defaultSelectedUid = match.params.name;
   const { sideMenuRef } = props;
@@ -66,7 +66,7 @@ const MenuEditor = (props) => {
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
-    history.push(`/admin/${schema['x-uid']}`);
+    navigate(`/admin/${schema['x-uid']}`);
   };
   const { data, loading } = useRequest(
     {
@@ -86,19 +86,19 @@ const MenuEditor = (props) => {
           } else {
             const s = findMenuItem(schema);
             if (s) {
-              history.push(`/admin/${s['x-uid']}`);
+              navigate(`/admin/${s['x-uid']}`);
               setTitle(s.title);
             } else {
-              history.push(`/admin/`);
+              navigate(`/admin/`);
             }
           }
         } else {
           const s = findMenuItem(schema);
           if (s) {
-            history.push(`/admin/${s['x-uid']}`);
+            navigate(`/admin/${s['x-uid']}`);
             setTitle(s.title);
           } else {
-            history.push(`/admin/`);
+            navigate(`/admin/`);
           }
         }
       },

@@ -9,7 +9,7 @@ import {
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
@@ -46,14 +46,14 @@ function OrderStatusSelect() {
 
 export const ShopShortcut = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <PluginManager.Toolbar.Item
       key="workflow"
       icon={<ShopOutlined />}
       title={t('Workflow')}
       onClick={() => {
-        history.push('/admin/settings/workflow/workflows');
+        navigate('/admin/settings/workflow/workflows');
       }}
     />
   );

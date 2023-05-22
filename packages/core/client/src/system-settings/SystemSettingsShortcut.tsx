@@ -5,7 +5,7 @@ import { Card, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '.';
 import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
@@ -284,13 +284,13 @@ export const SystemSettingsPane = () => {
 
 export const SystemSettingsShortcut = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <PluginManager.Toolbar.Item
       icon={<SettingOutlined />}
       title={t('System settings')}
       onClick={() => {
-        history.push('/admin/settings/system-settings/system-settings');
+        navigate('/admin/settings/system-settings/system-settings');
       }}
     />
   );

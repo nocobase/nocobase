@@ -7,7 +7,7 @@ import { useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, Button, Modal } from 'antd';
 import React, { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle } from 'react';
-import { useHistory } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 import Search from './Search';
@@ -101,7 +101,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const history = useHistory();
+  const navigate = useNavigate();
   const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
 
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
@@ -360,7 +360,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
+          <Button type="primary" onClick={() => navigate('/admin/settings/map-configuration/configuration')}>
             {t('Go to the configuration page')}
           </Button>
         }

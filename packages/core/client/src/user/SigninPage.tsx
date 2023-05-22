@@ -3,7 +3,7 @@ import { Space, Tabs } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import VerificationCode from './VerificationCode';
@@ -51,10 +51,10 @@ const passwordForm: ISchema = {
 
 export function useRedirect(next = '/admin') {
   const location = useLocation<any>();
-  const history = useHistory();
+  const navigate = useNavigate();
   const redirect = location?.['query']?.redirect;
   return useCallback(() => {
-    history.push(redirect || '/admin');
+    navigate(redirect || '/admin');
   }, [redirect]);
 }
 

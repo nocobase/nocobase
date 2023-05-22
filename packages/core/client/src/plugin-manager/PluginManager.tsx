@@ -5,7 +5,7 @@ import cls from 'classnames';
 import { get } from 'lodash';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { PluginManagerContext } from './context';
 
@@ -56,7 +56,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
   const { items = [] } = props;
   const [pinned, unpinned] = splitItems(items);
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <div style={{ display: 'inline-block' }}>
       <Menu style={{ width: '100%' }} selectable={false} mode={'horizontal'} theme={'dark'}>
@@ -86,7 +86,7 @@ PluginManager.Toolbar = (props: ToolbarProps) => {
             <Menu.Item
               key={'plugins'}
               onClick={() => {
-                history.push('/admin/settings');
+                navigate('/admin/settings');
               }}
               icon={<SettingOutlined />}
             >

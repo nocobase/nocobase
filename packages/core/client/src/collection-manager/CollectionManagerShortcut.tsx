@@ -4,7 +4,7 @@ import { uid } from '@formily/shared';
 import { Card } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
 import { ActionContext, SchemaComponent } from '../schema-component';
 import {
@@ -93,13 +93,13 @@ export const CollectionManagerPane = () => {
 
 export const CollectionManagerShortcut = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <PluginManager.Toolbar.Item
       icon={<DatabaseOutlined />}
       title={t('Collections & Fields')}
       onClick={() => {
-        history.push('/admin/settings/collection-manager/collections');
+        navigate('/admin/settings/collection-manager/collections');
       }}
     />
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useHistory } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Dropdown, Button, Tag, Switch, message, Breadcrumb, Modal } from 'antd';
 import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
@@ -43,7 +43,7 @@ function ExecutionResourceProvider({ request, filter = {}, ...others }) {
 }
 
 export function WorkflowCanvas() {
-  const history = useHistory();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { data, refresh, loading } = useResourceActionContext();
   const { resource } = useResourceContext();
@@ -66,7 +66,7 @@ export function WorkflowCanvas() {
 
   function onSwitchVersion({ key }) {
     if (key != workflow.id) {
-      history.push(key);
+      navigate(key);
     }
   }
 
@@ -91,7 +91,7 @@ export function WorkflowCanvas() {
     });
     message.success(t('Operation succeeded'));
 
-    history.push(`${revision.id}`);
+    navigate(`${revision.id}`);
   }
 
   async function onDelete() {
@@ -107,7 +107,7 @@ export function WorkflowCanvas() {
         });
         message.success(t('Operation succeeded'));
 
-        history.push(workflow.current ? '..' : `${revisions.find((item) => item.current)?.id}`);
+        navigate(workflow.current ? '..' : `${revisions.find((item) => item.current)?.id}`);
       },
     });
   }

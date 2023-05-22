@@ -3,7 +3,7 @@ import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { PluginManager, SchemaComponent, useActionContext, useRequest } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useCreateActionAndRefreshCM } from './action-hooks';
 import { GraphDrawPage } from './GraphDrawPage';
 import { useGCMTranslation } from './utils';
@@ -145,13 +145,13 @@ export const GraphCollectionPane = () => {
 
 export const GraphCollectionShortcut = () => {
   const { t } = useGCMTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <PluginManager.Toolbar.Item
       icon={<PartitionOutlined />}
       title={t('Graph Collection')}
       onClick={() => {
-        history.push('/admin/settings/graph/collections');
+        navigate('/admin/settings/graph/collections');
       }}
     />
   );

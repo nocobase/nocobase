@@ -1,6 +1,6 @@
 import { Input, PageHeader as AntdPageHeader, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
-import { useHistory, useRouteMatch } from 'react-router-dom';
+import { useNavigate, useRouteMatch } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';
 import { RemoteSchemaComponent, SchemaComponentContext } from '../schema-component';
 
@@ -58,7 +58,7 @@ const EditableTitle = (props) => {
 };
 
 export const BlockTemplateDetails = () => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const match = useRouteMatch<any>();
   const key = match?.params?.key;
   const value = useContext(SchemaComponentContext);
@@ -76,7 +76,7 @@ export const BlockTemplateDetails = () => {
     <div>
       <AntdPageHeader
         onBack={() => {
-          history.push('/admin/plugins/block-templates');
+          navigate('/admin/plugins/block-templates');
         }}
         ghost={false}
         title={<EditableTitle filterByTk={key} title={data?.data?.name} />}
