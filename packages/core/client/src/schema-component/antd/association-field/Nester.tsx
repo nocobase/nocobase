@@ -2,11 +2,10 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
 import { useAssociationFieldContext } from './hooks';
-// import { useRemoveActionProps } from '../../../block-provider/hooks';
 
 export const Nester = (props) => {
   const { options } = useContext(AssociationFieldContext);
@@ -36,9 +35,12 @@ const toArr = (value, isReadpretty) => {
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
-  const values = toArr(field.value, field.readPretty);
+  const [values, setValues] = useState([]);
+  useEffect(() => {
+    const values = toArr(field.value, field.readPretty);
+    setValues(values);
+  }, []);
   const { t } = useTranslation();
-  // const { onClick } = useRemoveActionProps(`${collectionField.collectionName}.${collectionField.target}`);
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
       {values.map((value, index) => {
@@ -49,7 +51,9 @@ const ToManyNester = observer((props) => {
                 <CloseCircleOutlined
                   style={{ zIndex: 1000, position: 'absolute', color: '#a8a3a3' }}
                   onClick={() => {
-                    field.value.splice(index, 1);
+                    const data = values.concat();
+                    data.splice(index, 1);
+                    setValues(data);
                   }}
                 />
               </div>
@@ -64,13 +68,9 @@ const ToManyNester = observer((props) => {
           type={'dashed'}
           block
           onClick={() => {
-            const v = field.value || [];
-            if (values.length > v.length) {
-              field.value = values;
-            } else {
-              field.value = v;
-            }
-            field.value.push({});
+            const data = values.concat();
+            data.push({});
+            setValues(data);
           }}
         >
           {t('Add new')}
