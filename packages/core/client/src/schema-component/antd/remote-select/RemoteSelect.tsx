@@ -1,15 +1,16 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm, observer } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { mapValues, isArray, isPlainObject, isString, isEqual, difference } from 'lodash';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -54,6 +55,7 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
+    const form = useForm();
 
     const mapOptionsToTags = useCallback(
       (options) => {
@@ -109,6 +111,46 @@ const InternalRemoteSelect = connect(
       [targetField?.uiSchema, fieldNames],
     );
 
+    // form 表单更新时触发重新请求
+    const filter = useRef({});
+    // const [formValues, setFormValues] = useState({ ...form.values });
+    // const [formChangedField, setFormChangedField] = useState('');
+    useEffect(() => {
+      let formChangedField = '';
+      function parseFilter(filterObj) {
+        return mapValues(filterObj, (value, key) => {
+          if (isArray(value)) {
+            return value.map((v) => {
+              return parseFilter(v);
+            });
+          }
+          if (isPlainObject(value)) {
+            return parseFilter(value);
+          }
+          if (isString(value) && value.includes('form')) {
+            const keys = value.replaceAll(/\{|\}/g, '').split('.');
+            const formValue = form.values?.[keys[1]]?.[keys[2]] || '';
+            if (formChangedField === keys[1]) {
+              props.onChange?.(null);
+              firstRun.current = false;
+            }
+            return formValue;
+          }
+          return value;
+        });
+      }
+      const unsubscribe = form.subscribe(({ payload, type }) => {
+        if (type !== 'onFieldValidateSuccess') {
+          return;
+        }
+        formChangedField = payload.path.entire;
+        filter.current = parseFilter(field.componentProps?.service?.params?.filter || service?.params?.filter);
+      });
+      return () => {
+        form.unsubscribe(unsubscribe);
+      };
+    }, [form, field, service, props]);
+
     const { data, run, loading } = useRequest(
       {
         action: 'list',
@@ -118,7 +160,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([field.componentProps?.service?.params?.filter || service?.params?.filter]),
+          filter: mergeFilter([filter.current]),
         },
       },
       {
@@ -153,7 +195,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          field.componentProps?.service?.params?.filter || service?.params?.filter,
+          filter.current,
         ]),
       });
     };
@@ -182,7 +224,7 @@ const InternalRemoteSelect = connect(
       }
       const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
-    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
+    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value, filter]);
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
         return;

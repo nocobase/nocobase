@@ -445,7 +445,7 @@ FormItem.Designer = function Designer() {
                   enum: dataSource,
                   'x-component': 'Filter',
                   'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                    dynamicComponent: (props) => FilterDynamicComponent({ ...props, form, collectionField }),
                   },
                 },
               },
