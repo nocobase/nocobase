@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { error, forEach, showToast } from '@nocobase/utils/client';
+import { error, forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -138,7 +138,7 @@ function findDataTemplates(fieldSchema): ITemplate {
 
 async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
   if (template.fields.length === 0) {
-    return showToast(t('Template fields have been removed and need to be reconfigured'));
+    return;
   }
   return api
     .resource(template.collection)
