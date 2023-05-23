@@ -39,7 +39,7 @@ const ToManyNester = observer((props) => {
   useEffect(() => {
     const values = toArr(field.value, field.readPretty);
     setValues(values);
-  }, []);
+  });
   const { t } = useTranslation();
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
@@ -52,6 +52,9 @@ const ToManyNester = observer((props) => {
                   style={{ zIndex: 1000, position: 'absolute', color: '#a8a3a3' }}
                   onClick={() => {
                     const data = values.concat();
+                    const result=field.value;
+                    result.splice(index,1);
+                    field.value=result
                     data.splice(index, 1);
                     setValues(data);
                   }}
