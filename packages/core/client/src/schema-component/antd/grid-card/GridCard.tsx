@@ -55,7 +55,7 @@ const designerCss = css`
 `;
 
 const InternalGridCard = (props) => {
-  const { columnCount: columnCountProp } = useProps(props);
+  const { columnCount: columnCountProp, pagination } = useProps(props);
   const { service, _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
@@ -108,6 +108,7 @@ const InternalGridCard = (props) => {
             !meta || meta.count <= meta.pageSize
               ? false
               : {
+                  ...pagination,
                   onChange: onPaginationChange,
                   total: meta?.count || 0,
                   pageSize: meta?.pageSize || 10,

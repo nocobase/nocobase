@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 import { useInterfaceContext } from '../../../router/InterfaceProvider';
+import { PaginationProps } from 'antd';
 
 const listCss = css`
   padding: 0 var(--nb-spacing);
@@ -27,5 +28,8 @@ export const useGridCardBlockProps = () => {
   const isInterface = useInterfaceContext();
   return {
     columnCount: isInterface ? columnCountConfig : null,
+    pagination: {
+      simple: true,
+    } as PaginationProps,
   };
 };
