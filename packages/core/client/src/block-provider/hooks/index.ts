@@ -1176,12 +1176,17 @@ export const useAssociationNames = (collection) => {
   if (schema) {
     const associations = getAssociationAppends(schema);
     const appends = flattenNestedList(associations);
-    console.log(appends, associations);
-    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+    return {
+      appends,
+      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
+    };
   }
   if (!schema) {
     const associations = getAssociationAppends(formSchema);
     const appends = flattenNestedList(associations);
-    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+    return {
+      appends,
+      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
+    };
   }
 };
