@@ -7,12 +7,38 @@ import { RouteSwitchProps } from './types';
 export function RouteSwitch(props: RouteSwitchProps) {
   const { routes: remoteRoutes = [] } = props;
 
-  // /a/b/:c?/:d?/:e? => /a/b
-  const getOptionalSegmentsPath = useCallback((path: string) => {
-    if (path.endsWith('?')) {
-      return getOptionalSegmentsPath(path.split('/').slice(0, -1).join('/'));
+  /**
+   * 将 path 中的可选参数转换为多个路径
+   *
+   * @example
+   * generatePaths('/a/b/:c?/:d?')
+   * => ['/a/b', '/a/b/:c', '/a/b/:c/:d']
+   */
+  const generatePaths = useCallback((path = '') => {
+    const segments: string[] = path.split('/'); // 将路径按照 '/' 分段
+    if (segments[segments.length - 1] === '') {
+      segments.pop(); // 最后一个字符是 '/'，将其弹出
     }
-    return path;
+    let lastOptionsIndex = undefined;
+    for (let i = segments.length - 1; i >= 0; i--) {
+      if (!segments[i].endsWith('?')) {
+        lastOptionsIndex = i; // 找到最后一个可选参数的位置
+        break;
+      }
+    }
+
+    if (lastOptionsIndex === undefined) return [path]; // 没有可选参数，直接返回原路径
+    const res: string[] = [];
+    for (let i = lastOptionsIndex; i < segments.length; i++) {
+      res.push(
+        segments
+          .slice(0, i + 1)
+          .join('/')
+          .replaceAll('?', '')
+          .replaceAll('(.+)', ''), // 历史遗留问题 /a/b/:c(.+)? => /a/b/:c
+      );
+    }
+    return res;
   }, []);
 
   const getRoutes = useCallback(
@@ -30,30 +56,15 @@ export function RouteSwitch(props: RouteSwitchProps) {
           };
         } else if (item.type === 'route' && item.path) {
           // common route
-          const commonRoutes = [
-            {
-              path: getOptionalSegmentsPath(item.path), // /a/b/:c?/:d? => /a/b | /a/b => /a/b
-              caseSensitive: item.sensitive,
-              element: (
-                <RouteContext.Provider value={item}>
-                  <ComponentRenderer component={item.component} />
-                </RouteContext.Provider>
-              ),
-            },
-          ];
-
-          if (item.path.endsWith('?')) {
-            commonRoutes.push({
-              path: item.path.replaceAll('?', '').replaceAll('(.+)', ''), // /a/b/:c?/:d(.+)? => /a/b/:c/:d
-              caseSensitive: item.sensitive,
-              element: (
-                <RouteContext.Provider value={item}>
-                  <ComponentRenderer component={item.component} />
-                </RouteContext.Provider>
-              ),
-            });
-          }
-          return commonRoutes;
+          return generatePaths(item.path).map((path) => ({
+            path: path,
+            caseSensitive: item.sensitive,
+            element: (
+              <RouteContext.Provider value={item}>
+                <ComponentRenderer component={item.component} />
+              </RouteContext.Provider>
+            ),
+          }));
         } else if (item.type === 'redirect') {
           // redirect route
           return {
@@ -64,7 +75,7 @@ export function RouteSwitch(props: RouteSwitchProps) {
       });
       return res;
     },
-    [getOptionalSegmentsPath],
+    [generatePaths],
   );
 
   const routers = useRoutes(getRoutes(remoteRoutes));
