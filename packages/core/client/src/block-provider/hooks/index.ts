@@ -1074,18 +1074,19 @@ export const useAssociationFilterBlockProps = () => {
 };
 
 const getTemplateSchema = (schema) => {
-  const conf = {
-    url: `/uiSchemas:getJsonSchema/${schema?.uid}`,
-  };
-  const { data, loading, run } = useRequest(conf, { manual: true });
-  if (loading) {
+  if (!schema?.uid) {
+    return null;
   }
-  useEffect(() => {
-    if (schema?.uid) {
-      run();
-    }
-  }, [schema?.uid]);
-  return schema?.uid ? new Schema(data?.data) : null;
+  const conf = {
+    url: `/uiSchemas:getJsonSchema/${schema.uid}`,
+  };
+  try {
+    const { data } = useRequest(conf);
+    return data?.data ? new Schema(data.data) : null;
+  } catch (error) {
+    console.error('Error fetching template schema:', error);
+    return null;
+  }
 };
 
 export const useAssociationNames = () => {
@@ -1113,7 +1114,7 @@ export const useAssociationNames = () => {
       } else if (s['x-component'] === 'BlockTemplate') {
         const template = getTemplateById(s?.['x-component-props']?.templateId);
         const templateSchema = getTemplateSchema(template);
-        getAssociationAppends(templateSchema, str);
+        templateSchema && getAssociationAppends(templateSchema, str);
       } else if (
         ![
           'ActionBar',
