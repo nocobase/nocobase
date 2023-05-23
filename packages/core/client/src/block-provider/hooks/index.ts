@@ -1,7 +1,7 @@
 import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep, isEqual, uniq, omitBy } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -158,7 +158,8 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const formValues = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;
@@ -255,6 +256,7 @@ export const useAssociationCreateActionProps = () => {
         }
         message.success(compile(onSuccess?.successMessage));
       } catch (error) {
+        actionField.data.data = null;
         actionField.data.loading = false;
       }
     },
@@ -1176,12 +1178,17 @@ export const useAssociationNames = (collection) => {
   if (schema) {
     const associations = getAssociationAppends(schema);
     const appends = flattenNestedList(associations);
-    console.log(appends, associations);
-    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+    return {
+      appends,
+      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
+    };
   }
   if (!schema) {
     const associations = getAssociationAppends(formSchema);
     const appends = flattenNestedList(associations);
-    return { appends, updateAssociationValues: appends.filter((v) => associationValues.includes(v)) };
+    return {
+      appends,
+      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
+    };
   }
 };
