@@ -16,7 +16,7 @@ export const PluginManagerLink = () => {
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/pm/list');
+          history.push('/admin/pm/list/');
         }}
       />
     </Tooltip>

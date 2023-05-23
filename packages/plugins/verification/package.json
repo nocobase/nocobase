@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-verification",
+  "displayName": "verification",
+  "displayName.zh-CN": "验证码",
+  "description": "verification setting.",
+  "description.zh-CN": "验证码配置。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
