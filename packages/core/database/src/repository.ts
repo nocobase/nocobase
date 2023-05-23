@@ -29,7 +29,7 @@ import { BelongsToRepository } from './relation-repository/belongs-to-repository
 import { HasManyRepository } from './relation-repository/hasmany-repository';
 import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
-import { updateAssociations, updateModelByValues } from './update-associations';
+import { updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 
@@ -460,11 +460,6 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     if (!instance) {
       return;
     }
-
-    await updateAssociations(instance, values, {
-      ...options,
-      transaction,
-    });
 
     if (options.hooks !== false) {
       await this.database.emitAsync(`${this.collection.name}.afterCreateWithAssociations`, instance, {

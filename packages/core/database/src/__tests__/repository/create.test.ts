@@ -45,6 +45,26 @@ describe('create with hasMany', () => {
     await db.sync();
   });
 
+  it('should get associations at afterCreate hook', async () => {
+    const fn = jest.fn();
+    db.on('posts.afterCreate', async (model) => {
+      fn(model.toJSON());
+    });
+
+    await db.getRepository('posts').create({
+      values: {
+        title: 'p1',
+        user: {
+          name: 'u1',
+        },
+      },
+    });
+
+    const arg1 = fn.mock.calls[0][0];
+
+    expect(arg1['userId']).not.toBeNull();
+  });
+
   it('should save associations with reverseField value', async () => {
     const u1 = await db.getRepository('users').create({
       values: {
