@@ -84,7 +84,7 @@ export const FormItem: any = observer((props: any) => {
             `,
             {
               [css`
-                & .ant-formily-item-label {
+                > .ant-formily-item-label {
                   display: none;
                 }
               `]: showTitle === false,
