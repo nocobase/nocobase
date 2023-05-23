@@ -13,14 +13,14 @@ const Tree = connect(
   mapProps({
     value: 'checkedKeys',
     dataSource: 'treeData',
-    onInput: 'onCheck',
+    // onInput: 'onCheck',
   }),
 );
 
 export const FormDataTemplates = observer((props: any) => {
   const { useProps } = props;
   const { defaultValues, collectionName } = useProps();
-  const { collectionList, getEnableFieldTree, onLoadData } = useCollectionState(collectionName);
+  const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
@@ -131,6 +131,7 @@ export const FormDataTemplates = observer((props: any) => {
                       checkStrictly: true,
                       selectable: false,
                       loadData: onLoadData,
+                      onCheck,
                       rootStyle: {
                         padding: '8px 0',
                         border: '1px solid #d9d9d9',

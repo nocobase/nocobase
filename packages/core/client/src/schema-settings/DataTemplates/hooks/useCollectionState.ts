@@ -1,4 +1,5 @@
 import { ArrayField } from '@formily/core';
+import _ from 'lodash';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
@@ -150,10 +151,24 @@ export const useCollectionState = (currentCollectionName: string) => {
     });
   }, []);
 
+  const onCheck = useCallback((checkedKeys, { node, checked }) => {
+    if (checked) {
+      const parentKey = node.key.split('.').slice(0, -1).join('.');
+
+      // 当子节点被选中时，也选中父节点，提高用户辨识度
+      if (parentKey) {
+        checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
+      }
+    }
+
+    dataFields.value = checkedKeys;
+  }, []);
+
   return {
     collectionList,
     getEnableFieldTree,
     onLoadData,
+    onCheck,
   };
 };
 
