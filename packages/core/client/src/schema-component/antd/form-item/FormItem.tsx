@@ -575,7 +575,7 @@ FormItem.Designer = function Designer() {
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
             if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
+              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
               field.value = field.value || initValue;
             }
             dn.emit('patch', {
