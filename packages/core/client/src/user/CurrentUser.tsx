@@ -29,7 +29,7 @@ export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
   const { allowAll, snippets } = useACLRoleContext();
-  const allowReboot = allowAll || snippets?.includes('app');
+  const appAllowed = allowAll || snippets?.includes('app');
   const silenceApi = useAPIClient();
   const check = async () => {
     return await new Promise((resolve) => {
@@ -71,31 +71,42 @@ export const CurrentUser = () => {
               <LanguageSettings />
               <ThemeSettings />
               <Menu.Divider />
-              {allowReboot && (
-                <Menu.Item
-                  key="reload"
-                  onClick={async () => {
-                    Modal.confirm({
-                      title: t('Reboot Application'),
-                      content: t(
-                        'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?',
-                      ),
-                      okText: t('Reboot'),
-                      okButtonProps: {
-                        danger: true,
-                      },
-                      onOk: async () => {
-                        await api.resource('app').reboot();
-                        await check();
-                        window.location.reload();
-                      },
-                    });
-                  }}
-                >
-                  {t('Reboot Application')}
-                </Menu.Item>
+              {appAllowed && (
+                <>
+                  <Menu.Item
+                    key="cache"
+                    onClick={async () => {
+                      await api.resource('app').clearCache();
+                      window.location.reload();
+                    }}
+                  >
+                    {t('Clear cache')}
+                  </Menu.Item>
+                  <Menu.Item
+                    key="reboot"
+                    onClick={async () => {
+                      Modal.confirm({
+                        title: t('Reboot application'),
+                        content: t(
+                          'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?',
+                        ),
+                        okText: t('Reboot'),
+                        okButtonProps: {
+                          danger: true,
+                        },
+                        onOk: async () => {
+                          await api.resource('app').reboot();
+                          await check();
+                          window.location.reload();
+                        },
+                      });
+                    }}
+                  >
+                    {t('Reboot application')}
+                  </Menu.Item>
+                  <Menu.Divider />
+                </>
               )}
-              <Menu.Divider />
               <Menu.Item
                 key="signout"
                 onClick={async () => {

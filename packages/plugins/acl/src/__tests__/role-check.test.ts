@@ -24,6 +24,12 @@ describe('role check action', () => {
       },
     });
 
+    await role.createMenuUiSchema({
+      values: {
+        name: 'test',
+      },
+    });
+
     const user = await db.getRepository('users').create({
       values: {
         roles: ['test'],

@@ -160,6 +160,8 @@ AssociationSelect.Designer = function Designer() {
     readOnlyMode = 'read-pretty';
   }
 
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -299,10 +301,10 @@ AssociationSelect.Designer = function Designer() {
                 title: t('Set default value'),
                 properties: {
                   default: {
-                    ...(fieldSchema || {}),
+                    ...(fieldSchemaWithoutRequired || {}),
                     'x-decorator': 'FormItem',
                     'x-component-props': {
-                      ...fieldSchema['x-component-props'],
+                      ...fieldSchemaWithoutRequired['x-component-props'],
                       component: collectionField?.target ? 'AssociationSelect' : undefined,
                       service: {
                         resource: collectionField?.target,
@@ -812,7 +814,7 @@ AssociationSelect.FilterDesigner = function FilterDesigner() {
               title: t('Set default value'),
               properties: {
                 default: {
-                  ...collectionField?.uiSchema,
+                  ..._.omit(collectionField?.uiSchema, 'required'),
                   name: 'default',
                   title: t('Default value'),
                   'x-decorator': 'FormItem',
