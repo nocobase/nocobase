@@ -33,7 +33,7 @@ const EditableAssociationField = observer((props: any) => {
       if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
         field.value = {};
       } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-        field.value = [{}];
+        field.value = [null];
       }
     }
     setLoading(false);
