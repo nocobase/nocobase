@@ -10,7 +10,7 @@ export const useCollectionState = (currentCollectionName: string) => {
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
 
-  let dataFields: ArrayField = [] as any;
+  let dataFields: ArrayField = {} as any;
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
