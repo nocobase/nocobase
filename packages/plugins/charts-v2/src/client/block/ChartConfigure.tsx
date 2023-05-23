@@ -1,18 +1,24 @@
 import { useChartsTranslation } from '../locale';
-import React, { createContext, useContext } from 'react';
-import { Row, Col, Card, Modal, Button } from 'antd';
+import React, { createContext, useContext, useMemo } from 'react';
+import { Row, Col, Card, Modal, Button, Space } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
-import { SchemaComponent, Filter, gridRowColWrap } from '@nocobase/client';
+import { SchemaComponent, Filter, gridRowColWrap, Select, Input, Radio, useDesignable } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { configSchema, querySchema } from './schemas/configure';
-import { ISchema } from '@formily/react';
-import { ChartRenderer } from '../renderer';
-import { Form } from '@formily/antd';
+import { ISchema, FormConsumer } from '@formily/react';
+import { ChartRenderer, ChartRendererProps, useChartTypes } from '../renderer';
+import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
+import { Form as FormType, createForm } from '@formily/core';
 
 export const ChartConfigContext = createContext<{
   visible: boolean;
   setVisible?: (visible: boolean) => void;
+  current?: {
+    schema: ISchema;
+    field: any;
+  };
+  setCurrent?: (current: { schema: ISchema; field: any }) => void;
 }>({
   visible: true,
 });
@@ -27,7 +33,9 @@ export const ChartConfigure: React.FC<{
   ) => void;
 }> = (props) => {
   const { t } = useChartsTranslation();
-  const { visible, setVisible } = useContext(ChartConfigContext);
+  const { visible, setVisible, current } = useContext(ChartConfigContext);
+  const { schema, field } = current || {};
+  const { dn } = useDesignable();
   const { insert } = props;
   const formCollapse = FormCollapse.createFormCollapse(['measure', 'dimension', 'sort', 'filter']);
   const RunButton: React.FC = () => (
@@ -36,16 +44,47 @@ export const ChartConfigure: React.FC<{
       {t('Run query')}
     </Button>
   );
+  const chartTypes = useChartTypes();
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: {
+          query: schema?.['x-component-props']?.query,
+          config: schema?.['x-component-props']?.config,
+        },
+      }),
+    [schema],
+  );
   return (
     <Modal
       title={t('Configure chart')}
       open={visible}
       onOk={() => {
+        const { query, config } = form.values;
+        if (schema && schema['x-uid']) {
+          schema['x-component-props'] = {
+            query,
+            config,
+          };
+          field.componentProps = {
+            query,
+            config,
+          };
+          dn.emit('patch', {
+            schema,
+          });
+          setVisible(false);
+          return;
+        }
         insert(
           {
             type: 'object',
             'x-decorator': 'CardItem',
             'x-component': 'ChartRenderer',
+            'x-component-props': {
+              query,
+              config,
+            },
             'x-initializer': 'ChartInitializers',
             'x-designer': 'ChartRenderer.Designer',
           },
@@ -62,9 +101,9 @@ export const ChartConfigure: React.FC<{
         background: 'rgba(128, 128, 128, 0.08)',
       }}
     >
-      <Form layout="vertical">
-        <Row>
-          <Col flex={3}>
+      <Form layout="vertical" form={form}>
+        <Row gutter={8}>
+          <Col span={15}>
             <Row>
               <Col
                 className={css`
@@ -76,7 +115,13 @@ export const ChartConfigure: React.FC<{
                     margin-bottom: 10px;
                   `}
                 >
-                  <ChartRenderer />
+                  <FormConsumer>
+                    {(form) => {
+                      const query = { ...form.values.query };
+                      const config = { ...form.values.config };
+                      return <ChartRenderer query={query} config={config} />;
+                    }}
+                  </FormConsumer>
                 </Card>
               </Col>
             </Row>
@@ -86,22 +131,32 @@ export const ChartConfigure: React.FC<{
                   width: 100%;
                 `}
               >
-                <SchemaComponent schema={configSchema} scope={{ t }} components={{ Card }} />
+                <SchemaComponent
+                  schema={configSchema}
+                  scope={{ t, chartTypes }}
+                  components={{ Card, Select, Input, FormItem }}
+                />
               </Col>
             </Row>
           </Col>
-          <Col
-            flex={3}
-            className={css`
-              margin-left: 10px;
-              width: 40%;
-            `}
-          >
+          <Col span={9}>
             <Card title={t('Query')} extra={<RunButton />}>
               <SchemaComponent
                 schema={querySchema}
                 scope={{ t, formCollapse }}
-                components={{ ArrayItems, Editable, Filter, FormCollapse, Card, Switch }}
+                components={{
+                  ArrayItems,
+                  Editable,
+                  Filter,
+                  FormCollapse,
+                  Card,
+                  Switch,
+                  Select,
+                  Input,
+                  FormItem,
+                  Radio,
+                  Space,
+                }}
               />
             </Card>
           </Col>

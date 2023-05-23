@@ -1,57 +1,39 @@
-import { CardItem, GeneralSchemaDesigner, SchemaSettings, useDesigner } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { css } from '@emotion/css';
-import { Line } from '@ant-design/plots';
+import { Empty } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block/ChartConfigure';
+import { useFieldSchema, useField } from '@formily/react';
+import { useChartComponent } from './ChartLibrary';
 
-const designerCss = css`
-  position: relative;
-  &:hover {
-    > .general-schema-designer {
-      display: block;
-    }
-  }
-  &.nb-form-item:hover {
-    > .general-schema-designer {
-      background: rgba(241, 139, 98, 0.06) !important;
-      border: 0 !important;
-      top: -5px !important;
-      bottom: -5px !important;
-      left: -5px !important;
-      right: -5px !important;
-    }
-  }
-  > .general-schema-designer {
-    position: absolute;
-    z-index: 999;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    display: none;
-    border: 2px solid rgba(241, 139, 98, 0.3);
-    pointer-events: none;
-    > .general-schema-designer-icons {
-      position: absolute;
-      right: 2px;
-      top: 2px;
-      line-height: 16px;
-      pointer-events: all;
-      .ant-space-item {
-        background-color: #f18b62;
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        padding-left: 1px;
-      }
-    }
-  }
-`;
+export type ChartRendererProps = {
+  query?: Partial<{
+    measures: {
+      field: string;
+      aggregate?: string;
+      alias?: string;
+    }[];
+    dimensions: {
+      field: string;
+      alias?: string;
+      format?: string;
+    }[];
+    sort: {
+      field: string;
+      order: 'asc' | 'desc';
+    };
+    filter: any;
+  }>;
+  config?: {
+    chartType: string;
+    chartConfig: string;
+  };
+};
 
-export const ChartRenderer: React.FC & {
+export const ChartRenderer: React.FC<ChartRendererProps> & {
   Designer: React.FC;
-} = () => {
+} = (props) => {
+  const { query, config } = props;
   const data = [
     {
       Date: '2010-01',
@@ -174,29 +156,38 @@ export const ChartRenderer: React.FC & {
       scales: 1755,
     },
   ];
-  const config = {
-    data,
-    xField: 'Date',
-    yField: 'scales',
-    xAxis: {
-      // type: 'timeCat',
-      tickCount: 5,
-    },
+  const { t } = useChartsTranslation();
+  const C = () => {
+    const chartType = config?.chartType || '-';
+    const [library, type] = chartType.split('-');
+    const Component = useChartComponent(library, type);
+    let chartConfig = {};
+    try {
+      chartConfig = JSON.parse(config?.chartConfig || '{}');
+    } catch (err) {
+      console.error(err);
+    }
+
+    return Component ? (
+      <Component {...{ ...chartConfig, data }} />
+    ) : (
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />
+    );
   };
-  return (
-    // <div className={designerCss}>
-    <Line {...config} />
-    // </div>
-  );
+  return <C />;
 };
 
 ChartRenderer.Designer = function Designer() {
   const { t } = useChartsTranslation();
-  const { setVisible } = useContext(ChartConfigContext);
+  const { setVisible, setCurrent } = useContext(ChartConfigContext);
+  const field = useField();
+  const schema = useFieldSchema();
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.Item
+        key="configure"
         onClick={() => {
+          setCurrent({ schema, field });
           setVisible(true);
         }}
       >

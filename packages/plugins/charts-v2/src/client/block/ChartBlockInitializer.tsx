@@ -8,11 +8,12 @@ import { ChartConfigContext } from './ChartConfigure';
 
 const itemWrap = SchemaInitializer.itemWrap;
 const ConfigureButton = itemWrap((props) => {
-  const { setVisible } = useContext(ChartConfigContext);
+  const { setVisible, setCurrent } = useContext(ChartConfigContext);
   return (
     <SchemaInitializer.Item
       {...props}
       onClick={() => {
+        setCurrent({ schema: {}, field: null });
         setVisible(true);
       }}
     />
@@ -21,7 +22,6 @@ const ConfigureButton = itemWrap((props) => {
 
 export const ChartInitializers = () => {
   const { t } = useChartsTranslation();
-  const { setVisible } = useContext(ChartConfigContext);
   const collections = useCollectionDataSourceItems('Chart');
   collections[0].children = collections[0].children.map((item) => ({
     ...item,
