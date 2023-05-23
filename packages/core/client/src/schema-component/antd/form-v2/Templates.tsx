@@ -71,7 +71,7 @@ export const Templates = ({ style = {}, form }) => {
     if (defaultTemplate) {
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
@@ -91,7 +91,7 @@ export const Templates = ({ style = {}, form }) => {
     if (option.key !== 'none') {
       fetchTemplateData(api, option, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
