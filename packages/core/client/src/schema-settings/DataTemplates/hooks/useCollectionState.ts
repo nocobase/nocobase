@@ -1,5 +1,4 @@
 import { ArrayField } from '@formily/core';
-import { observable } from '@formily/reactive';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
@@ -30,6 +29,9 @@ export const useCollectionState = (currentCollectionName: string) => {
     'updatedAt',
   ];
 
+  /**
+   * maxDepth: 从 0 开始，0 表示一层，1 表示两层，以此类推
+   */
   const traverseFields = (collectionName, { exclude = [], depth = 0, maxDepth, prefix = '' }) => {
     if (depth > maxDepth) {
       return [];
@@ -57,7 +59,7 @@ export const useCollectionState = (currentCollectionName: string) => {
           isLeaf: true,
           field,
         };
-        // 多对多的只展示关系字段
+        // 多对多和多对一只展示关系字段
         if (['belongsTo', 'belongsToMany'].includes(field.type)) {
           node['type'] = 'reference';
           option['type'] = 'reference';
@@ -78,12 +80,12 @@ export const useCollectionState = (currentCollectionName: string) => {
             exclude: ['id', ...systemKeys],
           });
         }
-        return observable(option);
+        return option;
       })
       .filter(Boolean);
   };
 
-  const traverseAssociations = (collectionName, { prefix, maxDepth, depth, exclude = [] }) => {
+  const traverseAssociations = (collectionName, { prefix, maxDepth, depth = 0, exclude = [] }) => {
     if (depth > maxDepth) {
       return [];
     }
@@ -103,6 +105,8 @@ export const useCollectionState = (currentCollectionName: string) => {
         return {
           title: React.createElement(TreeNode, option),
           key: value,
+          isLeaf: false,
+          field,
           children: traverseAssociations(field.target, {
             prefix: value,
             depth: depth + 1,
@@ -125,7 +129,7 @@ export const useCollectionState = (currentCollectionName: string) => {
     }
 
     try {
-      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 0 });
+      return traverseFields(collectionName, { exclude: ['id', ...systemKeys], maxDepth: 1 });
     } catch (error) {
       console.error(error);
       return [];
@@ -134,14 +138,14 @@ export const useCollectionState = (currentCollectionName: string) => {
 
   const onLoadData = useCallback((node) => {
     return new Promise((resolve) => {
-      const result = findNode(dataFields.componentProps.treeData, node);
+      if (node.children.length) {
+        node.children.forEach((child) => {
+          loadChildren({ node: child, traverseAssociations, traverseFields, systemKeys, dataFields });
+        });
+        return resolve(void 0);
+      }
 
-      result.children = traverseFields(node.field.target, {
-        exclude: ['id', ...systemKeys],
-        prefix: node.key,
-        maxDepth: 0,
-      });
-
+      loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataFields });
       resolve(void 0);
     });
   }, []);
@@ -165,4 +169,37 @@ function findNode(treeData, item) {
       queue.push(...node.children);
     }
   }
+}
+
+function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataFields }) {
+  const activeNode = findNode(dataFields.componentProps.treeData, node);
+  let children = [];
+
+  // 多对多和多对一只展示关系字段
+  if (['belongsTo', 'belongsToMany'].includes(node.field.type)) {
+    children = traverseAssociations(node.field.target, {
+      exclude: systemKeys,
+      prefix: node.key,
+      maxDepth: 1,
+    });
+  } else if (['hasOne', 'hasMany'].includes(node.field.type)) {
+    children = traverseFields(node.field.target, {
+      exclude: ['id', ...systemKeys],
+      prefix: node.key,
+      maxDepth: 1,
+    });
+  }
+
+  if (children.length) {
+    activeNode.children = children;
+
+    // 当父节点已被选中时，子节点也应该被选中
+    if (dataFields.value.includes(node.key)) {
+      dataFields.value.push(...children.map((item) => item.key));
+    }
+  } else {
+    activeNode.isLeaf = true;
+  }
+
+  return children;
 }
