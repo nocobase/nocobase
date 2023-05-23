@@ -1202,15 +1202,15 @@ export const useAssociationNames = () => {
   const getAssociationAppends = (schema, str) => {
     schema.reduceProperties((prefix, s) => {
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)&&s['x-component'] !== 'TableField') {
-        const path=prefix === ''?prefix + s.name:prefix + '.' + s.name;
-        // prefix === '' ? appends.push(prefix + s.name) : appends.push(prefix + '.' + s.name);
+      if (
+        collectionfield &&
+        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
+        s['x-component'] !== 'TableField'
+      ) {
+        const path = prefix === '' ? prefix + s.name : prefix + '.' + s.name;
         appends.push(path);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
-          // prefix === ''
-          //   ? updateAssociationValues.push(prefix + s.name)
-          //   : updateAssociationValues.push(prefix + '.' + s.name);
-            updateAssociationValues.push(path)
+          updateAssociationValues.push(path);
           const bufPrefix = prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);
         }
@@ -1223,6 +1223,8 @@ export const useAssociationNames = () => {
           'Selector',
           'Viewer',
           'AddNewer',
+          'AssociationField.Selector',
+          'AssociationField.AddNewer',
           'TableField',
         ].includes(s['x-component'])
       ) {
