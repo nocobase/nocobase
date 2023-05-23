@@ -20,6 +20,8 @@ const locale = {
   'Enable Tabs': '启用标签栏',
   'Delete tab item?': '是否删除标签项？',
   'Add tab': '添加标签页',
+  'Menu configuration': '菜单配置',
+  'Page configuration': '页面配置',
 };
 
 export default locale;

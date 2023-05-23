@@ -75,8 +75,12 @@ const InternalMenu: React.FC = (props) => {
         `,
       )}
     >
-      <Designer />
       <List>
+        {designable && (
+          <List.Item>
+            <Designer />
+          </List.Item>
+        )}
         <DndContext>
           <SchemaComponent onlyRenderProperties schema={fieldSchema}></SchemaComponent>
         </DndContext>

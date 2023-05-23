@@ -1,11 +1,36 @@
-import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
+import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
+import { MenuOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
+import { Button } from 'antd';
+import { useFieldSchema, useField } from '@formily/react';
 
 export const MenuDesigner: React.FC = (props) => {
   const { t } = useTranslation();
+  const fieldSchema = useFieldSchema();
+  const { dn } = useDesignable();
+  const field = useField();
+  const schemaSettingsProps = {
+    dn,
+    field,
+    fieldSchema,
+  };
   return (
-    <GeneralSchemaDesigner draggable={false}>
+    <SchemaSettings
+      title={
+        <Button
+          style={{
+            borderColor: 'rgb(241, 139, 98)',
+            color: 'rgb(241, 139, 98)',
+          }}
+          icon={<MenuOutlined />}
+          type="dashed"
+        >
+          {t('Menu configuration')}
+        </Button>
+      }
+      {...schemaSettingsProps}
+    >
       <SchemaSettings.Remove
         key="remove"
         removeParentsIfNoChildren
@@ -16,6 +41,6 @@ export const MenuDesigner: React.FC = (props) => {
           'x-component': 'Grid',
         }}
       />
-    </GeneralSchemaDesigner>
+    </SchemaSettings>
   );
 };

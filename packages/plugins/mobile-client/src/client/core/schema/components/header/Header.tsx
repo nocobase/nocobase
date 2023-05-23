@@ -21,10 +21,6 @@ const InternalHeader = (props: HeaderProps) => {
       className={cx(
         'nb-mobile-header',
         css`
-          & > .general-schema-designer > .general-schema-designer-icons {
-            top: unset;
-            bottom: 2px;
-          }
           width: 100%;
           background: #fff;
         `,

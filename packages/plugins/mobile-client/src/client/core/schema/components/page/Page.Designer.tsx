@@ -1,9 +1,11 @@
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { useFieldSchema } from '@formily/react';
+import { useField, useFieldSchema } from '@formily/react';
 import { findGridSchema } from '../../helpers';
 import { uid } from '@formily/shared';
+import { Button } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
 
 export const PageDesigner = (props) => {
   const { showBack } = props;
@@ -12,9 +14,29 @@ export const PageDesigner = (props) => {
   const { dn } = useDesignable();
   const headerSchema = fieldSchema?.properties?.['header'];
   const tabsSchema = fieldSchema?.properties?.['tabs'];
+  const field = useField();
+  const schemaSettingsProps = {
+    dn,
+    field,
+    fieldSchema,
+  };
 
   return (
-    <GeneralSchemaDesigner draggable={false}>
+    <SchemaSettings
+      title={
+        <Button
+          style={{
+            borderColor: 'rgb(241, 139, 98)',
+            color: 'rgb(241, 139, 98)',
+          }}
+          icon={<MenuOutlined />}
+          type="dashed"
+        >
+          {t('Page configuration')}
+        </Button>
+      }
+      {...schemaSettingsProps}
+    >
       <SchemaSettings.SwitchItem
         checked={!!headerSchema}
         title={t('Enable Header')}
@@ -79,8 +101,6 @@ export const PageDesigner = (props) => {
           }
         }}
       />
-      <SchemaSettings.Divider />
-      <SchemaSettings.Template componentName="MPage" needRender />
-    </GeneralSchemaDesigner>
+    </SchemaSettings>
   );
 };

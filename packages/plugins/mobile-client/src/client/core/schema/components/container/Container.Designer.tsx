@@ -1,10 +1,12 @@
-import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
+import { SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from '../../../../locale';
-import { Schema, useFieldSchema } from '@formily/react';
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useHistory } from 'react-router-dom';
 import { findSchema } from '../../helpers';
+import { Button } from 'antd';
+import { MenuOutlined } from '@ant-design/icons';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();
@@ -15,8 +17,29 @@ export const ContainerDesigner = () => {
   ) as Schema;
 
   const history = useHistory();
+
+  const field = useField();
+  const schemaSettingsProps = {
+    dn,
+    field,
+    fieldSchema,
+  };
   return (
-    <GeneralSchemaDesigner draggable={false}>
+    <SchemaSettings
+      title={
+        <Button
+          style={{
+            borderColor: 'rgb(241, 139, 98)',
+            color: 'rgb(241, 139, 98)',
+          }}
+          icon={<MenuOutlined />}
+          type="dashed"
+        >
+          {t('Interface Configuration')}
+        </Button>
+      }
+      {...schemaSettingsProps}
+    >
       <SchemaSettings.SwitchItem
         checked={!!tabBarSchema}
         title={t('Enable TabBar')}
@@ -57,6 +80,6 @@ export const ContainerDesigner = () => {
           }
         }}
       />
-    </GeneralSchemaDesigner>
+    </SchemaSettings>
   );
 };
