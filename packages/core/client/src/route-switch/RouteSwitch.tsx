@@ -58,7 +58,7 @@ export function RouteSwitch(props: RouteSwitchProps) {
           // redirect route
           return {
             path: item.from,
-            element: <Navigate replace to={item.to} />,
+            element: <Navigate replace={!item.push} to={item.to} />,
           };
         }
       });

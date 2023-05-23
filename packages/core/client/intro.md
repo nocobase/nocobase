@@ -70,7 +70,6 @@ const routes: RouteRedirectProps[] = [
   {
     type: 'route',
     path: '/',
-    exact: true,
     component: 'Home',
   },
   {
@@ -511,7 +510,6 @@ const routes: RouteRedirectProps[] = [
   {
     type: 'route',
     path: '/',
-    exact: true,
     component: 'RouteSchemaComponent',
     schema: {
       name: 'home',
