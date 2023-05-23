@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { forEach, showToast } from '@nocobase/utils/client';
+import { error, forEach, showToast } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -29,15 +29,20 @@ const useDataTemplates = () => {
 
   // 过滤掉已经被删除的字段
   items.forEach((item) => {
-    item.fields = item.fields
-      .map((field) => {
-        const joinField = getCollectionJoinField(`${item.collection}.${field}`);
-        if (joinField) {
-          return field;
-        }
-        return '';
-      })
-      .filter(Boolean);
+    try {
+      item.fields = item.fields
+        .map((field) => {
+          const joinField = getCollectionJoinField(`${item.collection}.${field}`);
+          if (joinField) {
+            return field;
+          }
+          return '';
+        })
+        .filter(Boolean);
+    } catch (err) {
+      error(err);
+      item.fields = [];
+    }
   });
 
   const templates: any = [
