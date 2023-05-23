@@ -82,6 +82,11 @@ export class EagerLoadingTree {
           pushAttribute(child, targetKey);
         }
 
+        if (associationType == 'BelongsToMany') {
+          const { sourceKey } = association;
+          pushAttribute(eagerLoadingTreeParent, sourceKey);
+        }
+
         eagerLoadingTreeParent.children.push(child);
 
         if (include.include) {
@@ -150,13 +155,16 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsToMany') {
+          const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
+
           instances = await node.model.findAll({
             transaction,
+            attributes: node.attributes,
             include: [
               {
                 association: association.oneFromTarget,
                 where: {
-                  [association.foreignKey]: ids,
+                  [association.foreignKey]: foreignKeyValues,
                 },
               },
             ],
