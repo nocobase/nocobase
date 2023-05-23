@@ -8,7 +8,7 @@ import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 
-interface ITemplate {
+export interface ITemplate {
   items: {
     key: string;
     title: string;
@@ -16,6 +16,10 @@ interface ITemplate {
     dataId: number;
     fields: string[];
     default?: boolean;
+    /** 设置的数据范围 */
+    filter?: any;
+    /** 设置的标题字段 */
+    titleField?: string;
   }[];
   /** 是否在 Form 区块显示模板选择器 */
   display: boolean;

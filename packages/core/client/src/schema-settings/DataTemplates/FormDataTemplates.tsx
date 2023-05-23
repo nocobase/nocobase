@@ -3,9 +3,11 @@ import { Tree as AntdTree } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../collection-manager';
-import { AssociationSelect, SchemaComponent } from '../../schema-component';
+import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
+import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
+import { Designer } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 
 const Tree = connect(
@@ -18,7 +20,7 @@ const Tree = connect(
 );
 
 export const FormDataTemplates = observer((props: any) => {
-  const { useProps } = props;
+  const { useProps, formSchema, designerCtx } = props;
   const { defaultValues, collectionName } = useProps();
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
@@ -26,14 +28,24 @@ export const FormDataTemplates = observer((props: any) => {
   const { t } = useTranslation();
   const field = getCollectionField(`${collectionName}.${collection?.titleField || 'id'}`);
   const components = useMemo(() => ({ ArrayCollapse }), []);
-  const scope = useMemo(() => ({ getEnableFieldTree }), []);
+  const scope = useMemo(
+    () => ({
+      getEnableFieldTree,
+      getMapOptions,
+      getLabel,
+      getFieldNames,
+      collection,
+      items: defaultValues?.items || [],
+    }),
+    [],
+  );
   const schema = useMemo(
     () => ({
       type: 'object',
       properties: {
         items: {
           type: 'array',
-          default: defaultValues?.items,
+          default: '{{ items }}',
           'x-component': 'ArrayCollapse',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -71,36 +83,29 @@ export const FormDataTemplates = observer((props: any) => {
                     title: '{{ t("Template Data") }}',
                     required: true,
                     description: t('Select an existing piece of data as the initialization data for the form'),
+                    'x-designer': Designer,
+                    'x-designer-props': {
+                      formSchema,
+                      data: defaultValues,
+                      collectionName,
+                    },
+                    'x-data': '{{ $index }}',
                     'x-decorator': 'FormItem',
                     'x-component': AssociationSelect,
                     'x-component-props': {
                       service: {
                         resource: collectionName,
+                        params: {
+                          filter: '{{ $record.filter }}',
+                        },
                       },
                       action: 'list',
                       multiple: false,
                       objectValue: false,
                       manual: false,
                       targetField: field,
-                      mapOptions(option) {
-                        try {
-                          const label = getLabel(collection);
-                          option[label] = (
-                            <>
-                              #{option.id} {option[label]}
-                            </>
-                          );
-
-                          return option;
-                        } catch (error) {
-                          console.error(error);
-                          return option;
-                        }
-                      },
-                      fieldNames: {
-                        label: getLabel(collection),
-                        value: 'id',
-                      },
+                      mapOptions: '{{ getMapOptions($record, collection) }}',
+                      fieldNames: '{{ getFieldNames($record, collection) }}',
                     },
                     'x-reactions': [
                       {
@@ -191,9 +196,42 @@ export const FormDataTemplates = observer((props: any) => {
     [],
   );
 
-  return <SchemaComponent components={components} scope={scope} schema={schema} />;
+  return (
+    <SchemaComponentContext.Provider value={{ ...designerCtx, designable: true }}>
+      <SchemaComponent components={components} scope={scope} schema={schema} />
+    </SchemaComponentContext.Provider>
+  );
 });
 
-function getLabel(collection: any) {
-  return !collection?.titleField || collection.titleField === 'id' ? 'label' : collection?.titleField;
+export function getLabel(titleField) {
+  return !titleField || titleField === 'id' ? 'label' : titleField;
+}
+
+function getMapOptions(record: ITemplate['items'][0], collection) {
+  return (option) => {
+    try {
+      if (option?.id === undefined) {
+        return null;
+      }
+
+      const label = getLabel(record.titleField || collection?.titleField || 'id');
+      option[label] = (
+        <>
+          #{option.id} {option[label]}
+        </>
+      );
+
+      return option;
+    } catch (error) {
+      console.error(error);
+      return null;
+    }
+  };
+}
+
+function getFieldNames(record, collection) {
+  return {
+    label: getLabel(record.titleField || collection?.titleField || 'id'),
+    value: 'id',
+  };
 }
