@@ -1045,7 +1045,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
         },
       },
     }),
-    [],
+    [templateData],
   );
   const onSubmit = useCallback((v) => {
     const data = v.fieldReaction || {};
