@@ -242,7 +242,7 @@ export class EagerLoadingTree {
 
           for (const instance of node.instances) {
             const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.get(oneFromTarget.as).get(foreignKey),
+              (parentInstance) => parentInstance.get(sourceKey) == instance[oneFromTarget.as].get(foreignKey),
             );
 
             if (parentInstance) {
