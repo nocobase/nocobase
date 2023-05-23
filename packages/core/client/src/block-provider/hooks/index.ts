@@ -1088,7 +1088,7 @@ const getTemplateSchema = (schema) => {
   return schema?.uid ? new Schema(data?.data) : null;
 };
 
-export const useAssociationNames = (collection) => {
+export const useAssociationNames1 = (collection) => {
   const { getCollectionJoinField } = useCollectionManager();
   const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
@@ -1189,4 +1189,47 @@ export const useAssociationNames = (collection) => {
       updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
     };
   }
+};
+
+export const useAssociationNames = () => {
+  const { getCollectionJoinField } = useCollectionManager();
+  const { getTemplateById } = useSchemaTemplateManager();
+  const fieldSchema = useFieldSchema();
+  const updateAssociationValues = [];
+  const appends = [];
+  let prefix = '';
+
+  const getAssociationAppends = (schema, str) => {
+    schema.reduceProperties((prefix, s) => {
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      if (collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type)&&s['x-component'] !== 'TableField') {
+        const path=prefix === ''?prefix + s.name:prefix + '.' + s.name;
+        // prefix === '' ? appends.push(prefix + s.name) : appends.push(prefix + '.' + s.name);
+        appends.push(path);
+        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+          // prefix === ''
+          //   ? updateAssociationValues.push(prefix + s.name)
+          //   : updateAssociationValues.push(prefix + '.' + s.name);
+            updateAssociationValues.push(path)
+          const bufPrefix = prefix !== '' ? prefix + '.' + s.name : s.name;
+          getAssociationAppends(s, bufPrefix);
+        }
+      } else if (
+        ![
+          'ActionBar',
+          'Action',
+          'Action.Link',
+          'Action.Modal',
+          'Selector',
+          'Viewer',
+          'AddNewer',
+          'TableField',
+        ].includes(s['x-component'])
+      ) {
+        getAssociationAppends(s, str);
+      }
+    }, str);
+  };
+  getAssociationAppends(fieldSchema, prefix);
+  return { appends, updateAssociationValues };
 };

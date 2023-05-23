@@ -21,6 +21,7 @@ import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 import _ from 'lodash';
+import { useAssociationNames } from './hooks';
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -59,7 +60,8 @@ const useResource = (props: UseResourceProps) => {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
+      sourceId:
+        sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
     };
     return new TableFieldResource(options);
   }
@@ -185,7 +187,16 @@ const BlockRequestProvider = (props) => {
   const __parent = useContext(BlockRequestContext);
   return (
     <BlockRequestContext.Provider
-      value={{ allowedActions, block: props.block, props, field, service, resource, __parent }}
+      value={{
+        allowedActions,
+        block: props.block,
+        props,
+        field,
+        service,
+        resource,
+        __parent,
+        updateAssociationValues: props?.updateAssociationValues || [],
+      }}
     >
       {props.children}
     </BlockRequestContext.Provider>
@@ -261,13 +272,20 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
+  const params = { ...props.params };
+  const { appends, updateAssociationValues } = useAssociationNames();
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props}>
-              <FilterBlockRecord {...props}>{props.children}</FilterBlockRecord>
+          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+            <SharedFilterProvider {...props} params={params}>
+              <FilterBlockRecord {...props} params={params}>
+                {props.children}
+              </FilterBlockRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>

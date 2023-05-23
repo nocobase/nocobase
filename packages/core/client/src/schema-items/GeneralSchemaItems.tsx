@@ -18,7 +18,6 @@ export const GeneralSchemaItems: React.FC<{
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-console.log(field,field.decoratorProps )
   return (
     <>
       {collectionField && (
