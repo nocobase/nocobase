@@ -248,9 +248,10 @@ interface SchemaInitializerActionModalProps {
   schema: any;
   onCancel?: () => void;
   onSubmit?: (values: any) => void;
+  buttonText?: any;
 }
 SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
-  const { title, schema, onCancel, onSubmit } = props;
+  const { title, schema, buttonText, onCancel, onSubmit } = props;
 
   const useCancelAction = useCallback(() => {
     const ctx = useActionContext();
@@ -285,8 +286,8 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
             style: {
               borderColor: 'rgb(241, 139, 98)',
               color: 'rgb(241, 139, 98)',
-              content: 'Add',
             },
+            title: buttonText,
             type: 'dashed',
           },
           properties: {
@@ -330,7 +331,7 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
         },
       },
     };
-  }, [schema, title, useCancelAction, useSubmitAction]);
+  }, [buttonText, schema, title, useCancelAction, useSubmitAction]);
 
   return <SchemaComponent schema={defaultSchema as any} />;
 };
