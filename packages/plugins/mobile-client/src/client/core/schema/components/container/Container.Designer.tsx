@@ -35,7 +35,7 @@ export const ContainerDesigner = () => {
           icon={<MenuOutlined />}
           type="dashed"
         >
-          {t('Interface Configuration')}
+          {t('App level Configuration')}
         </Button>
       }
       {...schemaSettingsProps}
