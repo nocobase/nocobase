@@ -192,11 +192,6 @@ function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, 
 
   if (children.length) {
     activeNode.children = children;
-
-    // 当父节点已被选中时，子节点也应该被选中
-    if (dataFields.value.includes(node.key)) {
-      dataFields.value.push(...children.map((item) => item.key));
-    }
   } else {
     activeNode.isLeaf = true;
   }

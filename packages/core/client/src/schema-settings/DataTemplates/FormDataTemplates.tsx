@@ -128,6 +128,7 @@ export const FormDataTemplates = observer((props: any) => {
                     'x-component-props': {
                       treeData: [],
                       checkable: true,
+                      checkStrictly: true,
                       selectable: false,
                       loadData: onLoadData,
                       rootStyle: {
