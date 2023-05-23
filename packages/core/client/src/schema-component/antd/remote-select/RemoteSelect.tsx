@@ -10,7 +10,7 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { mapValues, isArray, isPlainObject, isString, isEqual, difference } from 'lodash';
+import { mapValues, isArray, isPlainObject, isString, nth } from 'lodash';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -117,6 +117,20 @@ const InternalRemoteSelect = connect(
     // const [formChangedField, setFormChangedField] = useState('');
     useEffect(() => {
       let formChangedField = '';
+      function deepFind(obj, key) {
+        if (obj[key]) {
+          return obj[key];
+        }
+        for (const i in obj) {
+          if (obj[i] && typeof obj[i] === 'object') {
+            const found = deepFind(obj[i], key);
+            if (found) {
+              return found;
+            }
+          }
+        }
+        return undefined;
+      }
       function parseFilter(filterObj) {
         return mapValues(filterObj, (value, key) => {
           if (isArray(value)) {
@@ -129,8 +143,10 @@ const InternalRemoteSelect = connect(
           }
           if (isString(value) && value.includes('form')) {
             const keys = value.replaceAll(/\{|\}/g, '').split('.');
-            const formValue = form.values?.[keys[1]]?.[keys[2]] || '';
-            if (formChangedField === keys[1]) {
+            const name = nth(keys, -2);
+            const field = nth(keys, -1);
+            const formValue = deepFind(form.values, name)?.[field] || null;
+            if (formChangedField === name) {
               props.onChange?.(null);
               firstRun.current = false;
             }
@@ -143,7 +159,7 @@ const InternalRemoteSelect = connect(
         if (type !== 'onFieldValidateSuccess') {
           return;
         }
-        formChangedField = payload.path.entire;
+        formChangedField = nth(payload.path.entire.split('.'), -1);
         filter.current = parseFilter(field.componentProps?.service?.params?.filter || service?.params?.filter);
       });
       return () => {
