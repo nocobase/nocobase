@@ -23,12 +23,14 @@ async function findUserByToken(ctx: Context) {
         ctx.state.currentUserAppends.push(field.name);
       }
     }
+
     const user = await ctx.db.getRepository('users').findOne({
       appends: ctx.state.currentUserAppends,
       filter: {
         id: userId,
       },
     });
+
     ctx.logger.info(`Current user id: ${userId}`);
     return user;
   } catch (error) {

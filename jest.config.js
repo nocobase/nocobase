@@ -11,9 +11,12 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
   setupFiles: ['./jest.setup.ts'],
   setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: '<rootDir>/',
-  }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(compilerOptions.paths, {
+      prefix: '<rootDir>/',
+    }),
+    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.js',
+  },
   globals: {
     'ts-jest': {
       babelConfig: false,

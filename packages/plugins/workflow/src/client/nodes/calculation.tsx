@@ -1,6 +1,6 @@
 import { css } from '@emotion/css';
-import { FormItem, FormLayout } from '@formily/antd';
-import { SchemaInitializer, SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
+import { FormLayout, FormItem } from '@formily/antd';
+import { SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
 import { Radio } from 'antd';
@@ -29,7 +29,7 @@ const DynamicConfig = ({ value, onChange }) => {
 
   return (
     <FormLayout layout="vertical">
-      <FormItem label={t('Expression type', { ns: NAMESPACE })}>
+      <FormItem colon label={t('Expression type', { ns: NAMESPACE })}>
         <Radio.Group
           value={value === false ? false : value || null}
           onChange={(ev) => {
@@ -41,7 +41,13 @@ const DynamicConfig = ({ value, onChange }) => {
         </Radio.Group>
       </FormItem>
       {value !== false ? (
-        <FormItem label={t('Select dynamic expression', { ns: NAMESPACE })}>
+        <FormItem
+          label={t('Select dynamic expression', { ns: NAMESPACE })}
+          extra={t(
+            'Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.',
+            { ns: NAMESPACE },
+          )}
+        >
           <Variable.Input value={value || null} onChange={(v) => onChange(v)} scope={scope} />
         </FormItem>
       ) : null}
@@ -57,10 +63,12 @@ export default {
   title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
   type: 'calculation',
   group: 'control',
+  description: `{{t("Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression can be static or dynamic one from an expression collections.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     dynamic: {
       type: 'string',
       'x-component': 'DynamicConfig',
+      // description: `{{t("Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.", { ns: "${NAMESPACE}" })}}`,
       default: false,
     },
     engine: {
