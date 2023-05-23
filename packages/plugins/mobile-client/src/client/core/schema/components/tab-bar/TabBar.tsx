@@ -1,22 +1,13 @@
 import { TabBar } from 'antd-mobile';
 import { TabBarItem } from './TabBar.Item';
-import React, { useContext } from 'react';
+import React, { useCallback, useContext } from 'react';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import {
-  DndContext,
-  Icon,
-  SchemaComponent,
-  SchemaComponentOptions,
-  SchemaInitializer,
-  SortableItem,
-  useDesignable,
-} from '@nocobase/client';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { DndContext, Icon, SchemaComponent, SchemaInitializer, SortableItem, useDesignable } from '@nocobase/client';
 import { useTranslation } from '../../../../locale';
 import { css, cx } from '@emotion/css';
-import { PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { useHistory, useParams } from 'react-router-dom';
+import { tabItemSchema } from './schema';
 
 export const InternalTabBar: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
@@ -27,63 +18,32 @@ export const InternalTabBar: React.FC = (props) => {
   const history = useHistory();
   const params = useParams<{ name: string }>();
 
-  const onAddTab = () => {
-    return FormDialog({ title: t('Add tab') }, () => {
-      return (
-        <SchemaComponentOptions scope={options.scope} components={options.components}>
-          <FormLayout layout={'vertical'}>
-            <SchemaComponent
-              schema={{
-                properties: {
-                  title: {
-                    type: 'string',
-                    title: t('Title'),
-                    required: true,
-                    'x-component': 'Input',
-                    'x-decorator': 'FormItem',
-                  },
-                  icon: {
-                    required: true,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'IconPicker',
-                    title: t('Icon'),
-                    'x-component-props': {},
-                  },
-                },
-              }}
-            />
-          </FormLayout>
-        </SchemaComponentOptions>
-      );
-    })
-      .open({})
-      .then(async (values) => {
-        return insertBeforeEnd({
+  const onAddTab = useCallback((values: any) => {
+    return insertBeforeEnd({
+      type: 'void',
+      'x-component': 'MTabBar.Item',
+      'x-component-props': values,
+      'x-designer': 'MTabBar.Item.Designer',
+      properties: {
+        [uid()]: {
           type: 'void',
-          'x-component': 'MTabBar.Item',
-          'x-component-props': values,
-          'x-designer': 'MTabBar.Item.Designer',
+          'x-component': 'MPage',
+          'x-designer': 'MPage.Designer',
+          'x-component-props': {},
           properties: {
-            [uid()]: {
+            grid: {
               type: 'void',
-              'x-component': 'MPage',
-              'x-designer': 'MPage.Designer',
-              'x-component-props': {},
-              properties: {
-                grid: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'MBlockInitializers',
-                  'x-component-props': {
-                    showDivider: false,
-                  },
-                },
+              'x-component': 'Grid',
+              'x-initializer': 'MBlockInitializers',
+              'x-component-props': {
+                showDivider: false,
               },
             },
           },
-        });
-      });
-  };
+        },
+      },
+    });
+  }, []);
   return (
     <SortableItem
       className={cx(
@@ -100,6 +60,9 @@ export const InternalTabBar: React.FC = (props) => {
         <TabBar
           activeKey={params.name}
           onChange={(key) => {
+            if (key === 'add-tab') {
+              return;
+            }
             history.push(key);
           }}
           safeArea
@@ -125,8 +88,18 @@ export const InternalTabBar: React.FC = (props) => {
               ></TabBar.Item>
             );
           })}
+          {designable && Object.keys(fieldSchema.properties).length < 5 ? (
+            <TabBar.Item
+              className={css`
+                .adm-tab-bar-item-icon {
+                  height: auto;
+                }
+              `}
+              icon={<SchemaInitializer.ActionModal title={t('Add tab')} onSubmit={onAddTab} schema={tabItemSchema} />}
+              key="add-tab"
+            ></TabBar.Item>
+          ) : null}
         </TabBar>
-        {designable ? <SchemaInitializer.Button onClick={onAddTab} icon={<PlusOutlined />} /> : null}
       </DndContext>
     </SortableItem>
   );

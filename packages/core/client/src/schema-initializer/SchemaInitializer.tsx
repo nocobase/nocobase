@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
-import { ISchema, observer } from '@formily/react';
+import { ISchema, Schema, observer, useForm } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Icon } from '../icon';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import './style.less';
@@ -12,6 +12,7 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
+import { SchemaComponent, useActionContext } from '../schema-component';
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -240,6 +241,98 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
   return component;
+};
+
+interface SchemaInitializerActionModalProps {
+  title: string;
+  schema: any;
+  onCancel?: () => void;
+  onSubmit?: (values: any) => void;
+}
+SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
+  const { title, schema, onCancel, onSubmit } = props;
+
+  const useCancelAction = useCallback(() => {
+    const ctx = useActionContext();
+    return {
+      async run() {
+        await onCancel?.();
+        ctx.setVisible(false);
+      },
+    };
+  }, [onCancel]);
+
+  const useSubmitAction = useCallback(() => {
+    const form = useForm();
+    const ctx = useActionContext();
+    return {
+      async run() {
+        await form.validate();
+        await onSubmit?.(form.values);
+        ctx.setVisible(false);
+      },
+    };
+  }, [onSubmit]);
+  const defaultSchema = useMemo(() => {
+    return {
+      type: 'void',
+      properties: {
+        action1: {
+          type: 'void',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'PlusOutlined',
+            style: {
+              borderColor: 'rgb(241, 139, 98)',
+              color: 'rgb(241, 139, 98)',
+              content: 'Add',
+            },
+            type: 'dashed',
+          },
+          properties: {
+            drawer1: {
+              'x-decorator': 'Form',
+              'x-component': 'Action.Modal',
+              'x-component-props': {
+                style: {
+                  maxWidth: '520px',
+                  width: '100%',
+                },
+              },
+              type: 'void',
+              title,
+              properties: {
+                ...(schema?.properties || schema),
+                footer: {
+                  'x-component': 'Action.Modal.Footer',
+                  type: 'void',
+                  properties: {
+                    cancel: {
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: useCancelAction,
+                      },
+                    },
+                    submit: {
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: useSubmitAction,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }, [schema, title, useCancelAction, useSubmitAction]);
+
+  return <SchemaComponent schema={defaultSchema as any} />;
 };
 
 SchemaInitializer.SwitchItem = (props) => {

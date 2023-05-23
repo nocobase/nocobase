@@ -5,6 +5,7 @@ import { useTranslation } from '../../../../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { useSchemaPatch } from '../../hooks';
 import { css, cx } from '@emotion/css';
+import { tabItemSchema } from './schema';
 
 const InternalItem: React.FC<TabBarItemProps> = () => {
   // NOTE: nothing to do
@@ -40,23 +41,7 @@ export const Designer = () => {
       <SchemaSettings.ModalItem
         title={t('Edit info')}
         initialValues={field.componentProps}
-        schema={{
-          properties: {
-            title: {
-              type: 'string',
-              title: t('Title'),
-              required: true,
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-            icon: {
-              'x-decorator': 'FormItem',
-              'x-component': 'IconPicker',
-              title: t('Icon'),
-              'x-component-props': {},
-            },
-          },
-        }}
+        schema={tabItemSchema}
         onSubmit={onUpdateComponentProps}
       ></SchemaSettings.ModalItem>
       {tabItems > 1 ? (
