@@ -11,7 +11,7 @@ export interface RedirectProps {
 
 export interface RouteProps {
   type: 'route';
-  path?: string | string[];
+  path?: string;
   exact?: boolean;
   strict?: boolean;
   sensitive?: boolean;
