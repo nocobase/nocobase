@@ -25,11 +25,10 @@ const ToOneNester = (props) => {
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { field } = useAssociationFieldContext<ArrayField>();
-
   const { t } = useTranslation();
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
-      {field.value.map((value, index) => {
+      {(field.value || []).map((value, index) => {
         return (
           <>
             {!field.readPretty && (
