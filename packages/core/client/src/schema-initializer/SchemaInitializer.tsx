@@ -254,11 +254,13 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
   const { title, schema, buttonText, onCancel, onSubmit } = props;
 
   const useCancelAction = useCallback(() => {
+    const form = useForm();
     const ctx = useActionContext();
     return {
       async run() {
         await onCancel?.();
         ctx.setVisible(false);
+        form.reset();
       },
     };
   }, [onCancel]);
@@ -271,6 +273,7 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
         await form.validate();
         await onSubmit?.(form.values);
         ctx.setVisible(false);
+        form.reset();
       },
     };
   }, [onSubmit]);
