@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
@@ -10,7 +10,7 @@ import { removeNullCondition, useCompile, useDesignable } from '../../../schema-
 import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
 import { FilterDynamicComponent } from '../../../schema-component/antd/table-v2/FilterDynamicComponent';
 
-export const Designer = () => {
+export const Designer = observer(() => {
   const { getCollectionFields, getCollectionField, getCollection } = useCollectionManager();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -66,7 +66,10 @@ export const Designer = () => {
           data.filter = mergeFilter([filter, getSelectedIdFilter(field.value)], '$or');
 
           try {
-            field.componentProps.service.params = { filter: data.filter };
+            // 不仅更新当前模板，也更新同级的其它模板
+            field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {
+              item.componentProps.service.params = { filter: data.filter };
+            });
           } catch (err) {
             console.error(err);
           }
@@ -88,10 +91,13 @@ export const Designer = () => {
         onChange={(label) => {
           data.titleField = label;
           try {
-            field.componentProps.fieldNames.label = label;
-            field.componentProps.targetField = getCollectionField(
-              `${collectionName}.${label || collection?.titleField || 'id'}`,
-            );
+            // 不仅更新当前模板，也更新同级的其它模板
+            field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {
+              item.componentProps.fieldNames.label = label;
+              item.componentProps.targetField = getCollectionField(
+                `${collectionName}.${label || collection?.titleField || 'id'}`,
+              );
+            });
           } catch (err) {
             console.error(err);
           }
@@ -110,7 +116,7 @@ export const Designer = () => {
       />
     </GeneralSchemaDesigner>
   );
-};
+});
 
 function getSelectedIdFilter(selectedId) {
   return selectedId
