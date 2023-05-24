@@ -29,24 +29,47 @@ const Tree = connect(
 
 export const FormDataTemplates = observer((props: any) => {
   const { useProps, formSchema, designerCtx } = props;
-  const { defaultValues = { items: [], titleField: '', filter: {}, display: true }, collectionName } = useProps();
+  const { defaultValues, collectionName } = useProps();
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
-  const collection = getCollection(collectionName);
   const { t } = useTranslation();
 
   // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
-  const activeData = useMemo(() => observable(defaultValues), []);
+  const activeData = useMemo<ITemplate>(
+    () =>
+      observable(
+        defaultValues || { items: [], display: true, config: { [collectionName]: { titleField: '', filter: {} } } },
+      ),
+    [],
+  );
+
+  const getTargetField = (collectionName: string) => {
+    const collection = getCollection(collectionName);
+    return getCollectionField(
+      `${collectionName}.${activeData?.config[collectionName]?.titleField || collection?.titleField || 'id'}`,
+    );
+  };
+
+  const getFieldNames = (collectionName: string) => {
+    const collection = getCollection(collectionName);
+    return {
+      label: getLabel(activeData.config?.[collectionName]?.titleField || collection?.titleField || 'id'),
+      value: 'id',
+    };
+  };
+
+  const getFilter = (collectionName: string, value: any) => {
+    const filter = activeData.config?.[collectionName]?.filter;
+    return _.isEmpty(filter) ? {} : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(value)], '$or'));
+  };
 
   const components = useMemo(() => ({ ArrayCollapse }), []);
   const scope = useMemo(
     () => ({
       getEnableFieldTree,
-      isEmpty: _.isEmpty,
-      removeNullCondition,
-      mergeFilter,
-      getSelectedIdFilter,
-      activeData,
+      getTargetField,
+      getFieldNames,
+      getFilter,
     }),
     [],
   );
@@ -106,24 +129,16 @@ export const FormDataTemplates = observer((props: any) => {
                       service: {
                         resource: collectionName,
                         params: {
-                          filter: `{{
-                                isEmpty(activeData?.filter)
-                                ? {}
-                                : removeNullCondition(
-                                    mergeFilter([activeData?.filter, getSelectedIdFilter($self.value)], '$or'),
-                                  )
-                              }}`,
+                          filter: '{{ getFilter($self.componentProps.service.resource, $self.value) }}',
                         },
                       },
                       action: 'list',
                       multiple: false,
                       objectValue: false,
                       manual: false,
-                      targetField: getCollectionField(
-                        `${collectionName}.${activeData?.titleField || collection?.titleField || 'id'}`,
-                      ),
+                      targetField: '{{ getTargetField($self.componentProps.service.resource) }}',
                       mapOptions: getMapOptions(),
-                      fieldNames: getFieldNames(activeData, collection),
+                      fieldNames: '{{ getFieldNames($self.componentProps.service.resource) }}',
                     },
                     'x-reactions': [
                       {
@@ -222,7 +237,7 @@ export const FormDataTemplates = observer((props: any) => {
 });
 
 export function getLabel(titleField) {
-  return !titleField ? 'label' : titleField;
+  return titleField || 'label';
 }
 
 function getMapOptions() {
@@ -231,12 +246,5 @@ function getMapOptions() {
       return null;
     }
     return option;
-  };
-}
-
-function getFieldNames(data: ITemplate, collection) {
-  return {
-    label: getLabel(data?.titleField || collection?.titleField || 'id'),
-    value: 'id',
   };
 }

@@ -1,8 +1,9 @@
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { error } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
 import { mergeFilter } from '../../../block-provider';
@@ -19,19 +20,43 @@ export const Designer = observer(() => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const { formSchema, data, collectionName } = fieldSchema['x-designer-props'] as {
+  const { formSchema, data } = fieldSchema['x-designer-props'] as {
     formSchema: ISchema;
     index: number;
     collectionName: string;
     data?: ITemplate;
   };
+  const collectionName = field.componentProps.service.resource;
   const collection = getCollection(collectionName);
   const collectionFields = getCollectionFields(collectionName);
   const dataSource = useCollectionFilterOptions(collectionName);
 
+  // 切换 collection 后，之前选中的其它 collection 的数据就没有意义了，需要清空
+  useEffect(() => {
+    field.reset();
+  }, [collectionName]);
+
   if (!data) {
+    error('data is required');
     return null;
   }
+
+  const getFilter = () => data.config?.[collectionName]?.filter || {};
+  const setFilter = (filter) => {
+    try {
+      data.config[collectionName].filter = removeNullCondition(filter);
+    } catch (err) {
+      error(err);
+    }
+  };
+  const getTitleFIeld = () => data.config?.[collectionName]?.titleField || collection?.titleField || 'id';
+  const setTitleField = (titleField) => {
+    try {
+      data.config[collectionName].titleField = titleField;
+    } catch (err) {
+      error(err);
+    }
+  };
 
   const options = collectionFields
     .filter((field) => isTitleField(field))
@@ -44,14 +69,13 @@ export const Designer = observer(() => {
     <GeneralSchemaDesigner draggable={false}>
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
-        scope={{ data }}
         schema={
           {
             type: 'object',
             title: t('Set the data scope'),
             properties: {
               filter: {
-                default: '{{ data.filter }}',
+                default: getFilter(),
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
@@ -63,7 +87,7 @@ export const Designer = observer(() => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          data.filter = removeNullCondition(filter);
+          setFilter(filter);
 
           try {
             // 不仅更新当前模板，也更新同级的其它模板
@@ -91,9 +115,10 @@ export const Designer = observer(() => {
         key="title-field"
         title={t('Title field')}
         options={options}
-        value={data.titleField || collection?.titleField || 'id'}
+        value={getTitleFIeld()}
         onChange={(label) => {
-          data.titleField = label;
+          setTitleField(label);
+
           try {
             // 不仅更新当前模板，也更新同级的其它模板
             field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {

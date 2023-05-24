@@ -9,10 +9,14 @@ import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 
 export interface ITemplate {
-  /** 设置的数据范围 */
-  filter?: any;
-  /** 设置的标题字段 */
-  titleField?: string;
+  config?: {
+    [key: string]: {
+      /** 设置的数据范围 */
+      filter?: any;
+      /** 设置的标题字段 */
+      titleField?: string;
+    };
+  };
   items: {
     key: string;
     title: string;
