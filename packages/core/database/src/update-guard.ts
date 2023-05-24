@@ -111,7 +111,7 @@ export class UpdateGuard {
 
       if (Array.isArray(associationValues)) {
         associationValues = associationValues.map((value) => {
-          if (typeof value == 'string' || typeof value == 'number') {
+          if (value === undefined || value === null || typeof value == 'string' || typeof value == 'number') {
             return value;
           } else {
             return sanitizeValue(value);
