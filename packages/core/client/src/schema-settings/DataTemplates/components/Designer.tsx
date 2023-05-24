@@ -1,6 +1,7 @@
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
@@ -62,13 +63,16 @@ export const Designer = observer(() => {
           } as ISchema
         }
         onSubmit={({ filter }) => {
-          filter = removeNullCondition(filter);
-          data.filter = mergeFilter([filter, getSelectedIdFilter(field.value)], '$or');
+          data.filter = removeNullCondition(filter);
 
           try {
             // 不仅更新当前模板，也更新同级的其它模板
             field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {
-              item.componentProps.service.params = { filter: data.filter };
+              item.componentProps.service.params = {
+                filter: _.isEmpty(filter)
+                  ? {}
+                  : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(field.value)], '$or')),
+              };
             });
           } catch (err) {
             console.error(err);
@@ -118,7 +122,7 @@ export const Designer = observer(() => {
   );
 });
 
-function getSelectedIdFilter(selectedId) {
+export function getSelectedIdFilter(selectedId) {
   return selectedId
     ? {
         id: {

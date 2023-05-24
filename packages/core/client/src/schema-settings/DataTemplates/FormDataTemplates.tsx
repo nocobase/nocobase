@@ -1,14 +1,21 @@
 import { connect, mapProps, observer } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { Tree as AntdTree } from 'antd';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
-import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
+import {
+  AssociationSelect,
+  SchemaComponent,
+  SchemaComponentContext,
+  removeNullCondition,
+} from '../../schema-component';
 import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
-import { Designer } from './components/Designer';
+import { Designer, getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 
 const Tree = connect(
@@ -34,13 +41,11 @@ export const FormDataTemplates = observer((props: any) => {
   const scope = useMemo(
     () => ({
       getEnableFieldTree,
-      getMapOptions,
-      getLabel,
-      getFieldNames,
-      getCollectionField,
-      collection,
-      collectionName,
-      items: defaultValues?.items || [],
+      isEmpty: _.isEmpty,
+      removeNullCondition,
+      mergeFilter,
+      getSelectedIdFilter,
+      activeData,
     }),
     [],
   );
@@ -100,7 +105,13 @@ export const FormDataTemplates = observer((props: any) => {
                       service: {
                         resource: collectionName,
                         params: {
-                          filter: activeData?.filter,
+                          filter: `{{
+                                isEmpty(activeData?.filter)
+                                ? {}
+                                : removeNullCondition(
+                                    mergeFilter([activeData?.filter, getSelectedIdFilter($self.value)], '$or'),
+                                  )
+                              }}`,
                         },
                       },
                       action: 'list',
