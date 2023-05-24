@@ -2,7 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect } from 'antd';
+import { Select as AntdSelect, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
@@ -38,6 +38,7 @@ const ObjectSelect = (props: Props) => {
       value={toValue(value)}
       allowClear
       labelInValue
+      notFoundContent={<Spin />}
       options={options}
       fieldNames={fieldNames}
       showSearch
@@ -84,6 +85,7 @@ const InternalSelect = connect(
         filterOption={filterOption}
         allowClear
         dropdownMatchSelectWidth={false}
+        notFoundContent={<Spin />}
         value={value}
         {...others}
         onChange={(changed) => {
