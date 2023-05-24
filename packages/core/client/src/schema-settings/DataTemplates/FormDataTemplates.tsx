@@ -1,6 +1,6 @@
 import { connect, mapProps, observer } from '@formily/react';
 import { Tree as AntdTree } from 'antd';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
@@ -27,7 +27,6 @@ export const FormDataTemplates = observer((props: any) => {
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
-  const field = getCollectionField(`${collectionName}.${collection?.titleField || 'id'}`);
   const components = useMemo(() => ({ ArrayCollapse }), []);
   const scope = useMemo(
     () => ({
@@ -35,7 +34,9 @@ export const FormDataTemplates = observer((props: any) => {
       getMapOptions,
       getLabel,
       getFieldNames,
+      getCollectionField,
       collection,
+      collectionName,
       items: defaultValues?.items || [],
     }),
     [],
@@ -104,7 +105,8 @@ export const FormDataTemplates = observer((props: any) => {
                       multiple: false,
                       objectValue: false,
                       manual: false,
-                      targetField: field,
+                      targetField:
+                        '{{ getCollectionField(`${collectionName}.${$record.titleField || collection?.titleField || "id"}`) }}',
                       mapOptions: '{{ getMapOptions($record, collection) }}',
                       fieldNames: '{{ getFieldNames($record, collection) }}',
                     },
@@ -205,7 +207,7 @@ export const FormDataTemplates = observer((props: any) => {
 });
 
 export function getLabel(titleField) {
-  return !titleField || titleField === 'id' ? 'label' : titleField;
+  return !titleField ? 'label' : titleField;
 }
 
 function getMapOptions(record: ITemplate['items'][0], collection) {

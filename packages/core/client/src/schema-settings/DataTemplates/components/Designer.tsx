@@ -10,7 +10,7 @@ import { ITemplate } from '../../../schema-component/antd/form-v2/Templates';
 import { FilterDynamicComponent } from '../../../schema-component/antd/table-v2/FilterDynamicComponent';
 
 export const Designer = () => {
-  const { getCollectionFields, getCollection } = useCollectionManager();
+  const { getCollectionFields, getCollectionField, getCollection } = useCollectionManager();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -90,6 +90,9 @@ export const Designer = () => {
           item.titleField = label;
           try {
             field.componentProps.fieldNames.label = label;
+            field.componentProps.targetField = getCollectionField(
+              `${collectionName}.${label || collection?.titleField || 'id'}`,
+            );
           } catch (err) {
             console.error(err);
           }
