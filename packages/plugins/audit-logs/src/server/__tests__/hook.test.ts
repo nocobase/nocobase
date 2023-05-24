@@ -8,6 +8,8 @@ describe('hook', () => {
 
   beforeEach(async () => {
     api = mockServer();
+    await api.db.clean({ drop: true });
+
     api.plugin(logPlugin, { name: 'audit-logs' });
     await api.load();
     db = api.db;
