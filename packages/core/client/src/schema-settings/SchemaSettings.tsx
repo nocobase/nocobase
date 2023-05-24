@@ -1059,7 +1059,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
     [templateData],
   );
   const onSubmit = useCallback((v) => {
-    const data = v.fieldReaction || {};
+    const data = { ...(formSchema['x-data-templates'] || {}), ...v.fieldReaction };
 
     // 当 Tree 组件开启 checkStrictly 属性时，会导致 checkedKeys 的值是一个对象，而不是数组，所以这里需要转换一下以支持旧版本
     data.items.forEach((item) => {
