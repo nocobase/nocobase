@@ -88,7 +88,7 @@ export const InternalPicker = observer((props: any) => {
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
-        const label = option[fieldNames.label];
+        const label = option?.[fieldNames.label];
         return {
           ...option,
           [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
@@ -100,9 +100,8 @@ export const InternalPicker = observer((props: any) => {
 
   const getValue = () => {
     if (multiple == null) return null;
-    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
+    return Array.isArray(value) ? value.filter((v) => v)?.map((v) => v?.[fieldNames.value]) : value?.[fieldNames.value];
   };
-
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
