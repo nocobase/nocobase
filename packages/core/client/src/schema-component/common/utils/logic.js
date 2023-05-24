@@ -35,6 +35,9 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     }
     return a;
   }
+  function areArraysEqual(arr1, arr2) {
+    return JSON.stringify(arr1) === JSON.stringify(arr2);
+  }
 
   var jsonLogic = {};
   var operations = {
@@ -45,6 +48,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return JSON.stringify(a) === JSON.stringify(b);
     },
     $eq: function (a, b) {
+      if (Array.isArray(a)) return areArraysEqual(a, b);
       return a === b;
     },
     $ne: function (a, b) {
@@ -94,6 +98,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $includes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
+      if (Array.isArray(a)) return a.some((element) => element.includes(b));
       return a.indexOf(b) !== -1;
     },
     $notIncludes: function (a, b) {
