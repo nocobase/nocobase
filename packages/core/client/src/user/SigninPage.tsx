@@ -50,7 +50,7 @@ const passwordForm: ISchema = {
 };
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation<any>();
+  const location = useLocation();
   const navigate = useNavigate();
   const redirect = location?.['query']?.redirect;
   return useCallback(() => {

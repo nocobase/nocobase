@@ -135,7 +135,7 @@ export const Page = (props) => {
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const location = useLocation<any>();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState(() => {
     // @ts-ignore
