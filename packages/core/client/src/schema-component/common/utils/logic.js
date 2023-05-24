@@ -45,10 +45,18 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return a === b;
     },
     $match: function (a, b) {
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some(
+          (subArray) => subArray?.length === b.length && subArray?.every((element, index) => element === b[index]),
+        );
+      }
       return JSON.stringify(a) === JSON.stringify(b);
     },
     $eq: function (a, b) {
-      if (Array.isArray(a)) return areArraysEqual(a, b);
+      if (Array.isArray(a) && Array.isArray(b)) return areArraysEqual(a, b);
+      if (Array.isArray(a)) {
+        return a.includes(b);
+      }
       return a === b;
     },
     $ne: function (a, b) {
@@ -90,6 +98,9 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $in: function (a, b) {
       if (!b || typeof b.indexOf === 'undefined') return false;
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return b.some((elementB) => a.includes(elementB));
+      }
       return b.indexOf(a) !== -1;
     },
     $notIn: function (a, b) {
@@ -103,17 +114,24 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $notIncludes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
+      if (Array.isArray(a)) return !a.some((element) => element.includes(b));
       return !(a.indexOf(b) !== -1);
     },
     $anyOf: function (a, b) {
       if (a.length === 0) {
         return false;
       }
-      return b.every((item) => a.includes(item));
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some((subArray) => subArray.some((element) => b.includes(element)));
+      }
+      return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
       if (a.length === 0) {
         return true;
+      }
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some((subArray) => subArray.every((element) => !b.some((bElement) => element.includes(bElement))));
       }
       return b.some((item) => !a.includes(item));
     },

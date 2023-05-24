@@ -62,9 +62,10 @@ const getFieldValue = (fieldPath, values) => {
   const h = fieldPath[1];
   const regex = new RegExp('^' + v + '\\..+\\.' + h + '$'); // 构建匹配的正则表达式
   const matchedValues = [];
-  for (var key in values) {
+  const data = flat.flatten(values, { maxDepth: 3 });
+  for (var key in data) {
     if (regex.test(key)) {
-      matchedValues.push(values[key]);
+      matchedValues.push(data[key]);
     }
   }
   return matchedValues;
@@ -82,10 +83,11 @@ const getValue = (str: string, values) => {
 const getVariableValue = (str, values) => {
   const regex = /{{[^.]+\.([^}]+)}}/;
   const match = regex.exec(str);
-  const isArrayField = isArray(values[match?.[1]?.split('.')[0]]);
-  if (isArrayField) {
+  const targetField = match?.[1]?.split('.') || [];
+  const isArrayField = isArray(values[targetField[0]]);
+  if (isArrayField && targetField.length > 1) {
     //对多关系字段
-    return getFieldValue(match?.[1]?.split('.'), flat(values));
+    return getFieldValue(targetField, values);
   } else {
     return flat(values)[match?.[1]];
   }
@@ -130,13 +132,13 @@ export const conditionAnalyse = (rules, values) => {
     }
     try {
       const isArrayField = isArray(values[targetField[0]]);
-      if (!isArrayField) {
-        const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
+      if (isArrayField && targetField.length > 1) {
+        //对多关系字段比较
+        const currentValue = getFieldValue(targetField, values);
         const result = jsonLogic.apply({ [operator]: [currentValue, value] });
         return result;
       } else {
-        //对多关系字段比较
-        const currentValue = getFieldValue(targetField, flat(values));
+        const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
         const result = jsonLogic.apply({ [operator]: [currentValue, value] });
         return result;
       }
