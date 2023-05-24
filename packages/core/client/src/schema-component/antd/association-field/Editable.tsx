@@ -1,5 +1,5 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
@@ -17,6 +17,31 @@ const EditableAssociationField = observer((props: any) => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
   const { options: collectionField, currentMode } = useAssociationFieldContext();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    if (!collectionField) {
+      setLoading(false);
+      return;
+    }
+    if (field.value !== null && field.value !== undefined) {
+      setLoading(false);
+      return;
+    }
+    if (currentMode === 'Nester') {
+      if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+        field.value = {};
+      } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+        field.value = [null];
+      }
+    }
+    setLoading(false);
+  }, [currentMode, collectionField, field.value]);
+
+  if (loading) {
+    return null;
+  }
 
   const useCreateActionProps = () => {
     const { onClick } = useCAP();

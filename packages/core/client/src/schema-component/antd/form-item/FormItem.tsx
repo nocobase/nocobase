@@ -172,7 +172,7 @@ FormItem.Designer = function Designer() {
         };
   });
 
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
 
   return (
     <GeneralSchemaDesigner>
@@ -574,10 +574,10 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
-              field.value = field.value || initValue;
-            }
+            // if (mode === 'Nester') {
+            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
+            //   field.value = field.value || initValue;
+            // }
             dn.emit('patch', {
               schema,
             });
