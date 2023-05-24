@@ -4,7 +4,6 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
-import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { Designer } from './components/Designer';
@@ -107,7 +106,7 @@ export const FormDataTemplates = observer((props: any) => {
                       manual: false,
                       targetField:
                         '{{ getCollectionField(`${collectionName}.${$record.titleField || collection?.titleField || "id"}`) }}',
-                      mapOptions: '{{ getMapOptions($record, collection) }}',
+                      mapOptions: '{{ getMapOptions() }}',
                       fieldNames: '{{ getFieldNames($record, collection) }}',
                     },
                     'x-reactions': [
@@ -210,25 +209,12 @@ export function getLabel(titleField) {
   return !titleField ? 'label' : titleField;
 }
 
-function getMapOptions(record: ITemplate['items'][0], collection) {
+function getMapOptions() {
   return (option) => {
-    try {
-      if (option?.id === undefined) {
-        return null;
-      }
-
-      const label = getLabel(record.titleField || collection?.titleField || 'id');
-      option[label] = (
-        <>
-          #{option.id} {option[label]}
-        </>
-      );
-
-      return option;
-    } catch (error) {
-      console.error(error);
+    if (option?.id === undefined) {
       return null;
     }
+    return option;
   };
 }
 
