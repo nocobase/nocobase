@@ -24,7 +24,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           style={{ width: '100%' }}
           {...props}
           objectValue={objectValue}
-          value={props.value?.filter(Boolean)}
+          value={props.value?.filter?.(Boolean)}
           service={service}
         ></RemoteSelect>
 
