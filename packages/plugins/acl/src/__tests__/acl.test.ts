@@ -166,10 +166,7 @@ describe('acl', () => {
     const canResult = acl.can({ role: 'test-role', resource: 'repairs', action: 'list' });
     const params = canResult['params'];
 
-    //
-    expect(params['fields']).toHaveLength(2);
-
-    console.log({ params });
+    expect(params['fields']).toHaveLength(3);
   });
 
   it('should not have permission to list comments', async () => {

@@ -37,6 +37,13 @@ export class ACLResource {
 
   getAction(name: string) {
     const result = this.actions.get(name) || this.actions.get(this.acl.resolveActionAlias(name));
+    if (!result) {
+      return null;
+    }
+
+    if (Array.isArray(result.fields) && result.fields.length > 0) {
+      result.fields = lodash.uniq(result.fields);
+    }
     return lodash.cloneDeep(result);
   }
 
