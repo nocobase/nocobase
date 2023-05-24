@@ -15,6 +15,8 @@ export function RouteSwitch(props: RouteSwitchProps) {
    * => ['/a/b', '/a/b/:c', '/a/b/:c/:d']
    */
   const generatePaths = useCallback((path = '') => {
+    if (path === '/') return [path];
+
     const segments: string[] = path.split('/'); // 将路径按照 '/' 分段
     if (segments[segments.length - 1] === '') {
       segments.pop(); // 最后一个字符是 '/'，将其弹出
@@ -34,8 +36,8 @@ export function RouteSwitch(props: RouteSwitchProps) {
         segments
           .slice(0, i + 1)
           .join('/')
-          .replaceAll('?', '')
-          .replaceAll('(.+)', ''), // 历史遗留问题 /a/b/:c(.+)? => /a/b/:c
+          .replace(/\?/g, '')
+          .replace(/\(\.\+\)/g, ''), // 历史遗留问题 /a/b/:c(.+)? => /a/b/:c
       );
     }
     return res;
@@ -73,7 +75,7 @@ export function RouteSwitch(props: RouteSwitchProps) {
           };
         }
       });
-      return res;
+      return res.flat(Infinity);
     },
     [generatePaths],
   );
