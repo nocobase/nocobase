@@ -87,7 +87,7 @@ const InternalMenu: React.FC = (props) => {
         {designable ? (
           <List.Item>
             <SchemaInitializer.ActionModal
-              buttonText="Add menu item"
+              buttonText={t('Add menu item')}
               title={t('Add menu item')}
               schema={menuItemSchema}
               onSubmit={onAddMenuItem}
