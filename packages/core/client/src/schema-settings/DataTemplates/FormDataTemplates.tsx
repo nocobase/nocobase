@@ -2,6 +2,7 @@ import { connect, mapProps, observer } from '@formily/react';
 import { Tree as AntdTree } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
@@ -34,6 +35,7 @@ export const FormDataTemplates = observer((props: any) => {
       getLabel,
       getFieldNames,
       getCollectionField,
+      mergeFilter,
       collection,
       collectionName,
       items: defaultValues?.items || [],

@@ -3,6 +3,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
+import { mergeFilter } from '../../../block-provider';
 import { useCollectionFilterOptions, useCollectionManager } from '../../../collection-manager';
 import { isTitleField } from '../../../collection-manager/Configuration/CollectionFields';
 import { removeNullCondition, useCompile, useDesignable } from '../../../schema-component';
@@ -65,7 +66,8 @@ export const Designer = () => {
         }
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
-          item.filter = filter || {};
+          item.filter = mergeFilter([filter, getSelectedIdFilter(field.value)], '$or');
+
           try {
             field.componentProps.service.params = { filter: item.filter };
           } catch (err) {
@@ -112,3 +114,13 @@ export const Designer = () => {
     </GeneralSchemaDesigner>
   );
 };
+
+function getSelectedIdFilter(selectedId) {
+  return selectedId
+    ? {
+        id: {
+          $eq: selectedId,
+        },
+      }
+    : null;
+}
