@@ -1,4 +1,5 @@
 import { connect, mapProps, observer } from '@formily/react';
+import { observable } from '@formily/reactive';
 import { Tree as AntdTree } from 'antd';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +28,8 @@ export const FormDataTemplates = observer((props: any) => {
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
+
+  const activeData = useMemo(() => observable(defaultValues), [defaultValues]);
   const components = useMemo(() => ({ ArrayCollapse }), []);
   const scope = useMemo(
     () => ({
@@ -47,7 +50,7 @@ export const FormDataTemplates = observer((props: any) => {
       properties: {
         items: {
           type: 'array',
-          default: '{{ items }}',
+          default: activeData?.items,
           'x-component': 'ArrayCollapse',
           'x-decorator': 'FormItem',
           'x-component-props': {
@@ -88,17 +91,16 @@ export const FormDataTemplates = observer((props: any) => {
                     'x-designer': Designer,
                     'x-designer-props': {
                       formSchema,
-                      data: defaultValues,
+                      data: activeData,
                       collectionName,
                     },
-                    'x-data': '{{ $index }}',
                     'x-decorator': 'FormItem',
                     'x-component': AssociationSelect,
                     'x-component-props': {
                       service: {
                         resource: collectionName,
                         params: {
-                          filter: defaultValues?.filter,
+                          filter: activeData?.filter,
                         },
                       },
                       action: 'list',
@@ -106,10 +108,10 @@ export const FormDataTemplates = observer((props: any) => {
                       objectValue: false,
                       manual: false,
                       targetField: getCollectionField(
-                        `${collectionName}.${defaultValues?.titleField || collection?.titleField || 'id'}`,
+                        `${collectionName}.${activeData?.titleField || collection?.titleField || 'id'}`,
                       ),
                       mapOptions: getMapOptions(),
-                      fieldNames: getFieldNames(defaultValues, collection),
+                      fieldNames: getFieldNames(activeData, collection),
                     },
                     'x-reactions': [
                       {
@@ -191,7 +193,7 @@ export const FormDataTemplates = observer((props: any) => {
         display: {
           type: 'boolean',
           'x-content': '{{ t("Display data template selector") }}',
-          default: defaultValues?.display !== false,
+          default: activeData?.display !== false,
           'x-decorator': 'FormItem',
           'x-component': 'Checkbox',
         },

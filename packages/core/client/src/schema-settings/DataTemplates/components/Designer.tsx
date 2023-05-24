@@ -1,5 +1,6 @@
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
@@ -23,7 +24,6 @@ export const Designer = observer(() => {
     collectionName: string;
     data?: ITemplate;
   };
-
   const collection = getCollection(collectionName);
   const collectionFields = getCollectionFields(collectionName);
   const dataSource = useCollectionFilterOptions(collectionName);
@@ -83,7 +83,7 @@ export const Designer = observer(() => {
           dn.refresh();
         }}
       />
-      <SchemaSettings.SelectItem
+      <SelectItem
         key="title-field"
         title={t('Title field')}
         options={options}
@@ -126,4 +126,24 @@ function getSelectedIdFilter(selectedId) {
         },
       }
     : null;
+}
+
+function SelectItem(props) {
+  const { title, options, value, onChange, ...others } = props;
+
+  return (
+    <SchemaSettings.Item {...others}>
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        {title}
+        <Select
+          bordered={false}
+          value={value}
+          onChange={onChange}
+          options={options}
+          style={{ textAlign: 'right', minWidth: 100 }}
+          {...others}
+        />
+      </div>
+    </SchemaSettings.Item>
+  );
 }
