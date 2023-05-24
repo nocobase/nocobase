@@ -1,10 +1,10 @@
 import { connect, mapProps, observer } from '@formily/react';
 import { Tree as AntdTree } from 'antd';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
 import { AssociationSelect, SchemaComponent, SchemaComponentContext } from '../../schema-component';
+import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
 import { Designer } from './components/Designer';
@@ -22,7 +22,7 @@ const Tree = connect(
 export const FormDataTemplates = observer((props: any) => {
   const { useProps, formSchema, designerCtx } = props;
   // defaultValues 加个默认值，防止没有数据时，无法渲染 Designer
-  const { defaultValues = { items: [{}] }, collectionName } = useProps();
+  const { defaultValues = {}, collectionName } = useProps();
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
@@ -35,7 +35,6 @@ export const FormDataTemplates = observer((props: any) => {
       getLabel,
       getFieldNames,
       getCollectionField,
-      mergeFilter,
       collection,
       collectionName,
       items: defaultValues?.items || [],
@@ -99,17 +98,18 @@ export const FormDataTemplates = observer((props: any) => {
                       service: {
                         resource: collectionName,
                         params: {
-                          filter: '{{ $record.filter }}',
+                          filter: defaultValues?.filter,
                         },
                       },
                       action: 'list',
                       multiple: false,
                       objectValue: false,
                       manual: false,
-                      targetField:
-                        '{{ getCollectionField(`${collectionName}.${$record.titleField || collection?.titleField || "id"}`) }}',
-                      mapOptions: '{{ getMapOptions() }}',
-                      fieldNames: '{{ getFieldNames($record, collection) }}',
+                      targetField: getCollectionField(
+                        `${collectionName}.${defaultValues?.titleField || collection?.titleField || 'id'}`,
+                      ),
+                      mapOptions: getMapOptions(),
+                      fieldNames: getFieldNames(defaultValues, collection),
                     },
                     'x-reactions': [
                       {
@@ -220,9 +220,9 @@ function getMapOptions() {
   };
 }
 
-function getFieldNames(record, collection) {
+function getFieldNames(data: ITemplate, collection) {
   return {
-    label: getLabel(record.titleField || collection?.titleField || 'id'),
+    label: getLabel(data?.titleField || collection?.titleField || 'id'),
     value: 'id',
   };
 }

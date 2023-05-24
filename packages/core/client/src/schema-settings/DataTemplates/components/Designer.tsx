@@ -23,15 +23,12 @@ export const Designer = () => {
     collectionName: string;
     data?: ITemplate;
   };
-  const index = field.data;
 
   const collection = getCollection(collectionName);
   const collectionFields = getCollectionFields(collectionName);
   const dataSource = useCollectionFilterOptions(collectionName);
 
-  const item = data?.items?.[index];
-
-  if (!item) {
+  if (!data) {
     return null;
   }
 
@@ -46,14 +43,14 @@ export const Designer = () => {
     <GeneralSchemaDesigner draggable={false}>
       <SchemaSettings.ModalItem
         title={t('Set the data scope')}
-        scope={{ item }}
+        scope={{ data }}
         schema={
           {
             type: 'object',
             title: t('Set the data scope'),
             properties: {
               filter: {
-                default: '{{ item.filter }}',
+                default: '{{ data.filter }}',
                 // title: '数据范围',
                 enum: dataSource,
                 'x-component': 'Filter',
@@ -66,10 +63,10 @@ export const Designer = () => {
         }
         onSubmit={({ filter }) => {
           filter = removeNullCondition(filter);
-          item.filter = mergeFilter([filter, getSelectedIdFilter(field.value)], '$or');
+          data.filter = mergeFilter([filter, getSelectedIdFilter(field.value)], '$or');
 
           try {
-            field.componentProps.service.params = { filter: item.filter };
+            field.componentProps.service.params = { filter: data.filter };
           } catch (err) {
             console.error(err);
           }
@@ -87,9 +84,9 @@ export const Designer = () => {
         key="title-field"
         title={t('Title field')}
         options={options}
-        value={item.titleField || collection?.titleField || 'id'}
+        value={data.titleField || collection?.titleField || 'id'}
         onChange={(label) => {
-          item.titleField = label;
+          data.titleField = label;
           try {
             field.componentProps.fieldNames.label = label;
             field.componentProps.targetField = getCollectionField(
