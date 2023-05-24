@@ -16,6 +16,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const fieldSchema = useFieldSchema();
   const service = useServiceOptions(props);
   const isAllowAddNew = fieldSchema['x-add-new'];
+  const value = Array.isArray(props.value) ? props.value.filter(Boolean) : props.value;
 
   return (
     <div key={fieldSchema.name}>
@@ -24,7 +25,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           style={{ width: '100%' }}
           {...props}
           objectValue={objectValue}
-          value={props.value?.filter?.(Boolean)}
+          value={value}
           service={service}
         ></RemoteSelect>
 
