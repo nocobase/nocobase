@@ -84,7 +84,7 @@ export const FormItem: any = observer((props: any) => {
             `,
             {
               [css`
-                & .ant-formily-item-label {
+                > .ant-formily-item-label {
                   display: none;
                 }
               `]: showTitle === false,
@@ -171,6 +171,8 @@ FormItem.Designer = function Designer() {
           direction: 'asc',
         };
   });
+
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
 
   return (
     <GeneralSchemaDesigner>
@@ -352,7 +354,7 @@ FormItem.Designer = function Designer() {
                 properties: {
                   default: isInvariable(interfaceConfig)
                     ? {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
@@ -375,7 +377,7 @@ FormItem.Designer = function Designer() {
                         'x-disabled': false,
                       }
                     : {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
@@ -384,7 +386,7 @@ FormItem.Designer = function Designer() {
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                             s.title = '';
                             s['x-read-pretty'] = false;
                             s['x-disabled'] = false;
@@ -572,12 +574,10 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
-              field.value = field.value || initValue;
-            }else if(mode==='SubTable'){
-              field.value = field.value || [];
-            }
+            // if (mode === 'Nester') {
+            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
+            //   field.value = field.value || initValue;
+            // }
             dn.emit('patch', {
               schema,
             });
