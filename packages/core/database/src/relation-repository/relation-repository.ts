@@ -8,7 +8,6 @@ import FilterParser from '../filter-parser';
 import { Model } from '../model';
 import { OptionsParser } from '../options-parser';
 import { CreateOptions, Filter, FindOptions } from '../repository';
-import { updateAssociations } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 
 export const transaction = transactionWrapperBuilder(function () {
@@ -48,10 +47,6 @@ export abstract class RelationRepository {
     return this.associationField.targetKey;
   }
 
-  protected accessors() {
-    return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
-  }
-
   @transaction()
   async create(options?: CreateOptions): Promise<any> {
     if (Array.isArray(options.values)) {
@@ -67,8 +62,6 @@ export abstract class RelationRepository {
     const sourceModel = await this.getSourceModel(transaction);
 
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
-
-    await updateAssociations(instance, values, { ...options, transaction });
 
     if (options.hooks !== false) {
       await this.db.emitAsync(`${this.targetCollection.name}.afterCreateWithAssociations`, instance, {
@@ -93,6 +86,10 @@ export abstract class RelationRepository {
     }
 
     return this.sourceInstance;
+  }
+
+  protected accessors() {
+    return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 
   protected buildQueryOptions(options: FindOptions) {

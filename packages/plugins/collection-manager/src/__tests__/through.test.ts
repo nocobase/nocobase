@@ -3,13 +3,35 @@ import { mockServer } from '@nocobase/test';
 import Plugin from '../server';
 
 describe('collections repository', () => {
-  it('case 1', async () => {
-    const app1 = mockServer({
+  let app1;
+  let app2;
+
+  beforeEach(async () => {
+    app1 = mockServer({
       database: {
         tablePrefix: 'through_',
       },
       acl: false,
     });
+
+    app2 = mockServer({
+      database: {
+        tablePrefix: 'through_',
+      },
+    });
+  });
+
+  afterEach(async () => {
+    if (app1) {
+      await app1.destroy();
+    }
+
+    if (app2) {
+      await app2.destroy();
+    }
+  });
+
+  it('case 1', async () => {
     app1.plugin(PluginErrorHandler, { name: 'error-handler' });
     app1.plugin(Plugin, { name: 'collection-manager' });
     await app1.loadAndInstall({ clean: true });
@@ -68,7 +90,7 @@ describe('collections repository', () => {
         },
       });
 
-    await app1
+    let response = await app1
       .agent()
       .resource('collections.fields', 'resumes')
       .create({
@@ -86,7 +108,9 @@ describe('collections repository', () => {
         },
       });
 
-    await app1
+    expect(response.status).toBe(200);
+
+    response = await app1
       .agent()
       .resource('collections.fields', 'resumes')
       .create({
@@ -101,6 +125,8 @@ describe('collections repository', () => {
         },
       });
 
+    expect(response.status).toBe(200);
+
     const job1 = await app1.db.getRepository('jobs').create({});
     await app1.db.getRepository('resumes').create({
       values: {
@@ -113,13 +139,7 @@ describe('collections repository', () => {
       rid: 1,
       jid: 1,
     });
-    await app1.destroy();
 
-    const app2 = mockServer({
-      database: {
-        tablePrefix: 'through_',
-      },
-    });
     app2.plugin(PluginErrorHandler, { name: 'error-handler' });
     app2.plugin(Plugin, { name: 'collection-manager' });
     await app2.load();
@@ -139,6 +159,5 @@ describe('collections repository', () => {
       rid: 1,
       jid: 1,
     });
-    await app2.destroy();
   });
 });
