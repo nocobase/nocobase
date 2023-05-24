@@ -16,28 +16,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const fieldSchema = useFieldSchema();
   const service = useServiceOptions(props);
   const isAllowAddNew = fieldSchema['x-add-new'];
-  // const normalizeValues = useCallback(
-  //   (obj) => {
-  //     if (!objectValue && typeof obj === 'object') {
-  //       return obj[fieldNames?.value];
-  //     }
-  //     return obj;
-  //   },
-  //   [objectValue, fieldNames?.value],
-  // );
-  // const value = useMemo(() => {
-  //   if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
-  //     return;
-  //   }
-  //   if (Array.isArray(props.value)) {
-  //     return props.value;
-  //   } else {
-  //     return props.value;
-  //   }
-  // }, [props.value, normalizeValues]);
-  // useEffect(() => {
-  //   field.value = value;
-  // }, []);
+
   return (
     <div key={fieldSchema.name}>
       <Input.Group compact style={{ display: 'flex' }}>
@@ -45,7 +24,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
           style={{ width: '100%' }}
           {...props}
           objectValue={objectValue}
-          value={props.value}
+          value={props.value?.filter(Boolean)}
           service={service}
         ></RemoteSelect>
 
