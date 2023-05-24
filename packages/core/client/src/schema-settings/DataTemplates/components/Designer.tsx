@@ -67,7 +67,7 @@ export const Designer = () => {
           filter = removeNullCondition(filter);
           item.filter = filter || {};
           try {
-            field.componentProps.service.params.filter = item.filter;
+            field.componentProps.service.params = { filter: item.filter };
           } catch (err) {
             console.error(err);
           }

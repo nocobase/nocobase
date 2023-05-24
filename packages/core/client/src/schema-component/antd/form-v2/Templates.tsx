@@ -35,7 +35,7 @@ const useDataTemplates = () => {
   items.forEach((item) => {
     try {
       item.fields = item.fields
-        .map((field) => {
+        ?.map((field) => {
           const joinField = getCollectionJoinField(`${item.collection}.${field}`);
           if (joinField) {
             return field;
