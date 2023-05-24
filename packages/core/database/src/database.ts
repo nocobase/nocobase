@@ -354,8 +354,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
-    this.on('afterDefine', (model) => {
-      model.afterCreate(async (model, options) => {
+    this.on('afterDefineCollection', (collection) => {
+      collection.model.afterCreate(async (model, options) => {
         if (!options.values) {
           return;
         }

@@ -17,6 +17,27 @@ describe('collection', () => {
     await db.close();
   });
 
+  it('should create collection with string field primary key', async () => {
+    const test = db.collection({
+      name: 'test',
+      fields: [
+        {
+          type: 'string',
+          name: 'id',
+          primaryKey: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const rawAttributes = test.model.rawAttributes;
+    const id = rawAttributes.id;
+
+    // @ts-ignore
+    expect(id.type.constructor.key).toBe('STRING');
+  });
+
   it('should remove sequelize model prototype methods after field remove', async () => {
     db.collection({
       name: 'tags',
