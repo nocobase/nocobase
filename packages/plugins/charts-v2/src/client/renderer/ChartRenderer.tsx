@@ -1,10 +1,12 @@
 import { GeneralSchemaDesigner, SchemaSettings } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { Empty } from 'antd';
+import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
-import { ChartConfigContext } from '../block/ChartConfigure';
+import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField } from '@formily/react';
 import { useChartComponent } from './ChartLibrary';
+import { ErrorBoundary } from 'react-error-boundary';
+const { Paragraph, Text } = Typography;
 
 export type ChartRendererProps = {
   query?: Partial<{
@@ -169,7 +171,14 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
     }
 
     return Component ? (
-      <Component {...{ ...chartConfig, data }} />
+      <ErrorBoundary
+        onError={(error) => {
+          console.error(error);
+        }}
+        FallbackComponent={ErrorFallback}
+      >
+        <Component {...{ ...chartConfig, data }} />
+      </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />
     );
@@ -187,7 +196,7 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="configure"
         onClick={() => {
-          setCurrent({ schema, field });
+          setCurrent({ schema, field, collection: field?.componentProps?.collection });
           setVisible(true);
         }}
       >
@@ -201,5 +210,21 @@ ChartRenderer.Designer = function Designer() {
         }}
       />
     </GeneralSchemaDesigner>
+  );
+};
+
+const ErrorFallback = ({ error }) => {
+  const { t } = useChartsTranslation();
+
+  return (
+    <div style={{ backgroundColor: 'white' }}>
+      <Result status="error" title={t('Render Failed')} subTitle={t('Please check the configuration.')}>
+        <Paragraph copyable>
+          <Text type="danger" style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>
+            {error.message}
+          </Text>
+        </Paragraph>
+      </Result>
+    </div>
   );
 };

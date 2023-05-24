@@ -1,6 +1,6 @@
 import { Collection, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { ChartConfigContext, ChartConfigure } from './ChartConfigure';
+import { ChartConfigContext, ChartConfigCurrent, ChartConfigure } from './ChartConfigure';
 import { ISchema } from '@formily/react';
 
 export const ChartV2Block: React.FC<{
@@ -8,10 +8,7 @@ export const ChartV2Block: React.FC<{
 }> = (props) => {
   const { insertAdjacent } = useDesignable();
   const [visible, setVisible] = React.useState(false);
-  const [current, setCurrent] = React.useState<{
-    schema: ISchema;
-    field: any;
-  }>({} as any);
+  const [current, setCurrent] = React.useState<ChartConfigCurrent>({} as any);
   return (
     <ChartConfigContext.Provider value={{ visible, setVisible, current, setCurrent }}>
       {props.children}

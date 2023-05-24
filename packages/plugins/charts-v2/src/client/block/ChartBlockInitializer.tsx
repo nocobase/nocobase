@@ -13,7 +13,7 @@ const ConfigureButton = itemWrap((props) => {
     <SchemaInitializer.Item
       {...props}
       onClick={() => {
-        setCurrent({ schema: {}, field: null });
+        setCurrent({ schema: {}, field: null, collection: props.item?.name });
         setVisible(true);
       }}
     />

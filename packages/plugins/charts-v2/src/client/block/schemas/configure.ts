@@ -8,18 +8,23 @@ const getArraySchema = (fields = {}) => ({
   // 'x-component-props': { style: { maxWidth: 550 } },
   items: {
     type: 'object',
-    'x-component': 'Space',
     properties: {
-      sort: {
+      space: {
         type: 'void',
-        'x-decorator': 'FormItem',
-        'x-component': 'ArrayItems.SortHandle',
-      },
-      ...fields,
-      remove: {
-        type: 'void',
-        'x-decorator': 'FormItem',
-        'x-component': 'ArrayItems.Remove',
+        'x-component': 'Space',
+        properties: {
+          sort: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.SortHandle',
+          },
+          ...fields,
+          remove: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'ArrayItems.Remove',
+          },
+        },
       },
     },
   },
@@ -93,10 +98,11 @@ export const querySchema: ISchema = {
                   field: {
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Input',
+                    'x-component': 'Select',
                     'x-component-props': {
                       placeholder: '{{t("Field")}}',
                     },
+                    enum: '{{ fields }}',
                   },
                   aggregation: {
                     type: 'string',
@@ -106,11 +112,11 @@ export const querySchema: ISchema = {
                       placeholder: '{{t("Aggregation")}}',
                     },
                     enum: [
-                      { label: 'Sum', value: 'sum' },
-                      { label: 'Count', value: 'count' },
-                      { label: 'Avg', value: 'avg' },
-                      { label: 'Max', value: 'max' },
-                      { label: 'Min', value: 'min' },
+                      { label: lang('Sum'), value: 'sum' },
+                      { label: lang('Count'), value: 'count' },
+                      { label: lang('Avg'), value: 'avg' },
+                      { label: lang('Max'), value: 'max' },
+                      { label: lang('Min'), value: 'min' },
                     ],
                   },
                   alias: {
@@ -136,7 +142,27 @@ export const querySchema: ISchema = {
                   field: {
                     type: 'string',
                     'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    'x-component-props': {
+                      placeholder: '{{t("Field")}}',
+                    },
+                    enum: '{{ fields }}',
+                  },
+                  format: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
                     'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: '{{t("Format")}}',
+                    },
+                  },
+                  alias: {
+                    type: 'string',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Input',
+                    'x-component-props': {
+                      placeholder: '{{t("Alias")}}',
+                    },
                   },
                 }),
               },
@@ -153,7 +179,11 @@ export const querySchema: ISchema = {
                   field: {
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Input',
+                    'x-component': 'FieldSelect',
+                    'x-component-props': {
+                      fields: '{{ fields }}',
+                      placeholder: '{{t("Field")}}',
+                    },
                   },
                   order: {
                     type: 'string',

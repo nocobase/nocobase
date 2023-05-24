@@ -7,6 +7,7 @@
     "@nocobase/test": "0.9.3-alpha.1"
   },
   "dependencies": {
-    "@ant-design/plots": "^1.2.5"
+    "@ant-design/plots": "^1.2.5",
+    "react-error-boundary": "^4.0.4"
   }
 }
