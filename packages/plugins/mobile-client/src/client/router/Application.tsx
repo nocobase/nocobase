@@ -8,11 +8,7 @@ import { DrawerProps, ModalProps } from 'antd';
 const commonCSSVariables = css`
   --nb-spacing: 14px;
 `;
-const commonCSSOverride = css`
-  .ant-tag {
-    white-space: pre-wrap;
-  }
-`;
+const commonCSSOverride = css``;
 const commonDesignerCSS = css`
   --nb-designer-top: 2px;
   --nb-designer-right: 2px;
