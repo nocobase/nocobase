@@ -21,7 +21,8 @@ const Tree = connect(
 
 export const FormDataTemplates = observer((props: any) => {
   const { useProps, formSchema, designerCtx } = props;
-  const { defaultValues, collectionName } = useProps();
+  // defaultValues 加个默认值，防止没有数据时，无法渲染 Designer
+  const { defaultValues = { items: [{}] }, collectionName } = useProps();
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);

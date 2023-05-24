@@ -61,7 +61,7 @@ const useDataTemplates = () => {
     templates,
     display,
     defaultTemplate,
-    enabled: items.length > 0,
+    enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
 
@@ -72,7 +72,7 @@ export const Templates = ({ style = {}, form }) => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (defaultTemplate) {
+    if (enabled && defaultTemplate) {
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
           if (form && data) {
