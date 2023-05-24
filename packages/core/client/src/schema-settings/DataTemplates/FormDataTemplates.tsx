@@ -29,14 +29,15 @@ const Tree = connect(
 
 export const FormDataTemplates = observer((props: any) => {
   const { useProps, formSchema, designerCtx } = props;
-  // defaultValues 加个默认值，防止没有数据时，无法渲染 Designer
-  const { defaultValues = {}, collectionName } = useProps();
+  const { defaultValues = { items: [], titleField: '', filter: {}, display: true }, collectionName } = useProps();
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
   const collection = getCollection(collectionName);
   const { t } = useTranslation();
 
-  const activeData = useMemo(() => observable(defaultValues), [defaultValues]);
+  // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
+  const activeData = useMemo(() => observable(defaultValues), []);
+
   const components = useMemo(() => ({ ArrayCollapse }), []);
   const scope = useMemo(
     () => ({
