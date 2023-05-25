@@ -22,8 +22,6 @@ export const Designer = observer(() => {
   const compile = useCompile();
   const { formSchema, data } = fieldSchema['x-designer-props'] as {
     formSchema: ISchema;
-    index: number;
-    collectionName: string;
     data?: ITemplate;
   };
 
@@ -101,7 +99,7 @@ export const Designer = observer(() => {
               };
             });
           } catch (err) {
-            console.error(err);
+            error(err);
           }
           formSchema['x-data-templates'] = data;
           dn.emit('patch', {

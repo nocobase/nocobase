@@ -124,7 +124,6 @@ export const FormDataTemplates = observer((props: any) => {
                     'x-designer-props': {
                       formSchema,
                       data: activeData,
-                      collectionName,
                     },
                     'x-decorator': 'FormItem',
                     'x-component': AssociationSelect,
