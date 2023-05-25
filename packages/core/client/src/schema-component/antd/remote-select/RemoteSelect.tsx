@@ -10,6 +10,8 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 
+const EMPTY = 'N/A';
+
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
   onChange?: (v: any) => void;
@@ -90,13 +92,13 @@ const InternalRemoteSelect = connect(
 
               if (mapOptions) {
                 return mapOptions({
-                  [fieldNames.label]: label,
+                  [fieldNames.label]: label || EMPTY,
                   [fieldNames.value]: option[fieldNames.value],
                 });
               }
               return {
                 ...option,
-                [fieldNames.label]: label || option[fieldNames.value],
+                [fieldNames.label]: label || EMPTY,
                 [fieldNames.value]: option[fieldNames.value],
               };
             })
