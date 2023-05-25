@@ -203,15 +203,16 @@ export class PluginMultiAppManager extends Plugin {
         return;
       }
       try {
-        const subApps = await repository.find();
+        const subApps = await repository.find({
+          filter: {
+            'options.autoStart': true,
+          },
+        });
         for (const subApp of subApps) {
-          const options = subApp.get('options');
-          if (options?.autoStart) {
-            const registeredApp = await subApp.registerToMainApp(this.app, {
-              appOptionsFactory: this.appOptionsFactory,
-            });
-            await registeredApp.load();
-          }
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
         }
       } catch (err) {
         console.error('Auto register sub applications failed: ', err);
