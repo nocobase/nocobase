@@ -29,7 +29,7 @@ export const TableBlockDesigner = () => {
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
-    return item.startsWith('-')
+    return item?.startsWith('-')
       ? {
           field: item.substring(1),
           direction: 'desc',
@@ -151,6 +151,7 @@ export const TableBlockDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
+                            required:true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {

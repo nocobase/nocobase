@@ -1,5 +1,5 @@
 import { onFormValuesChange } from '@formily/core';
-import { useFieldSchema, useFormEffects } from '@formily/react';
+import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
 import { Checkbox, DatePicker, InputNumber, Input as InputString, useCollection } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
@@ -44,6 +44,10 @@ export const Result = (props) => {
   });
   const Component = TypedComponents[dataType] ?? InputString;
   return <Component {...others} value={dataType === 'double' ? toFixedByStep(value, props.step) : value} />;
+};
+
+Result.ReadPretty = function ReadPretty(props) {
+  return props.value ?? null;
 };
 
 export default Result;

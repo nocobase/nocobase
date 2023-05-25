@@ -39,17 +39,19 @@ import { JobStatusOptionsMap } from '../constants';
 import { NAMESPACE, lang } from '../locale';
 import request from './request';
 import { VariableOptions } from '../variable';
+import { NodeDescription } from '../components/NodeDescription';
 
 export interface Instruction {
   title: string;
   type: string;
   group: string;
+  description?: string;
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
+  render?(props): JSX.Element;
   endding?: boolean;
   useVariables?(node, options?): VariableOptions;
   useScopeVariables?(node, options?): VariableOptions;
@@ -388,7 +390,7 @@ export function NodeDefaultView(props) {
                 },
                 [`${instruction.type}_${data.id}`]: {
                   type: 'void',
-                  title: instruction.title,
+                  title: data.title,
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -415,6 +417,16 @@ export function NodeDefaultView(props) {
                                 font-size: 85%;
                                 margin-bottom: 2em;
                               `,
+                            },
+                          },
+                        }
+                      : instruction.description
+                      ? {
+                          description: {
+                            type: 'void',
+                            'x-component': NodeDescription,
+                            'x-component-props': {
+                              instruction,
                             },
                           },
                         }

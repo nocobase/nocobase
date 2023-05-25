@@ -16,7 +16,8 @@ export type VariableOptions = VariableOption[] | null;
 export const nodesOptions = {
   label: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
   value: '$jobsMapByNodeId',
-  useOptions(current, options) {
+  useOptions(options) {
+    const current = useNodeContext();
     const upstreams = useAvailableUpstreams(current);
     const result: VariableOption[] = [];
     upstreams.forEach((node) => {
@@ -38,7 +39,7 @@ export const nodesOptions = {
 export const triggerOptions = {
   label: `{{t("Trigger variables", { ns: "${NAMESPACE}" })}}`,
   value: '$context',
-  useOptions(current, options) {
+  useOptions(options) {
     const { workflow } = useFlowContext();
     const trigger = triggers.get(workflow.type);
     return trigger?.useVariables?.(workflow.config, options) ?? null;
@@ -48,7 +49,8 @@ export const triggerOptions = {
 export const scopeOptions = {
   label: `{{t("Scope variables", { ns: "${NAMESPACE}" })}}`,
   value: '$scopes',
-  useOptions(current, options) {
+  useOptions(options) {
+    const current = useNodeContext();
     const scopes = useUpstreamScopes(current);
     const result: VariableOption[] = [];
     scopes.forEach((node) => {
@@ -70,7 +72,7 @@ export const scopeOptions = {
 export const systemOptions = {
   label: `{{t("System variables", { ns: "${NAMESPACE}" })}}`,
   value: '$system',
-  useOptions(current, { types }) {
+  useOptions({ types }) {
     return [
       ...(!types || types.includes('date')
         ? [
@@ -158,9 +160,8 @@ export function filterTypedFields(fields, types, depth = 1) {
 
 export function useWorkflowVariableOptions(options = {}) {
   const compile = useCompile();
-  const current = useNodeContext();
   const result = [scopeOptions, nodesOptions, triggerOptions, systemOptions].map((item: any) => {
-    const opts = typeof item.useOptions === 'function' ? item.useOptions(current, options).filter(Boolean) : null;
+    const opts = typeof item.useOptions === 'function' ? item.useOptions(options).filter(Boolean) : null;
     return {
       label: compile(item.label),
       value: item.value,

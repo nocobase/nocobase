@@ -61,7 +61,9 @@ const useResource = (props: UseResourceProps) => {
       field,
       api,
       resource,
-      sourceId: !isCreateAction ? sourceId || record[association?.sourceKey || 'id'] : undefined,
+      sourceId: !isCreateAction
+        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
+        : undefined,
     };
     return new TableFieldResource(options);
   }

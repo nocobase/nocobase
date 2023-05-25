@@ -28,7 +28,7 @@ function AssociatedConfig({ value, onChange, ...props }): JSX.Element {
   const { getCollection } = useCollectionManager();
   const current = useNodeContext();
   const options = [nodesOptions, triggerOptions].map((item) => {
-    const children = item.useOptions(current, { types: [matchToManyField] })?.filter(Boolean);
+    const children = item.useOptions({ types: [matchToManyField] })?.filter(Boolean);
     return {
       label: compile(item.label),
       value: item.value,
@@ -90,6 +90,7 @@ export default {
   title: `{{t("Aggregate", { ns: "${NAMESPACE}" })}}`,
   type: 'aggregate',
   group: 'collection',
+  description: `{{t("Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     aggregator: {
       type: 'string',
