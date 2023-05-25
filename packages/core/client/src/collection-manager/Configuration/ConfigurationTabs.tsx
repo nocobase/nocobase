@@ -114,6 +114,12 @@ export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
+  const [activeKey, setActiveKey] = useState('all');
+  const compile = useCompile();
+  const api = useAPIClient();
+
+  if (!data) return null;
+
   const tabsItems = data
     .sort((a, b) => b.sort - a.sort)
     .concat()
@@ -131,9 +137,7 @@ export const ConfigurationTabs = () => {
       closable: false,
       schema: collectionTableSchema,
     });
-  const compile = useCompile();
-  const [activeKey, setActiveKey] = useState('all');
-  const api = useAPIClient();
+
   const onChange = (key: string) => {
     setActiveKey(key);
     setKey(uid());
