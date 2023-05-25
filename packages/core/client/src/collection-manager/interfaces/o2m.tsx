@@ -1,12 +1,5 @@
 import { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import {
-  constraintsProps,
-  recordPickerSelector,
-  recordPickerViewer,
-  relationshipType,
-  reverseFieldProperties,
-} from './properties';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const o2m: IField = {
@@ -52,7 +45,7 @@ export const o2m: IField = {
   },
   availableTypes: ['hasMany'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, targetCollection }) {
-    schema['type'] = 'array';
+    // schema['type'] = 'array';
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;

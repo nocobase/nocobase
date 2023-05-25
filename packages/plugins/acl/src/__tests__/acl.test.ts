@@ -12,6 +12,8 @@ describe('acl', () => {
   let admin;
   let adminAgent;
 
+  let userPlugin;
+
   let uiSchemaRepository: UiSchemaRepository;
 
   afterEach(async () => {
@@ -30,7 +32,7 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
+    userPlugin = app.getPlugin('users') as UsersPlugin;
 
     adminAgent = app.agent().auth(
       userPlugin.jwtService.sign({
@@ -40,6 +42,131 @@ describe('acl', () => {
     );
 
     uiSchemaRepository = db.getRepository('uiSchemas');
+  });
+
+  test('append createById', async () => {
+    const Company = await db.getRepository('collections').create({
+      context: {},
+      values: {
+        name: 'companies',
+        fields: [
+          {
+            type: 'string',
+            name: 'name',
+          },
+          {
+            type: 'hasMany',
+            name: 'users',
+          },
+        ],
+      },
+    });
+
+    const Repair = await db.getRepository('collections').create({
+      context: {},
+      values: {
+        name: 'repairs',
+        createdBy: true,
+        fields: [
+          {
+            type: 'belongsTo',
+            name: 'company',
+          },
+          {
+            type: 'string',
+            name: 'name',
+          },
+        ],
+      },
+    });
+
+    const c1 = await db.getRepository('companies').create({
+      values: {
+        name: 'c1',
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+    });
+
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        name: 'repairs',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'list',
+            fields: ['id'],
+          },
+        ],
+      },
+    });
+
+    const u1 = await db.getRepository('users').create({
+      values: {
+        name: 'u1',
+        company: { id: c1.get('id') },
+        roles: ['test-role'],
+      },
+    });
+
+    const r1 = await db.getRepository('repairs').create({
+      values: {
+        name: 'r1',
+        company: { id: c1.get('id') },
+      },
+    });
+
+    userPlugin = app.getPlugin('users') as UsersPlugin;
+
+    const testAgent = app.agent().auth(
+      userPlugin.jwtService.sign({
+        userId: u1.get('id'),
+      }),
+      { type: 'bearer' },
+    );
+
+    // @ts-ignore
+    const response1 = await testAgent.resource('repairs').list({
+      filter: {
+        company: {
+          id: {
+            $isVar: 'currentUser.company.id',
+          },
+        },
+      },
+    });
+
+    // @ts-ignore
+    const response2 = await testAgent.resource('repairs').list({
+      filter: {
+        company: {
+          id: {
+            $isVar: 'currentUser.company.id',
+          },
+        },
+      },
+    });
+
+    // @ts-ignore
+    const response3 = await testAgent.resource('repairs').list({
+      filter: {
+        company: {
+          id: {
+            $isVar: 'currentUser.company.id',
+          },
+        },
+      },
+    });
+
+    const acl = app.acl;
+    const canResult = acl.can({ role: 'test-role', resource: 'repairs', action: 'list' });
+    const params = canResult['params'];
+
+    expect(params['fields']).toHaveLength(3);
   });
 
   it('should not have permission to list comments', async () => {
