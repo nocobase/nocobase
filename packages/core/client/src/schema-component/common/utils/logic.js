@@ -151,9 +151,11 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return false;
     },
     $isTruly: function (a) {
+      if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
       return a === true || a === 1;
     },
     $isFalsy: function (a) {
+      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
       return !jsonLogic.truthy(a);
     },
     cat: function () {
