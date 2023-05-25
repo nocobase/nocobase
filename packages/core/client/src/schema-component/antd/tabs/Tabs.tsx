@@ -8,13 +8,16 @@ import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
 import { TabsDesigner } from './Tabs.Designer';
+import { useTabsContext } from './context';
 
 export const Tabs: any = observer((props: TabsProps) => {
   const fieldSchema = useFieldSchema();
   const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+  const contextProps = useTabsContext();
   return (
     <DndContext>
       <AntdTabs
+        {...contextProps}
         style={props.style}
         tabBarExtraContent={{
           right: render(),

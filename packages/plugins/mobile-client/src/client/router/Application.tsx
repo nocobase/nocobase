@@ -98,6 +98,7 @@ const MApplication: React.FC = (props) => {
               {props.children}
             </RemoteSchemaComponent>
           )}
+          <div id="nb-position-container"></div>
         </div>
       </ActionContextProvider>
     </Provider>

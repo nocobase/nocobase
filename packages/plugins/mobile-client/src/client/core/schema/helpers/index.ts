@@ -19,3 +19,19 @@ export const findSchema = (schema: Schema, component: string) => {
 export const findGridSchema = (schema: Schema) => {
   return findSchema(schema, 'Grid');
 };
+
+const allowComponents = ['Grid', 'Grid.Row'];
+const plusComponent = ['Grid.Col'];
+export const countGridCol = (schema: Schema) => {
+  if (!schema) return 0;
+  let count = 0;
+  if (plusComponent.includes(schema['x-component'])) {
+    count += 1;
+  }
+  if (allowComponents.includes(schema['x-component'])) {
+    schema.mapProperties((schema) => {
+      count += countGridCol(schema);
+    });
+  }
+  return count;
+};
