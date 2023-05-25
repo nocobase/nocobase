@@ -73,6 +73,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return a >= b;
     },
     $lt: function (a, b, c) {
+      if (Array.isArray(a)) return a.some((k) => k < b);
       return c === undefined ? a < b : a < b && b < c;
     },
     $lte: function (a, b, c) {
@@ -85,6 +86,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return jsonLogic.truthy(a);
     },
     $empty: function (a) {
+      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
       return !jsonLogic.truthy(a);
     },
     $notExists: function (a) {
@@ -110,7 +112,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $includes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
-      if (Array.isArray(a)) return a.some((element) => element.includes(b));
+      if (Array.isArray(a)) return a.some((element) => element?.includes(b));
       return a.indexOf(b) !== -1;
     },
     $notIncludes: function (a, b) {
