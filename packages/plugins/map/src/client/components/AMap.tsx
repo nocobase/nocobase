@@ -327,10 +327,14 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
         });
       })
       .catch((err) => {
-        if (err.includes('多个不一致的 key')) {
-          setErrMessage(t('The AccessKey is incorrect, please check it'));
-        } else {
-          setErrMessage(err);
+        if (typeof err === 'string') {
+          if (err.includes('多个不一致的 key')) {
+            setErrMessage(t('The AccessKey is incorrect, please check it'));
+          } else {
+            setErrMessage(err);
+          }
+        } else if (err?.type === 'error') {
+          setErrMessage('Something went wrong, please refresh the page and try again');
         }
       });
 
