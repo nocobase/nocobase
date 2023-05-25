@@ -118,8 +118,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [visible, setVisible] = useState(false);
   const DropdownMenu = (
     <Dropdown
-      visible={visible}
-      onVisibleChange={(visible) => {
+      open={visible}
+      onOpenChange={(visible) => {
         setVisible(visible);
       }}
       overlay={<Menu>{props.children}</Menu>}
