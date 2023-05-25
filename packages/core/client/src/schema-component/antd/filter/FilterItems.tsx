@@ -12,7 +12,7 @@ export const FilterItems = observer((props) => {
       {field?.value?.map((item, index) => {
         return (
           <RemoveConditionContext.Provider key={index} value={() => field.remove(index)}>
-            <ObjectField name={index} component={[item.$and || item.$or ? FilterGroup : FilterItem]} />
+            <ObjectField name={index} component={[item?.$and || item?.$or ? FilterGroup : FilterItem]} />
           </RemoveConditionContext.Provider>
         );
       })}

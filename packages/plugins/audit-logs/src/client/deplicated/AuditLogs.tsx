@@ -4,6 +4,7 @@ import {
   CollectionManagerContext,
   CollectionManagerProvider,
   FormProvider,
+  generateFilterParams,
   SchemaComponent,
   TableBlockProvider,
   useCollection,
@@ -450,26 +451,7 @@ AuditLogs.Decorator = observer((props: any) => {
   const parent = useCollection();
   const record = useRecord();
   const { interfaces } = useContext(CollectionManagerContext);
-  let filter = props?.params?.filter;
-  if (parent.name) {
-    const filterByTk = record?.[parent.filterTargetKey || 'id'];
-    if (filter) {
-      filter = {
-        $and: [
-          filter,
-          {
-            collectionName: parent.name,
-            recordId: `${filterByTk}`,
-          },
-        ],
-      };
-    } else {
-      filter = {
-        collectionName: parent.name,
-        recordId: `${filterByTk}`,
-      };
-    }
-  }
+  const filter = generateFilterParams(record, parent.name, parent.filterTargetKey, props?.params?.filter) || {};
   const defaults = {
     collection: 'auditLogs',
     resource: 'auditLogs',
