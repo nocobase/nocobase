@@ -74,7 +74,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { updateCollection, refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -180,7 +180,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { updateCollection, refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -265,7 +265,7 @@ const InheritFields = (props) => {
   );
 };
 
-export const CollectionFields = (props) => {
+export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name } = useRecord();
