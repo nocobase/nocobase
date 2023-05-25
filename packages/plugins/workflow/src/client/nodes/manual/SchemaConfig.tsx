@@ -27,6 +27,22 @@ import { JOB_STATUS } from '../../constants';
 import customForm from './forms/custom';
 import createForm from './forms/create';
 import updateForm from './forms/update';
+import { FormBlockProvider } from './FormBlockProvider';
+
+type ValueOf<T> = T[keyof T];
+
+export type FormType = {
+  type: 'create' | 'update' | 'custom';
+  title: string;
+  actions: ValueOf<typeof JOB_STATUS>[];
+  collection:
+    | string
+    | {
+        name: string;
+        fields: any[];
+        [key: string]: any;
+      };
+};
 
 export type ManualFormType = {
   title: string;
@@ -38,11 +54,11 @@ export type ManualFormType = {
     components?: {
       [key: string]: React.FC;
     };
-    parseFormOptions: Function;
+    parseFormOptions(root: ISchema): { [key: string]: FormType };
   };
   block: {
     scope?: {
-      [key: string]: Function;
+      [key: string]: () => any;
     };
     components?: {
       [key: string]: React.FC;
@@ -347,6 +363,7 @@ export function SchemaConfig({ value, onChange }) {
                 (result, item) => Object.assign(result, item.config.components),
                 {},
               ),
+              FormBlockProvider,
               // NOTE: fake provider component
               ManualActionStatusProvider(props) {
                 return props.children;

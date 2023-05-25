@@ -1129,6 +1129,7 @@ export const createFormBlockSchema = (options) => {
     association,
     action,
     actions = {},
+    'x-designer': designer = 'FormV2.Designer',
     template,
     title,
     ...others
@@ -1150,10 +1151,10 @@ export const createFormBlockSchema = (options) => {
       // action: 'get',
       // useParams: '{{ useParamsFromRecord }}',
     },
-    'x-designer': 'FormV2.Designer',
+    'x-designer': designer,
     'x-component': 'CardItem',
     'x-component-props': {
-      title
+      title,
     },
     properties: {
       [uid()]: {

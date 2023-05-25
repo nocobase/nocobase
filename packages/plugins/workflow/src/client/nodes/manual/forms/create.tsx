@@ -1,61 +1,8 @@
-import React from 'react';
-
-import {
-  CollectionProvider,
-  createFormBlockSchema,
-  FormBlockProvider,
-  RecordProvider,
-  SchemaInitializer,
-  useCollectionManager,
-  useRecord,
-} from '@nocobase/client';
+import { useCollectionManager } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
-import { JOB_STATUS } from '../../../constants';
 import { findSchema, ManualFormType } from '../SchemaConfig';
-
-function CreateFormBlockProvider(props) {
-  const record = useRecord() ?? {};
-
-  return (
-    <CollectionProvider collection={props.collection}>
-      <RecordProvider record={record}>
-        <FormBlockProvider {...props} />
-      </RecordProvider>
-    </CollectionProvider>
-  );
-}
-
-function CreateFormBlockInitializer({ insert, collection, ...props }) {
-  function onConfirm() {
-    const schema = createFormBlockSchema({
-      title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
-      collection,
-      actionInitializers: 'AddActionButton',
-      actions: {
-        resolve: {
-          type: 'void',
-          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'ManualActionStatusProvider',
-          'x-decorator-props': {
-            value: JOB_STATUS.RESOLVED,
-          },
-          'x-component': 'Action',
-          'x-component-props': {
-            type: 'primary',
-            useAction: '{{ useSubmit }}',
-          },
-          'x-designer': 'Action.Designer',
-          'x-action': `${JOB_STATUS.RESOLVED}`,
-        },
-      },
-    });
-    schema['x-decorator'] = 'CreateFormBlockProvider';
-    insert(schema);
-  }
-
-  return <SchemaInitializer.Item {...props} onClick={onConfirm} />;
-}
+import { FormBlockInitializer } from '../FormBlockInitializer';
 
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
@@ -66,24 +13,31 @@ export default {
         key: 'createRecordForm',
         type: 'subMenu',
         title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections.map((item) => ({
-          key: item.name,
-          type: 'item',
-          title: item.title,
-          collection: item.name,
-          component: CreateFormBlockInitializer,
-        })),
+        children: collections
+          .filter((item) => !item.hidden)
+          .map((item) => ({
+            key: `createForm-${item.name}`,
+            type: 'item',
+            title: item.title,
+            schema: {
+              collection: item.name,
+              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'create',
+            },
+            component: FormBlockInitializer,
+          })),
       };
     },
     initializers: {
       // AddCustomFormField
     },
-    components: {
-      CreateFormBlockProvider,
-    },
+    components: {},
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'CreateFormBlockProvider');
+      const formBlocks: any[] = findSchema(
+        root,
+        (item) => item['x-decorator'] === 'FormBlockProvider' && item['x-decorator-props'].formType === 'create',
+      );
       formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
@@ -103,8 +57,6 @@ export default {
     scope: {
       // useFormBlockProps
     },
-    components: {
-      CreateFormBlockProvider,
-    },
+    components: {},
   },
 } as ManualFormType;

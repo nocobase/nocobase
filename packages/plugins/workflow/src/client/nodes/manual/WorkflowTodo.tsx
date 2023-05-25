@@ -1,5 +1,4 @@
-import React, { useContext, createContext, useEffect, useState, useMemo } from 'react';
-import { createForm } from '@formily/core';
+import React, { useContext, createContext, useEffect, useState } from 'react';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Spin, Tag } from 'antd';
 import { css } from '@emotion/css';
@@ -17,15 +16,18 @@ import {
   useRecord,
   useRequest,
   useTableBlockContext,
+  FormBlockContext,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { uid, parse } from '@nocobase/utils/client';
 
-import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from '../../constants';
+import { JobStatusOptions, JobStatusOptionsMap } from '../../constants';
 import { NAMESPACE } from '../../locale';
 import { FlowContext, useFlowContext } from '../../FlowContext';
 import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from '../../utils';
 import { manualFormTypes } from './SchemaConfig';
+import { FormBlockProvider } from './FormBlockProvider';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -348,7 +350,8 @@ function ActionBarProvider(props) {
   //   2. not current user: disabled action bar
 
   const { data: user } = useCurrentUserContext();
-  const { status, result, userId } = useRecord();
+  const { userJob } = useFlowContext();
+  const { status, result, userId } = userJob;
   const buttonSchema = useFieldSchema();
   const { name } = buttonSchema.parent.toJSON();
 
@@ -369,15 +372,15 @@ function ActionBarProvider(props) {
 const ManualActionStatusContext = createContext<number | null>(null);
 
 function ManualActionStatusProvider({ value, children }) {
-  const { status } = useRecord();
+  const { userJob } = useFlowContext();
   const button = useField();
 
   useEffect(() => {
-    if (status) {
+    if (userJob.status) {
       button.disabled = true;
-      button.visible = status === value;
+      button.visible = userJob.status === value;
     }
-  }, [status, value]);
+  }, [userJob.status, value, button]);
 
   return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
@@ -389,17 +392,19 @@ function useSubmit() {
   const buttonSchema = useFieldSchema();
   const nextStatus = useContext(ManualActionStatusContext);
   const { service } = useTableBlockContext();
-  const { id } = useRecord();
+  const { userJob } = useFlowContext();
+  const { updateAssociationValues } = useContext(FormBlockContext);
   return {
     async run() {
       await submit();
       const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
-        filterByTk: id,
+        filterByTk: userJob.id,
         values: {
           status: nextStatus,
           result: { [name]: values },
         },
+        updateAssociationValues,
       });
       setVisible(false);
       service.refresh();
@@ -407,6 +412,7 @@ function useSubmit() {
   };
 }
 
+// parse datasource block from execution context
 function useFlowRecordFromBlock(opts) {
   const { ['x-context-datasource']: dataSource } = useFieldSchema();
   const { execution } = useFlowContext();
@@ -440,10 +446,11 @@ function FlowContextProvider(props) {
         appends: ['node', 'workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
       })
       .then(({ data }) => {
-        const { node, workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
+        const { node, workflow: { nodes = [], ...workflow } = {}, execution, ...userJob } = data?.data ?? {};
         linkNodes(nodes);
         setNode(node);
         setFlowContext({
+          userJob,
           workflow,
           nodes,
           execution,
@@ -484,25 +491,20 @@ function FlowContextProvider(props) {
 }
 
 function useFormBlockProps() {
-  const { status, result, userId } = useRecord();
+  const { userJob } = useFlowContext();
+  const record = useRecord();
   const { data: user } = useCurrentUserContext();
-  const { name } = useFieldSchema();
 
-  const pattern = status
-    ? result?.[name]
+  const pattern = userJob.status
+    ? record
       ? 'readPretty'
       : 'disabled'
-    : user?.data?.id !== userId
+    : user?.data?.id !== userJob.userId
     ? 'disabled'
     : 'editable';
-  const form = useMemo(
-    () =>
-      createForm({
-        pattern,
-        initialValues: result?.[name] ?? {},
-      }),
-    [status, result, name],
-  );
+
+  const { form } = useFormBlockContext();
+  form.setPattern(pattern);
 
   return { form };
 }
@@ -542,6 +544,7 @@ function Drawer() {
         components={{
           Tag,
           FlowContextProvider,
+          FormBlockProvider,
         }}
         schema={{
           type: 'void',

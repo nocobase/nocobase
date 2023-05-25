@@ -3,23 +3,18 @@ import { useFieldSchema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 
 import {
-  CollectionProvider,
-  createFormBlockSchema,
   GeneralSchemaDesigner,
-  RecordProvider,
-  SchemaInitializer,
   SchemaSettings,
   useCollection,
   useCollectionFilterOptions,
   useCollectionManager,
   useDesignable,
-  useRecord,
 } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
-import { JOB_STATUS } from '../../../constants';
 import { findSchema, ManualFormType } from '../SchemaConfig';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
+import { FormBlockInitializer } from '../FormBlockInitializer';
 
 function UpdateFormDesigner() {
   const { name, title } = useCollection();
@@ -72,53 +67,6 @@ function UpdateFormDesigner() {
   );
 }
 
-function UpdateFormBlockProvider({ collection, children }) {
-  const record = useRecord() ?? {};
-
-  return (
-    <CollectionProvider collection={collection}>
-      <RecordProvider record={record}>{children}</RecordProvider>
-    </CollectionProvider>
-  );
-}
-
-function UpdateFormBlockInitializer({ insert, collection, ...props }) {
-  function onConfirm() {
-    const schema = createFormBlockSchema({
-      title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
-      collection,
-      actionInitializers: 'AddActionButton',
-      action: 'get',
-      actions: {
-        resolve: {
-          type: 'void',
-          title: `{{t("Continue the process", { ns: "${NAMESPACE}" })}}`,
-          'x-decorator': 'ManualActionStatusProvider',
-          'x-decorator-props': {
-            value: JOB_STATUS.RESOLVED,
-          },
-          'x-component': 'Action',
-          'x-component-props': {
-            type: 'primary',
-            useAction: '{{ useSubmit }}',
-          },
-          'x-designer': 'Action.Designer',
-          'x-action': `${JOB_STATUS.RESOLVED}`,
-        },
-      },
-    });
-    Object.assign(schema, {
-      'x-decorator': 'UpdateFormBlockProvider',
-      'x-decorator-props': { collection },
-      'x-designer': 'UpdateFormDesigner',
-    });
-
-    insert(schema);
-  }
-
-  return <SchemaInitializer.Item {...props} onClick={onConfirm} />;
-}
-
 export default {
   title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
   config: {
@@ -128,26 +76,35 @@ export default {
         key: 'updateRecordForm',
         type: 'subMenu',
         title: `{{t("Update record form", { ns: "${NAMESPACE}" })}}`,
-        children: collections.map((item) => ({
-          key: item.name,
-          type: 'item',
-          title: item.title,
-          collection: item.name,
-          component: UpdateFormBlockInitializer,
-        })),
+        children: collections
+          .filter((item) => !item.hidden)
+          .map((item) => ({
+            key: `updateForm-${item.name}`,
+            type: 'item',
+            title: item.title,
+            schema: {
+              collection: item.name,
+              title: `{{t("Update record", { ns: "${NAMESPACE}" })}}`,
+              formType: 'update',
+              'x-designer': 'UpdateFormDesigner',
+            },
+            component: FormBlockInitializer,
+          })),
       };
     },
     initializers: {
       // AddCustomFormField
     },
     components: {
-      UpdateFormBlockProvider,
       FilterDynamicComponent,
       UpdateFormDesigner,
     },
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'UpdateFormBlockProvider');
+      const formBlocks: any[] = findSchema(
+        root,
+        (item) => item['x-decorator'] === 'FormBlockProvider' && item['x-decorator-props'].formType === 'update',
+      );
       formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
@@ -167,8 +124,6 @@ export default {
     scope: {
       // useFormBlockProps
     },
-    components: {
-      UpdateFormBlockProvider,
-    },
+    components: {},
   },
 } as ManualFormType;
