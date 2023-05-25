@@ -522,5 +522,4 @@ export default {
   'Display data template selector': "Отображать селектор шаблона данных",
   'Form data templates': "Шаблоны данных формы",
   "Data template": "Шаблон данных",
-  "Template fields have been removed and need to be reconfigured": "Поля шаблона были удалены и требуют повторной настройки",
 }
