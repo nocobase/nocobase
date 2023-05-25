@@ -208,7 +208,10 @@ export const querySchema: ISchema = {
                 filter: {
                   type: 'object',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Filter',
+                  'x-component': 'FieldFilter',
+                  'x-component-props': {
+                    fields: '{{ fields }}',
+                  },
                 },
               },
             },

@@ -2,23 +2,15 @@ import { useChartsTranslation } from '../locale';
 import React, { createContext, useContext, useMemo } from 'react';
 import { Row, Col, Card, Modal, Button, Space } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
-import {
-  SchemaComponent,
-  Filter,
-  gridRowColWrap,
-  Select,
-  Input,
-  Radio,
-  useDesignable,
-  useCollectionManager,
-} from '@nocobase/client';
+import { SchemaComponent, Filter, gridRowColWrap, Select, Input, Radio, useDesignable } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { configSchema, querySchema } from './schemas/configure';
-import { ISchema, FormConsumer } from '@formily/react';
+import { ISchema, FormConsumer, Schema } from '@formily/react';
 import { ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
+import { FieldOption, useFields, useFilterOptions } from './hooks';
 
 export type ChartConfigCurrent = {
   schema: ISchema;
@@ -45,7 +37,7 @@ export const ChartConfigure: React.FC<{
   ) => void;
 }> & {
   Renderer: React.FC;
-  Query: React.FC<{ fields: { value: string }[] }>;
+  Query: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { visible, setVisible, current } = useContext(ChartConfigContext);
@@ -69,17 +61,6 @@ export const ChartConfigure: React.FC<{
       }),
     [schema],
   );
-  const { getCollection } = useCollectionManager();
-  const fields = (getCollection(collection)?.fields || [])
-    .filter((item) => {
-      return !['password', 'json', 'belongsTo', 'hasMany', 'belongsToMany'].includes(item.type);
-    })
-    .map((item: { key: string; name: string }) => ({
-      key: item.key,
-      label: item.name,
-      value: item.name,
-    }));
-
   return (
     <Modal
       title={t('Configure chart')}
@@ -157,7 +138,7 @@ export const ChartConfigure: React.FC<{
           </Col>
           <Col span={9}>
             <Card title={t('Query')} extra={<RunButton />}>
-              <ChartConfigure.Query fields={fields} />
+              <ChartConfigure.Query />
             </Card>
           </Col>
         </Row>
@@ -176,21 +157,34 @@ ChartConfigure.Renderer = () => (
   </FormConsumer>
 );
 
-const FieldSelect: React.FC<{
-  fields: { value: string }[];
+const FieldComponent: React.FC<{
+  fields: FieldOption[];
+  component: React.FC<{
+    allFields: FieldOption[];
+  }>;
 }> = (props) => {
   const { fields } = props;
   return (
     <FormConsumer>
       {(form) => {
-        const getAliasFields = (fields: { alias?: string }[]) => {
-          return fields
-            .filter((field) => field.alias)
-            .map((field) => ({
-              key: field.alias,
-              label: field.alias,
-              value: field.alias,
-            }));
+        // When field alias is set, appends it to the field list
+        const getAliasFields = (selectedFields: { field: string; aggregation: string; alias?: string }[]) => {
+          return selectedFields
+            .filter((selectedField) => selectedField.alias)
+            .map((selectedField) => {
+              const fieldProps = fields.find((field) => field.name === selectedField.field);
+              if (selectedField.aggregation) {
+                // If aggregation is set, set the field type to number
+                fieldProps.type = 'number';
+                fieldProps.interface = 'number';
+              }
+              return {
+                ...fieldProps,
+                key: selectedField.alias,
+                label: selectedField.alias,
+                value: selectedField.alias,
+              };
+            });
         };
         const query = form.values.query || {};
         const measures = query.measures || [];
@@ -199,14 +193,37 @@ const FieldSelect: React.FC<{
         // unique
         const map = new Map([...fields, ...aliasFields].map((item) => [item.value, item]));
         const allFields = [...map.values()];
-        return <Select {...props} options={allFields} />;
+        return props.component({ ...props, allFields });
       }}
     </FormConsumer>
   );
 };
 
-ChartConfigure.Query = function QueryWrap(props) {
-  const { fields } = props;
+const FieldSelect: React.FC<{
+  fields: FieldOption[];
+}> = (props) => {
+  return (
+    <FieldComponent
+      fields={props.fields}
+      component={(props) => {
+        return <Select {...props} options={props.allFields} />;
+      }}
+    />
+  );
+};
+
+const FieldFilter: React.FC<{
+  fields: FieldOption[];
+}> = (props) => {
+  const F = (props: { allFields: FieldOption[] }) => {
+    const options = useFilterOptions(props.allFields);
+    return <Filter {...props} options={options} />;
+  };
+  return <FieldComponent fields={props.fields} component={(props) => <F {...props} />} />;
+};
+
+ChartConfigure.Query = function Query() {
+  const fields = useFields();
   const { t } = useChartsTranslation();
   const formCollapse = FormCollapse.createFormCollapse(['measure', 'dimension', 'sort', 'filter']);
   return (
@@ -216,7 +233,7 @@ ChartConfigure.Query = function QueryWrap(props) {
       components={{
         ArrayItems,
         Editable,
-        Filter,
+        FieldFilter,
         FormCollapse,
         Card,
         Switch,
@@ -225,7 +242,7 @@ ChartConfigure.Query = function QueryWrap(props) {
         FormItem,
         Radio,
         Space,
-        FieldSelect: (props) => <FieldSelect {...props} />,
+        FieldSelect,
       }}
     />
   );
