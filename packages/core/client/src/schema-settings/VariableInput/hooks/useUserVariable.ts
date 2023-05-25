@@ -1,5 +1,8 @@
+import { observable } from '@formily/reactive';
+import { error } from '@nocobase/utils/client';
 import { useMemo } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
+import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
   schema: any;
@@ -7,14 +10,18 @@ interface GetOptionsParams {
   maxDepth: number;
   count?: number;
   getFilterOptions: (collectionName: string) => any[];
+  loadChildren?: (option: Option) => void;
 }
 
-const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, getFilterOptions }: GetOptionsParams) => {
+const getChildren = (
+  options: FieldOption[],
+  { schema, operator, maxDepth, count = 1, getFilterOptions, loadChildren }: GetOptionsParams,
+): Option[] => {
   if (count > maxDepth) {
     return [];
   }
 
-  const result = options.map((option) => {
+  const result = options.map((option): Option => {
     if (!option.target) {
       return {
         key: option.name,
@@ -22,6 +29,7 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
         disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+        isLeaf: true,
       };
     }
 
@@ -32,6 +40,7 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
         maxDepth,
         count: count + 1,
         getFilterOptions,
+        loadChildren,
       }) || [];
 
     return {
@@ -39,7 +48,9 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
       value: option.name,
       label: option.title,
       children,
-      disabled: children.every((child) => child.disabled),
+      isLeaf: false,
+      field: option,
+      loadChildren,
     };
   });
 
@@ -50,18 +61,38 @@ export const useUserVariable = ({ operator, schema, level }: { operator?: any; s
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
 
-  const children = useMemo(
-    () => getChildren(getFilterOptions('users'), { schema, operator, maxDepth: level || 3, getFilterOptions }) || [],
-    [operator, schema],
-  );
+  const loadChildren = (option: Option) => {
+    if (!option.field?.target) {
+      return error('Must be set field target');
+    }
 
-  return useMemo(() => {
+    const collectionName = option.field.target;
+    const children =
+      getChildren(getFilterOptions(collectionName), {
+        schema,
+        operator,
+        maxDepth: level || 1,
+        getFilterOptions,
+        loadChildren,
+      }) || [];
+
+    option.children = compile(children);
+  };
+
+  const result = useMemo(() => {
     return compile({
       label: `{{t("Current user")}}`,
       value: '$user',
       key: '$user',
-      disabled: children.every((option) => option.disabled),
-      children: children,
-    });
-  }, [children]);
+      children: [],
+      isLeaf: false,
+      field: {
+        target: 'users',
+      },
+      loadChildren,
+    } as Option);
+  }, [schema, operator]);
+
+  // 必须使用 observable 包一下，使其变成响应式对象，不然 children 加载后不会更新 UI
+  return observable(result);
 };

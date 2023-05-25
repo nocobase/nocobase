@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 
 import classNames from 'classnames';
 import { useCompile } from '../..';
+import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -125,6 +126,14 @@ export function Input(props) {
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
   const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
+
+  const loadData = (selectedOptions: Option[]) => {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (option.loadChildren) {
+      // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
+      option.loadChildren(option);
+    }
+  };
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
     ? {
@@ -257,6 +266,7 @@ export function Input(props) {
           options={options}
           value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
           onChange={onSwitch}
+          loadData={loadData as any}
           changeOnSelect
         >
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}
