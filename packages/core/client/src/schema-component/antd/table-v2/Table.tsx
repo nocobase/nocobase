@@ -85,7 +85,7 @@ const useTableColumns = (props) => {
       key: 'delete',
       width: 60,
       align: 'center',
-      fixed:'right',
+      fixed: 'right',
       render: (v, record, index) => {
         return (
           <DeleteOutlined
@@ -215,6 +215,7 @@ export const Table: any = observer((props: any) => {
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
   const [selectedRow, setSelectedRow] = useState([]);
+  const dataSource = field?.value?.slice?.()?.filter?.(Boolean);
 
   let onRow = null,
     highlightRow = '';
@@ -452,7 +453,6 @@ export const Table: any = observer((props: any) => {
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
   const { height: tableHeight, tableSizeRefCallback } = useTableSize();
-
   const scroll = useMemo(() => {
     return fixedBlock
       ? {
@@ -463,7 +463,6 @@ export const Table: any = observer((props: any) => {
           x: 'max-content',
         };
   }, [fixedBlock, tableHeight]);
-
   return (
     <div
       className={css`
@@ -490,7 +489,7 @@ export const Table: any = observer((props: any) => {
         <AntdTable
           ref={tableSizeRefCallback}
           rowKey={rowKey ?? defaultRowKey}
-          dataSource={field?.value?.slice?.()}
+          dataSource={dataSource}
           {...others}
           {...restProps}
           pagination={paginationProps}

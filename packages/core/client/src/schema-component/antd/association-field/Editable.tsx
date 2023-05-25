@@ -29,7 +29,7 @@ const EditableAssociationField = observer((props: any) => {
       setLoading(false);
       return;
     }
-    if (currentMode === 'Nester') {
+    if (['Nester', 'SubTable'].includes(currentMode)) {
       if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
         field.value = {};
       } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {

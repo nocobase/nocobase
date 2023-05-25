@@ -9,6 +9,7 @@ import { useAssociationFieldContext } from './hooks';
 
 export const SubTable: any = observer((props: any) => {
   const { field } = useAssociationFieldContext<ArrayField>();
+  console.log(field.value)
   const { t } = useTranslation();
   return (
     <div>

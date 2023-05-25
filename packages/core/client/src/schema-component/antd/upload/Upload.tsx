@@ -1,8 +1,9 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useFieldSchema } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -30,6 +31,9 @@ Upload.Attachment = connect((props: UploadProps) => {
   const images = fileList;
   const [photoIndex, setPhotoIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const fieldSchema = useFieldSchema();
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
+
   const { t } = useTranslation();
   useEffect(() => {
     if (sync) {
@@ -38,7 +42,36 @@ Upload.Attachment = connect((props: UploadProps) => {
   }, [value, sync]);
   const uploadProps = useUploadProps({ ...props });
   return (
-    <div>
+    <div
+      className={
+        isDisplayInTable
+          ? css`
+              .nb-upload {
+                margin-bottom: 0px;
+                .ant-upload-list-picture-card-container {
+                  width: 45px;
+                  height: 38px;
+                  margin: 0px;
+                  margin-right: 10px;
+                }
+                .ant-upload.ant-upload-select-picture-card {
+                  width: 45px;
+                  height: 38px;
+                  margin: 0px;
+                  font-size: 12px;
+                }
+                .ant-upload.ant-upload-select-picture-card > .ant-upload {
+                  font-size: 10px;
+                }
+                .ant-btn-icon-only.ant-btn-sm {
+                  width: 18px;
+                  height: 18px;
+                }
+              }
+            `
+          : ''
+      }
+    >
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
           {fileList.map((file) => {
