@@ -72,7 +72,6 @@ export const FormDataTemplates = observer((props: any) => {
       getFieldNames,
       getFilter,
       getResource,
-      getMapOptions,
       collectionName,
     }),
     [],
@@ -141,7 +140,7 @@ export const FormDataTemplates = observer((props: any) => {
                       objectValue: false,
                       manual: false,
                       targetField: '{{ getTargetField($self.componentProps.service.resource) }}',
-                      mapOptions: '{{ getMapOptions(getFieldNames($self.componentProps.service.resource)) }}',
+                      mapOptions: getMapOptions(),
                       fieldNames: '{{ getFieldNames($self.componentProps.service.resource) }}',
                     },
                     'x-reactions': [
@@ -244,16 +243,10 @@ export function getLabel(titleField) {
   return titleField || 'label';
 }
 
-function getMapOptions(fieldNames: { label: string; value: string }) {
+function getMapOptions() {
   return (option) => {
-    if (option?.id == null) {
+    if (option?.id === undefined) {
       return null;
-    }
-    if (option[fieldNames.label] == null) {
-      return {
-        ...option,
-        id: 'N/A',
-      };
     }
     return option;
   };
