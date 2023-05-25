@@ -182,6 +182,42 @@ export class PluginMultiAppManager extends Plugin {
       },
     );
 
+    this.app.on('afterStart', async (app) => {
+      const repository = this.db.getRepository('applications');
+      const appManager = this.app.appManager;
+      if (appManager.runningMode == 'single') {
+        // If the sub application is running in single mode, register the application automatically
+        try {
+          const subApp = await repository.findOne({
+            filter: {
+              name: appManager.singleAppName,
+            },
+          });
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
+        } catch (err) {
+          console.error('Auto register sub application in single mode failed: ', appManager.singleAppName, err);
+        }
+        return;
+      }
+      try {
+        const subApps = await repository.find();
+        for (const subApp of subApps) {
+          const options = subApp.get('options');
+          if (options?.autoStart) {
+            const registeredApp = await subApp.registerToMainApp(this.app, {
+              appOptionsFactory: this.appOptionsFactory,
+            });
+            await registeredApp.load();
+          }
+        }
+      } catch (err) {
+        console.error('Auto register sub applications failed: ', err);
+      }
+    });
+
     this.app.on('afterUpgrade', async (app, options) => {
       const cliArgs = options?.cliArgs;
 
