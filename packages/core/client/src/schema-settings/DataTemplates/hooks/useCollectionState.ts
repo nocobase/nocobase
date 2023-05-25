@@ -1,4 +1,5 @@
 import { ArrayField } from '@formily/core';
+import { error } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
@@ -153,11 +154,19 @@ export const useCollectionState = (currentCollectionName: string) => {
 
   const onCheck = useCallback((checkedKeys, { node, checked }) => {
     if (checked) {
-      const parentKey = node.key.split('.').slice(0, -1).join('.');
+      let parentKey = node.key.split('.').slice(0, -1).join('.');
 
-      // 当子节点被选中时，也选中父节点，提高用户辨识度
-      if (parentKey) {
-        checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
+      try {
+        // 当子节点被选中时，也选中所有祖先节点，提高用户辨识度
+        while (parentKey) {
+          if (parentKey) {
+            checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
+          }
+
+          parentKey = parentKey.split('.').slice(0, -1).join('.');
+        }
+      } catch (err) {
+        error(err);
       }
     }
 
