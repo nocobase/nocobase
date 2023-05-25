@@ -31,6 +31,7 @@ import {
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
+  SchemaComponentContext,
   SchemaComponentOptions,
   createDesignable,
   findFormBlock,
@@ -1011,8 +1012,15 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   );
 };
 
-export const useDataTemplates = () => {
+export const useDataTemplates = (schema?: Schema) => {
   const fieldSchema = useFieldSchema();
+
+  if (schema) {
+    return {
+      templateData: _.cloneDeep(schema['x-data-templates']),
+    };
+  }
+
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   return {
     templateData: _.cloneDeep(formSchema?.['x-data-templates']),
@@ -1020,6 +1028,7 @@ export const useDataTemplates = () => {
 };
 
 SchemaSettings.DataTemplates = function DataTemplates(props) {
+  const designerCtx = useContext(SchemaComponentContext);
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1035,6 +1044,8 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
         fieldReaction: {
           'x-component': FormDataTemplates,
           'x-component-props': {
+            designerCtx,
+            formSchema,
             useProps: () => {
               return {
                 defaultValues: templateData,
@@ -1048,7 +1059,7 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
     [templateData],
   );
   const onSubmit = useCallback((v) => {
-    const data = v.fieldReaction || {};
+    const data = { ...(formSchema['x-data-templates'] || {}), ...v.fieldReaction };
 
     // 当 Tree 组件开启 checkStrictly 属性时，会导致 checkedKeys 的值是一个对象，而不是数组，所以这里需要转换一下以支持旧版本
     data.items.forEach((item) => {
