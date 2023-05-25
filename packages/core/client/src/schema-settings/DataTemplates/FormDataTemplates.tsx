@@ -1,3 +1,4 @@
+import { Field } from '@formily/core';
 import { connect, mapProps, observer } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { Tree as AntdTree } from 'antd';
@@ -70,6 +71,8 @@ export const FormDataTemplates = observer((props: any) => {
       getTargetField,
       getFieldNames,
       getFilter,
+      getResource,
+      collectionName,
     }),
     [],
   );
@@ -104,7 +107,7 @@ export const FormDataTemplates = observer((props: any) => {
                     title: '{{ t("Collection") }}',
                     required: true,
                     description: t('If collection inherits, choose inherited collections as templates'),
-                    default: collectionName,
+                    default: '{{ collectionName }}',
                     'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
                     'x-decorator': 'FormItem',
                     'x-component': 'Select',
@@ -127,7 +130,7 @@ export const FormDataTemplates = observer((props: any) => {
                     'x-component': AssociationSelect,
                     'x-component-props': {
                       service: {
-                        resource: collectionName,
+                        resource: '{{ $record.collection || collectionName }}',
                         params: {
                           filter: '{{ getFilter($self.componentProps.service.resource, $self.value) }}',
                         },
@@ -148,7 +151,7 @@ export const FormDataTemplates = observer((props: any) => {
                             disabled: '{{ !$deps[0] }}',
                             componentProps: {
                               service: {
-                                resource: '{{ $deps[0] }}',
+                                resource: '{{ getResource($deps[0], $self) }}',
                               },
                             },
                           },
@@ -247,4 +250,12 @@ function getMapOptions() {
     }
     return option;
   };
+}
+
+function getResource(resource: string, field: Field) {
+  if (resource !== field.componentProps.service.resource) {
+    // 切换 collection 后，之前选中的其它 collection 的数据就没有意义了，需要清空
+    field.value = undefined;
+  }
+  return resource;
 }

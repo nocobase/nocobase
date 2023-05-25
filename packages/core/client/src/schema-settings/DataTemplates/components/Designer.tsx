@@ -3,7 +3,7 @@ import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { GeneralSchemaDesigner, SchemaSettings } from '../..';
 import { mergeFilter } from '../../../block-provider';
@@ -26,15 +26,13 @@ export const Designer = observer(() => {
     collectionName: string;
     data?: ITemplate;
   };
+
+  // 在这里读取 resource 的值，当 resource 变化时，会触发该组件的更新
   const collectionName = field.componentProps.service.resource;
+
   const collection = getCollection(collectionName);
   const collectionFields = getCollectionFields(collectionName);
   const dataSource = useCollectionFilterOptions(collectionName);
-
-  // 切换 collection 后，之前选中的其它 collection 的数据就没有意义了，需要清空
-  useEffect(() => {
-    field.reset();
-  }, [collectionName]);
 
   if (!data) {
     error('data is required');
@@ -44,7 +42,7 @@ export const Designer = observer(() => {
   const getFilter = () => data.config?.[collectionName]?.filter || {};
   const setFilter = (filter) => {
     try {
-      data.config[collectionName].filter = removeNullCondition(filter);
+      _.set(data, `config.${collectionName}.filter`, removeNullCondition(filter));
     } catch (err) {
       error(err);
     }
@@ -52,7 +50,7 @@ export const Designer = observer(() => {
   const getTitleFIeld = () => data.config?.[collectionName]?.titleField || collection?.titleField || 'id';
   const setTitleField = (titleField) => {
     try {
-      data.config[collectionName].titleField = titleField;
+      _.set(data, `config.${collectionName}.titleField`, titleField);
     } catch (err) {
       error(err);
     }
