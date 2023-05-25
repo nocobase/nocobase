@@ -90,6 +90,10 @@ export const Designer = observer(() => {
           try {
             // 不仅更新当前模板，也更新同级的其它模板
             field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {
+              if (item.componentProps.service.resource !== collectionName) {
+                return;
+              }
+
               item.componentProps.service.params = {
                 filter: _.isEmpty(filter)
                   ? {}
@@ -120,6 +124,10 @@ export const Designer = observer(() => {
           try {
             // 不仅更新当前模板，也更新同级的其它模板
             field.query('fieldReaction.items.*.layout.dataId').forEach((item) => {
+              if (item.componentProps.service.resource !== collectionName) {
+                return;
+              }
+
               item.componentProps.fieldNames.label = label;
               item.componentProps.targetField = getCollectionField(
                 `${collectionName}.${label || collection?.titleField || 'id'}`,
