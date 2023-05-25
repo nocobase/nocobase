@@ -42,6 +42,12 @@ export const MBlockInitializers = {
           title: '{{t("Calendar")}}',
           component: 'CalendarBlockInitializer',
         },
+        {
+          key: 'mapBlock',
+          type: 'item',
+          title: generateNTemplate('Map'),
+          component: 'MapBlockInitializer',
+        },
       ],
     },
     {
