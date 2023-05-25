@@ -66,6 +66,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return a !== b;
     },
     $gt: function (a, b) {
+      if (Array.isArray(a)) return a.some((k) => k > b);
       return a > b;
     },
     $gte: function (a, b) {
