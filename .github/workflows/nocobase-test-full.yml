@@ -53,7 +53,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - name: Test with Sqlite
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
@@ -94,7 +94,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with postgres
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -131,7 +131,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with MySQL
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: mysql
           DB_HOST: mysql

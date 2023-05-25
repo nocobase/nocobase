@@ -289,6 +289,24 @@ describe('parseFilter', () => {
     ).toEqual({ createdAt: { $eq: date } });
   });
 
+  test('$user & array', async () => {
+    const date = new Date();
+    await expectParseFilter(
+      {
+        'roles.name.$eq': '{{$user.roles.name}}',
+      },
+      {
+        vars: {
+          $user: async (fields) => {
+            return {
+              roles: [{ name: 'admin' }, { name: 'user' }],
+            };
+          },
+        },
+      },
+    ).toEqual({ roles: { name: { $eq: ['admin', 'user'] } } });
+  });
+
   test('$dateOn', async () => {
     const date = new Date();
     await expectParseFilter(

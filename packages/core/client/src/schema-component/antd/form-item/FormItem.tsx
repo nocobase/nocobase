@@ -32,6 +32,7 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+import { Select } from 'antd';
 
 const defaultInputStyle = css`
   & > .nb-form-item {
@@ -84,7 +85,7 @@ export const FormItem: any = observer((props: any) => {
             `,
             {
               [css`
-                & .ant-formily-item-label {
+                > .ant-formily-item-label {
                   display: none;
                 }
               `]: showTitle === false,
@@ -171,6 +172,12 @@ FormItem.Designer = function Designer() {
           direction: 'asc',
         };
   });
+
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
+
+  const isPickerMode = fieldSchema['x-component-props'].mode === 'Picker';
+  const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
+  const showModeSelect = showFieldMode && isPickerMode;
 
   return (
     <GeneralSchemaDesigner>
@@ -352,7 +359,7 @@ FormItem.Designer = function Designer() {
                 properties: {
                   default: isInvariable(interfaceConfig)
                     ? {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
@@ -375,7 +382,7 @@ FormItem.Designer = function Designer() {
                         'x-disabled': false,
                       }
                     : {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
@@ -384,7 +391,7 @@ FormItem.Designer = function Designer() {
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                             s.title = '';
                             s['x-read-pretty'] = false;
                             s['x-disabled'] = false;
@@ -557,7 +564,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isAssociationField && fieldModeOptions && !isTableField && (
+      {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
           title={t('Field mode')}
@@ -572,10 +579,10 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
-              field.value = field.value || initValue;
-            }
+            // if (mode === 'Nester') {
+            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
+            //   field.value = field.value || initValue;
+            // }
             dn.emit('patch', {
               schema,
             });
@@ -583,7 +590,37 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-
+      {showModeSelect && (
+        <SchemaSettings.Item>
+          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+            {t('Popup size')}
+            <Select
+              bordered={false}
+              options={[
+                { label: t('Small'), value: 'small' },
+                { label: t('Middle'), value: 'middle' },
+                { label: t('Large'), value: 'large' },
+              ]}
+              value={
+                fieldSchema?.['x-component-props']?.['openSize'] ??
+                (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+              }
+              onChange={(value) => {
+                field.componentProps.openSize = value;
+                fieldSchema['x-component-props'] = field.componentProps;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': fieldSchema['x-uid'],
+                    'x-component-props': fieldSchema['x-component-props'],
+                  },
+                });
+                dn.refresh();
+              }}
+              style={{ textAlign: 'right', minWidth: 100 }}
+            />
+          </div>
+        </SchemaSettings.Item>
+      )}
       {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"

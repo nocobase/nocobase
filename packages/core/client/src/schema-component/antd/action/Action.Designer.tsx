@@ -53,6 +53,7 @@ export const ActionDesigner = (props) => {
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
+  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -73,7 +74,7 @@ export const ActionDesigner = (props) => {
     ),
   };
   return (
-    <GeneralSchemaDesigner {...restProps} disableInitializer>
+    <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
         <SchemaSettings.ModalItem
           title={t('Edit button')}
