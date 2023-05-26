@@ -56,8 +56,8 @@ export const CurrentUser = () => {
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
         <Dropdown
-          visible={visible}
-          onVisibleChange={(visible) => {
+          open={visible}
+          onOpenChange={(visible) => {
             setVisible(visible);
           }}
           overlay={
