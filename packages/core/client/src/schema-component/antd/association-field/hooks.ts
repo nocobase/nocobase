@@ -30,7 +30,12 @@ export const useInsertSchema = (component) => {
 };
 
 export function useAssociationFieldContext<F extends GeneralField>() {
-  return useContext(AssociationFieldContext) as { options: any; field: F; currentMode: string };
+  return useContext(AssociationFieldContext) as {
+    options: any;
+    field: F;
+    currentMode: string;
+    allowMultiple?: boolean;
+  };
 }
 
 export default function useServiceOptions(props) {
