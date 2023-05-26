@@ -27,9 +27,7 @@ export default React.memo((props) => {
         },
       }}
     >
-      <RouterSwitchProvider>
-        <MobileCore>{props.children}</MobileCore>
-      </RouterSwitchProvider>
+      <RouterSwitchProvider>{props.children}</RouterSwitchProvider>
     </SettingsCenterProvider>
   );
 });

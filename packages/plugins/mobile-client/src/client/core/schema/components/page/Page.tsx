@@ -15,6 +15,7 @@ const globalActionCSS = css`
     padding: 0 var(--nb-spacing);
     align-items: center;
     overflow-x: auto;
+    background: #ffffff;
     z-index: 100;
   }
 `;

@@ -4,6 +4,7 @@ import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute }
 import { css, cx } from '@emotion/css';
 import { useInterfaceContext } from './InterfaceProvider';
 import { DrawerProps, ModalProps } from 'antd';
+import { MobileCore } from '../core';
 
 const commonCSSVariables = css`
   --nb-spacing: 14px;
@@ -74,33 +75,35 @@ const MApplication: React.FC = (props) => {
   }, [interfaceContext]);
   return (
     <Provider>
-      <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
-        <div
-          className={cx(
-            'nb-mobile-application',
-            commonDesignerCSS,
-            commonCSSVariables,
-            commonCSSOverride,
-            css`
-              display: flex;
-              flex-direction: column;
-              width: 100%;
-              height: 100%;
-              position: relative;
-              overflow: hidden;
-            `,
-          )}
-        >
-          {params.name && !params.name.startsWith('tab_') ? (
-            props.children
-          ) : (
-            <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
-              {props.children}
-            </RemoteSchemaComponent>
-          )}
-          <div id="nb-position-container"></div>
-        </div>
-      </ActionContextProvider>
+      <MobileCore>
+        <ActionContextProvider modalProps={modalProps as ModalProps} drawerProps={drawerProps}>
+          <div
+            className={cx(
+              'nb-mobile-application',
+              commonDesignerCSS,
+              commonCSSVariables,
+              commonCSSOverride,
+              css`
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                height: 100%;
+                position: relative;
+                overflow: hidden;
+              `,
+            )}
+          >
+            {params.name && !params.name.startsWith('tab_') ? (
+              props.children
+            ) : (
+              <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
+                {props.children}
+              </RemoteSchemaComponent>
+            )}
+            <div id="nb-position-container"></div>
+          </div>
+        </ActionContextProvider>
+      </MobileCore>
     </Provider>
   );
 };
