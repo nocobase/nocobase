@@ -1,12 +1,15 @@
+import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { AssociationFieldContext } from './context';
 
 export const AssociationFieldProvider = observer((props) => {
-  const field = useField();
+  const field = useField<Field>();
   const { getCollectionJoinField, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
+  const allowMultiple = fieldSchema['x-component-props']?.multiple !== false;
+  const allowDissociate = fieldSchema['x-component-props']?.allowDissociate !== false;
 
   const collectionField = useMemo(
     () => getCollectionJoinField(fieldSchema['x-collection-field']),
@@ -20,8 +23,11 @@ export const AssociationFieldProvider = observer((props) => {
     () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
     [fieldSchema['x-component-props']?.mode],
   );
+
   return collectionField ? (
-    <AssociationFieldContext.Provider value={{ options: collectionField, field, currentMode }}>
+    <AssociationFieldContext.Provider
+      value={{ options: collectionField, field, allowMultiple, allowDissociate, currentMode }}
+    >
       {props.children}
     </AssociationFieldContext.Provider>
   ) : null;

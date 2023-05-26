@@ -66,10 +66,16 @@ interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export const SortableItem: React.FC<SortableItemProps> = observer((props) => {
-  const { schema, id, eid, ...others } = useSortableItemProps(props);
-  const removeParentsIfNoChildren = others.removeParentsIfNoChildren ?? true;
+  const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
   return (
-    <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema, removeParentsIfNoChildren }}>
+    <SortableProvider
+      id={id}
+      data={{
+        insertAdjacent: 'afterEnd',
+        schema: schema,
+        removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
+      }}
+    >
       <Sortable id={eid} {...others}>
         {props.children}
       </Sortable>

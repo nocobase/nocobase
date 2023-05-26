@@ -1,5 +1,5 @@
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { AssociationFieldProvider } from './AssociationFieldProvider';
@@ -17,6 +17,37 @@ const EditableAssociationField = observer((props: any) => {
   const form = useForm();
   const fieldSchema = useFieldSchema();
   const { options: collectionField, currentMode } = useAssociationFieldContext();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    if (!collectionField) {
+      setLoading(false);
+      return;
+    }
+    if (field.value !== null && field.value !== undefined) {
+      // Nester 子表单时，如果没数据初始化一个 [null] 的占位
+      if (currentMode === 'Nester' && Array.isArray(field.value)) {
+        if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+          field.value = [null];
+        }
+      }
+      setLoading(false);
+      return;
+    }
+    if (currentMode === 'Nester') {
+      if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+        field.value = {};
+      } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+        field.value = [null];
+      }
+    }
+    setLoading(false);
+  }, [currentMode, collectionField, field.value]);
+
+  if (loading) {
+    return null;
+  }
 
   const useCreateActionProps = () => {
     const { onClick } = useCAP();
@@ -25,21 +56,23 @@ const EditableAssociationField = observer((props: any) => {
       async onClick() {
         await onClick();
         const { data } = actionField.data?.data?.data || {};
-        if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
-          const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
-          values.push({
-            ...data,
-          });
-          setTimeout(() => {
-            form.setValuesIn(field.props.name, values);
-          }, 100);
-        } else {
-          const value = {
-            ...data,
-          };
-          setTimeout(() => {
-            form.setValuesIn(field.props.name, value);
-          }, 100);
+        if (data) {
+          if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
+            const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
+            values.push({
+              ...data,
+            });
+            setTimeout(() => {
+              form.setValuesIn(field.props.name, values);
+            }, 100);
+          } else {
+            const value = {
+              ...data,
+            };
+            setTimeout(() => {
+              form.setValuesIn(field.props.name, value);
+            }, 100);
+          }
         }
       },
     };

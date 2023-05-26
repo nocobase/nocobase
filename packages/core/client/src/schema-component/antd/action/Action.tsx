@@ -172,8 +172,8 @@ Action.Popover = observer((props) => {
     <Popover
       {...props}
       destroyTooltipOnHide
-      visible={visible}
-      onVisibleChange={(visible) => {
+      open={visible}
+      onOpenChange={(visible) => {
         setVisible(visible);
       }}
       content={props.children}

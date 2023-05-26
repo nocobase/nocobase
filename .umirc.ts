@@ -68,8 +68,8 @@ const parseMenuItems = (items: any[], lang: string) => {
       });
     } else {
       menuItems.push({
-        title: getTitle(item, lang),
         ...item,
+        title: getTitle(item, lang),
       });
     }
   }
