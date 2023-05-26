@@ -313,6 +313,7 @@ export default {
   "Display field title": "显示字段标题",
   "Field component": "字段组件",
   "Allow multiple": "允许添加/关联多条",
+  "Allow dissociate": "允许移除已关联记录",
   "Quick upload": "快速上传",
   "Select file": "选择文件",
   "Subtable": "子表格",
