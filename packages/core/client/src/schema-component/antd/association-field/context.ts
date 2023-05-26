@@ -6,6 +6,7 @@ export interface AssociationFieldContextProps {
   field?: GeneralField;
   currentMode?: string;
   allowMultiple?: boolean;
+  allowDissociate?: boolean;
 }
 
 export const AssociationFieldContext = createContext<AssociationFieldContextProps>({});

@@ -24,14 +24,18 @@ const ToOneNester = (props) => {
 
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
-  const { field, allowMultiple } = useAssociationFieldContext<ArrayField>();
+  const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
   const { t } = useTranslation();
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
       {(field.value || []).map((value, index) => {
+        let allowed = allowDissociate;
+        if (!allowDissociate) {
+          allowed = !value?.[options.targetKey];
+        }
         return (
           <>
-            {!field.readPretty && (
+            {!field.readPretty && allowed && (
               <div style={{ textAlign: 'right' }}>
                 <CloseCircleOutlined
                   style={{ zIndex: 1000, position: 'absolute', color: '#a8a3a3' }}
