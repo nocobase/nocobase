@@ -132,6 +132,7 @@ describe('create', () => {
       name: 'users',
       fields: [
         { type: 'string', name: 'name' },
+        { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
       ],
     });
@@ -154,10 +155,14 @@ describe('create', () => {
     const u1 = await User.repository.firstOrCreate({
       attributes: {
         name: 'u1',
+        age: 10,
       },
     });
 
     expect(u1.name).toEqual('u1');
+    expect(u1.age).toEqual(10);
+
+    expect((await User.repository.firstOrCreate({ attributes: { name: 'u1' } })).get('id')).toEqual(u1.get('id'));
   });
 
   test('create with association', async () => {

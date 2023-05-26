@@ -210,7 +210,7 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
-interface FirstOrCreateOptions {
+interface FirstOrCreateOptions extends Transactionable {
   attributes: Values;
   values?: Values;
 }
@@ -435,7 +435,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   /**
    * Get the first record matching the attributes or create it.
    */
-  async firstOrCreate(options: FirstOrCreateOptions) {}
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { attributes, values, transaction } = options;
+    const instance = await this.findOne({ where: attributes, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values: { ...attributes, ...values }, transaction });
+  }
 
   /**
    * Save instance to database
