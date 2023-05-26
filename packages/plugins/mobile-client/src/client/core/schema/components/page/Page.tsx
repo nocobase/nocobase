@@ -8,11 +8,13 @@ import { TabsProps } from 'antd';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 const globalActionCSS = css`
-  height: 50px;
+  height: 49px;
+  border-top: 1px solid #f0f2f5;
   margin-bottom: 0px !important;
   padding: 0 var(--nb-spacing);
   align-items: center;
   overflow-x: auto;
+  z-index: 100;
 `;
 
 const InternalPage: React.FC = (props) => {
