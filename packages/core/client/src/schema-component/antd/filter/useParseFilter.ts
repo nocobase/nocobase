@@ -29,7 +29,7 @@ export function useParseFilter(filterParams, onChange?: () => void) {
   const formChangedPath = useRef('');
   const parseFilter = useCallback(
     (filterObj) => {
-      return mapValues(filterObj, (value, key) => {
+      return mapValues({ ...filterObj }, (value, key) => {
         if (isArray(value)) {
           return value.map((v) => {
             return parseFilter(v);
@@ -38,12 +38,14 @@ export function useParseFilter(filterParams, onChange?: () => void) {
         if (isPlainObject(value)) {
           return parseFilter(value);
         }
-        if (isString(value) && value.includes('form')) {
+        if (isString(value) && value.includes('$currentForm')) {
           const keys = value.replaceAll(/\{|\}/g, '').split('.');
           const name = nth(keys, -2);
           const nameField = nth(keys, -1);
           const formPath = [...field.path.segments];
-          formPath[formPath.length - 1] = name;
+          if (name !== '$currentForm') {
+            formPath[formPath.length - 1] = name;
+          }
           const formValue = get(form.values, formPath)?.[nameField] || null;
           if (formChangedPath.current === formPath.join('.')) {
             onChange?.();

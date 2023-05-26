@@ -57,7 +57,12 @@ export const TableSelectorDesigner = () => {
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props, ...parentBlock }),
+                  dynamicComponent: (props) =>
+                    FilterDynamicComponent({
+                      ...props,
+                      form: parentBlock?.form,
+                      collectionField: parentBlock?.collectionField,
+                    }),
                 },
               },
             },
