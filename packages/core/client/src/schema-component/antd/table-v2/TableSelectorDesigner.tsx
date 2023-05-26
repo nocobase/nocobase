@@ -1,7 +1,7 @@
 import { ArrayItems } from '@formily/antd';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema, SchemaOptionsContext } from '@formily/react';
 import { cloneDeep } from 'lodash';
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableSelectorContext } from '../../../block-provider';
 import { useCollection } from '../../../collection-manager';
@@ -11,9 +11,10 @@ import { useSchemaTemplate } from '../../../schema-templates';
 import { useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { useParseFilter } from '../filter/useParseFilter';
 
 export const TableSelectorDesigner = () => {
-  const { name, title } = useCollection();
+  const { name, title, getField } = useCollection();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -37,6 +38,10 @@ export const TableSelectorDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort } = field.decoratorProps;
+  const schemaOptions = useContext(SchemaOptionsContext);
+  const parentBlock = schemaOptions?.scope?.useParentBlockProps() || {};
+  const { parseFilter } = useParseFilter({});
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name} disableInitializer>
       <SchemaSettings.ModalItem
@@ -52,7 +57,7 @@ export const TableSelectorDesigner = () => {
                 enum: dataSource,
                 'x-component': 'Filter',
                 'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                  dynamicComponent: (props) => FilterDynamicComponent({ ...props, ...parentBlock }),
                 },
               },
             },
@@ -74,6 +79,7 @@ export const TableSelectorDesigner = () => {
               serviceFilter = extraFilter;
             }
           }
+          serviceFilter = parseFilter(serviceFilter);
           service.run({ ...service.params?.[0], filter: serviceFilter, page: 1 });
           dn.emit('patch', {
             schema: {
@@ -133,7 +139,7 @@ export const TableSelectorDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
-                            required:true,
+                            required: true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {

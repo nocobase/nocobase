@@ -8,6 +8,7 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { SchemaComponentOptions } from '../schema-component';
 import { BlockProvider, RenderChildrenWithAssociationFilter, useBlockRequestContext } from './BlockProvider';
 import { mergeFilter } from './SharedFilterProvider';
+import { useParseFilter } from '../schema-component/antd/filter/useParseFilter';
 
 type Params = {
   filter?: any;
@@ -228,6 +229,8 @@ export const TableSelectorProvider = (props: TableSelectorProviderProps) => {
       params['filter'] = extraFilter;
     }
   }
+  const { parseFilter } = useParseFilter(params.filter);
+  params.filter = parseFilter(params.filter);
 
   try {
     params.filter = mergeFilter([parentParams.filter, params.filter]);

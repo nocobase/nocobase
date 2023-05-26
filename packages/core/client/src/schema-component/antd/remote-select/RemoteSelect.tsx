@@ -1,16 +1,16 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm, observer } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { mapValues, isArray, isPlainObject, isString, nth } from 'lodash';
+import { useParseFilter } from '../filter/useParseFilter';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -55,7 +55,6 @@ const InternalRemoteSelect = connect(
       }
       return '$includes';
     }, [targetField]);
-    const form = useForm();
 
     const mapOptionsToTags = useCallback(
       (options) => {
@@ -111,61 +110,10 @@ const InternalRemoteSelect = connect(
       [targetField?.uiSchema, fieldNames],
     );
 
-    // form 表单更新时触发重新请求
-    const filter = useRef({});
-    // const [formValues, setFormValues] = useState({ ...form.values });
-    // const [formChangedField, setFormChangedField] = useState('');
-    useEffect(() => {
-      let formChangedField = '';
-      function deepFind(obj, key) {
-        if (obj[key]) {
-          return obj[key];
-        }
-        for (const i in obj) {
-          if (obj[i] && typeof obj[i] === 'object') {
-            const found = deepFind(obj[i], key);
-            if (found) {
-              return found;
-            }
-          }
-        }
-        return undefined;
-      }
-      function parseFilter(filterObj) {
-        return mapValues(filterObj, (value, key) => {
-          if (isArray(value)) {
-            return value.map((v) => {
-              return parseFilter(v);
-            });
-          }
-          if (isPlainObject(value)) {
-            return parseFilter(value);
-          }
-          if (isString(value) && value.includes('form')) {
-            const keys = value.replaceAll(/\{|\}/g, '').split('.');
-            const name = nth(keys, -2);
-            const field = nth(keys, -1);
-            const formValue = deepFind(form.values, name)?.[field] || null;
-            if (formChangedField === name) {
-              props.onChange?.(null);
-              firstRun.current = false;
-            }
-            return formValue;
-          }
-          return value;
-        });
-      }
-      const unsubscribe = form.subscribe(({ payload, type }) => {
-        if (type !== 'onFieldValidateSuccess') {
-          return;
-        }
-        formChangedField = nth(payload.path.entire.split('.'), -1);
-        filter.current = parseFilter(field.componentProps?.service?.params?.filter || service?.params?.filter);
-      });
-      return () => {
-        form.unsubscribe(unsubscribe);
-      };
-    }, [form, field, service, props]);
+    const { filter } = useParseFilter(field.componentProps?.service?.params?.filter || service?.params?.filter, () => {
+      props.onChange(null);
+      firstRun.current = false;
+    });
 
     const { data, run, loading } = useRequest(
       {
@@ -176,7 +124,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([filter.current]),
+          filter: mergeFilter([filter]),
         },
       },
       {
@@ -211,7 +159,7 @@ const InternalRemoteSelect = connect(
                 },
               }
             : {},
-          filter.current,
+          filter,
         ]),
       });
     };

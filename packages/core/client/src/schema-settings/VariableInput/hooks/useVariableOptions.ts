@@ -11,5 +11,5 @@ export const useVariableOptions = ({ blockForm, collectionField }) => {
 
   if (!operator || !schema) return [];
 
-  return [userVariable, dateVariable, formVariable];
+  return [userVariable, dateVariable, ...[collectionField ? formVariable : null]];
 };

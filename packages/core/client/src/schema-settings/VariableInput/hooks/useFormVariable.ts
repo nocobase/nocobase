@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useCollectionManager } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 
 interface GetOptionsParams {
@@ -16,14 +15,14 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
   }
 
   const result = options.map((option) => {
-    if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
+    if (!option.target) {
       return {
         key: option.name,
         value: option.name,
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        // disabled: schema?.['x-component'] !== option.schema?.['x-component'],
-        disabled: false,
+        disabled: schema?.['x-component'] !== option.schema?.['x-component'],
+        // disabled: false,
       };
     }
 
@@ -63,10 +62,11 @@ export const useFormVariable = ({
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-  const fields = getFilterOptions(collectionField.collectionName);
+  const fields = getFilterOptions(collectionField?.target) || [];
+  const parentFields = getFilterOptions(collectionField?.collectionName) || [];
 
   const children = useMemo(() => {
-    const allowFields = fields.filter((field) => {
+    const allowFields = parentFields.filter((field) => {
       return (
         field.name !== collectionField.name && Object.keys(blockForm.fields).some((name) => name.includes(field.name))
       );

@@ -1,4 +1,4 @@
-import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { RecursionField, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
@@ -9,6 +9,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
+import { useFormBlockContext } from '../../../block-provider';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -21,7 +22,7 @@ import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
 
 const useTableSelectorProps = () => {
-  const field: any = useField();
+  const fieldTable: any = useField();
   const {
     multiple,
     options = [],
@@ -42,7 +43,7 @@ const useTableSelectorProps = () => {
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
-        const scopeRows = flatData(field.value) || [];
+        const scopeRows = flatData(fieldTable.value) || [];
         const allSelectedRows = rcSelectRows || [];
         const otherRows = differenceBy(allSelectedRows, scopeRows, rowKey);
         const unionSelectedRows = unionBy(otherRows, selectedRows, rowKey);
@@ -85,6 +86,7 @@ export const InternalPicker = observer((props: any) => {
     setSelectedRows,
     collectionField,
   };
+  const form = useForm();
   useEffect(() => {
     if (value && Object.keys(value).length > 0) {
       const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
@@ -123,6 +125,15 @@ export const InternalPicker = observer((props: any) => {
       },
     };
   };
+
+  const useParentBlockProps = () => {
+    return {
+      field,
+      form,
+      collectionField,
+    };
+  };
+
   return (
     <>
       <Input.Group compact style={{ display: 'flex' }}>
@@ -174,7 +185,7 @@ export const InternalPicker = observer((props: any) => {
           <CollectionProvider name={collectionField?.target}>
             <FormProvider>
               <TableSelectorParamsProvider params={{ filter: getFilter() }}>
-                <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps }}>
+                <SchemaComponentOptions scope={{ usePickActionProps, useTableSelectorProps, useParentBlockProps }}>
                   <RecursionField
                     onlyRenderProperties
                     basePath={field.address}
