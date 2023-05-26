@@ -621,7 +621,7 @@ FormItem.Designer = function Designer() {
           </div>
         </SchemaSettings.Item>
       )}
-      {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
+      {!field.readPretty && isAssociationField && ['Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"
           title={t('Allow add new data')}
@@ -659,6 +659,55 @@ FormItem.Designer = function Designer() {
               schema,
             });
             refresh();
+          }}
+        />
+      )}
+      {!field.readPretty && isAssociationField && ['Select'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="add-mode"
+          title={t('Add new mode')}
+          options={[
+            { label: t('Quick add '), value: 'quickAdd' },
+            { label: t('Modal add'), value: 'modalAdd' },
+          ]}
+          value={field.componentProps?.addMode}
+          onChange={(mode) => {
+            if(mode==='modalAdd'){
+              const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
+                if (schema['x-component'] === 'Action') {
+                  return schema;
+                }
+                return buf;
+              }, null);
+  
+              if (!hasAddNew) {
+                const addNewActionschema = {
+                  'x-action': 'create',
+                  title: "{{t('Add new')}}",
+                  'x-designer': 'Action.Designer',
+                  'x-component': 'Action',
+                  'x-decorator': 'ACLActionProvider',
+                  'x-component-props': {
+                    openMode: 'drawer',
+                    type: 'default',
+                    component: 'CreateRecordAction',
+                  },
+                };
+                insertAdjacent('afterBegin', addNewActionschema);
+              }
+            }
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['addMode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.addMode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
           }}
         />
       )}

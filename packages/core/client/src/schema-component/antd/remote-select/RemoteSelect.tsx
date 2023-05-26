@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { SelectProps, Tag } from 'antd';
+import { SelectProps, Tag, Empty } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -21,6 +21,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
+  CustomDropdownRender?: any;
 };
 
 const InternalRemoteSelect = connect(
@@ -34,12 +35,14 @@ const InternalRemoteSelect = connect(
       manual = true,
       mapOptions,
       targetField: _targetField,
+      CustomDropdownRender,
       ...others
     } = props;
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
     const { getField } = useCollection();
+    const [searchData, setSearchData] = useState<any>(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
@@ -128,7 +131,6 @@ const InternalRemoteSelect = connect(
         debounceWait: wait,
       },
     );
-
     const runDep = useMemo(
       () =>
         JSON.stringify({
@@ -137,6 +139,13 @@ const InternalRemoteSelect = connect(
         }),
       [service, fieldNames],
     );
+    const CustomRenderCom = useCallback(() => {
+      if (data?.data.length < 1 && searchData && CustomDropdownRender) {
+        return <CustomDropdownRender search={searchData} callBack={() => setSearchData(null)} />;
+      } else {
+        return <Empty />;
+      }
+    }, [data?.data, searchData]);
 
     useEffect(() => {
       // Lazy load
@@ -158,6 +167,7 @@ const InternalRemoteSelect = connect(
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
+      setSearchData(search);
     };
 
     const getOptionsByFieldNames = useCallback(
@@ -186,13 +196,13 @@ const InternalRemoteSelect = connect(
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
     const onDropdownVisibleChange = () => {
-      if (firstRun.current) {
+      setSearchData(null);
+      if (firstRun.current && data?.data.length > 0) {
         return;
       }
       run();
       firstRun.current = true;
     };
-
     return (
       <Select
         dropdownMatchSelectWidth={false}
@@ -207,6 +217,7 @@ const InternalRemoteSelect = connect(
         {...others}
         loading={loading}
         options={mapOptionsToTags(options)}
+        dropdownRender={searchData && data?.data.length < 1 && CustomRenderCom}
       />
     );
   },
