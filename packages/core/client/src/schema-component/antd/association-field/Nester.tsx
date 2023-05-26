@@ -24,7 +24,7 @@ const ToOneNester = (props) => {
 
 const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
-  const { field } = useAssociationFieldContext<ArrayField>();
+  const { field, allowMultiple } = useAssociationFieldContext<ArrayField>();
   const { t } = useTranslation();
   return (
     <Card bordered={true} style={{ position: 'relative' }}>
@@ -48,7 +48,7 @@ const ToManyNester = observer((props) => {
           </>
         );
       })}
-      {field.editable && (
+      {field.editable && allowMultiple && (
         <Button
           type={'dashed'}
           block
