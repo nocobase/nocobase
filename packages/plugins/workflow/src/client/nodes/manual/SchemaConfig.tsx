@@ -10,7 +10,6 @@ import {
   SchemaInitializerItemOptions,
   InitializerWithSwitch,
   SchemaInitializerProvider,
-  useSchemaComponentContext,
   gridRowColWrap,
   ActionContext,
   GeneralSchemaDesigner,
@@ -179,23 +178,6 @@ export function findSchema(schema, filter, onlyLeaf = false) {
   return result;
 }
 
-function SchemaComponentRefreshProvider(props) {
-  const ctx = useSchemaComponentContext();
-  return (
-    <SchemaComponentContext.Provider
-      value={{
-        ...ctx,
-        refresh() {
-          ctx?.refresh?.();
-          props?.onRefresh?.();
-        },
-      }}
-    >
-      {props.children}
-    </SchemaComponentContext.Provider>
-  );
-}
-
 function ActionInitializer({ action, actionProps, ...props }) {
   return (
     <InitializerWithSwitch
@@ -329,7 +311,23 @@ export function SchemaConfig({ value, onChange }) {
   });
 
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: !workflow.executed }}>
+    <SchemaComponentContext.Provider
+      value={{
+        ...ctx,
+        designable: !workflow.executed,
+        refresh(designable) {
+          ctx.refresh?.(designable);
+          const { tabs } = get(designable.current.root.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+          const forms = Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+            {},
+          );
+          form.setValuesIn('forms', forms);
+
+          onChange(tabs.properties);
+        },
+      }}
+    >
       <SchemaInitializerProvider
         initializers={{
           AddBlockButton,
@@ -342,43 +340,29 @@ export function SchemaConfig({ value, onChange }) {
           ),
         }}
       >
-        <SchemaComponentRefreshProvider
-          onRefresh={() => {
-            const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
-
-            const forms = Array.from(manualFormTypes.getValues()).reduce(
-              (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
+        <SchemaComponent
+          schema={schema}
+          components={{
+            ...nodeComponents,
+            ...Array.from(manualFormTypes.getValues()).reduce(
+              (result, item) => Object.assign(result, item.config.components),
               {},
-            );
-            form.setValuesIn('forms', forms);
-
-            onChange(tabs.properties);
+            ),
+            FormBlockProvider,
+            // NOTE: fake provider component
+            ManualActionStatusProvider(props) {
+              return props.children;
+            },
+            ActionBarProvider(props) {
+              return props.children;
+            },
+            SimpleDesigner,
           }}
-        >
-          <SchemaComponent
-            schema={schema}
-            components={{
-              ...nodeComponents,
-              ...Array.from(manualFormTypes.getValues()).reduce(
-                (result, item) => Object.assign(result, item.config.components),
-                {},
-              ),
-              FormBlockProvider,
-              // NOTE: fake provider component
-              ManualActionStatusProvider(props) {
-                return props.children;
-              },
-              ActionBarProvider(props) {
-                return props.children;
-              },
-              SimpleDesigner,
-            }}
-            scope={{
-              useSubmit,
-              useFlowRecordFromBlock,
-            }}
-          />
-        </SchemaComponentRefreshProvider>
+          scope={{
+            useSubmit,
+            useFlowRecordFromBlock,
+          }}
+        />
       </SchemaInitializerProvider>
     </SchemaComponentContext.Provider>
   );

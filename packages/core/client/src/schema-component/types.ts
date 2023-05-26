@@ -1,11 +1,12 @@
 import { Form } from '@formily/core';
 import { IRecursionFieldProps, ISchemaFieldProps, SchemaReactComponents } from '@formily/react';
 import React from 'react';
+import { Designable } from './hooks';
 
 export interface ISchemaComponentContext {
   scope?: any;
   components?: SchemaReactComponents;
-  refresh?: () => void;
+  refresh?: (designable?: Designable) => void;
   reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;

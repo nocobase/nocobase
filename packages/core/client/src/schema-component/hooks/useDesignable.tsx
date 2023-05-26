@@ -12,7 +12,7 @@ import { SchemaComponentContext } from '../context';
 interface CreateDesignableProps {
   current: Schema;
   api?: APIClient;
-  refresh?: () => void;
+  refresh?: (designable?: Designable) => void;
   onSuccess?: any;
   i18n?: any;
   t?: any;
@@ -107,7 +107,7 @@ export class Designable {
   }
 
   loadAPIClientEvents() {
-    const { refresh, api, t = translate } = this.options;
+    const { api, t = translate } = this.options;
     if (!api) {
       return;
     }
@@ -140,7 +140,7 @@ export class Designable {
       if (removed?.['x-component'] === 'Grid.Col') {
         schemas = schemas.concat(updateColumnSize(removed.parent));
       }
-      refresh();
+      this.refresh();
       if (!current['x-uid']) {
         return;
       }
@@ -169,7 +169,7 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('patch', async ({ schema }) => {
-      refresh();
+      this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
@@ -183,7 +183,7 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('batchPatch', async ({ schemas }) => {
-      refresh();
+      this.refresh();
       await api.request({
         url: `/uiSchemas:batchPatch`,
         method: 'post',
@@ -196,7 +196,7 @@ export class Designable {
       if (removed?.['x-component'] === 'Grid.Col') {
         schemas = updateColumnSize(removed.parent);
       }
-      refresh();
+      this.refresh();
       if (!removed?.['x-uid']) {
         return;
       }
@@ -266,7 +266,7 @@ export class Designable {
 
   refresh() {
     const { refresh } = this.options;
-    return refresh?.();
+    return refresh?.(this);
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {
