@@ -29,7 +29,6 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
   const targetCollection = getCollection(collectionField.target);
-  console.log(targetCollection);
   const handleCreateAction = async (props) => {
     const { search: value, callBack } = props;
     const { data } = await resource.create({

@@ -53,7 +53,7 @@ export const ActionDesigner = (props) => {
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
-  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -141,6 +141,34 @@ export const ActionDesigner = (props) => {
             dn.refresh();
           }}
         />
+        {fieldSchema['x-action'] === 'submit' &&
+          fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && (
+            <SchemaSettings.SelectItem
+              key="save-mode"
+              title={t('Save mode')}
+              options={[
+                { value: 'create', label: t('Insert') },
+                { value: 'firstOrCreate', label: t('InsertIfNotExits') },
+                { value: 'updateOrCreate', label: t('Upsert') },
+              ]}
+              value={field.componentProps.saveMode || 'create'}
+              onChange={(mode) => {
+                const schema = {
+                  ['x-uid']: fieldSchema['x-uid'],
+                };
+                fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                fieldSchema['x-component-props']['saveMode'] = mode;
+                schema['x-component-props'] = fieldSchema['x-component-props'];
+                field.componentProps = field.componentProps || {};
+                field.componentProps.saveMode = mode;
+
+                dn.emit('patch', {
+                  schema,
+                });
+                dn.refresh();
+              }}
+            />
+          )}
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction}></OpenModeSchemaItems>
         {isUpdateModePopupAction && (

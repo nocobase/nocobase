@@ -144,6 +144,7 @@ export const useCreateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const action = actionField.componentProps.saveMode || 'create';
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -168,7 +169,7 @@ export const useCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const data = await resource.create({
+        const data = await resource[action]({
           values: {
             ...values,
             ...overwriteValues,
