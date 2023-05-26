@@ -3,7 +3,7 @@ import { Switch } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const AsDefaultTemplate = React.forwardRef((props: any) => {
+export const AsDefaultTemplate = React.forwardRef((props: any, ref) => {
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();

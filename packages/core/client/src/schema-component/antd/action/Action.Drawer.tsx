@@ -41,7 +41,7 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
             title={field.title}
             {...others}
             destroyOnClose
-            visible={visible}
+            open={visible}
             onClose={() => setVisible(false, true)}
             className={classNames(
               others.className,
