@@ -5,7 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { useAPIClient } from '../../../';
+import { useAPIClient, useCollectionManager } from '../../../';
 import { isFunction } from 'mathjs';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
@@ -17,6 +17,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const { objectValue = true } = props;
   const field: any = useField();
   const fieldSchema = useFieldSchema();
+  const { getCollection } = useCollectionManager();
   const service = useServiceOptions(props);
   const { options: collectionField } = useAssociationFieldContext();
   const value = Array.isArray(props.value) ? props.value.filter(Boolean) : props.value;
@@ -27,7 +28,8 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const form = useForm();
   const api = useAPIClient();
   const resource = api.resource(collectionField.target);
-
+  const targetCollection = getCollection(collectionField.target);
+  console.log(targetCollection);
   const handleCreateAction = async (props) => {
     const { search: value, callBack } = props;
     const { data } = await resource.create({
@@ -56,12 +58,12 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       message.success(t('Saved successfully'));
     }
   };
-
   const QuickAddContent = (props) => {
     return (
       <div>
         <span style={{ color: 'black' }}>
-          {t('Not found.')} {t('Add') + ` ${props.search} ` + t('to') + ' Collection' + ` ${collectionField.target}? `}
+          {`${t('Not found') + '.'}`}
+          {t('Add') + ` ${props.search} ` + t('to') + ' Collection' + ` ${t(targetCollection.title)}? `}
         </span>
         <Button type="primary" onClick={() => handleCreateAction(props)}>
           {t('Ok')}

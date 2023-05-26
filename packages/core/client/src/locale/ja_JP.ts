@@ -618,4 +618,6 @@ export default {
   'Display data template selector': 'データテンプレートセレクターを表示',
   'Form data templates': 'フォームデータテンプレート',
   "Data template": "データテンプレート",
+  "Not found":"存在しない",
+  "Add":"追加"
 }

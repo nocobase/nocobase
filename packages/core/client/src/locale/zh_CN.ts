@@ -788,4 +788,7 @@ export default {
   'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
   'Reboot': '重启',
   'Clear cache': '清除缓存',
+  "Not found":"不存在该值",
+  "Add":"添加",
+  "to":"至"
 }

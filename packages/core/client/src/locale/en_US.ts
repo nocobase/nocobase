@@ -709,4 +709,6 @@ export default {
   "Feedback": "Feedback",
   "Try again": "Try again",
   "Data template": "Data template",
+  "Not found":"Not found",
+  "Add":"Add"
 };
