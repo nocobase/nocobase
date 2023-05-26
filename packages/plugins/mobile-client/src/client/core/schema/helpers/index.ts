@@ -22,15 +22,16 @@ export const findGridSchema = (schema: Schema) => {
 
 const allowComponents = ['Grid', 'Grid.Row'];
 const plusComponent = ['Grid.Col'];
-export const countGridCol = (schema: Schema) => {
+export const countGridCol = (schema: Schema, countToStop?: number) => {
   if (!schema) return 0;
   let count = 0;
   if (plusComponent.includes(schema['x-component'])) {
     count += 1;
   }
+  if (typeof countToStop === 'number' && count >= countToStop) return count;
   if (allowComponents.includes(schema['x-component'])) {
     schema.mapProperties((schema) => {
-      count += countGridCol(schema);
+      count += countGridCol(schema, countToStop);
     });
   }
   return count;
