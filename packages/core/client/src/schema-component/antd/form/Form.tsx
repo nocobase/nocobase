@@ -1,7 +1,7 @@
 import { FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Options, Result } from 'ahooks/lib/useRequest/src/types';
+import { Options, Result } from 'ahooks/es/useRequest/src/types';
 import { ConfigProvider, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
