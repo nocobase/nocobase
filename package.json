@@ -44,6 +44,7 @@
     "@commitlint/prompt-cli": "^16.1.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
     "ghooks": "^2.0.4",
