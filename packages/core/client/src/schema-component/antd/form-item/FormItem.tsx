@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formil
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Select } from 'antd';
 import _ from 'lodash';
 import moment from 'moment';
 import React, { useContext, useEffect } from 'react';
@@ -32,7 +33,6 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
-import { Select } from 'antd';
 
 const defaultInputStyle = css`
   & > .nb-form-item {
@@ -175,6 +175,7 @@ FormItem.Designer = function Designer() {
 
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
 
+  const isSubFormMode = fieldSchema['x-component-props'].mode === 'Nester';
   const isPickerMode = fieldSchema['x-component-props'].mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
@@ -678,6 +679,29 @@ FormItem.Designer = function Designer() {
 
             fieldSchema['x-component-props'].multiple = value;
             field.componentProps.multiple = value;
+
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
+      {IsShowMultipleSwitch() && isSubFormMode ? (
+        <SchemaSettings.SwitchItem
+          key="allowDissociate"
+          title={t('Allow dissociate')}
+          checked={fieldSchema['x-component-props']?.allowDissociate !== false}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            field.componentProps = field.componentProps || {};
+
+            fieldSchema['x-component-props'].allowDissociate = value;
+            field.componentProps.allowDissociate = value;
 
             schema['x-component-props'] = fieldSchema['x-component-props'];
             dn.emit('patch', {

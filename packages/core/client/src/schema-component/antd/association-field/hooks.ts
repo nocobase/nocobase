@@ -35,6 +35,7 @@ export function useAssociationFieldContext<F extends GeneralField>() {
     field: F;
     currentMode: string;
     allowMultiple?: boolean;
+    allowDissociate?: boolean;
   };
 }
 
