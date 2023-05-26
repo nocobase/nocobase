@@ -3,7 +3,7 @@ import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@for
 import { SelectProps, Tag, Empty } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -42,7 +42,7 @@ const InternalRemoteSelect = connect(
     const fieldSchema = useFieldSchema();
     const field = useField();
     const { getField } = useCollection();
-    const [searchData, setSearchData] = useState<any>(null);
+    const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
@@ -140,12 +140,12 @@ const InternalRemoteSelect = connect(
       [service, fieldNames],
     );
     const CustomRenderCom = useCallback(() => {
-      if (data?.data.length < 1 && searchData && CustomDropdownRender) {
-        return <CustomDropdownRender search={searchData} callBack={() => setSearchData(null)} />;
+      if (data?.data.length < 1 && searchData.current && CustomDropdownRender) {
+        return <CustomDropdownRender search={searchData.current} callBack={() => (searchData.current = null)} />;
       } else {
         return <Empty />;
       }
-    }, [data?.data, searchData]);
+    }, [data?.data, searchData.current]);
 
     useEffect(() => {
       // Lazy load
@@ -167,7 +167,7 @@ const InternalRemoteSelect = connect(
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
-      setSearchData(search);
+      searchData.current = search;
     };
 
     const getOptionsByFieldNames = useCallback(
@@ -196,7 +196,7 @@ const InternalRemoteSelect = connect(
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
     const onDropdownVisibleChange = () => {
-      setSearchData(null);
+      searchData.current = null;
       if (firstRun.current && data?.data.length > 0) {
         return;
       }
@@ -217,7 +217,7 @@ const InternalRemoteSelect = connect(
         {...others}
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
-        dropdownRender={searchData && data?.data.length < 1 && CustomRenderCom}
+        dropdownRender={searchData.current && data?.data.length < 1 && CustomRenderCom}
       />
     );
   },
