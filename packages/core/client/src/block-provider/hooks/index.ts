@@ -1,7 +1,7 @@
 import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, isEqual, uniq, omitBy } from 'lodash';
+import { cloneDeep, uniq } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -16,12 +16,12 @@ import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
+import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { useSchemaTemplateManager } from '../../schema-templates';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -158,8 +158,8 @@ export const useCreateActionProps = () => {
       if (!skipValidator) {
         await form.submit();
       }
-      const formValues = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
-      const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;

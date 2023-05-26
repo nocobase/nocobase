@@ -32,6 +32,7 @@ import { FilterDynamicComponent } from '../table-v2/FilterDynamicComponent';
 import { isInvariable } from '../variable';
 import { FilterFormDesigner } from './FormItem.FilterFormDesigner';
 import { useEnsureOperatorsValid } from './SchemaSettingOptions';
+import { Select } from 'antd';
 
 const defaultInputStyle = css`
   & > .nb-form-item {
@@ -172,7 +173,11 @@ FormItem.Designer = function Designer() {
         };
   });
 
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
+
+  const isPickerMode = fieldSchema['x-component-props'].mode === 'Picker';
+  const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
+  const showModeSelect = showFieldMode && isPickerMode;
 
   return (
     <GeneralSchemaDesigner>
@@ -559,7 +564,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isAssociationField && fieldModeOptions && !isTableField && (
+      {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
           title={t('Field mode')}
@@ -574,10 +579,10 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
-              field.value = field.value || initValue;
-            }
+            // if (mode === 'Nester') {
+            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
+            //   field.value = field.value || initValue;
+            // }
             dn.emit('patch', {
               schema,
             });
@@ -585,7 +590,37 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-
+      {showModeSelect && (
+        <SchemaSettings.Item>
+          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+            {t('Popup size')}
+            <Select
+              bordered={false}
+              options={[
+                { label: t('Small'), value: 'small' },
+                { label: t('Middle'), value: 'middle' },
+                { label: t('Large'), value: 'large' },
+              ]}
+              value={
+                fieldSchema?.['x-component-props']?.['openSize'] ??
+                (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+              }
+              onChange={(value) => {
+                field.componentProps.openSize = value;
+                fieldSchema['x-component-props'] = field.componentProps;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': fieldSchema['x-uid'],
+                    'x-component-props': fieldSchema['x-component-props'],
+                  },
+                });
+                dn.refresh();
+              }}
+              style={{ textAlign: 'right', minWidth: 100 }}
+            />
+          </div>
+        </SchemaSettings.Item>
+      )}
       {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"

@@ -787,6 +787,5 @@ export default {
   "Allows to clear cache, reboot application": "允许清除缓存，重启应用",
   'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
   'Reboot': '重启',
-  "Template fields have been removed and need to be reconfigured": "模板字段已被删除，需要重新配置",
   'Clear cache': '清除缓存',
 }

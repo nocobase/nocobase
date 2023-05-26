@@ -160,7 +160,7 @@ AssociationSelect.Designer = function Designer() {
     readOnlyMode = 'read-pretty';
   }
 
-  const fieldSchemaWithoutRequired = _.omit(fieldSchema,'required')
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
 
   return (
     <GeneralSchemaDesigner>

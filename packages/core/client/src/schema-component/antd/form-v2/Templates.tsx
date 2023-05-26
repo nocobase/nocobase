@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { error, forEach, showToast } from '@nocobase/utils/client';
+import { error, forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -8,7 +8,15 @@ import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 
-interface ITemplate {
+export interface ITemplate {
+  config?: {
+    [key: string]: {
+      /** 设置的数据范围 */
+      filter?: any;
+      /** 设置的标题字段 */
+      titleField?: string;
+    };
+  };
   items: {
     key: string;
     title: string;
@@ -31,7 +39,7 @@ const useDataTemplates = () => {
   items.forEach((item) => {
     try {
       item.fields = item.fields
-        .map((field) => {
+        ?.map((field) => {
           const joinField = getCollectionJoinField(`${item.collection}.${field}`);
           if (joinField) {
             return field;
@@ -57,7 +65,7 @@ const useDataTemplates = () => {
     templates,
     display,
     defaultTemplate,
-    enabled: items.length > 0,
+    enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
 
@@ -68,10 +76,10 @@ export const Templates = ({ style = {}, form }) => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (defaultTemplate) {
+    if (enabled && defaultTemplate) {
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
@@ -91,7 +99,7 @@ export const Templates = ({ style = {}, form }) => {
     if (option.key !== 'none') {
       fetchTemplateData(api, option, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
@@ -138,7 +146,7 @@ function findDataTemplates(fieldSchema): ITemplate {
 
 async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
   if (template.fields.length === 0) {
-    return showToast(t('Template fields have been removed and need to be reconfigured'));
+    return;
   }
   return api
     .resource(template.collection)

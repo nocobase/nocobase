@@ -710,5 +710,4 @@ export default {
   "Feedback": "Feedback",
   "Try again": "Try again",
   "Data template": "Data template",
-  "Template fields have been removed and need to be reconfigured": "Template fields have been removed and need to be reconfigured",
 };

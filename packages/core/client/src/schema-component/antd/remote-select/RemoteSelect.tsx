@@ -7,10 +7,11 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
-import { useCompile } from '../../hooks';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { useParseFilter } from '../filter/useParseFilter';
+
+const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -36,7 +37,6 @@ const InternalRemoteSelect = connect(
       targetField: _targetField,
       ...others
     } = props;
-    const compile = useCompile();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
@@ -59,49 +59,51 @@ const InternalRemoteSelect = connect(
     const mapOptionsToTags = useCallback(
       (options) => {
         try {
-          return options.map((option) => {
-            let label = option[fieldNames.label];
+          return options
+            .map((option) => {
+              let label = option[fieldNames.label];
 
-            if (targetField?.uiSchema?.enum) {
-              if (Array.isArray(label)) {
-                label = label
-                  .map((item, index) => {
-                    const option = targetField.uiSchema.enum.find((i) => i.value === item);
-                    if (option) {
-                      return (
-                        <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
-                          {option?.label || item}
-                        </Tag>
-                      );
-                    } else {
-                      return <Tag>{item}</Tag>;
-                    }
-                  })
-                  .reverse();
-              } else {
-                const item = targetField.uiSchema.enum.find((i) => i.value === label);
-                if (item) {
-                  label = <Tag color={item.color}>{item.label}</Tag>;
+              if (targetField?.uiSchema?.enum) {
+                if (Array.isArray(label)) {
+                  label = label
+                    .map((item, index) => {
+                      const option = targetField.uiSchema.enum.find((i) => i.value === item);
+                      if (option) {
+                        return (
+                          <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                            {option?.label || item}
+                          </Tag>
+                        );
+                      } else {
+                        return <Tag key={item}>{item}</Tag>;
+                      }
+                    })
+                    .reverse();
+                } else {
+                  const item = targetField.uiSchema.enum.find((i) => i.value === label);
+                  if (item) {
+                    label = <Tag color={item.color}>{item.label}</Tag>;
+                  }
                 }
               }
-            }
 
-            if (targetField?.type === 'date') {
-              label = moment(label).format('YYYY-MM-DD');
-            }
+              if (targetField?.type === 'date') {
+                label = moment(label).format('YYYY-MM-DD');
+              }
 
-            if (mapOptions) {
-              return mapOptions({
-                [fieldNames.label]: label,
+              if (mapOptions) {
+                return mapOptions({
+                  [fieldNames.label]: label || EMPTY,
+                  [fieldNames.value]: option[fieldNames.value],
+                });
+              }
+              return {
+                ...option,
+                [fieldNames.label]: label || EMPTY,
                 [fieldNames.value]: option[fieldNames.value],
-              });
-            }
-            return {
-              ...option,
-              [fieldNames.label]: label || option[fieldNames.value],
-              [fieldNames.value]: option[fieldNames.value],
-            };
-          });
+              };
+            })
+            .filter(Boolean);
         } catch (err) {
           console.error(err);
           return options;
