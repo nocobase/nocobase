@@ -100,6 +100,9 @@ export const Templates = ({ style = {}, form }) => {
       fetchTemplateData(api, option, t)
         .then((data) => {
           if (form && data) {
+            // 切换之前先把之前的数据清空
+            form.reset();
+
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
