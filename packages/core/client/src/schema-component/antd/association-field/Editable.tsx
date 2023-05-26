@@ -26,6 +26,12 @@ const EditableAssociationField = observer((props: any) => {
       return;
     }
     if (field.value !== null && field.value !== undefined) {
+      // Nester 子表单时，如果没数据初始化一个 [null] 的占位
+      if (currentMode === 'Nester' && Array.isArray(field.value)) {
+        if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+          field.value = [null];
+        }
+      }
       setLoading(false);
       return;
     }

@@ -46,31 +46,22 @@ export const SettingsCenterDropdown = () => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
         placement="bottom"
-        overlay={
-          <Menu>
-            {bookmarkTabs.map((tab) => {
-              return (
-                <Menu.Item
-                  onClick={() => {
-                    history.push('/admin/settings/' + tab.path);
-                  }}
-                  key={tab.path}
-                >
-                  {compile(tab.title)}
-                </Menu.Item>
-              );
-            })}
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item
-              onClick={() => {
-                history.push('/admin/settings');
-              }}
-              key="/admin/settings"
-            >
-              {t('All plugin settings')}
-            </Menu.Item>
-          </Menu>
-        }
+        menu={{
+          items: [
+            ...bookmarkTabs.map((tab) => ({
+              key: `/admin/settings/${tab.path}`,
+              label: compile(tab.title),
+            })),
+            { type: 'divider' },
+            {
+              key: '/admin/settings',
+              label: t('All plugin settings'),
+            },
+          ],
+          onClick({ key }) {
+            history.push(key);
+          },
+        }}
       >
         <Button
           icon={<SettingOutlined />}

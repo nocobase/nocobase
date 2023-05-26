@@ -215,7 +215,7 @@ const InternalRemoteSelect = connect(
         objectValue={objectValue}
         value={value}
         {...others}
-        loading={loading}
+        loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
         dropdownRender={searchData && data?.data.length < 1 && CustomRenderCom}
       />
