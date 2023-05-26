@@ -1,10 +1,11 @@
 import { mockDatabase } from '../index';
 import Database from '../../database';
+import { Collection } from '../../collection';
 
 describe('create with hasMany', () => {
   let db: Database;
-  let Post;
-  let User;
+  let Post: Collection;
+  let User: Collection;
 
   afterEach(async () => {
     await db.close();
@@ -61,8 +62,8 @@ describe('create with hasMany', () => {
 
 describe('create with belongsToMany', () => {
   let db: Database;
-  let Post;
-  let Tag;
+  let Post: Collection;
+  let Tag: Collection;
 
   afterEach(async () => {
     await db.close();
@@ -122,8 +123,8 @@ describe('create with belongsToMany', () => {
 
 describe('create', () => {
   let db: Database;
-  let User;
-  let Post;
+  let User: Collection;
+  let Post: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -147,6 +148,16 @@ describe('create', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  test('firstOrCreate', async () => {
+    const u1 = await User.repository.firstOrCreate({
+      attributes: {
+        name: 'u1',
+      },
+    });
+
+    expect(u1.name).toEqual('u1');
   });
 
   test('create with association', async () => {

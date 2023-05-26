@@ -210,6 +210,11 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
+interface FirstOrCreateOptions {
+  attributes: Values;
+  values?: Values;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   implements IRepository
 {
@@ -426,6 +431,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
   }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   */
+  async firstOrCreate(options: FirstOrCreateOptions) {}
 
   /**
    * Save instance to database
