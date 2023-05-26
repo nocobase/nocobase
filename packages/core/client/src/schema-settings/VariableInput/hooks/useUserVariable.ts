@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useCompile, useGetFilterOptions } from '../../../schema-component';
+import { useGetFilterOptions } from '../../../schema-component';
 
 interface GetOptionsParams {
   schema: any;
@@ -46,22 +46,31 @@ const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, ge
   return result;
 };
 
+// 缓存结果，避免重复计算
+// TODO: 由于结果缓存到内存中，所以当用户更改了用户的数据时需要刷新页面才能生效，后续优化的版本在 #1932 中进行
+let cacheResult = null;
+
 export const useUserVariable = ({ operator, schema, level }: { operator?: any; schema: any; level?: number }) => {
-  const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
 
-  const children = useMemo(
-    () => getChildren(getFilterOptions('users'), { schema, operator, maxDepth: level || 3, getFilterOptions }) || [],
-    [operator, schema],
-  );
-
   return useMemo(() => {
-    return compile({
+    if (cacheResult) return cacheResult;
+    if (!schema) return {};
+
+    let children = [];
+    if (schema) {
+      children =
+        getChildren(getFilterOptions('users'), { schema, operator, maxDepth: level || 3, getFilterOptions }) || [];
+    }
+
+    cacheResult = {
       label: `{{t("Current user")}}`,
       value: '$user',
       key: '$user',
       disabled: children.every((option) => option.disabled),
       children: children,
-    });
-  }, [children]);
+    };
+
+    return cacheResult;
+  }, [schema]);
 };
