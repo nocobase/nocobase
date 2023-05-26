@@ -8,13 +8,15 @@ import { TabsProps } from 'antd';
 import { useHistory, useLocation, useParams } from 'react-router-dom';
 
 const globalActionCSS = css`
-  height: 49px;
-  border-top: 1px solid #f0f2f5;
-  margin-bottom: 0px !important;
-  padding: 0 var(--nb-spacing);
-  align-items: center;
-  overflow-x: auto;
-  z-index: 100;
+  #nb-position-container > & {
+    height: 49px;
+    border-top: 1px solid #f0f2f5;
+    margin-bottom: 0px !important;
+    padding: 0 var(--nb-spacing);
+    align-items: center;
+    overflow-x: auto;
+    z-index: 100;
+  }
 `;
 
 const InternalPage: React.FC = (props) => {
@@ -28,9 +30,9 @@ const InternalPage: React.FC = (props) => {
   const onlyInPage = fieldSchema.root === fieldSchema.parent;
   let hasGlobalActions = false;
   if (!tabsSchema) {
-    hasGlobalActions = countGridCol(fieldSchema.properties['grid']) === 1;
+    hasGlobalActions = countGridCol(fieldSchema.properties['grid'], 2) === 1;
   } else if (query.has('tab') && tabsSchema.properties[query.get('tab')]) {
-    hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid']) === 1;
+    hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid'], 2) === 1;
   } else {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
     history.replace({
