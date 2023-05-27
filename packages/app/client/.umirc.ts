@@ -36,13 +36,11 @@ export default defineConfig({
   },
   fastRefresh: true,
   mfsu: false,
-  routes: [{ path: '/*', component: 'index' }],
-  chainWebpack(memo) {
-    // umi4 可能不需要这个配置，通过 debugger 没看到 mermaid，甚至没有 js-in-node_modules
-    memo.module
-      .rule('js-in-node_modules')
-      .test(/.*mermaid.*\.js$/)
-      .include.clear();
-    return memo;
+  // 浏览器兼容性，兼容到 2018 年的浏览器
+  targets: {
+    chrome: 69,
+    edge: 79,
+    safari: 12,
   },
+  routes: [{ path: '/*', component: 'index' }],
 });
