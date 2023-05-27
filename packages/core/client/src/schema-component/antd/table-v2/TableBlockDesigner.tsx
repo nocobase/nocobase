@@ -60,7 +60,7 @@ export const TableBlockDesigner = () => {
         },
       },
     } as ISchema;
-  }, [dataSource]);
+  }, [dataSource, defaultFilter]);
   const onDataScopeSubmit = useCallback(
     ({ filter }) => {
       filter = removeNullCondition(filter);
