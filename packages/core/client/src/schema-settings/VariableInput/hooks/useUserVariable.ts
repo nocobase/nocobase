@@ -10,7 +10,7 @@ interface GetOptionsParams {
   maxDepth: number;
   count?: number;
   getFilterOptions: (collectionName: string) => any[];
-  loadChildren?: (option: Option) => void;
+  loadChildren?: (option: Option) => Promise<void>;
 }
 
 const getChildren = (
@@ -61,22 +61,32 @@ export const useUserVariable = ({ operator, schema, level }: { operator?: any; s
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
 
-  const loadChildren = (option: Option) => {
+  const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
-      return error('Must be set field target');
+      return new Promise((resolve) => {
+        error('Must be set field target');
+        resolve(void 0);
+      });
     }
 
     const collectionName = option.field.target;
-    const children =
-      getChildren(getFilterOptions(collectionName), {
-        schema,
-        operator,
-        maxDepth: level || 1,
-        getFilterOptions,
-        loadChildren,
-      }) || [];
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const children =
+          getChildren(getFilterOptions(collectionName), {
+            schema,
+            operator,
+            maxDepth: level || 1,
+            getFilterOptions,
+            loadChildren,
+          }) || [];
 
-    option.children = compile(children);
+        option.children = compile(children);
+        resolve(void 0);
+
+        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
+      }, 5);
+    });
   };
 
   const result = useMemo(() => {

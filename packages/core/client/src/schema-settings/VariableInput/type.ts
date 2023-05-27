@@ -10,7 +10,7 @@ export interface Option {
   // 设为 `false` 时会强制标记为父节点，即使当前节点没有 children，也会显示展开图标
   isLeaf?: boolean;
   /** 当开启异步加载时有效，用于加载当前 node 的 children */
-  loadChildren?(option: Option): void;
+  loadChildren?(option: Option): Promise<void>;
   field?: FieldOption;
 }
 
