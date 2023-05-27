@@ -53,6 +53,9 @@ export const AuditLogsViewActionInitializer = (props) => {
                                   collection: 'auditLogs',
                                   readPretty: true,
                                   action: 'get',
+                                  params: {
+                                    appends: ['collection', 'user', 'changes'],
+                                  },
                                   useParams: '{{ useParamsFromRecord }}',
                                   useSourceId: '{{ useSourceIdFromParentRecord }}',
                                 },

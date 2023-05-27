@@ -8,6 +8,7 @@ export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
+  description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     method: {
       type: 'string',

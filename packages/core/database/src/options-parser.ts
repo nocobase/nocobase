@@ -249,6 +249,11 @@ export class OptionsParser {
       }
 
       if (appendFields.length == 2) {
+        const association = associations[appendFields[0]];
+        if (!association) {
+          throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
+        }
+
         const associationModel = associations[appendFields[0]].target;
         if (associationModel.rawAttributes[appendFields[1]]) {
           lastLevel = true;
@@ -263,6 +268,11 @@ export class OptionsParser {
       let existIncludeIndex = queryParams['include'].findIndex(
         (include) => include['association'] == appendAssociation,
       );
+
+      // if include from filter, remove fromFilter attribute
+      if (existIncludeIndex != -1) {
+        delete queryParams['include'][existIncludeIndex]['fromFilter'];
+      }
 
       // if association not exist, create it
       if (existIncludeIndex == -1) {

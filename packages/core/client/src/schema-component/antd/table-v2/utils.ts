@@ -24,7 +24,7 @@ export function getIdsWithChildren(nodes) {
     for (const node of nodes) {
       if (node.children && node.children.length > 0) {
         ids.push(node.id);
-        ids.push(...getIdsWithChildren(node.children));
+        ids.push(...getIdsWithChildren(node?.children));
       }
     }
   }

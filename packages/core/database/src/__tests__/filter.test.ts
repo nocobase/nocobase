@@ -14,6 +14,60 @@ describe('filter', () => {
     await db.close();
   });
 
+  it('should filter by belongs to many association', async () => {
+    const A = db.collection({
+      name: 'a',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'b', target: 'b' },
+      ],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsTo', name: 'c', target: 'c' },
+        { type: 'belongsTo', name: 'd', target: 'd' },
+      ],
+    });
+
+    const C = db.collection({
+      name: 'c',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const D = db.collection({
+      name: 'd',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    const findArgs = {
+      filter: {
+        $and: [{ b: { c: { name: { $eq: 'c1' } } } }, { b: { d: { name: { $eq: 'd1' } } } }],
+      },
+    };
+
+    const findOptions = A.repository.buildQueryOptions(findArgs);
+
+    const include = findOptions.include;
+
+    const associationB = include.find((i) => i.association === 'b');
+    expect(associationB).toBeDefined();
+    expect(associationB.include).toHaveLength(2);
+
+    let err;
+    try {
+      await A.repository.find({ ...findArgs });
+    } catch (e) {
+      err = e;
+    }
+
+    expect(err).toBeUndefined();
+  });
+
   it('should filter by hasMany association field', async () => {
     const DeptCollection = db.collection({
       name: 'depts',

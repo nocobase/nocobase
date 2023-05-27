@@ -62,6 +62,8 @@ export const ActionDesigner = (props) => {
   const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
+  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
   const targetSchema = findTableOrFormBlockProviderByActionFieldSchema(fieldSchema);
   const defaultCustomRequestName = targetSchema?.['x-component-props']?.title || targetSchema?.['x-uid'] || '';
   const [customRequestSettings, setCustomRequestSettings] = useState({
@@ -104,7 +106,7 @@ export const ActionDesigner = (props) => {
     },
   );
   return (
-    <GeneralSchemaDesigner {...restProps} disableInitializer>
+    <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
         <SchemaSettings.ModalItem
           title={t('Edit button')}
@@ -365,16 +367,21 @@ export const ActionDesigner = (props) => {
         )}
 
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
-          removeParentsIfNoChildren
-          breakRemoveOn={(s) => {
-            return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
-          }}
-          confirm={{
-            title: t('Delete action'),
-          }}
-        />
+
+        {!isDelete && (
+          <>
+            <SchemaSettings.Divider />
+            <SchemaSettings.Remove
+              removeParentsIfNoChildren
+              breakRemoveOn={(s) => {
+                return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+              }}
+              confirm={{
+                title: t('Delete action'),
+              }}
+            />
+          </>
+        )}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );

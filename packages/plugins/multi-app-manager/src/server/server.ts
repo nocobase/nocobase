@@ -160,6 +160,13 @@ export class PluginMultiAppManager extends Plugin {
           },
         })) as ApplicationModel | null;
 
+        const instanceOptions = applicationRecord.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+          return;
+        }
+
         if (!applicationRecord) {
           return;
         }
@@ -175,12 +182,68 @@ export class PluginMultiAppManager extends Plugin {
       },
     );
 
+    this.app.on('afterStart', async (app) => {
+      const repository = this.db.getRepository('applications');
+      const appManager = this.app.appManager;
+      if (appManager.runningMode == 'single') {
+        // If the sub application is running in single mode, register the application automatically
+        try {
+          const subApp = await repository.findOne({
+            filter: {
+              name: appManager.singleAppName,
+            },
+          });
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
+        } catch (err) {
+          console.error('Auto register sub application in single mode failed: ', appManager.singleAppName, err);
+        }
+        return;
+      }
+      try {
+        const subApps = await repository.find({
+          filter: {
+            'options.autoStart': true,
+          },
+        });
+        for (const subApp of subApps) {
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
+        }
+      } catch (err) {
+        console.error('Auto register sub applications failed: ', err);
+      }
+    });
+
     this.app.on('afterUpgrade', async (app, options) => {
       const cliArgs = options?.cliArgs;
+
       const repository = this.db.getRepository('applications');
-      const instances = await repository.find();
+      const findOptions = {};
+
+      const appManager = this.app.appManager;
+
+      if (appManager.runningMode == 'single') {
+        findOptions['filter'] = {
+          name: appManager.singleAppName,
+        };
+      }
+
+      const instances = await repository.find(findOptions);
+
       for (const instance of instances) {
-        const subApp = await this.app.appManager.getApplication(instance.name, {
+        const instanceOptions = instance.get('options');
+
+        // skip standalone deployment application
+        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+          continue;
+        }
+
+        const subApp = await appManager.getApplication(instance.name, {
           upgrading: true,
         });
 

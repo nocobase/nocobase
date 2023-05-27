@@ -1,7 +1,7 @@
 import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import lodash from 'lodash';
 import { SyncOptions, Transactionable } from 'sequelize';
 import { FieldModel } from './field';
-import lodash from 'lodash';
 
 interface LoadOptions extends Transactionable {
   // TODO
@@ -50,8 +50,12 @@ export class CollectionModel extends MagicAttributeModel {
   }
 
   async loadFields(options: Transactionable = {}) {
+    let fields = this.get('fields') || [];
+    if (!fields.length) {
+      fields = await this.getFields(options);
+    }
     // @ts-ignore
-    const instances: FieldModel[] = await this.getFields(options);
+    const instances: FieldModel[] = fields;
 
     for (const instance of instances) {
       await instance.load(options);
