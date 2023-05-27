@@ -1,4 +1,4 @@
-import { Association, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
+import { Association, HasOne, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
@@ -157,12 +157,18 @@ export class EagerLoadingTree {
         if (associationType == 'BelongsToMany') {
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
+          const pivotAssoc = new HasOne(association.target, association.through.model, {
+            as: '_pivot',
+            foreignKey: association.otherKey,
+            sourceKey: association.targetKey,
+          });
+
           instances = await node.model.findAll({
             transaction,
             attributes: node.attributes,
             include: [
               {
-                association: association.oneFromTarget,
+                association: pivotAssoc,
                 where: {
                   [association.foreignKey]: foreignKeyValues,
                 },
@@ -246,11 +252,9 @@ export class EagerLoadingTree {
           const sourceKey = association.sourceKey;
           const foreignKey = association.foreignKey;
 
-          const oneFromTarget = association.oneFromTarget;
-
           for (const instance of node.instances) {
             const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance[oneFromTarget.as].get(foreignKey),
+              (parentInstance) => parentInstance.get(sourceKey) == instance['_pivot'].get(foreignKey),
             );
 
             if (parentInstance) {
