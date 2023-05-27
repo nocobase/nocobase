@@ -9,7 +9,6 @@ describe('hook', () => {
   beforeEach(async () => {
     api = mockServer();
     await api.db.clean({ drop: true });
-
     api.plugin(logPlugin, { name: 'audit-logs' });
     await api.load();
     db = api.db;
@@ -89,13 +88,17 @@ describe('hook', () => {
     });
     expect(auditLogs.length).toBe(3);
 
-    expect(auditLogs[0].changes[0].before).toBeNull();
-    expect(auditLogs[0].changes[0].after).toBe('t1');
+    const titleChange = (changes) => {
+      return changes.find((item) => item.field.name === 'title');
+    };
 
-    expect(auditLogs[1].changes[0].before).toBe('t1');
-    expect(auditLogs[1].changes[0].after).toBe('t2');
+    expect(titleChange(auditLogs[0].changes).before).toBeNull();
+    expect(titleChange(auditLogs[0].changes).after).toBe('t1');
 
-    expect(auditLogs[2].changes[0].before).toBe('t2');
+    expect(titleChange(auditLogs[1].changes).before).toBe('t1');
+    expect(titleChange(auditLogs[1].changes).after).toBe('t2');
+
+    expect(titleChange(auditLogs[2].changes).before).toBe('t2');
   });
 
   it('repository', async () => {

@@ -332,18 +332,20 @@ export const ActionDesigner = (props) => {
 
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
 
-        {!isDelete && [
-          <SchemaSettings.Divider />,
-          <SchemaSettings.Remove
-            removeParentsIfNoChildren
-            breakRemoveOn={(s) => {
-              return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
-            }}
-            confirm={{
-              title: t('Delete action'),
-            }}
-          />,
-        ]}
+        {!isDelete && (
+          <>
+            <SchemaSettings.Divider />
+            <SchemaSettings.Remove
+              removeParentsIfNoChildren
+              breakRemoveOn={(s) => {
+                return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+              }}
+              confirm={{
+                title: t('Delete action'),
+              }}
+            />
+          </>
+        )}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );

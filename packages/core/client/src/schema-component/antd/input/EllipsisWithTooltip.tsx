@@ -45,8 +45,8 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
 
   return (
     <Popover
-      visible={ellipsis && visible}
-      onVisibleChange={(visible) => {
+      open={ellipsis && visible}
+      onOpenChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
       content={
