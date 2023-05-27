@@ -1,3 +1,5 @@
+import { error } from '@nocobase/utils/client';
+
 const methods = [
   'atX0SecondsPastTheMinuteGt20',
   'atX0MinutesPastTheHourGt20',
@@ -91,12 +93,12 @@ const langs = {
   'zh-TW': 'zh_TW',
 };
 
-export const getCronstrueLocale = (lang) => {
+export const getCronstrueLocale = async (lang) => {
   const lng = langs[lang] || 'en';
-  const Locale = require(`cronstrue/locales/${lng}`);
+  const Locale = await import(`cronstrue/locales/${lng}`);
   let locale;
-  if (Locale?.default) {
-    locale = Locale.default.locales[lng];
+  if (Locale) {
+    locale = Locale.locales[lng];
   } else {
     const L = Locale[lng];
     locale = new L();
@@ -105,7 +107,9 @@ export const getCronstrueLocale = (lang) => {
   for (const method of methods) {
     try {
       items[method] = locale[method]();
-    } catch (error) {}
+    } catch (err) {
+      error(err);
+    }
   }
   return items;
 };
