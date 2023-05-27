@@ -158,7 +158,7 @@ export class EagerLoadingTree {
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
           const pivotAssoc = new HasOne(association.target, association.through.model, {
-            as: '_pivot',
+            as: '_pivot_',
             foreignKey: association.otherKey,
             sourceKey: association.targetKey,
           });
@@ -252,9 +252,16 @@ export class EagerLoadingTree {
           const sourceKey = association.sourceKey;
           const foreignKey = association.foreignKey;
 
+          const as = association.oneFromTarget.as;
+
           for (const instance of node.instances) {
+            // set instance accessor
+            instance[as] = instance.dataValues[as] = instance['_pivot_'];
+            delete instance.dataValues['_pivot_'];
+            delete instance['_pivot_'];
+
             const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance['_pivot'].get(foreignKey),
+              (parentInstance) => parentInstance.get(sourceKey) == instance.dataValues[as].get(foreignKey),
             );
 
             if (parentInstance) {

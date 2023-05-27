@@ -56,6 +56,12 @@ describe('Eager loading tree', () => {
     });
 
     expect(a.get('bs')).toHaveLength(2);
+    const data = a.toJSON();
+
+    // @ts-ignore
+    const as = A.model.associations.bs.oneFromTarget.as;
+
+    expect(data['bs'][0][as]).toBeDefined();
   });
 
   it('should handle fields filter', async () => {
