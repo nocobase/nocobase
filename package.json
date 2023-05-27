@@ -46,6 +46,7 @@
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
     "auto-changelog": "^2.4.0",
+    "dumi-theme-antd": "^0.2.4",
     "ghooks": "^2.0.4",
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",

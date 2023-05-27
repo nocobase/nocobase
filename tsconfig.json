@@ -40,6 +40,9 @@
       ],
       "@nocobase/*": [
         "packages/core/*/src"
+      ],
+      "@@/*": [
+        ".dumi/tmp/*"
       ]
     }
   },
@@ -49,7 +52,9 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    ".dumi/**/*",
+    ".dumirc.ts"
   ],
   "exclude": [
     "packages/**/node_modules",

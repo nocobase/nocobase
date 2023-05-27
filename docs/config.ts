@@ -1,4 +1,31 @@
-export default {
+const nav = [
+  {
+    title: 'Welcome',
+    'title.zh-CN': '欢迎',
+    link: '/welcome/introduction',
+  },
+  {
+    title: 'User manual',
+    'title.zh-CN': '使用手册',
+    link: '/manual/quick-start/the-first-app',
+  },
+  {
+    title: 'Plugin Development',
+    'title.zh-CN': '插件开发',
+    link: '/development',
+  },
+  {
+    title: 'API reference',
+    'title.zh-CN': 'API 参考',
+    link: '/api',
+  },
+  {
+    title: 'Schema components',
+    'title.zh-CN': 'Schema 组件库',
+    link: '/components',
+  },
+];
+const sidebar = {
   '/welcome': [
     {
       title: 'Welcome',
@@ -6,7 +33,7 @@ export default {
       'title.tr-TR': 'Hoşgeldiniz',
       type: 'group',
       children: [
-        '/welcome/introduction/index',
+        '/welcome/introduction',
         '/welcome/introduction/features',
         '/welcome/introduction/when',
         // '/welcome/introduction/learning-guide',
@@ -24,7 +51,7 @@ export default {
           'title.TR-TR': 'Kurulum',
           type: 'subMenu',
           children: [
-            '/welcome/getting-started/installation/index',
+            '/welcome/getting-started/installation',
             '/welcome/getting-started/installation/docker-compose',
             '/welcome/getting-started/installation/create-nocobase-app',
             '/welcome/getting-started/installation/git-clone',
@@ -36,7 +63,7 @@ export default {
           'title.TR-TR': 'Güncelleme',
           type: 'subMenu',
           children: [
-            '/welcome/getting-started/upgrading/index',
+            '/welcome/getting-started/upgrading',
             '/welcome/getting-started/upgrading/docker-compose',
             '/welcome/getting-started/upgrading/create-nocobase-app',
             '/welcome/getting-started/upgrading/git-clone',
@@ -49,7 +76,7 @@ export default {
       'title.zh-CN': '路线图 & 发布',
       'title.TR-TR': 'Sürüm',
       type: 'group',
-      children: ['/welcome/release/roadmap', '/welcome/release/index', '/welcome/release/v08-changelog'],
+      children: ['/welcome/release/roadmap', '/welcome/release', '/welcome/release/v08-changelog'],
     },
     {
       title: 'Community',
@@ -107,7 +134,7 @@ export default {
       'title.TR-TR': 'Başlarken',
       type: 'group',
       children: [
-        '/development/index',
+        '/development',
         '/development/your-fisrt-plugin',
         '/development/app-ds',
         '/development/plugin-ds',
@@ -121,14 +148,14 @@ export default {
       'title.TR-TR': 'Sunucu',
       type: 'group',
       children: [
-        '/development/server/index',
+        '/development/server',
         {
           title: 'Collections & Fields',
           'title.zh-CN': '数据表和字段',
           'title.TR-TR': 'Koleksiyonlar & Alanlar',
           type: 'subMenu',
           children: [
-            '/development/server/collections/index',
+            '/development/server/collections',
             '/development/server/collections/options',
             '/development/server/collections/configure',
             '/development/server/collections/association-fields',
@@ -152,14 +179,14 @@ export default {
       'title.TR-TR': 'Ziyaretçi(Client)',
       type: 'group',
       children: [
-        '/development/client/index',
+        '/development/client',
         {
           title: 'UI 设计器',
           'title.zh-CN': 'UI 设计器',
           'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
           type: 'subMenu',
           children: [
-            // '/development/client/ui-schema-designer/index',
+            // '/development/client/ui-schema-designer',
             '/development/client/ui-schema-designer/what-is-ui-schema',
             '/development/client/ui-schema-designer/extending-schema-components',
             // '/development/client/ui-schema-designer/insert-adjacent',
@@ -179,12 +206,12 @@ export default {
     },
   ],
   '/api': [
-    '/api/index',
+    '/api',
     '/api/env',
     {
       title: 'HTTP API',
       type: 'subMenu',
-      children: ['/api/http/index', '/api/http/rest-api'],
+      children: ['/api/http', '/api/http/rest-api'],
     },
     {
       title: '@nocobase/server',
@@ -199,7 +226,7 @@ export default {
       title: '@nocobase/database',
       type: 'subMenu',
       children: [
-        '/api/database/index',
+        '/api/database',
         '/api/database/collection',
         '/api/database/field',
         '/api/database/repository',
@@ -213,18 +240,13 @@ export default {
     {
       title: '@nocobase/resourcer',
       type: 'subMenu',
-      children: [
-        '/api/resourcer/index',
-        '/api/resourcer/resource',
-        '/api/resourcer/action',
-        '/api/resourcer/middleware',
-      ],
+      children: ['/api/resourcer', '/api/resourcer/resource', '/api/resourcer/action', '/api/resourcer/middleware'],
     },
     {
       title: '@nocobase/acl',
       type: 'subMenu',
       children: [
-        '/api/acl/index',
+        '/api/acl',
         '/api/acl/acl',
         '/api/acl/acl-role',
         '/api/acl/acl-resource',
@@ -237,7 +259,7 @@ export default {
       title: '@nocobase/client',
       type: 'subMenu',
       children: [
-        // '/api/client/index',
+        // '/api/client',
         '/api/client/application',
         '/api/client/route-switch',
         {
@@ -280,3 +302,4 @@ export default {
     },
   ],
 };
+export { nav, sidebar };
