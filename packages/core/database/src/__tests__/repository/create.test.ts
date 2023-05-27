@@ -125,15 +125,24 @@ describe('create', () => {
   let db: Database;
   let User: Collection;
   let Post: Collection;
+  let Group: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
+    await db.clean({ drop: true });
+
+    Group = db.collection({
+      name: 'groups',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
     User = db.collection({
       name: 'users',
       fields: [
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
+        { type: 'belongsTo', name: 'group' },
       ],
     });
 
@@ -149,6 +158,33 @@ describe('create', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  test('firstOrCreate By association', async () => {
+    const u1 = await User.repository.firstOrCreate({
+      filterKeys: ['name'],
+      values: {
+        name: 'u1',
+        age: 10,
+        group: {
+          name: 'g1',
+        },
+      },
+    });
+    expect(u1.name).toEqual('u1');
+    const group = await u1.get('group');
+    expect(group.name).toEqual('g1');
+
+    const u2 = await User.repository.firstOrCreate({
+      filterKeys: ['group'],
+      values: {
+        group: {
+          name: 'g1',
+        },
+      },
+    });
+
+    expect(u2.name).toEqual('u1');
   });
 
   test('firstOrCreate', async () => {
