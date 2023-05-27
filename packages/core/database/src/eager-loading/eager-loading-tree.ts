@@ -255,8 +255,10 @@ export class EagerLoadingTree {
           const as = association.oneFromTarget.as;
 
           for (const instance of node.instances) {
-            instance.setDataValue(as, instance['_pivot_']);
+            // set instance accessor
+            instance[as] = instance.dataValues[as] = instance['_pivot_'];
             delete instance.dataValues['_pivot_'];
+            delete instance['_pivot_'];
 
             const parentInstance = node.parent.instances.find(
               (parentInstance) => parentInstance.get(sourceKey) == instance.dataValues[as].get(foreignKey),
