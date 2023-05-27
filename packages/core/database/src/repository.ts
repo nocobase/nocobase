@@ -211,7 +211,7 @@ export interface AggregateOptions {
 }
 
 interface FirstOrCreateOptions extends Transactionable {
-  attributes: Values;
+  filterKeys: string[];
   values?: Values;
 }
 
@@ -436,14 +436,16 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * Get the first record matching the attributes or create it.
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
-    const { attributes, values, transaction } = options;
-    const instance = await this.findOne({ where: attributes, transaction });
+    const { filterKeys, values, transaction } = options;
+    const filter = lodash.pick(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
 
     if (instance) {
       return instance;
     }
 
-    return this.create({ values: { ...attributes, ...values }, transaction });
+    return this.create({ values, transaction });
   }
 
   /**

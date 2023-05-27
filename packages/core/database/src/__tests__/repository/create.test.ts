@@ -153,7 +153,8 @@ describe('create', () => {
 
   test('firstOrCreate', async () => {
     const u1 = await User.repository.firstOrCreate({
-      attributes: {
+      filterKeys: ['name'],
+      values: {
         name: 'u1',
         age: 10,
       },
@@ -162,7 +163,17 @@ describe('create', () => {
     expect(u1.name).toEqual('u1');
     expect(u1.age).toEqual(10);
 
-    expect((await User.repository.firstOrCreate({ attributes: { name: 'u1' } })).get('id')).toEqual(u1.get('id'));
+    expect(
+      (
+        await User.repository.firstOrCreate({
+          filterKeys: ['name'],
+          values: {
+            name: 'u1',
+            age: 10,
+          },
+        })
+      ).get('id'),
+    ).toEqual(u1.get('id'));
   });
 
   test('create with association', async () => {
