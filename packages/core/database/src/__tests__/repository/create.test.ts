@@ -176,6 +176,30 @@ describe('create', () => {
     ).toEqual(u1.get('id'));
   });
 
+  test('updateOrCreate', async () => {
+    const u1 = await User.repository.updateOrCreate({
+      filterKeys: ['name'],
+      values: {
+        name: 'u1',
+        age: 10,
+      },
+    });
+
+    expect(u1.name).toEqual('u1');
+    expect(u1.age).toEqual(10);
+
+    await User.repository.updateOrCreate({
+      filterKeys: ['name'],
+      values: {
+        name: 'u1',
+        age: 20,
+      },
+    });
+
+    await u1.reload();
+    expect(u1.age).toEqual(20);
+  });
+
   test('create with association', async () => {
     const u1 = await User.repository.create({
       values: {

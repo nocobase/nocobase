@@ -448,6 +448,23 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction });
   }
 
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = lodash.pick(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return await this.update({
+        filterByTk: instance.get(this.collection.model.primaryKeyAttribute),
+        values,
+        transaction,
+      });
+    }
+
+    return this.create({ values, transaction });
+  }
+
   /**
    * Save instance to database
    *
