@@ -82,8 +82,8 @@ export const customRequestActions = {
     if (!record) {
       ctx.throw(404, ctx.t('request config not exists', { ns: NAME_SPACE }));
     }
+    const { data, method, headers, params, url, timeout = 5000, requestType } = record.options;
 
-    const { data, method, headers, params, url, timeout = 5000 } = record.options;
     // url 非空校验
     if (isEmpty(url)) {
       ctx.throw(400, ctx.t('notNull violation', { ns: 'error-handler' }));
@@ -102,6 +102,17 @@ export const customRequestActions = {
       data,
       timeout,
     };
+
+    if (requestType === 'internal') {
+      if (!tempParams.url.startsWith(ctx.request.origin)) {
+        tempParams.url = `${ctx.request.header.origin}${tempParams.url.startsWith('/') ? '' : '/'}${tempParams.url}`;
+      }
+      tempParams.headers = {
+        ...tempParams.headers,
+        ...ctx.request.header,
+      };
+    }
+
     try {
       const res = await axios(tempParams);
       ctx.body = res.data;

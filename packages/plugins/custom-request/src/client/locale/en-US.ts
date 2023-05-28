@@ -16,4 +16,9 @@ export default {
   'Request name': 'Request name',
   'The current role has no request permission': 'The current role has no request permission',
   'request config not exists': 'request config not exists',
+  'request type': 'request type',
+  'internal request': 'internal request',
+  'external request': 'external request',
+  'URL description':
+    'If the request type is internal, the domain part of the request path can be omitted e.g. api/xxx:create, and the request header can also be omitted',
 };

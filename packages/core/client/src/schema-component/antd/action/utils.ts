@@ -68,19 +68,20 @@ export const findTableOrFormBlockProviderByActionFieldSchema = (fieldSchema: Sch
 };
 
 export const getCustomRequestSchema = () => {
+  const NameSpace = 'custom-request';
   return {
     type: 'object',
     properties: {
       name: {
         type: 'string',
-        title: '{{t("Request name")}}',
+        title: `{{t("Request name", { ns:"${NameSpace}"})}}`,
         required: true,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
       method: {
         type: 'string',
-        title: '{{t("HTTP method")}}',
+        title: `{{t("HTTP method", { ns:"${NameSpace}"})}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Select',
         default: 'POST',
@@ -94,14 +95,27 @@ export const getCustomRequestSchema = () => {
       },
       url: {
         type: 'string',
-        title: '{{t("URL")}}',
+        title: `{{t("URL", { ns:"${NameSpace}"})}}`,
         required: true,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
       },
+      requestType: {
+        type: 'string',
+        title: `{{t("request type", { ns:"${NameSpace}"})}}`,
+        default: 'internal',
+        enum: [
+          { label: `{{t("internal request", { ns:"${NameSpace}"})}}`, value: 'internal' },
+          { label: `{{t("external request", { ns:"${NameSpace}"})}}`, value: 'external' },
+        ],
+        required: true,
+        'x-decorator': 'FormItem',
+        'x-component': 'Radio.Group',
+        description: `{{t('URL description', { ns:"${NameSpace}"})}}`,
+      },
       headers: {
         type: 'array',
-        title: '{{t("Request headers")}}',
+        title: `{{t("Headers", { ns:"${NameSpace}"})}}`,
         'x-decorator': 'FormItem',
         'x-component': 'ArrayItems',
         items: {
@@ -141,18 +155,18 @@ export const getCustomRequestSchema = () => {
             },
           },
         },
-        description: `{{t('"Content-Type" only support "application/json", and no need to specify')}}`,
+        description: `{{t('"Content-Type" only support "application/json", and no need to specify', { ns:"${NameSpace}"})}}`,
         properties: {
           add: {
             type: 'void',
-            title: '{{t("Add request header")}}',
+            title: `{{t("Add request header", { ns:"${NameSpace}"})}}`,
             'x-component': 'ArrayItems.Addition',
           },
         },
       },
       params: {
         type: 'array',
-        title: '{{t("Request query parameters")}}',
+        title: `{{t("Request query parameters", { ns:"${NameSpace}"})}}`,
         'x-decorator': 'FormItem',
         'x-component': 'ArrayItems',
         items: {
@@ -192,32 +206,32 @@ export const getCustomRequestSchema = () => {
         properties: {
           add: {
             type: 'void',
-            title: '{{t("Add parameter")}}',
+            title: `{{t("Add parameter", { ns:"${NameSpace}"})}}`,
             'x-component': 'ArrayItems.Addition',
           },
         },
       },
       data: {
         type: 'string',
-        title: '{{t("Request body")}}',
+        title: `{{t("Request body", { ns:"${NameSpace}"})}}`,
         'x-decorator': 'FormItem',
         'x-component': 'JSONInput',
         'x-component-props': {
           autoSize: {
             minRows: 6,
           },
-          placeholder: `{{t("Input request data")}}`,
+          placeholder: `{{t("Input request data", { ns:"${NameSpace}"})}}`,
         },
-        description: `{{t("Only support standard JSON data")}}`,
+        description: `{{t("Only support standard JSON data", { ns:"${NameSpace}"})}}`,
       },
       timeout: {
         type: 'number',
-        title: `{{t("Timeout config")}}`,
+        title: `{{t("Timeout config" ,{ ns:"${NameSpace}"})}}`,
         'x-decorator': 'FormItem',
         'x-decorator-props': {},
         'x-component': 'InputNumber',
         'x-component-props': {
-          addonAfter: `{{t("ms")}}`,
+          addonAfter: `{{t("ms", { ns:"${NameSpace}"})}}`,
           min: 1,
           step: 1000,
           defaultValue: 5000,

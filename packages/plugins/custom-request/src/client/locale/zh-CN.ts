@@ -16,4 +16,8 @@ export default {
   'Request name': '请求名称',
   'The current role has no request permission': '当前角色没有请求权限',
   'request config not exists': '未找到当前请求配置',
+  'request type': '请求类型',
+  'internal request': '内部请求',
+  'external request': '外部请求',
+  'URL description': '若请求类型为内部请求，则可省去请求路径中的域名部分 如： api/xxx:create, 且请求头也可省略',
 };

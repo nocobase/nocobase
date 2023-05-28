@@ -9,7 +9,7 @@ import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
 
-import { ArrayItems, Space } from '@formily/antd';
+import { ArrayItems, Radio, Space } from '@formily/antd';
 import { cloneDeep } from 'lodash';
 import { JSONInput } from '../variable/JSONInput';
 import { useAPIClient, useRequest } from '../../../api-client';
@@ -217,7 +217,7 @@ export const ActionDesigner = (props) => {
         )}
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
           <SchemaSettings.ActionModalItem
-            components={{ ArrayItems, Space, JSONInput }}
+            components={{ ArrayItems, Space, JSONInput, Radio }}
             title={t('Request settings')}
             schema={requestSettingsSchema}
             initialValues={customRequestSettings}

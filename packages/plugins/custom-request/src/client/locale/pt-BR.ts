@@ -15,4 +15,9 @@ export default {
   'Request name': 'Solicitar nome',
   'The current role has no request permission': 'A função atual não tem permissão de solicitação',
   'request config not exists': 'A configuração da solicitação não existe',
+  'request type': 'tipo de solicitação',
+  'internal request': 'solicitação interna',
+  'external request': 'solicitação externa',
+  'URL description':
+    'Se o tipo de solicitação for interno, a parte do domínio do caminho da solicitação poderá ser omitida, por exemplo, api/xxx:create, e o cabeçalho da solicitação poderá ser omitido',
 };
