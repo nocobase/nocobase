@@ -682,5 +682,6 @@ export default {
     '"Content-Type" somente suporta "application/json" e não precisa ser especificado',
   "Request name":"Solicitar nome",
   "The current role has no request permission":"A função atual não tem permissão de solicitação",
+  'request config not exists': "A configuração da solicitação não existe",
   "Data template": "Modelo de dados",
 };

@@ -1,6 +1,8 @@
 import { Context } from '@nocobase/actions';
 import axios from 'axios';
-import { formatParamsIntoObject } from './utils';
+import { formatParamsIntoObject, NAME_SPACE } from './utils';
+import isEmpty from 'lodash/isEmpty';
+import { checkSendPermission } from '../send-middleware';
 
 export const getRepositoryFromCtx = (ctx: Context, name = 'customRequest') => {
   return ctx.db.getCollection(name).repository;
@@ -38,6 +40,12 @@ export const customRequestActions = {
         },
       });
     } else {
+      const sameNameRecord = await repo.findOne({
+        filter: { name: options.name },
+      });
+      if (sameNameRecord) {
+        ctx.throw(400, ctx.t('unique violation', { field: ctx.t('Request name'), ns: 'error-handler' }));
+      }
       await repo.create({
         values: {
           key,
@@ -72,29 +80,33 @@ export const customRequestActions = {
     });
 
     if (!record) {
-      ctx.throw(404);
+      ctx.throw(404, ctx.t('request config not exists', { ns: NAME_SPACE }));
     }
 
     const { data, method, headers, params, url, timeout = 5000 } = record.options;
+    // url 非空校验
+    if (isEmpty(url)) {
+      ctx.throw(400, ctx.t('notNull violation', { ns: 'error-handler' }));
+    }
+
+    await checkSendPermission(ctx, next);
+
     const tempParams = {
       url,
       method,
-      headers: formatParamsIntoObject(headers),
+      headers: {
+        ...formatParamsIntoObject(headers),
+        'Content-Type': 'application/json; charset=UTF-8;',
+      },
       params: formatParamsIntoObject(params),
       data,
       timeout,
     };
     try {
       const res = await axios(tempParams);
-      ctx.body = res?.data;
-      return next();
+      ctx.body = res.data;
     } catch (e) {
-      ctx.status = 500;
-      ctx.body = {
-        message: e?.message,
-        code: e?.code,
-      };
-      return next();
+      ctx.throw(500, e?.message);
     }
   },
 };

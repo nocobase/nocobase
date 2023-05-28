@@ -63,7 +63,7 @@ export const ActionDesigner = (props) => {
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
-  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const targetSchema = findTableOrFormBlockProviderByActionFieldSchema(fieldSchema);
   const defaultCustomRequestName = targetSchema?.['x-component-props']?.title || targetSchema?.['x-uid'] || '';
   const [customRequestSettings, setCustomRequestSettings] = useState({

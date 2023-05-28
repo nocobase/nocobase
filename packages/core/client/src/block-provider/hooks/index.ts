@@ -622,7 +622,16 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const uid = actionSchema['x-uid'];
-
+  const redirectCallback = () => {
+    const { onSuccess } = actionSchema?.['x-action-settings'] ?? {};
+    if (onSuccess?.redirecting && onSuccess?.redirectTo) {
+      if (isURL(onSuccess.redirectTo)) {
+        window.location.href = onSuccess.redirectTo;
+      } else {
+        history.push(onSuccess.redirectTo);
+      }
+    }
+  };
   return {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
@@ -653,17 +662,12 @@ export const useCustomizeRequestActionProps = () => {
           Modal.success({
             title: compile(onSuccess?.successMessage),
             onOk: async () => {
-              if (onSuccess?.redirecting && onSuccess?.redirectTo) {
-                if (isURL(onSuccess.redirectTo)) {
-                  window.location.href = onSuccess.redirectTo;
-                } else {
-                  history.push(onSuccess.redirectTo);
-                }
-              }
+              redirectCallback();
             },
           });
         } else {
-          message.success(compile(onSuccess?.successMessage));
+          message.success(compile(onSuccess?.successMessage), 1);
+          setTimeout(redirectCallback, 1000);
         }
       } finally {
         actionField.data.loading = false;

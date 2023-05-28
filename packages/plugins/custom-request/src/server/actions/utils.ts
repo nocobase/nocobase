@@ -4,3 +4,5 @@ export const formatParamsIntoObject = (object: { key: string; value: string }[])
     return prev;
   }, {});
 };
+
+export const NAME_SPACE = 'custom-request';

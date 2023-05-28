@@ -724,5 +724,6 @@ export default {
   'Input request data': 'Input request data',
   'Request name':'Request name',
   "The current role has no request permission":"The current role has no request permission",
+  'request config not exists': "request config not exists",
   "Data template": "Data template",
 };
