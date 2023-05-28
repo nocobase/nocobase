@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { css, cx } from '@emotion/css';
 import { ContainerDesigner } from './Container.Designer';
-import { RouteSwitch, SchemaComponent, SortableItem, useCompile, useDesigner } from '@nocobase/client';
-import { Schema, useFieldSchema } from '@formily/react';
-import { RouteProps, useParams, useRouteMatch } from 'react-router-dom';
+import { RouteSwitch, SchemaComponent, SortableItem, useDesigner } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { Redirect, RouteProps, useParams, useRouteMatch } from 'react-router-dom';
 
 const findGrid = (schema, uid) => {
   return schema.reduceProperties((final, next) => {
@@ -22,6 +22,9 @@ const TabContentComponent = () => {
   const fieldSchema = useFieldSchema();
   if (!name) return <></>;
   const gridSchema = findGrid(fieldSchema.properties['tabBar'], name.replace('tab_', ''));
+  if (!gridSchema) {
+    return <Redirect to="../" />;
+  }
   return <SchemaComponent schema={gridSchema} />;
 };
 
