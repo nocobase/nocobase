@@ -68,6 +68,13 @@ export const MBlockInitializers = {
           title: '{{t("Markdown")}}',
           component: 'MarkdownBlockInitializer',
         },
+        {
+          key: 'setting',
+          type: 'item',
+          title: generateNTemplate('Setting'),
+          component: 'MSettingBlockInitializer',
+          sort: 100,
+        },
       ],
     },
   ],

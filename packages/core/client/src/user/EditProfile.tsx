@@ -4,7 +4,7 @@ import { Menu } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  ActionContext,
+  ActionContextProvider,
   DropdownVisibleContext,
   SchemaComponent,
   useActionContext,
@@ -119,18 +119,18 @@ export const EditProfile = () => {
   const { t } = useTranslation();
   const ctx = useContext(DropdownVisibleContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Menu.Item
         key="profile"
         eventKey={'EditProfile'}
         onClick={() => {
           setVisible(true);
-          ctx.setVisible(false);
+          ctx?.setVisible(false);
         }}
       >
         {t('Edit profile')}
       </Menu.Item>
       <SchemaComponent scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }} schema={schema} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
