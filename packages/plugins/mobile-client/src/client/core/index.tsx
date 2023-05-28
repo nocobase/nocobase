@@ -14,6 +14,7 @@ import {
   useGridCardBlockItemProps,
   useGridCardBlockProps,
 } from './schema';
+import './bridge';
 
 export const MobileCore: React.FC = (props) => {
   return (
