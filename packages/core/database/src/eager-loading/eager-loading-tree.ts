@@ -163,6 +163,16 @@ export class EagerLoadingTree {
             sourceKey: association.targetKey,
           });
 
+          const targetModel = association.target;
+          const order = [];
+
+          if (
+            targetModel.primaryKeyAttribute &&
+            targetModel.rawAttributes[targetModel.primaryKeyAttribute].autoIncrement
+          ) {
+            order.push([targetModel.primaryKeyAttribute, 'ASC']);
+          }
+
           instances = await node.model.findAll({
             transaction,
             attributes: node.attributes,
@@ -174,6 +184,7 @@ export class EagerLoadingTree {
                 },
               },
             ],
+            order,
           });
         }
       }
