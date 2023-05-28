@@ -58,8 +58,6 @@ describe('Eager loading tree', () => {
       fields: [{ type: 'string', name: 'name' }],
     });
 
-    await db.sync();
-
     const Source = db.collection({
       name: 'source',
       fields: [
@@ -82,7 +80,9 @@ describe('Eager loading tree', () => {
       fields: [{ type: 'integer', name: 'seq_number' }],
     });
 
-    await db.sync();
+    await db.sync({
+      force: true,
+    });
 
     const targets = await Target.repository.create({
       values: [
