@@ -86,6 +86,7 @@ describe('hook', () => {
     const auditLogs = await db.getCollection('auditLogs').repository.find({
       appends: ['changes'],
     });
+
     expect(auditLogs.length).toBe(3);
 
     const titleChange = (changes) => {
