@@ -6,7 +6,7 @@ import { Designable } from './hooks';
 export interface ISchemaComponentContext {
   scope?: any;
   components?: SchemaReactComponents;
-  refresh?: (designable?: Designable) => void;
+  refresh?: () => void;
   reset?: () => void;
   designable?: boolean;
   setDesignable?: (value: boolean) => void;

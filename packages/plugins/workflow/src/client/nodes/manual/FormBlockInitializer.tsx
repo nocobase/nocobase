@@ -1,11 +1,20 @@
 import React from 'react';
 
-import { SchemaInitializer, createFormBlockSchema } from '@nocobase/client';
+import {
+  CollectionProvider,
+  SchemaInitializer,
+  createFormBlockSchema,
+  useRecordCollectionDataSourceItems,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
 import { JOB_STATUS } from '../../constants';
 import { NAMESPACE } from '../../locale';
 
-export function FormBlockInitializer({ insert, schema, ...others }) {
-  function onConfirm() {
+function InternalFormBlockInitializer({ insert, schema, ...others }) {
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
+  const items = useRecordCollectionDataSourceItems('FormItem').filter((item) => item.name !== 'ref');
+  async function onConfirm({ item }) {
+    const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = createFormBlockSchema({
       actionInitializers: 'AddActionButton',
       actions: {
@@ -26,6 +35,7 @@ export function FormBlockInitializer({ insert, schema, ...others }) {
         },
       },
       ...schema,
+      template,
     });
     delete result['x-acl-action-props'];
     delete result['x-acl-action'];
@@ -34,5 +44,13 @@ export function FormBlockInitializer({ insert, schema, ...others }) {
     insert(result);
   }
 
-  return <SchemaInitializer.Item {...others} onClick={onConfirm} />;
+  return <SchemaInitializer.Item {...others} onClick={onConfirm} items={items} />;
+}
+
+export function FormBlockInitializer(props) {
+  return (
+    <CollectionProvider collection={props.schema?.collection}>
+      <InternalFormBlockInitializer {...props} />
+    </CollectionProvider>
+  );
 }

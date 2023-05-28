@@ -1,12 +1,13 @@
 import React, { useRef, useMemo } from 'react';
 import { createForm } from '@formily/core';
-import { useFieldSchema, useField } from '@formily/react';
+import { useFieldSchema, useField, RecursionField } from '@formily/react';
 import {
   CollectionProvider,
   FormBlockContext,
   FormV2,
   RecordProvider,
   useAssociationNames,
+  useDesignable,
   useRecord,
 } from '@nocobase/client';
 
@@ -18,6 +19,9 @@ export function FormBlockProvider(props) {
   const { appends, updateAssociationValues } = useAssociationNames(props.collection);
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
+
+  const { findComponent } = useDesignable();
+  const Component = findComponent(field.component?.[0]) || React.Fragment;
 
   const form = useMemo(
     () =>
@@ -51,10 +55,12 @@ export function FormBlockProvider(props) {
             formBlockRef,
           }}
         >
-          <div ref={formBlockRef}>
+          <Component {...field.componentProps}>
             <FormV2.Templates style={{ marginBottom: 18 }} form={form} />
-            {props.children}
-          </div>
+            <div ref={formBlockRef}>
+              <RecursionField schema={fieldSchema} onlyRenderProperties />
+            </div>
+          </Component>
         </FormBlockContext.Provider>
       </RecordProvider>
     </CollectionProvider>

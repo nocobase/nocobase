@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 
 import { useForm, ISchema, Schema, useFieldSchema } from '@formily/react';
 import { get } from 'lodash';
@@ -269,55 +269,59 @@ export function SchemaConfig({ value, onChange }) {
     Object.assign(nodeComponents, instruction.components);
   });
 
-  const schema = new Schema({
-    properties: {
-      drawer: {
-        type: 'void',
-        title: '{{t("Configure form")}}',
-        'x-decorator': 'Form',
-        'x-component': 'Action.Drawer',
-        'x-component-props': {
-          className: 'nb-action-popup',
-        },
+  const schema = useMemo(
+    () =>
+      new Schema({
         properties: {
-          tabs: {
+          drawer: {
             type: 'void',
-            'x-component': 'Tabs',
-            'x-component-props': {},
-            'x-initializer': 'TabPaneInitializers',
-            'x-initializer-props': {
-              gridInitializer: 'AddBlockButton',
+            title: '{{t("Configure form")}}',
+            'x-decorator': 'Form',
+            'x-component': 'Action.Drawer',
+            'x-component-props': {
+              className: 'nb-action-popup',
             },
-            properties: value ?? {
-              tab1: {
+            properties: {
+              tabs: {
                 type: 'void',
-                title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
-                'x-component': 'Tabs.TabPane',
-                'x-designer': 'Tabs.Designer',
-                properties: {
-                  grid: {
+                'x-component': 'Tabs',
+                'x-component-props': {},
+                'x-initializer': 'TabPaneInitializers',
+                'x-initializer-props': {
+                  gridInitializer: 'AddBlockButton',
+                },
+                properties: value ?? {
+                  tab1: {
                     type: 'void',
-                    'x-component': 'Grid',
-                    'x-initializer': 'AddBlockButton',
-                    properties: {},
+                    title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
+                    'x-component': 'Tabs.TabPane',
+                    'x-designer': 'Tabs.Designer',
+                    properties: {
+                      grid: {
+                        type: 'void',
+                        'x-component': 'Grid',
+                        'x-initializer': 'AddBlockButton',
+                        properties: {},
+                      },
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    },
-  });
+      }),
+    [],
+  );
 
   return (
     <SchemaComponentContext.Provider
       value={{
         ...ctx,
         designable: !workflow.executed,
-        refresh(designable) {
-          ctx.refresh?.(designable);
-          const { tabs } = get(designable.current.root.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
+        refresh() {
+          ctx.refresh?.();
+          const { tabs } = get(schema.toJSON(), 'properties.drawer.properties') as { tabs: ISchema };
           const forms = Array.from(manualFormTypes.getValues()).reduce(
             (result, item) => Object.assign(result, item.config.parseFormOptions(tabs)),
             {},

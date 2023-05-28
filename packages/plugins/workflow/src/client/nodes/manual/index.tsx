@@ -125,20 +125,22 @@ export default {
       return null;
     }
 
-    const forms = formKeys.map(formKey => {
-      const form = node.config.forms[formKey];
-      const { fields = [] } = getCollection(form.collection);
+    const forms = formKeys
+      .map((formKey) => {
+        const form = node.config.forms[formKey];
+        const { fields = [] } = getCollection(form.collection);
 
-      return fields.length
-        ? {
-          type: 'item',
-          title: form.title ?? formKey,
-          component: CollectionBlockInitializer,
-          collection: form.collection,
-          dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`
-        } as SchemaInitializerItemOptions
-        : null;
-    }).filter(Boolean);
+        return fields.length
+          ? ({
+              type: 'item',
+              title: form.title ?? formKey,
+              component: CollectionBlockInitializer,
+              collection: form.collection,
+              dataSource: `{{$jobsMapByNodeId.${node.id}.${formKey}}}`,
+            } as SchemaInitializerItemOptions)
+          : null;
+      })
+      .filter(Boolean);
 
     return forms.length
       ? {

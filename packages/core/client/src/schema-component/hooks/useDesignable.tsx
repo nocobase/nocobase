@@ -12,7 +12,7 @@ import { SchemaComponentContext } from '../context';
 interface CreateDesignableProps {
   current: Schema;
   api?: APIClient;
-  refresh?: (designable?: Designable) => void;
+  refresh?: () => void;
   onSuccess?: any;
   i18n?: any;
   t?: any;
@@ -266,7 +266,7 @@ export class Designable {
 
   refresh() {
     const { refresh } = this.options;
-    return refresh?.(this);
+    return refresh?.();
   }
 
   insertAdjacent(position: Position, schema: ISchema, options: InsertAdjacentOptions = {}) {

@@ -494,6 +494,7 @@ function useFormBlockProps() {
   const { userJob } = useFlowContext();
   const record = useRecord();
   const { data: user } = useCurrentUserContext();
+  const { form } = useFormBlockContext();
 
   const pattern = userJob.status
     ? record
@@ -503,8 +504,9 @@ function useFormBlockProps() {
     ? 'disabled'
     : 'editable';
 
-  const { form } = useFormBlockContext();
-  form.setPattern(pattern);
+  useEffect(() => {
+    form.setPattern(pattern);
+  }, [pattern, form]);
 
   return { form };
 }
