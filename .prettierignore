@@ -10,6 +10,6 @@ packages/**/lib/**
 packages/**/esm/**
 packages/**/node_modules/**
 packages/core/client/src/locale/*
-.dumi/tmp
-.dumi/tmp-test
-.dumi/tmp-production
+**/.dumi/tmp
+**/.dumi/tmp-test
+**/.dumi/tmp-production

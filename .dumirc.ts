@@ -28,8 +28,8 @@ export default defineConfig({
     docDirs: [`./docs/${lang}`]
   },
   locales: [
-    { id: 'zh-CN', name: '中文' },
     { id: 'en-US', name: 'English' },
+    { id: 'zh-CN', name: '中文' },
   ],
   themeConfig: {
     title: 'NocoBase',
@@ -42,34 +42,5 @@ export default defineConfig({
       { id: 'zh-CN', switchPrefix: '中' },
       { id: 'en-US', switchPrefix: 'en' }
     ],
-  },
-  scripts: [`
-    function changeLanguage(language) {
-      const ele = document.querySelector('.btn-inner');
-      if (ele) {
-        ele.parentElement.addEventListener('click', function (e) {
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          e.preventDefault();
-          if (window.location.host.indexOf('localhost') > -1) {
-            alert('本地开发，请使用 yarn doc --lang=xxx 切换')
-            return;
-          }
-          if (window.location.host.indexOf('docs-cn') > -1) {
-            // 跳转到英文网站
-            window.location.href = window.location.href.replace('docs-cn', 'docs');
-          } else {
-            // 跳转到中文网站
-            window.location.href = window.location.href.replace('docs', 'docs-cn');
-          }
-        })
-      } else {
-        setTimeout(() => {
-          changeLanguage();
-        }, 1000);
-      }
-    }
-
-    changeLanguage()
-  `]
+  }
 });

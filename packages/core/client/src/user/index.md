@@ -1,9 +1,7 @@
 ---
-nav:
-  path: /client
 group:
   title: Client
-  path: /client
+  order: 1
 ---
 
 # User

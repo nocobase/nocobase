@@ -34,7 +34,7 @@ export default app.compose();
  * title: Router
  */
 import React from 'react';
-import { Route, Switch, Link, MemoryRouter as Router } from 'react-router-dom';
+import { Route, Routes, Link, MemoryRouter as Router } from 'react-router-dom';
 
 const Home = () => <h1>Home</h1>;
 const About = () => <h1>About</h1>;
@@ -42,10 +42,10 @@ const About = () => <h1>About</h1>;
 const App = () => (
   <Router initialEntries={['/']}>
     <Link to={'/'}>Home</Link>, <Link to={'/about'}>About</Link>
-    <Switch>
+    <Routes>
       <Route path="/" element={<Home />}></Route>
       <Route path="/about" element={<About />}></Route>
-    </Switch>
+    </Routes>
   </Router>
 );
 
@@ -636,7 +636,7 @@ dn.insertAfterEnd(schema);
 
 相关例子如下：
 
-<code src="./src/schema-component/demos/demo1.tsx" />
+<code id='intro-demo1' src="../src/schema-component/demos/demo1.tsx"></code>
 
 insertAdjacent 操作不仅可以用于新增节点，也可以用于现有节点的位置移动，如以下拖拽排序的例子：
 
@@ -809,7 +809,7 @@ const { data, loading } = useRequest();
 
 但是这样的方式不利于 Providers 的管理和扩展，为此提炼了 `compose()` 函数用于配置多个 providers，如下：
 
-<code defaultShowCode="true" titile="compose" src="./src/application/demos/demo1/index.tsx"/>
+<code id='intro-demo2' defaultShowCode="true" titile="compose" src="../src/application/demos/demo1/index.tsx"></code>
 
 ## Application
 

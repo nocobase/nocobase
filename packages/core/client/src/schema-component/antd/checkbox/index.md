@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # Checkbox
@@ -11,8 +10,8 @@ group:
 
 ### 勾选
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 ### 组
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>

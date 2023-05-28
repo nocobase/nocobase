@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # PluginManager
@@ -13,7 +12,7 @@ group:
 
 插件管理器的工具栏，用于便捷的展示所有插件，不常用的可折叠显示。
 
-<code src="./demos/demo1.tsx"/>
+<code src="./demos/demo1.tsx"></code>
 
 ## PluginManager.Toolbar.Item
 

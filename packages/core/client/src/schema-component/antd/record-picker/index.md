@@ -1,11 +1,10 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
-# RecordPicker - 记录选择器 <Badge>待定</Badge>
+# RecordPicker <Badge>待定</Badge>
 
 ## JSON Schema
 
@@ -79,4 +78,4 @@ group:
 
 ## Examples
 
-<code src="./demos/demo1.tsx"/>
+<code src="./demos/demo1.tsx"></code>

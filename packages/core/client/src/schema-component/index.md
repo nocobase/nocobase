@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # SchemaComponent
@@ -121,7 +120,7 @@ insertAdjacent('afterEnd', schema);
 
 ## 扩展的 Formily Schema 属性
 
-- `x-uid` 可缺失，前端无感。主要用于插件 `plugin-ui-schema-storage`，用于后端 schema 的增删改查  
+- `x-uid` 可缺失，前端无感。主要用于插件 `plugin-ui-schema-storage`，用于后端 schema 的增删改查
 - `x-designer` schema 设计器
 - `x-initializer` schema 初始化器
 - `x-collection-field` 用来标记 [CollectionField](collection-manager#collectionfield)
@@ -130,4 +129,4 @@ insertAdjacent('afterEnd', schema);
 
 ## Examples
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
