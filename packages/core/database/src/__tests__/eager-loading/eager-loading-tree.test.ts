@@ -15,6 +15,55 @@ describe('Eager loading tree', () => {
     await db.close();
   });
 
+  it('should handle eager loading with long field', async () => {
+    const Through = db.collection({
+      name: 'abc_abcd_abcd_abcdefg_abc_abc_a_abcdefghijk',
+    });
+
+    const A = db.collection({
+      name: 'a',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'bs',
+          target: 'b',
+          through: 'abc_abcd_abcd_abcdefg_abc_abc_a_abcdefghijk',
+          foreignKey: 'abc_abcd_abcdefg_abcd_abc',
+          sourceKey: 'id',
+          otherKey: 'b_id',
+          targetKey: 'id',
+        },
+      ],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    await A.repository.create({
+      values: {
+        name: 'a1',
+        bs: [{ name: 'b1' }, { name: 'b2' }],
+      },
+    });
+
+    const a = await A.repository.findOne({
+      appends: ['bs'],
+    });
+
+    expect(a.get('bs')).toHaveLength(2);
+    const data = a.toJSON();
+
+    // @ts-ignore
+    const as = A.model.associations.bs.oneFromTarget.as;
+
+    expect(data['bs'][0][as]).toBeDefined();
+  });
+
   it('should handle fields filter', async () => {
     const User = db.collection({
       name: 'users',

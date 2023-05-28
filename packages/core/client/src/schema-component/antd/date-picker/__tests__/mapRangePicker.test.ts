@@ -7,7 +7,7 @@ describe('mapRangePicker', () => {
       showTime: false,
       gmt: true,
       utc: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
     const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
@@ -20,7 +20,7 @@ describe('mapRangePicker', () => {
       showTime: true,
       gmt: true,
       utc: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
     const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
@@ -33,7 +33,7 @@ describe('mapRangePicker', () => {
       showTime: false,
       gmt: true,
       utc: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
     const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
