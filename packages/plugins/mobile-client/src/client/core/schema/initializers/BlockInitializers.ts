@@ -69,10 +69,10 @@ export const MBlockInitializers = {
           component: 'MarkdownBlockInitializer',
         },
         {
-          key: 'setting',
+          key: 'settings',
           type: 'item',
-          title: generateNTemplate('Setting'),
-          component: 'MSettingBlockInitializer',
+          title: generateNTemplate('Settings'),
+          component: 'MSettingsBlockInitializer',
           sort: 100,
         },
       ],

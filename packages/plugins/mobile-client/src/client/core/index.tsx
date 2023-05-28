@@ -9,8 +9,8 @@ import {
   MTabBar,
   MPage,
   MHeader,
-  MSettingBlockInitializer,
-  MSetting,
+  MSettingsBlockInitializer,
+  MSettings,
   useGridCardBlockItemProps,
   useGridCardBlockProps,
 } from './schema';
@@ -25,14 +25,14 @@ export const MobileCore: React.FC = (props) => {
       <SchemaComponentOptions
         components={{
           MMenuBlockInitializer,
-          MSettingBlockInitializer,
+          MSettingsBlockInitializer,
           MContainer,
           MGrid,
           MMenu,
           MTabBar,
           MPage,
           MHeader,
-          MSetting,
+          MSettings,
         }}
         scope={{
           useGridCardBlockItemProps,

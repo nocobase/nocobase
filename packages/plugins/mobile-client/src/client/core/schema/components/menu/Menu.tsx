@@ -1,19 +1,16 @@
-import React, { useContext, useMemo } from 'react';
+import React from 'react';
 import { MenuItem } from './Menu.Item';
 import {
   DndContext,
   SchemaComponent,
-  SchemaComponentOptions,
   SchemaInitializer,
   SortableItem,
   useDesignable,
   useDesigner,
-  useSchemaTemplateManager,
 } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
-import { FormDialog, FormLayout } from '@formily/antd';
 import { MenuDesigner } from './Menu.Designer';
-import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { useFieldSchema } from '@formily/react';
 import { List } from 'antd-mobile';
 import { useTranslation } from '../../../../locale';
 import { menuItemSchema } from './schema';

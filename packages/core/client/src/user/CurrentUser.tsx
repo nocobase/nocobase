@@ -23,7 +23,7 @@ const ApplicationVersion = () => {
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
  */
-export const SettingMenu: React.FC = () => {
+export const SettingsMenu: React.FC = () => {
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
   const history = useHistory();
@@ -126,7 +126,7 @@ export const CurrentUser = () => {
           onOpenChange={(visible) => {
             setVisible(visible);
           }}
-          overlay={<SettingMenu />}
+          overlay={<SettingsMenu />}
         >
           <span
             className={css`

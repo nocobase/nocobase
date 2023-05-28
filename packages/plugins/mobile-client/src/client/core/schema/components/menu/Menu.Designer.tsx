@@ -35,7 +35,7 @@ export const MenuDesigner: React.FC = (props) => {
         key="remove"
         removeParentsIfNoChildren
         confirm={{
-          title: t('Delete menu?'),
+          title: t('Delete menu block'),
         }}
         breakRemoveOn={{
           'x-component': 'Grid',

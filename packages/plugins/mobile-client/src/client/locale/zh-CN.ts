@@ -23,6 +23,9 @@ const locale = {
   'App level Configuration': '应用级别配置',
   'Menu configuration': '菜单配置',
   'Page configuration': '页面配置',
+  Settings: '设置',
+  'Delete settings block': '删除设置区块',
+  'Delete menu block': '删除菜单区块',
 };
 
 export default locale;
