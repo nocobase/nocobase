@@ -2,6 +2,10 @@
   "name": "@nocobase/plugin-mobile-client",
   "version": "0.9.4-alpha.1",
   "main": "lib/server/index.js",
+  "displayName": "Mobile-client",
+  "displayName.zh-CN": "移动端",
+  "description": "Provide mobile client access",
+  "description.zh-CN": "提供移动端访问",
   "devDependencies": {
     "@emotion/css": "^11.7.1",
     "@formily/react": "2.0.20",
