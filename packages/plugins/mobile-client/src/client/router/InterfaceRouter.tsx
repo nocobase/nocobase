@@ -3,7 +3,9 @@ import React, { useEffect, useMemo } from 'react';
 import { HashRouter } from 'react-router-dom';
 import { InterfaceProvider } from './InterfaceProvider';
 
-interface InterfaceRouterProps {}
+interface InterfaceRouterProps {
+  [key: string]: any;
+}
 export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
   const allRoutes = useRoutes();
   const routes = useMemo(
