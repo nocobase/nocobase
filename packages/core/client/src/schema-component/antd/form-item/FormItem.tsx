@@ -72,7 +72,7 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
-  const { showTitle = true } = props;
+  const showTitle = schema['x-decorator-props']?.showTitle ?? true;
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>

@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-export",
+  "displayName": "export",
+  "displayName.zh-CN": "导出",
+  "description": "export data",
+  "description.zh-CN": "导出数据。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
