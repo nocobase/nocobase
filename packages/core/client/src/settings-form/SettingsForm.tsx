@@ -56,8 +56,8 @@ export const SettingsForm: any = observer((props: any) => {
           <FormContext.Provider value={form}>
             <FieldContext.Provider value={f}>
               <Dropdown
-                visible={dropdownVisible}
-                onVisibleChange={(visible) => setDropdownVisible(visible)}
+                open={dropdownVisible}
+                onOpenChange={(visible) => setDropdownVisible(visible)}
                 overlayStyle={{ width: 200 }}
                 overlay={
                   <Menu>

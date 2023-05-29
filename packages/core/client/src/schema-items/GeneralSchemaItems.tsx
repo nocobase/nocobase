@@ -1,9 +1,8 @@
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema,observer } from '@formily/react';
-import _ from 'lodash';
-import { useTranslation } from 'react-i18next';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import { useTranslation } from 'react-i18next';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { SchemaSettings } from '../schema-settings';
 

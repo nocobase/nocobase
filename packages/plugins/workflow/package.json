@@ -1,19 +1,19 @@
 {
   "name": "@nocobase/plugin-workflow",
-  "version": "0.9.3-alpha.1",
+  "version": "0.9.4-alpha.2",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "0.9.3-alpha.1",
-    "@nocobase/client": "0.9.3-alpha.1",
-    "@nocobase/database": "0.9.3-alpha.1",
-    "@nocobase/evaluators": "0.9.3-alpha.1",
-    "@nocobase/logger": "0.9.3-alpha.1",
-    "@nocobase/resourcer": "0.9.3-alpha.1",
-    "@nocobase/server": "0.9.3-alpha.1",
-    "@nocobase/utils": "0.9.3-alpha.1",
+    "@nocobase/actions": "0.9.4-alpha.2",
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/database": "0.9.4-alpha.2",
+    "@nocobase/evaluators": "0.9.4-alpha.2",
+    "@nocobase/logger": "0.9.4-alpha.2",
+    "@nocobase/resourcer": "0.9.4-alpha.2",
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/utils": "0.9.4-alpha.2",
     "antd": "^4.24.8",
     "axios": "^0.27.2",
     "classnames": "^2.3.1",
@@ -23,8 +23,8 @@
     "react-js-cron": "^3.1.0"
   },
   "devDependencies": {
-    "@nocobase/plugin-formula-field": "0.9.3-alpha.1",
-    "@nocobase/test": "0.9.3-alpha.1",
+    "@nocobase/plugin-formula-field": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2",
     "@types/ejs": "^3.1.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

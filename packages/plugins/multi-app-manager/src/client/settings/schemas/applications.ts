@@ -125,7 +125,12 @@ export const tableActionColumnSchema = {
             'options.standaloneDeployment': {
               'x-component': 'Checkbox',
               'x-decorator': 'FormItem',
-              'x-content': '{{t("Standalone deployment")}}',
+              'x-content': i18nText('Standalone deployment'),
+            },
+            'options.autoStart': {
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              'x-content': i18nText('Auto start'),
             },
             cname: {
               title: i18nText('Custom domain'),
@@ -260,7 +265,12 @@ export const schema: ISchema = {
                     'options.standaloneDeployment': {
                       'x-component': 'Checkbox',
                       'x-decorator': 'FormItem',
-                      'x-content': '{{t("Standalone deployment")}}',
+                      'x-content': i18nText('Standalone deployment'),
+                    },
+                    'options.autoStart': {
+                      'x-component': 'Checkbox',
+                      'x-decorator': 'FormItem',
+                      'x-content': i18nText('Auto start'),
                     },
                     cname: {
                       title: i18nText('Custom domain'),
