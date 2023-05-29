@@ -1,25 +1,41 @@
+import { CollectionFieldOptions } from '../../../../collection-manager';
 import { useFilterOptions } from '../../filter';
+
+interface Operator {
+  label: string;
+  value: string;
+}
 
 interface GetOptionsParams {
   schema: any;
-  operator: string;
+  operator: Operator;
   maxDepth: number;
   count?: number;
 }
 
-const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
+const isOperatorSupportMultiRelation = (operator: Operator) => {
+  if (!operator) return false;
+  return ['$eq', '$ne'].includes(operator.value);
+};
+
+const isSingleRelationField = (field: CollectionFieldOptions) => {
+  if (!field) return false;
+  return field.type === 'belongsTo' || field.type === 'hasOne';
+};
+
+export const useOptions = (collectionName: string, { schema, operator, maxDepth, count = 1 }: GetOptionsParams) => {
   if (count > maxDepth) {
     return [];
   }
 
   const result = useFilterOptions(collectionName).map((option) => {
-    if ((option.type !== 'belongsTo' && option.type !== 'hasOne') || !option.target) {
+    if (!option.target) {
       return {
         key: option.name,
         value: option.name,
         label: option.title,
         // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        disabled: schema?.['x-component'] !== option.schema['x-component'],
+        disabled: schema?.['x-component'] !== option.schema?.['x-component'],
       };
     }
 
@@ -36,7 +52,9 @@ const useOptions = (collectionName: string, { schema, operator, maxDepth, count 
       value: option.name,
       label: option.title,
       children,
-      disabled: children.every((child) => child.disabled),
+      disabled:
+        (!isSingleRelationField(option) && !isOperatorSupportMultiRelation(operator)) ||
+        children.every((child) => child.disabled),
     };
   });
 

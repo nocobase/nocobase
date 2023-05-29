@@ -2,14 +2,166 @@ import { Field } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import flat from 'flat';
 import { useTranslation } from 'react-i18next';
+import { useCompile } from '../..';
 import { useBlockRequestContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 
+export const useGetFilterOptions = () => {
+  const { getCollectionFields } = useCollectionManager();
+  const compile = useCompile();
+  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection();
+  const getFilterFieldOptions = useGetFilterFieldOptions();
+
+  return (collectionName) => {
+    const fields = getCollectionFields(collectionName);
+    const options = getFilterFieldOptions(fields);
+    const childrenCollections = getChildrenCollections(collection.name);
+
+    if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
+      options.push({
+        name: 'tableoid',
+        type: 'string',
+        title: '{{t("Table OID(Inheritance)")}}',
+        schema: {
+          'x-component': 'Select',
+          enum: [{ value: collection.name, label: compile(collection.title) }].concat(
+            childrenCollections.map((v) => {
+              return {
+                value: v.name,
+                label: compile(v.title),
+              };
+            }),
+          ),
+        },
+        operators: [
+          {
+            label: '{{t("contains")}}',
+            value: '$childIn',
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': { mode: 'tags' },
+            },
+          },
+          {
+            label: '{{t("does not contain")}}',
+            value: '$childNotIn',
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': { mode: 'tags' },
+            },
+          },
+        ],
+      });
+    }
+    return options;
+  };
+};
+
 export const useFilterOptions = (collectionName: string) => {
   const { getCollectionFields } = useCollectionManager();
+  const compile = useCompile();
+  const { getChildrenCollections } = useCollectionManager();
+  const collection = useCollection();
   const fields = getCollectionFields(collectionName);
-  return useFilterFieldOptions(fields);
+  const options = useFilterFieldOptions(fields);
+
+  const childrenCollections = getChildrenCollections(collection.name);
+  if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
+    options.push({
+      name: 'tableoid',
+      type: 'string',
+      title: '{{t("Table OID(Inheritance)")}}',
+      schema: {
+        'x-component': 'Select',
+        enum: [{ value: collection.name, label: compile(collection.title) }].concat(
+          childrenCollections.map((v) => {
+            return {
+              value: v.name,
+              label: compile(v.title),
+            };
+          }),
+        ),
+      },
+      operators: [
+        {
+          label: '{{t("contains")}}',
+          value: '$childIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+        {
+          label: '{{t("does not contain")}}',
+          value: '$childNotIn',
+          schema: {
+            'x-component': 'Select',
+            'x-component-props': { mode: 'tags' },
+          },
+        },
+      ],
+    });
+  }
+  return options;
+};
+
+export const useGetFilterFieldOptions = () => {
+  const fieldSchema = useFieldSchema();
+  const nonfilterable = fieldSchema?.['x-component-props']?.nonfilterable || [];
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const field2option = (field, depth) => {
+    if (nonfilterable.length && depth === 1 && nonfilterable.includes(field.name)) {
+      return;
+    }
+    if (!field.interface) {
+      return;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface.filterable) {
+      return;
+    }
+    const { nested, children, operators } = fieldInterface.filterable;
+    const option = {
+      name: field.name,
+      type: field.type,
+      target: field.target,
+      title: field?.uiSchema?.title || field.name,
+      schema: field?.uiSchema,
+      operators:
+        operators?.filter?.((operator) => {
+          return !operator?.visible || operator.visible(field);
+        }) || [],
+    };
+    if (field.target && depth > 2) {
+      return;
+    }
+    if (depth > 2) {
+      return option;
+    }
+    if (children?.length) {
+      option['children'] = children;
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target);
+      const options = getOptions(targetFields, depth + 1).filter(Boolean);
+      option['children'] = option['children'] || [];
+      option['children'].push(...options);
+    }
+    return option;
+  };
+  const getOptions = (fields, depth) => {
+    const options = [];
+    fields.forEach((field) => {
+      const option = field2option(field, depth);
+      if (option) {
+        options.push(option);
+      }
+    });
+    return options;
+  };
+  return (fields) => getOptions(fields, 1);
 };
 
 export const useFilterFieldOptions = (fields) => {

@@ -4,12 +4,11 @@ import { cx, css } from '@emotion/css';
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
 
-
-
 export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
+  description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     method: {
       type: 'string',
@@ -28,19 +27,18 @@ export default {
         { label: 'PATCH', value: 'PATCH' },
         { label: 'DELETE', value: 'DELETE' },
       ],
-      default: 'POST'
+      default: 'POST',
     },
     url: {
       type: 'string',
       required: true,
       title: `{{t("URL", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-decorator-props': {
-      },
+      'x-decorator-props': {},
       'x-component': 'Input',
       'x-component-props': {
         placeholder: 'https://www.nocobase.com',
-        className: 'full-width'
+        className: 'full-width',
       },
     },
     headers: {
@@ -69,8 +67,9 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions
-                }
+                  scope: useWorkflowVariableOptions,
+                  useTypedConstant: true,
+                },
               },
               remove: {
                 type: 'void',
@@ -114,8 +113,9 @@ export default {
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.Input',
                 'x-component-props': {
-                  scope: useWorkflowVariableOptions
-                }
+                  scope: useWorkflowVariableOptions,
+                  useTypedConstant: true,
+                },
               },
               remove: {
                 type: 'void',
@@ -146,10 +146,13 @@ export default {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: cx('full-width', css`
-          font-size: 90%;
-          font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-        `)
+        className: cx(
+          'full-width',
+          css`
+            font-size: 90%;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          `,
+        ),
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },
@@ -171,7 +174,7 @@ export default {
       title: `{{t("Ignore fail request and continue workflow", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-    }
+    },
   },
   view: {},
   scope: {},

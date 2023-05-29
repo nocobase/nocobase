@@ -19,6 +19,8 @@ export const createMapBlockSchema = (options) => {
     },
     'x-designer': 'MapBlockDesigner',
     'x-component': 'CardItem',
+    // 保存当前筛选区块所能过滤的数据区块
+    'x-filter-targets': [],
     properties: {
       actions: {
         type: 'void',
@@ -75,6 +77,5 @@ export const createMapBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };

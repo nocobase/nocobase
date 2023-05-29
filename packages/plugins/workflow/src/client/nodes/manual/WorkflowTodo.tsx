@@ -1,19 +1,31 @@
-import React, { useContext, createContext, useMemo, useEffect, useState } from "react";
-import { createForm } from '@formily/core';
+import React, { useContext, createContext, useEffect, useState } from 'react';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
 import { Tag } from 'antd';
-import parse from 'json-templates';
-import { css } from "@emotion/css";
+import { css } from '@emotion/css';
 import moment from 'moment';
 
-import { CollectionManagerProvider, CollectionProvider, SchemaComponent, SchemaComponentContext, SchemaComponentOptions, TableBlockProvider, useActionContext, useAPIClient, useCollectionManager, useCurrentUserContext, useRecord, useRequest, useTableBlockContext } from "@nocobase/client";
-import { uid } from "@nocobase/utils/client";
+import {
+  CollectionManagerProvider,
+  SchemaComponent,
+  SchemaComponentContext,
+  SchemaComponentOptions,
+  TableBlockProvider,
+  useActionContext,
+  useAPIClient,
+  useCollectionManager,
+  useCurrentUserContext,
+  useRecord,
+  useRequest,
+  useTableBlockContext,
+} from '@nocobase/client';
+import { uid, parse } from '@nocobase/utils/client';
 
-import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from "../../constants";
-import { NAMESPACE } from "../../locale";
-import { FlowContext, useFlowContext } from "../../FlowContext";
+import { JobStatusOptions, JobStatusOptionsMap, JOB_STATUS } from '../../constants';
+import { NAMESPACE } from '../../locale';
+import { FlowContext, useFlowContext } from '../../FlowContext';
 import { instructions, useAvailableUpstreams } from '..';
-import { linkNodes } from "../../utils";
+import { linkNodes } from '../../utils';
+import customForm from './forms/customForm';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -36,12 +48,12 @@ const nodeCollection = {
             resource: 'flow_nodes',
             params: {
               filter: {
-                type: 'manual'
-              }
-            }
+                type: 'manual',
+              },
+            },
           },
-        }
-      }
+        },
+      },
     },
     {
       type: 'string',
@@ -50,10 +62,10 @@ const nodeCollection = {
       uiSchema: {
         type: 'string',
         title: '{{t("Title")}}',
-        'x-component': 'Input'
-      }
+        'x-component': 'Input',
+      },
     },
-  ]
+  ],
 };
 
 const workflowCollection = {
@@ -71,7 +83,7 @@ const workflowCollection = {
         required: true,
       },
     },
-  ]
+  ],
 };
 
 const todoCollection = {
@@ -94,10 +106,10 @@ const todoCollection = {
             value: 'id',
           },
           service: {
-            resource: 'users'
+            resource: 'users',
           },
-        }
-      }
+        },
+      },
     },
     {
       type: 'belongsTo',
@@ -116,10 +128,10 @@ const todoCollection = {
             value: 'id',
           },
           service: {
-            resource: 'flow_nodes'
+            resource: 'flow_nodes',
           },
-        }
-      }
+        },
+      },
     },
     {
       type: 'belongsTo',
@@ -137,10 +149,10 @@ const todoCollection = {
             value: 'id',
           },
           service: {
-            resource: 'workflows'
+            resource: 'workflows',
           },
-        }
-      }
+        },
+      },
     },
     {
       type: 'integer',
@@ -150,8 +162,8 @@ const todoCollection = {
         type: 'number',
         title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'Select',
-        enum: JobStatusOptions
-      }
+        enum: JobStatusOptions,
+      },
     },
     {
       name: 'createdAt',
@@ -167,8 +179,8 @@ const todoCollection = {
         'x-read-pretty': true,
       },
     },
-  ]
-}
+  ],
+};
 
 const NodeColumn = observer(() => {
   const field = useField<any>();
@@ -191,7 +203,7 @@ export function WorkflowTodo() {
       components={{
         NodeColumn,
         WorkflowColumn,
-        UserColumn
+        UserColumn,
       }}
       schema={{
         type: 'void',
@@ -314,92 +326,125 @@ export function WorkflowTodo() {
                     properties: {
                       drawer: {
                         'x-component': 'WorkflowTodo.Drawer',
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       }}
     />
-  )
+  );
+}
+
+function ActionBarProvider(props) {
+  // * status is done:
+  //   1. form is this form: show action button, and emphasis used status button
+  //   2. form is not this form: hide action bar
+  // * status is not done:
+  //   1. current user: show action bar
+  //   2. not current user: disabled action bar
+
+  const { data: user } = useCurrentUserContext();
+  const { status, result, userId } = useRecord();
+  const buttonSchema = useFieldSchema();
+  const { name } = buttonSchema.parent.toJSON();
+
+  let { children: content } = props;
+  if (status) {
+    if (!result[name]) {
+      content = null;
+    }
+  } else {
+    if (user?.data?.id !== userId) {
+      content = null;
+    }
+  }
+
+  return content;
 }
 
 const ManualActionStatusContext = createContext<number | null>(null);
 
-function useManualActionStatusContext() {
-  return useContext(ManualActionStatusContext);
-}
-
 function ManualActionStatusProvider({ value, children }) {
-  return (
-    <ManualActionStatusContext.Provider value={value}>
-      {children}
-    </ManualActionStatusContext.Provider>
-  )
+  const { status } = useRecord();
+  const button = useField();
+
+  useEffect(() => {
+    if (status) {
+      button.disabled = true;
+      button.visible = status === value;
+    }
+  }, [status, value]);
+
+  return <ManualActionStatusContext.Provider value={value}>{children}</ManualActionStatusContext.Provider>;
 }
 
 function useSubmit() {
   const api = useAPIClient();
   const { setVisible } = useActionContext();
   const { values, submit } = useForm();
-  const nextStatus = useManualActionStatusContext();
+  const buttonSchema = useFieldSchema();
+  const nextStatus = useContext(ManualActionStatusContext);
   const { service } = useTableBlockContext();
   const { id } = useRecord();
   return {
     async run() {
       await submit();
+      const { name } = buttonSchema.parent.parent.toJSON();
       await api.resource('users_jobs').submit({
         filterByTk: id,
         values: {
           status: nextStatus,
-          result: values
-        }
+          result: { [name]: values },
+        },
       });
       setVisible(false);
       service.refresh();
-    }
-  }
+    },
+  };
 }
 
 function useFlowRecordFromBlock(opts) {
   const { ['x-context-datasource']: dataSource } = useFieldSchema();
   const { execution } = useFlowContext();
-  let result = parse(dataSource)({
+  const result = parse(dataSource)({
     $context: execution?.context,
-    $jobsMapByNodeId: (execution?.jobs ?? []).reduce((map, job) => Object.assign(map, { [job.nodeId]: job.result }),{})
+    $jobsMapByNodeId: (execution?.jobs ?? []).reduce(
+      (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
+      {},
+    ),
   });
 
   return useRequest(() => {
-    return Promise.resolve({ data: result })
+    return Promise.resolve({ data: result });
   }, opts);
 }
 
 function FlowContextProvider(props) {
   const api = useAPIClient();
-  const { id, node, executionId } = useRecord();
+  const { id, node } = useRecord();
   const [flowContext, setFlowContext] = useState<any>(null);
 
   useEffect(() => {
-    if (!executionId) {
+    if (!id) {
       return;
     }
-    api.resource('users_jobs').get?.({
-      filterByTk: executionId,
-      appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
-    })
+    api
+      .resource('users_jobs')
+      .get?.({
+        filterByTk: id,
+        appends: ['workflow', 'workflow.nodes', 'execution', 'execution.jobs'],
+      })
       .then(({ data }) => {
-        const {
-          workflow: { nodes = [], ...workflow } = {},
-          execution
-        } = data?.data ?? {};
+        const { workflow: { nodes = [], ...workflow } = {}, execution } = data?.data ?? {};
         linkNodes(nodes);
         setFlowContext({
           workflow,
           nodes,
-          execution
+          execution,
         });
       });
   }, [id]);
@@ -408,105 +453,91 @@ function FlowContextProvider(props) {
     return null;
   }
 
-  const upstreams = useAvailableUpstreams(flowContext.nodes.find(item => item.id === node.id));
-  const nodeComponents = upstreams.reduce((components, { type }) => Object.assign(components, instructions.get(type).components), {});
+  const upstreams = useAvailableUpstreams(flowContext.nodes.find((item) => item.id === node.id));
+  const nodeComponents = upstreams.reduce(
+    (components, { type }) => Object.assign(components, instructions.get(type).components),
+    {},
+  );
 
   return (
     <FlowContext.Provider value={flowContext}>
-      <SchemaComponentOptions components={{ ...nodeComponents }}>
-        {props.children}
-      </SchemaComponentOptions>
+      <SchemaComponentOptions components={{ ...nodeComponents }}>{props.children}</SchemaComponentOptions>
     </FlowContext.Provider>
   );
 }
 
 WorkflowTodo.Drawer = function () {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status, result, updatedAt, userId } = useRecord();
-  const { data: user } = useCurrentUserContext();
+  const { id, node, workflow, status, updatedAt } = useRecord();
 
-  const disabled = Boolean(status) || user?.data?.id !== userId;
-  const form = useMemo(() => createForm({
-    readPretty: disabled,
-    disabled,
-    initialValues: result
-  }), [result]);
-
-  const { blocks, collection, actions } = node.config.schema ?? {};
-  const availableActions = Object.keys(actions).reduce((buttons, key) => ({ ...buttons, [key]: {
-    ...actions[key],
-    'x-disabled': disabled
-  } }), {});
+  const { schema } = node.config ?? {};
 
   const statusOption = JobStatusOptionsMap[status];
-  const actionSchema = status
+  const footerSchema = status
     ? {
-      date: {
-        type: 'void',
-        'x-component': 'time',
-        'x-component-props': {
-          className: css`
-            margin-right: .5em;
-          `
+        date: {
+          type: 'void',
+          'x-component': 'time',
+          'x-component-props': {
+            className: css`
+              margin-right: 0.5em;
+            `,
+          },
+          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
-        'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss')
-      },
-      status: {
-        type: 'void',
-        'x-component': 'Tag',
-        'x-component-props': {
-          icon: statusOption.icon,
-          color: statusOption.color
+        status: {
+          type: 'void',
+          'x-component': 'Tag',
+          'x-component-props': {
+            icon: statusOption.icon,
+            color: statusOption.color,
+          },
+          'x-content': statusOption.label,
         },
-        'x-content': statusOption.label
       }
-    }
-    : availableActions;
+    : null;
 
   return (
     <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
-      <CollectionProvider collection={collection}>
-        <SchemaComponent
-          components={{
-            Tag,
-            ManualActionStatusProvider,
-            FlowContextProvider
-          }}
-          schema={{
-            type: 'void',
-            name: `drawer-${id}-${status}`,
-            'x-decorator': 'Form',
-            'x-decorator-props': {
-              form,
+      <SchemaComponent
+        components={{
+          Tag,
+          ActionBarProvider,
+          ManualActionStatusProvider,
+          FlowContextProvider,
+          ...customForm.block.components,
+        }}
+        schema={{
+          type: 'void',
+          name: `drawer-${id}-${status}`,
+          'x-component': 'Action.Drawer',
+          'x-component-props': {
+            className: 'nb-action-popup',
+          },
+          title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
+          properties: {
+            tabs: {
+              type: 'void',
+              'x-decorator': 'FlowContextProvider',
+              'x-component': 'Tabs',
+              properties: schema,
             },
-            'x-component': 'Action.Drawer',
-            'x-component-props': {
-              className: 'nb-action-popup',
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
+              properties: footerSchema,
             },
-            title: `${workflow.title} - ${node.title ?? `#${node.id}`}`,
-            properties: {
-              tabs: {
-                type: 'void',
-                'x-decorator': 'FlowContextProvider',
-                'x-component': 'Tabs',
-                properties: blocks,
-              },
-              footer: {
-                type: 'void',
-                'x-component': 'Action.Drawer.Footer',
-                properties: actionSchema
-              }
-            }
-          }}
-          scope={{
-            useSubmit,
-            useFlowRecordFromBlock
-          }}
-        />
-      </CollectionProvider>
+          },
+        }}
+        scope={{
+          useSubmit,
+          useFlowRecordFromBlock,
+          ...customForm.block.scope,
+        }}
+      />
     </SchemaComponentContext.Provider>
-  )
-}
+  );
+};
 
 WorkflowTodo.Decorator = function ({ children }) {
   const { collections, ...cm } = useCollectionManager();
@@ -526,8 +557,11 @@ WorkflowTodo.Decorator = function ({ children }) {
   };
 
   return (
-    <CollectionManagerProvider {...cm} collections={[...collections, nodeCollection, workflowCollection, todoCollection]}>
+    <CollectionManagerProvider
+      {...cm}
+      collections={[...collections, nodeCollection, workflowCollection, todoCollection]}
+    >
       <TableBlockProvider {...blockProps}>{children}</TableBlockProvider>
     </CollectionManagerProvider>
   );
-}
+};

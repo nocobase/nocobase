@@ -44,14 +44,16 @@ export const ActionDesigner = (props) => {
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
+  const isAction = useLinkageAction();
   const isPopupAction = ['create', 'update', 'view', 'customize:popup'].includes(fieldSchema['x-action'] || '');
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
-  const isLinkageAction = linkageAction || useLinkageAction();
+  const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
-  const isSupportEditButton = fieldSchema['x-action'] !== 'expandAll';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
+  const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
+  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -72,7 +74,7 @@ export const ActionDesigner = (props) => {
     ),
   };
   return (
-    <GeneralSchemaDesigner {...restProps} disableInitializer>
+    <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
         <SchemaSettings.ModalItem
           title={t('Edit button')}
@@ -87,7 +89,6 @@ export const ActionDesigner = (props) => {
                   title: t('Button title'),
                   default: fieldSchema.title,
                   'x-component-props': {},
-                  'x-visible': isSupportEditButton,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 icon: {
@@ -96,7 +97,7 @@ export const ActionDesigner = (props) => {
                   title: t('Button icon'),
                   default: fieldSchema?.['x-component-props']?.icon,
                   'x-component-props': {},
-                  'x-visible': isSupportEditButton && !isLink,
+                  'x-visible': !isLink,
                   // description: `原字段标题：${collectionField?.uiSchema?.title}`,
                 },
                 type: {
@@ -330,16 +331,21 @@ export const ActionDesigner = (props) => {
         )}
 
         {isChildCollectionAction && <SchemaSettings.EnableChildCollections collectionName={name} />}
-        <SchemaSettings.Divider />
-        <SchemaSettings.Remove
-          removeParentsIfNoChildren
-          breakRemoveOn={(s) => {
-            return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
-          }}
-          confirm={{
-            title: t('Delete action'),
-          }}
-        />
+
+        {!isDelete && (
+          <>
+            <SchemaSettings.Divider />
+            <SchemaSettings.Remove
+              removeParentsIfNoChildren
+              breakRemoveOn={(s) => {
+                return s['x-component'] === 'Space' || s['x-component'].endsWith('ActionBar');
+              }}
+              confirm={{
+                title: t('Delete action'),
+              }}
+            />
+          </>
+        )}
       </MenuGroup>
     </GeneralSchemaDesigner>
   );

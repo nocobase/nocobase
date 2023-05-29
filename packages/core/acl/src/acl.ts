@@ -1,7 +1,6 @@
 import { Action } from '@nocobase/resourcer';
-import { assign, Toposort, ToposortOptions } from '@nocobase/utils';
+import { assign, parseFilter, Toposort, ToposortOptions } from '@nocobase/utils';
 import EventEmitter from 'events';
-import parse from 'json-templates';
 import compose from 'koa-compose';
 import lodash from 'lodash';
 import { ACLAvailableAction, AvailableActionOptions } from './acl-available-action';
@@ -46,20 +45,15 @@ interface CanArgs {
 }
 
 export class ACL extends EventEmitter {
-  protected availableActions = new Map<string, ACLAvailableAction>();
   public availableStrategy = new Map<string, ACLAvailableStrategy>();
-  protected fixedParamsManager = new FixedParamsManager();
-
-  protected middlewares: Toposort<any>;
-
   public allowManager = new AllowManager(this);
   public snippetManager = new SnippetManager();
-
   roles = new Map<string, ACLRole>();
-
   actionAlias = new Map<string, string>();
-
   configResources: string[] = [];
+  protected availableActions = new Map<string, ACLAvailableAction>();
+  protected fixedParamsManager = new FixedParamsManager();
+  protected middlewares: Toposort<any>;
 
   constructor() {
     super();
@@ -99,68 +93,6 @@ export class ACL extends EventEmitter {
     });
 
     this.addCoreMiddleware();
-  }
-
-  protected addCoreMiddleware() {
-    const acl = this;
-
-    const filterParams = (ctx, resourceName, params) => {
-      if (params?.filter?.createdById) {
-        const collection = ctx.db.getCollection(resourceName);
-        if (!collection || !collection.getField('createdById')) {
-          return lodash.omit(params, 'filter.createdById');
-        }
-      }
-
-      return params;
-    };
-
-    this.middlewares.add(
-      async (ctx, next) => {
-        const resourcerAction: Action = ctx.action;
-        const { resourceName, actionName } = ctx.action;
-
-        const permission = ctx.permission;
-
-        ctx.log?.info && ctx.log.info('ctx permission', permission);
-
-        if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
-          ctx.throw(403, 'No permissions');
-          return;
-        }
-
-        const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
-
-        ctx.log?.info && ctx.log.info('acl params', params);
-
-        if (params && resourcerAction.mergeParams) {
-          const filteredParams = filterParams(ctx, resourceName, params);
-          const parsedParams = acl.parseJsonTemplate(filteredParams, ctx);
-
-          ctx.permission.parsedParams = parsedParams;
-          ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
-          ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
-          resourcerAction.mergeParams(parsedParams, {
-            appends: (x, y) => {
-              if (!x) {
-                return [];
-              }
-              if (!y) {
-                return x;
-              }
-              return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
-            },
-          });
-          ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
-        }
-
-        await next();
-      },
-      {
-        tag: 'core',
-        group: 'core',
-      },
-    );
   }
 
   define(options: DefineOptions): ACLRole {
@@ -303,10 +235,6 @@ export class ACL extends EventEmitter {
     return null;
   }
 
-  protected isAvailableAction(actionName: string) {
-    return this.availableActions.has(this.resolveActionAlias(actionName));
-  }
-
   public resolveActionAlias(action: string) {
     return this.actionAlias.get(action) ? this.actionAlias.get(action) : action;
   }
@@ -332,12 +260,25 @@ export class ACL extends EventEmitter {
     }
   }
 
-  parseJsonTemplate(json: any, ctx: any) {
-    return parse(json)({
-      ctx: {
-        state: JSON.parse(JSON.stringify(ctx.state)),
-      },
-    });
+  async parseJsonTemplate(json: any, ctx: any) {
+    if (json.filter) {
+      ctx.logger?.info?.('parseJsonTemplate.raw', JSON.parse(JSON.stringify(json.filter)));
+      const timezone = ctx?.get?.('x-timezone');
+      const state = JSON.parse(JSON.stringify(ctx.state));
+      const filter = await parseFilter(json.filter, {
+        timezone,
+        now: new Date().toISOString(),
+        vars: {
+          ctx: {
+            state,
+          },
+          $user: async () => state.currentUser,
+        },
+      });
+      json.filter = filter;
+      ctx.logger?.info?.('parseJsonTemplate.parsed', filter);
+    }
+    return json;
   }
 
   middleware() {
@@ -348,7 +289,9 @@ export class ACL extends EventEmitter {
       const { resourceName, actionName } = ctx.action;
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        return acl.can({ role: roleName, ...options });
+        const canResult = acl.can({ role: roleName, ...options });
+
+        return canResult;
       };
 
       ctx.permission = {
@@ -364,7 +307,11 @@ export class ACL extends EventEmitter {
     const { resourceName, actionName } = ctx.action;
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      return this.can({ role: roleName, ...options });
+      const can = this.can({ role: roleName, ...options });
+      if (!can) {
+        return null;
+      }
+      return lodash.cloneDeep(can);
     };
 
     ctx.permission = {
@@ -380,5 +327,71 @@ export class ACL extends EventEmitter {
 
   registerSnippet(snippet: SnippetOptions) {
     this.snippetManager.register(snippet);
+  }
+
+  protected addCoreMiddleware() {
+    const acl = this;
+
+    const filterParams = (ctx, resourceName, params) => {
+      if (params?.filter?.createdById) {
+        const collection = ctx.db.getCollection(resourceName);
+        if (!collection || !collection.getField('createdById')) {
+          return lodash.omit(params, 'filter.createdById');
+        }
+      }
+
+      return params;
+    };
+
+    this.middlewares.add(
+      async (ctx, next) => {
+        const resourcerAction: Action = ctx.action;
+        const { resourceName, actionName } = ctx.action;
+
+        const permission = ctx.permission;
+
+        ctx.log?.info && ctx.log.info('ctx permission', permission);
+
+        if ((!permission.can || typeof permission.can !== 'object') && !permission.skip) {
+          ctx.throw(403, 'No permissions');
+          return;
+        }
+
+        const params = permission.can?.params || acl.fixedParamsManager.getParams(resourceName, actionName);
+
+        ctx.log?.info && ctx.log.info('acl params', params);
+
+        if (params && resourcerAction.mergeParams) {
+          const filteredParams = filterParams(ctx, resourceName, params);
+          const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
+
+          ctx.permission.parsedParams = parsedParams;
+          ctx.log?.info && ctx.log.info('acl parsedParams', parsedParams);
+          ctx.permission.rawParams = lodash.cloneDeep(resourcerAction.params);
+          resourcerAction.mergeParams(parsedParams, {
+            appends: (x, y) => {
+              if (!x) {
+                return [];
+              }
+              if (!y) {
+                return x;
+              }
+              return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+            },
+          });
+          ctx.permission.mergedParams = lodash.cloneDeep(resourcerAction.params);
+        }
+
+        await next();
+      },
+      {
+        tag: 'core',
+        group: 'core',
+      },
+    );
+  }
+
+  protected isAvailableAction(actionName: string) {
+    return this.availableActions.has(this.resolveActionAlias(actionName));
   }
 }

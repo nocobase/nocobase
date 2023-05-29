@@ -2,8 +2,6 @@ import { Context, utils } from '@nocobase/actions';
 import Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
 
-
-
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
   const { filterByTk, values } = context.action.params;
@@ -15,7 +13,7 @@ export async function submit(context: Context, next) {
 
   const plugin: Plugin = context.app.pm.get('workflow') as Plugin;
 
-  const userJob = await context.db.sequelize.transaction(async transaction => {
+  const userJob = await context.db.sequelize.transaction(async (transaction) => {
     const instance = await repository.findOne({
       filterByTk,
       // filter: {
@@ -23,21 +21,23 @@ export async function submit(context: Context, next) {
       // },
       appends: ['job', 'node', 'execution', 'workflow'],
       context,
-      transaction
+      transaction,
     });
 
     if (!instance) {
       return context.throw(404);
     }
 
-    const { actions = [] } = instance.node.config;
+    const { forms = {} } = instance.node.config;
+    const [form] = Object.keys(values.result ?? {});
 
     // NOTE: validate status
-    if (instance.status !== JOB_STATUS.PENDING
-      || instance.job.status !== JOB_STATUS.PENDING
-      || instance.execution.status !== EXECUTION_STATUS.STARTED
-      || !instance.workflow.enabled
-      || !actions.includes(values.status)
+    if (
+      instance.status !== JOB_STATUS.PENDING ||
+      instance.job.status !== JOB_STATUS.PENDING ||
+      instance.execution.status !== EXECUTION_STATUS.STARTED ||
+      !instance.workflow.enabled ||
+      !forms[form]?.actions?.includes(values.status)
     ) {
       return context.throw(400);
     }
@@ -47,23 +47,23 @@ export async function submit(context: Context, next) {
     await processor.prepare();
 
     const assignees = processor.getParsedValue(instance.node.config.assignees ?? []);
-    if (!assignees.includes(currentUser.id)
-      || instance.userId !== currentUser.id
-    ) {
+    if (!assignees.includes(currentUser.id) || instance.userId !== currentUser.id) {
       return context.throw(403);
     }
 
     // NOTE: validate assignee
-    await instance.update({
-      status: values.status,
-      result: values.result
-    }, {
-      transaction
-    });
+    await instance.update(
+      {
+        status: values.status,
+        result: values.result,
+      },
+      {
+        transaction,
+      },
+    );
 
     return instance;
   });
-
 
   // await transaction.commit();
 

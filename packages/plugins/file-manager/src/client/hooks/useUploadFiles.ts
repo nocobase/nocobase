@@ -1,5 +1,6 @@
-import { useBlockRequestContext } from '@nocobase/client';
+import { RecordPickerContext, useActionContext, useBlockRequestContext } from '@nocobase/client';
 import { notification } from 'antd';
+import { useContext } from 'react';
 import { useFmTranslation } from '../locale';
 
 // 限制上传文件大小为 10M
@@ -8,6 +9,8 @@ export const FILE_LIMIT_SIZE = 10 * 1024 * 1024;
 export const useUploadFiles = () => {
   const { service } = useBlockRequestContext();
   const { t } = useFmTranslation();
+  const { setVisible } = useActionContext();
+  const { setSelectedRows } = useContext(RecordPickerContext) || {};
   const uploadingFiles = {};
 
   let pendingNumber = 0;
@@ -32,13 +35,21 @@ export const useUploadFiles = () => {
           pendingNumber++;
           uploadingFiles[file.uid] = true;
         }
-        if (file.status === 'done' && uploadingFiles[file.uid]) {
+        if (file.status !== 'uploading' && uploadingFiles[file.uid]) {
           delete uploadingFiles[file.uid];
           if (--pendingNumber === 0) {
             service?.refresh?.();
+            setSelectedRows?.((preRows) => [
+              ...preRows,
+              ...fileList.filter((file) => file.status === 'done').map((file) => file.response.data),
+            ]);
           }
         }
       });
+
+      if (fileList.every((file) => file.status === 'done')) {
+        setVisible(false);
+      }
     },
   };
 };

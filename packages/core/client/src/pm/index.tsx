@@ -1,13 +1,12 @@
-import { DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Avatar, Card, Layout, Menu, message, Modal, PageHeader, Popconfirm, Result, Spin, Switch, Tabs } from 'antd';
+import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
 import { sortBy } from 'lodash';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { useAPIClient, useRequest } from '../api-client';
+import { useRequest } from '../api-client';
 import { CollectionManagerPane } from '../collection-manager';
 import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
@@ -15,152 +14,66 @@ import { RouteSwitchContext } from '../route-switch';
 import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
+import { BuiltInPluginCard, PluginCard } from './Card';
+
+export interface TData {
+  data: IPluginData[];
+  meta: IMetaData;
+}
+
+export interface IPluginData {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  displayName: string;
+  version: string;
+  enabled: boolean;
+  installed: boolean;
+  builtIn: boolean;
+  options: Record<string, unknown>;
+  description?: string;
+}
+
+export interface IMetaData {
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPage: number;
+  allowedActions: AllowedActions;
+}
+
+export interface AllowedActions {
+  view: number[];
+  update: number[];
+  destroy: number[];
+}
+
+// TODO: refactor card/built-int card
 
 export const SettingsCenterContext = createContext<any>({});
 
-const PluginCard = (props) => {
-  const history = useHistory<any>();
-  const { data = {} } = props;
-  const api = useAPIClient();
-  const { t } = useTranslation();
-  return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      actions={[
-        data.enabled ? (
-          <SettingOutlined
-            onClick={() => {
-              history.push(`/admin/settings/${data.name}`);
-            }}
-          />
-        ) : null,
-        <Popconfirm
-          title={t('Are you sure to delete this plugin?')}
-          onConfirm={async () => {
-            await api.request({
-              url: `pm:remove/${data.name}`,
-            });
-            message.success(t('插件删除成功'));
-            window.location.reload();
-          }}
-          onCancel={() => {}}
-          okText={t('Yes')}
-          cancelText={t('No')}
-        >
-          <DeleteOutlined />
-        </Popconfirm>,
-        <Switch
-          size={'small'}
-          onChange={async (checked) => {
-            Modal.warn({
-              title: checked ? t('Plugin staring') : t('Plugin stopping'),
-              content: t('The application is reloading, please do not close the page.'),
-              okButtonProps: {
-                style: {
-                  display: 'none',
-                },
-              },
-            });
-            await api.request({
-              url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
-            });
-            window.location.reload();
-            // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
-          }}
-          defaultChecked={data.enabled}
-        ></Switch>,
-      ].filter(Boolean)}
-    >
-      <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
-        avatar={<Avatar />}
-        description={data.description}
-        title={
-          <span>
-            {data.name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {data.version}
-            </span>
-          </span>
-        }
-      />
-    </Card>
-  );
-};
-
-const BuiltInPluginCard = (props) => {
-  const { data } = props;
-  return (
-    <Card
-      bordered={false}
-      style={{ width: 'calc(20% - 24px)', marginRight: 24, marginBottom: 24 }}
-      // actions={[<a>Settings</a>, <a>Remove</a>, <Switch size={'small'} defaultChecked={true}></Switch>]}
-    >
-      <Card.Meta
-        className={css`
-          .ant-card-meta-avatar {
-            margin-top: 8px;
-            .ant-avatar {
-              border-radius: 2px;
-            }
-          }
-        `}
-        avatar={<Avatar />}
-        description={data.description}
-        title={
-          <span>
-            {data.name}
-            <span
-              className={css`
-                display: block;
-                color: rgba(0, 0, 0, 0.45);
-                font-weight: normal;
-                font-size: 13px;
-                // margin-left: 8px;
-              `}
-            >
-              {data.version}
-            </span>
-          </span>
-        }
-      />
-    </Card>
-  );
-};
-
 const LocalPlugins = () => {
-  const { data, loading } = useRequest({
+  // TODO: useRequest types for data ts type
+  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
       filter: {
         'builtIn.$isFalsy': true,
       },
       sort: 'name',
+      paginate: false,
     },
   });
   if (loading) {
     return <Spin />;
   }
+
   return (
     <>
       {data?.data?.map((item) => {
-        return <PluginCard data={item} />;
+        const { id } = item;
+        return <PluginCard data={item} key={id} />;
       })}
     </>
   );
@@ -174,6 +87,7 @@ const BuiltinPlugins = () => {
         'builtIn.$isTruly': true,
       },
       sort: 'name',
+      paginate: false,
     },
   });
   if (loading) {
@@ -182,7 +96,8 @@ const BuiltinPlugins = () => {
   return (
     <>
       {data?.data?.map((item) => {
-        return <BuiltInPluginCard data={item} />;
+        const { id } = item;
+        return <BuiltInPluginCard data={item} key={id} />;
       })}
     </>
   );
@@ -201,6 +116,13 @@ const PluginList = (props) => {
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
 
+  useEffect(() => {
+    const { tabName } = match.params;
+    if (!tabName) {
+      history.replace(`/admin/pm/list/local/`);
+    }
+  }, []);
+
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
@@ -210,7 +132,7 @@ const PluginList = (props) => {
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}`);
+              history.push(`/admin/pm/list/${activeKey}/`);
             }}
           >
             <Tabs.TabPane tab={t('Local')} key={'local'} />
@@ -425,7 +347,7 @@ export const PMProvider = (props) => {
   routes[1].routes.unshift(
     {
       type: 'route',
-      path: '/admin/pm/list/:tabName?',
+      path: '/admin/pm/list/:tabName?/:mdfile?',
       component: PluginList,
     },
     {

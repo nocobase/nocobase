@@ -1,5 +1,5 @@
 import Plugin from '..';
-import { EXECUTION_STATUS, JOB_STATUS } from "../constants";
+import { EXECUTION_STATUS, JOB_STATUS } from '../constants';
 import ExecutionModel from '../models/Execution';
 import JobModel from '../models/Job';
 import Processor from '../Processor';
@@ -22,31 +22,31 @@ export default class implements Instruction {
 
   async load() {
     const { model } = this.plugin.db.getCollection('jobs');
-    const jobs = await model.findAll({
+    const jobs = (await model.findAll({
       where: {
-        status: JOB_STATUS.PENDING
+        status: JOB_STATUS.PENDING,
       },
       include: [
         {
           association: 'execution',
           attributes: [],
           where: {
-            status: EXECUTION_STATUS.STARTED
+            status: EXECUTION_STATUS.STARTED,
           },
-          required: true
+          required: true,
         },
         {
           association: 'node',
           attributes: ['config'],
           where: {
-            type: 'delay'
+            type: 'delay',
           },
-          required: true
-        }
-      ]
-    }) as JobModel[];
+          required: true,
+        },
+      ],
+    })) as JobModel[];
 
-    jobs.forEach(job => {
+    jobs.forEach((job) => {
       this.schedule(job, job.node!.config.duration);
     });
   }
@@ -68,7 +68,7 @@ export default class implements Instruction {
   }
 
   async trigger(job) {
-    const execution = await job.getExecution() as ExecutionModel;
+    const execution = (await job.getExecution()) as ExecutionModel;
     if (execution.status === EXECUTION_STATUS.STARTED) {
       job.execution = execution;
       await this.plugin.resume(job);
@@ -83,7 +83,7 @@ export default class implements Instruction {
       status: JOB_STATUS.PENDING,
       result: null,
       nodeId: node.id,
-      upstreamId: prevJob?.id ?? null
+      upstreamId: prevJob?.id ?? null,
     });
 
     const { duration } = node.config as DelayConfig;

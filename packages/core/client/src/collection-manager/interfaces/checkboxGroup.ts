@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -17,7 +18,7 @@ export const checkboxGroup: IField = {
       'x-component': 'Checkbox.Group',
     },
   },
-  availableTypes:['array'],
+  availableTypes: ['array'],
   hasDefaultValue: true,
   properties: {
     ...defaultProps,
@@ -25,5 +26,11 @@ export const checkboxGroup: IField = {
   },
   filterable: {
     operators: operators.array,
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    if (['Table', 'Kanban'].includes(block)) {
+      schema['x-component-props'] = schema['x-component-props'] || {};
+      schema['x-component-props']['ellipsis'] = true;
+    }
   },
 };

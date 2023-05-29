@@ -1,12 +1,9 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { cloneDeep } from 'lodash';
 import {
   defaultProps,
-  recordPickerSelector,
-  recordPickerViewer,
   relationshipType,
-  reverseFieldProperties,
+  reverseFieldProperties
 } from './properties';
 import { IField } from './types';
 
@@ -23,7 +20,7 @@ export const m2m: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -39,7 +36,7 @@ export const m2m: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
@@ -51,42 +48,16 @@ export const m2m: IField = {
       },
     },
   },
-  availableTypes:['belongsToMany'],
+  availableTypes: ['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
-    if (targetCollection?.template === 'file') {
-      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
-      fieldNames.label = 'preview';
-      schema['x-component-props']['fieldNames'] = fieldNames;
-    }
-
-    if (block === 'Form') {
-      if (schema['x-component'] === 'AssociationSelect') {
-        Object.assign(schema, {
-          type: 'string',
-          'x-designer': 'AssociationSelect.Designer',
-        });
-      } else {
-        schema.type = 'string';
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
-      return schema;
-    }
-    if (readPretty) {
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-      };
-    } else {
-      schema['properties'] = {
-        selector: cloneDeep(recordPickerSelector),
-      };
+    // schema['type'] = 'array';
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
-
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
@@ -275,4 +246,5 @@ export const m2m: IField = {
       // },
     ],
   },
+  invariable: true,
 };

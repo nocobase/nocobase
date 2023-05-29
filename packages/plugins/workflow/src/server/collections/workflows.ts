@@ -38,7 +38,7 @@ export default function () {
       {
         type: 'boolean',
         name: 'useTransaction',
-        defaultValue: true,
+        // defaultValue: true,
       },
       {
         type: 'hasMany',
@@ -74,6 +74,7 @@ export default function () {
         sourceKey: 'key',
         // NOTE: no constraints needed here because tricky self-referencing
         constraints: false,
+        onDelete: 'NO ACTION',
       },
     ],
     // NOTE: use unique index for avoiding deadlock in mysql when setCurrent

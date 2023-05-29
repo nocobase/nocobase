@@ -3,8 +3,6 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS } from '../../constants';
 
-
-
 describe('workflow > triggers > collection', () => {
   let app: Application;
   let db: Database;
@@ -34,15 +32,15 @@ describe('workflow > triggers > collection', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       await workflow.update({
         config: {
           ...workflow.config,
-          collection: 'comments'
-        }
+          collection: 'comments',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -61,8 +59,8 @@ describe('workflow > triggers > collection', () => {
         type: 'collection',
         config: {
           mode: 1,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1', category: { title: 'c1' } } });
@@ -83,8 +81,8 @@ describe('workflow > triggers > collection', () => {
         type: 'collection',
         config: {
           mode: 2,
-          collection: 'posts'
-        }
+          collection: 'posts',
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -104,8 +102,8 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 2,
           collection: 'posts',
-          changed: ['title']
-        }
+          changed: ['title'],
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -126,8 +124,8 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 2,
           collection: 'posts',
-          changed: ['published']
-        }
+          changed: ['published'],
+        },
       });
 
       const post = await PostRepo.create({ values: { title: 't1' } });
@@ -148,11 +146,11 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 1,
           collection: 'posts',
-        }
+        },
       });
 
       await workflow.createNode({
-        type: 'echo'
+        type: 'echo',
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -160,8 +158,8 @@ describe('workflow > triggers > collection', () => {
       const post = await PostRepo.create({
         values: {
           title: 't1',
-          categoryId: category.id
-        }
+          categoryId: category.id,
+        },
       });
 
       await sleep(500);
@@ -179,12 +177,12 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 1,
           collection: 'posts',
-          appends: ['category']
-        }
+          appends: ['category'],
+        },
       });
 
       await workflow.createNode({
-        type: 'echo'
+        type: 'echo',
       });
 
       const category = await CategoryRepo.create({ values: { title: 'c1' } });
@@ -192,8 +190,8 @@ describe('workflow > triggers > collection', () => {
       const post = await PostRepo.create({
         values: {
           title: 't1',
-          categoryId: category.id
-        }
+          categoryId: category.id,
+        },
       });
 
       await sleep(500);
@@ -204,6 +202,35 @@ describe('workflow > triggers > collection', () => {
       expect(job.result.data.category.title).toBe('c1');
     });
 
+    it('appends belongsTo null', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          appends: ['category'],
+        },
+      });
+
+      await workflow.createNode({
+        type: 'echo',
+      });
+
+      const post = await PostRepo.create({
+        values: {
+          title: 't1',
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.data.category).toBeNull();
+    });
+
     it('appends hasMany', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
@@ -211,12 +238,12 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 1,
           collection: 'posts',
-          appends: ['comments']
-        }
+          appends: ['comments'],
+        },
       });
 
       await workflow.createNode({
-        type: 'echo'
+        type: 'echo',
       });
 
       const comments = await CommentRepo.create({ values: [{}] });
@@ -224,8 +251,8 @@ describe('workflow > triggers > collection', () => {
       const post = await PostRepo.create({
         values: {
           title: 't1',
-          comments: comments.map(item => item.id)
-        }
+          comments: comments.map((item) => item.id),
+        },
       });
 
       await sleep(500);
@@ -243,12 +270,12 @@ describe('workflow > triggers > collection', () => {
         config: {
           mode: 1,
           collection: 'posts',
-          appends: ['tags']
-        }
+          appends: ['tags'],
+        },
       });
 
       await workflow.createNode({
-        type: 'echo'
+        type: 'echo',
       });
 
       const tags = await TagRepo.create({ values: [{}] });
@@ -256,8 +283,8 @@ describe('workflow > triggers > collection', () => {
       const post = await PostRepo.create({
         values: {
           title: 't1',
-          tags: tags.map(item => item.id)
-        }
+          tags: tags.map((item) => item.id),
+        },
       });
 
       await sleep(500);

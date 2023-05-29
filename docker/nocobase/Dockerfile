@@ -1,4 +1,4 @@
-FROM node:16-stretch-slim as builder
+FROM node:18-slim as builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ RUN cd /app \
   && find ./my-nocobase-app/node_modules/china-division/dist -name '*.sqlite' -delete \
   && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
 
-FROM node:16-stretch-slim
+FROM node:18-slim
 
 # COPY ./sources.list /etc/apt/sources.list
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \

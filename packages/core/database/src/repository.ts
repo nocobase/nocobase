@@ -1,4 +1,4 @@
-import lodash, { omit } from 'lodash';
+import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
@@ -9,6 +9,7 @@ import {
   FindOptions as SequelizeFindOptions,
   ModelStatic,
   Op,
+  Sequelize,
   Transactionable,
   UpdateOptions as SequelizeUpdateOptions,
   WhereOperators,
@@ -30,7 +31,7 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { handleAppendsQuery } from './utils';
+import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
 
 const debug = require('debug')('noco-database');
 
@@ -189,10 +190,6 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  protected builder() {
-    return this.builderMap;
-  }
-
   of(id: string | number): R {
     if (!this.association) {
       return;
@@ -200,6 +197,17 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
+
+  protected builder() {
+    return this.builderMap;
+  }
+}
+
+export interface AggregateOptions {
+  method: 'avg' | 'count' | 'min' | 'max' | 'sum';
+  field?: string;
+  filter?: Filter;
+  distinct?: boolean;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -259,11 +267,64 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
+  async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
+    const { method, field } = options;
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    options.optionsTransformer?.(queryOptions);
+    const hasAssociationFilter = () => {
+      if (queryOptions.include && queryOptions.include.length > 0) {
+        const filterInclude = queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        });
+        return filterInclude.length > 0;
+      }
+      return false;
+    };
+
+    if (hasAssociationFilter()) {
+      const primaryKeyField = this.model.primaryKeyAttribute;
+      const queryInterface = this.database.sequelize.getQueryInterface();
+
+      const findOptions = {
+        ...queryOptions,
+        raw: true,
+        includeIgnoreAttributes: false,
+        attributes: [
+          [
+            Sequelize.literal(
+              `DISTINCT ${queryInterface.quoteIdentifiers(`${this.collection.name}.${primaryKeyField}`)}`,
+            ),
+            primaryKeyField,
+          ],
+        ],
+      };
+
+      const ids = await this.model.findAll(findOptions);
+
+      return await this.model.aggregate(field, method, {
+        ...lodash.omit(queryOptions, ['where', 'include']),
+        where: {
+          [primaryKeyField]: ids.map((node) => node[primaryKeyField]),
+        },
+      });
+    }
+
+    return await this.model.aggregate(field, method, queryOptions);
+  }
+
   /**
    * find
    * @param options
    */
-  async find(options?: FindOptions) {
+  async find(options: FindOptions = {}) {
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 
@@ -278,6 +339,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       // @ts-ignore
       const primaryKeyField = model.primaryKeyField || model.primaryKeyAttribute;
 
+      // find all ids
       const ids = (
         await model.findAll({
           ...opts,
@@ -299,37 +361,20 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
-      const templateModel = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [primaryKeyField],
-        group: `${model.name}.${primaryKeyField}`,
-        transaction,
-        limit: 1,
-        offset: 0,
-      } as any);
-
-      const where = {
-        [primaryKeyField]: {
-          [Op.in]: ids.map((id) => id['pk']),
-        },
-      };
-
-      rows = await handleAppendsQuery({
-        queryPromises: opts.include.map((include) => {
-          const options = {
-            ...omit(opts, ['limit', 'offset']),
-            include: include,
-            where,
-            transaction,
-          };
-
-          return model.findAll(options).then((rows) => {
-            return { rows, include };
-          });
-        }),
-        templateModel: templateModel,
+      // find all rows
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model,
+        rootAttributes: opts.attributes,
+        includeOption: opts.include,
+        rootOrder: opts.order,
       });
+
+      await eagerLoadingTree.load(
+        ids.map((i) => i.pk),
+        transaction,
+      );
+
+      rows = eagerLoadingTree.root.instances;
     } else {
       rows = await model.findAll({
         ...opts,
@@ -351,10 +396,9 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]> {
-    const transaction = await this.getTransaction(options);
     options = {
       ...options,
-      transaction,
+      transaction: await this.getTransaction(options),
     };
 
     const count = await this.count(options);
@@ -472,6 +516,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         records: options.values,
       });
     }
+
     const transaction = await this.getTransaction(options);
 
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });

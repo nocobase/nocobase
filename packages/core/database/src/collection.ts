@@ -14,6 +14,7 @@ import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { AdjacencyListRepository } from './tree-repository/adjacency-list-repository';
 
 export type RepositoryType = typeof Repository;
 
@@ -24,6 +25,14 @@ type dumpable = 'required' | 'optional' | 'skip';
 export interface CollectionOptions extends Omit<ModelOptions, 'name' | 'hooks'> {
   name: string;
   namespace?: string;
+  /**
+   * Used for @nocobase/plugin-duplicator
+   * @see packages/core/database/src/collection-group-manager.tss
+   *
+   * @prop {'required' | 'optional' | 'skip'} dumpable - Determine whether the collection is dumped
+   * @prop {string[] | string} [with] - Collections dumped with this collection
+   * @prop {any} [delayRestore] - A function to execute after all collections are restored
+   */
   duplicator?:
     | dumpable
     | {
@@ -70,8 +79,33 @@ export class Collection<
   model: ModelStatic<Model>;
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
+  constructor(options: CollectionOptions, context: CollectionContext) {
+    super();
+    this.context = context;
+    this.options = options;
+
+    this.checkOptions(options);
+
+    this.bindFieldEventListener();
+    this.modelInit();
+
+    this.db.modelCollection.set(this.model, this);
+
+    // set tableName to collection map
+    // the form of key is `${schema}.${tableName}` if schema exists
+    // otherwise is `${tableName}`
+    this.db.tableNameCollectionMap.set(this.getTableNameWithSchemaAsString(), this);
+
+    if (!options.inherits) {
+      this.setFields(options.fields);
+    }
+
+    this.setRepository(options.repository);
+    this.setSortable(options.sortable);
+  }
+
   get filterTargetKey() {
-    let targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
+    const targetKey = lodash.get(this.options, 'filterTargetKey', this.model.primaryKeyAttribute);
     if (!targetKey && this.model.rawAttributes['id']) {
       return 'id';
     }
@@ -107,63 +141,10 @@ export class Collection<
     }
   }
 
-  constructor(options: CollectionOptions, context: CollectionContext) {
-    super();
-    this.context = context;
-    this.options = options;
-
-    this.checkOptions(options);
-
-    this.bindFieldEventListener();
-    this.modelInit();
-
-    this.db.modelCollection.set(this.model, this);
-
-    // set tableName to collection map
-    // the form of key is `${schema}.${tableName}` if schema exists
-    // otherwise is `${tableName}`
-    this.db.tableNameCollectionMap.set(this.getTableNameWithSchemaAsString(), this);
-
-    if (!options.inherits) {
-      this.setFields(options.fields);
-    }
-
-    this.setRepository(options.repository);
-    this.setSortable(options.sortable);
-  }
-
-  private checkOptions(options: CollectionOptions) {
-    checkIdentifier(options.name);
-    this.checkTableName();
-  }
-
-  private checkTableName() {
-    const tableName = this.tableName();
-    for (const [k, collection] of this.db.collections) {
-      if (
-        collection.name != this.options.name &&
-        tableName === collection.tableName() &&
-        collection.collectionSchema() === this.collectionSchema()
-      ) {
-        throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
-      }
-    }
-  }
-
   tableName() {
     const { name, tableName } = this.options;
     const tName = tableName || name;
     return this.options.underscored ? snakeCase(tName) : tName;
-  }
-
-  protected sequelizeModelOptions() {
-    const { name } = this.options;
-    return {
-      ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
-      modelName: name,
-      sequelize: this.context.database.sequelize,
-      tableName: this.tableName(),
-    };
   }
 
   /**
@@ -215,18 +196,12 @@ export class Collection<
     if (typeof repository === 'string') {
       repo = this.context.database.repositories.get(repository) || Repository;
     }
+
+    if (this.options.tree == 'adjacency-list' || this.options.tree == 'adjacencyList') {
+      repo = AdjacencyListRepository;
+    }
+
     this.repository = new repo(this);
-  }
-
-  private bindFieldEventListener() {
-    this.on('field.afterAdd', (field: Field) => {
-      field.bind();
-    });
-
-    this.on('field.afterRemove', (field: Field) => {
-      field.unbind();
-      this.db.emit('field.afterRemove', field);
-    });
   }
 
   forEachField(callback: (field: Field) => void) {
@@ -285,10 +260,20 @@ export class Collection<
       const [sourceCollectionName, sourceFieldName] = options.source.split('.');
       const sourceCollection = this.db.collections.get(sourceCollectionName);
       if (!sourceCollection) {
-        throw new Error(`source collection "${sourceCollectionName}" not found`);
+        this.db.logger.warn(
+          `source collection "${sourceCollectionName}" not found for field "${name}" at collection "${this.name}"`,
+        );
       }
+
       const sourceField = sourceCollection.fields.get(sourceFieldName);
-      options = { ...sourceField.options, ...options };
+
+      if (!sourceField) {
+        this.db.logger.warn(
+          `source field "${sourceFieldName}" not found for field "${name}" at collection "${this.name}"`,
+        );
+      } else {
+        options = { ...sourceField.options, ...options };
+      }
     }
 
     this.emit('field.beforeAdd', name, options, { collection: this });
@@ -472,7 +457,7 @@ export class Collection<
     }
 
     // collection defined indexes
-    let indexes: any = this.model.options.indexes || [];
+    const indexes: any = this.model.options.indexes || [];
 
     let indexName = [];
     let indexItem;
@@ -661,5 +646,44 @@ export class Collection<
 
   public isView() {
     return false;
+  }
+
+  protected sequelizeModelOptions() {
+    const { name } = this.options;
+    return {
+      ..._.omit(this.options, ['name', 'fields', 'model', 'targetKey']),
+      modelName: name,
+      sequelize: this.context.database.sequelize,
+      tableName: this.tableName(),
+    };
+  }
+
+  private checkOptions(options: CollectionOptions) {
+    checkIdentifier(options.name);
+    this.checkTableName();
+  }
+
+  private checkTableName() {
+    const tableName = this.tableName();
+    for (const [k, collection] of this.db.collections) {
+      if (
+        collection.name != this.options.name &&
+        tableName === collection.tableName() &&
+        collection.collectionSchema() === this.collectionSchema()
+      ) {
+        throw new Error(`collection ${collection.name} and ${this.name} have same tableName "${tableName}"`);
+      }
+    }
+  }
+
+  private bindFieldEventListener() {
+    this.on('field.afterAdd', (field: Field) => {
+      field.bind();
+    });
+
+    this.on('field.afterRemove', (field: Field) => {
+      field.unbind();
+      this.db.emit('field.afterRemove', field);
+    });
   }
 }

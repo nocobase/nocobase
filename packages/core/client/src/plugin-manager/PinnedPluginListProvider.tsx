@@ -39,12 +39,12 @@ export const PinnedPluginList = () => {
       `}
       style={{ display: 'inline-block' }}
     >
-      {Object.values<any>(ctx.items)
-        .sort((a, b) => a.order - b.order)
-        .filter((v) => getSnippetsAllow(v.snippet))
-        .map((item) => {
-          const Action = get(components, item.component);
-          return Action ? <Action /> : null;
+      {Object.keys(ctx.items)
+        .sort((a, b) => ctx.items[a].order - ctx.items[b].order)
+        .filter((key) => getSnippetsAllow(ctx.items[key].snippet))
+        .map((key) => {
+          const Action = get(components, ctx.items[key].component);
+          return Action ? <Action key={key} /> : null;
         })}
     </div>
   );

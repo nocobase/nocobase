@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-map",
-  "version": "0.9.1-alpha.2",
-  "description": "",
+  "displayName": "Map",
+  "displayName.zh-CN": "地图",
+  "version": "0.9.4-alpha.2",
+  "description": "Provide map fields and blocks",
+  "description.zh-CN": "提供地图字段和区块",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.9.1-alpha.2",
-    "@nocobase/test": "0.9.1-alpha.2"
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",

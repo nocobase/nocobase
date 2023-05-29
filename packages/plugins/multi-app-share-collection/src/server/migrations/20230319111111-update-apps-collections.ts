@@ -3,6 +3,12 @@ import { CollectionsGraph } from '@nocobase/utils';
 
 export default class extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<0.9.3-alpha.1');
+
+    if (!result) {
+      return;
+    }
+
     if (!this.app.db.getCollection('applications')) return;
 
     await this.app.db.getCollection('collections').repository.destroy({

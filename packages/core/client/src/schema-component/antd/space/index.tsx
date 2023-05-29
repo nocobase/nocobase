@@ -5,7 +5,7 @@ import React from 'react';
 export const Space: React.FC<SpaceProps> = (props) => {
   let { split } = props;
   if (split === '|') {
-    split = <Divider type="vertical" style={{ margin: '0 2px' }}/>;
+    split = <Divider type="vertical" style={{ margin: '0 2px' }} />;
   }
   const layout = useFormLayout();
   return React.createElement(AntdSpace, {

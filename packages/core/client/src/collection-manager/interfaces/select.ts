@@ -1,3 +1,4 @@
+import { ISchema } from '@formily/react';
 import { dataSource, defaultProps, operators } from './properties';
 import { IField } from './types';
 
@@ -26,5 +27,16 @@ export const select: IField = {
   },
   filterable: {
     operators: operators.enumType,
+  },
+  schemaInitialize(schema: ISchema, { block }) {
+    const props = (schema['x-component-props'] = schema['x-component-props'] || {});
+    props.style = {
+      ...(props.style || {}),
+      width: '100%',
+    };
+
+    if (['Table', 'Kanban'].includes(block)) {
+      props['ellipsis'] = true;
+    }
   },
 };

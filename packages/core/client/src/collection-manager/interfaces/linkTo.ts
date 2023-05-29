@@ -17,7 +17,7 @@ export const linkTo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: true,
@@ -33,7 +33,7 @@ export const linkTo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: true,
@@ -45,44 +45,15 @@ export const linkTo: IField = {
       },
     },
   },
-  availableTypes:['belongsToMany'],
+  availableTypes: ['belongsToMany'],
   schemaInitialize(schema: ISchema, { readPretty, block, targetCollection }) {
-    if (targetCollection?.template === 'file') {
-      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
-      fieldNames.label = 'preview';
-      schema['x-component-props']['fieldNames'] = fieldNames;
+    if (targetCollection?.titleField && schema['x-component-props']) {
+      schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
+      schema['x-component-props'].fieldNames.label = targetCollection.titleField;
     }
-
-    if (block === 'Form') {
-      if (schema['x-component'] === 'AssociationSelect') {
-        Object.assign(schema, {
-          type: 'string',
-          'x-designer': 'AssociationSelect.Designer',
-        });
-      } else {
-        schema.type = 'string';
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
-      return schema;
-    } else {
-      if (readPretty) {
-        schema['properties'] = {
-          viewer: cloneDeep(recordPickerViewer),
-        };
-      } else {
-        schema['properties'] = {
-          selector: cloneDeep(recordPickerSelector),
-        };
-      }
-    }
-
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
-
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
@@ -168,4 +139,5 @@ export const linkTo: IField = {
       // },
     ],
   },
+  invariable: true,
 };

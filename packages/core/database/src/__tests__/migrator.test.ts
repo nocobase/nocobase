@@ -1,13 +1,12 @@
 import { Database, Migration, mockDatabase } from '@nocobase/database';
 import { resolve } from 'path';
 
-const names = (migrations: Array<{ name: string }>) => migrations.map(m => m.name);
+const names = (migrations: Array<{ name: string }>) => migrations.map((m) => m.name);
 
 describe('migrator', () => {
   let db: Database;
 
   beforeEach(async () => {
-
     db = mockDatabase({
       tablePrefix: 'test_',
     });
@@ -17,6 +16,10 @@ describe('migrator', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  test('migrations', async () => {
+    expect(db.getModel('migrations').tableName).toBe('test_migrations');
   });
 
   test('addMigrations', async () => {

@@ -5,7 +5,7 @@ import { useCancelAction, useUpdateFieldAction } from '../action-hooks';
 
 const useUpdateCollectionField = (record) => {
   const collectionName = record.collectionName;
-  const { run } = useUpdateFieldAction({collectionName, name:record.name,key:record.key});
+  const { run } = useUpdateFieldAction({ collectionName, name: record.name, key: record.key });
   return {
     async run() {
       await run();

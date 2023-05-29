@@ -12,7 +12,7 @@ export default function (props) {
     <SigninPageExtensionProvider component={SAMLList}>
       <SettingsCenterProvider
         settings={{
-          'saml-manager': {
+          saml: {
             title: t('SAML manager'),
             icon: 'FileOutlined',
             tabs: {

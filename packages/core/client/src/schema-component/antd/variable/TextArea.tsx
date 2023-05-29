@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Input, Cascader, Tooltip, Button } from 'antd';
+import { Input } from 'antd';
 import { useForm } from '@formily/react';
 import { cx, css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import * as sanitizeHTML from 'sanitize-html';
 
-import { useCompile } from '../..';
+import { EllipsisWithTooltip, useCompile } from '../..';
+import { VariableSelect } from './VariableSelect';
 
 type RangeIndexes = [number, number, number, number];
 
 const VARIABLE_RE = /{{\s*([^{}]+)\s*}}/g;
 
-function pasteHTML(container: HTMLElement, html: string, { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {}) {
+function pasteHTML(
+  container: HTMLElement,
+  html: string,
+  { selectPastedContent = false, range: indexes }: { selectPastedContent?: boolean; range?: RangeIndexes } = {},
+) {
   // IE9 and non-IE
   const sel = window.getSelection?.();
   const range = sel?.getRangeAt(0);
@@ -24,6 +29,8 @@ function pasteHTML(container: HTMLElement, html: string, { selectPastedContent =
     if (indexes[0] === -1) {
       if (indexes[1]) {
         range.setStartAfter(children[indexes[1] - 1]);
+      } else {
+        range.setStart(container, 0);
       }
     } else {
       range.setStart(children[indexes[0]], indexes[1]);
@@ -32,6 +39,8 @@ function pasteHTML(container: HTMLElement, html: string, { selectPastedContent =
     if (indexes[2] === -1) {
       if (indexes[3]) {
         range.setEndAfter(children[indexes[3] - 1]);
+      } else {
+        range.setEnd(container, 0);
       }
     } else {
       range.setEnd(children[indexes[2]], indexes[3]);
@@ -168,14 +177,16 @@ function getCurrentRange(element: HTMLElement): RangeIndexes {
   const startElementIndex = range.startContainer === element ? -1 : nodes.indexOf(range.startContainer as HTMLElement);
   const endElementIndex = range.endContainer === element ? -1 : nodes.indexOf(range.endContainer as HTMLElement);
 
-  const result: RangeIndexes = [...getSingleEndRange(nodes, startElementIndex, range.startOffset), ...getSingleEndRange(nodes, endElementIndex, range.endOffset)];
+  const result: RangeIndexes = [
+    ...getSingleEndRange(nodes, startElementIndex, range.startOffset),
+    ...getSingleEndRange(nodes, endElementIndex, range.endOffset),
+  ];
   return result;
 }
 
 export function TextArea(props) {
-  const { value = '', scope, onChange, multiline = true, button } = props;
+  const { value = '', scope, onChange, multiline = true } = props;
   const compile = useCompile();
-  const { t } = useTranslation();
   const inputRef = useRef<HTMLDivElement>(null);
   const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
   const form = useForm();
@@ -185,9 +196,17 @@ export function TextArea(props) {
   const [html, setHtml] = useState(() => renderHTML(value ?? '', keyLabelMap));
   // NOTE: e.g. [startElementIndex, startOffset, endElementIndex, endOffset]
   const [range, setRange] = useState<[number, number, number, number]>([-1, 0, -1, 0]);
+  const [selectedVar, setSelectedVar] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedVar([]);
+  }, [scope]);
 
   useEffect(() => {
     setHtml(renderHTML(value ?? '', keyLabelMap));
+    if (!changed) {
+      setRange([-1, 0, -1, 0]);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -197,6 +216,7 @@ export function TextArea(props) {
     }
     const nextRange = new Range();
     if (changed) {
+      setChanged(false);
       if (range.join() === '-1,0,-1,0') {
         return;
       }
@@ -234,8 +254,8 @@ export function TextArea(props) {
     }
   }, [html]);
 
-  function onInsert(keyPath) {
-    const variable: string[] = keyPath.filter((key) => Boolean(key.trim()));
+  function onInsert(paths: string[]) {
+    const variable: string[] = paths.filter((key) => Boolean(key.trim()));
     const { current } = inputRef;
     if (!current || !variable) {
       return;
@@ -243,7 +263,8 @@ export function TextArea(props) {
 
     current.focus();
 
-    pasteHTML(current, createVariableTagHTML(variable.join('.'), keyLabelMap), {
+    const content = createVariableTagHTML(variable.join('.'), keyLabelMap);
+    pasteHTML(current, content, {
       range,
     });
 
@@ -269,7 +290,7 @@ export function TextArea(props) {
     if (ev.key === 'Enter') {
       ev.preventDefault();
     }
-    setIME(ev.keyCode === 229);
+    setIME(ev.keyCode === 229 && ![' ', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Enter'].includes(ev.key));
     // if (ev.key === 'Control') {
     //   console.debug(getSelection().getRangeAt(0));
     // }
@@ -291,12 +312,14 @@ export function TextArea(props) {
       },
       transformTags: {
         span(tagName, attribs) {
-          return attribs['data-variable'] ? {
-            tagName: tagName,
-            attribs,
-          } : {};
-        }
-      }
+          return attribs['data-variable']
+            ? {
+                tagName: tagName,
+                attribs,
+              }
+            : {};
+        },
+      },
     }).replace(/\n/g, ' ');
     // ev.clipboardData.setData('text/html', sanitizedHTML);
     // console.log(input, sanitizedHTML);
@@ -305,7 +328,6 @@ export function TextArea(props) {
     setRange(getCurrentRange(ev.currentTarget));
     onChange(getValue(ev.currentTarget));
   }
-
 
   const disabled = props.disabled || form.disabled;
 
@@ -353,20 +375,38 @@ export function TextArea(props) {
         contentEditable={!disabled}
         dangerouslySetInnerHTML={{ __html: html }}
       />
-      <Tooltip title={t('Use variable')}>
-        <Cascader value={[]} options={options} onChange={onInsert}>
-          {button ?? (
-            <Button
-              className={css`
-                font-style: italic;
-                font-family: 'New York', 'Times New Roman', Times, serif;
-              `}
-            >
-              x
-            </Button>
-          )}
-        </Cascader>
-      </Tooltip>
+      {!disabled ? <VariableSelect options={options} onInsert={onInsert} /> : null}
     </Input.Group>
   );
 }
+
+TextArea.ReadPretty = function ReadPretty(props): JSX.Element {
+  const { value, multiline = true, scope } = props;
+  const compile = useCompile();
+  const options = compile((typeof scope === 'function' ? scope() : scope) ?? []);
+  const keyLabelMap = useMemo(() => createOptionsValueLabelMap(options), [scope]);
+  const html = renderHTML(value ?? '', keyLabelMap);
+
+  const content = (
+    <span
+      dangerouslySetInnerHTML={{ __html: html }}
+      className={css`
+        overflow: auto;
+
+        .ant-tag {
+          display: inline;
+          line-height: 19px;
+          margin: 0 0.25em;
+          padding: 2px 7px;
+          border-radius: 10px;
+        }
+      `}
+    />
+  );
+
+  return (
+    <EllipsisWithTooltip ellipsis popoverContent={content}>
+      {content}
+    </EllipsisWithTooltip>
+  );
+};

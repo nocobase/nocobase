@@ -12,8 +12,10 @@ import { CollectionCategroriesContext } from '../context';
 import { useCollectionManager } from '../hooks/useCollectionManager';
 import { DataSourceContext } from '../sub-table';
 import { AddSubFieldAction } from './AddSubFieldAction';
+import { CollectionFields } from './CollectionFields';
 import { EditSubFieldAction } from './EditSubFieldAction';
 import { FieldSummary } from './components/FieldSummary';
+import { TemplateSummay } from './components/TemplateSummay';
 import { collectionSchema } from './schemas/collections';
 
 /**
@@ -163,7 +165,9 @@ export const ConfigurationTable = () => {
           AddSubFieldAction,
           EditSubFieldAction,
           FieldSummary,
+          TemplateSummay,
           CollectionFieldsTable,
+          CollectionFields,
         }}
         scope={{
           useDestroySubField,

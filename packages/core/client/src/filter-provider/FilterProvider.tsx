@@ -1,9 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useEffect, useRef } from 'react';
 import { useBlockRequestContext } from '../block-provider';
-import { SharedFilter } from '../block-provider/SharedFilterProvider';
+import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
+import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
+import { uniqBy } from 'lodash';
 
 type Collection = ReturnType<typeof useCollection>;
 
@@ -16,6 +18,8 @@ export interface DataBlock {
   collection: Collection;
   /** 根据提供的参数执行该方法即可刷新数据区块的数据 */
   doFilter: (params: any, params2?: any) => Promise<void>;
+  /** 清除筛选区块设置的筛选参数 */
+  clearFilter: (uid: string) => void;
   /** 数据区块表中所有的关系字段 */
   associatedFields?: CollectionFieldOptions[];
   /** 通过右上角菜单设置的过滤条件 */
@@ -72,6 +76,24 @@ export const FilterBlockRecord = ({
       defaultFilter: params?.filter || {},
       service,
       dom: container.current,
+      clearFilter(uid: string) {
+        const param = this.service.params?.[0] || {};
+        const storedFilter = this.service.params?.[1]?.filters || {};
+        delete storedFilter[uid];
+        const mergedFilter = mergeFilter([
+          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+          params?.filter || {},
+        ]);
+
+        this.service.run(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      },
     });
   };
 
@@ -112,8 +134,8 @@ export const useFilterBlock = () => {
       existingBlock.defaultFilter = block.defaultFilter;
       return;
     }
-
-    setDataBlocks((prev) => [...prev, block]);
+    // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
+    setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
   };
   const getDataBlocks = () => dataBlocks;
   const removeDataBlock = (uid: string) => {

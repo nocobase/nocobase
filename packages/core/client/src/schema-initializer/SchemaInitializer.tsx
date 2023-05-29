@@ -37,7 +37,7 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
     ...others
   } = props;
   const compile = useCompile();
-  let { insertAdjacent, findComponent, designable } = useDesignable();
+  const { insertAdjacent, findComponent, designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const insertSchema = (schema) => {
     if (props.insert) {
@@ -123,8 +123,8 @@ SchemaInitializer.Button = observer((props: SchemaInitializerButtonProps) => {
             }
           `,
         )}
-        visible={visible}
-        onVisibleChange={(visible) => {
+        open={visible}
+        onOpenChange={(visible) => {
           setVisible(visible);
         }}
         {...dropdown}

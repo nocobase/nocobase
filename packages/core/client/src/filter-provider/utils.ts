@@ -1,6 +1,11 @@
 import { Schema, useFieldSchema } from '@formily/react';
-import { isPlainObject, isEmpty } from '@nocobase/utils/client';
-import { Collection, FieldOptions, useCollection } from '../collection-manager';
+import { flatten, getValuesByPath } from '@nocobase/utils/client';
+import _ from 'lodash';
+import { useCallback, useEffect, useState } from 'react';
+import { mergeFilter } from '../block-provider';
+import { FilterTarget, findFilterTargets } from '../block-provider/hooks';
+import { Collection, CollectionFieldOptions, FieldOptions, useCollection } from '../collection-manager';
+import { removeNullCondition } from '../schema-component';
 import { findFilterOperators } from '../schema-component/antd/form-item/SchemaSettingOptions';
 import { useFilterBlock } from './FilterProvider';
 
@@ -40,38 +45,55 @@ export const useSupportedBlocks = (filterBlockType: FilterBlockType) => {
   }
 };
 
-/**
- * Recursively flatten an object and generate a query object.
- * @param result - The resulting query object.
- * @param obj - The object to be flattened and queried.
- * @param key - The current key in the object tree.
- * @param operators - The operators to use for each field.
- * @returns The resulting query object.
- */
-const flattenAndQueryObject = (result: Record<string, any>, obj: any, key: string, operators: Record<string, any>) => {
-  if (!obj) return result;
-
-  if (!isPlainObject(obj)) {
-    result[key] = {
-      [operators[key] || '$eq']: obj,
-    };
-  } else {
-    Object.keys(obj).forEach((k) => {
-      flattenAndQueryObject(result, obj[k], `${key}.${k}`, operators);
-    });
-  }
-
-  return result;
-};
-
-export const transformToFilter = (values: Record<string, any>, fieldSchema: Schema) => {
+export const transformToFilter = (
+  values: Record<string, any>,
+  fieldSchema: Schema,
+  getCollectionJoinField: (name: string) => CollectionFieldOptions,
+  collectionName: string,
+) => {
   const { operators } = findFilterOperators(fieldSchema);
 
-  return {
+  values = flatten(values, {
+    breakOn({ value, path }) {
+      const collectionField = getCollectionJoinField(`${collectionName}.${path}`);
+      if (collectionField?.target) {
+        if (Array.isArray(value)) {
+          return true;
+        }
+        const targetKey = collectionField.targetKey || 'id';
+        if (value && value[targetKey] != null) {
+          return true;
+        }
+      }
+      return false;
+    },
+  });
+
+  const result = {
     $and: Object.keys(values)
-      .map((key) => flattenAndQueryObject({}, values[key], key, operators))
-      .filter((item) => !isEmpty(item)),
+      .map((key) => {
+        let value = _.get(values, key);
+        const collectionField = getCollectionJoinField(`${collectionName}.${key}`);
+
+        if (collectionField?.target) {
+          value = getValuesByPath(value, collectionField.targetKey || 'id');
+          key = `${key}.${collectionField.targetKey || 'id'}`;
+        }
+
+        if (!value) {
+          return null;
+        }
+
+        return {
+          [key]: {
+            [operators[key] || '$eq']: value,
+          },
+        };
+      })
+      .filter(Boolean),
   };
+
+  return result;
 };
 
 export const useAssociatedFields = () => {
@@ -81,9 +103,96 @@ export const useAssociatedFields = () => {
 };
 
 export const isAssocField = (field?: FieldOptions) => {
-  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo'].includes(field?.interface);
+  return ['o2o', 'oho', 'obo', 'm2o', 'createdBy', 'updatedBy', 'o2m', 'm2m', 'linkTo', 'chinaRegion'].includes(
+    field?.interface,
+  );
 };
 
 export const isSameCollection = (c1: Collection, c2: Collection) => {
   return c1.name === c2.name;
+};
+
+export const useFilterAPI = () => {
+  const fieldSchema = useFieldSchema();
+  const { getDataBlocks } = useFilterBlock();
+  const { targets, uid } = findFilterTargets(fieldSchema);
+  const dataBlocks = getDataBlocks();
+  const [isConnected, setIsConnected] = useState(() => {
+    return targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid));
+  });
+  const targetsKeys = Object.keys(targets || {});
+
+  useEffect(() => {
+    setIsConnected(targets && targets.some((target) => dataBlocks.some((dataBlock) => dataBlock.uid === target.uid)));
+  }, [targetsKeys.length, dataBlocks]);
+
+  const doFilter = useCallback(
+    (
+      value,
+      field: string | ((target: FilterTarget['targets'][0]) => string) = 'id',
+      operator: string | ((target: FilterTarget['targets'][0]) => string) = '$eq',
+    ) => {
+      dataBlocks.forEach((block) => {
+        const target = targets.find((target) => target.uid === block.uid);
+        if (!target) return;
+
+        if (_.isFunction(field)) {
+          field = field(target);
+        }
+        if (_.isFunction(operator)) {
+          operator = operator(target);
+        }
+
+        const param = block.service.params?.[0] || {};
+        // 保留原有的 filter
+        const storedFilter = block.service.params?.[1]?.filters || {};
+
+        if (value !== undefined) {
+          storedFilter[uid] = {
+            $and: [
+              {
+                [field]: {
+                  [operator]: value,
+                },
+              },
+            ],
+          };
+        } else {
+          delete storedFilter[uid];
+        }
+
+        const mergedFilter = mergeFilter([
+          ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
+          block.defaultFilter,
+        ]);
+
+        block.doFilter(
+          {
+            ...param,
+            page: 1,
+            filter: mergedFilter,
+          },
+          { filters: storedFilter },
+        );
+      });
+    },
+    [dataBlocks],
+  );
+
+  return {
+    /** 当前区块是否已连接其它区块 */
+    isConnected,
+    /** 调用该方法进行过滤 */
+    doFilter,
+  };
+};
+
+export const isInFilterFormBlock = (fieldSchema: Schema) => {
+  while (fieldSchema) {
+    if (fieldSchema['x-filter-targets']) {
+      return fieldSchema['x-decorator'] === 'FilterFormBlockProvider';
+    }
+    fieldSchema = fieldSchema.parent;
+  }
+  return false;
 };

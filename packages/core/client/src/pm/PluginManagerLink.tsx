@@ -1,5 +1,5 @@
 import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
@@ -11,13 +11,15 @@ export const PluginManagerLink = () => {
   const { t } = useTranslation();
   const history = useHistory();
   return (
-    <Button
-      icon={<ApiOutlined />}
-      title={t('Plugin manager')}
-      onClick={() => {
-        history.push('/admin/pm/list');
-      }}
-    />
+    <Tooltip title={t('Plugin manager')}>
+      <Button
+        icon={<ApiOutlined />}
+        title={t('Plugin manager')}
+        onClick={() => {
+          history.push('/admin/pm/list/');
+        }}
+      />
+    </Tooltip>
   );
 };
 
@@ -44,31 +46,22 @@ export const SettingsCenterDropdown = () => {
     <ActionContext.Provider value={{ visible, setVisible }}>
       <Dropdown
         placement="bottom"
-        overlay={
-          <Menu>
-            {bookmarkTabs.map((tab) => {
-              return (
-                <Menu.Item
-                  onClick={() => {
-                    history.push('/admin/settings/' + tab.path);
-                  }}
-                  key={tab.path}
-                >
-                  {compile(tab.title)}
-                </Menu.Item>
-              );
-            })}
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item
-              onClick={() => {
-                history.push('/admin/settings');
-              }}
-              key="/admin/settings"
-            >
-              {t('All plugin settings')}
-            </Menu.Item>
-          </Menu>
-        }
+        menu={{
+          items: [
+            ...bookmarkTabs.map((tab) => ({
+              key: `/admin/settings/${tab.path}`,
+              label: compile(tab.title),
+            })),
+            { type: 'divider' },
+            {
+              key: '/admin/settings',
+              label: t('All plugin settings'),
+            },
+          ],
+          onClick({ key }) {
+            history.push(key);
+          },
+        }}
       >
         <Button
           icon={<SettingOutlined />}

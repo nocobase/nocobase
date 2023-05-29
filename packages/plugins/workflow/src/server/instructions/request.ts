@@ -24,7 +24,10 @@ async function request(config) {
     }
     return Object.assign(result, { [header.name]: header.value });
   }, {});
-  const params = (config.params ?? []).reduce((result, param) => Object.assign(result, { [param.name]: param.value }), {});
+  const params = (config.params ?? []).reduce(
+    (result, param) => Object.assign(result, { [param.name]: param.value }),
+    {},
+  );
 
   // TODO(feat): only support JSON type for now, should support others in future
   headers['Content-Type'] = 'application/json';
@@ -37,7 +40,7 @@ async function request(config) {
     data,
     timeout,
   });
-};
+}
 
 export default class implements Instruction {
   constructor(public plugin) {}
@@ -48,19 +51,19 @@ export default class implements Instruction {
       nodeId: node.id,
     });
 
-    const config = processor.getParsedValue(node.config) as RequestConfig;
+    const config = processor.getParsedValue(node.config, node) as RequestConfig;
 
     request(config)
-      .then(response => {
+      .then((response) => {
         job.set({
           status: JOB_STATUS.RESOLVED,
-          result: response.data
+          result: response.data,
         });
       })
-      .catch(error => {
+      .catch((error) => {
         job.set({
           status: JOB_STATUS.FAILED,
-          result: error.isAxiosError ? error.toJSON() : error.message
+          result: error.isAxiosError ? error.toJSON() : error.message,
         });
       })
       .finally(() => {

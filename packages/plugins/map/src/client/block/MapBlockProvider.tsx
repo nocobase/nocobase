@@ -1,6 +1,6 @@
 import { useField, useFieldSchema } from '@formily/react';
 import { BlockProvider, FixedBlockWrapper, SchemaComponentOptions, useBlockRequestContext } from '@nocobase/client';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 export const MapBlockContext = createContext<any>({});
 

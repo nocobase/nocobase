@@ -35,6 +35,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - run: yarn build
+    timeout-minutes: 15
 
   sqlite-test:
     strategy:
@@ -52,11 +53,12 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - name: Test with Sqlite
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
           DB_UNDERSCORED: ${{ matrix.underscored }}
+    timeout-minutes: 30
 
   postgres-test:
     strategy:
@@ -92,7 +94,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with postgres
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -103,6 +105,7 @@ jobs:
           DB_UNDERSCORED: ${{ matrix.underscored }}
           DB_SCHEMA: ${{ matrix.schema }}
           COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+    timeout-minutes: 30
 
   mysql-test:
     strategy:
@@ -128,7 +131,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with MySQL
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: mysql
           DB_HOST: mysql
@@ -137,3 +140,4 @@ jobs:
           DB_PASSWORD: password
           DB_DATABASE: nocobase
           DB_UNDERSCORED: ${{ matrix.underscored }}
+    timeout-minutes: 30

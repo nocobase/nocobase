@@ -13,6 +13,7 @@ import { useResourceActionContext, useResourceContext } from '../ResourceActionP
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import * as components from './components';
+import { TemplateSummay } from './components/TemplateSummay';
 import { templateOptions } from './templates';
 
 const getSchema = (schema, category, compile): ISchema => {
@@ -62,7 +63,7 @@ const getSchema = (schema, category, compile): ISchema => {
         properties: {
           summary: {
             type: 'void',
-            'x-component': 'FieldSummary',
+            'x-component': 'TemplateSummay',
             'x-component-props': {
               schemaKey: schema.name,
             },
@@ -97,7 +98,7 @@ const getSchema = (schema, category, compile): ISchema => {
 };
 
 const useDefaultCollectionFields = (values) => {
-  let defaults = values.fields ? [...values.fields] : [];
+  const defaults = values.fields ? [...values.fields] : [];
   const { autoGenId = true, createdAt = true, createdBy = true, updatedAt = true, updatedBy = true } = values;
   if (autoGenId) {
     const pk = values.fields.find((f) => f.primaryKey);
@@ -200,30 +201,35 @@ const useCreateCollection = (schema?: any) => {
     async run() {
       field.data = field.data || {};
       field.data.loading = true;
-      await form.submit();
-      const values = cloneDeep(form.values);
-      if (schema?.events?.beforeSubmit) {
-        schema.events.beforeSubmit(values);
+      try {
+        await form.submit();
+        const values = cloneDeep(form.values);
+        if (schema?.events?.beforeSubmit) {
+          schema.events.beforeSubmit(values);
+        }
+        const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
+        if (values.autoCreateReverseField) {
+        } else {
+          delete values.reverseField;
+        }
+        delete values.id;
+        delete values.autoCreateReverseField;
+
+        await resource.create({
+          values: {
+            logging: true,
+            ...values,
+            fields,
+          },
+        });
+        ctx.setVisible(false);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+        await refreshCM();
+      } catch (error) {
+        field.data.loading = false;
       }
-      const fields = values?.template !== 'view' ? useDefaultCollectionFields(values) : values.fields;
-      if (values.autoCreateReverseField) {
-      } else {
-        delete values.reverseField;
-      }
-      delete values.id;
-      delete values.autoCreateReverseField;
-      await resource.create({
-        values: {
-          logging: true,
-          ...values,
-          fields,
-        },
-      });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
-      await refreshCM();
     },
   };
 };
@@ -283,7 +289,7 @@ export const AddCollectionAction = (props) => {
         </Dropdown>
         <SchemaComponent
           schema={schema}
-          components={{ ...components, ArrayTable }}
+          components={{ ...components, ArrayTable, TemplateSummay }}
           scope={{
             getContainer,
             useCancelAction,

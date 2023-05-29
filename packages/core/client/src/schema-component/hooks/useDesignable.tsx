@@ -76,7 +76,7 @@ export const splitWrapSchema = (wrapped: Schema, schema: ISchema) => {
     return [null, wrapped.toJSON()];
   }
   const wrappedJson: ISchema = wrapped.toJSON();
-  let schema1 = { ...wrappedJson, properties: {} };
+  const schema1 = { ...wrappedJson, properties: {} };
   let schema2 = null;
   const findSchema = (properties, parent) => {
     Object.keys(properties || {}).forEach((key) => {
@@ -135,10 +135,10 @@ export class Designable {
     this.on('insertAdjacent', async ({ onSuccess, current, position, schema, wrap, wrapped, removed }) => {
       let schemas = [];
       if (wrapped?.['x-component'] === 'Grid.Col') {
-        schemas = updateColumnSize(wrapped.parent);
+        schemas = schemas.concat(updateColumnSize(wrapped.parent));
       }
       if (removed?.['x-component'] === 'Grid.Col') {
-        schemas = updateColumnSize(removed.parent);
+        schemas = schemas.concat(updateColumnSize(removed.parent));
       }
       refresh();
       if (!current['x-uid']) {
@@ -313,7 +313,7 @@ export class Designable {
 
   remove(schema?: Schema, options: RemoveOptions = {}) {
     const { breakRemoveOn, removeParentsIfNoChildren } = options;
-    let s = schema || this.current;
+    const s = schema || this.current;
     let removed = s.parent.removeProperty(s.name);
     if (removeParentsIfNoChildren) {
       const parent = this.recursiveRemoveIfNoChildren(s.parent, { breakRemoveOn });
@@ -326,7 +326,7 @@ export class Designable {
 
   removeWithoutEmit(schema?: Schema, options: RemoveOptions = {}) {
     const { breakRemoveOn, removeParentsIfNoChildren } = options;
-    let s = schema || this.current;
+    const s = schema || this.current;
     let removed = s.parent.removeProperty(s.name);
     if (removeParentsIfNoChildren) {
       const parent = this.recursiveRemoveIfNoChildren(s.parent, { breakRemoveOn });

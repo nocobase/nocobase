@@ -1,24 +1,30 @@
 import React, { useState, useContext } from 'react';
-import {
-  CloseOutlined,
-  DeleteOutlined,
-} from '@ant-design/icons';
+import { CloseOutlined, DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
 import { ISchema, useForm } from '@formily/react';
-import { Button, message, Modal, Tag, Alert, Input } from 'antd';
+import { Button, message, Modal, Tag, Alert, Input, Dropdown } from 'antd';
 import { useTranslation } from 'react-i18next';
-import parse from 'json-templates';
 
-import { Registry } from '@nocobase/utils/client';
-import { ActionContext, SchemaComponent, SchemaInitializerItemOptions, useActionContext, useAPIClient, useCompile, useRequest, useResourceActionContext } from '@nocobase/client';
+import { Registry, parse, str2moment } from '@nocobase/utils/client';
+import {
+  ActionContext,
+  SchemaComponent,
+  SchemaInitializerItemOptions,
+  useActionContext,
+  useAPIClient,
+  useCompile,
+  useRequest,
+  useResourceActionContext,
+} from '@nocobase/client';
 
-import { nodeBlockClass, nodeCardClass, nodeClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeBlockClass, nodeCardClass, nodeClass, nodeJobButtonClass, nodeMetaClass } from '../style';
 import { AddButton } from '../AddButton';
 import { useFlowContext } from '../FlowContext';
 
 import calculation from './calculation';
 import condition from './condition';
 import parallel from './parallel';
+import loop from './loop';
 import delay from './delay';
 
 import manual from './manual';
@@ -27,32 +33,38 @@ import query from './query';
 import create from './create';
 import update from './update';
 import destroy from './destroy';
-import { JobStatusOptions, JobStatusOptionsMap } from '../constants';
-import { lang, NAMESPACE } from '../locale';
-import request from "./request";
-import { VariableOption } from '../variable';
+import aggregate from './aggregate';
+
+import { JobStatusOptionsMap } from '../constants';
+import { NAMESPACE, lang } from '../locale';
+import request from './request';
+import { VariableOptions } from '../variable';
+import { NodeDescription } from '../components/NodeDescription';
 
 export interface Instruction {
   title: string;
   type: string;
   group: string;
+  description?: string;
   options?: { label: string; value: any; key: string }[];
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
+  render?(props): JSX.Element;
   endding?: boolean;
-  getOptions?(config, types?): VariableOption[] | null;
+  useVariables?(node, options?): VariableOptions;
+  useScopeVariables?(node, options?): VariableOptions;
   useInitializers?(node): SchemaInitializerItemOptions | null;
   initializers?: { [key: string]: any };
-};
+}
 
 export const instructions = new Registry<Instruction>();
 
+instructions.register('calculation', calculation);
 instructions.register('condition', condition);
 instructions.register('parallel', parallel);
-instructions.register('calculation', calculation);
+instructions.register('loop', loop);
 instructions.register('delay', delay);
 
 instructions.register('manual', manual);
@@ -61,6 +73,8 @@ instructions.register('query', query);
 instructions.register('create', create);
 instructions.register('update', update);
 instructions.register('destroy', destroy);
+instructions.register('aggregate', aggregate);
+
 instructions.register('request', request);
 
 function useUpdateAction() {
@@ -80,14 +94,14 @@ function useUpdateAction() {
       await api.resource('flow_nodes', data.id).update?.({
         filterByTk: data.id,
         values: {
-          config: form.values
-        }
+          config: form.values,
+        },
       });
       ctx.setVisible(false);
       refresh();
     },
   };
-};
+}
 
 export const NodeContext = React.createContext<any>({});
 
@@ -107,41 +121,52 @@ export function useAvailableUpstreams(node) {
   return stack;
 }
 
+export function useUpstreamScopes(node) {
+  const stack: any[] = [];
+  if (!node) {
+    return [];
+  }
+
+  for (let current = node; current; current = current.upstream) {
+    if (current.upstream && current.branchIndex != null) {
+      stack.push(current.upstream);
+    }
+  }
+
+  return stack;
+}
+
 export function Node({ data }) {
   const instruction = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(nodeBlockClass)}>
-        {instruction.render
-          ? instruction.render(data)
-          : <NodeDefaultView data={data} />
-        }
-        {!instruction.endding
-          ? <AddButton upstream={data} />
-          : (
-            <div
-              className={css`
-                flex-grow: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                width: 1px;
-                height: 6em;
-                padding: 2em 0;
-                background-color: #f0f2f5;
+        {instruction.render ? instruction.render(data) : <NodeDefaultView data={data} />}
+        {!instruction.endding ? (
+          <AddButton upstream={data} />
+        ) : (
+          <div
+            className={css`
+              flex-grow: 1;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              width: 1px;
+              height: 6em;
+              padding: 2em 0;
+              background-color: #f0f2f5;
 
-                .anticon{
-                  font-size: 1.5em;
-                  line-height: 100%;
-                }
-              `}
-            >
-              <CloseOutlined />
-            </div>
-          )
-        }
+              .anticon {
+                font-size: 1.5em;
+                line-height: 100%;
+              }
+            `}
+          >
+            <CloseOutlined />
+          </div>
+        )}
       </div>
     </NodeContext.Provider>
   );
@@ -160,30 +185,35 @@ export function RemoveButton() {
   async function onRemove() {
     async function onOk() {
       await resource.destroy?.({
-        filterByTk: current.id
+        filterByTk: current.id,
       });
       refresh();
     }
 
-    const usingNodes = nodes.filter(node => {
+    const usingNodes = nodes.filter((node) => {
       if (node === current) {
         return false;
       }
 
       const template = parse(node.config);
-      const refs = template.parameters.filter(({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`);
+      const refs = template.parameters.filter(
+        ({ key }) => key.startsWith(`$jobsMapByNodeId.${current.id}.`) || key === `$jobsMapByNodeId.${current.id}`,
+      );
       return refs.length;
     });
 
     if (usingNodes.length) {
       Modal.error({
         title: lang('Can not delete'),
-        content: lang('The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.', { nodes: usingNodes.map(item => `#${item.id}`).join(', ') }),
+        content: lang(
+          'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
+          { nodes: usingNodes.map((item) => `#${item.id}`).join(', ') },
+        ),
       });
       return;
     }
 
-    const hasBranches = !nodes.find(item => item.upstream === current && item.branchIndex != null);
+    const hasBranches = !nodes.find((item) => item.upstream === current && item.branchIndex != null);
     const message = hasBranches
       ? t('Are you sure you want to delete it?')
       : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
@@ -191,13 +221,11 @@ export function RemoveButton() {
     Modal.confirm({
       title: t('Delete'),
       content: message,
-      onOk
+      onOk,
     });
   }
 
-  return workflow.executed
-  ? null
-  : (
+  return workflow.executed ? null : (
     <Button
       type="text"
       shape="circle"
@@ -208,104 +236,77 @@ export function RemoveButton() {
   );
 }
 
+function InnerJobButton({ job, ...props }) {
+  const { icon, color } = JobStatusOptionsMap[job.status];
+
+  return (
+    <Button {...props} shape="circle" className={nodeJobButtonClass}>
+      <Tag color={color}>{icon}</Tag>
+    </Button>
+  );
+}
+
 export function JobButton() {
-  const compile = useCompile();
-  const { execution } = useFlowContext();
-  const { id, type, title, job } = useNodeContext() ?? {};
+  const { execution, setViewJob } = useFlowContext();
+  const { jobs } = useNodeContext() ?? {};
   if (!execution) {
     return null;
   }
 
-  if (!job) {
+  if (!jobs.length) {
     return (
       <span
-        className={cx('workflow-node-job-button', css`
-          border: 2px solid #d9d9d9;
-          border-radius: 50%;
-          cursor: not-allowed;
-        `)}
+        className={cx(
+          nodeJobButtonClass,
+          css`
+            border: 2px solid #d9d9d9;
+            border-radius: 50%;
+            cursor: not-allowed;
+          `,
+        )}
       />
     );
   }
 
-  const instruction = instructions.get(type);
-  const { value, icon, color } = JobStatusOptionsMap[job.status];
+  function onOpenJob({ key }) {
+    const job = jobs.find((item) => item.id == key);
+    setViewJob(job);
+  }
 
-  return (
-    <SchemaComponent
-      schema={{
-        type: 'void',
-        properties: {
-          [`${job.id}-button`]: {
-            type: 'void',
-            'x-component': 'Action',
-            'x-component-props': {
-              title: <Tag color={color}>{icon}</Tag>,
-              shape: 'circle',
-              className: ['workflow-node-job-button', css`
-                .ant-tag{
-                  padding: 0;
-                  width: 100%;
-                  line-height: 18px;
-                  margin-right: 0;
-                  border-radius: 50%;
-                }
-              `]
-            },
-            properties: {
-              [`${job.id}-modal`]: {
-                type: 'void',
-                'x-decorator': 'Form',
-                'x-decorator-props': {
-                  initialValue: job
-                },
-                'x-component': 'Action.Modal',
-                title: (
-                  <div className={cx(nodeTitleClass)}>
-                    <Tag>{compile(instruction.title)}</Tag>
-                    <strong>{title}</strong>
-                    <span className="workflow-node-id">#{id}</span>
-                  </div>
-                ),
-                properties: {
-                  status: {
-                    type: 'number',
-                    title: `{{t("Status", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Select',
-                    enum: JobStatusOptions,
-                    'x-read-pretty': true,
-                  },
-                  updatedAt: {
-                    type: 'string',
-                    title: `{{t("Executed at", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'DatePicker',
-                    'x-component-props': {
-                      showTime: true
-                    },
-                    'x-read-pretty': true,
-                  },
-                  result: {
-                    type: 'object',
-                    title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.JSON',
-                    'x-component-props': {
-                      className: css`
-                        padding: 1em;
-                        background-color: #eee;
-                      `
-                    },
-                    'x-read-pretty': true,
+  return jobs.length > 1 ? (
+    <Dropdown
+      menu={{
+        items: jobs.map((job) => {
+          const { icon, color } = JobStatusOptionsMap[job.status];
+          return {
+            key: job.id,
+            label: (
+              <div
+                className={css`
+                  display: flex;
+                  gap: 0.5em;
+
+                  time {
+                    color: #999;
+                    font-size: 0.8em;
                   }
-                }
-              }
-            }
-          }
-        }
+                `}
+              >
+                <span className={nodeJobButtonClass}>
+                  <Tag color={color}>{icon}</Tag>
+                </span>
+                <time>{str2moment(job.updatedAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+              </div>
+            ),
+          };
+        }),
+        onClick: onOpenJob,
       }}
-    />
+    >
+      <InnerJobButton job={jobs[jobs.length - 1]} />
+    </Dropdown>
+  ) : (
+    <InnerJobButton job={jobs[0]} onClick={() => setViewJob(jobs[0])} />
   );
 }
 
@@ -331,8 +332,8 @@ export function NodeDefaultView(props) {
     await api.resource('flow_nodes').update?.({
       filterByTk: data.id,
       values: {
-        title
-      }
+        title,
+      },
     });
     refresh();
   }
@@ -343,7 +344,7 @@ export function NodeDefaultView(props) {
       return;
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
-    for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
+    for (let el = ev.target; el && el !== ev.currentTarget && el !== document.documentElement; el = el.parentNode) {
       if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
@@ -384,12 +385,12 @@ export function NodeDefaultView(props) {
                   'x-component': Button,
                   'x-component-props': {
                     type: 'link',
-                    className: 'workflow-node-config-button'
+                    className: 'workflow-node-config-button',
                   },
                 },
                 [`${instruction.type}_${data.id}`]: {
                   type: 'void',
-                  title: instruction.title,
+                  title: data.title,
                   'x-component': 'Action.Drawer',
                   'x-decorator': 'Form',
                   'x-decorator-props': {
@@ -399,71 +400,90 @@ export function NodeDefaultView(props) {
                       return useRequest(() => {
                         return Promise.resolve({ data: config });
                       }, options);
-                    }
+                    },
                   },
                   properties: {
-                    ...(workflow.executed ? {
-                      alert: {
-                        type: 'void',
-                        'x-component': Alert,
-                        'x-component-props': {
-                          type: 'warning',
-                          showIcon: true,
-                          message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
-                          className: css`
-                            width: 100%;
-                            font-size: 85%;
-                            margin-bottom: 2em;
-                          `
-                        },
-                      }
-                    } : {}),
+                    ...(workflow.executed
+                      ? {
+                          alert: {
+                            type: 'void',
+                            'x-component': Alert,
+                            'x-component-props': {
+                              type: 'warning',
+                              showIcon: true,
+                              message: `{{t("Node in executed workflow cannot be modified", { ns: "${NAMESPACE}" })}}`,
+                              className: css`
+                                width: 100%;
+                                font-size: 85%;
+                                margin-bottom: 2em;
+                              `,
+                            },
+                          },
+                        }
+                      : instruction.description
+                      ? {
+                          description: {
+                            type: 'void',
+                            'x-component': NodeDescription,
+                            'x-component-props': {
+                              instruction,
+                            },
+                          },
+                        }
+                      : {}),
                     fieldset: {
                       type: 'void',
                       'x-component': 'fieldset',
                       'x-component-props': {
                         className: css`
-                          .ant-input,
                           .ant-select,
                           .ant-cascader-picker,
                           .ant-picker,
                           .ant-input-number,
-                          .ant-input-affix-wrapper{
-                            &:not(.full-width){
+                          .ant-input-affix-wrapper {
+                            &:not(.full-width) {
                               width: auto;
                               min-width: 6em;
                             }
                           }
-                        `
+                          .ant-input-affix-wrapper {
+                            &:not(.full-width) {
+                              .ant-input {
+                                width: auto;
+                                min-width: 6em;
+                              }
+                            }
+                          }
+                        `,
                       },
-                      properties: instruction.fieldset
+                      properties: instruction.fieldset,
                     },
                     actions: workflow.executed
-                    ? null
-                    : {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
+                      ? null
+                      : {
+                          type: 'void',
+                          'x-component': 'Action.Drawer.Footer',
+                          properties: {
+                            cancel: {
+                              title: '{{t("Cancel")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                useAction: '{{ cm.useCancelAction }}',
+                              },
+                            },
+                            submit: {
+                              title: '{{t("Submit")}}',
+                              'x-component': 'Action',
+                              'x-component-props': {
+                                type: 'primary',
+                                useAction: useUpdateAction,
+                              },
+                            },
                           },
                         },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: useUpdateAction,
-                          },
-                        },
-                      },
-                    }
-                  }
-                } as ISchema
-              }
+                  },
+                } as ISchema,
+              },
             }}
           />
         </ActionContext.Provider>

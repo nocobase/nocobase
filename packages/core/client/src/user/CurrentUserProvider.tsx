@@ -7,7 +7,7 @@ export const CurrentUserContext = createContext(null);
 
 export const useCurrentUserContext = () => {
   return useContext(CurrentUserContext);
-}
+};
 
 export const CurrentUserProvider = (props) => {
   const location = useLocation();
@@ -18,7 +18,7 @@ export const CurrentUserProvider = (props) => {
     return <Spin />;
   }
   const { pathname, search } = location;
-  let redirect = `?redirect=${pathname}${search}`;
+  const redirect = `?redirect=${pathname}${search}`;
   if (!result?.data?.data?.id) {
     return <Redirect to={`/signin${redirect}`} />;
   }

@@ -1,13 +1,16 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty } from '@formily/react';
-import { SelectProps } from 'antd';
-import Item from 'antd/lib/list/Item';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { SelectProps, Tag } from 'antd';
+import { uniqBy } from 'lodash';
+import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
-import { useCompile } from '../../hooks';
-import { defaultFieldNames, Select } from '../select';
+import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+
+const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   objectValue?: boolean;
@@ -15,14 +18,98 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   target: string;
   wait?: number;
   manual?: boolean;
+  mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
+  targetField?: any;
   service: ResourceActionOptions<P>;
 };
 
 const InternalRemoteSelect = connect(
   (props: RemoteSelectProps) => {
-    const { fieldNames = {}, service = {}, wait = 300, value, objectValue, manual = true, ...others } = props;
-    const compile = useCompile();
+    const {
+      fieldNames = {},
+      service = {},
+      wait = 300,
+      value,
+      objectValue,
+      manual = true,
+      mapOptions,
+      targetField: _targetField,
+      ...others
+    } = props;
     const firstRun = useRef(false);
+    const fieldSchema = useFieldSchema();
+    const field = useField();
+    const { getField } = useCollection();
+    const { getCollectionJoinField, getInterface } = useCollectionManager();
+    const collectionField = getField(fieldSchema.name);
+    const targetField =
+      _targetField ||
+      (collectionField?.target &&
+        fieldNames?.label &&
+        getCollectionJoinField(`${collectionField.target}.${fieldNames.label}`));
+
+    const operator = useMemo(() => {
+      if (targetField?.interface) {
+        return getInterface(targetField.interface)?.filterable?.operators[0].value || '$includes';
+      }
+      return '$includes';
+    }, [targetField]);
+
+    const mapOptionsToTags = useCallback(
+      (options) => {
+        try {
+          return options
+            .map((option) => {
+              let label = option[fieldNames.label];
+
+              if (targetField?.uiSchema?.enum) {
+                if (Array.isArray(label)) {
+                  label = label
+                    .map((item, index) => {
+                      const option = targetField.uiSchema.enum.find((i) => i.value === item);
+                      if (option) {
+                        return (
+                          <Tag key={index} color={option.color} style={{ marginRight: 3 }}>
+                            {option?.label || item}
+                          </Tag>
+                        );
+                      } else {
+                        return <Tag key={item}>{item}</Tag>;
+                      }
+                    })
+                    .reverse();
+                } else {
+                  const item = targetField.uiSchema.enum.find((i) => i.value === label);
+                  if (item) {
+                    label = <Tag color={item.color}>{item.label}</Tag>;
+                  }
+                }
+              }
+
+              if (targetField?.type === 'date') {
+                label = moment(label).format('YYYY-MM-DD');
+              }
+
+              if (mapOptions) {
+                return mapOptions({
+                  [fieldNames.label]: label || EMPTY,
+                  [fieldNames.value]: option[fieldNames.value],
+                });
+              }
+              return {
+                ...option,
+                [fieldNames.label]: label || EMPTY,
+                [fieldNames.value]: option[fieldNames.value],
+              };
+            })
+            .filter(Boolean);
+        } catch (err) {
+          console.error(err);
+          return options;
+        }
+      },
+      [targetField?.uiSchema, fieldNames],
+    );
 
     const { data, run, loading } = useRequest(
       {
@@ -33,7 +120,7 @@ const InternalRemoteSelect = connect(
           ...service?.params,
           // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([service?.params?.filter]),
+          filter: mergeFilter([field.componentProps?.service?.params?.filter || service?.params?.filter]),
         },
       },
       {
@@ -61,12 +148,14 @@ const InternalRemoteSelect = connect(
     const onSearch = async (search) => {
       run({
         filter: mergeFilter([
-          {
-            [fieldNames.label]: {
-              $includes: search,
-            },
-          },
-          service?.params?.filter,
+          search
+            ? {
+                [fieldNames.label]: {
+                  [operator]: search,
+                },
+              }
+            : {},
+          field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
     };
@@ -74,12 +163,6 @@ const InternalRemoteSelect = connect(
     const getOptionsByFieldNames = useCallback(
       (item) => {
         return Object.keys(fieldNames).reduce((obj, key) => {
-          const value = item[fieldNames[key]];
-          if (value) {
-            // support hidden, disabled, etc.
-            obj[['label', 'value', 'options'].includes(key) ? fieldNames[key] : key] =
-              key === 'label' ? compile(value) : value;
-          }
           return obj;
         }, {} as any);
       },
@@ -97,15 +180,11 @@ const InternalRemoteSelect = connect(
 
     const options = useMemo(() => {
       if (!data?.data?.length) {
-        return value !== undefined && value !== null
-          ? Array.isArray(value)
-            ? value.map(normalizeOptions)
-            : [normalizeOptions(value)]
-          : [];
+        return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      return data?.data?.map(getOptionsByFieldNames) || [];
+      const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
+      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
-
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
         return;
@@ -113,9 +192,9 @@ const InternalRemoteSelect = connect(
       run();
       firstRun.current = true;
     };
-
     return (
       <Select
+        dropdownMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}
@@ -125,8 +204,8 @@ const InternalRemoteSelect = connect(
         objectValue={objectValue}
         value={value}
         {...others}
-        loading={loading}
-        options={options}
+        loading={data! ? loading : true}
+        options={mapOptionsToTags(options)}
       />
     );
   },

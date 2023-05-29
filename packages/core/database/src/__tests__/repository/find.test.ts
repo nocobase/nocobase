@@ -1,7 +1,264 @@
 import { mockDatabase } from '../index';
 import Database from '@nocobase/database';
 import { Collection } from '../../collection';
-import { OptionsParser } from '../../options-parser';
+
+describe('find with associations', () => {
+  let db: Database;
+  beforeEach(async () => {
+    db = mockDatabase();
+
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should filter by association array field', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'posts',
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        {
+          type: 'array',
+          name: 'tags',
+        },
+        {
+          type: 'string',
+          name: 'title',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              tags: ['t1'],
+              title: 'u1p1',
+            },
+          ],
+        },
+      ],
+    });
+
+    const posts = await Post.repository.find({
+      filter: {
+        tags: {
+          $match: ['t1'],
+        },
+      },
+    });
+
+    expect(posts.length).toEqual(1);
+
+    const filter = {
+      $and: [
+        {
+          posts: {
+            tags: {
+              $match: ['t1'],
+            },
+          },
+        },
+      ],
+    };
+
+    const results = await User.repository.find({
+      filter,
+    });
+
+    expect(results[0].get('name')).toEqual('u1');
+  });
+
+  it('should filter with append', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { name: 'title', type: 'string' },
+        {
+          name: 'user',
+          type: 'belongsTo',
+        },
+        {
+          name: 'category',
+          type: 'belongsTo',
+        },
+      ],
+    });
+
+    const Category = db.collection({
+      name: 'categories',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'belongsTo', name: 'organization' },
+        {
+          type: 'belongsTo',
+          name: 'department',
+        },
+      ],
+    });
+
+    const Org = db.collection({
+      name: 'organizations',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const Dept = db.collection({
+      name: 'departments',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          category: { name: 'c1' },
+          user: {
+            name: 'u1',
+            organization: {
+              name: 'o1',
+            },
+            department: {
+              name: 'd1',
+            },
+          },
+        },
+        {
+          title: 'p2',
+          category: { name: 'c2' },
+          user: {
+            name: 'u2',
+            organization: {
+              name: 'o2',
+            },
+            department: {
+              name: 'd2',
+            },
+          },
+        },
+      ],
+    });
+
+    const filterResult = await Post.repository.find({
+      appends: ['user.department'],
+      filter: {
+        'user.name': 'u1',
+      },
+    });
+
+    expect(filterResult[0].get('user').get('department')).toBeDefined();
+  });
+
+  it('should filter by association field', async () => {
+    const User = db.collection({
+      name: 'users',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'posts', target: 'posts', foreignKey: 'user_id' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          foreignKey: 'parent_id',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          foreignKey: 'parent_id',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        { type: 'belongsTo', name: 'user', target: 'users', foreignKey: 'user_id' },
+      ],
+    });
+
+    await db.sync();
+
+    expect(User.options.tree).toBeTruthy();
+
+    await User.repository.create({
+      values: [
+        {
+          name: 'u1',
+          posts: [
+            {
+              title: 'u1p1',
+            },
+          ],
+          children: [
+            {
+              name: 'u2',
+              posts: [
+                {
+                  title: '标题2',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+
+    const filter = {
+      $and: [
+        {
+          children: {
+            posts: {
+              title: {
+                $eq: '标题2',
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    const [findResult, count] = await User.repository.findAndCount({
+      filter,
+      offset: 0,
+      limit: 20,
+    });
+
+    expect(findResult[0].get('name')).toEqual('u1');
+  });
+});
 
 describe('repository find', () => {
   let db: Database;
@@ -9,6 +266,7 @@ describe('repository find', () => {
   let Post: Collection;
   let Comment: Collection;
   let Tag: Collection;
+  let Profile: Collection;
 
   let A1: Collection;
   let A2: Collection;
@@ -26,6 +284,7 @@ describe('repository find', () => {
         { type: 'string', name: 'name' },
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
+        { type: 'hasOne', name: 'profile' },
         { type: 'belongsToMany', name: 'a1' },
         { type: 'belongsToMany', name: 'a2' },
       ],
@@ -39,6 +298,15 @@ describe('repository find', () => {
     A2 = db.collection({
       name: 'a2',
       fields: [{ type: 'string', name: 'name' }],
+    });
+
+    Profile = db.collection({
+      name: 'profiles',
+      fields: [
+        { type: 'integer', name: 'salary' },
+        { type: 'belongsTo', name: 'user' },
+        { type: 'string', name: 'description' },
+      ],
     });
 
     Post = db.collection({
@@ -90,6 +358,7 @@ describe('repository find', () => {
           posts: [{ title: 'u1t1', comments: [{ content: 'u1t1c1' }], abc1: [{ name: 't1' }] }],
           a1: [{ name: 'u1a11' }, { name: 'u1a12' }],
           a2: [{ name: 'u1a21' }, { name: 'u1a22' }],
+          profile: { salary: 1000 },
         },
         {
           name: 'u2',
@@ -97,14 +366,35 @@ describe('repository find', () => {
           posts: [{ title: 'u2t1', comments: [{ content: 'u2t1c1' }] }],
           a1: [{ name: 'u2a11' }, { name: 'u2a12' }],
           a2: [{ name: 'u2a21' }, { name: 'u2a22' }],
+          profile: { salary: 2000 },
         },
         {
           name: 'u3',
           age: 30,
           posts: [{ title: 'u3t1', comments: [{ content: 'u3t1c1' }] }],
+          profile: { salary: 3000 },
         },
       ],
     });
+  });
+
+  it('should only output filed in fields args', async () => {
+    const resp = await User.model.findOne({
+      attributes: [],
+      include: [
+        {
+          association: 'profile',
+          attributes: ['salary'],
+        },
+      ],
+    });
+
+    const users = await User.repository.find({
+      fields: ['profile', 'profile.salary', 'profile.id'],
+    });
+
+    const firstUser = users[0].toJSON();
+    expect(Object.keys(firstUser)).toEqual(['profile']);
   });
 
   it('append with associations', async () => {
@@ -149,6 +439,15 @@ describe('repository find', () => {
       const data = user.toJSON();
       expect(Object.keys(data)).toEqual(['id', 'posts']);
       expect(Object.keys(data['posts'])).not.toContain('id');
+    });
+
+    test('find one with appends', async () => {
+      const profile = await Profile.repository.findOne({
+        filterByTk: 1,
+        appends: ['user.name'],
+      });
+
+      expect(profile.get('user').get('name')).toEqual('u1');
     });
   });
 

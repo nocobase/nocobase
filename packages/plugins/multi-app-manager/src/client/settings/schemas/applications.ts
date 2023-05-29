@@ -5,7 +5,7 @@ import {
   useRecord,
   useRequest,
   useResourceActionContext,
-  useResourceContext
+  useResourceContext,
 } from '@nocobase/client';
 import { i18nText } from '../../utils';
 
@@ -121,6 +121,16 @@ export const tableActionColumnSchema = {
             pinned: {
               'x-component': 'CollectionField',
               'x-decorator': 'FormItem',
+            },
+            'options.standaloneDeployment': {
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              'x-content': i18nText('Standalone deployment'),
+            },
+            'options.autoStart': {
+              'x-component': 'Checkbox',
+              'x-decorator': 'FormItem',
+              'x-content': i18nText('Auto start'),
             },
             cname: {
               title: i18nText('Custom domain'),
@@ -251,6 +261,16 @@ export const schema: ISchema = {
                     pinned: {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
+                    },
+                    'options.standaloneDeployment': {
+                      'x-component': 'Checkbox',
+                      'x-decorator': 'FormItem',
+                      'x-content': i18nText('Standalone deployment'),
+                    },
+                    'options.autoStart': {
+                      'x-component': 'Checkbox',
+                      'x-decorator': 'FormItem',
+                      'x-content': i18nText('Auto start'),
                     },
                     cname: {
                       title: i18nText('Custom domain'),

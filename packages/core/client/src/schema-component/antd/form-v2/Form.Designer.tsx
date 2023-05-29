@@ -2,6 +2,7 @@ import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useFormBlockContext } from '../../../block-provider';
 import { useDetailsBlockContext } from '../../../block-provider/DetailsBlockProvider';
 import { useCollection } from '../../../collection-manager';
 import { useCollectionFilterOptions, useSortFields } from '../../../collection-manager/action-hooks';
@@ -16,17 +17,21 @@ export const FormDesigner = () => {
   const template = useSchemaTemplate();
   const fieldSchema = useFieldSchema();
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const { action } = useFormBlockContext();
 
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       {/* <SchemaSettings.Template componentName={'FormItem'} collectionName={name} /> */}
       <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.LinkageRules collectionName={name} />
+      {/* 当 action 没有值的时候，说明是在用表单创建新数据，此时需要显示数据模板 */}
+      {!action ? <SchemaSettings.DataTemplates collectionName={name} /> : null}
+      <SchemaSettings.Divider />
       <SchemaSettings.FormItemTemplate
         componentName={'FormItem'}
         collectionName={name}
         resourceName={defaultResource}
       />
-      <SchemaSettings.LinkageRules collectionName={name} />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
@@ -153,6 +158,7 @@ export const DetailsDesigner = () => {
                         field: {
                           type: 'string',
                           enum: sortFields,
+                          required: true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {

@@ -2,6 +2,7 @@ import { ISchema } from '@formily/react';
 import { useContext, useEffect } from 'react';
 import { useFormBlockContext } from '../../../block-provider';
 import { useFilterOptions } from '../../../schema-component';
+import { FilterDynamicComponent } from '../FilterDynamicComponent';
 import { RoleResourceCollectionContext } from '../RolesResourcesActions';
 
 export const rolesResourcesScopesCollection = {
@@ -139,6 +140,7 @@ export const scopesSchema: ISchema = {
                                       'x-decorator': 'FormItem',
                                       'x-component': 'Filter',
                                       'x-component-props': {
+                                        dynamicComponent: FilterDynamicComponent,
                                         useProps() {
                                           const ctx = useContext(RoleResourceCollectionContext);
                                           const options = useFilterOptions(ctx.name);
@@ -267,6 +269,7 @@ export const scopesSchema: ISchema = {
                                               'x-decorator': 'FormItem',
                                               'x-component': 'Filter',
                                               'x-component-props': {
+                                                dynamicComponent: FilterDynamicComponent,
                                                 useProps() {
                                                   const ctx = useContext(RoleResourceCollectionContext);
                                                   const options = useFilterOptions(ctx.name);
@@ -311,7 +314,6 @@ export const scopesSchema: ISchema = {
                               'x-action': 'destroy',
                               'x-decorator': 'ACLActionProvider',
                               'x-component': 'Action.Link',
-                              'x-designer': 'Action.Designer',
                               'x-component-props': {
                                 icon: 'DeleteOutlined',
                                 confirm: {
@@ -342,7 +344,6 @@ export const scopesSchema: ISchema = {
                       title: '{{ t("Submit") }}',
                       'x-action': 'submit',
                       'x-component': 'Action',
-                      'x-designer': 'Action.Designer',
                       'x-component-props': {
                         type: 'primary',
                         htmlType: 'submit',

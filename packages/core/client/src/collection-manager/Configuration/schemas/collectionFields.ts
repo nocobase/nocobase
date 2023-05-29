@@ -2,7 +2,7 @@ import { ISchema } from '@formily/react';
 import { CollectionOptions } from '../../types';
 import { CollectionFieldInterface } from '../components/CollectionFieldInterface';
 
-const collection: CollectionOptions = {
+export const collection: CollectionOptions = {
   name: 'fields',
   fields: [
     {
@@ -194,7 +194,7 @@ export const collectionFieldSchema: ISchema = {
                 delete: {
                   type: 'void',
                   title: '{{ t("Delete") }}',
-                  'x-visible': '{{cm.useDeleteButtonVisible()}}',
+                  'x-disabled': '{{cm.useDeleteButtonDisabled()}}',
                   'x-component': 'Action.Link',
                   'x-component-props': {
                     confirm: {

@@ -11,6 +11,7 @@ export * from './board';
 export * from './china-region';
 export * from './collection-manager';
 export * from './document-title';
+export * from './filter-provider';
 export * from './formula';
 export * from './i18n';
 export * from './icon';
@@ -23,7 +24,7 @@ export * from './schema-component';
 export * from './schema-initializer';
 export * from './schema-settings';
 export * from './schema-templates';
+export * from './schema-items';
 export * from './settings-form';
 export * from './system-settings';
 export * from './user';
-

@@ -19,6 +19,7 @@ const useDragEnd = (props?: any) => {
     const breakRemoveOn = over?.data?.current?.breakRemoveOn;
     const wrapSchema = over?.data?.current?.wrapSchema;
     const onSuccess = over?.data?.current?.onSuccess;
+    const removeParentsIfNoChildren = over?.data?.current?.removeParentsIfNoChildren ?? true;
 
     if (!activeSchema || !overSchema) {
       props?.onDragEnd?.(event);
@@ -49,7 +50,7 @@ const useDragEnd = (props?: any) => {
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         breakRemoveOn,
-        removeParentsIfNoChildren: true,
+        removeParentsIfNoChildren,
         onSuccess,
       });
       props?.onDragEnd?.(event);
@@ -69,7 +70,7 @@ export const DndContext = observer((props: Props) => {
         const { active } = event;
         const activeSchema = active?.data?.current?.schema;
         setVisible(!!activeSchema);
-        if(props?.onDragStart){
+        if (props?.onDragStart) {
           props?.onDragStart?.(event);
         }
       }}

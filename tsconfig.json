@@ -32,6 +32,9 @@
       "@nocobase/preset-*": [
         "packages/presets/*/src"
       ],
+      "@nocobase/evaluators/client": [
+        "packages/core/evaluators/src/client"
+      ],
       "@nocobase/utils/client": [
         "packages/core/utils/src/client"
       ],
@@ -46,7 +49,8 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",

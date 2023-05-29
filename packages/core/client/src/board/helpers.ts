@@ -2,7 +2,7 @@ import {
   addInArrayAtPosition,
   changeElementOfPositionInArray,
   removeFromArrayAtPosition,
-  replaceElementOfArray
+  replaceElementOfArray,
 } from './utils';
 
 function reorderCardsOnColumn(column, reorderCards) {

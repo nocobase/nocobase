@@ -1,6 +1,6 @@
-import React from "react";
+import React from 'react';
 
-import { InitializerWithSwitch } from "./InitializerWithSwitch";
+import { InitializerWithSwitch } from './InitializerWithSwitch';
 
 export const TableActionColumnInitializer = (props) => {
   const schema = {

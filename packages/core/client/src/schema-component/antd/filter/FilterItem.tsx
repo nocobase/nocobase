@@ -2,7 +2,7 @@ import { CloseCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Cascader, Select, Space } from 'antd';
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
 import { RemoveConditionContext } from './context';
@@ -47,7 +47,7 @@ export const FilterItem = observer((props: any) => {
         />
         {!operator?.noValue &&
           React.createElement(DynamicComponent, {
-            value,
+            value: value ? value : undefined,
             schema,
             onChange(value) {
               setValue(value);

@@ -54,6 +54,7 @@ describe('repository.find', () => {
   let User: Collection;
   let Post: Collection;
   let Comment: Collection;
+  let Tag: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -70,8 +71,18 @@ describe('repository.find', () => {
         { type: 'string', name: 'name' },
         { type: 'belongsTo', name: 'user' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsToMany', name: 'tags' },
       ],
     });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts' },
+      ],
+    });
+
     Comment = db.collection({
       name: 'comments',
       fields: [
@@ -80,6 +91,10 @@ describe('repository.find', () => {
       ],
     });
     await db.sync();
+
+    const tags = await Tag.repository.create({
+      values: [{ name: 't1' }, { name: 't2' }],
+    });
     await User.repository.createMany({
       records: [
         {
@@ -88,18 +103,22 @@ describe('repository.find', () => {
             {
               name: 'post11',
               comments: [{ name: 'comment111' }, { name: 'comment112' }, { name: 'comment113' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post12',
               comments: [{ name: 'comment121' }, { name: 'comment122' }, { name: 'comment123' }],
+              tags: [{ id: tags[1].get('id') }, { id: tags[0].get('id') }],
             },
             {
               name: 'post13',
               comments: [{ name: 'comment131' }, { name: 'comment132' }, { name: 'comment133' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post14',
               comments: [{ name: 'comment141' }, { name: 'comment142' }, { name: 'comment143' }],
+              tags: [{ id: tags[1].get('id') }],
             },
           ],
         },
@@ -109,6 +128,7 @@ describe('repository.find', () => {
             {
               name: 'post21',
               comments: [{ name: 'comment211' }, { name: 'comment212' }, { name: 'comment213' }],
+              tags: [{ id: tags[0].get('id') }, { id: tags[1].get('id') }],
             },
             {
               name: 'post22',
@@ -142,6 +162,16 @@ describe('repository.find', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should appends with belongs to association', async () => {
+    const posts = await Post.repository.find({
+      appends: ['user'],
+    });
+
+    posts.forEach((post) => {
+      expect(post.get('user')).toBeDefined();
+    });
   });
 
   test('find pk with filter', async () => {
@@ -178,6 +208,80 @@ describe('repository.find', () => {
         'posts.comments.id': null,
       },
     });
+  });
+});
+
+describe('repository create with belongs to many', () => {
+  let db: Database;
+
+  beforeEach(async () => {
+    db = mockDatabase({
+      tablePrefix: '',
+    });
+    await db.clean({ drop: true });
+  });
+
+  afterEach(async () => [await db.close()]);
+
+  it('should save value at through table', async () => {
+    const Product = db.collection({
+      name: 'products',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'integer', name: 'price' },
+      ],
+    });
+
+    const OrderProduct = db.collection({
+      name: 'orders_products',
+      fields: [{ type: 'integer', name: 'quantity' }],
+    });
+
+    const Order = db.collection({
+      name: 'orders',
+      fields: [
+        {
+          type: 'belongsToMany',
+          name: 'products',
+          through: 'orders_products',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Product.repository.create({
+      values: [
+        {
+          name: 'product1',
+          price: 100,
+        },
+        {
+          name: 'product2',
+          price: 200,
+        },
+      ],
+    });
+
+    const p1 = await Product.repository.findOne({
+      filter: { name: 'product1' },
+    });
+
+    await Order.repository.create({
+      values: {
+        products: [
+          {
+            id: p1.get('id'),
+            orders_products: {
+              quantity: 20,
+            },
+          },
+        ],
+      },
+    });
+
+    const through = await OrderProduct.repository.findOne();
+    expect(through.get('quantity')).toBe(20);
   });
 });
 

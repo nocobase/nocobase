@@ -5,7 +5,7 @@ import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
 import Designer from './Designer';
 
-interface MapProps extends AMapComponentProps {}
+type MapProps = AMapComponentProps;
 
 const InternalMap = connect((props: MapProps) => {
   return (

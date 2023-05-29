@@ -6,11 +6,12 @@ import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings'
 import { useCompile, useDesignable } from '../../hooks';
 
 const useLabelFields = (collectionName?: any) => {
+  // 需要在组件顶层调用
+  const compile = useCompile();
+  const { getCollectionFields } = useCollectionManager();
   if (!collectionName) {
     return [];
   }
-  const compile = useCompile();
-  const { getCollectionFields } = useCollectionManager();
   const targetFields = getCollectionFields(collectionName);
   return targetFields
     ?.filter?.((field) => field?.interface && !field?.target && field.type !== 'boolean' && !field.isForeignKey)
@@ -24,7 +25,7 @@ const useLabelFields = (collectionName?: any) => {
 
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
-  const { getInterface } = useCollectionManager();
+  const { getInterface, getCollection } = useCollectionManager();
   const field = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
@@ -33,7 +34,8 @@ export const TableColumnDesigner = (props) => {
     fieldSchema?.['x-component-props']?.['fieldNames'] || uiSchema?.['x-component-props']?.['fieldNames'];
   const options = useLabelFields(collectionField?.target ?? collectionField?.targetCollection);
   const intefaceCfg = getInterface(collectionField?.interface);
-
+  const targetCollection = getCollection(collectionField?.target);
+  const isFileField = isFileCollection(targetCollection);
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -44,9 +46,9 @@ export const TableColumnDesigner = (props) => {
             title: t('Custom column title'),
             properties: {
               title: {
-                // title: t('Column title'),
+                title: t('Column title'),
                 default: columnSchema?.title,
-                description: `${t('Original title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
+                description: `${t('Original field title: ')}${collectionField?.uiSchema?.title || fieldSchema?.title}`,
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 'x-component-props': {},
@@ -122,27 +124,32 @@ export const TableColumnDesigner = (props) => {
       )}
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot', 'createdBy', 'updatedBy'].includes(
         collectionField?.interface,
-      ) && (
-        <SchemaSettings.SwitchItem
-          title={t('Enable link')}
-          checked={(fieldSchema['x-component-props']?.mode ?? 'links') === 'links'}
-          onChange={(flag) => {
-            fieldSchema['x-component-props'] = {
-              ...fieldSchema?.['x-component-props'],
-              mode: flag ? 'links' : 'tags',
-            };
-            dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-component-props': {
-                  ...fieldSchema['x-component-props'],
+      ) &&
+        !isFileField && (
+          <SchemaSettings.SwitchItem
+            title={t('Enable link')}
+            checked={fieldSchema['x-component-props']?.enableLink !== false}
+            onChange={(flag) => {
+              fieldSchema['x-component-props'] = {
+                ...fieldSchema?.['x-component-props'],
+                enableLink: flag,
+              };
+              field.componentProps = {
+                ...fieldSchema?.['x-component-props'],
+                enableLink: flag,
+              };
+              dn.emit('patch', {
+                schema: {
+                  'x-uid': fieldSchema['x-uid'],
+                  'x-component-props': {
+                    ...fieldSchema?.['x-component-props'],
+                  },
                 },
-              },
-            });
-            dn.refresh();
-          }}
-        />
-      )}
+              });
+              dn.refresh();
+            }}
+          />
+        )}
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot'].includes(collectionField?.interface) && (
         <SchemaSettings.SelectItem
           title={t('Title field')}
@@ -183,3 +190,7 @@ export const TableColumnDesigner = (props) => {
     </GeneralSchemaDesigner>
   );
 };
+
+function isFileCollection(collection) {
+  return collection?.template === 'file';
+}

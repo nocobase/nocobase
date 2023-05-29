@@ -129,6 +129,7 @@ export class PluginACL extends Plugin {
 
     for (const role of roles) {
       role.writeToAcl({ acl: this.acl });
+
       for (const resource of role.get('resources') as RoleResourceModel[]) {
         await this.writeResourceToACL(resource, null);
       }
@@ -537,7 +538,7 @@ export class PluginACL extends Plugin {
               ctx.permission.can = false;
             }
           } else {
-            const filter = parseJsonTemplate(action?.params?.filter || {}, ctx);
+            const filter = await parseJsonTemplate(action?.params?.filter || {}, ctx);
             const sourceInstance = await ctx.db.getRepository(collectionName).findOne({
               filterByTk: resourceOf,
               filter,
@@ -585,19 +586,11 @@ export class PluginACL extends Plugin {
     const withACLMeta = async (ctx: any, next) => {
       await next();
 
-      if (!ctx.action) {
+      if (!ctx.action || !ctx.get('X-With-ACL-Meta') || ctx.status !== 200) {
         return;
       }
 
       const { resourceName, actionName } = ctx.action;
-
-      if (!ctx.get('X-With-ACL-Meta')) {
-        return;
-      }
-
-      if (ctx.status !== 200) {
-        return;
-      }
 
       if (!['list', 'get'].includes(actionName)) {
         return;
@@ -620,11 +613,11 @@ export class PluginACL extends Plugin {
         listData = lodash.castArray(listData);
       }
 
-      const actions = ['view', 'update', 'destroy'];
+      const inspectActions = ['view', 'update', 'destroy'];
 
       const actionsParams = [];
 
-      for (const action of actions) {
+      for (const action of inspectActions) {
         const actionCtx: any = {
           db: ctx.db,
           action: {
@@ -707,10 +700,16 @@ export class PluginACL extends Plugin {
           {
             where: (() => {
               const filterObj = queryParams.where;
+
               if (!this.db.options.underscored) {
                 return filterObj;
               }
 
+              const isAssociationKey = (key) => {
+                return key.startsWith('$') && key.endsWith('$');
+              };
+
+              // change camelCase to snake_case
               const iterate = (rootObj, path = []) => {
                 const obj = path.length == 0 ? rootObj : lodash.get(rootObj, path);
 
@@ -738,8 +737,21 @@ export class PluginACL extends Plugin {
                   }
 
                   if (typeof key === 'string' && key !== snakeCase(key)) {
-                    lodash.set(rootObj, [...path, snakeCase(key)], lodash.cloneDeep(obj[key]));
+                    const setKey = isAssociationKey(key)
+                      ? (() => {
+                          const parts = key.split('.');
+
+                          parts[parts.length - 1] = lodash.snakeCase(parts[parts.length - 1]);
+
+                          const result = parts.join('.');
+
+                          return result.endsWith('$') ? result : `${result}$`;
+                        })()
+                      : snakeCase(key);
+                    const setValue = lodash.cloneDeep(obj[key]);
                     lodash.unset(rootObj, [...path, key]);
+
+                    lodash.set(rootObj, [...path, setKey], setValue);
                   }
                 });
               };
@@ -776,7 +788,7 @@ export class PluginACL extends Plugin {
         include: conditions.map((condition) => condition.include).flat(),
       });
 
-      const allowedActions = actions
+      const allowedActions = inspectActions
         .map((action) => {
           if (allAllowed.includes(action)) {
             return [action, ids];

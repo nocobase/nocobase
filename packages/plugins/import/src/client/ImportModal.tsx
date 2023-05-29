@@ -21,7 +21,7 @@ export const ImportModal = (props: any) => {
   };
   const downloadFailureDataHandler = () => {
     const arrayBuffer = new Int8Array(fileData?.data);
-    let blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
+    const blob = new Blob([arrayBuffer], { type: 'application/x-xls' });
     saveAs(blob, `fail.xlsx`);
   };
   return (
@@ -29,7 +29,7 @@ export const ImportModal = (props: any) => {
       title={t('Import Data')}
       width="50%"
       bodyStyle={{ height: 'calc(80vh - 200px)' }}
-      visible={importModalVisible}
+      open={importModalVisible}
       footer={null}
       closable={importStatus === ImportStatus.IMPORTED}
       onCancel={doneHandler}

@@ -8,7 +8,7 @@ import { SchemaComponentContext } from '../context';
 import { ISchemaComponentProvider } from '../types';
 import { SchemaComponentOptions } from './SchemaComponentOptions';
 
-const randomString = (prefix: string = '') => {
+const randomString = (prefix = '') => {
   return `${prefix}${uid()}`;
 };
 
@@ -35,7 +35,7 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
   const { designable, components, children } = props;
   const [, setUid] = useState(uid());
   const [formId, setFormId] = useState(uid());
-  const form = props.form || useMemo(() => createForm(), [formId]);
+  const form = useMemo(() => props.form || createForm(), [formId]);
   const { t } = useTranslation();
   const scope = { ...props.scope, t, randomString };
   const [active, setActive] = useCookieState('useCookieDesignable', {

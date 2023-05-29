@@ -8,12 +8,11 @@ import { CollectionFieldInitializers } from '../components/CollectionFieldInitia
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
-
-
 export default {
   title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
   type: 'create',
   group: 'collection',
+  description: `{{t("Add new record to a collection. You can use variables from upstream nodes to assign values to fields.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
     // multiple: {
@@ -30,22 +29,26 @@ export default {
       type: 'object',
       properties: {
         values,
-        appends
-      }
-    }
+        appends,
+      },
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     CollectionFieldset,
-    FieldsSelect
+    FieldsSelect,
   },
-  getOptions(config, types) {
-    return useCollectionFieldOptions({ collection: config.collection, types });
+  useVariables({ config }, options) {
+    const result = useCollectionFieldOptions({
+      collection: config?.collection,
+      ...options,
+      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
+    });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
@@ -57,10 +60,10 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

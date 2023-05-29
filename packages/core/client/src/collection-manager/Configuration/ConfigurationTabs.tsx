@@ -7,16 +7,17 @@ import {
   useDraggable,
   useDroppable,
   useSensor,
-  useSensors
+  useSensors,
 } from '@dnd-kit/core';
-import { observer, RecursionField } from '@formily/react';
+import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Badge, Card, Dropdown, Menu, Modal, Tabs } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
-import { CollectionCategroriesContext } from '../context';
 import { useResourceActionContext } from '../ResourceActionProvider';
+import { CollectionCategroriesContext } from '../context';
+import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
 
 function Draggable(props) {
@@ -113,6 +114,12 @@ export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
+  const [activeKey, setActiveKey] = useState('all');
+  const compile = useCompile();
+  const api = useAPIClient();
+
+  if (!data) return null;
+
   const tabsItems = data
     .sort((a, b) => b.sort - a.sort)
     .concat()
@@ -130,9 +137,7 @@ export const ConfigurationTabs = () => {
       closable: false,
       schema: collectionTableSchema,
     });
-  const compile = useCompile();
-  const [activeKey, setActiveKey] = useState('all');
-  const api = useAPIClient();
+
   const onChange = (key: string) => {
     setActiveKey(key);
     setKey(uid());
@@ -240,6 +245,7 @@ export const ConfigurationTabs = () => {
             >
               <Card bordered={false}>
                 <SchemaComponentOptions
+                  components={{ CollectionFields }}
                   inherit
                   scope={{ loadCategories, categoryVisible: item.id === 'all', categoryId: item.id }}
                 >

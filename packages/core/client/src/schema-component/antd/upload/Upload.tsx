@@ -1,4 +1,4 @@
-import { DeleteOutlined, DownloadOutlined, InboxOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { usePrefixCls } from '@formily/antd/lib/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
@@ -24,7 +24,7 @@ export const Upload: ComposedUpload = connect(
 );
 
 Upload.Attachment = connect((props: UploadProps) => {
-  const { disabled, multiple, value, onChange, onRemove } = props;
+  const { disabled, multiple, value, onChange } = props;
   const [fileList, setFileList] = useState([]);
   const [sync, setSync] = useState(true);
   const images = fileList;
@@ -216,12 +216,24 @@ Upload.DraggerV2 = connect(
     const defaultSubTitle = t('Support for a single or bulk upload, file size should not exceed') + ` 10MB`;
     const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
     const extraProps: Record<string, any> = useProps?.() || {};
+    const [loading, setLoading] = useState(false);
+
+    const handleChange = (fileList = []) => {
+      const { onChange } = extraProps;
+      onChange?.(fileList);
+
+      if (fileList.some((file) => file.status === 'uploading')) {
+        setLoading(true);
+      } else {
+        setLoading(false);
+      }
+    };
 
     return (
       <div className={usePrefixCls('upload-dragger')}>
-        <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps })}>
+        <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
           <p className="ant-upload-drag-icon">
-            <InboxOutlined />
+            {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
           </p>
           <p className="ant-upload-text">{title}</p>
           <p className="ant-upload-hint">{subTitle}</p>

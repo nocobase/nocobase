@@ -8,49 +8,50 @@ import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
-
-
 export default {
   title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
   type: 'query',
   group: 'collection',
+  description: `{{t("Query records from a collection. You can use variables from upstream nodes as query conditions.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     collection,
-    // multiple: {
-    //   type: 'boolean',
-    //   title: `{{t("Multiple records", { ns: "${NAMESPACE}" })}}`,
-    //   'x-decorator': 'FormItem',
-    //   'x-component': 'Checkbox',
-    //   'x-component-props': {
-    //     disabled: true
-    //   }
-    // },
+    multiple: {
+      type: 'boolean',
+      title: `{{t("Allow multiple records as result", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      description: `{{t("If checked, when there are multiple records in the query result, an array will be returned as the result, which can be operated on one by one using a loop node. Otherwise, only one record will be returned.", { ns: "${NAMESPACE}" })}}`,
+    },
     params: {
       type: 'object',
       properties: {
         filter,
-        appends
-      }
+        appends,
+      },
     },
     failOnEmpty: {
       type: 'boolean',
-      title: `{{t("Fail on no data", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Exit when query result is null", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
-    }
+    },
   },
-  view: {
-
-  },
+  view: {},
   scope: {
-    useCollectionDataSource
+    useCollectionDataSource,
   },
   components: {
     FilterDynamicComponent,
-    FieldsSelect
+    FieldsSelect,
   },
-  getOptions(config, types) {
-    return useCollectionFieldOptions({ collection: config.collection, types });
+  useVariables({ config }, options) {
+    const result = useCollectionFieldOptions({
+      collection: config?.collection,
+      ...options,
+      depth: options?.depth ?? config?.params?.appends?.length ? 1 : 0,
+    });
+
+    return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
     if (!node.config.collection) {
@@ -62,10 +63,10 @@ export default {
       title: node.title ?? `#${node.id}`,
       component: CollectionBlockInitializer,
       collection: node.config.collection,
-      dataSource: `{{$jobsMapByNodeId.${node.id}}}`
+      dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
   initializers: {
-    CollectionFieldInitializers
-  }
+    CollectionFieldInitializers,
+  },
 };

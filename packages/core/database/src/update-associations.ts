@@ -6,10 +6,11 @@ import {
   HasOne,
   Hookable,
   ModelStatic,
-  Transactionable
+  Transactionable,
 } from 'sequelize';
 import { Model } from './model';
 import { UpdateGuard } from './update-guard';
+import lodash from 'lodash';
 
 function isUndefinedOrNull(value: any) {
   return typeof value === 'undefined' || value === null;
@@ -308,7 +309,7 @@ export async function updateSingleAssociation(
     }
 
     if (isStringOrNumber(value[dataKey])) {
-      let instance: any = await M.findOne({
+      const instance: any = await M.findOne({
         where: {
           [dataKey]: value[dataKey],
         },
@@ -396,38 +397,40 @@ export async function updateMultipleAssociation(
       return;
     }
 
-    if (!Array.isArray(value)) {
-      value = [value];
-    }
+    value = lodash.castArray(value);
 
-    const list1 = []; // to be setted
-    const list2 = []; // to be added
-    const created = [];
+    const setItems = []; // to be setted
+    const objectItems = []; // to be added
+
+    // iterate item in value
     for (const item of value) {
       if (isUndefinedOrNull(item)) {
         continue;
       }
+
       if (isStringOrNumber(item)) {
-        list1.push(item);
+        setItems.push(item);
       } else if (item instanceof Model) {
-        list1.push(item);
+        setItems.push(item);
       } else if (item.sequelize) {
-        list1.push(item);
+        setItems.push(item);
       } else if (typeof item === 'object') {
         const targetKey = (association as any).targetKey || 'id';
+
         if (item[targetKey]) {
-          created.push(item[targetKey]);
-          list1.push(item[targetKey]);
+          setItems.push(item[targetKey]);
         }
-        list2.push(item);
+
+        objectItems.push(item);
       }
     }
 
     // associate targets in lists1
-    await model[setAccessor](list1, { transaction, context, individualHooks: true });
+    await model[setAccessor](setItems, { transaction, context, individualHooks: true });
 
-    const list3 = [];
-    for (const item of list2) {
+    const newItems = [];
+
+    for (const item of objectItems) {
       const pk = association.target.primaryKeyAttribute;
 
       const through = (<any>association).through ? (<any>association).through.model.name : null;
@@ -446,13 +449,14 @@ export async function updateMultipleAssociation(
       if (isUndefinedOrNull(item[pk])) {
         // create new record
         const instance = await model[createAccessor](item, accessorOptions);
+
         await updateAssociations(instance, item, {
           ...options,
           transaction,
           associationContext: association,
           updateAssociationValues: keys,
         });
-        list3.push(instance);
+        newItems.push(instance);
       } else {
         // set & update record
         const instance = await association.target.findByPk<any>(item[pk], {
@@ -462,9 +466,9 @@ export async function updateMultipleAssociation(
           continue;
         }
         const addAccessor = association.accessors.add;
-        if (!created.includes(item[pk])) {
-          await model[addAccessor](item[pk], accessorOptions);
-        }
+
+        await model[addAccessor](item[pk], accessorOptions);
+
         if (!recursive) {
           continue;
         }
@@ -477,11 +481,11 @@ export async function updateMultipleAssociation(
           associationContext: association,
           updateAssociationValues: keys,
         });
-        list3.push(instance);
+        newItems.push(instance);
       }
     }
 
-    model.setDataValue(key, list1.concat(list3));
+    model.setDataValue(key, setItems.concat(newItems));
   } catch (error) {
     throw error;
   }

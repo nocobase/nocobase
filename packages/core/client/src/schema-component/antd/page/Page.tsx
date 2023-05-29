@@ -1,12 +1,13 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
-import { Schema, SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
-import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
+import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import { PageHeader as AntdPageHeader, Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
@@ -14,6 +15,7 @@ import { DndContext } from '../../common';
 import { SortableItem } from '../../common/sortable-item';
 import { SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
+import { ErrorFallback } from '../error-fallback';
 import FixedBlock from './FixedBlock';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 
@@ -26,10 +28,10 @@ const designerCss = css`
   }
   &.nb-action-link {
     > .general-schema-designer {
-      top: -10px;
-      bottom: -10px;
-      left: -10px;
-      right: -10px;
+      top: var(--nb-designer-offset);
+      bottom: var(--nb-designer-offset);
+      right: var(--nb-designer-offset);
+      left: var(--nb-designer-offset);
     }
   }
   > .general-schema-designer {
@@ -42,10 +44,6 @@ const designerCss = css`
     display: none;
     background: rgba(241, 139, 98, 0.06);
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       position: absolute;
@@ -67,7 +65,9 @@ const designerCss = css`
 const pageDesignerCss = css`
   position: relative;
   z-index: 20;
-  padding-top: 1px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     > .general-schema-designer {
@@ -88,10 +88,6 @@ const pageDesignerCss = css`
     display: none;
     /* background: rgba(241, 139, 98, 0.06); */
     border: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
     pointer-events: none;
     > .general-schema-designer-icons {
       z-index: 9999;
@@ -112,8 +108,9 @@ const pageDesignerCss = css`
 `;
 
 const pageWithFixedBlockCss = classNames([
-  'nb-page',
+  'nb-page-content',
   css`
+    height: 100%;
     > .nb-grid:not(:last-child) {
       > .nb-schema-initializer-button {
         display: none;
@@ -146,6 +143,10 @@ export const Page = (props) => {
   });
 
   const [height, setHeight] = useState(0);
+
+  const handleErrors = (error) => {
+    console.error(error);
+  };
 
   return (
     <FilterBlockProvider>
@@ -264,42 +265,44 @@ export const Page = (props) => {
             />
           )}
         </div>
-        <div className={'m24'} style={{ margin: 24 }}>
-          {loading ? (
-            <Spin />
-          ) : !disablePageHeader && enablePageTabs ? (
-            fieldSchema.mapProperties((schema) => {
-              if (schema.name !== activeKey) return null;
-              return (
-                <FixedBlock
-                  key={schema.name}
-                  height={
-                    // header 46 margin 48
-                    height + 46 + 48
-                  }
-                >
-                  <SchemaComponent
-                    schema={
-                      new Schema({
-                        properties: {
-                          [schema.name]: schema,
-                        },
-                      })
+        <div className="nb-page-wrapper" style={{ margin: 'var(--nb-spacing)', flex: 1 }}>
+          <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
+            {loading ? (
+              <Spin />
+            ) : !disablePageHeader && enablePageTabs ? (
+              fieldSchema.mapProperties((schema) => {
+                if (schema.name !== activeKey) return null;
+                return (
+                  <FixedBlock
+                    key={schema.name}
+                    height={
+                      // header 46 margin --nb-spacing * 2
+                      `calc(${height}px + 46px + var(--nb-spacing) * 2)`
                     }
-                  />
-                </FixedBlock>
-              );
-            })
-          ) : (
-            <FixedBlock
-              height={
-                // header 46 margin 48
-                height + 46 + 48
-              }
-            >
-              <div className={pageWithFixedBlockCss}>{props.children}</div>
-            </FixedBlock>
-          )}
+                  >
+                    <SchemaComponent
+                      schema={
+                        new Schema({
+                          properties: {
+                            [schema.name]: schema,
+                          },
+                        })
+                      }
+                    />
+                  </FixedBlock>
+                );
+              })
+            ) : (
+              <FixedBlock
+                height={
+                  // header 46 margin --nb-spacing * 2
+                  `calc(${height}px + 46px + var(--nb-spacing) * 2)`
+                }
+              >
+                <div className={pageWithFixedBlockCss}>{props.children}</div>
+              </FixedBlock>
+            )}
+          </ErrorBoundary>
         </div>
       </div>
     </FilterBlockProvider>

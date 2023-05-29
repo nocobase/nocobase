@@ -2,6 +2,7 @@ import { omit } from 'lodash';
 import { HasMany, Op } from 'sequelize';
 import { Model } from '../model';
 import {
+  AggregateOptions,
   CreateOptions,
   DestroyOptions,
   FindOneOptions,
@@ -22,7 +23,7 @@ interface IHasManyRepository<M extends Model> {
   // 更新
   update(options?: UpdateOptions): Promise<M>;
   // 删除
-  destroy(options?: TK | DestroyOptions): Promise<Boolean>;
+  destroy(options?: TK | DestroyOptions): Promise<boolean>;
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
   // 附加关联
@@ -53,13 +54,29 @@ export class HasManyRepository extends MultipleRelationRepository implements IHa
     return await targetRepository.find(findOptions);
   }
 
+  async aggregate(options: AggregateOptions) {
+    const targetRepository = this.targetCollection.repository;
+    const addFilter = {
+      [this.association.foreignKey]: this.sourceKeyValue,
+    };
+
+    const aggOptions = {
+      ...options,
+      filter: {
+        $and: [options.filter || {}, addFilter],
+      },
+    };
+
+    return await targetRepository.aggregate(aggOptions);
+  }
+
   @transaction((args, transaction) => {
     return {
       filterByTk: args[0],
       transaction,
     };
   })
-  async destroy(options?: TK | DestroyOptions): Promise<Boolean> {
+  async destroy(options?: TK | DestroyOptions): Promise<boolean> {
     const transaction = await this.getTransaction(options);
 
     const sourceModel = await this.getSourceModel(transaction);

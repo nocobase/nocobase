@@ -20,8 +20,7 @@ describe('cache', () => {
   });
 
   it('createCache-with-single-config', async () => {
-    let cacheConfigStr =
-      '{"store":"memory","ttl":1,"max":10}';
+    let cacheConfigStr = '{"store":"memory","ttl":1,"max":10}';
     let cacheConfig = JSON.parse(cacheConfigStr);
     let cache = createCache(cacheConfig);
     await cache.set('name', 'Emma');
@@ -31,8 +30,7 @@ describe('cache', () => {
     await sleep(1005);
     expect(await cache.get('name')).toBeUndefined();
 
-    cacheConfigStr =
-      '[{"store":"memory","ttl":1,"max":10}]';
+    cacheConfigStr = '[{"store":"memory","ttl":1,"max":10}]';
     cacheConfig = JSON.parse(cacheConfigStr);
     cache = createCache(cacheConfig);
     await cache.set('name', 'Emma');
