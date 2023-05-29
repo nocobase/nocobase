@@ -550,7 +550,7 @@ function Drawer() {
     : null;
 
   return (
-    <SchemaComponentContext.Provider value={{ ...ctx, designable: false }}>
+    <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
       <SchemaComponent
         components={{
           Tag,

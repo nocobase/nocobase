@@ -13,9 +13,7 @@ import { NAMESPACE } from '../../locale';
 
 function InternalFormBlockInitializer({ insert, schema, ...others }) {
   const { getTemplateSchemaByMode } = useSchemaTemplateManager();
-  const items = useRecordCollectionDataSourceItems('FormItem').filter(
-    (item) => item.name !== 'ref',
-  ) as SchemaInitializerItemOptions[];
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
   async function onConfirm({ item }) {
     const template = item.template ? await getTemplateSchemaByMode(item) : null;
     const result = createFormBlockSchema({
