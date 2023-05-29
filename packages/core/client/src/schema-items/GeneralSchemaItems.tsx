@@ -1,15 +1,14 @@
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema } from '@formily/react';
-import _ from 'lodash';
-import { useTranslation } from 'react-i18next';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import { useTranslation } from 'react-i18next';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { SchemaSettings } from '../schema-settings';
 
 export const GeneralSchemaItems: React.FC<{
   required?: boolean;
-}> = (props) => {
+}> = observer((props) => {
   const { required = true } = props;
   const { getCollectionJoinField } = useCollectionManager();
   const { getField } = useCollection();
@@ -18,7 +17,6 @@ export const GeneralSchemaItems: React.FC<{
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-
   return (
     <>
       {collectionField && (
@@ -60,6 +58,8 @@ export const GeneralSchemaItems: React.FC<{
         checked={field.decoratorProps.showTitle ?? true}
         title={t('Display title')}
         onChange={(checked) => {
+          fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
+          fieldSchema['x-decorator-props']['showTitle'] = checked;
           field.decoratorProps.showTitle = checked;
           dn.emit('patch', {
             schema: {
@@ -158,4 +158,4 @@ export const GeneralSchemaItems: React.FC<{
       )}
     </>
   );
-};
+});

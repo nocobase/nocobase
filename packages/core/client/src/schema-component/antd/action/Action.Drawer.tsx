@@ -20,6 +20,8 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
   const { visible, setVisible, openSize = 'middle' } = useActionContext();
   const schema = useFieldSchema();
   const field = useField();
+  const openSizeFromParent = schema.parent?.['x-component-props']?.['openSize'];
+  const finalOpenSize = openSizeFromParent || openSize;
   const footerSchema = schema.reduceProperties((buf, s) => {
     if (s['x-component'] === footerNodeName) {
       return s;
@@ -35,11 +37,11 @@ export const ActionDrawer: ComposedActionDrawer = observer((props) => {
           }}
         >
           <Drawer
-            width={openSizeWidthMap.get(openSize)}
+            width={openSizeWidthMap.get(finalOpenSize)}
             title={field.title}
             {...others}
             destroyOnClose
-            visible={visible}
+            open={visible}
             onClose={() => setVisible(false, true)}
             className={classNames(
               others.className,

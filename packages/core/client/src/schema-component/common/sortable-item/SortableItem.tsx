@@ -56,10 +56,16 @@ const useSortableItemId = (props) => {
 };
 
 export const SortableItem: React.FC<any> = observer((props) => {
-  const { schema, id, ...others } = useSortableItemProps(props);
-  const removeParentsIfNoChildren = others.removeParentsIfNoChildren ?? true;
+  const { schema, id, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
   return (
-    <SortableProvider id={id} data={{ insertAdjacent: 'afterEnd', schema: schema, removeParentsIfNoChildren }}>
+    <SortableProvider
+      id={id}
+      data={{
+        insertAdjacent: 'afterEnd',
+        schema: schema,
+        removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
+      }}
+    >
       <Sortable {...others}>{props.children}</Sortable>
     </SortableProvider>
   );

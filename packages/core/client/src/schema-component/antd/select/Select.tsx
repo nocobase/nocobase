@@ -2,7 +2,7 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect } from 'antd';
+import { Select as AntdSelect, Spin, Empty } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
@@ -12,7 +12,7 @@ type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, ...others } = props;
+  const { value, options, onChange, fieldNames, mode, loading, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -38,6 +38,7 @@ const ObjectSelect = (props: Props) => {
       value={toValue(value)}
       allowClear
       labelInValue
+      notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
       options={options}
       fieldNames={fieldNames}
       showSearch
@@ -70,13 +71,13 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, value, ...others } = props;
+    const { objectValue, loading, value, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
     if (objectValue) {
-      return <ObjectSelect {...others} value={value} mode={mode} />;
+      return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
     return (
       <AntdSelect
@@ -84,6 +85,7 @@ const InternalSelect = connect(
         filterOption={filterOption}
         allowClear
         dropdownMatchSelectWidth={false}
+        notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={value}
         {...others}
         onChange={(changed) => {
