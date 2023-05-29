@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-duplicator",
+  "displayName": "duplicator",
+  "displayName.zh-CN": "NocoBase应用备份与还原",
+  "description": "Backup and Restore Plugin for NocoBase applications, used for scenarios such as application replication, migration, and upgrade.",
+  "description.zh-CN": "NocoBase 应用的备份与还原插件，可用于应用的复制、迁移、升级等场景。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

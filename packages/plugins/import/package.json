@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-import",
+  "displayName": "import",
+  "displayName.zh-CN": "导入",
+  "description": "import data.",
+  "description.zh-CN": "导入数据。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
