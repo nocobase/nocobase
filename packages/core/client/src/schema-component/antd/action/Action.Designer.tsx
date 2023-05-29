@@ -11,11 +11,11 @@ import { useLinkageAction } from './hooks';
 
 import { ArrayItems, Radio, Space } from '@formily/antd';
 import { cloneDeep } from 'lodash';
-import { JSONInput } from '../variable/JSONInput';
 import { useAPIClient, useRequest } from '../../../api-client';
 import { useRecord } from '../../../record-provider';
-import { findTableOrFormBlockProviderByActionFieldSchema, getCustomRequestSchema } from './utils';
+import { getCustomRequestSchema } from './utils';
 import isEmpty from 'lodash/isEmpty';
+import Variable from '../variable/Variable';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -64,10 +64,8 @@ export const ActionDesigner = (props) => {
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
-  const targetSchema = findTableOrFormBlockProviderByActionFieldSchema(fieldSchema);
-  const defaultCustomRequestName = targetSchema?.['x-component-props']?.title || targetSchema?.['x-uid'] || '';
   const [customRequestSettings, setCustomRequestSettings] = useState({
-    name: defaultCustomRequestName,
+    name: uid(),
   });
   useEffect(() => {
     const schemaUid = uid();
@@ -217,7 +215,7 @@ export const ActionDesigner = (props) => {
         )}
         {isValid(fieldSchema?.['x-action-settings']?.requestSettings) && (
           <SchemaSettings.ActionModalItem
-            components={{ ArrayItems, Space, JSONInput, Radio }}
+            components={{ ArrayItems, Space, Radio, Variable }}
             title={t('Request settings')}
             schema={requestSettingsSchema}
             initialValues={customRequestSettings}

@@ -74,7 +74,7 @@ export function JSONInput(props) {
         `}
       >
         <Button onClick={onFormat}>{t('Prettify')}</Button>
-        <VariableSelect options={options} onInsert={onInsert} />
+        {options?.length ? <VariableSelect options={options} onInsert={onInsert} /> : null}
       </Button.Group>
     </div>
   );
