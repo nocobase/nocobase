@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-iframe-block",
+  "displayName": "iframe",
+  "displayName.zh-CN": "iframe",
+  "description": "create and manage IFrame blocks on the page for embedding and displaying external web pages or content.",
+  "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

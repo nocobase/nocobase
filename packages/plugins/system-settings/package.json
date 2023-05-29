@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-system-settings",
+  "displayName": "system settings",
+  "displayName.zh-CN": "系统配置",
+  "description": "A plugin specifically designed to adjust the system-level settings of NocoBase.",
+  "description.zh-CN": "用于调整 nocobase 的系统级设置。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

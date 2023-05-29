@@ -3,7 +3,7 @@
   "displayName": "ACL",
   "displayName.zh-CN": "权限控制",
   "description": "A simple access control based on roles, resources and actions",
-  "description.zh-CN": "基于角色、资源和操作的权限控制插件",
+  "description.zh-CN": "基于角色、资源和操作的权限控制。",
   "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
