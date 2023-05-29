@@ -469,6 +469,7 @@ function FlowContextProvider(props) {
     <FlowContext.Provider value={flowContext}>
       <SchemaComponent
         components={{
+          FormBlockProvider,
           ActionBarProvider,
           ManualActionStatusProvider,
           ...Array.from(manualFormTypes.getValues()).reduce(
@@ -476,6 +477,14 @@ function FlowContextProvider(props) {
             {},
           ),
           ...nodeComponents,
+        }}
+        scope={{
+          useSubmit,
+          useFormBlockProps,
+          ...Array.from(manualFormTypes.getValues()).reduce(
+            (result, item) => Object.assign(result, item.block.scope),
+            {},
+          ),
         }}
         schema={{
           type: 'void',
@@ -546,7 +555,6 @@ function Drawer() {
         components={{
           Tag,
           FlowContextProvider,
-          FormBlockProvider,
         }}
         schema={{
           type: 'void',
@@ -569,13 +577,7 @@ function Drawer() {
           },
         }}
         scope={{
-          useSubmit,
           useFlowRecordFromBlock,
-          useFormBlockProps,
-          ...Array.from(manualFormTypes.getValues()).reduce(
-            (result, item) => Object.assign(result, item.block.scope),
-            {},
-          ),
         }}
       />
     </SchemaComponentContext.Provider>
