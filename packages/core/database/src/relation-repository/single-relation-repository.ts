@@ -56,6 +56,8 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
     if (!sourceModel) return null;
 
+    let data;
+
     if (findOptions?.include?.length > 0) {
       const templateModel = await sourceModel[getAccessor]({
         ...findOptions,
@@ -75,13 +77,17 @@ export abstract class SingleRelationRepository extends RelationRepository {
 
       await eagerLoadingTree.load([templateModel.get(this.targetModel.primaryKeyAttribute)], transaction);
 
-      return eagerLoadingTree.root.instances[0];
+      data = eagerLoadingTree.root.instances[0];
+    } else {
+      data = await sourceModel[getAccessor]({
+        ...findOptions,
+        transaction,
+      });
     }
 
-    const data = await sourceModel[getAccessor]({
-      ...findOptions,
-      transaction,
-    });
+    if (!data) {
+      return null;
+    }
 
     await this.collection.db.emitAsync('afterRepositoryFind', {
       findOptions: options,
