@@ -1,7 +1,7 @@
-import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
+import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -16,7 +16,6 @@ import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
-import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -1075,25 +1074,8 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
-const getTemplateSchema = (schema) => {
-  if (!schema?.uid) {
-    return null;
-  }
-  const conf = {
-    url: `/uiSchemas:getJsonSchema/${schema.uid}`,
-  };
-  try {
-    const { data } = useRequest(conf);
-    return data?.data ? new Schema(data.data) : null;
-  } catch (error) {
-    console.error('Error fetching template schema:', error);
-    return null;
-  }
-};
-
 export const useAssociationNames = () => {
   const { getCollectionJoinField } = useCollectionManager();
-  const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
   const updateAssociationValues = [];
   const appends = [];
@@ -1113,10 +1095,6 @@ export const useAssociationNames = () => {
           const bufPrefix = prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);
         }
-      } else if (s['x-component'] === 'BlockTemplate') {
-        const template = getTemplateById(s?.['x-component-props']?.templateId);
-        const templateSchema = getTemplateSchema(template);
-        templateSchema && getAssociationAppends(templateSchema, str);
       } else if (
         ![
           'ActionBar',

@@ -139,7 +139,6 @@ export const useResourceAction = (props, opts = {}) => {
       refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
-
   // automatic run service when params has changed
   const firstRun = useRef(false);
   useEffect(() => {
@@ -166,7 +165,7 @@ export const MaybeCollectionProvider = (props) => {
   );
 };
 
-const BlockRequestProvider = (props) => {
+export const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
@@ -280,6 +279,7 @@ export const BlockProvider = (props) => {
   if (!Object.keys(params).includes('appends')) {
     params['appends'] = appends;
   }
+
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
