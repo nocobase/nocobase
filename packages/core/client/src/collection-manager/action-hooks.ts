@@ -108,7 +108,7 @@ export const useChildrenCollections = (collectionName: string) => {
   });
 };
 
-export const useCollectionFilterOptions = (collectionName: string) => {
+export const useCollectionFilterOptions = (collectionName: string, maxDepth = 2) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
@@ -130,10 +130,10 @@ export const useCollectionFilterOptions = (collectionName: string) => {
         }) || [],
       interface: field.interface,
     };
-    if (field.target && depth > 2) {
+    if (field.target && depth > maxDepth) {
       return;
     }
-    if (depth > 2) {
+    if (depth > maxDepth) {
       return option;
     }
     if (children?.length) {
@@ -244,6 +244,63 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
     const options = [];
     fields.forEach((field) => {
       const option = field2option(field, depth);
+      if (option) {
+        options.push(option);
+      }
+    });
+    return options;
+  };
+  const options = getOptions(fields, 1);
+  return options;
+};
+// 通用
+export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2) => {
+  const { getCollectionFields, getInterface } = useCollectionManager();
+  const fields = getCollectionFields(collectionName);
+
+  const field2option = (field, depth, prefix?) => {
+    if (!field.interface) {
+      return;
+    }
+    const fieldInterface = getInterface(field.interface);
+    if (!fieldInterface?.filterable) {
+      return;
+    }
+    const { nested, children } = fieldInterface.filterable;
+    const value = prefix ? `${prefix}.${field.name}` : field.name;
+    const option = {
+      ...field,
+      name: field.name,
+      title: field?.uiSchema?.title || field.name,
+      schema: field?.uiSchema,
+      key: value,
+    };
+    if (field.target && depth > maxDepth) {
+      return;
+    }
+    if (depth > maxDepth) {
+      return option;
+    }
+    if (children?.length) {
+      option['children'] = children.map((v) => {
+        return {
+          ...v,
+          key: `${field.name}.${v.name}`,
+        };
+      });
+    }
+    if (nested) {
+      const targetFields = getCollectionFields(field.target);
+      const options = getOptions(targetFields, depth + 1, field.name).filter(Boolean);
+      option['children'] = option['children'] || [];
+      option['children'].push(...options);
+    }
+    return option;
+  };
+  const getOptions = (fields, depth, prefix?) => {
+    const options = [];
+    fields.forEach((field) => {
+      const option = field2option(field, depth, prefix);
       if (option) {
         options.push(option);
       }

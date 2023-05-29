@@ -1,16 +1,30 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema, connect, mapProps } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu } from 'antd';
-import React, { useEffect, useState } from 'react';
+import { Menu, Tree as AntdTree } from 'antd';
+import { ArrayField } from '@formily/core';
+import { uniq } from 'lodash';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection, useCollectionManager, useCollectionFieldsOptions } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
 
 import { requestSettingsSchema } from './utils';
 
+const Tree = connect(
+  AntdTree,
+  mapProps((props, field: any) => {
+    console.log(props, field);
+    return {
+      ...props,
+      onCheck: (checkedKeys) => {
+        field.value = checkedKeys;
+      },
+    };
+  }),
+);
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
   const actionType = fieldSchema['x-action'] || '';
@@ -54,6 +68,7 @@ export const ActionDesigner = (props) => {
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const options = useCollectionFieldsOptions(name, 1);
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -143,27 +158,64 @@ export const ActionDesigner = (props) => {
         />
         {fieldSchema['x-action'] === 'submit' &&
           fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && (
-            <SchemaSettings.SelectItem
-              key="save-mode"
+            <SchemaSettings.ModalItem
               title={t('Save mode')}
-              options={[
-                { value: 'create', label: t('Insert') },
-                { value: 'firstOrCreate', label: t('InsertIfNotExits') },
-                { value: 'updateOrCreate', label: t('Upsert') },
-              ]}
-              value={field.componentProps.saveMode || 'create'}
-              onChange={(mode) => {
-                const schema = {
-                  ['x-uid']: fieldSchema['x-uid'],
-                };
+              components={{ Tree }}
+              schema={
+                {
+                  type: 'object',
+                  title: t('Save mode'),
+                  properties: {
+                    saveMode: {
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Radio.Group',
+                      title: t('Save mode'),
+                      default: field.componentProps.saveMode || 'create',
+                      enum: [
+                        { value: 'create', label: '{{t("Insert")}}' },
+                        { value: 'firstOrCreate', label: '{{t("InsertIfNotExits")}}' },
+                        { value: 'updateOrCreate', label: '{{t("Upsert")}}' },
+                      ],
+                    },
+                    filterKeys: {
+                      type: 'array',
+                      title: '{{ t("Find by the following fields") }}',
+                      required: true,
+                      default: field.componentProps.filterKeys,
+                      description: t('Only the selected fields will be used as the filterkeys'),
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Tree',
+                      'x-component-props': {
+                        treeData: options,
+                        checkable: true,
+                        defaultCheckedKeys: field.componentProps.filterKeys,
+                        rootStyle: {
+                          padding: '8px 0',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '2px',
+                          maxHeight: '30vh',
+                          overflow: 'auto',
+                          margin: '2px 0',
+                        },
+                      },
+                    },
+                  },
+                } as ISchema
+              }
+              onSubmit={({ saveMode, filterKeys }) => {
+                console.log(saveMode, filterKeys);
+                field.componentProps.saveMode = saveMode;
+                field.componentProps.filterKeys = filterKeys;
                 fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-                fieldSchema['x-component-props']['saveMode'] = mode;
-                schema['x-component-props'] = fieldSchema['x-component-props'];
-                field.componentProps = field.componentProps || {};
-                field.componentProps.saveMode = mode;
-
+                fieldSchema['x-component-props'].saveMode = saveMode;
+                fieldSchema['x-component-props'].filterKeys = filterKeys;
                 dn.emit('patch', {
-                  schema,
+                  schema: {
+                    ['x-uid']: fieldSchema['x-uid'],
+                    'x-component-props': {
+                      ...fieldSchema['x-component-props'],
+                    },
+                  },
                 });
                 dn.refresh();
               }}

@@ -145,6 +145,7 @@ export const useCreateActionProps = () => {
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
   const action = actionField.componentProps.saveMode || 'create';
+  const filterKeys = actionField.componentProps.filterKeys || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -175,6 +176,7 @@ export const useCreateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
+          filterKeys:filterKeys,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
