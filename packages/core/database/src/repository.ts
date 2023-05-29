@@ -32,6 +32,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
+import { flatten } from 'flat';
 
 const debug = require('debug')('noco-database');
 
@@ -226,6 +227,50 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+  }
+
+  public static valuesToFilter(values: Values, filterKeys: Array<string>) {
+    const filterAnd = [];
+    const flattedValues = flatten(values);
+
+    const keyWithOutArrayIndex = (key) => {
+      const chunks = key.split('.');
+      return chunks
+        .filter((chunk) => {
+          return !Boolean(chunk.match(/\d+/));
+        })
+        .join('.');
+    };
+
+    for (const filterKey of filterKeys) {
+      let filterValue;
+
+      for (const flattedKey of Object.keys(flattedValues)) {
+        const flattedKeyWithoutIndex = keyWithOutArrayIndex(flattedKey);
+
+        if (flattedKeyWithoutIndex === filterKey) {
+          if (filterValue) {
+            if (Array.isArray(filterValue)) {
+              filterValue.push(flattedValues[flattedKey]);
+            } else {
+              filterValue = [filterValue, flattedValues[flattedKey]];
+            }
+          } else {
+            filterValue = flattedValues[flattedKey];
+          }
+        }
+      }
+
+      if (filterValue) {
+        filterAnd.push({
+          [filterKey]: filterValue,
+        });
+      }
+    }
+
+    return {
+      $and: filterAnd,
+    };
   }
 
   /**
@@ -437,7 +482,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    */
   async firstOrCreate(options: FirstOrCreateOptions) {
     const { filterKeys, values, transaction } = options;
-    const filter = lodash.pick(values, filterKeys);
+    const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction });
 
@@ -450,7 +495,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
   async updateOrCreate(options: FirstOrCreateOptions) {
     const { filterKeys, values, transaction } = options;
-    const filter = lodash.pick(values, filterKeys);
+    const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction });
 

@@ -126,6 +126,7 @@ describe('create', () => {
   let User: Collection;
   let Post: Collection;
   let Group: Collection;
+  let Role: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -143,6 +144,15 @@ describe('create', () => {
         { type: 'integer', name: 'age' },
         { type: 'hasMany', name: 'posts' },
         { type: 'belongsTo', name: 'group' },
+        { type: 'belongsToMany', name: 'roles' },
+      ],
+    });
+
+    Role = db.collection({
+      name: 'roles',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'users' },
       ],
     });
 
@@ -160,7 +170,7 @@ describe('create', () => {
     await db.close();
   });
 
-  test('firstOrCreate By association', async () => {
+  test('firstOrCreate by filterKeys', async () => {
     const u1 = await User.repository.firstOrCreate({
       filterKeys: ['name'],
       values: {
@@ -185,6 +195,32 @@ describe('create', () => {
     });
 
     expect(u2.name).toEqual('u1');
+  });
+
+  test('firstOrCreate by many to many associations', async () => {
+    const roles = await Role.repository.create({
+      values: [{ name: 'r1' }, { name: 'r2' }],
+    });
+
+    const u1 = await User.repository.firstOrCreate({
+      values: {
+        name: 'u1',
+        roles: [{ name: 'r1' }, { name: 'r2' }],
+      },
+      filterKeys: ['roles.name'],
+    });
+
+    expect(u1.get('roles')).toHaveLength(2);
+
+    const u1a = await User.repository.firstOrCreate({
+      values: {
+        name: 'u1',
+        roles: [{ name: 'r1' }, { name: 'r2' }],
+      },
+      filterKeys: ['roles.name'],
+    });
+
+    expect(u1a.get('id')).toEqual(u1.get('id'));
   });
 
   test('firstOrCreate', async () => {
