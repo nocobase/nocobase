@@ -1,5 +1,5 @@
 import flat from 'flat';
-import _, { every, findIndex, some } from 'lodash';
+import _, { every, findIndex, some, isArray } from 'lodash';
 import moment from 'moment';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
@@ -57,11 +57,25 @@ function getInnermostKeyAndValue(obj) {
   return null;
 }
 
+const getFieldValue = (fieldPath, values) => {
+  const v = fieldPath[0];
+  const h = fieldPath[1];
+  const regex = new RegExp('^' + v + '\\..+\\.' + h + '$'); // 构建匹配的正则表达式
+  const matchedValues = [];
+  const data = flat.flatten(values, { maxDepth: 3 });
+  for (var key in data) {
+    if (regex.test(key)) {
+      matchedValues.push(data[key]);
+    }
+  }
+  return matchedValues;
+};
+
 const getValue = (str: string, values) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
-    return getVariableValue(str, flat(values));
+    return getVariableValue(str, values);
   } else {
     return str;
   }
@@ -69,7 +83,14 @@ const getValue = (str: string, values) => {
 const getVariableValue = (str, values) => {
   const regex = /{{[^.]+\.([^}]+)}}/;
   const match = regex.exec(str);
-  return values[match?.[1]];
+  const targetField = match?.[1]?.split('.') || [];
+  const isArrayField = isArray(values[targetField[0]]);
+  if (isArrayField && targetField.length > 1) {
+    //对多关系字段
+    return getFieldValue(targetField, values);
+  } else {
+    return flat(values)[match?.[1]];
+  }
 };
 const getTargetField = (obj) => {
   const keys = getAllKeys(obj);
@@ -110,9 +131,17 @@ export const conditionAnalyse = (rules, values) => {
       return true;
     }
     try {
-      const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
-      const result = jsonLogic.apply({ [operator]: [currentValue, value] });
-      return result;
+      const isArrayField = isArray(values[targetField[0]]);
+      if (isArrayField && targetField.length > 1) {
+        //对多关系字段比较
+        const currentValue = getFieldValue(targetField, values);
+        const result = jsonLogic.apply({ [operator]: [currentValue, value] });
+        return result;
+      } else {
+        const currentValue = targetField.length > 1 ? flat(values)?.[targetField.join('.')] : values?.[targetField[0]];
+        const result = jsonLogic.apply({ [operator]: [currentValue, value] });
+        return result;
+      }
     } catch (error) {
       console.error(error);
     }
