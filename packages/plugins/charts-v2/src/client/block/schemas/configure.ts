@@ -37,7 +37,7 @@ const getArraySchema = (fields = {}) => ({
   },
 });
 
-export const configSchema: ISchema = {
+export const getConfigSchema = (general: any) => ({
   type: 'void',
   properties: {
     config: {
@@ -52,14 +52,22 @@ export const configSchema: ISchema = {
               title: '{{t("Chart type")}}',
               'x-decorator': 'FormItem',
               'x-component': 'Select',
+              'x-component-props': {
+                placeholder: '{{t("Please select a chart type.")}}',
+              },
               enum: '{{ chartTypes }}',
             },
-            chartConfig: {
+            general,
+            advanced: {
               type: 'string',
-              title: '{{t("Chart JSON config")}}',
+              title: '{{t("JSON config")}}',
               'x-decorator': 'FormItem',
+              'x-decorator-props': {
+                extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
+              },
               'x-component': 'Input.TextArea',
               'x-component-props': {
+                defaultValue: '{}',
                 autoSize: {
                   minRows: 5,
                 },
@@ -70,15 +78,58 @@ export const configSchema: ISchema = {
       },
     },
   },
-};
+});
 
 export const querySchema: ISchema = {
   type: 'void',
   properties: {
+    mode: {
+      type: 'void',
+      properties: {
+        mode: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Radio.Group',
+          'x-component-props': {
+            defaultValue: 'builder',
+            optionType: 'button',
+            buttonStyle: 'solid',
+          },
+          enum: [
+            {
+              label: lang('Builder mode'),
+              value: 'builder',
+            },
+            {
+              label: lang('SQL mode'),
+              value: 'sql',
+            },
+          ],
+          'x-reactions': [
+            {
+              target: 'query.builder',
+              fulfill: {
+                state: {
+                  visible: '{{ $self.value !== "sql" }}',
+                },
+              },
+            },
+            {
+              target: 'query.sql',
+              fulfill: {
+                state: {
+                  visible: '{{ $self.value === "sql" }}',
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
     query: {
       type: 'object',
       properties: {
-        collapse: {
+        builder: {
           type: 'void',
           'x-decorator': 'FormItem',
           'x-component': 'FormCollapse',
@@ -175,13 +226,13 @@ export const querySchema: ISchema = {
                 key: 'sort',
               },
               properties: {
-                sort: getArraySchema({
+                orders: getArraySchema({
                   field: {
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': 'FieldSelect',
+                    'x-component': 'Select',
                     'x-component-props': {
-                      fields: '{{ fields }}',
+                      options: '{{ fields }}',
                       placeholder: '{{t("Field")}}',
                     },
                   },
@@ -191,6 +242,7 @@ export const querySchema: ISchema = {
                     'x-component': 'Radio.Group',
                     'x-component-props': {
                       defaultValue: 'ASC',
+                      optionType: 'button',
                     },
                     enum: ['ASC', 'DESC'],
                   },
@@ -208,10 +260,26 @@ export const querySchema: ISchema = {
                 filter: {
                   type: 'object',
                   'x-decorator': 'FormItem',
-                  'x-component': 'FieldFilter',
+                  'x-component': 'Filter',
                   'x-component-props': {
-                    fields: '{{ fields }}',
+                    options: '{{ filterOptions }}',
                   },
+                },
+              },
+            },
+          },
+        },
+        sql: {
+          type: 'void',
+          properties: {
+            sql: {
+              type: 'string',
+              title: '{{t("SQL")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              'x-component-props': {
+                autoSize: {
+                  minRows: 5,
                 },
               },
             },

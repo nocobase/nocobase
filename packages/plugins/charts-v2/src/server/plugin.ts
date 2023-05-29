@@ -1,11 +1,18 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-
+import { query } from './actions';
 export class ChartsV2Plugin extends Plugin {
   afterAdd() {}
 
   beforeLoad() {}
 
-  async load() {}
+  async load() {
+    this.app.resource({
+      name: 'charts',
+      actions: {
+        query,
+      },
+    });
+  }
 
   async install(options?: InstallOptions) {}
 

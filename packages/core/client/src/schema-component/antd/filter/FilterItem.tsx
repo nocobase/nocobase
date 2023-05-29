@@ -21,6 +21,11 @@ export const FilterItem = observer((props: any) => {
           className={css`
             width: 160px;
           `}
+          popupClassName={css`
+            .ant-cascader-menu {
+              height: 100%;
+            }
+          `}
           fieldNames={{
             label: 'title',
             value: 'name',

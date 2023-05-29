@@ -6,6 +6,36 @@ export const G2PlotLibrary: Charts = {
   line: {
     name: lang('Line Chart'),
     component: Line,
+    schema: {
+      type: 'object',
+      properties: {
+        xField: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          title: 'xField',
+          'x-decorator-props': {
+            style: {
+              display: 'inline-block',
+              width: 'calc(50% - 8px)',
+            },
+          },
+        },
+        yField: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+          title: 'yField',
+          'x-decorator-props': {
+            style: {
+              display: 'inline-block',
+              width: 'calc(50% - 8px)',
+              marginLeft: '16px',
+            },
+          },
+        },
+      },
+    },
   },
   area: {
     name: lang('Area Chart'),
