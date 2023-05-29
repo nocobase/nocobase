@@ -36,7 +36,7 @@
     "@nocobase/plugin-verification": "0.9.4-alpha.2",
     "@nocobase/plugin-workflow": "0.9.4-alpha.2",
     "@nocobase/server": "0.9.4-alpha.2",
-    "@nocobase/plugin-mobile-client": "0.9.4-alpha.1"
+    "@nocobase/plugin-mobile-client": "0.9.4-alpha.2"
   },
   "repository": {
     "type": "git",
