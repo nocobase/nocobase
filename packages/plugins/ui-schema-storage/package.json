@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-ui-schema-storage",
+  "displayName": "UI schema storage",
+  "displayName.zh-CN": "UI schema",
+  "description": "A plugin used for managing page UI schemas.",
+  "description.zh-CN": "UI schema 配置。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

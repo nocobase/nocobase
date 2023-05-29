@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-oidc",
+  "displayName": "OpenID Connect",
+  "displayName.zh-CN": "OpenID Connect",
+  "description": " provide OIDC authentication and authorization functionality for applications or authentication systems.",
+  "description.zh-CN": "在为应用程序或身份验证系统提供OIDC认证和授权功能。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

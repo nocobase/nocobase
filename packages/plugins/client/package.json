@@ -1,5 +1,9 @@
 {
   "name": "@nocobase/plugin-client",
+  "displayName": "client",
+  "displayName.zh-CN": "客户端",
+  "description": "client",
+  "description.zh-CN": "客户端。",
   "version": "0.9.4-alpha.2",
   "main": "lib/index.js",
   "license": "AGPL-3.0",
