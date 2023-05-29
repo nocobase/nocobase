@@ -1,12 +1,15 @@
 {
   "name": "@nocobase/plugin-multi-app-manager",
-  "version": "0.9.4-alpha.1",
-  "description": "",
+  "displayName": "multi app manager",
+  "displayName.zh-CN": "多应用管理",
+  "description": "manage app",
+  "description.zh-CN": "管理应用",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/server": "0.9.4-alpha.1"
+    "@nocobase/server": "0.9.4-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

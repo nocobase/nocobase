@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-ui-routes-storage",
-  "version": "0.9.4-alpha.1",
-  "description": "",
+  "displayName": "ui routes storage",
+  "displayName.zh-CN": "路由管理",
+  "description": "manage the routes of nocobase",
+  "description.zh-CN": "管理页面路由。",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -9,7 +12,7 @@
     "flat-to-nested": "^1.1.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.4-alpha.1"
+    "@nocobase/test": "0.9.4-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

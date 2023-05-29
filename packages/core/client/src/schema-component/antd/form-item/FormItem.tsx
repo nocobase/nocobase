@@ -72,7 +72,7 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
-  const { showTitle = true } = props;
+  const showTitle = schema['x-decorator-props']?.showTitle ?? true;
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>
@@ -175,8 +175,8 @@ FormItem.Designer = function Designer() {
 
   const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
 
-  const isSubFormMode = fieldSchema['x-component-props'].mode === 'Nester';
-  const isPickerMode = fieldSchema['x-component-props'].mode === 'Picker';
+  const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
+  const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
 

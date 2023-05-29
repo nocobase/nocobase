@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-export",
-  "version": "0.9.4-alpha.1",
-  "description": "",
+  "displayName": "export",
+  "displayName.zh-CN": "导出",
+  "description": "export data",
+  "description.zh-CN": "导出数据。",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/client": "0.9.4-alpha.1",
-    "@nocobase/server": "0.9.4-alpha.1",
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/server": "0.9.4-alpha.2",
     "node-xlsx": "^0.16.1"
   },
   "devDependencies": {

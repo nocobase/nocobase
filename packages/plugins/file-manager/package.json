@@ -1,16 +1,19 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "0.9.4-alpha.1",
-  "description": "",
+  "version": "0.9.4-alpha.2",
+  "displayName": "file manager",
+  "displayName.zh-CN": "文件管理",
+  "description": "file management plugin.",
+  "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
     "@koa/multer": "^3.0.0",
-    "@nocobase/actions": "0.9.4-alpha.1",
-    "@nocobase/client": "0.9.4-alpha.1",
-    "@nocobase/server": "0.9.4-alpha.1",
+    "@nocobase/actions": "0.9.4-alpha.2",
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/server": "0.9.4-alpha.2",
     "cos-nodejs-sdk-v5": "^2.11.14",
     "koa-static": "^5.0.0",
     "mime-match": "^1.0.2",
@@ -21,7 +24,7 @@
     "multer-s3": "^3.0.1"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.4-alpha.1",
+    "@nocobase/test": "0.9.4-alpha.2",
     "@types/koa-multer": "^1.0.1",
     "@types/multer": "^1.4.5"
   },
