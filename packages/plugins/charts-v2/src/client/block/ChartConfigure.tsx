@@ -98,7 +98,7 @@ export const ChartConfigure: React.FC<{
         }
         insert(
           {
-            type: 'object',
+            type: 'void',
             'x-decorator': 'CardItem',
             'x-component': 'ChartRenderer',
             'x-component-props': rendererProps,

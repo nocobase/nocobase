@@ -1,5 +1,5 @@
 import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useRequest } from '@nocobase/client';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
@@ -41,7 +41,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData } = useContext(ChartConfigContext);
-  const { query, config, collection, configuring } = props;
+  const { config, collection, configuring } = props;
   const general = config?.general || {};
   let advanced = {};
   try {
@@ -78,17 +78,25 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
     },
   );
 
+  /*
+   * For a renderer of a configured chart,
+   * query parameters are obtained from props and don't trigger requests on component rerendering.
+   * For the renderer of the configuration pane,
+   * query parameters are obtained in real-time from the form values and trigger requests when changed.
+   */
+  const refQuery = useRef(props.query);
+  const query = configuring ? props.query : refQuery.current;
   useEffect(() => {
     if (query?.measures?.length && query?.dimensions?.length) {
       run();
     }
-  }, [run]);
+  }, [query, run]);
 
   const chartType = config?.chartType || '-';
   const [library, type] = chartType.split('-');
   const chart = useChart(library, type);
-  const Component = chart.component;
-  const transformer = chart.transformer;
+  const Component = chart?.component;
+  const transformer = chart?.transformer;
 
   const C = () =>
     Component ? (
