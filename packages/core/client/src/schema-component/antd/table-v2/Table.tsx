@@ -216,6 +216,7 @@ export const Table: any = observer((props: any) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
   const [selectedRow, setSelectedRow] = useState([]);
   const dataSource = field?.value?.slice?.()?.filter?.(Boolean);
+  const isRowSelect = rowSelection.type !== 'none';
 
   let onRow = null,
     highlightRow = '';
@@ -387,15 +388,19 @@ export const Table: any = observer((props: any) => {
                         opacity: 1;
                       }
                     }
-                    &:hover {
-                      .nb-table-index {
-                        opacity: 0;
-                      }
-                      .nb-origin-node {
-                        display: block;
-                      }
-                    }
                   `,
+                  {
+                    [css`
+                      &:hover {
+                        .nb-table-index {
+                          opacity: 0;
+                        }
+                        .nb-origin-node {
+                          display: block;
+                        }
+                      }
+                    `]: isRowSelect,
+                  },
                 )}
               >
                 <div
@@ -412,22 +417,24 @@ export const Table: any = observer((props: any) => {
                   {dragSort && <SortHandle id={getRowKey(record)} />}
                   {showIndex && <TableIndex index={index} />}
                 </div>
-                <div
-                  className={classNames(
-                    'nb-origin-node',
-                    checked ? 'checked' : null,
-                    css`
-                      position: absolute;
-                      right: 50%;
-                      transform: translateX(50%);
-                      &:not(.checked) {
-                        display: none;
-                      }
-                    `,
-                  )}
-                >
-                  {originNode}
-                </div>
+                {isRowSelect && (
+                  <div
+                    className={classNames(
+                      'nb-origin-node',
+                      checked ? 'checked' : null,
+                      css`
+                        position: absolute;
+                        right: 50%;
+                        transform: translateX(50%);
+                        &:not(.checked) {
+                          display: none;
+                        }
+                      `,
+                    )}
+                  >
+                    {originNode}
+                  </div>
+                )}
               </div>
             );
           },
@@ -435,7 +442,6 @@ export const Table: any = observer((props: any) => {
         }
       : undefined,
   };
-
   const SortableWrapper = useCallback<React.FC>(
     ({ children }) => {
       return dragSort

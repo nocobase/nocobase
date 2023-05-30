@@ -9,7 +9,6 @@ import { useAssociationFieldContext } from './hooks';
 
 export const SubTable: any = observer((props: any) => {
   const { field } = useAssociationFieldContext<ArrayField>();
-  console.log(field.value)
   const { t } = useTranslation();
   return (
     <div>
@@ -31,7 +30,7 @@ export const SubTable: any = observer((props: any) => {
         dragSort={field.editable}
         showDel={field.editable}
         pagination={false}
-        rowSelection={{ type: 'none' }}
+        rowSelection={{ type: 'none', hideSelectAll: true }}
       />
       {field.editable && (
         <Button
