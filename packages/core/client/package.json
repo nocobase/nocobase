@@ -47,18 +47,13 @@
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
-    "@types/react": ">=18.0.0",
-    "@types/react-dom": ">=18.0.0",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0",
-    "react-is": ">=18.0.0"
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0",
+    "react-is": ">=17.0.0"
   },
   "devDependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "@types/react": ">=18.0.0",
-    "@types/react-dom": ">=18.0.0",
-    "dumi-theme-antd": "^0.2.4",
+    "dumi": "^2.2.0",
+    "dumi-theme-nocobase": "^0.2.7",
     "@testing-library/react": "^12.1.2",
     "@types/markdown-it": "12.2.3",
     "@types/markdown-it-highlightjs": "3.3.1",

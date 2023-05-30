@@ -1,4 +1,5 @@
 import { defineConfig } from 'dumi';
+import { defineThemeConfig } from 'dumi-theme-nocobase'
 import { nav, sidebar } from './docs/config';
 
 const lang = process.env.DOC_LANG || 'en-US';
@@ -31,16 +32,16 @@ export default defineConfig({
     { id: 'en-US', name: 'English' },
     { id: 'zh-CN', name: '中文' },
   ],
-  themeConfig: {
+  themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
     nav: nav.map((item) => ({ ...item, title: (item[`title.${lang}`] || item.title) })),
-    sidebarEnhance: sidebar,
+    sidebarEnhance: sidebar as any,
     github: 'https://github.com/nocobase/nocobase',
     footer: 'nocobase | Copyright © 2022',
     localesEnhance: [
       { id: 'zh-CN', switchPrefix: '中' },
       { id: 'en-US', switchPrefix: 'en' }
     ],
-  }
+  })
 });

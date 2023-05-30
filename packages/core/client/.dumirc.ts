@@ -1,4 +1,5 @@
 import { defineConfig } from 'dumi';
+import { defineThemeConfig } from 'dumi-theme-nocobase'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import fs from 'fs';
 import path from 'path';
@@ -27,7 +28,7 @@ export default defineConfig({
       { type: 'component', dir: 'src/route-switch/antd' },
     ]
   },
-  themeConfig: {
+  themeConfig: defineThemeConfig({
     title: 'NocoBase',
     logo: 'https://www.nocobase.com/images/logo.png',
     github: 'https://github.com/nocobase/nocobase',
@@ -51,5 +52,5 @@ export default defineConfig({
         link: '/contributing',
       }
     ]
-  }
+  })
 });

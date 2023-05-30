@@ -49,7 +49,6 @@ const sidebar = {
           title: 'Installation',
           'title.zh-CN': '安装',
           'title.TR-TR': 'Kurulum',
-          type: 'subMenu',
           children: [
             '/welcome/getting-started/installation',
             '/welcome/getting-started/installation/docker-compose',
@@ -61,7 +60,6 @@ const sidebar = {
           title: 'Upgrading',
           'title.zh-CN': '升级',
           'title.TR-TR': 'Güncelleme',
-          type: 'subMenu',
           children: [
             '/welcome/getting-started/upgrading',
             '/welcome/getting-started/upgrading/docker-compose',
@@ -153,7 +151,6 @@ const sidebar = {
           title: 'Collections & Fields',
           'title.zh-CN': '数据表和字段',
           'title.TR-TR': 'Koleksiyonlar & Alanlar',
-          type: 'subMenu',
           children: [
             '/development/server/collections',
             '/development/server/collections/options',
@@ -184,7 +181,6 @@ const sidebar = {
           title: 'UI 设计器',
           'title.zh-CN': 'UI 设计器',
           'title.TR-TR': 'Kullanıcı Arayüz Tasarımcısı',
-          type: 'subMenu',
           children: [
             // '/development/client/ui-schema-designer',
             '/development/client/ui-schema-designer/what-is-ui-schema',
@@ -267,7 +263,6 @@ const sidebar = {
           'title.zh-CN': 'SchemaDesigner',
           'title.TR-TR': 'Şema Tasarımcısı',
 
-          type: 'subMenu',
           children: [
             '/api/client/schema-designer/schema-component',
             '/api/client/schema-designer/schema-initializer',
@@ -278,7 +273,6 @@ const sidebar = {
           title: 'Extensions',
           'title.zh-CN': 'Extensions',
           'title.TR-TR': 'Eklentiler',
-          type: 'subMenu',
           children: [
             // '/api/client/extensions/schema-component',
             '/api/client/extensions/collection-manager',

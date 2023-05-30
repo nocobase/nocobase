@@ -1,12 +1,11 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import { Gantt } from '../index';
 
 describe('gantt', () => {
   it('renders without crashing', () => {
     const div = document.createElement('div');
-    const root = createRoot(div);
-    root.render(
+    ReactDOM.render(
       <Gantt
         tasks={[
           {
@@ -19,6 +18,7 @@ describe('gantt', () => {
           },
         ]}
       />,
+      div,
     );
   });
 });
