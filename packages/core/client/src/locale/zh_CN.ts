@@ -797,5 +797,6 @@ export default {
   'Save mode':"保存方式",
   "First or create":"不存在时则新增,存在时不处理",
   "Update or create":"不存在时新增,存在时更新",
-  "Find by the following fields":"通过以下字段查找"
+  "Find by the following fields":"通过以下字段查找",
+  "Create":"仅新增"
 }

@@ -626,5 +626,6 @@ export default {
   "Save mode":"保存方法",
   "First or create":"存在しない場合に追加",
   "Update or create":"存在しなければ新規、存在すれば更新",
-  "Find by the following fields":"次のフィールドで検索"
+  "Find by the following fields":"次のフィールドで検索",
+  "Create":"新規のみ"
 }

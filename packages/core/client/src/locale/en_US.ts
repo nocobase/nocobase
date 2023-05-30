@@ -717,5 +717,6 @@ export default {
   "Save mode":"Save mode",
   "First or create":"First or create",
   "Update or create":"Update or create",
-  "Find by the following fields":"Find by the following fields"
+  "Find by the following fields":"Find by the following fields",
+  "Create":"Create"
 };
