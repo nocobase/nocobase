@@ -1,8 +1,9 @@
-import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Radio as AntdRadio, Tag } from 'antd';
 import type { RadioGroupProps, RadioProps } from 'antd/lib/radio';
 import React from 'react';
+import Select from '../select/Select';
 
 type ComposedRadio = React.FC<RadioProps> & {
   Group?: React.FC<RadioGroupProps>;
@@ -18,8 +19,15 @@ export const Radio: ComposedRadio = connect(
 );
 Radio.__ANT_RADIO = true;
 
+const InputRadioGroup: React.FC<RadioGroupProps> = (props: any) => {
+  const fieldSchema = useFieldSchema();
+  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
+
+  return isDisplayInTable ? <Select {...props} multiple={false} /> : <AntdRadio.Group {...props} />;
+};
+
 Radio.Group = connect(
-  AntdRadio.Group,
+  InputRadioGroup,
   mapProps({
     dataSource: 'options',
   }),
