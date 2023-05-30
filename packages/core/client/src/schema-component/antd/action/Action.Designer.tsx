@@ -172,9 +172,9 @@ export const ActionDesigner = (props) => {
                       title: t('Save mode'),
                       default: field.componentProps.saveMode || 'create',
                       enum: [
-                        { value: 'create', label: '{{t("Insert")}}' },
-                        { value: 'firstOrCreate', label: '{{t("InsertIfNotExits")}}' },
-                        { value: 'updateOrCreate', label: '{{t("Upsert")}}' },
+                        { value: 'create', label: '{{t("Create")}}' },
+                        { value: 'firstOrCreate', label: '{{t("First or create")}}' },
+                        { value: 'updateOrCreate', label: '{{t("Update or create")}}' },
                       ],
                     },
                     filterKeys: {
@@ -182,7 +182,6 @@ export const ActionDesigner = (props) => {
                       title: '{{ t("Find by the following fields") }}',
                       required: true,
                       default: field.componentProps.filterKeys,
-                      description: t('Only the selected fields will be used as the filterkeys'),
                       'x-decorator': 'FormItem',
                       'x-component': 'Tree',
                       'x-component-props': {

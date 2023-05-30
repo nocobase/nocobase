@@ -790,5 +790,12 @@ export default {
   'Clear cache': '清除缓存',
   "Not found":"不存在该值",
   "Add":"添加",
-  "to":"至"
+  "to":"至",
+  "Add new mode":"添加方式",
+  "Quick add":"快捷添加",
+  "Modal add":"弹窗添加",
+  'Save mode':"保存方式",
+  "First or create":"不存在时则新增,存在时不处理",
+  "Update or create":"不存在时新增,存在时更新",
+  "Find by the following fields":"通过以下字段查找"
 }

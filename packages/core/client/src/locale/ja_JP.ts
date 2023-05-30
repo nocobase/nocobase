@@ -619,5 +619,12 @@ export default {
   'Form data templates': 'フォームデータテンプレート',
   "Data template": "データテンプレート",
   "Not found":"存在しない",
-  "Add":"追加"
+  "Add":"追加",
+  "Add new mode":"追加モード",
+  "Quick add":"すばやい",
+  "Modal add":"ポップアップ窓の追加",
+  "Save mode":"保存方法",
+  "First or create":"存在しない場合に追加",
+  "Update or create":"存在しなければ新規、存在すれば更新",
+  "Find by the following fields":"次のフィールドで検索"
 }

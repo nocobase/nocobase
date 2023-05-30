@@ -710,5 +710,12 @@ export default {
   "Try again": "Try again",
   "Data template": "Data template",
   "Not found":"Not found",
-  "Add":"Add"
+  "Add":"Add",
+  "Add new mode":"Add new mode",
+  "Quick add":"Quick add",
+  "Modal add":"Modal add",
+  "Save mode":"Save mode",
+  "First or create":"First or create",
+  "Update or create":"Update or create",
+  "Find by the following fields":"Find by the following fields"
 };
