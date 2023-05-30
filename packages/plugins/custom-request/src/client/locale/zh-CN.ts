@@ -19,5 +19,5 @@ export default {
   'request type': '请求类型',
   'internal request': '内部请求',
   'external request': '外部请求',
-  'URL description': '若请求类型为内部请求，则可省去请求路径中的域名部分 如： api/xxx:create, 且请求头也可省略',
+  'URL description': '若请求类型为内部请求，则需要省去请求路径中的域名部分 如： api/xxx:create, 且请求头也可省略',
 };

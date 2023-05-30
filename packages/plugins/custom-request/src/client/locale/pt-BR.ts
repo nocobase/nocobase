@@ -19,5 +19,5 @@ export default {
   'internal request': 'solicitação interna',
   'external request': 'solicitação externa',
   'URL description':
-    'Se o tipo de solicitação for interno, a parte do domínio do caminho da solicitação poderá ser omitida, por exemplo, api/xxx:create, e o cabeçalho da solicitação poderá ser omitido',
+    'Se o tipo de solicitação for interno, a parte do domínio do caminho da solicitação deverá ser omitida, por exemplo, api/xxx:create, e o cabeçalho da solicitação poderá ser omitido',
 };

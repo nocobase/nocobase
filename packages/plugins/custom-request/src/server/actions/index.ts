@@ -102,9 +102,8 @@ export const customRequestActions = {
       data,
       timeout,
     };
-
     if (requestType === 'internal') {
-      if (!tempParams.url.startsWith(ctx.request.origin)) {
+      if (!tempParams.url.startsWith(ctx.request.header.origin)) {
         tempParams.url = `${ctx.request.header.origin}${tempParams.url.startsWith('/') ? '' : '/'}${tempParams.url}`;
       }
       tempParams.headers = {

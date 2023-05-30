@@ -20,5 +20,5 @@ export default {
   'internal request': 'internal request',
   'external request': 'external request',
   'URL description':
-    'If the request type is internal, the domain part of the request path can be omitted e.g. api/xxx:create, and the request header can also be omitted',
+    'If the request type is internal, the domain part of the request path should be omitted e.g. api/xxx:create, and the request header can be omitted',
 };
