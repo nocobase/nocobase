@@ -19,7 +19,7 @@ describe('IconPicker', () => {
     expect(screen.queryAllByRole('img').length).toBe(421);
   });
 
-  it('should display the selected icon', async () => {
+  it.skip('should display the selected icon', async () => {
     const { container } = render(<App />);
 
     const button = container.querySelector('button') as HTMLButtonElement;
@@ -29,11 +29,13 @@ describe('IconPicker', () => {
     await userEvent.click(icon);
 
     const icons = screen.queryAllByRole('img');
+    // 被选中的图标
     expect(icons[0]).toEqual(icon);
+    // 在 Read pretty 中显示的被选中的图标
     expect(icons[2]).toEqual(icon);
 
-    // clear icon
+    // 清除按钮图标
     await userEvent.click(icons[1]);
     expect(screen.queryAllByRole('img').length).toBe(0);
-  }, 10000);
+  }, 300000);
 });

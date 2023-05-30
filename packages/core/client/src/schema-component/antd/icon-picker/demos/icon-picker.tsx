@@ -1,4 +1,5 @@
-import { FormItem, IconPicker, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem } from '@formily/antd';
+import { IconPicker, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {

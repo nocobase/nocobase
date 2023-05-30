@@ -72,7 +72,7 @@ function convertToText(html: string) {
   const temp = document.createElement('div');
   temp.innerHTML = html;
   const text = temp.innerText;
-  return text.replace(/[\n\r]/g, '');
+  return text?.replace(/[\n\r]/g, '') || '';
 }
 
 ReadPretty.Html = (props) => {

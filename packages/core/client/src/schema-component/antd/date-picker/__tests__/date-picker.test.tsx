@@ -1,10 +1,11 @@
 import React from 'react';
 import { render, userEvent } from 'testUtils';
 import App1 from '../demos/demo1';
-import App3 from '../demos/demo2';
-import App5 from '../demos/demo3';
-import { default as App2, default as App4 } from '../demos/demo4';
-import App6 from '../demos/demo5';
+import App2 from '../demos/demo2';
+import App3 from '../demos/demo3';
+import App4 from '../demos/demo4';
+import App5 from '../demos/demo5';
+import App6 from '../demos/demo6';
 
 describe('DatePicker', () => {
   it('basic', async () => {
