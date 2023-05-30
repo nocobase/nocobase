@@ -1,6 +1,6 @@
 import { onFormValuesChange } from '@formily/core';
 import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
-import { Checkbox, DatePicker, InputNumber, Input as InputString, useCollection } from '@nocobase/client';
+import { Checkbox, DatePicker, InputNumber, Input as InputString, useCollection, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
 import cloneDeep from 'lodash/cloneDeep';
@@ -18,15 +18,29 @@ const TypedComponents = {
   string: InputString,
 };
 
+function useTargetCollectionField() {
+  const fieldSchema = useFieldSchema();
+  const providedCollection = useCollection();
+  const { getCollection, getCollectionField } = useCollectionManager();
+  const paths = (fieldSchema.name as string).split('.');
+  let collection = providedCollection;
+  for (let i = 0; i < paths.length - 1; i++) {
+    const field = collection.getField(paths[i]);
+    collection = getCollection(field.target);
+  }
+  return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
+}
+
 export const Result = (props) => {
   const { value, ...others } = props;
-  const { getField } = useCollection();
   const fieldSchema = useFieldSchema();
-  const options = getField(fieldSchema.name as string);
-  const { dataType, expression, engine = 'math.js' } = options || {};
+  const { name, dataType, expression, engine = 'math.js' } = useTargetCollectionField() ?? {};
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
   useFormEffects(() => {
     onFormValuesChange((form) => {
+      if ((fieldSchema.name as string).indexOf('.') >= 0) {
+        return;
+      }
       const scope = cloneDeep(form.values);
       let v;
       try {
@@ -38,16 +52,11 @@ export const Result = (props) => {
       if ((v == null && value == null) || JSON.stringify(v) === JSON.stringify(value)) {
         return;
       }
-      // console.log(options.name, v, value, props.defaultValue);
-      form.setValuesIn(options.name, v);
+      form.setValuesIn(name, v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
   return <Component {...others} value={dataType === 'double' ? toFixedByStep(value, props.step) : value} />;
-};
-
-Result.ReadPretty = function ReadPretty(props) {
-  return props.value ?? null;
 };
 
 export default Result;
