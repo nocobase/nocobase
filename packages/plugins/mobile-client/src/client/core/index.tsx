@@ -3,7 +3,6 @@ import React from 'react';
 import {
   MBlockInitializers,
   MMenuBlockInitializer,
-  MGrid,
   MMenu,
   MContainer,
   MTabBar,
@@ -28,7 +27,6 @@ export const MobileCore: React.FC = (props) => {
           MMenuBlockInitializer,
           MSettingsBlockInitializer,
           MContainer,
-          MGrid,
           MMenu,
           MTabBar,
           MPage,
