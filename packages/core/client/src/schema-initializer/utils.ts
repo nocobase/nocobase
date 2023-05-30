@@ -1,6 +1,5 @@
 import { ISchema, Schema, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
-import { notDependencies } from 'mathjs';
 import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockRequestContext, SchemaInitializerItemOptions } from '../';
@@ -73,13 +72,24 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
     return buf;
   });
 };
-const quickEditField = ['attachment', 'textarea', 'markdown', 'json', 'richText', 'polygon', 'circle', 'point'];
+const quickEditField = [
+  'attachment',
+  'textarea',
+  'markdown',
+  'json',
+  'richText',
+  'polygon',
+  'circle',
+  'point',
+  'lineString',
+];
 
 export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
+
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
   return currentFields
@@ -88,17 +98,22 @@ export const useTableColumnInitializerFields = () => {
     )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
+      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': isReadPretty,
         'x-component-props': {},
-        'x-decorator': isSubTable ? (quickEditField.includes(field.interface) ? 'QuickEdit' : 'FormItem') : null,
+        'x-decorator': isSubTable
+          ? quickEditField.includes(field.interface) || isFileCollection
+            ? 'QuickEdit'
+            : 'FormItem'
+          : null,
         'x-decorator-props': {
-          labelStyle:{
-            display:'none'
-          }
+          labelStyle: {
+            display: 'none',
+          },
         },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
