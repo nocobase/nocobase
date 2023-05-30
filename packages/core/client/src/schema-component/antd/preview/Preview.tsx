@@ -28,7 +28,7 @@ export const Preview = connect((props) => {
 }, mapReadPretty(ReadPretty.File));
 
 export const FileSelector = (props: Props) => {
-  const { disabled, multiple, value, quickUpload, selectFile, onRemove, onSelect, isDisplayInTable } = props;
+  const { disabled, multiple, value, quickUpload, selectFile, onRemove, onSelect } = props;
   const uploadProps = useUploadProps({ ...props });
   const [fileList, setFileList] = useState([]);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -56,36 +56,7 @@ export const FileSelector = (props: Props) => {
   const list = fileList.length ? (multiple ? fileList : [fileList[fileList.length - 1]]) : [];
 
   return (
-    <div
-      className={
-        isDisplayInTable
-          ? css`
-              .nb-upload {
-                margin-bottom: 0px;
-                .ant-upload-list-picture-card-container {
-                  width: 45px;
-                  height: 38px;
-                  margin: 0px;
-                  margin-right: 10px;
-                }
-                .ant-upload.ant-upload-select-picture-card {
-                  width: 45px;
-                  height: 38px;
-                  margin: 0px;
-                  font-size: 12px;
-                }
-                .ant-upload.ant-upload-select-picture-card > .ant-upload {
-                  font-size: 10px;
-                }
-                .ant-btn-icon-only.ant-btn-sm{
-                  width:18px;
-                  height:18px;
-                }
-              }
-            `
-          : ''
-      }
-    >
+    <div>
       <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
         <div className={'ant-upload-list ant-upload-list-picture-card'}>
           {list.map((file) => {
