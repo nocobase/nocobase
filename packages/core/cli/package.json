@@ -14,7 +14,10 @@
     "execa": "^5.1.1",
     "pm2": "^5.2.0",
     "portfinder": "^1.0.28",
-    "serve": "^13.0.2"
+    "serve": "^13.0.2",
+    "fs-extra": "^11.1.1",
+    "@types/fs-extra": "^11.0.1",
+    "fast-glob": "^3.2.12"
   },
   "devDependencies": {
     "@nocobase/devtools": "0.9.3-alpha.1"
