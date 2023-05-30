@@ -668,7 +668,7 @@ FormItem.Designer = function Designer() {
           key="add-mode"
           title={t('Add new mode')}
           options={[
-            { label: t('Quick add '), value: 'quickAdd' },
+            { label: t('Quick add'), value: 'quickAdd' },
             { label: t('Modal add'), value: 'modalAdd' },
           ]}
           value={field.componentProps?.addMode}
