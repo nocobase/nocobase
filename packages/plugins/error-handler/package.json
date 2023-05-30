@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-error-handler",
+  "displayName": "error handler",
+  "displayName.zh-CN": "错误处理",
+  "description": "Managing and handling errors and exceptions in an application.",
+  "description.zh-CN": "管理和处理应用程序中的错误和异常。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

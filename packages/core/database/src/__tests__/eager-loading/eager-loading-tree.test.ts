@@ -15,6 +15,100 @@ describe('Eager loading tree', () => {
     await db.close();
   });
 
+  it('should sort has many default by primary key', async () => {
+    const Source = db.collection({
+      name: 'source',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'targets',
+          target: 'target',
+          foreignKey: 'source_id',
+        },
+      ],
+    });
+
+    const Target = db.collection({
+      name: 'target',
+      fields: [{ type: 'integer', name: 'seq_number' }],
+    });
+
+    await db.sync();
+
+    const target1 = await Target.repository.create({ values: { seq_number: 1 } });
+    const target2 = await Target.repository.create({ values: { seq_number: 3 } });
+
+    await target1.update({ values: { seq_number: 2 } });
+
+    await Source.repository.create({
+      values: { name: 's1', targets: [{ id: target2.get('id') }, { id: target1.get('id') }] },
+    });
+
+    const source = await Source.repository.findOne({
+      appends: ['targets'],
+    });
+
+    expect(source.get('targets').map((item: any) => item.get('id'))).toEqual([1, 2]);
+  });
+
+  it('should sort belongs to many default by target primary key', async () => {
+    const Through = db.collection({
+      name: 'through',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    const Source = db.collection({
+      name: 'source',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsToMany',
+          name: 'targets',
+          target: 'target',
+          through: 'through',
+          foreignKey: 'source_id',
+          otherKey: 'target_id',
+          sourceKey: 'id',
+          targetKey: 'id',
+        },
+      ],
+    });
+
+    const Target = db.collection({
+      name: 'target',
+      fields: [{ type: 'integer', name: 'seq_number' }],
+    });
+
+    await db.sync({
+      force: true,
+    });
+
+    const targets = await Target.repository.create({
+      values: [
+        { seq_number: 1 },
+        { seq_number: 2 },
+        { seq_number: 3 },
+        { seq_number: 4 },
+        { seq_number: 5 },
+        { seq_number: 6 },
+      ],
+    });
+
+    await Source.repository.create({
+      values: {
+        name: 'source1',
+        targets: [targets[2], targets[0], targets[1]],
+      },
+    });
+
+    const source = await Source.repository.findOne({
+      appends: ['targets'],
+    });
+
+    expect(source.targets.map((t) => t.get('id'))).toEqual([1, 2, 3]);
+  });
+
   it('should handle eager loading with long field', async () => {
     const Through = db.collection({
       name: 'abc_abcd_abcd_abcdefg_abc_abc_a_abcdefghijk',

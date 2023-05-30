@@ -103,6 +103,17 @@ export class EagerLoadingTree {
   async load(pks: Array<string | number>, transaction?: Transaction) {
     const result = {};
 
+    const orderOption = (association) => {
+      const targetModel = association.target;
+      const order = [];
+
+      if (targetModel.primaryKeyAttribute && targetModel.rawAttributes[targetModel.primaryKeyAttribute].autoIncrement) {
+        order.push([targetModel.primaryKeyAttribute, 'ASC']);
+      }
+
+      return order;
+    };
+
     const loadRecursive = async (node, ids) => {
       const modelPrimaryKey = node.model.primaryKeyAttribute;
 
@@ -134,6 +145,7 @@ export class EagerLoadingTree {
           const findOptions = {
             where: { [foreignKey]: foreignKeyValues },
             attributes: node.attributes,
+            order: orderOption(association),
             transaction,
           };
 
@@ -174,6 +186,7 @@ export class EagerLoadingTree {
                 },
               },
             ],
+            order: orderOption(association),
           });
         }
       }

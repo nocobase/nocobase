@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-formula-field",
+  "displayName": "formula-field",
+  "displayName.zh-CN": "字段",
+  "description": "formula-field",
+  "description.zh-CN": "字段。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

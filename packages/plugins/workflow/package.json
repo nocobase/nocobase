@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-workflow",
+  "displayName": "workflow",
+  "displayName.zh-CN": "工作流",
+  "description": " a powerful workflow plugin designed to support business process management and automation. .",
+  "description.zh-CN": "工作流插件，为业务流程管理和自动化提供支持。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
