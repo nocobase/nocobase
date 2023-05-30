@@ -56,6 +56,6 @@
     "packages/**/node_modules",
     "packages/**/dist",
     "packages/**/lib",
-    "packages/**/es",
+    "packages/**/es"
   ]
 }
