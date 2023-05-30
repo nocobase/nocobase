@@ -1,10 +1,10 @@
-import { GeneralSchemaDesigner, SchemaSettings, useRequest } from '@nocobase/client';
-import React, { useContext, useEffect } from 'react';
+import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useRequest } from '@nocobase/client';
+import React, { useContext, useEffect, useState } from 'react';
 import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField } from '@formily/react';
-import { useChartComponent } from './ChartLibrary';
+import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
 const { Paragraph, Text } = Typography;
 
@@ -32,14 +32,16 @@ export type ChartRendererProps = {
     general: any;
     advanced: string;
   };
+  // A flag to indicate whether it is the renderer of the configuration pane.
+  configuring?: boolean;
 };
 
 export const ChartRenderer: React.FC<ChartRendererProps> & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
-
-  const { query, config, collection } = props;
+  const { setData: setQueryData } = useContext(ChartConfigContext);
+  const { query, config, collection, configuring } = props;
   const general = config?.general || {};
   let advanced = {};
   try {
@@ -48,20 +50,31 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
     console.error(err);
   }
 
-  const {
-    data = [],
-    loading,
-    run,
-  } = useRequest(
-    {
-      url: 'charts:query',
-      params: {
-        collection,
-        ...query,
-      },
-    },
+  const api = useAPIClient();
+  const [data, setData] = useState<any[]>([]);
+  const { loading, run } = useRequest(
+    () =>
+      api
+        .request({
+          url: 'charts:query',
+          method: 'POST',
+          data: {
+            collection,
+            ...query,
+          },
+        })
+        .then((res) => {
+          return res?.data?.data || [];
+        }),
     {
       manual: true,
+      onSuccess: (data) => {
+        setData(data);
+        if (configuring) {
+          const sampleData = data.length > 10 ? data.slice(0, 10) : data;
+          setQueryData(JSON.stringify(sampleData, null, 2));
+        }
+      },
     },
   );
 
@@ -69,11 +82,13 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
     if (query?.measures?.length && query?.dimensions?.length) {
       run();
     }
-  }, [query, run]);
+  }, [run]);
 
   const chartType = config?.chartType || '-';
   const [library, type] = chartType.split('-');
-  const Component = useChartComponent(library, type);
+  const chart = useChart(library, type);
+  const Component = chart.component;
+  const transformer = chart.transformer;
 
   const C = () =>
     Component ? (
@@ -83,7 +98,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...{ ...general, ...advanced, data }} />
+        <Component {...{ ...general, ...advanced, data: transformer ? transformer(data) : data }} />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />

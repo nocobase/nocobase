@@ -1,6 +1,6 @@
 import { useChartsTranslation } from '../locale';
 import React, { createContext, useContext, useMemo } from 'react';
-import { Row, Col, Card, Modal, Button, Space, Tabs } from 'antd';
+import { Row, Col, Card, Modal, Button, Space, Tabs, Typography } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
 import {
   SchemaComponent,
@@ -18,9 +18,10 @@ import { ISchema, FormConsumer } from '@formily/react';
 import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
-import { createForm } from '@formily/core';
-import { useFields } from './hooks';
+import { createForm, Form as FormType } from '@formily/core';
+import { useFields, FieldOption } from './hooks';
 import { cloneDeep } from 'lodash';
+const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
   schema: ISchema;
@@ -33,6 +34,8 @@ export const ChartConfigContext = createContext<{
   setVisible?: (visible: boolean) => void;
   current?: ChartConfigCurrent;
   setCurrent?: (current: ChartConfigCurrent) => void;
+  data?: string;
+  setData?: (data: string) => void;
 }>({
   visible: true,
 });
@@ -47,21 +50,14 @@ export const ChartConfigure: React.FC<{
   ) => void;
 }> & {
   Renderer: React.FC;
+  Config: React.FC;
   Query: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
-  const { visible, setVisible, current } = useContext(ChartConfigContext);
+  const { visible, setVisible, current, data } = useContext(ChartConfigContext);
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
-  const RunButton: React.FC = () => (
-    <Button type="link">
-      <RightSquareOutlined />
-      {t('Run query')}
-    </Button>
-  );
-  const chartTypes = useChartTypes();
-  const libraries = useContext(ChartLibraryContext);
   const form = useMemo(
     () =>
       createForm({
@@ -71,6 +67,13 @@ export const ChartConfigure: React.FC<{
         },
       }),
     [schema],
+  );
+  const RunButton: React.FC = () => (
+    // apply cloneDeep to trigger form change and ChartRenderer will rerender
+    <Button type="link" onClick={() => (form.values.query = cloneDeep(form.values.query))}>
+      <RightSquareOutlined />
+      {t('Run query')}
+    </Button>
   );
   return (
     <Modal
@@ -139,26 +142,7 @@ export const ChartConfigure: React.FC<{
                   width: 100%;
                 `}
               >
-                <FormConsumer>
-                  {(form) => {
-                    const getSchema = (type: string) => {
-                      if (!type) {
-                        return {};
-                      }
-                      const [library, chart] = type.split('-');
-                      return libraries[library]?.charts[chart]?.schema || {};
-                    };
-                    const chartType = form.values.config?.chartType;
-                    const schema = getSchema(chartType);
-                    return (
-                      <SchemaComponent
-                        schema={getConfigSchema(schema)}
-                        scope={{ t, chartTypes }}
-                        components={{ Card, Select, Input, FormItem }}
-                      />
-                    );
-                  }}
-                </FormConsumer>
+                <ChartConfigure.Config />
               </Col>
             </Row>
           </Col>
@@ -175,6 +159,19 @@ export const ChartConfigure: React.FC<{
                   {
                     label: t('Data'),
                     key: 'data',
+                    children: (
+                      <Paragraph ellipsis={true}>
+                        <Text>{t('The first 10 records of the query result:')}</Text>
+                        <pre
+                          className={css`
+                            max-height: 700px;
+                            overflow: scroll;
+                          `}
+                        >
+                          <Text>{data || t('Please run query to retrive data.')}</Text>
+                        </pre>
+                      </Paragraph>
+                    ),
                   },
                 ]}
               />
@@ -192,9 +189,10 @@ ChartConfigure.Renderer = function Renderer() {
   return (
     <FormConsumer>
       {(form) => {
-        const query = cloneDeep(form.values.query);
+        // Any change of config will trigger rerender
+        // Change of query only trigger rerender when "Run query" button is clicked
         const config = cloneDeep(form.values.config);
-        return <ChartRenderer collection={collection} query={query} config={config} />;
+        return <ChartRenderer collection={collection} query={form.values.query} config={config} configuring={true} />;
       }}
     </FormConsumer>
   );
@@ -206,7 +204,7 @@ ChartConfigure.Query = function Query() {
   const { collection } = current || {};
   const fields = useFields();
   const filterOptions = useLinkageCollectionFilterOptions(collection);
-  const formCollapse = FormCollapse.createFormCollapse(['measure', 'dimension', 'sort', 'filter']);
+  const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
   return (
     <SchemaComponent
       schema={querySchema}
@@ -225,5 +223,84 @@ ChartConfigure.Query = function Query() {
         Filter,
       }}
     />
+  );
+};
+
+const FieldComponent: React.FC<{
+  fields: FieldOption[];
+  component: React.FC<{
+    allFields: FieldOption[];
+  }>;
+}> = (props) => {
+  const { fields } = props;
+  return (
+    <FormConsumer>
+      {(form) => {
+        // When field alias is set, appends it to the field list
+        const getAliasFields = (selectedFields: { field: string; aggregation: string; alias?: string }[]) => {
+          return selectedFields
+            .filter((selectedField) => selectedField.alias)
+            .map((selectedField) => {
+              const fieldProps = fields.find((field) => field.name === selectedField.field);
+              return {
+                ...fieldProps,
+                key: selectedField.alias,
+                label: selectedField.alias,
+                value: selectedField.alias,
+              };
+            });
+        };
+        const query = form.values.query || {};
+        const measures = query.measures || [];
+        const dimensions = query.dimensions || [];
+        const aliasFields = [...getAliasFields(measures), ...getAliasFields(dimensions)];
+        // unique
+        const map = new Map([...fields, ...aliasFields].map((item) => [item.value, item]));
+        const allFields = [...map.values()];
+        return props.component({ ...props, allFields });
+      }}
+    </FormConsumer>
+  );
+};
+
+const FieldSelect: React.FC = (props) => {
+  const { t } = useChartsTranslation();
+  const fields = useFields();
+  return (
+    <FieldComponent
+      {...props}
+      fields={fields}
+      component={(props) => {
+        return <Select placeholder={t('Field')} {...props} options={props.allFields} />;
+      }}
+    />
+  );
+};
+
+ChartConfigure.Config = function Config() {
+  const { t } = useChartsTranslation();
+  const chartTypes = useChartTypes();
+  const libraries = useContext(ChartLibraryContext);
+  return (
+    <FormConsumer>
+      {(form) => {
+        const getSchema = (type: string) => {
+          if (!type) {
+            return {};
+          }
+          const [library, chart] = type.split('-');
+          return libraries[library]?.charts[chart]?.schema || {};
+        };
+        const chartType = form.values.config?.chartType;
+        const schema = getSchema(chartType);
+        return (
+          <SchemaComponent
+            schema={getConfigSchema(schema)}
+            scope={{ t, chartTypes }}
+            components={{ Card, Select, Input, FormItem, FieldSelect, ArrayItems, Space }}
+          />
+        );
+      }}
+    </FormConsumer>
   );
 };

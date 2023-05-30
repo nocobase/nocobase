@@ -31,7 +31,7 @@ export const useFields = () => {
       value: field.name,
       ...field,
     }));
-  return Schema.compile(fields, { t });
+  return Schema.compile(fields, { t }) as FieldOption[];
 };
 
 export const useFilterOptions = (fields: FieldOption[]) => {

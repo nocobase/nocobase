@@ -5,6 +5,7 @@ type ChartProps = {
   name: string;
   component: React.FC<any>;
   schema?: ISchema;
+  transformer?: (data: any) => any;
 };
 
 export type Charts = {
@@ -42,9 +43,9 @@ export const useChartTypes = (): (ChartProps & {
     }, []);
 };
 
-export const useChartComponent = (library: string, type: string) => {
+export const useChart = (library: string, type: string) => {
   const ctx = useContext(ChartLibraryContext);
-  return ctx[library]?.charts[type]?.component;
+  return ctx[library]?.charts[type];
 };
 
 export const useToggleChartLibrary = () => {

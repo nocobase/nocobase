@@ -1,5 +1,6 @@
 import { ISchema } from '@formily/react';
 import { lang } from '../../locale';
+import { uid } from '@formily/shared';
 
 const getArraySchema = (fields = {}) => ({
   type: 'array',
@@ -57,7 +58,12 @@ export const getConfigSchema = (general: any) => ({
               },
               enum: '{{ chartTypes }}',
             },
-            general,
+            [uid()]: {
+              type: 'void',
+              properties: {
+                general,
+              },
+            },
             advanced: {
               type: 'string',
               title: '{{t("JSON config")}}',
@@ -65,9 +71,8 @@ export const getConfigSchema = (general: any) => ({
               'x-decorator-props': {
                 extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
               },
-              'x-component': 'Input.TextArea',
+              'x-component': 'Input.JSON',
               'x-component-props': {
-                defaultValue: '{}',
                 autoSize: {
                   minRows: 5,
                 },
