@@ -1124,7 +1124,7 @@ export const useAssociationNames = (collection) => {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
-        if (s['x-component-props'].mode === 'Nester') {
+        if (s['x-component-props']?.mode === 'Nester') {
           return getAssociationAppends(s, buf);
         }
         return buf;

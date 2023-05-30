@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-users",
+  "displayName": "users",
+  "displayName.zh-CN": "用户管理",
+  "description": "manage the uses of nocobase system",
+  "description.zh-CN": "管理系统用户",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

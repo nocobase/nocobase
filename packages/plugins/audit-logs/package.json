@@ -1,6 +1,10 @@
 {
   "name": "@nocobase/plugin-audit-logs",
   "version": "0.9.4-alpha.2",
+  "displayName": "audit-logs",
+  "displayName.zh-CN": "审计日志",
+  "description": "audit logs plugin",
+  "description.zh-CN": "审计日志。",
   "main": "./lib/server/index.js",
   "types": "./lib/server/index.d.ts",
   "license": "AGPL-3.0",
