@@ -1,30 +1,31 @@
 import React from 'react';
-import { LoadingOutlined } from '@ant-design/icons';
-import {
-  connect,
-  mapProps,
-  mapReadPretty,
-  useFieldSchema,
-  ObjectField,
-  FormProvider,
-  Field,
-  useField,
-} from '@formily/react';
-import { css } from '@emotion/css';
-import { Editable } from '@formily/antd';
+import { EditOutlined } from '@ant-design/icons';
 import { Popover } from 'antd';
-import { InputProps } from 'antd/lib/input';
-import { createForm } from '@formily/core';
-import { FormItem } from '../form-item';
+import { useField, observer } from '@formily/react';
+import { FormItem } from '@formily/antd';
 import CollectionField from '../../../collection-manager/CollectionField';
 
-export const QuickEdit = (props) => {
-  console.log(props);
-  return (
-    <Popover content={<CollectionField editable />}>
-      <FormItem>
-        <CollectionField readPretty />
-      </FormItem>
-    </Popover>
+export const QuickEdit = observer((props) => {
+  const field: any = useField();
+  const content = (
+    <div>
+      <CollectionField
+        value={field.value}
+        onChange={(e) => {
+          const data = e.target?.value || e;
+          field.value = data;
+        }}
+      />
+    </div>
   );
-};
+
+  return (
+    <FormItem {...props}>
+      <Popover content={content} trigger="click">
+        <EditOutlined />
+        {/* <CollectionField value={field.value} /> */}
+        {field.value}
+      </Popover>
+    </FormItem>
+  );
+});
