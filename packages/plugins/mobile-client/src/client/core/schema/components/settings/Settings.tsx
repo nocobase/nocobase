@@ -14,7 +14,7 @@ export const InternalSettings = () => {
       )}
     >
       <Designer />
-      <SettingsMenu />
+      <SettingsMenu redirectUrl="/mobile" />
     </SortableItem>
   );
 };

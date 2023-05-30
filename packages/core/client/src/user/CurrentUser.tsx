@@ -23,7 +23,10 @@ const ApplicationVersion = () => {
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
  */
-export const SettingsMenu: React.FC = () => {
+export const SettingsMenu: React.FC<{
+  redirectUrl?: string;
+}> = (props) => {
+  const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
   const history = useHistory();
@@ -103,7 +106,7 @@ export const SettingsMenu: React.FC = () => {
         onClick={async () => {
           await api.resource('users').signout();
           api.auth.setToken(null);
-          history.push('/signin');
+          history.push(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
         }}
       >
         {t('Sign out')}
