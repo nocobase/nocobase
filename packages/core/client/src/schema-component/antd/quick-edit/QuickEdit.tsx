@@ -34,8 +34,10 @@ export const QuickEdit = observer((props) => {
   return (
     <FormItem {...props}>
       <Popover content={content} trigger="click">
-        <EditOutlined />
-        <CollectionField value={field.value} name={fieldSchema.name} readPretty />
+        <span style={{ display: 'flex' ,maxHeight:30}}>
+          <EditOutlined style={{ marginRight: '10px',lineHeight:'25px' }} />
+          <CollectionField value={field.value} name={fieldSchema.name} readPretty />
+        </span>
       </Popover>
     </FormItem>
   );
