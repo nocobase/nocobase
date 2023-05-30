@@ -32,7 +32,6 @@ export const AuditLogsBlockInitializer = (props) => {
     tableColumnInitializers: 'AuditLogsTableColumnInitializers',
     tableActionColumnInitializers: 'AuditLogsTableActionColumnInitializers',
     tableBlockProvider: 'AuditLogsBlockProvider',
-    TableBlockDesigner: 'AuditLogsDesigner',
     disableTemplate: true,
     // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
     crypticFilter: crypticFilterFromAuditLogs,
