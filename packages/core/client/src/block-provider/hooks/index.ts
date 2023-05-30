@@ -1083,9 +1083,10 @@ export const useAssociationNames = () => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationSubfield = s.name.includes('.');
       if (
         collectionfield &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
+        (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) || isAssociationSubfield) &&
         s['x-component'] !== 'TableField'
       ) {
         const path = prefix === '' || !prefix ? s.name : prefix + '.' + s.name;
