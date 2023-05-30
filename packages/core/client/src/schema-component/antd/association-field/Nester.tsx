@@ -1,4 +1,4 @@
-import { CloseCircleOutlined } from '@ant-design/icons';
+import { CloseCircleOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { Button, Card, Divider } from 'antd';
@@ -37,14 +37,26 @@ const ToManyNester = observer((props) => {
           <>
             {!field.readPretty && allowed && (
               <div style={{ textAlign: 'right' }}>
-                <CloseCircleOutlined
-                  style={{ zIndex: 1000, position: 'absolute', color: '#a8a3a3' }}
-                  onClick={() => {
-                    const result = field.value;
-                    result.splice(index, 1);
-                    field.value = result;
-                  }}
-                />
+                {[
+                  <CloseCircleOutlined
+                    style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
+                    onClick={() => {
+                      const result = field.value;
+                      result.splice(index, 1);
+                      field.value = result;
+                    }}
+                  />,
+                  field.editable && allowMultiple && (
+                    <PlusSquareOutlined
+                      style={{ zIndex: 1000, color: '#a8a3a3' }}
+                      onClick={() => {
+                        const result = field.value;
+                        result.splice(index+1,0,{});
+                        field.value = result;
+                      }}
+                    />
+                  ),
+                ]}
               </div>
             )}
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
@@ -52,7 +64,7 @@ const ToManyNester = observer((props) => {
           </>
         );
       })}
-      {field.editable && allowMultiple && (
+      {/* {field.editable && allowMultiple && (
         <Button
           type={'dashed'}
           block
@@ -64,7 +76,7 @@ const ToManyNester = observer((props) => {
         >
           {t('Add new')}
         </Button>
-      )}
+      )} */}
     </Card>
   );
 });

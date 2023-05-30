@@ -12,7 +12,7 @@ export const InternalNester = () => {
   const fieldSchema = useFieldSchema();
   const insertNester = useInsertSchema('Nester');
   const { options: collectionField } = useAssociationFieldContext();
-
+  const showTitle = fieldSchema['x-decorator-props']?.showTitle ?? true;
   useEffect(() => {
     insertNester(schema.Nester);
   }, []);
@@ -26,12 +26,22 @@ export const InternalNester = () => {
                 margin-bottom: 10px;
               }
               .ant-card-body {
-                padding: 15px 20px ;
+                padding: 15px 20px;
               }
-              .ant-divider-horizontal{
-                margin:10px 0
+              .ant-divider-horizontal {
+                margin: 10px 0;
               }
             `,
+            {
+              [css`
+                .ant-card-body {
+                  padding: 0px 20px 20px 0px;
+                }
+                > .ant-card-bordered {
+                  border: none;
+                }
+              `]: showTitle === false,
+            },
           )}
         >
           <RecursionField
