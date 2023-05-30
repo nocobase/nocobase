@@ -3,11 +3,14 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    mainFields: ['module'],
+  },
   test: {
     globals: true,
     setupFiles: 'scripts/setupVitest.ts',
     environment: 'jsdom',
-    css: true,
+    css: false,
     threads: true,
     alias: [
       { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
@@ -23,5 +26,8 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/lib/**', '**/es/**', '**/{vitest,commitlint}.config.*'],
     testTimeout: 300000,
     bail: 1,
+    deps: {
+      inline: ['@juggle/resize-observer', 'clsx'],
+    },
   },
 });

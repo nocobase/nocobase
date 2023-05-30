@@ -5,6 +5,9 @@
   "main": "lib",
   "module": "es/index.js",
   "typings": "es/index.d.ts",
+  "exports": {
+    "import": "./es/index.js"
+  },
   "dependencies": {
     "@antv/g2plot": "^2.4.18",
     "@dnd-kit/core": "^5.0.1",

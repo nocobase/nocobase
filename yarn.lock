@@ -13751,6 +13751,14 @@ jscodeshift@^0.6.2:
     temp "^0.8.1"
     write-file-atomic "^2.3.0"
 
+jsdom-worker@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.npmmirror.com/jsdom-worker/-/jsdom-worker-0.3.0.tgz#aff32ec089d17f56a5a344a426b6fb2f56e7de54"
+  integrity sha512-nlPmN0i93+e6vxzov8xqLMR+MBs/TAYeSviehivzqovHH0AgooVx9pQ/otrygASppPvdR+V9Jqx5SMe8+FcADg==
+  dependencies:
+    mitt "^3.0.0"
+    uuid-v4 "^0.1.0"
+
 jsdom@^11.5.1:
   version "11.12.0"
   resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-11.12.0.tgz#1a80d40ddd378a1de59656e9e6dc5a3ba8657bc8"
@@ -15299,6 +15307,11 @@ mississippi@^2.0.0:
     pumpify "^1.3.3"
     stream-each "^1.1.0"
     through2 "^2.0.0"
+
+mitt@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.npmmirror.com/mitt/-/mitt-3.0.0.tgz#69ef9bd5c80ff6f57473e8d89326d01c414be0bd"
+  integrity sha512-7dX2/10ITVyqh4aOSVI9gdape+t9l2/8QxHrFmUXu4EEUpdlxl6RudZUPZoc+zuY2hk1j7XxVroIVIan/pD/SQ==
 
 mixin-deep@^1.2.0:
   version "1.3.2"
@@ -21847,6 +21860,11 @@ utility@^1.16.1, utility@^1.17.0, utility@^1.8.0:
     mkdirp "^0.5.1"
     mz "^2.7.0"
     unescape "^1.0.1"
+
+uuid-v4@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.npmmirror.com/uuid-v4/-/uuid-v4-0.1.0.tgz#62d7b310406f6cecfea1528c69f1e8e0bcec5a3a"
+  integrity sha512-m11RYDtowtAIihBXMoGajOEKpAXrKbpKlpmxqyztMYQNGSY5nZAZ/oYch/w2HNS1RMA4WLGcZvuD8/wFMuCEzA==
 
 uuid@^3.2.1, uuid@^3.3.2:
   version "3.4.0"
