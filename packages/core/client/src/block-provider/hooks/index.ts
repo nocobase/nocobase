@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep } from 'lodash';
+import { cloneDeep, uniq } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -1079,20 +1079,20 @@ export const useAssociationNames = () => {
   const fieldSchema = useFieldSchema();
   const updateAssociationValues = [];
   const appends = [];
-  const prefix = '';
   const getAssociationAppends = (schema, str) => {
-    schema.reduceProperties((prefix, s) => {
+    schema.reduceProperties((pre, s) => {
+      const prefix = pre || str;
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       if (
         collectionfield &&
         ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
         s['x-component'] !== 'TableField'
       ) {
-        const path = prefix === '' ? prefix + s.name : prefix + '.' + s.name;
+        const path = prefix === '' || !prefix ? s.name : prefix + '.' + s.name;
         appends.push(path);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           updateAssociationValues.push(path);
-          const bufPrefix = prefix !== '' ? prefix + '.' + s.name : s.name;
+          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);
         }
       } else if (
@@ -1113,6 +1113,6 @@ export const useAssociationNames = () => {
       }
     }, str);
   };
-  getAssociationAppends(fieldSchema, prefix);
-  return { appends, updateAssociationValues };
+  getAssociationAppends(fieldSchema, '');
+  return { appends: uniq(appends), updateAssociationValues };
 };
