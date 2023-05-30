@@ -1,6 +1,8 @@
 import { CloseCircleOutlined, PlusSquareOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
+import { spliceArrayState } from '@formily/core/lib/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
+import { action } from '@formily/reactive';
 import { Button, Card, Divider } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,9 +43,14 @@ const ToManyNester = observer((props) => {
                   <CloseCircleOutlined
                     style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
                     onClick={() => {
-                      const result = field.value;
-                      result.splice(index, 1);
-                      field.value = result;
+                      action(() => {
+                      spliceArrayState(field as any, {
+                        startIndex: index,
+                        deleteCount: 1,
+                      });
+                        field.value.splice(index, 1);
+                        return field.onInput(field.value);
+                    });
                     }}
                   />,
                   field.editable && allowMultiple && (
