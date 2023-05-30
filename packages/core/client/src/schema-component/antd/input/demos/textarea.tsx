@@ -1,8 +1,4 @@
-/**
- * title: Textarea
- */
-import { FormItem } from '@formily/antd';
-import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {

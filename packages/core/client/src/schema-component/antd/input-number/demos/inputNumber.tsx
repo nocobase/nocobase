@@ -1,18 +1,14 @@
-/**
- * title: Input
- */
-import { FormItem } from '@formily/antd';
-import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem, InputNumber, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'number',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'InputNumber',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -23,18 +19,18 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'number',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Input',
+      'x-component': 'InputNumber',
     },
   },
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ Input, FormItem }}>
+    <SchemaComponentProvider components={{ InputNumber, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

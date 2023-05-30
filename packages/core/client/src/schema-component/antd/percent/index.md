@@ -5,10 +5,10 @@ group:
   path: /schema-components
 ---
 
-# IconPicker
+# Percent
 
 ## Examples
 
-### IconPicker
+### Percent
 
-<code src="./demos/icon-picker.tsx" />
+<code src="./demos/percent.tsx"/>

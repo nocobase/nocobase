@@ -1,22 +1,17 @@
-/**
- * title: stringMode
- */
-import { FormItem } from '@formily/antd';
-import { InputNumber, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem, InputNumber, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        stringMode: true,
-        step: '0.01',
-        addonAfter: '%',
+        addonBefore: '¥',
+        addonAfter: '万元',
       },
       'x-reactions': {
         target: 'read',
@@ -28,15 +23,14 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'string',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'InputNumber',
       'x-component-props': {
-        stringMode: true,
-        step: '0.01',
-        addonAfter: '%',
+        addonBefore: '¥',
+        addonAfter: '万元',
       },
     },
   },

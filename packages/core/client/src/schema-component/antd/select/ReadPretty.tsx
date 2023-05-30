@@ -4,8 +4,8 @@ import { isValid } from '@formily/shared';
 import { Tag } from 'antd';
 import React from 'react';
 import { useCompile } from '../../hooks';
-import { defaultFieldNames, getCurrentOptions } from './shared';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
+import { defaultFieldNames, getCurrentOptions } from './utils';
 
 type Composed = {
   Select?: React.FC<any>;

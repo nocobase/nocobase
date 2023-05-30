@@ -1,18 +1,14 @@
-/**
- * title: URL
- */
-import { FormItem } from '@formily/antd';
-import { Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'object',
+      type: 'string',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'Input.JSON',
+      'x-component': 'Input',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -27,7 +23,7 @@ const schema = {
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'Input.JSON',
+      'x-component': 'Input',
     },
   },
 };

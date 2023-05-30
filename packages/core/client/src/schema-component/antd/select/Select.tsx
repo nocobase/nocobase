@@ -2,10 +2,10 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect, Spin, Empty } from 'antd';
+import { Select as AntdSelect, Empty, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames, getCurrentOptions } from './shared';
+import { defaultFieldNames, getCurrentOptions } from './utils';
 
 type Props = SelectProps<any, any> & {
   objectValue?: boolean;

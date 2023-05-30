@@ -1,18 +1,14 @@
-/**
- * title: IconPicker
- */
-import { FormItem } from '@formily/antd';
-import { IconPicker, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { FormItem, Percent, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import React from 'react';
 
 const schema = {
   type: 'object',
   properties: {
     input: {
-      type: 'boolean',
+      type: 'number',
       title: `Editable`,
       'x-decorator': 'FormItem',
-      'x-component': 'IconPicker',
+      'x-component': 'Percent',
       'x-reactions': {
         target: 'read',
         fulfill: {
@@ -23,18 +19,18 @@ const schema = {
       },
     },
     read: {
-      type: 'boolean',
+      type: 'number',
       title: `Read pretty`,
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
-      'x-component': 'IconPicker',
+      'x-component': 'Percent',
     },
   },
 };
 
 export default () => {
   return (
-    <SchemaComponentProvider components={{ IconPicker, FormItem }}>
+    <SchemaComponentProvider components={{ Percent, FormItem }}>
       <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );

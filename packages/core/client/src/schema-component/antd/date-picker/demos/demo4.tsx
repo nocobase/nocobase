@@ -14,7 +14,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker.RangePicker',
       'x-component-props': {
-        utc: false,
+        gmt: true,
       },
       'x-reactions': [
         {
@@ -41,6 +41,9 @@ const schema = {
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'DatePicker.RangePicker',
+      'x-component-props': {
+        gmt: true,
+      },
     },
     read2: {
       type: 'string',
