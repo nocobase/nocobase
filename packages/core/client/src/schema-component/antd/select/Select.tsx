@@ -79,6 +79,15 @@ const InternalSelect = connect(
     if (objectValue) {
       return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
+    const toValue= (v) => {
+      if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
+        if (!v) {
+          return [];
+        }
+        return Array.isArray(v) ? v : [v];
+      }
+      return v;
+    };
     return (
       <AntdSelect
         showSearch
@@ -86,7 +95,7 @@ const InternalSelect = connect(
         allowClear
         dropdownMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
-        value={value?value:undefined}
+        value={toValue(value)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
