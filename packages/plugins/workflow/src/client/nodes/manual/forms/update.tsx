@@ -12,7 +12,8 @@ import {
 } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
-import { findSchema, ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
+import { ManualFormType } from '../SchemaConfig';
 import { FilterDynamicComponent } from '../../../components/FilterDynamicComponent';
 import { FormBlockInitializer } from '../FormBlockInitializer';
 

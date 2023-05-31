@@ -19,7 +19,8 @@ import { merge, uid } from '@nocobase/utils/client';
 
 import { JOB_STATUS } from '../../../constants';
 import { lang, NAMESPACE } from '../../../locale';
-import { findSchema, ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
+import { ManualFormType } from '../SchemaConfig';
 
 const FormCollectionContext = React.createContext<any>(null);
 

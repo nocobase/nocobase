@@ -8,6 +8,9 @@ import {
   useRecordCollectionDataSourceItems,
   useSchemaTemplateManager,
 } from '@nocobase/client';
+
+import { traverseSchema } from './utils';
+
 import { JOB_STATUS } from '../../constants';
 import { NAMESPACE } from '../../locale';
 
@@ -42,6 +45,11 @@ function InternalFormBlockInitializer({ insert, schema, ...others }) {
     delete result['x-acl-action'];
     const [formKey] = Object.keys(result.properties);
     result.properties[formKey].properties.actions['x-decorator'] = 'ActionBarProvider';
+    traverseSchema(result, (node) => {
+      if (node['x-uid']) {
+        delete node['x-uid'];
+      }
+    });
     insert(result);
   }
 

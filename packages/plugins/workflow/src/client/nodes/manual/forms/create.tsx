@@ -1,7 +1,8 @@
 import { useCollectionManager } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
-import { findSchema, ManualFormType } from '../SchemaConfig';
+import { findSchema } from '../utils';
+import { ManualFormType } from '../SchemaConfig';
 import { FormBlockInitializer } from '../FormBlockInitializer';
 
 export default {
