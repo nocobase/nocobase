@@ -79,12 +79,9 @@ const InternalSelect = connect(
     if (objectValue) {
       return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
-    const toValue= (v) => {
+    const toValue = (v) => {
       if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
-        if (!v) {
-          return [];
-        }
-        return Array.isArray(v) ? v : [v];
+        return toArr(v);
       }
       return v;
     };
