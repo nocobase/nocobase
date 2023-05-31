@@ -6,8 +6,6 @@ import { FILE_FIELD_NAME, LIMIT_FILES, DEFAULT_MAX_FILE_SIZE } from '../constant
 import * as Rules from '../rules';
 import { getStorageConfig } from '../storages';
 
-
-
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
 function getFileFilter(storage) {
   return (req, file, cb) => {
@@ -15,8 +13,7 @@ function getFileFilter(storage) {
     const { size, ...rules } = storage.rules;
     const ruleKeys = Object.keys(rules);
     const result =
-      !ruleKeys.length ||
-      !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key]));
+      !ruleKeys.length || !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key]));
     cb(null, result);
   };
 }
@@ -33,21 +30,21 @@ export async function multipart(ctx: Context, next: Next) {
   const StorageRepo = ctx.db.getRepository('storages');
   // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
   const storage = await StorageRepo.findOne({
-    filter: associatedIndex ? { name: associatedIndex } : { default: true }
+    filter: associatedIndex ? { name: associatedIndex } : { default: true },
   });
 
   if (!storage) {
     console.error('[file-manager] no linked or default storage provided');
     return ctx.throw(500);
   }
+  // 传递已取得的存储引擎，避免重查
+  ctx.storage = storage;
 
   const storageConfig = getStorageConfig(storage.type);
   if (!storageConfig) {
     console.error(`[file-manager] storage type "${storage.type}" is not defined`);
     return ctx.throw(500);
   }
-  // 传递已取得的存储引擎，避免重查
-  ctx.storage = storage;
 
   const multerOptions = {
     fileFilter: getFileFilter(storage),
@@ -83,7 +80,7 @@ export async function create(ctx: Context, next: Next) {
   // make compatible filename across cloud service (with path)
   const filename = path.basename(name);
   const extname = path.extname(filename);
-  const urlPath = storage.path ? storage.path.replace(/^([^\/])/, '/$1') : '';
+  const urlPath = storage.path ? storage.path.replace(/^([^/])/, '/$1') : '';
 
   const data = {
     title: file.originalname.replace(extname, ''),

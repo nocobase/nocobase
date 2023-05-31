@@ -17,8 +17,7 @@ export const attachment: IField = {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-component-props': {
-      },
+      'x-component-props': {},
     },
   },
   availableTypes: ['belongsToMany'],
@@ -28,7 +27,9 @@ export const attachment: IField = {
       schema['x-component-props']['size'] = 'small';
     }
 
-    schema['x-component-props']['action'] = field.storage ? `/storages/${field.storage}/attachments:create` : '/attachments:create';
+    schema['x-component-props']['action'] = field.storage
+      ? `/storages/${field.storage}/attachments:create`
+      : '/attachments:create';
   },
   initialize: (values: any) => {
     if (!values.through) {
@@ -55,6 +56,7 @@ export const attachment: IField = {
       'x-component': 'Input',
       'x-decorator': 'FormItem',
       description: 'Example: image/png',
+      default: 'image/*',
     },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
@@ -66,6 +68,7 @@ export const attachment: IField = {
     storage: {
       type: 'string',
       title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t('Default storage will be used when not selected', { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'RemoteSelect',
       'x-component-props': {
@@ -73,14 +76,14 @@ export const attachment: IField = {
           resource: 'storages',
           params: {
             // pageSize: -1
-          }
+          },
         },
         fieldNames: {
           label: 'title',
           value: 'name',
         },
       },
-    }
+    },
   },
   filterable: {
     children: [
