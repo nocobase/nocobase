@@ -1,4 +1,3 @@
-import { P } from '@antv/g2plot';
 import { Field } from '@formily/core';
 import { connect, useField, useFieldSchema } from '@formily/react';
 import { merge } from '@formily/shared';
@@ -12,7 +11,6 @@ import { useCollectionField } from './hooks';
 type Props = {
   component: any;
   children?: React.ReactNode;
-  editable?: boolean;
   readPretty?: boolean;
 };
 
@@ -61,10 +59,6 @@ const InternalField: React.FC = (props: Props) => {
     }
     if (fieldSchema['x-read-pretty'] === true || uiSchema['x-read-pretty'] === true || props.readPretty) {
       field.readPretty = true;
-    }
-    if (props.editable) {
-      field.readPretty = false;
-      field.editable = true;
     }
     setRequired();
     // @ts-ignore
