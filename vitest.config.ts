@@ -6,18 +6,11 @@ export default defineConfig({
   resolve: {
     mainFields: ['module'],
   },
-  css: {
-    preprocessorOptions: {
-      less: {
-        javascriptEnabled: true,
-      },
-    },
-  },
   test: {
     globals: true,
     setupFiles: 'scripts/setupVitest.ts',
     environment: 'jsdom',
-    css: true,
+    css: false,
     threads: true,
     alias: [
       { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
