@@ -7,13 +7,12 @@ import {
 } from '@nocobase/client';
 import { Button, Dropdown, Menu } from 'antd';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppManager } from './AppManager';
 import { AppNameInput } from './AppNameInput';
 import { usePluginUtils } from './utils';
 
 const MultiAppManager = () => {
-  const navigate = useNavigate();
   const { data, loading, run } = useRequest(
     {
       resource: 'applications',
@@ -24,40 +23,32 @@ const MultiAppManager = () => {
     },
   );
   const { t } = usePluginUtils();
-  const menu = (
-    <Menu>
-      {(data?.data || []).map((app) => {
-        let link = `/apps/${app.name}/admin/`;
-        if (app.options?.standaloneDeployment && app.cname) {
-          link = `//${app.cname}`;
-        }
-        return (
-          <Menu.Item
-            key={app.name}
-            onClick={() => {
-              window.open(link, '_blank');
-            }}
-          >
+  const items = [
+    ...(data?.data || []).map((app) => {
+      let link = `/apps/${app.name}/admin/`;
+      if (app.options?.standaloneDeployment && app.cname) {
+        link = `//${app.cname}`;
+      }
+      return {
+        key: app.name,
+        label: (
+          <a href={link} target="_blank" rel="noopener noreferrer">
             {app.displayName || app.name}
-          </Menu.Item>
-        );
-      })}
-      {(data?.data || []).length > 0 && <Menu.Divider />}
-      <Menu.Item
-        onClick={() => {
-          navigate('/admin/settings/multi-app-manager/applications');
-        }}
-      >
-        {t('Manage applications')}
-      </Menu.Item>
-    </Menu>
-  );
+          </a>
+        ),
+      };
+    }),
+    {
+      key: '.manager',
+      label: <Link to="/admin/settings/multi-app-manager/applications">{t('Manage applications')}</Link>,
+    },
+  ];
   return (
     <Dropdown
-      onVisibleChange={(visible) => {
+      onOpenChange={(visible) => {
         run();
       }}
-      overlay={menu}
+      menu={{ items }}
     >
       <Button title={'Apps'} icon={<Icon type={'AppstoreOutlined'} />} />
     </Dropdown>

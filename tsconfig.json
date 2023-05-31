@@ -54,7 +54,8 @@
   "include": [
     "packages/**/*",
     ".dumi/**/*",
-    ".dumirc.ts"
+    ".dumirc.ts",
+    "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",

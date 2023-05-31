@@ -1,11 +1,22 @@
+import { Field } from '@formily/core';
 import { connect, mapProps, observer } from '@formily/react';
+import { observable } from '@formily/reactive';
 import { Tree as AntdTree } from 'antd';
-import React from 'react';
+import _ from 'lodash';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { mergeFilter } from '../../block-provider';
 import { useCollectionManager } from '../../collection-manager';
-import { AssociationSelect, SchemaComponent } from '../../schema-component';
+import {
+  AssociationSelect,
+  SchemaComponent,
+  SchemaComponentContext,
+  removeNullCondition,
+} from '../../schema-component';
+import { ITemplate } from '../../schema-component/antd/form-v2/Templates';
 import { AsDefaultTemplate } from './components/AsDefaultTemplate';
 import { ArrayCollapse } from './components/DataTemplateTitle';
+import { Designer, getSelectedIdFilter } from './components/Designer';
 import { useCollectionState } from './hooks/useCollectionState';
 
 const Tree = connect(
@@ -13,185 +24,237 @@ const Tree = connect(
   mapProps({
     value: 'checkedKeys',
     dataSource: 'treeData',
-    onInput: 'onCheck',
+    // onInput: 'onCheck',
   }),
 );
 
 export const FormDataTemplates = observer((props: any) => {
-  const { useProps } = props;
+  const { useProps, formSchema, designerCtx } = props;
   const { defaultValues, collectionName } = useProps();
-  const { collectionList, getEnableFieldTree } = useCollectionState(collectionName);
+  const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(collectionName);
   const { getCollection, getCollectionField } = useCollectionManager();
-  const collection = getCollection(collectionName);
   const { t } = useTranslation();
-  const field = getCollectionField(`${collectionName}.${collection?.titleField || 'id'}`);
 
-  return (
-    <SchemaComponent
-      components={{ ArrayCollapse }}
-      scope={{ getEnableFieldTree }}
-      schema={{
-        type: 'object',
-        properties: {
+  // 不要在后面的数组中依赖 defaultValues，否则会因为 defaultValues 的变化导致 activeData 响应性丢失
+  const activeData = useMemo<ITemplate>(
+    () =>
+      observable(
+        defaultValues || { items: [], display: true, config: { [collectionName]: { titleField: '', filter: {} } } },
+      ),
+    [],
+  );
+
+  const getTargetField = (collectionName: string) => {
+    const collection = getCollection(collectionName);
+    return getCollectionField(
+      `${collectionName}.${activeData?.config[collectionName]?.titleField || collection?.titleField || 'id'}`,
+    );
+  };
+
+  const getFieldNames = (collectionName: string) => {
+    const collection = getCollection(collectionName);
+    return {
+      label: getLabel(activeData.config?.[collectionName]?.titleField || collection?.titleField || 'id'),
+      value: 'id',
+    };
+  };
+
+  const getFilter = (collectionName: string, value: any) => {
+    const filter = activeData.config?.[collectionName]?.filter;
+    return _.isEmpty(filter) ? {} : removeNullCondition(mergeFilter([filter, getSelectedIdFilter(value)], '$or'));
+  };
+
+  const components = useMemo(() => ({ ArrayCollapse }), []);
+  const scope = useMemo(
+    () => ({
+      getEnableFieldTree,
+      getTargetField,
+      getFieldNames,
+      getFilter,
+      getResource,
+      collectionName,
+    }),
+    [],
+  );
+  const schema = useMemo(
+    () => ({
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          default: activeData?.items,
+          'x-component': 'ArrayCollapse',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            accordion: true,
+          },
           items: {
-            type: 'array',
-            default: defaultValues?.items,
-            'x-component': 'ArrayCollapse',
-            'x-decorator': 'FormItem',
+            type: 'object',
+            'x-component': 'ArrayCollapse.CollapsePanel',
             'x-component-props': {
-              accordion: true,
-            },
-            items: {
-              type: 'object',
-              'x-component': 'ArrayCollapse.CollapsePanel',
-              'x-component-props': {
-                extra: [<AsDefaultTemplate />],
-              },
-              properties: {
-                layout: {
-                  type: 'void',
-                  'x-component': 'FormLayout',
-                  'x-component-props': {
-                    layout: 'vertical',
-                  },
-                  // TODO: 翻译
-                  properties: {
-                    collection: {
-                      type: 'string',
-                      title: '{{ t("Collection") }}',
-                      required: true,
-                      description: t('If collection inherits, choose inherited collections as templates'),
-                      default: collectionName,
-                      'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
-                      'x-decorator': 'FormItem',
-                      'x-component': 'Select',
-                      'x-component-props': {
-                        options: collectionList,
-                      },
-                    },
-                    dataId: {
-                      type: 'number',
-                      title: '{{ t("Template Data") }}',
-                      required: true,
-                      description: t('Select an existing piece of data as the initialization data for the form'),
-                      'x-decorator': 'FormItem',
-                      'x-component': AssociationSelect,
-                      'x-component-props': {
-                        service: {
-                          resource: collectionName,
-                        },
-                        action: 'list',
-                        multiple: false,
-                        objectValue: false,
-                        manual: false,
-                        targetField: field,
-                        mapOptions(option) {
-                          try {
-                            const label = getLabel(collection);
-                            option[label] = (
-                              <>
-                                #{option.id} {option[label]}
-                              </>
-                            );
-
-                            return option;
-                          } catch (error) {
-                            console.error(error);
-                            return option;
-                          }
-                        },
-                        fieldNames: {
-                          label: getLabel(collection),
-                          value: 'id',
-                        },
-                      },
-                      'x-reactions': [
-                        {
-                          dependencies: ['.collection'],
-                          fulfill: {
-                            state: {
-                              disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                service: {
-                                  resource: '{{ $deps[0] }}',
-                                },
-                              },
-                            },
-                          },
-                        },
-                      ],
-                    },
-                    fields: {
-                      type: 'array',
-                      title: '{{ t("Data fields") }}',
-                      required: true,
-                      description: t('Only the selected fields will be used as the initialization data for the form'),
-                      'x-decorator': 'FormItem',
-                      'x-component': Tree,
-                      'x-component-props': {
-                        treeData: [],
-                        checkable: true,
-                        selectable: false,
-                        rootStyle: {
-                          padding: '8px 0',
-                          border: '1px solid #d9d9d9',
-                          borderRadius: '2px',
-                          maxHeight: '30vh',
-                          overflow: 'auto',
-                          margin: '2px 0',
-                        },
-                      },
-                      'x-reactions': [
-                        {
-                          dependencies: ['.collection'],
-                          fulfill: {
-                            state: {
-                              disabled: '{{ !$deps[0] }}',
-                              componentProps: {
-                                treeData: '{{ getEnableFieldTree($deps[0]) }}',
-                              },
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  },
-                },
-                remove: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.Remove',
-                },
-                moveUp: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveUp',
-                },
-                moveDown: {
-                  type: 'void',
-                  'x-component': 'ArrayCollapse.MoveDown',
-                },
-              },
+              extra: [<AsDefaultTemplate key="0" />],
             },
             properties: {
-              add: {
+              layout: {
                 type: 'void',
-                title: '{{ t("Add template") }}',
-                'x-component': 'ArrayCollapse.Addition',
+                'x-component': 'FormLayout',
+                'x-component-props': {
+                  layout: 'vertical',
+                },
+                properties: {
+                  collection: {
+                    type: 'string',
+                    title: '{{ t("Collection") }}',
+                    required: true,
+                    description: t('If collection inherits, choose inherited collections as templates'),
+                    default: '{{ collectionName }}',
+                    'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    'x-component-props': {
+                      options: collectionList,
+                    },
+                  },
+                  dataId: {
+                    type: 'number',
+                    title: '{{ t("Template Data") }}',
+                    required: true,
+                    description: t('Select an existing piece of data as the initialization data for the form'),
+                    'x-designer': Designer,
+                    'x-designer-props': {
+                      formSchema,
+                      data: activeData,
+                    },
+                    'x-decorator': 'FormItem',
+                    'x-component': AssociationSelect,
+                    'x-component-props': {
+                      service: {
+                        resource: '{{ $record.collection || collectionName }}',
+                        params: {
+                          filter: '{{ getFilter($self.componentProps.service.resource, $self.value) }}',
+                        },
+                      },
+                      action: 'list',
+                      multiple: false,
+                      objectValue: false,
+                      manual: false,
+                      targetField: '{{ getTargetField($self.componentProps.service.resource) }}',
+                      mapOptions: getMapOptions(),
+                      fieldNames: '{{ getFieldNames($self.componentProps.service.resource) }}',
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.collection'],
+                        fulfill: {
+                          state: {
+                            disabled: '{{ !$deps[0] }}',
+                            componentProps: {
+                              service: {
+                                resource: '{{ getResource($deps[0], $self) }}',
+                              },
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                  fields: {
+                    type: 'array',
+                    title: '{{ t("Data fields") }}',
+                    required: true,
+                    description: t('Only the selected fields will be used as the initialization data for the form'),
+                    'x-decorator': 'FormItem',
+                    'x-component': Tree,
+                    'x-component-props': {
+                      treeData: [],
+                      checkable: true,
+                      checkStrictly: true,
+                      selectable: false,
+                      loadData: onLoadData,
+                      onCheck,
+                      rootStyle: {
+                        padding: '8px 0',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '2px',
+                        maxHeight: '30vh',
+                        overflow: 'auto',
+                        margin: '2px 0',
+                      },
+                    },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.collection'],
+                        fulfill: {
+                          state: {
+                            disabled: '{{ !$deps[0] }}',
+                            componentProps: {
+                              treeData: '{{ getEnableFieldTree($deps[0], $self) }}',
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+              remove: {
+                type: 'void',
+                'x-component': 'ArrayCollapse.Remove',
+              },
+              moveUp: {
+                type: 'void',
+                'x-component': 'ArrayCollapse.MoveUp',
+              },
+              moveDown: {
+                type: 'void',
+                'x-component': 'ArrayCollapse.MoveDown',
               },
             },
           },
-          display: {
-            type: 'boolean',
-            'x-content': '{{ t("Display data template selector") }}',
-            default: defaultValues?.display !== false,
-            'x-decorator': 'FormItem',
-            'x-component': 'Checkbox',
+          properties: {
+            add: {
+              type: 'void',
+              title: '{{ t("Add template") }}',
+              'x-component': 'ArrayCollapse.Addition',
+            },
           },
         },
-      }}
-    />
+        display: {
+          type: 'boolean',
+          'x-content': '{{ t("Display data template selector") }}',
+          default: activeData?.display !== false,
+          'x-decorator': 'FormItem',
+          'x-component': 'Checkbox',
+        },
+      },
+    }),
+    [],
+  );
+
+  return (
+    <SchemaComponentContext.Provider value={{ ...designerCtx, designable: true }}>
+      <SchemaComponent components={components} scope={scope} schema={schema} />
+    </SchemaComponentContext.Provider>
   );
 });
 
-function getLabel(collection: any) {
-  return !collection?.titleField || collection.titleField === 'id' ? 'label' : collection?.titleField;
+export function getLabel(titleField) {
+  return titleField || 'label';
+}
+
+function getMapOptions() {
+  return (option) => {
+    if (option?.id === undefined) {
+      return null;
+    }
+    return option;
+  };
+}
+
+function getResource(resource: string, field: Field) {
+  if (resource !== field.componentProps.service.resource) {
+    // 切换 collection 后，之前选中的其它 collection 的数据就没有意义了，需要清空
+    field.value = undefined;
+  }
+  return resource;
 }

@@ -45,7 +45,7 @@ const SnippetCheckboxGroup = connect((props) => {
         <Checkbox value="pm.*">{t('Allows to configure plugins')}</Checkbox>
       </div>
       <div style={{ marginTop: 8 }}>
-        <Checkbox value="app">{t('Allows to reboot application')}</Checkbox>
+        <Checkbox value="app">{t('Allows to clear cache, reboot application')}</Checkbox>
       </div>
     </Checkbox.Group>
   );

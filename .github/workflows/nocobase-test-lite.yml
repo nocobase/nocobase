@@ -69,7 +69,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - name: Test with postgres
-        run: yarn nocobase install -f && yarn test
+        run: yarn nocobase install -f && yarn test && yarn test:client
         env:
           DB_DIALECT: postgres
           DB_HOST: postgres

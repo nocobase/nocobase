@@ -1,4 +1,4 @@
-import { Association, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
+import { Association, HasOne, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
@@ -82,6 +82,11 @@ export class EagerLoadingTree {
           pushAttribute(child, targetKey);
         }
 
+        if (associationType == 'BelongsToMany') {
+          const { sourceKey } = association;
+          pushAttribute(eagerLoadingTreeParent, sourceKey);
+        }
+
         eagerLoadingTreeParent.children.push(child);
 
         if (include.include) {
@@ -97,6 +102,17 @@ export class EagerLoadingTree {
 
   async load(pks: Array<string | number>, transaction?: Transaction) {
     const result = {};
+
+    const orderOption = (association) => {
+      const targetModel = association.target;
+      const order = [];
+
+      if (targetModel.primaryKeyAttribute && targetModel.rawAttributes[targetModel.primaryKeyAttribute].autoIncrement) {
+        order.push([targetModel.primaryKeyAttribute, 'ASC']);
+      }
+
+      return order;
+    };
 
     const loadRecursive = async (node, ids) => {
       const modelPrimaryKey = node.model.primaryKeyAttribute;
@@ -129,6 +145,7 @@ export class EagerLoadingTree {
           const findOptions = {
             where: { [foreignKey]: foreignKeyValues },
             attributes: node.attributes,
+            order: orderOption(association),
             transaction,
           };
 
@@ -150,16 +167,26 @@ export class EagerLoadingTree {
         }
 
         if (associationType == 'BelongsToMany') {
+          const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
+
+          const pivotAssoc = new HasOne(association.target, association.through.model, {
+            as: '_pivot_',
+            foreignKey: association.otherKey,
+            sourceKey: association.targetKey,
+          });
+
           instances = await node.model.findAll({
             transaction,
+            attributes: node.attributes,
             include: [
               {
-                association: association.oneFromTarget,
+                association: pivotAssoc,
                 where: {
-                  [association.foreignKey]: ids,
+                  [association.foreignKey]: foreignKeyValues,
                 },
               },
             ],
+            order: orderOption(association),
           });
         }
       }
@@ -238,11 +265,16 @@ export class EagerLoadingTree {
           const sourceKey = association.sourceKey;
           const foreignKey = association.foreignKey;
 
-          const oneFromTarget = association.oneFromTarget;
+          const as = association.oneFromTarget.as;
 
           for (const instance of node.instances) {
+            // set instance accessor
+            instance[as] = instance.dataValues[as] = instance['_pivot_'];
+            delete instance.dataValues['_pivot_'];
+            delete instance['_pivot_'];
+
             const parentInstance = node.parent.instances.find(
-              (parentInstance) => parentInstance.get(sourceKey) == instance.get(oneFromTarget.as).get(foreignKey),
+              (parentInstance) => parentInstance.get(sourceKey) == instance.dataValues[as].get(foreignKey),
             );
 
             if (parentInstance) {

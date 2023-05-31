@@ -686,5 +686,6 @@ export default {
     "UpdatedAt": "Registro del último usuario actualizado de una fila",
     "Column width": "Ancho de columna",
     "Sortable": "Clasificable",
-    "Enable link": "Activar enlace"
+    "Enable link": "Activar enlace",
+    "Data template": "Plantilla de datos",
  };

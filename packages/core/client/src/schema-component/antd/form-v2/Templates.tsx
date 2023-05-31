@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { forEach } from '@nocobase/utils/client';
+import { error, forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -8,7 +8,15 @@ import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
 
-interface ITemplate {
+export interface ITemplate {
+  config?: {
+    [key: string]: {
+      /** 设置的数据范围 */
+      filter?: any;
+      /** 设置的标题字段 */
+      titleField?: string;
+    };
+  };
   items: {
     key: string;
     title: string;
@@ -25,39 +33,60 @@ const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
   const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const { getCollectionJoinField } = useCollectionManager();
+
+  // 过滤掉已经被删除的字段
+  items.forEach((item) => {
+    try {
+      item.fields = item.fields
+        ?.map((field) => {
+          const joinField = getCollectionJoinField(`${item.collection}.${field}`);
+          if (joinField) {
+            return field;
+          }
+          return '';
+        })
+        .filter(Boolean);
+    } catch (err) {
+      error(err);
+      item.fields = [];
+    }
+  });
+
   const templates: any = [
     {
       key: 'none',
       title: t('None'),
     },
   ].concat(items.map<any>((t, i) => ({ key: i, ...t })));
+
   const defaultTemplate = items.find((item) => item.default);
   return {
     templates,
     display,
     defaultTemplate,
-    enabled: items.length > 0,
+    enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
-  const { getCollectionField } = useCollectionManager();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (defaultTemplate) {
-      fetchTemplateData(api, defaultTemplate)
+    if (enabled && defaultTemplate) {
+      fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
               }
             });
           }
+          return data;
         })
         .catch((err) => {
           console.error(err);
@@ -68,15 +97,23 @@ export const Templates = ({ style = {}, form }) => {
   const handleChange = useCallback(async (value, option) => {
     setValue(value);
     if (option.key !== 'none') {
-      fetchTemplateData(api, option).then((data) => {
-        if (form) {
-          forEach(data, (value, key) => {
-            if (value) {
-              form.values[key] = value;
-            }
-          });
-        }
-      });
+      fetchTemplateData(api, option, t)
+        .then((data) => {
+          if (form && data) {
+            // 切换之前先把之前的数据清空
+            form.reset();
+
+            forEach(data, (value, key) => {
+              if (value) {
+                form.values[key] = value;
+              }
+            });
+          }
+          return data;
+        })
+        .catch((err) => {
+          console.error(err);
+        });
     } else {
       form?.reset();
     }
@@ -110,7 +147,10 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }) {
+async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+  if (template.fields.length === 0) {
+    return;
+  }
   return api
     .resource(template.collection)
     .get({
