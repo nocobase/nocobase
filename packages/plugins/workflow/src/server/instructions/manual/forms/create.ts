@@ -11,8 +11,8 @@ export default async function (this: ManualInstruction, instance, { collection }
   await repo.create({
     values: {
       ...((values as { [key: string]: any }) ?? {}),
-      createdById: instance.userId,
-      updatedById: instance.userId,
+      createdBy: instance.userId,
+      updatedBy: instance.userId,
     },
     context: {
       executionId: processor.execution.id,

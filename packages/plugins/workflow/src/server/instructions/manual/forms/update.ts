@@ -12,7 +12,7 @@ export default async function (this: ManualInstruction, instance, { collection, 
     filter: processor.getParsedValue(filter),
     values: {
       ...(values ?? {}),
-      updatedById: instance.userId,
+      updatedBy: instance.userId,
     },
     context: {
       executionId: processor.execution.id,
