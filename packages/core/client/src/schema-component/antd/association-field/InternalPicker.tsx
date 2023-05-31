@@ -125,7 +125,7 @@ export const InternalPicker = observer((props: any) => {
   };
   return (
     <>
-      <Input.Group compact style={{ display: 'flex' }}>
+      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
         <div style={{ width: '100%' }}>
           <Select
             style={{ width: '100%' }}
