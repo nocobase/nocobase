@@ -127,7 +127,10 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const variableOptions = useMemo(() => (typeof scope === 'function' ? scope() : scope ?? []), [scope]);
+
+  // 当 scope 是一个函数时，可能是一个 hook，所以不能使用 useMemo
+  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
+
   const [variableText, setVariableText] = React.useState('');
 
   const loadData = async (selectedOptions: Option[]) => {
