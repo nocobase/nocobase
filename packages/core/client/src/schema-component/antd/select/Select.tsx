@@ -86,7 +86,7 @@ const InternalSelect = connect(
         allowClear
         dropdownMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
-        value={value}
+        value={value?value:undefined}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);
