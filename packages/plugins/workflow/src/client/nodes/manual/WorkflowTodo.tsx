@@ -514,7 +514,7 @@ function useFormBlockProps() {
     : 'editable';
 
   useEffect(() => {
-    form.setPattern(pattern);
+    form?.setPattern(pattern);
   }, [pattern, form]);
 
   return { form };
