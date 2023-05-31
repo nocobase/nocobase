@@ -1,4 +1,4 @@
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema,Schema } from '@formily/react';
 import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSchemaComponent, useDesignable } from '..';
@@ -20,6 +20,7 @@ export const BlockTemplate = observer((props: any) => {
   const template = useMemo(() => getTemplateById(templateId), [templateId]);
   const onSuccess = (data) => {
     fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
+    fieldSchema.setProperties(data?.data?.properties)
   };
   return template ? (
     <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>

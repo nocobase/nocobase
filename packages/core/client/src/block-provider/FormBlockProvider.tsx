@@ -7,12 +7,11 @@ import { RecordProvider, useRecord } from '../record-provider';
 import { useActionContext, useDesignable } from '../schema-component';
 import { Templates as DataTemplateSelect } from '../schema-component/antd/form-v2/Templates';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
-import { useAssociationNames } from './hooks';
 
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty, params, updateAssociationValues } = props;
+  const { action, readPretty, params } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -21,7 +20,7 @@ const InternalFormBlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
   // if (service.loading) {
@@ -68,14 +67,9 @@ export const FormBlockProvider = (props) => {
   const record = useRecord();
   const { collection } = props;
   const { __collection } = record;
-  const params = { ...props.params };
   const currentCollection = useCollection();
   const { designable } = useDesignable();
   const isEmptyRecord = useIsEmptyRecord();
-  const { appends, updateAssociationValues } = useAssociationNames(collection);
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
-  }
   let detailFlag = false;
   if (isEmptyRecord) {
     detailFlag = true;
@@ -87,8 +81,8 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'} params={params} runWhenParamsChanged>
-        <InternalFormBlockProvider {...props} params={params} updateAssociationValues={updateAssociationValues} />
+      <BlockProvider {...props} block={'form'}>
+        <InternalFormBlockProvider {...props} />
       </BlockProvider>
     )
   );
