@@ -1,6 +1,4 @@
 ---
-nav:
-  title: Client
 group:
   title: Client
   order: 1

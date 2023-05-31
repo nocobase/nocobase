@@ -176,11 +176,16 @@ export const Form: React.FC<FormProps> & {
   const formDisabled = disabled || field.disabled;
   return (
     <ConfigProvider componentDisabled={formDisabled}>
+      {/* React17 下会报错，注释后发现没影响，就先注释，后面升到 react 18 再打开 */}
+      {/* <form>
+        <Spin spinning={field.loading || false}> */}
       {form ? (
         <WithForm form={form} {...others} disabled={formDisabled} />
       ) : (
         <WithoutForm {...others} disabled={formDisabled} />
       )}
+      {/* </Spin>
+      </form> */}
     </ConfigProvider>
   );
 });
