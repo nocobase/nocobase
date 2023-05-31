@@ -10,6 +10,7 @@ describe('Action', () => {
     const { getByText } = render(<App1 />);
 
     await userEvent.click(getByText('Open'));
+    await sleep(300);
     // drawer
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     // mask
@@ -21,16 +22,19 @@ describe('Action', () => {
 
     // close button
     await userEvent.click(getByText('Close'));
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
 
     // should also close when click the mask
     await userEvent.click(getByText('Open'));
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     await userEvent.click(document.querySelector('.ant-drawer-mask') as HTMLElement);
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
 
     // should also close when click the close icon
     await userEvent.click(getByText('Open'));
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     await userEvent.click(document.querySelector('.ant-drawer-close') as HTMLElement);
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
@@ -46,6 +50,8 @@ describe('Action', () => {
     // drawer
     await userEvent.click(getByText('Drawer'));
     await userEvent.click(getByText('Open'));
+    await sleep(300);
+
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
     expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
@@ -54,6 +60,8 @@ describe('Action', () => {
     // modal
     await userEvent.click(getByText('Modal'));
     await userEvent.click(getByText('Open'));
+    await sleep(300);
+
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
     expect(document.querySelector('.ant-modal')).toBeInTheDocument();
     expect(document.querySelector('.nb-action-page')).not.toBeInTheDocument();
@@ -62,6 +70,8 @@ describe('Action', () => {
     // page
     await userEvent.click(getByText('Page'));
     await userEvent.click(getByText('Open'));
+    await sleep(300);
+
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
     expect(document.querySelector('.ant-modal')).not.toBeInTheDocument();
     expect(document.querySelector('.nb-action-page')).toBeInTheDocument();
@@ -77,6 +87,7 @@ describe('Action.Drawer without Action', () => {
     const { getByText } = render(<App2 />);
 
     await userEvent.click(getByText('Open'));
+    await sleep(300);
     // drawer
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     // mask
@@ -88,18 +99,25 @@ describe('Action.Drawer without Action', () => {
 
     // close button
     await userEvent.click(getByText('Close'));
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
 
     // should also close when click the mask
     await userEvent.click(getByText('Open'));
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     await userEvent.click(document.querySelector('.ant-drawer-mask') as HTMLElement);
+    await sleep(300);
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
 
     // should also close when click the close icon
     await userEvent.click(getByText('Open'));
+    await sleep(300);
+
     expect(document.querySelector('.ant-drawer')).toBeInTheDocument();
     await userEvent.click(document.querySelector('.ant-drawer-close') as HTMLElement);
+    await sleep(300);
+
     expect(document.querySelector('.ant-drawer')).not.toBeInTheDocument();
   });
 });
@@ -112,7 +130,7 @@ describe('Action.Popover', () => {
     fireEvent.mouseEnter(btn);
 
     // wait for the popover to show
-    await sleep(100);
+    await sleep(300);
     // popover
     expect(document.querySelector('.ant-popover')).toBeInTheDocument();
     // content
@@ -120,7 +138,7 @@ describe('Action.Popover', () => {
 
     fireEvent.mouseLeave(btn);
     // wait for the popover to hide
-    await sleep(100);
+    await sleep(300);
     expect(document.querySelector('.ant-popover')).not.toBeInTheDocument();
   });
 });

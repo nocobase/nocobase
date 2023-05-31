@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, userEvent } from 'testUtils';
+import { render, screen, userEvent } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 import App3 from '../demos/demo3';
@@ -19,10 +19,9 @@ describe('DatePicker', () => {
 
     expect(input).toHaveValue('2023/05/01 00:00:00');
     // Read pretty
-    expect(getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
+    expect(screen.getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
     // Value
-    // TODO: 不知道为什么在 GitHub Actions 中会报错，本地运行没问题
-    // expect(getByText('2023-04-30T16:00:00.000Z')).toBeInTheDocument();
+    expect(screen.getByText('2023-04-30T16:00:00.000Z')).toBeInTheDocument();
   });
 
   it('GMT', async () => {
@@ -38,13 +37,13 @@ describe('DatePicker', () => {
 
     expect(input).toHaveValue('2023/05/01 00:00:00');
     // Read pretty
-    expect(getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
+    expect(screen.getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
     // Value
-    expect(getByText('2023-05-01T00:00:00.000Z')).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01T00:00:00.000Z')).toBeInTheDocument();
   });
 
   it('non-UTC', async () => {
-    const { container, getByText } = render(<App3 />);
+    const { container } = render(<App3 />);
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const input = container.querySelector('input') as HTMLElement;
 
@@ -57,15 +56,15 @@ describe('DatePicker', () => {
 
     expect(input).toHaveValue('2023/05/01');
     // Read pretty
-    expect(getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
+    expect(screen.getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
     // Value
-    expect(getByText('2023-05-01')).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01')).toBeInTheDocument();
   });
 });
 
 describe('RangePicker', () => {
   it('GMT', async () => {
-    const { container, getByText, getByPlaceholderText } = render(<App4 />);
+    const { container, getByPlaceholderText } = render(<App4 />);
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -77,13 +76,13 @@ describe('RangePicker', () => {
     expect(startInput).toHaveValue('2023-05-01');
     expect(endInput).toHaveValue('2023-05-02');
     // Read pretty
-    expect(getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
-    expect(getByText('2023-05-01T00:00:00.000Z ~ 2023-05-02T23:59:59.999Z')).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01T00:00:00.000Z ~ 2023-05-02T23:59:59.999Z')).toBeInTheDocument();
   });
 
   it('non-GMT', async () => {
-    const { container, getByText, getByPlaceholderText } = render(<App5 />);
+    const { container, getByPlaceholderText } = render(<App5 />);
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -95,14 +94,13 @@ describe('RangePicker', () => {
     expect(startInput).toHaveValue('2023-05-01');
     expect(endInput).toHaveValue('2023-05-02');
     // Read pretty
-    expect(getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
-    // TODO: 不知道为什么在 GitHub Actions 中会报错，本地运行没问题
-    // expect(getByText('2023-04-30T16:00:00.000Z ~ 2023-05-02T15:59:59.999Z')).toBeInTheDocument();
+    expect(screen.getByText('2023-04-30T16:00:00.000Z ~ 2023-05-02T15:59:59.999Z')).toBeInTheDocument();
   });
 
   it('non-UTC', async () => {
-    const { container, getByText, getByPlaceholderText } = render(<App6 />);
+    const { container, getByPlaceholderText } = render(<App6 />);
     const picker = container.querySelector('.ant-picker') as HTMLElement;
     const startInput = getByPlaceholderText('Start date');
     const endInput = getByPlaceholderText('End date');
@@ -114,8 +112,8 @@ describe('RangePicker', () => {
     expect(startInput).toHaveValue('2023-05-01');
     expect(endInput).toHaveValue('2023-05-02');
     // Read pretty
-    expect(getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
     // Value
-    expect(getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument();
+    expect(screen.getByText('2023-05-01 ~ 2023-05-02')).toBeInTheDocument();
   });
 });

@@ -1,8 +1,9 @@
-import { act, cleanup, render } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
 import { afterEach } from 'vitest';
 
 afterEach(() => {
   cleanup();
+  document.body.innerHTML = '';
 });
 
 function customRender(ui: React.ReactElement, options = {}) {
@@ -18,12 +19,8 @@ export { default as userEvent } from '@testing-library/user-event';
 // override render export
 export { customRender as render };
 
-const globalTimeout = global.setTimeout;
-
 export const sleep = async (timeout = 0) => {
-  await act(async () => {
-    await new Promise((resolve) => {
-      globalTimeout(resolve, timeout);
-    });
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
   });
 };
