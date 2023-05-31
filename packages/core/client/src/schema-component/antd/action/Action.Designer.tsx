@@ -1,6 +1,6 @@
-import { ISchema, useField, useFieldSchema } from '@formily/react';
+import { ISchema, useField, useFieldSchema, connect, mapProps } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu } from 'antd';
+import { Menu, Tree as AntdTree } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
@@ -11,6 +11,18 @@ import { useLinkageAction } from './hooks';
 
 import { requestSettingsSchema } from './utils';
 
+const Tree = connect(
+  AntdTree,
+  mapProps((props, field: any) => {
+    console.log(props, field);
+    return {
+      ...props,
+      onCheck: (checkedKeys) => {
+        field.value = checkedKeys;
+      },
+    };
+  }),
+);
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
   const actionType = fieldSchema['x-action'] || '';
@@ -53,7 +65,8 @@ export const ActionDesigner = (props) => {
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
-  const isDraggable=fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDuplicate = fieldSchema['x'];
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -142,6 +155,91 @@ export const ActionDesigner = (props) => {
           }}
         />
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
+        {isDuplicate && [
+          <SchemaSettings.ModalItem
+            title={t('Duplicate fields')}
+            components={{Tree}}
+            schema={
+              {
+                type: 'object',
+                title: t('Duplicate fields'),
+                properties: {
+                  depulicateFields: {
+                    type: 'array',
+                    title: '{{ t("Find by the following fields") }}',
+                    required: true,
+                    default: field.componentProps.depulicateFields,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Tree',
+                    'x-component-props': {
+                      treeData: [],
+                      checkable: true,
+                      defaultCheckedKeys: field.componentProps.options,
+                      rootStyle: {
+                        padding: '8px 0',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '2px',
+                        maxHeight: '30vh',
+                        overflow: 'auto',
+                        margin: '2px 0',
+                      },
+                    },
+                  },
+                },
+              } as ISchema
+            }
+            onSubmit={({ title, icon, type }) => {
+              fieldSchema.title = title;
+              field.title = title;
+              field.componentProps.icon = icon;
+              field.componentProps.danger = type === 'danger';
+              field.componentProps.type = type;
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props'].icon = icon;
+              fieldSchema['x-component-props'].danger = type === 'danger';
+              fieldSchema['x-component-props'].type = type;
+              dn.emit('patch', {
+                schema: {
+                  ['x-uid']: fieldSchema['x-uid'],
+                  title,
+                  'x-component-props': {
+                    ...fieldSchema['x-component-props'],
+                  },
+                },
+              });
+              dn.refresh();
+            }}
+          />,
+          <SchemaSettings.SelectItem
+            key="Deplicate-mode"
+            title={t('Deplicate mode')}
+            options={[
+              {
+                label: t('Deplicate and continue'),
+                value: 'continueDepulicate',
+              },
+              {
+                label: t('Quick duplicate'),
+                value: 'quickDuplicate',
+              },
+            ]}
+            value={field.componentProps.depulicateMode ?? 'quickDuplicate'}
+            onChange={(mode) => {
+              const schema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+              fieldSchema['x-component-props']['quickDuplicate'] = mode;
+              schema['x-component-props'] = fieldSchema['x-component-props'];
+              field.componentProps = field.componentProps || {};
+              field.componentProps.quickDuplicate = mode;
+              dn.emit('patch', {
+                schema,
+              });
+              dn.refresh();
+            }}
+          />,
+        ]}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction}></OpenModeSchemaItems>
         {isUpdateModePopupAction && (
           <SchemaSettings.SelectItem
@@ -217,39 +315,6 @@ export const ActionDesigner = (props) => {
             }}
           />
         )}
-        {/* {isValid(fieldSchema?.['x-action-settings']?.overwriteValues) && (
-          <SchemaSettings.ModalItem
-            title={t('Form values')}
-            schema={
-              {
-                type: 'object',
-                properties: {
-                  overwriteValues: {
-                    title: t('When submitting the following fields, the saved values are'),
-                    'x-decorator': 'FormItem',
-                    'x-component': 'Input.TextArea',
-                    default: JSON.stringify(fieldSchema?.['x-action-settings']?.overwriteValues),
-                  },
-                },
-              } as ISchema
-            }
-            onSubmit={({ overwriteValues }) => {
-              try {
-                const values = JSON.parse(overwriteValues);
-                fieldSchema['x-action-settings'].overwriteValues = values;
-                dn.emit('patch', {
-                  schema: {
-                    ['x-uid']: fieldSchema['x-uid'],
-                    'x-action-settings': {
-                      ...fieldSchema['x-action-settings'],
-                    },
-                  },
-                });
-                dn.refresh();
-              } catch (e) {}
-            }}
-          />
-        )} */}
         {isValid(fieldSchema?.['x-action-settings']?.['onSuccess']) && (
           <SchemaSettings.ModalItem
             title={

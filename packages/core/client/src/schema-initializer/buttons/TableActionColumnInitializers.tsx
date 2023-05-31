@@ -84,6 +84,20 @@ export const TableActionColumnInitializers = (props: any) => {
           children: [
             {
               type: 'item',
+              title: t('Duplicate'),
+              component: 'DuplicateActionInitializer',
+              schema: {
+                'x-component': 'Action.Link',
+                'x-action': 'create',
+                'x-decorator': 'ACLActionProvider',
+              },
+              visible: () => {
+                const collection = useCollection();
+                return (collection as any).template !== 'view';
+              },
+            },
+            {
+              type: 'item',
               title: t('View'),
               component: 'ViewActionInitializer',
               schema: {
@@ -106,6 +120,7 @@ export const TableActionColumnInitializers = (props: any) => {
                 return (collection as any).template !== 'view';
               },
             },
+
             modifyFlag && {
               type: 'item',
               title: t('Delete'),
