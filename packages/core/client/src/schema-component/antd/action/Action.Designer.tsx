@@ -16,6 +16,7 @@ import { useRecord } from '../../../record-provider';
 import { getCustomRequestSchema } from './utils';
 import isEmpty from 'lodash/isEmpty';
 import Variable from '../variable/Variable';
+import { useDateVariable } from '../../../schema-settings/VariableInput/hooks/useDateVariable';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -46,11 +47,28 @@ export const ActionDesigner = (props) => {
   const { modalTip, linkageAction, ...restProps } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
-  const { name } = useCollection();
+
+  const { name, currentFields } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
-  const requestSettingsSchema = getCustomRequestSchema();
+
+  const recordOption = currentFields
+    .filter((item) => item?.uiSchema)
+    .map(({ name, uiSchema }) => ({
+      key: name,
+      label: uiSchema.title,
+      value: name,
+    }));
+  const currentRecordOptions = [
+    {
+      label: '当前记录',
+      value: '$currentRecord',
+      children: recordOption,
+    },
+  ];
+  const dateVariable = useDateVariable({ withoutDisabled: true, operator: null, schema: null });
+  const requestSettingsSchema = getCustomRequestSchema([...currentRecordOptions, dateVariable]);
   const api = useAPIClient();
   const record = useRecord();
 

@@ -622,6 +622,7 @@ export const useCustomizeRequestActionProps = () => {
   const actionField = useField();
   const { setVisible } = useActionContext();
   const uid = actionSchema['x-uid'];
+  const record = useRecord();
   const redirectCallback = () => {
     const { onSuccess } = actionSchema?.['x-action-settings'] ?? {};
     if (onSuccess?.redirecting && onSuccess?.redirectTo) {
@@ -646,6 +647,7 @@ export const useCustomizeRequestActionProps = () => {
         await apiClient.request({
           url: `customRequest:send/${uid}`,
           method: 'post',
+          data: record,
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

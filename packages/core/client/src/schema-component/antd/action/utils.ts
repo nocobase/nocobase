@@ -52,7 +52,48 @@ export const linkageAction = (operator, field, condition, values) => {
   }
 };
 
-export const getCustomRequestSchema = () => {
+const userOptions = {
+  label: "{{t('Users')}}",
+  value: '$user',
+  children: [
+    {
+      label: 'ID',
+      value: 'id',
+      key: 'id',
+    },
+    {
+      label: "{{t('Nickname')}}",
+      value: 'nickname',
+      key: 'nickname',
+    },
+    {
+      label: "{{t('Email')}}",
+      value: 'email',
+      key: 'email',
+    },
+    {
+      label: "{{t('Phone')}}",
+      value: 'phone',
+      key: 'phone',
+    },
+    {
+      label: "{{t('Roles')}}",
+      value: 'roles',
+      key: 'roles',
+      children: [
+        {
+          label: "{{t('Role UID')}}",
+          value: 'uid',
+        },
+        {
+          label: "{{t('Role name')}}",
+          value: 'title',
+        },
+      ],
+    },
+  ],
+};
+export const getCustomRequestSchema = (scopeOptions) => {
   const NameSpace = 'custom-request';
   return {
     type: 'object',
@@ -119,16 +160,16 @@ export const getCustomRequestSchema = () => {
                   'x-component': 'Input',
                   'x-component-props': {
                     placeholder: '{{t("Fields")}}',
-                    style: { width: 270 },
                   },
                 },
                 value: {
                   type: 'string',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'Variable.Input',
                   'x-component-props': {
+                    scope: [userOptions, ...scopeOptions],
+                    useTypedConstant: true,
                     placeholder: '{{t("Fields values")}}',
-                    style: { width: 270 },
                   },
                 },
                 remove: {
@@ -167,16 +208,16 @@ export const getCustomRequestSchema = () => {
                   'x-component': 'Input',
                   'x-component-props': {
                     placeholder: '{{t("Fields")}}',
-                    style: { width: 270 },
                   },
                 },
                 value: {
                   type: 'string',
                   'x-decorator': 'FormItem',
-                  'x-component': 'Input',
+                  'x-component': 'Variable.Input',
                   'x-component-props': {
+                    scope: [userOptions, ...scopeOptions],
+                    useTypedConstant: true,
                     placeholder: '{{t("Fields values")}}',
-                    style: { width: 270 },
                   },
                 },
                 remove: {
@@ -202,6 +243,7 @@ export const getCustomRequestSchema = () => {
         'x-decorator': 'FormItem',
         'x-component': 'Variable.JSON',
         'x-component-props': {
+          scope: [userOptions, ...scopeOptions],
           autoSize: {
             minRows: 6,
           },

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { formatParamsIntoObject, NAME_SPACE } from './utils';
 import isEmpty from 'lodash/isEmpty';
 import { checkSendPermission } from '../send-middleware';
+import { getDateVars, parseFilter } from '@nocobase/utils';
 
 export const getRepositoryFromCtx = (ctx: Context, name = 'customRequest') => {
   return ctx.db.getCollection(name).repository;
@@ -91,15 +92,30 @@ export const customRequestActions = {
 
     await checkSendPermission(ctx, next);
 
+    const state = JSON.parse(JSON.stringify(ctx.state));
+
+    const generateOptions = () => ({
+      timezone: ctx.get('x-timezone'),
+      vars: {
+        $currentRecord: values.values,
+        $date: getDateVars(),
+        ctx: { state },
+        $user: async () => state.currentUser,
+      },
+    });
+    const realData = await parseFilter(data, generateOptions());
+    const realHeaders = await parseFilter(formatParamsIntoObject(headers), generateOptions());
+    const realParams = await parseFilter(formatParamsIntoObject(params), generateOptions());
+
     const tempParams = {
       url,
       method,
       headers: {
-        ...formatParamsIntoObject(headers),
+        ...realHeaders,
         'Content-Type': 'application/json; charset=UTF-8;',
       },
-      params: formatParamsIntoObject(params),
-      data,
+      params: realParams,
+      data: realData,
       timeout,
     };
     if (requestType === 'internal') {

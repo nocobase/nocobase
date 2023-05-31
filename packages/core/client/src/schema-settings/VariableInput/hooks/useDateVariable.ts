@@ -1,18 +1,18 @@
 import { useCompile } from '../../../schema-component';
 
-export const useDateVariable = ({ operator, schema }) => {
+export const useDateVariable = ({ operator, schema, withoutDisabled = false }) => {
   const compile = useCompile();
   const operatorValue = operator?.value || '';
 
-  if (!operator || !schema) return null;
+  if (!withoutDisabled && (!operator || !schema)) return null;
 
-  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema['x-component']);
+  const disabled = !withoutDisabled && !['DatePicker', 'DatePicker.RangePicker'].includes(schema['x-component']);
   const dateOptions = [
     {
       key: 'now',
       value: 'now',
       label: `{{t("Now")}}`,
-      disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+      disabled: !withoutDisabled && (schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween'),
     },
     {
       key: 'yesterday',
