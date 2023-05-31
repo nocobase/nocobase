@@ -9,7 +9,8 @@ const basicSchema = {
       title: 'xField',
       type: 'string',
       'x-decorator': 'FormItem',
-      'x-component': 'FieldSelect',
+      'x-component': 'Select',
+      'x-reactions': '{{ useChartFields }}',
       'x-decorator-props': {
         style: {
           display: 'inline-block',
@@ -21,7 +22,8 @@ const basicSchema = {
       title: 'yField',
       type: 'string',
       'x-decorator': 'FormItem',
-      'x-component': 'FieldSelect',
+      'x-component': 'Select',
+      'x-reactions': '{{ useChartFields }}',
       'x-decorator-props': {
         style: {
           display: 'inline-block',
@@ -34,7 +36,8 @@ const basicSchema = {
       title: 'seriesField',
       type: 'string',
       'x-decorator': 'FormItem',
-      'x-component': 'FieldSelect',
+      'x-component': 'Select',
+      'x-reactions': '{{ useChartFields }}',
       'x-decorator-props': {
         style: {
           display: 'inline-block',
@@ -76,7 +79,8 @@ export const G2PlotLibrary: Charts = {
           title: 'angleField',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'FieldSelect',
+          'x-component': 'Select',
+          'x-reactions': '{{ useChartFields }}',
           'x-decorator-props': {
             style: {
               display: 'inline-block',
@@ -88,7 +92,8 @@ export const G2PlotLibrary: Charts = {
           title: 'colorField',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'FieldSelect',
+          'x-component': 'Select',
+          'x-reactions': '{{ useChartFields }}',
           'x-decorator-props': {
             style: {
               display: 'inline-block',
@@ -113,7 +118,8 @@ export const G2PlotLibrary: Charts = {
           title: 'xField',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'FieldSelect',
+          'x-component': 'Select',
+          'x-reactions': '{{ useChartFields }}',
           'x-decorator-props': {
             style: {
               display: 'inline-block',
@@ -125,7 +131,8 @@ export const G2PlotLibrary: Charts = {
           title: 'seriesField',
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'FieldSelect',
+          'x-component': 'Select',
+          'x-reactions': '{{ useChartFields }}',
           'x-decorator-props': {
             style: {
               display: 'inline-block',
@@ -156,7 +163,8 @@ export const G2PlotLibrary: Charts = {
               input: {
                 type: 'string',
                 'x-decorator': 'FormItem',
-                'x-component': 'FieldSelect',
+                'x-component': 'Select',
+                'x-reactions': '{{ useChartFields }}',
                 'x-component-props': {
                   style: {
                     'min-width': '100px',

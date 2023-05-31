@@ -1,5 +1,5 @@
 import { useChartsTranslation } from '../locale';
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { Row, Col, Card, Modal, Button, Space, Tabs, Typography } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
 import {
@@ -18,8 +18,8 @@ import { ISchema, FormConsumer } from '@formily/react';
 import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
-import { createForm, Form as FormType } from '@formily/core';
-import { useFields, FieldOption } from './hooks';
+import { createForm } from '@formily/core';
+import { useFields, useAllFields, useFormatters } from '../hooks';
 import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
@@ -27,6 +27,11 @@ export type ChartConfigCurrent = {
   schema: ISchema;
   field: any;
   collection: any;
+};
+
+export type SelectedField = {
+  field: string;
+  alias?: string;
 };
 
 export const ChartConfigContext = createContext<{
@@ -58,6 +63,7 @@ export const ChartConfigure: React.FC<{
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
+
   const form = useMemo(
     () =>
       createForm({
@@ -66,7 +72,9 @@ export const ChartConfigure: React.FC<{
           config: schema?.['x-component-props']?.config,
         },
       }),
-    [schema],
+    // visible added here to re-initialize form when visible changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schema, visible],
   );
   const RunButton: React.FC = () => (
     // apply cloneDeep to trigger form change and ChartRenderer will rerender
@@ -81,7 +89,6 @@ export const ChartConfigure: React.FC<{
       open={visible}
       onOk={() => {
         const { query, config } = form.values;
-        console.log(query);
         const rendererProps = {
           query,
           config,
@@ -203,12 +210,13 @@ ChartConfigure.Query = function Query() {
   const { current } = useContext(ChartConfigContext);
   const { collection } = current || {};
   const fields = useFields();
+  const useFormatterOptions = useFormatters(fields);
   const filterOptions = useLinkageCollectionFilterOptions(collection);
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
   return (
     <SchemaComponent
       schema={querySchema}
-      scope={{ t, formCollapse, fields, filterOptions }}
+      scope={{ t, formCollapse, fields, filterOptions, useFormatterOptions }}
       components={{
         ArrayItems,
         Editable,
@@ -226,61 +234,12 @@ ChartConfigure.Query = function Query() {
   );
 };
 
-const FieldComponent: React.FC<{
-  fields: FieldOption[];
-  component: React.FC<{
-    allFields: FieldOption[];
-  }>;
-}> = (props) => {
-  const { fields } = props;
-  return (
-    <FormConsumer>
-      {(form) => {
-        // When field alias is set, appends it to the field list
-        const getAliasFields = (selectedFields: { field: string; aggregation: string; alias?: string }[]) => {
-          return selectedFields
-            .filter((selectedField) => selectedField.alias)
-            .map((selectedField) => {
-              const fieldProps = fields.find((field) => field.name === selectedField.field);
-              return {
-                ...fieldProps,
-                key: selectedField.alias,
-                label: selectedField.alias,
-                value: selectedField.alias,
-              };
-            });
-        };
-        const query = form.values.query || {};
-        const measures = query.measures || [];
-        const dimensions = query.dimensions || [];
-        const aliasFields = [...getAliasFields(measures), ...getAliasFields(dimensions)];
-        // unique
-        const map = new Map([...fields, ...aliasFields].map((item) => [item.value, item]));
-        const allFields = [...map.values()];
-        return props.component({ ...props, allFields });
-      }}
-    </FormConsumer>
-  );
-};
-
-const FieldSelect: React.FC = (props) => {
-  const { t } = useChartsTranslation();
-  const fields = useFields();
-  return (
-    <FieldComponent
-      {...props}
-      fields={fields}
-      component={(props) => {
-        return <Select placeholder={t('Field')} {...props} options={props.allFields} />;
-      }}
-    />
-  );
-};
-
 ChartConfigure.Config = function Config() {
   const { t } = useChartsTranslation();
   const chartTypes = useChartTypes();
+  const fields = useFields();
   const libraries = useContext(ChartLibraryContext);
+  const useChartFields = useAllFields(fields);
   return (
     <FormConsumer>
       {(form) => {
@@ -296,8 +255,8 @@ ChartConfigure.Config = function Config() {
         return (
           <SchemaComponent
             schema={getConfigSchema(schema)}
-            scope={{ t, chartTypes }}
-            components={{ Card, Select, Input, FormItem, FieldSelect, ArrayItems, Space }}
+            scope={{ t, chartTypes, useChartFields }}
+            components={{ Card, Select, Input, FormItem, ArrayItems, Space }}
           />
         );
       }}

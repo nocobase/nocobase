@@ -1,9 +1,11 @@
 import { Context, Next } from '@nocobase/actions';
+import { formatFn, formatter } from './formatter';
 
 export const query = async (ctx: Context, next: Next) => {
   const { collection, measures, dimensions, orders, filter, limit } = ctx.action.params.values || {};
   const { sequelize } = ctx.db;
   const repository = ctx.db.getRepository(collection);
+  const fields = repository.collection.fields;
   const attributes = [];
   const group = [];
   const order = [];
@@ -21,10 +23,10 @@ export const query = async (ctx: Context, next: Next) => {
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
   });
   dimensions.forEach((item: { field: string; format: string; alias: string }) => {
+    const type = fields.get(item.field).type;
     const attribute = [];
-    const col = sequelize.col(item.field);
     if (item.format) {
-      attribute.push(sequelize.fn(item.format, col));
+      attribute.push(formatter(sequelize, type, item.field, item.format));
     } else {
       attribute.push(item.field);
     }

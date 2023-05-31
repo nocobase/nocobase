@@ -207,10 +207,12 @@ export const querySchema: ISchema = {
                   format: {
                     type: 'string',
                     'x-decorator': 'FormItem',
-                    'x-component': 'Input',
+                    'x-component': 'Select',
                     'x-component-props': {
                       placeholder: '{{t("Format")}}',
                     },
+                    'x-reactions': '{{ useFormatterOptions }}',
+                    'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
                   },
                   alias: {
                     type: 'string',

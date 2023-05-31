@@ -1,5 +1,5 @@
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { query } from './actions';
+import { query } from './actions/query';
 export class ChartsV2Plugin extends Plugin {
   afterAdd() {}
 
