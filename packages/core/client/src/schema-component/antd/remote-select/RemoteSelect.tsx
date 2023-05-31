@@ -206,6 +206,7 @@ const InternalRemoteSelect = connect(
         {...others}
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
+        rawOptions={options}
       />
     );
   },
