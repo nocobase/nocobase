@@ -59,7 +59,7 @@ export const SettingsCenterDropdown = () => {
             },
           ],
           onClick({ key }) {
-            history.push(key);
+            navigate(key);
           },
         }}
       >

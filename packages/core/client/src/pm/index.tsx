@@ -117,7 +117,7 @@ const PluginList = (props) => {
   const { snippets = [] } = useACLRoleContext();
 
   useEffect(() => {
-    const { tabName } = match.params;
+    const { tabName } = params;
     if (!tabName) {
       navigate(`/admin/pm/list/local/`, { replace: true });
     }
