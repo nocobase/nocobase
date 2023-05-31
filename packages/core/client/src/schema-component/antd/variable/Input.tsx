@@ -133,11 +133,11 @@ export function Input(props) {
 
   const [variableText, setVariableText] = React.useState('');
 
-  const loadData = async (selectedOptions: Option[]) => {
+  const loadData = (selectedOptions: Option[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (option.loadChildren) {
       // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
-      await option.loadChildren(option);
+      option.loadChildren(option);
     }
   };
 
@@ -208,8 +208,8 @@ export function Input(props) {
       }
     };
 
-    // 弹窗动画的延迟时间是 300 毫秒，动画结束之后再执行，防止动画卡顿
-    setTimeout(run, 300);
+    // 如果没有这个延迟，会导致选择父节点时不展开子节点
+    setTimeout(run);
   }, [variable]);
 
   const disabled = props.disabled || form.disabled;
