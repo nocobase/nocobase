@@ -7,12 +7,17 @@ import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
+type Props = SelectProps<any, any> & {
+  objectValue?: boolean;
+  onChange?: (v: any) => void;
+  multiple: boolean;
+  rawOptions: any[];
+};
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, loading, ...others } = props;
+  const { value, options, onChange, fieldNames, mode, loading, rawOptions, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -52,7 +57,7 @@ const ObjectSelect = (props: Props) => {
       onChange={(changed) => {
         const current = getCurrentOptions(
           toArr(changed).map((v) => v.value),
-          options,
+          rawOptions,
           fieldNames,
         );
         if (['tags', 'multiple'].includes(mode) || props.multiple) {

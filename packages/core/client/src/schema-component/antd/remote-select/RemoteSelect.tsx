@@ -192,6 +192,7 @@ const InternalRemoteSelect = connect(
       run();
       firstRun.current = true;
     };
+    console.log(mapOptionsToTags(options),options)
     return (
       <Select
         dropdownMatchSelectWidth={false}
@@ -206,6 +207,7 @@ const InternalRemoteSelect = connect(
         {...others}
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
+        rawOptions={options}
       />
     );
   },
