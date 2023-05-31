@@ -1,9 +1,10 @@
-import { CloseCircleOutlined, PlusSquareOutlined } from '@ant-design/icons';
+import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
-import { spliceArrayState } from '@formily/core/lib/shared/internals';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
-import { Button, Card, Divider } from 'antd';
+import { Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
@@ -29,7 +30,15 @@ const ToManyNester = observer((props) => {
   const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
   const { t } = useTranslation();
   return (
-    <Card bordered={true} style={{ position: 'relative' }}>
+    <Card
+      bordered={true}
+      style={{ position: 'relative' }}
+      className={css`
+        > .ant-card-body > .ant-divider:last-child {
+          display: none;
+        }
+      `}
+    >
       {(field.value || []).map((value, index) => {
         let allowed = allowDissociate;
         if (!allowDissociate) {
@@ -40,29 +49,41 @@ const ToManyNester = observer((props) => {
             {!field.readPretty && allowed && (
               <div style={{ textAlign: 'right' }}>
                 {[
-                  <CloseCircleOutlined
-                    style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
-                    onClick={() => {
-                      action(() => {
-                      spliceArrayState(field as any, {
-                        startIndex: index,
-                        deleteCount: 1,
-                      });
-                        field.value.splice(index, 1);
-                        return field.onInput(field.value);
-                    });
-                    }}
-                  />,
                   field.editable && allowMultiple && (
-                    <PlusSquareOutlined
+                    <Tooltip key={'add'} title={t('Add new')}>
+                      <PlusOutlined
+                        style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
+                        onClick={() => {
+                          action(() => {
+                            if (!Array.isArray(field.value)) {
+                              field.value = [];
+                            }
+                            spliceArrayState(field as any, {
+                              startIndex: index + 1,
+                              insertCount: 1,
+                            });
+                            field.value.splice(index + 1, 0, {});
+                            return field.onInput(field.value);
+                          });
+                        }}
+                      />
+                    </Tooltip>
+                  ),
+                  <Tooltip key={'remove'} title={t('Remove')}>
+                    <CloseOutlined
                       style={{ zIndex: 1000, color: '#a8a3a3' }}
                       onClick={() => {
-                        const result = field.value;
-                        result.splice(index+1,0,{});
-                        field.value = result;
+                        action(() => {
+                          spliceArrayState(field as any, {
+                            startIndex: index,
+                            deleteCount: 1,
+                          });
+                          field.value.splice(index, 1);
+                          return field.onInput(field.value);
+                        });
                       }}
                     />
-                  ),
+                  </Tooltip>,
                 ]}
               </div>
             )}
