@@ -37,6 +37,7 @@ export const TableColumnDesigner = (props) => {
   const intefaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
+  const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode } = useAssociationFieldContext();
   return (
     <GeneralSchemaDesigner disableInitializer>
@@ -175,6 +176,26 @@ export const TableColumnDesigner = (props) => {
                   ...fieldSchema['x-component-props'],
                 },
               },
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+
+      {isSubTableColumn && !field.readPretty && (
+        <SchemaSettings.SwitchItem
+          key="required"
+          title={t('Required')}
+          checked={fieldSchema.required as boolean}
+          onChange={(required) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            field.required = required;
+            fieldSchema['required'] = required;
+            schema['required'] = required;
+            dn.emit('patch', {
+              schema,
             });
             dn.refresh();
           }}
