@@ -43,5 +43,6 @@ export default defineConfig({
       { id: 'zh-CN', switchPrefix: '中' },
       { id: 'en-US', switchPrefix: 'en' }
     ],
-  })
+  }),
+  // mfsu: true, // 报错
 });

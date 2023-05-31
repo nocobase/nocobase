@@ -35,7 +35,11 @@ export default defineConfig({
     ...umiConfig.proxy,
   },
   fastRefresh: true,
-  mfsu: false,
+  mfsu: true,
+  // srcTranspiler: 'esbuild', // 不行，各种报错
+  // mfsu: {
+  //   esbuild: true // 不行，各种报错
+  // },
   // 浏览器兼容性，兼容到 2018 年的浏览器
   targets: {
     chrome: 69,
