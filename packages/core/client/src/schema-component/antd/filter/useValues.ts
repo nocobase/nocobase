@@ -23,7 +23,6 @@ const findOption = (dataIndex = [], options) => {
 export const useValues = () => {
   const field = useField<any>();
   const { options } = useContext(FilterContext) || {};
-
   const data2value = () => {
     field.value = flat.unflatten({
       [`${field.data.dataIndex?.join('.')}.${field.data?.operator?.value}`]: field.data?.value,
@@ -48,7 +47,7 @@ export const useValues = () => {
     field.data.schema = merge(option?.schema, operator?.schema);
     field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
   };
-  useEffect(value2data, [field.path.entire]);
+  useEffect(value2data, [field.path]);
   return {
     fields: options,
     ...(field?.data || {}),

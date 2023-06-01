@@ -23,3 +23,4 @@ export * from './value-parsers';
 export * from './collection-group-manager';
 export * from './view-collection';
 export * from './view/view-inference';
+export { default as FilterParser } from './filter-parser';

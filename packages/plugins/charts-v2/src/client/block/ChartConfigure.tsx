@@ -1,5 +1,5 @@
 import { useChartsTranslation } from '../locale';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Row, Col, Card, Modal, Button, Space, Tabs, Typography } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
 import {
@@ -8,9 +8,11 @@ import {
   gridRowColWrap,
   Select,
   Input,
+  InputNumber,
+  DatePicker,
   Radio,
   useDesignable,
-  useLinkageCollectionFilterOptions,
+  useFilterFieldOptions,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { getConfigSchema, querySchema } from './schemas/configure';
@@ -63,7 +65,7 @@ export const ChartConfigure: React.FC<{
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
-
+  console.log(schema);
   const form = useMemo(
     () =>
       createForm({
@@ -207,11 +209,9 @@ ChartConfigure.Renderer = function Renderer() {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
-  const { current } = useContext(ChartConfigContext);
-  const { collection } = current || {};
   const fields = useFields();
   const useFormatterOptions = useFormatters(fields);
-  const filterOptions = useLinkageCollectionFilterOptions(collection);
+  const filterOptions = useFilterFieldOptions(fields);
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
   return (
     <SchemaComponent
@@ -225,10 +225,12 @@ ChartConfigure.Query = function Query() {
         Switch,
         Select,
         Input,
+        InputNumber,
         FormItem,
         Radio,
         Space,
         Filter,
+        DatePicker,
       }}
     />
   );
