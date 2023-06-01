@@ -160,7 +160,7 @@ FormItem.Designer = function Designer() {
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
-  const isSelectFieldMode = fieldMode === 'Select';
+  const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
       ? {
