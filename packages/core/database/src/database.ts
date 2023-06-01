@@ -189,6 +189,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   logger: Logger;
 
   collectionGroupManager = new CollectionGroupManager(this);
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   snapshot: DatabaseSnapshot;
 
@@ -392,36 +393,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     });
 
-    this.on('afterRepositoryFind', ({ findOptions, dataCollection, data }) => {
-      if (dataCollection.isParent()) {
-        for (const row of data) {
-          const rowCollection = this.tableNameCollectionMap.get(
-            findOptions.raw
-              ? `${row['__schemaName']}.${row['__tableName']}`
-              : `${row.get('__schemaName')}.${row.get('__tableName')}`,
-          );
-
-          if (!rowCollection) {
-            this.logger.warn(
-              `Can not find collection by table name ${JSON.stringify(row)}, current collections: ${Array.from(
-                this.tableNameCollectionMap.keys(),
-              ).join(', ')}`,
-            );
-
-            return;
-          }
-
-          const rowCollectionName = rowCollection.name;
-
-          findOptions.raw
-            ? (row['__collection'] = rowCollectionName)
-            : row.set('__collection', rowCollectionName, {
-                raw: true,
-              });
-        }
-      }
-    });
-
     registerBuiltInListeners(this);
   }
 
@@ -570,7 +541,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   getRepository<R extends Repository>(name: string): R;
+
   getRepository<R extends RelationRepository>(name: string, relationId: string | number): R;
+
   getRepository<R extends ArrayFieldRepository>(name: string, relationId: string | number): R;
 
   getRepository<R extends RelationRepository>(name: string, relationId?: string | number): Repository | R {
@@ -787,21 +760,34 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 
   on(event: EventType, listener: any): this;
+
   on(event: ModelValidateEventTypes, listener: SyncListener): this;
+
   on(event: ModelValidateEventTypes, listener: ValidateListener): this;
+
   on(event: ModelCreateEventTypes, listener: CreateListener): this;
+
   on(event: ModelUpdateEventTypes, listener: UpdateListener): this;
+
   on(event: ModelSaveEventTypes, listener: SaveListener): this;
+
   on(event: ModelDestroyEventTypes, listener: DestroyListener): this;
+
   on(event: ModelCreateWithAssociationsEventTypes, listener: CreateWithAssociationsListener): this;
+
   on(event: ModelUpdateWithAssociationsEventTypes, listener: UpdateWithAssociationsListener): this;
+
   on(event: ModelSaveWithAssociationsEventTypes, listener: SaveWithAssociationsListener): this;
+
   on(event: DatabaseBeforeDefineCollectionEventType, listener: BeforeDefineCollectionListener): this;
+
   on(event: DatabaseAfterDefineCollectionEventType, listener: AfterDefineCollectionListener): this;
+
   on(
     event: DatabaseBeforeRemoveCollectionEventType | DatabaseAfterRemoveCollectionEventType,
     listener: RemoveCollectionListener,
   ): this;
+
   on(event: EventType, listener: any): this {
     // NOTE: to match if event is a sequelize or model type
     const type = this.modelHook.match(event);
@@ -852,8 +838,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     return result;
   }
-
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 }
 
 export function extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {

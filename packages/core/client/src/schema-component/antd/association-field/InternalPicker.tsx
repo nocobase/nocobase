@@ -1,7 +1,7 @@
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import {
   FormProvider,
   RecordPickerContext,
@@ -71,7 +71,20 @@ export const InternalPicker = observer((props: any) => {
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
   const isAllowAddNew = fieldSchema['x-add-new'];
   const [selectedRows, setSelectedRows] = useState([]);
-  const [options, setOptions] = useState([]);
+  const options = useMemo(() => {
+    if (value && Object.keys(value).length > 0) {
+      const opts = (Array.isArray(value) ? value : value ? [value] : []).filter(Boolean).map((option) => {
+        const label = option?.[fieldNames.label];
+        return {
+          ...option,
+          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
+        };
+      });
+      return opts;
+    }
+    return [];
+  }, [value, fieldNames?.label]);
+
   const pickerProps = {
     size: 'small',
     fieldNames,
@@ -85,24 +98,11 @@ export const InternalPicker = observer((props: any) => {
     setSelectedRows,
     collectionField,
   };
-  useEffect(() => {
-    if (value && Object.keys(value).length > 0) {
-      const opts = (Array.isArray(value) ? value : value ? [value] : []).map((option) => {
-        const label = option[fieldNames.label];
-        return {
-          ...option,
-          [fieldNames.label]: getLabelFormatValue(compile(labelUiSchema), compile(label)),
-        };
-      });
-      setOptions(opts);
-    }
-  }, [value, fieldNames?.label]);
 
   const getValue = () => {
     if (multiple == null) return null;
-    return Array.isArray(value) ? value?.map((v) => v[fieldNames.value]) : value?.[fieldNames.value];
+    return Array.isArray(value) ? value.filter(Boolean)?.map((v) => v?.[fieldNames.value]) : value?.[fieldNames.value];
   };
-
   const getFilter = () => {
     const targetKey = collectionField?.targetKey || 'id';
     const list = options.map((option) => option[targetKey]).filter(Boolean);
@@ -125,7 +125,7 @@ export const InternalPicker = observer((props: any) => {
   };
   return (
     <>
-      <Input.Group compact style={{ display: 'flex' }}>
+      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
         <div style={{ width: '100%' }}>
           <Select
             style={{ width: '100%' }}

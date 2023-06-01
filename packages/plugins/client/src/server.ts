@@ -94,8 +94,18 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('app', 'getInfo');
     this.app.acl.allow('app', 'getPlugins');
     this.app.acl.allow('plugins', '*', 'public');
+    this.app.acl.registerSnippet({
+      name: 'app',
+      actions: ['app:reboot', 'app:clearCache'],
+    });
     const dialect = this.app.db.sequelize.getDialect();
     const locales = require('./locale').default;
+    const restartMark = resolve(process.cwd(), 'storage', 'restart');
+    this.app.on('beforeStart', async () => {
+      if (fs.existsSync(restartMark)) {
+        fs.unlinkSync(restartMark);
+      }
+    });
     this.app.resource({
       name: 'app',
       actions: {
@@ -160,6 +170,24 @@ export class ClientPlugin extends Plugin {
             })
             .map((item) => item.name);
           await next();
+        },
+        async clearCache(ctx, next) {
+          await ctx.cache.reset();
+          await next();
+        },
+        reboot(ctx) {
+          const RESTART_CODE = 100;
+          process.on('exit', (code) => {
+            if (code === RESTART_CODE && process.env.APP_ENV === 'production') {
+              fs.writeFileSync(restartMark, '1');
+              console.log('Restart mark created.');
+            }
+          });
+          ctx.app.on('afterStop', () => {
+            // Exit with code 100 will restart the process
+            process.exit(RESTART_CODE);
+          });
+          ctx.app.stop();
         },
       },
     });

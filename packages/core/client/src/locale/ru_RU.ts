@@ -521,4 +521,5 @@ export default {
   'Add template': "Добавить шаблон",
   'Display data template selector': "Отображать селектор шаблона данных",
   'Form data templates': "Шаблоны данных формы",
+  "Data template": "Шаблон данных",
 }

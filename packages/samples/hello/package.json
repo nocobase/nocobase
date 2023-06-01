@@ -1,11 +1,15 @@
 {
   "name": "@nocobase/plugin-sample-hello",
-  "version": "0.9.3-alpha.1",
+  "version": "0.9.4-alpha.2",
   "main": "lib/server/index.js",
+  "displayName": "Sample-Hello",
+  "displayName.zh-CN": "插件demo-hello",
+  "description": "simple plugin demo",
+  "description.zh-CN": "这就是一个简单的插件demo",
   "devDependencies": {
-    "@nocobase/client": "0.9.3-alpha.1",
-    "@nocobase/server": "0.9.3-alpha.1",
-    "@nocobase/test": "0.9.3-alpha.1"
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2"
   },
   "peerDependencies": {
     "@nocobase/client": "*",

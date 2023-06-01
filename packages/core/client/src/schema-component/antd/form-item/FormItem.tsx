@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formil
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { Select } from 'antd';
 import _ from 'lodash';
 import moment from 'moment';
 import React, { useContext, useEffect } from 'react';
@@ -71,7 +72,7 @@ export const FormItem: any = observer((props: any) => {
       }
     }
   }, []);
-  const { showTitle = true } = props;
+  const showTitle = schema['x-decorator-props']?.showTitle ?? true;
   return (
     <ACLCollectionFieldProvider>
       <BlockItem className={'nb-form-item'}>
@@ -84,7 +85,7 @@ export const FormItem: any = observer((props: any) => {
             `,
             {
               [css`
-                & .ant-formily-item-label {
+                > .ant-formily-item-label {
                   display: none;
                 }
               `]: showTitle === false,
@@ -171,6 +172,13 @@ FormItem.Designer = function Designer() {
           direction: 'asc',
         };
   });
+
+  const fieldSchemaWithoutRequired = _.omit(fieldSchema, 'required');
+
+  const isSubFormMode = fieldSchema['x-component-props']?.mode === 'Nester';
+  const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
+  const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
+  const showModeSelect = showFieldMode && isPickerMode;
 
   return (
     <GeneralSchemaDesigner>
@@ -352,7 +360,7 @@ FormItem.Designer = function Designer() {
                 properties: {
                   default: isInvariable(interfaceConfig)
                     ? {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
@@ -375,7 +383,7 @@ FormItem.Designer = function Designer() {
                         'x-disabled': false,
                       }
                     : {
-                        ...(fieldSchema || {}),
+                        ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component': 'VariableInput',
                         'x-component-props': {
@@ -384,7 +392,7 @@ FormItem.Designer = function Designer() {
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
                           renderSchemaComponent: function Com(props) {
-                            const s = _.cloneDeep(fieldSchema) || ({} as Schema);
+                            const s = _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema);
                             s.title = '';
                             s['x-read-pretty'] = false;
                             s['x-disabled'] = false;
@@ -557,7 +565,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {isAssociationField && fieldModeOptions && !isTableField && (
+      {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
           title={t('Field mode')}
@@ -572,10 +580,10 @@ FormItem.Designer = function Designer() {
             schema['x-component-props'] = fieldSchema['x-component-props'];
             field.componentProps = field.componentProps || {};
             field.componentProps.mode = mode;
-            if (mode === 'Nester') {
-              const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [] : {};
-              field.value = field.value || initValue;
-            }
+            // if (mode === 'Nester') {
+            //   const initValue = ['hasMany', 'belongsToMany'].includes(collectionField?.type) ? [{}] : {};
+            //   field.value = field.value || initValue;
+            // }
             dn.emit('patch', {
               schema,
             });
@@ -583,7 +591,37 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-
+      {showModeSelect && (
+        <SchemaSettings.Item>
+          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+            {t('Popup size')}
+            <Select
+              bordered={false}
+              options={[
+                { label: t('Small'), value: 'small' },
+                { label: t('Middle'), value: 'middle' },
+                { label: t('Large'), value: 'large' },
+              ]}
+              value={
+                fieldSchema?.['x-component-props']?.['openSize'] ??
+                (fieldSchema?.['x-component-props']?.['openMode'] == 'modal' ? 'large' : 'middle')
+              }
+              onChange={(value) => {
+                field.componentProps.openSize = value;
+                fieldSchema['x-component-props'] = field.componentProps;
+                dn.emit('patch', {
+                  schema: {
+                    'x-uid': fieldSchema['x-uid'],
+                    'x-component-props': fieldSchema['x-component-props'],
+                  },
+                });
+                dn.refresh();
+              }}
+              style={{ textAlign: 'right', minWidth: 100 }}
+            />
+          </div>
+        </SchemaSettings.Item>
+      )}
       {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"
@@ -641,6 +679,29 @@ FormItem.Designer = function Designer() {
 
             fieldSchema['x-component-props'].multiple = value;
             field.componentProps.multiple = value;
+
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            dn.emit('patch', {
+              schema,
+            });
+            refresh();
+          }}
+        />
+      ) : null}
+      {IsShowMultipleSwitch() && isSubFormMode ? (
+        <SchemaSettings.SwitchItem
+          key="allowDissociate"
+          title={t('Allow dissociate')}
+          checked={fieldSchema['x-component-props']?.allowDissociate !== false}
+          onChange={(value) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            field.componentProps = field.componentProps || {};
+
+            fieldSchema['x-component-props'].allowDissociate = value;
+            field.componentProps.allowDissociate = value;
 
             schema['x-component-props'] = fieldSchema['x-component-props'];
             dn.emit('patch', {
