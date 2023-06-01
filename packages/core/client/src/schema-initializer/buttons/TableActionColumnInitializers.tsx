@@ -88,7 +88,7 @@ export const TableActionColumnInitializers = (props: any) => {
               component: 'DuplicateActionInitializer',
               schema: {
                 'x-component': 'Action.Link',
-                'x-action': 'create',
+                'x-action': 'duplicate',
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {

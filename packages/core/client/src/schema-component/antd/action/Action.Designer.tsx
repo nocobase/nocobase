@@ -1,6 +1,7 @@
 import { ISchema, useField, useFieldSchema, connect, mapProps } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Menu, Tree as AntdTree } from 'antd';
+import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
@@ -8,13 +9,12 @@ import { useCollection, useCollectionManager } from '../../../collection-manager
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
-
+import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
 import { requestSettingsSchema } from './utils';
 
 const Tree = connect(
   AntdTree,
   mapProps((props, field: any) => {
-    console.log(props, field);
     return {
       ...props,
       onCheck: (checkedKeys) => {
@@ -53,7 +53,7 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
-  const { getChildrenCollections } = useCollectionManager();
+  const { getChildrenCollections, getCollection, getCollectionField } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
@@ -66,7 +66,9 @@ export const ActionDesigner = (props) => {
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
-  const isDuplicate = fieldSchema['x'];
+  const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+  const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
+  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].depulicateFields?.checked || []);
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -86,6 +88,7 @@ export const ActionDesigner = (props) => {
       'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
     ),
   };
+
   return (
     <GeneralSchemaDesigner {...restProps} disableInitializer draggable={isDraggable}>
       <MenuGroup>
@@ -155,26 +158,55 @@ export const ActionDesigner = (props) => {
           }}
         />
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
-        {isDuplicate && [
+        {isDuplicateAction && [
           <SchemaSettings.ModalItem
-            title={t('Duplicate fields')}
-            components={{Tree}}
+            title={t('Duplicate mode')}
+            components={{ Tree }}
+            scope={{ getEnableFieldTree, collectionName: name }}
             schema={
               {
                 type: 'object',
-                title: t('Duplicate fields'),
+                title: t('Duplicate mode'),
                 properties: {
+                  duplicateMode: {
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Radio.Group',
+                    title: t('Duplicate mode'),
+                    default: field.componentProps.duplicate || 'quickDulicate',
+                    enum: [
+                      { value: 'quickDulicate', label: '{{t("Quick duplicate")}}' },
+                      { value: 'continueduplicate', label: '{{t("Duplicate and continue")}}' },
+                    ],
+                  },
+                  collection: {
+                    type: 'string',
+                    title: '{{ t("Collection") }}',
+                    required: true,
+                    description: t('If collection inherits, choose inherited collections as templates'),
+                    default: '{{ collectionName }}',
+                    'x-display': collectionList.length > 1 ? 'visible' : 'hidden',
+                    'x-decorator': 'FormItem',
+                    'x-component': 'Select',
+                    'x-component-props': {
+                      options: collectionList,
+                    },
+                  },
                   depulicateFields: {
                     type: 'array',
-                    title: '{{ t("Find by the following fields") }}',
+                    title: '{{ t("Data fields") }}',
                     required: true,
-                    default: field.componentProps.depulicateFields,
+                    // default: duplicateValues,
+                    description: t('Only the selected fields will be used as the initialization data for the form'),
                     'x-decorator': 'FormItem',
-                    'x-component': 'Tree',
+                    'x-component': Tree,
                     'x-component-props': {
+                      defaultCheckedKeys: duplicateValues,
                       treeData: [],
                       checkable: true,
-                      defaultCheckedKeys: field.componentProps.options,
+                      checkStrictly: true,
+                      selectable: false,
+                      loadData: onLoadData,
+                      onCheck,
                       rootStyle: {
                         padding: '8px 0',
                         border: '1px solid #d9d9d9',
@@ -184,57 +216,36 @@ export const ActionDesigner = (props) => {
                         margin: '2px 0',
                       },
                     },
+                    'x-reactions': [
+                      {
+                        dependencies: ['.collection'],
+                        fulfill: {
+                          state: {
+                            disabled: '{{ !$deps[0] }}',
+                            componentProps: {
+                              treeData: '{{ getEnableFieldTree($deps[0], $self) }}',
+                            },
+                          },
+                        },
+                      },
+                    ],
                   },
                 },
               } as ISchema
             }
-            onSubmit={({ title, icon, type }) => {
-              fieldSchema.title = title;
-              field.title = title;
-              field.componentProps.icon = icon;
-              field.componentProps.danger = type === 'danger';
-              field.componentProps.type = type;
+            onSubmit={({ duplicateMode, depulicateFields }) => {
+              field.componentProps.duplicateMode = duplicateMode;
+              field.componentProps.depulicateFields = depulicateFields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props'].icon = icon;
-              fieldSchema['x-component-props'].danger = type === 'danger';
-              fieldSchema['x-component-props'].type = type;
+              fieldSchema['x-component-props'].duplicateMode = duplicateMode;
+              fieldSchema['x-component-props'].depulicateFields = depulicateFields;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],
-                  title,
                   'x-component-props': {
                     ...fieldSchema['x-component-props'],
                   },
                 },
-              });
-              dn.refresh();
-            }}
-          />,
-          <SchemaSettings.SelectItem
-            key="Deplicate-mode"
-            title={t('Deplicate mode')}
-            options={[
-              {
-                label: t('Deplicate and continue'),
-                value: 'continueDepulicate',
-              },
-              {
-                label: t('Quick duplicate'),
-                value: 'quickDuplicate',
-              },
-            ]}
-            value={field.componentProps.depulicateMode ?? 'quickDuplicate'}
-            onChange={(mode) => {
-              const schema = {
-                ['x-uid']: fieldSchema['x-uid'],
-              };
-              fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
-              fieldSchema['x-component-props']['quickDuplicate'] = mode;
-              schema['x-component-props'] = fieldSchema['x-component-props'];
-              field.componentProps = field.componentProps || {};
-              field.componentProps.quickDuplicate = mode;
-              dn.emit('patch', {
-                schema,
               });
               dn.refresh();
             }}
