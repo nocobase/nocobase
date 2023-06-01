@@ -200,6 +200,7 @@ function isReverseAssociationPair(a: any, b: any) {
 
     return (
       sourceAssoc.source.name === targetAssoc.target.name &&
+      sourceAssoc.target.name === targetAssoc.source.name &&
       sourceAssoc.foreignKey === targetAssoc.foreignKey &&
       sourceAssoc.sourceKey === targetAssoc.targetKey
     );
@@ -224,6 +225,10 @@ export async function updateAssociation(
   const association = modelAssociationByKey(instance, key);
 
   if (!association) {
+    return false;
+  }
+
+  if (options.associationContext && isReverseAssociationPair(association, options.associationContext)) {
     return false;
   }
 
