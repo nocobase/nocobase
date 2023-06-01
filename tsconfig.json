@@ -61,6 +61,7 @@
     "packages/**/node_modules",
     "packages/**/dist",
     "packages/**/public",
+    "packages/core/build/bin",
     "packages/**/lib"
   ]
 }

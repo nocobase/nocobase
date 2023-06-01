@@ -17,7 +17,7 @@
   },
   "resolutions": {
     "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
+    "@types/react-dom": "^18.0.0"
   },
   "dependencies": {
     "@nocobase/cli": "{{{version}}}",
