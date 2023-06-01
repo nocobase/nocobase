@@ -88,6 +88,7 @@ export default {
     AssigneesSelect,
   },
   useVariables({ config }, { types }) {
+    const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -97,7 +98,9 @@ export default {
       .map((formKey) => {
         const form = config.forms[formKey];
 
-        const fields = (form.collection?.fields ?? []).map((field) => ({
+        const fields = (
+          typeof form.collection === 'string' ? getCollectionFields(form.collection) : form.collection?.fields ?? []
+        ).map((field) => ({
           key: field.name,
           value: field.name,
           label: field.uiSchema.title,
