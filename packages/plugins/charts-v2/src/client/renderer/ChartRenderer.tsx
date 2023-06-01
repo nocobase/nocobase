@@ -90,10 +90,17 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
       manual: true,
       onSuccess: (data) => {
         setData(data);
-        if (configuring) {
-          const sampleData = data.length > 10 ? data.slice(0, 10) : data;
-          setQueryData(JSON.stringify(sampleData, null, 2));
+      },
+      onFinally(params, data, e) {
+        if (!configuring) {
+          return;
         }
+        if (e) {
+          setQueryData(e.stack);
+          return;
+        }
+        const sampleData = data.length > 10 ? data.slice(0, 10) : data;
+        setQueryData(JSON.stringify(sampleData, null, 2));
       },
     },
   );

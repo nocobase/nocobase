@@ -129,3 +129,14 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   }
   field.dataSource = options;
 };
+
+export const useCollectionOptions = () => {
+  const { t } = useTranslation();
+  const { collections } = useCollectionManager();
+  const options = collections.map((collection: { name: string; title: string }) => ({
+    label: collection.title,
+    value: collection.name,
+    key: collection.name,
+  }));
+  return Schema.compile(options, { t });
+};

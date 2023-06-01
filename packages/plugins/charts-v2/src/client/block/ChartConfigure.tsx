@@ -21,7 +21,7 @@ import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { useFields, useAllFields, useFormatters } from '../hooks';
+import { useFields, useAllFields, useFormatters, useCollectionOptions } from '../hooks';
 import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
@@ -65,18 +65,19 @@ export const ChartConfigure: React.FC<{
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
-  console.log(schema);
   const form = useMemo(
     () =>
       createForm({
         initialValues: {
           query: schema?.['x-component-props']?.query,
           config: schema?.['x-component-props']?.config,
+          collection,
+          mode: 'builder',
         },
       }),
-    // visible added here to re-initialize form when visible changes
+    // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [schema, visible],
+    [schema, visible, collection],
   );
   const RunButton: React.FC = () => (
     // apply cloneDeep to trigger form change and ChartRenderer will rerender
@@ -212,11 +213,30 @@ ChartConfigure.Query = function Query() {
   const fields = useFields();
   const useFormatterOptions = useFormatters(fields);
   const filterOptions = useFilterFieldOptions(fields);
+  const collectionOptions = useCollectionOptions();
+  const { current, setCurrent, setData } = useContext(ChartConfigContext);
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
+  const onCollectionChange = (value: string) => {
+    const { schema, field } = current;
+    setCurrent({
+      schema: {
+        ...schema,
+        'x-component-props': {},
+      },
+      field,
+      collection: value,
+    });
+    setData('');
+  };
+  const FromSql = () => (
+    <Text code>
+      From <span style={{ color: '#1890ff' }}>{current?.collection}</span>
+    </Text>
+  );
   return (
     <SchemaComponent
       schema={querySchema}
-      scope={{ t, formCollapse, fields, filterOptions, useFormatterOptions }}
+      scope={{ t, formCollapse, fields, filterOptions, collectionOptions, useFormatterOptions, onCollectionChange }}
       components={{
         ArrayItems,
         Editable,
@@ -231,6 +251,8 @@ ChartConfigure.Query = function Query() {
         Space,
         Filter,
         DatePicker,
+        Text,
+        FromSql,
       }}
     />
   );

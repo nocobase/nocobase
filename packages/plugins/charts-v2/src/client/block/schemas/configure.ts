@@ -65,7 +65,7 @@ export const getConfigSchema = (general: any) => ({
               },
             },
             advanced: {
-              type: 'string',
+              type: 'json',
               title: '{{t("JSON config")}}',
               'x-decorator': 'FormItem',
               'x-decorator-props': {
@@ -88,12 +88,19 @@ export const getConfigSchema = (general: any) => ({
 export const querySchema: ISchema = {
   type: 'void',
   properties: {
-    mode: {
+    settings: {
       type: 'void',
+      'x-component': 'FormItem',
       properties: {
         mode: {
           type: 'string',
           'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            style: {
+              display: 'inline-block',
+              width: '45%',
+            },
+          },
           'x-component': 'Radio.Group',
           'x-component-props': {
             defaultValue: 'builder',
@@ -128,6 +135,22 @@ export const querySchema: ISchema = {
               },
             },
           ],
+        },
+        collection: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-decorator-props': {
+            style: {
+              display: 'inline-block',
+              width: '30%',
+            },
+          },
+          'x-component': 'Select',
+          'x-component-props': {
+            options: '{{ collectionOptions }}',
+            onChange: '{{ onCollectionChange }}',
+            placeholder: lang('Collection'),
+          },
         },
       },
     },
@@ -297,17 +320,42 @@ export const querySchema: ISchema = {
           },
         },
         sql: {
-          type: 'void',
+          type: 'object',
           properties: {
+            select: {
+              type: 'void',
+              'x-decorator': 'p',
+              'x-component': 'Text',
+              'x-component-props': {
+                code: true,
+              },
+              'x-content': 'SELECT',
+            },
+            fields: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input.TextArea',
+              'x-component-props': {
+                autoSize: {
+                  minRows: 2,
+                },
+                placeholder: 'Fields',
+              },
+            },
+            from: {
+              type: 'void',
+              'x-decorator': 'p',
+              'x-component': 'FromSql',
+            },
             sql: {
               type: 'string',
-              title: '{{t("SQL")}}',
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
               'x-component-props': {
                 autoSize: {
                   minRows: 5,
                 },
+                placeholder: 'Join, Where, Group By, Having, Order By, Limit',
               },
             },
           },

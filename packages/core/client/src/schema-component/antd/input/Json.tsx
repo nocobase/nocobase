@@ -13,7 +13,7 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
       <Input.TextArea
         {...props}
         ref={ref}
-        defaultValue={value != null ? JSON.stringify(value, null, space) : ''}
+        value={value != null ? JSON.stringify(value, null, space) : ''}
         onChange={(ev) => {
           try {
             const v = ev.target.value.trim() !== '' ? JSON.parse(ev.target.value) : null;
