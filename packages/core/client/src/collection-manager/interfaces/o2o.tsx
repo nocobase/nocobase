@@ -1,12 +1,5 @@
 import { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import {
-  constraintsProps,
-  recordPickerSelector,
-  recordPickerViewer,
-  relationshipType,
-  reverseFieldProperties,
-} from './properties';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const o2o: IField = {
@@ -231,7 +224,7 @@ export const oho: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    schema['type'] = 'object';
+    // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -401,7 +394,7 @@ export const obo: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
-    schema['type'] = 'object';
+    // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;

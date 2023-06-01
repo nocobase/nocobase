@@ -1,12 +1,15 @@
 {
   "name": "@nocobase/plugin-snapshot-field",
-  "version": "0.9.3-alpha.1",
-  "description": "",
+  "displayName": "snapshot field",
+  "displayName.zh-CN": "关系数据库快照",
+  "description": "provide fast and reliable database backup and recovery functionality for database systems.",
+  "description.zh-CN": "为数据库系统提供快速、可靠的数据库备份和恢复功能。。",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.9.3-alpha.1",
-    "@nocobase/test": "0.9.3-alpha.1"
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2"
   }
 }

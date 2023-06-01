@@ -4,7 +4,7 @@ import { useUserVariable } from './useUserVariable';
 
 export const useVariableOptions = () => {
   const { operator, schema } = useValues();
-  const userVariable = useUserVariable({ operator, schema });
+  const userVariable = useUserVariable({ maxDepth: 3, schema });
   const dateVariable = useDateVariable({ operator, schema });
 
   if (!operator || !schema) return [];

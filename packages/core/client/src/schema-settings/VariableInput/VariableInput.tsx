@@ -17,7 +17,7 @@ type Props = {
 export const VariableInput = (props: Props) => {
   const { value, onChange, renderSchemaComponent: RenderSchemaComponent, style, schema, className } = props;
   const compile = useCompile();
-  const userVariable = useUserVariable({ schema, level: 1 });
+  const userVariable = useUserVariable({ schema, maxDepth: 1 });
   const scope = useMemo(() => {
     return [
       userVariable,

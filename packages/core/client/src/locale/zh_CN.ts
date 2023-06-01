@@ -312,7 +312,8 @@ export default {
   "Display association fields": "显示关联表的字段",
   "Display field title": "显示字段标题",
   "Field component": "字段组件",
-  "Allow multiple": "允许多选",
+  "Allow multiple": "允许添加/关联多条",
+  "Allow dissociate": "允许移除已关联记录",
   "Quick upload": "快速上传",
   "Select file": "选择文件",
   "Subtable": "子表格",
@@ -786,6 +787,5 @@ export default {
   "Allows to clear cache, reboot application": "允许清除缓存，重启应用",
   'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
   'Reboot': '重启',
-  "Template fields have been removed and need to be reconfigured": "模板字段已被删除，需要重新配置",
   'Clear cache': '清除缓存',
 }

@@ -1,4 +1,4 @@
-import { connect } from '@formily/react';
+import { connect, mapReadPretty } from '@formily/react';
 
 import Expression from './Expression';
 import Result from './Result';
