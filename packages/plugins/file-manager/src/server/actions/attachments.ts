@@ -18,7 +18,36 @@ function getFileFilter(storage) {
   };
 }
 
-export async function multipart(ctx: Context, next: Next) {
+function getFileData(ctx: Context) {
+  const { [FILE_FIELD_NAME]: file, storage } = ctx;
+  if (!file) {
+    return ctx.throw(400, 'file validation failed');
+  }
+
+  const storageConfig = getStorageConfig(storage.type);
+  const { [storageConfig.filenameKey || 'filename']: name } = file;
+  // make compatible filename across cloud service (with path)
+  const filename = path.basename(name);
+  const extname = path.extname(filename);
+  const urlPath = storage.path ? storage.path.replace(/^([^/])/, '/$1') : '';
+
+  return {
+    title: file.originalname.replace(extname, ''),
+    filename,
+    extname,
+    // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
+    path: storage.path,
+    size: file.size,
+    // 直接缓存起来
+    url: `${storage.baseUrl}${urlPath}/${filename}`,
+    mimetype: file.mimetype,
+    // @ts-ignore
+    meta: ctx.request.body,
+    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
+  };
+}
+
+export async function attachmentCreate(ctx: Context, next: Next) {
   const { associatedIndex } = ctx.action.params;
 
   // NOTE:
@@ -33,12 +62,49 @@ export async function multipart(ctx: Context, next: Next) {
     filter: associatedIndex ? { name: associatedIndex } : { default: true },
   });
 
+  // 传递已取得的存储引擎，避免重查
+  ctx.storage = storage;
+
+  await multipart(ctx, async () => {
+    const values = getFileData(ctx);
+
+    const attachment = await storage.createAttachment(values, { context: ctx });
+
+    ctx.body = attachment;
+
+    await next();
+  });
+}
+
+export async function templateCollectionCreate(ctx: Context, next: Next) {
+  const { resourceName, actionName } = ctx.action;
+  const collection = ctx.db.getCollection(resourceName);
+  if (collection?.options?.template !== 'file' || !['upload', 'create'].includes(actionName)) {
+    return next();
+  }
+
+  const StorageRepo = ctx.db.getRepository('storages');
+  const storage = await StorageRepo.findOne({ filter: { name: collection.options.storage } });
+
+  ctx.storage = storage;
+
+  await multipart(ctx, async () => {
+    const values = getFileData(ctx);
+
+    ctx.action.mergeParams({
+      values,
+    });
+
+    await next();
+  });
+}
+
+export async function multipart(ctx: Context, next: Next) {
+  const { storage } = ctx;
   if (!storage) {
     console.error('[file-manager] no linked or default storage provided');
     return ctx.throw(500);
   }
-  // 传递已取得的存储引擎，避免重查
-  ctx.storage = storage;
 
   const storageConfig = getStorageConfig(storage.type);
   if (!storageConfig) {
@@ -65,43 +131,6 @@ export async function multipart(ctx: Context, next: Next) {
     }
     return ctx.throw(500);
   }
-
-  await next();
-}
-
-export async function create(ctx: Context, next: Next) {
-  const { [FILE_FIELD_NAME]: file, storage } = ctx;
-  if (!file) {
-    return ctx.throw(400, 'file validation failed');
-  }
-
-  const storageConfig = getStorageConfig(storage.type);
-  const { [storageConfig.filenameKey || 'filename']: name } = file;
-  // make compatible filename across cloud service (with path)
-  const filename = path.basename(name);
-  const extname = path.extname(filename);
-  const urlPath = storage.path ? storage.path.replace(/^([^/])/, '/$1') : '';
-
-  const data = {
-    title: file.originalname.replace(extname, ''),
-    filename,
-    extname,
-    // TODO(feature): 暂时两者相同，后面 storage.path 模版化以后，这里只是 file 实际的 path
-    path: storage.path,
-    size: file.size,
-    // 直接缓存起来
-    url: `${storage.baseUrl}${urlPath}/${filename}`,
-    mimetype: file.mimetype,
-    // @ts-ignore
-    meta: ctx.request.body,
-    ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
-  };
-
-  const attachment = await storage.createAttachment(data, { context: ctx });
-
-  // 将存储引擎的信息附在已创建的记录里，节省一次查询
-  // attachment.setDataValue('storage', storage);
-  ctx.body = attachment;
 
   await next();
 }
