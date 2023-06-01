@@ -130,7 +130,7 @@ FormItem.Designer = function Designer() {
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldModeOptions = useFieldModeOptions();
-  const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
   const isTableField = fieldSchema['x-component'] === 'TableField';
   const isFileField = isFileCollection(targetCollection);
   const initialValue = {
@@ -160,7 +160,7 @@ FormItem.Designer = function Designer() {
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
-  const isSelectFieldMode = fieldMode === 'Select';
+  const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
       ? {
@@ -179,7 +179,6 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
-
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -663,7 +662,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {IsShowMultipleSwitch() ? (
+      {isAssociationField && IsShowMultipleSwitch() ? (
         <SchemaSettings.SwitchItem
           key="multiple"
           title={t('Allow multiple')}
