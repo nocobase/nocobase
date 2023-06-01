@@ -67,7 +67,7 @@ export default {
     type: 'formula',
     // name,
     uiSchema: {
-      type: 'number',
+      type: 'string',
       // title,
       'x-component': 'Formula.Result',
       'x-component-props': {
