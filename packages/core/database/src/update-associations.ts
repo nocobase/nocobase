@@ -227,10 +227,6 @@ export async function updateAssociation(
     return false;
   }
 
-  if (options.associationContext && isReverseAssociationPair(association, options.associationContext)) {
-    return false;
-  }
-
   switch (association.associationType) {
     case 'HasOne':
     case 'BelongsTo':
@@ -339,12 +335,14 @@ export async function updateSingleAssociation(
     }
 
     const instance = await model[createAccessor](value, { context, transaction });
+
     await updateAssociations(instance, value, {
       ...options,
       transaction,
       associationContext: association,
       updateAssociationValues: keys,
     });
+
     model.setDataValue(key, instance);
     // @ts-ignore
     if (association.targetKey) {
