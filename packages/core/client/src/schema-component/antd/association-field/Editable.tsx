@@ -31,18 +31,14 @@ const EditableAssociationField = observer((props: any) => {
             values.push({
               ...data,
             });
-            setTimeout(() => {
-              form.setValuesIn(field.props.name, values);
-              field.onInput(values)
-            }, 100);
+            form.setValuesIn(field.props.name, values);
+            field.onInput(values);
           } else {
             const value = {
               ...data,
             };
-            setTimeout(() => {
-              form.setValuesIn(field.props.name, value);
-              field.onInput(value)
-            }, 100);
+            form.setValuesIn(field.props.name, value);
+            field.onInput(value);
           }
         }
       },
