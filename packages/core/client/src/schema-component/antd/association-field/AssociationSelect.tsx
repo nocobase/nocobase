@@ -72,7 +72,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   };
   return (
     <div key={fieldSchema.name}>
-      <Input.Group compact style={{ display: 'flex' }}>
+      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
         <RemoteSelect
           style={{ width: '100%' }}
           {...props}
