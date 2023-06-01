@@ -4,6 +4,7 @@ import { defineConfig } from 'umi';
 const umiConfig = getUmiConfig();
 
 process.env.MFSU_AD = 'none';
+process.env.DID_YOU_KNOW = 'none';
 
 export default defineConfig({
   title: 'Loading...',
@@ -35,7 +36,7 @@ export default defineConfig({
     ...umiConfig.proxy,
   },
   fastRefresh: true,
-  mfsu: true,
+  mfsu: false,
   // srcTranspiler: 'esbuild', // 不行，各种报错
   // mfsu: {
   //   esbuild: true // 不行，各种报错

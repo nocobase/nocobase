@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
@@ -59,6 +59,7 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
+  const location = useLocation();
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
@@ -76,10 +77,11 @@ const MenuEditor = (props) => {
       refreshDeps: [route.uiSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
+        // 不是  // "admin" | "admin/km5wokseg39" 的情况下，返回
+        const paramsArr = params['*'].split('/');
+        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 1) return;
+
         if (defaultSelectedUid) {
-          if (defaultSelectedUid.includes('/')) {
-            return;
-          }
           const s = findByUid(schema, defaultSelectedUid);
           if (s) {
             setTitle(s.title);

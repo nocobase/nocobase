@@ -1,6 +1,9 @@
 import { defineConfig } from 'dumi';
 import { defineThemeConfig } from 'dumi-theme-nocobase'
+import { getUmiConfig } from '@nocobase/devtools/umiConfig';
 import { nav, sidebar } from './docs/config';
+
+const umiConfig = getUmiConfig();
 
 const lang = process.env.DOC_LANG || 'en-US';
 
@@ -24,6 +27,9 @@ if (lang !== 'en-US') {
 
 export default defineConfig({
   hash: true,
+  alias: {
+    ...umiConfig.alias,
+  },
   outputPath: `./docs/dist/${lang}`,
   resolve: {
     docDirs: [`./docs/${lang}`]

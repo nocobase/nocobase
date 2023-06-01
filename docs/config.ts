@@ -251,15 +251,7 @@ const sidebar = {
     {
       title: '@nocobase/acl',
       type: 'subMenu',
-      children: [
-        '/api/acl',
-        '/api/acl/acl',
-        '/api/acl/acl-role',
-        '/api/acl/acl-resource',
-        '/api/acl/acl-available-action',
-        '/api/acl/acl-available-strategy',
-        '/api/acl/allow-manager',
-      ],
+      children: ['/api/acl/acl', '/api/acl/acl-role', '/api/acl/acl-resource'],
     },
     {
       title: '@nocobase/client',
