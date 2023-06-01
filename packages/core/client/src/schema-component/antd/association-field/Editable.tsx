@@ -33,6 +33,7 @@ const EditableAssociationField = observer((props: any) => {
             });
             setTimeout(() => {
               form.setValuesIn(field.props.name, values);
+              field.onInput(values);
             }, 100);
           } else {
             const value = {
@@ -40,6 +41,7 @@ const EditableAssociationField = observer((props: any) => {
             };
             setTimeout(() => {
               form.setValuesIn(field.props.name, value);
+              field.onInput(value);
             }, 100);
           }
         }
