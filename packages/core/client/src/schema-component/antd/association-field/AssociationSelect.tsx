@@ -4,6 +4,7 @@ import { Input } from 'antd';
 import React from 'react';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions from './hooks';
+import { RecordProvider } from '../../../';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -20,7 +21,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
 
   return (
     <div key={fieldSchema.name}>
-      <Input.Group compact style={{ display: 'flex' }}>
+      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
         <RemoteSelect
           style={{ width: '100%' }}
           {...props}
@@ -30,14 +31,16 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {isAllowAddNew && (
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'Action';
-            }}
-          />
+          <RecordProvider record={null}>
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'Action';
+              }}
+            />
+          </RecordProvider>
         )}
       </Input.Group>
     </div>
