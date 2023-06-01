@@ -1,9 +1,31 @@
-import { useCollectionManager } from '@nocobase/client';
+import React from 'react';
+import { useFieldSchema } from '@formily/react';
+
+import { GeneralSchemaDesigner, SchemaSettings, useCollection, useCollectionManager } from '@nocobase/client';
 
 import { NAMESPACE } from '../../../locale';
 import { findSchema } from '../utils';
 import { ManualFormType } from '../SchemaConfig';
 import { FormBlockInitializer } from '../FormBlockInitializer';
+
+function CreateFormDesigner() {
+  const { name, title } = useCollection();
+
+  return (
+    <GeneralSchemaDesigner title={title || name}>
+      <SchemaSettings.BlockTitleItem />
+      <SchemaSettings.LinkageRules collectionName={name} />
+      <SchemaSettings.DataTemplates collectionName={name} />
+      <SchemaSettings.Divider />
+      <SchemaSettings.Remove
+        removeParentsIfNoChildren
+        breakRemoveOn={{
+          'x-component': 'Grid',
+        }}
+      />
+    </GeneralSchemaDesigner>
+  );
+}
 
 export default {
   title: `{{t("Create record form", { ns: "${NAMESPACE}" })}}`,
@@ -24,6 +46,7 @@ export default {
               collection: item.name,
               title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
               formType: 'create',
+              'x-designer': 'CreateFormDesigner',
             },
             component: FormBlockInitializer,
           })),
@@ -32,7 +55,9 @@ export default {
     initializers: {
       // AddCustomFormField
     },
-    components: {},
+    components: {
+      CreateFormDesigner,
+    },
     parseFormOptions(root) {
       const forms = {};
       const formBlocks: any[] = findSchema(
