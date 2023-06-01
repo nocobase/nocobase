@@ -1,17 +1,19 @@
-import { FC, useRef, useEffect, Suspense } from 'react';
-import ReactDOM from 'react-dom';
+import React, { FC, useRef, useEffect, Suspense } from 'react';
+import { Root, createRoot } from 'react-dom/client';
 import { IPreviewerProps } from 'dumi';
 import DefaultPreviewer from 'dumi/theme-default/builtins/Previewer';
 
 const Previewer: FC<IPreviewerProps> = ({ children, ...props }) => {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    let root: Root
     if (ref.current) {
-      ReactDOM.render(<Suspense fallback={<div>loading...</div>}>{children}</Suspense>, ref.current)
+      root = createRoot(ref.current)
+      root.render(<Suspense fallback={<div>loading...</div>}>{children}</Suspense>)
     }
     return () => {
-      if (ref.current) {
-        ReactDOM.unmountComponentAtNode(ref.current)
+      if (root) {
+        root.unmount()
       }
     }
   }, []);

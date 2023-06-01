@@ -125,6 +125,15 @@ export const Page = (props) => {
   const { title, setTitle } = useDocumentTitle();
   const fieldSchema = useFieldSchema();
   const dn = useDesignable();
+
+  // react18  tab 动画会卡顿，所以第一个 tab 时，动画禁用，后面的 tab 才启用
+  const [hasMounted, setHasMounted] = useState(false);
+  useEffect(() => {
+    setTimeout(() => {
+      setHasMounted(true);
+    });
+  }, []);
+
   useEffect(() => {
     if (!title) {
       setTitle(fieldSchema.title);
@@ -178,6 +187,7 @@ export const Page = (props) => {
                   <DndContext>
                     <Tabs
                       size={'small'}
+                      animated={hasMounted}
                       activeKey={activeKey}
                       onTabClick={(activeKey) => {
                         setLoading(true);

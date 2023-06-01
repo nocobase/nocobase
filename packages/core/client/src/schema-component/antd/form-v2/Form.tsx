@@ -1,6 +1,6 @@
 import { FormLayout } from '@formily/antd';
-import { Field, createForm, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
-import { FieldContext, FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
+import { createForm, Field, onFieldChange, onFieldInit, onFieldReact, onFormInputChange } from '@formily/core';
+import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
@@ -176,16 +176,15 @@ export const Form: React.FC<FormProps> & {
   const formDisabled = disabled || field.disabled;
   return (
     <ConfigProvider componentDisabled={formDisabled}>
-      {/* React17 下会报错，注释后发现没影响，就先注释，后面升到 react 18 再打开 */}
-      {/* <form>
-        <Spin spinning={field.loading || false}> */}
-      {form ? (
-        <WithForm form={form} {...others} disabled={formDisabled} />
-      ) : (
-        <WithoutForm {...others} disabled={formDisabled} />
-      )}
-      {/* </Spin>
-      </form> */}
+      <form>
+        <Spin spinning={field.loading || false}>
+          {form ? (
+            <WithForm form={form} {...others} disabled={formDisabled} />
+          ) : (
+            <WithoutForm {...others} disabled={formDisabled} />
+          )}
+        </Spin>
+      </form>
     </ConfigProvider>
   );
 });
