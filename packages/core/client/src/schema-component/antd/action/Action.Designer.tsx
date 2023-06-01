@@ -197,6 +197,16 @@ export const ActionDesigner = (props) => {
                           margin: '2px 0',
                         },
                       },
+                      'x-reactions': [
+                        {
+                          dependencies: ['.saveMode'],
+                          fulfill: {
+                            state: {
+                              required: '{{ $deps[0]!=="create"}}',
+                            },
+                          },
+                        },
+                      ],
                     },
                   },
                 } as ISchema
