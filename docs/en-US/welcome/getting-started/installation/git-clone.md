@@ -56,7 +56,7 @@ Production
 # Compile
 yarn build
 # Start
-yarn start # Does not support running on win platform
+yarn start
 ```
 
 ## 7. Log in to NocoBase

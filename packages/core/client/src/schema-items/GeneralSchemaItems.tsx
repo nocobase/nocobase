@@ -1,9 +1,8 @@
 import { Field } from '@formily/core';
-import { ISchema, useField, useFieldSchema,observer } from '@formily/react';
-import _ from 'lodash';
-import { useTranslation } from 'react-i18next';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { useCollectionManager, useCollection } from '../collection-manager';
+import { useTranslation } from 'react-i18next';
+import { useCollection, useCollectionManager } from '../collection-manager';
 import { useDesignable } from '../schema-component';
 import { SchemaSettings } from '../schema-settings';
 
@@ -18,7 +17,6 @@ export const GeneralSchemaItems: React.FC<{
   const { t } = useTranslation();
   const { dn, refresh } = useDesignable();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-console.log(field,field.decoratorProps )
   return (
     <>
       {collectionField && (
@@ -57,7 +55,7 @@ console.log(field,field.decoratorProps )
         />
       )}
       <SchemaSettings.SwitchItem
-        checked={field.decoratorProps.showTitle ?? true}
+        checked={fieldSchema['x-decorator-props'] ?? true}
         title={t('Display title')}
         onChange={(checked) => {
           fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};

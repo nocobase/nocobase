@@ -16,12 +16,12 @@ import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
+import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { mergeFilter } from '../SharedFilterProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { useSchemaTemplateManager } from '../../schema-templates';
 
 export const usePickActionProps = () => {
   const form = useForm();
@@ -159,6 +159,7 @@ export const useCreateActionProps = () => {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;
@@ -255,6 +256,7 @@ export const useAssociationCreateActionProps = () => {
         }
         message.success(compile(onSuccess?.successMessage));
       } catch (error) {
+        actionField.data.data = null;
         actionField.data.loading = false;
       }
     },
@@ -1119,7 +1121,7 @@ export const useAssociationNames = (collection) => {
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
           associationValues.push(s.name);
         }
-        if (s['x-component-props'].mode === 'Nester') {
+        if (s['x-component-props']?.mode === 'Nester') {
           return getAssociationAppends(s, buf);
         }
         return buf;

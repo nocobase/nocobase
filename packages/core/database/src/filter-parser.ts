@@ -164,11 +164,15 @@ export default class FilterParser {
 
         debug('associationKeys %o', associationKeys);
 
-        // set sequelize include option
-        _.set(include, firstKey, {
-          association: firstKey,
-          attributes: [], // out put empty fields by default
-        });
+        const existInclude = _.get(include, firstKey);
+
+        if (!existInclude) {
+          // set sequelize include option
+          _.set(include, firstKey, {
+            association: firstKey,
+            attributes: [], // out put empty fields by default
+          });
+        }
 
         // association target model
         let target = associations[firstKey].target;
@@ -192,10 +196,14 @@ export default class FilterParser {
               assoc.push(associationKey);
             });
 
-            _.set(include, assoc, {
-              association: attr,
-              attributes: [],
-            });
+            const existInclude = _.get(include, assoc);
+            if (!existInclude) {
+              _.set(include, assoc, {
+                association: attr,
+                attributes: [],
+              });
+            }
+
             target = target.associations[attr].target;
           } else {
             throw new Error(`${attr} neither ${firstKey}'s association nor ${firstKey}'s attribute`);

@@ -125,7 +125,6 @@ export const CreateAction = observer((props: any) => {
   const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
   const field: any = useField();
   const componentType = field.componentProps.type || 'primary';
-  console.log(componentType)
   const { getChildrenCollections } = useCollectionManager();
   const totalChildCollections = getChildrenCollections(collection.name);
   const inheritsCollections = enableChildren
