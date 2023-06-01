@@ -158,6 +158,7 @@ export const getCustomRequestSchema = (scopeOptions) => {
                   type: 'string',
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
+                  required: true,
                   'x-component-props': {
                     placeholder: '{{t("Fields")}}',
                   },
@@ -206,6 +207,7 @@ export const getCustomRequestSchema = (scopeOptions) => {
                   type: 'string',
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
+                  required: true,
                   'x-component-props': {
                     placeholder: '{{t("Fields")}}',
                   },

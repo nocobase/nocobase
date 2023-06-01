@@ -637,9 +637,12 @@ export const useCustomizeRequestActionProps = () => {
     async onClick() {
       const { skipValidator, onSuccess } = actionSchema?.['x-action-settings'] ?? {};
       const xAction = actionSchema?.['x-action'];
-
-      if (skipValidator !== true && xAction === 'customize:form:request') {
-        await form.submit();
+      let data = record;
+      if (xAction === 'customize:form:request') {
+        data = form.values;
+        if (skipValidator !== true) {
+          await form.submit();
+        }
       }
       actionField.data = field.data || {};
       actionField.data.loading = true;
@@ -647,7 +650,7 @@ export const useCustomizeRequestActionProps = () => {
         await apiClient.request({
           url: `customRequest:send/${uid}`,
           method: 'post',
-          data: record,
+          data,
         });
         actionField.data.loading = false;
         if (!(resource instanceof TableFieldResource)) {

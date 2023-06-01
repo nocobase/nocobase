@@ -83,7 +83,7 @@ export const customRequestActions = {
     if (!record) {
       ctx.throw(404, ctx.t('request config not exists', { ns: NAME_SPACE }));
     }
-    const { data, method, headers, params, url, timeout = 5000, requestType } = record.options;
+    const { data = {}, method, headers, params, url, timeout = 5000, requestType } = record.options;
 
     // url 非空校验
     if (isEmpty(url)) {
@@ -103,19 +103,19 @@ export const customRequestActions = {
         $user: async () => state.currentUser,
       },
     });
-    const realData = await parseFilter(data, generateOptions());
-    const realHeaders = await parseFilter(formatParamsIntoObject(headers), generateOptions());
-    const realParams = await parseFilter(formatParamsIntoObject(params), generateOptions());
+    const parsedData = await parseFilter(data || {}, generateOptions());
+    const parsedHeaders = await parseFilter(formatParamsIntoObject(headers || {}), generateOptions());
+    const parsedParams = await parseFilter(formatParamsIntoObject(params || {}), generateOptions());
 
     const tempParams = {
       url,
       method,
       headers: {
-        ...realHeaders,
+        ...parsedHeaders,
         'Content-Type': 'application/json; charset=UTF-8;',
       },
-      params: realParams,
-      data: realData,
+      params: parsedParams,
+      data: parsedData,
       timeout,
     };
     if (requestType === 'internal') {

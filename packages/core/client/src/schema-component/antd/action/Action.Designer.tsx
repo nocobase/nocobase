@@ -60,15 +60,13 @@ export const ActionDesigner = (props) => {
       label: uiSchema.title,
       value: name,
     }));
-  const currentRecordOptions = [
-    {
-      label: '当前记录',
-      value: '$currentRecord',
-      children: recordOption,
-    },
-  ];
+  const currentRecordOptions = {
+    label: t('Current record'),
+    value: '$currentRecord',
+    children: recordOption,
+  };
   const dateVariable = useDateVariable({ withoutDisabled: true, operator: null, schema: null });
-  const requestSettingsSchema = getCustomRequestSchema([...currentRecordOptions, dateVariable]);
+  const requestSettingsSchema = getCustomRequestSchema([currentRecordOptions, dateVariable]);
   const api = useAPIClient();
   const record = useRecord();
 
