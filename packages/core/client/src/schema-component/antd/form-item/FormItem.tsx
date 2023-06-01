@@ -662,7 +662,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {IsShowMultipleSwitch() ? (
+      {isAssociationField && IsShowMultipleSwitch() ? (
         <SchemaSettings.SwitchItem
           key="multiple"
           title={t('Allow multiple')}
