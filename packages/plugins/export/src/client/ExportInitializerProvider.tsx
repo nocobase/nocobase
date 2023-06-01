@@ -2,7 +2,7 @@ import { SchemaInitializerContext } from '@nocobase/client';
 import { useContext } from 'react';
 
 export const ExportInitializerProvider = (props: any) => {
-  const initializes = useContext(SchemaInitializerContext);
+  const initializes = useContext<any>(SchemaInitializerContext);
   const hasExportAction = initializes.TableActionInitializers.items[0].children.some(
     (initialize) => initialize.component === 'ExportActionInitializer',
   );

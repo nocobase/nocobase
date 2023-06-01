@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import classNames from 'classnames';
 import _, { cloneDeep } from 'lodash';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { ReactNode, createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -51,12 +51,14 @@ import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
+import { MenuDividerProps } from 'antd/lib/menu';
 
 interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
   field?: GeneralField;
   fieldSchema?: Schema;
+  children?: ReactNode;
 }
 
 interface SchemaSettingsContextProps {
@@ -122,7 +124,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       onOpenChange={(visible) => {
         setVisible(visible);
       }}
-      overlay={<Menu>{props.children}</Menu>}
+      overlay={<Menu>{props.children as any}</Menu>}
       overlayClassName={classNames(
         'nb-schema-initializer-button-overlay',
         css`
@@ -411,7 +413,7 @@ SchemaSettings.SubMenu = (props) => {
   return <Menu.SubMenu {...props} />;
 };
 
-SchemaSettings.Divider = (props) => {
+SchemaSettings.Divider = (props: MenuDividerProps) => {
   return <Menu.Divider {...props} />;
 };
 

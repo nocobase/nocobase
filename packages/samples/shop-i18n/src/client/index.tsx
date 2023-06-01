@@ -7,7 +7,7 @@ import {
   SettingsCenterProvider,
 } from '@nocobase/client';
 import { Select } from 'antd';
-import React, { useContext } from 'react';
+import React, { ReactNode, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -59,7 +59,7 @@ export const ShopShortcut = () => {
   );
 };
 
-export default React.memo((props) => {
+export default React.memo((props: { children?: ReactNode }) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
 

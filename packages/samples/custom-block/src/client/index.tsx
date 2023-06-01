@@ -31,7 +31,7 @@ export const HelloBlockInitializer = (props) => {
 };
 
 export default React.memo((props) => {
-  const items = useContext(SchemaInitializerContext);
+  const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[2].children;
   children.push({
     key: 'customBlock',
