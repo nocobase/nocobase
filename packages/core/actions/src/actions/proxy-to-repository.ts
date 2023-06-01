@@ -1,5 +1,5 @@
 import { getRepositoryFromParams } from '../utils';
-import { Context } from '@nocobase/actions';
+import { Context } from '../index';
 import lodash from 'lodash';
 
 export function proxyToRepository(paramKeys: string[], repositoryMethod: string) {
@@ -7,6 +7,7 @@ export function proxyToRepository(paramKeys: string[], repositoryMethod: string)
     const repository = getRepositoryFromParams(ctx);
 
     const callObj = lodash.pick(ctx.action.params, paramKeys);
+    callObj.context = ctx;
 
     ctx.body = await repository[repositoryMethod](callObj);
 
