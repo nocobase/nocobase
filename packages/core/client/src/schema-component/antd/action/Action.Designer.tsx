@@ -68,7 +68,7 @@ export const ActionDesigner = (props) => {
   const isDraggable = fieldSchema?.parent?.['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
-  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].depulicateFields?.checked || []);
+  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -191,7 +191,7 @@ export const ActionDesigner = (props) => {
                       options: collectionList,
                     },
                   },
-                  depulicateFields: {
+                  duplicateFields: {
                     type: 'array',
                     title: '{{ t("Data fields") }}',
                     required: true,
@@ -233,13 +233,14 @@ export const ActionDesigner = (props) => {
                 },
               } as ISchema
             }
-            onSubmit={({ duplicateMode, depulicateFields }) => {
-              console.log(duplicateMode, depulicateFields);
+            onSubmit={({ duplicateMode, duplicateFields }) => {
+              console.log(duplicateFields);
+              const fields = duplicateFields?.checked || [];
               field.componentProps.duplicateMode = duplicateMode;
-              field.componentProps.depulicateFields = depulicateFields;
+              field.componentProps.duplicateFields = fields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
               fieldSchema['x-component-props'].duplicateMode = duplicateMode;
-              fieldSchema['x-component-props'].depulicateFields = depulicateFields;
+              fieldSchema['x-component-props'].duplicateFields = fields;
               dn.emit('patch', {
                 schema: {
                   ['x-uid']: fieldSchema['x-uid'],

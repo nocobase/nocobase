@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
+import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 
 export interface ITemplate {
   config?: {
@@ -70,7 +71,7 @@ const useDataTemplates = () => {
 };
 
 export const Templates = ({ style = {}, form }) => {
-  const { templates, display, enabled, defaultTemplate } = useDataTemplates();
+  const { templates, display, enabled, defaultTemplate } = useDuplicatefieldsContext() || useDataTemplates();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
