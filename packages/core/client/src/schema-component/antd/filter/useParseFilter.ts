@@ -1,20 +1,23 @@
-import { SchemaOptionsContext, useForm, useField } from '@formily/react';
+import { SchemaOptionsContext, useForm, useField, Schema } from '@formily/react';
 import { mapValues, isArray, isPlainObject, isString, nth, get } from 'lodash';
 import { useContext, useEffect, useState, useRef, useCallback } from 'react';
 
-function deepFind(obj, key) {
-  if (obj[key]) {
-    return obj[key];
+export function findDecoratorFilterDeep(schema: Schema) {
+  if (!schema) {
+    return null;
   }
-  for (const i in obj) {
-    if (obj[i] && typeof obj[i] === 'object') {
-      const found = deepFind(obj[i], key);
-      if (found) {
-        return found;
+  if (schema['x-decorator-props']?.params?.filter) {
+    return schema['x-decorator-props']?.params?.filter;
+  }
+  if (schema?.properties) {
+    for (const key in schema?.properties) {
+      const rs = findDecoratorFilterDeep(schema?.properties?.[key]);
+      if (rs) {
+        return rs;
       }
     }
   }
-  return undefined;
+  return null;
 }
 
 export function useParseFilter(filterParams, onChange?: () => void) {
@@ -27,6 +30,8 @@ export function useParseFilter(filterParams, onChange?: () => void) {
 
   const [filter, setFilter] = useState({});
   const formChangedPath = useRef('');
+  // 依赖的字段
+  const deps = useRef({});
   const parseFilter = useCallback(
     (filterObj) => {
       return mapValues({ ...filterObj }, (value, key) => {
@@ -46,11 +51,23 @@ export function useParseFilter(filterParams, onChange?: () => void) {
           if (name !== '$currentForm') {
             formPath[formPath.length - 1] = name;
           }
-          const formValue = get(form.values, formPath)?.[nameField] || null;
-          if (formChangedPath.current === formPath.join('.')) {
+          const formValue = get(form.values, formPath);
+          let formValueField = formValue?.[nameField] || null;
+          if (isArray(formValue)) {
+            formValueField = formValue.map((v) => v?.[nameField]);
+          }
+
+          const formPathStr = formPath.join('.');
+          const formPathFieldStr = [...formPath, nameField].join('.');
+          if (formChangedPath.current === formPathStr || formChangedPath.current === formPathFieldStr) {
             onChange?.();
           }
-          return formValue;
+          deps.current = {
+            ...deps.current,
+            [formPathStr]: formValue,
+            [formPathFieldStr]: formValueField,
+          };
+          return formValueField;
         }
         return value;
       });
@@ -60,10 +77,11 @@ export function useParseFilter(filterParams, onChange?: () => void) {
   useEffect(() => {
     // form 表单其他字段更新时触发重置表单值
     const unsubscribe = form.subscribe(({ payload, type }) => {
-      if (type !== 'onFieldValidateSuccess') {
+      const path = payload?.path?.entire || '';
+      if (type !== 'onFieldValidateSuccess' || (deps.current[path] && deps.current[path] === payload.value)) {
         return;
       }
-      formChangedPath.current = payload.path.entire;
+      formChangedPath.current = path;
       setFilter(parseFilter(filterParams));
     });
     return () => {

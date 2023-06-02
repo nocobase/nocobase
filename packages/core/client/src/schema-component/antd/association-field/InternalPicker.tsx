@@ -16,6 +16,7 @@ import {
 import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
 import { ActionContext } from '../action';
+import { findDecoratorFilterDeep, useParseFilter } from '../filter/useParseFilter';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
@@ -132,6 +133,10 @@ export const InternalPicker = observer((props: any) => {
       collectionField,
     };
   };
+
+  useParseFilter(findDecoratorFilterDeep(fieldSchema), () => {
+    props.onChange(null);
+  });
 
   return (
     <>
