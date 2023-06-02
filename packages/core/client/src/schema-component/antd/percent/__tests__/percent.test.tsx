@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '../../../../test';
+import { fireEvent, render, screen } from 'testUtils';
 import App from '../demos/percent';
 
 describe('Percent', () => {
