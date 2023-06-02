@@ -5,6 +5,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
+import { RecordProvider } from '../../../';
 import { useAPIClient, useCollectionManager } from '../../../';
 import { isFunction } from 'mathjs';
 
@@ -83,14 +84,16 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {(addMode === 'modalAdd' || isAllowAddNew) && (
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'Action';
-            }}
-          />
+          <RecordProvider record={null}>
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'Action';
+              }}
+            />
+          </RecordProvider>
         )}
       </Input.Group>
     </div>
