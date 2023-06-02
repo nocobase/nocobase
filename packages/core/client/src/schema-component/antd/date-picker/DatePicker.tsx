@@ -40,7 +40,7 @@ export const DatePicker = (props) => {
   return <_DatePicker {...props} />;
 };
 
-DatePicker.RangePicker = (props) => {
+DatePicker.RangePicker = function RangePicker(props) {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
