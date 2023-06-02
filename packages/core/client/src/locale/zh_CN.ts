@@ -572,9 +572,6 @@ export default {
   'Role UID': '角色标识',
 
   'Precision': '精确度',
-  'Formula mode': '计算方式',
-  'Input +, -, *, /, ( ) to calculate, input @ to open field variables.': '英文输入+、-、*、/、( ) 进行运算，输入@打开可用字段变量。',
-  'Formula error.': '公式验证错误。',
   'Rich Text': '富文本',
   'Junction collection': '中间表',
   'Leave it blank, unless you need a custom intermediate table': '默认留空，除非你需要一个自定义的中间表',
