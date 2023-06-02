@@ -23,6 +23,7 @@ interface Option {
 
 function flatData(data: any[], fieldNames: FieldNames): any[] {
   const newArr: any[] = [];
+  if (!Array.isArray(data)) return newArr;
   for (let i = 0; i < data.length; i++) {
     const children = data[i][fieldNames.options];
     if (Array.isArray(children)) {

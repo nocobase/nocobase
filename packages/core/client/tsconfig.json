@@ -7,10 +7,4 @@
       "vitest/globals"
     ]
   },
-  "ts-node": {
-    "compilerOptions": {
-      "target": "ESNext",
-      "module": "ESNext"
-    }
-  },
 }
