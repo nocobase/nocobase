@@ -788,4 +788,8 @@ export default {
   'The will interrupt service, it may take a few seconds to restart. Are you sure to continue?': '重启将会中断当前服务，这个过程可能需要一点时间，确定要继续吗？',
   'Reboot': '重启',
   'Clear cache': '清除缓存',
+  "Duplicate":"复制",
+  "Duplicate mode":"复制方式",
+  "Quick duplicate":"快速复制",
+  "Duplicate and continue":"复制并继续"
 }
