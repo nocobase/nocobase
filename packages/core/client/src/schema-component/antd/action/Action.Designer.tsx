@@ -64,8 +64,8 @@ export const ActionDesigner = (props) => {
   const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
-  const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
-  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDelete = fieldSchema?.parent?.['x-component'] === 'CollectionField';
+  const isDraggable = fieldSchema?.parent?.['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].depulicateFields?.checked || []);
@@ -172,7 +172,7 @@ export const ActionDesigner = (props) => {
                     'x-decorator': 'FormItem',
                     'x-component': 'Radio.Group',
                     title: t('Duplicate mode'),
-                    default: field.componentProps.duplicate || 'quickDulicate',
+                    default: field.componentProps.duplicateMode || 'quickDulicate',
                     enum: [
                       { value: 'quickDulicate', label: '{{t("Quick duplicate")}}' },
                       { value: 'continueduplicate', label: '{{t("Duplicate and continue")}}' },
@@ -195,7 +195,7 @@ export const ActionDesigner = (props) => {
                     type: 'array',
                     title: '{{ t("Data fields") }}',
                     required: true,
-                    // default: duplicateValues,
+                    default: duplicateValues,
                     description: t('Only the selected fields will be used as the initialization data for the form'),
                     'x-decorator': 'FormItem',
                     'x-component': Tree,
@@ -234,6 +234,7 @@ export const ActionDesigner = (props) => {
               } as ISchema
             }
             onSubmit={({ duplicateMode, depulicateFields }) => {
+              console.log(duplicateMode, depulicateFields);
               field.componentProps.duplicateMode = duplicateMode;
               field.componentProps.depulicateFields = depulicateFields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
