@@ -7,6 +7,7 @@ import { operators } from '@nocobase/client';
 import formatters from './block/formatters';
 import transformers from './block/transformers';
 import { lang } from './locale';
+import { ChartRendererProps, QueryProps } from './renderer';
 
 export type FieldOption = {
   value: string;
@@ -37,43 +38,6 @@ export const useFields = (collection?: string) => {
       ...field,
     }));
   return Schema.compile(fields, { t }) as FieldOption[];
-};
-
-export const useFilterOptions = (fields: FieldOption[]) => {
-  const { getInterface } = useCollectionManager();
-  const interfaceMap = {
-    createdAt: 'createdAt',
-    updatedAt: 'updatedAt',
-    createdById: 'createdBy',
-    updatedById: 'updatedBy',
-  };
-
-  const options = [];
-  fields.forEach((field) => {
-    let ops = [];
-    let optionChildren = [];
-    const fieldInterface = getInterface(field.interface || interfaceMap[field.name]);
-    if (fieldInterface?.filterable) {
-      const { children, operators } = fieldInterface.filterable;
-      ops = operators || [];
-      optionChildren = children;
-    } else {
-      ops = operators[field.type] || [];
-    }
-    if (!ops.length && !optionChildren.length) {
-      return;
-    }
-    options.push({
-      name: field.value,
-      title: field.label,
-      schema: field.uiSchema,
-      operators: ops.filter((op) => {
-        return !op?.visible || op.visible(field);
-      }),
-      children: optionChildren,
-    });
-  });
-  return options;
 };
 
 export const getAllFields = (fields: FieldOption[], field: any) => {
@@ -185,7 +149,6 @@ export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
 
 export const useTransformers = (field: any) => {
   const selectedType = field.query('.type').get('value');
-  console.log(selectedType);
   if (!selectedType) {
     field.dataSource = [];
     return;
@@ -195,4 +158,37 @@ export const useTransformers = (field: any) => {
     value: key,
   }));
   field.dataSource = options;
+};
+
+export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
+  // If alias is not set, use field title (display name instead of field name) as alias
+  const appendAlias = (selectedFields: SelectedField[]) => {
+    return selectedFields
+      .filter((item) => item.field)
+      .map((item) => {
+        const field = fields.find((field) => field.name === item.field);
+        return {
+          ...item,
+          alias: item.alias || field.label,
+        };
+      });
+  };
+  const { dimensions = [], measures = [] } = query;
+  return {
+    ...query,
+    dimensions: appendAlias(dimensions),
+    measures: appendAlias(measures),
+  };
+};
+
+export const useFieldTransformer = (transformer: ChartRendererProps['transformer']) => {
+  return (transformer || [])
+    .filter((item) => item.field && item.type && item.format)
+    .reduce((meta, item) => {
+      const formatter = transformers[item.type][item.format];
+      meta[item.field] = {
+        formatter: (val: any) => formatter(val),
+      };
+      return meta;
+    }, {});
 };

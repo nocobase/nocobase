@@ -6,15 +6,14 @@ import {
   useDesignable,
   useRequest,
 } from '@nocobase/client';
-import React, { useContext, useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
-import { ChartConfigContext, SelectedField } from '../block';
+import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField } from '@formily/react';
 import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useFields } from '../hooks';
-import { cloneDeep } from 'lodash';
+import { useFields, useQueryWithAlias, useFieldTransformer } from '../hooks';
 const { Paragraph, Text } = Typography;
 
 export type QueryProps = Partial<{
@@ -48,6 +47,11 @@ export type ChartRendererProps = {
     general: any;
     advanced: string;
   };
+  transformer?: {
+    field: string;
+    type: string;
+    format: string;
+  }[];
   // A flag to indicate whether it is the renderer of the configuration pane.
   configuring?: boolean;
   mode?: 'builder' | 'sql';
@@ -58,32 +62,12 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData } = useContext(ChartConfigContext);
-  const { query, config, collection, configuring } = props;
+  const { query, config, collection, transformer, configuring } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
 
   const fields = useFields(collection);
-  // If alias is not set, use field title (display name instead of field name) as alias
-  const appendAlias = (selectedFields: SelectedField[]) => {
-    return selectedFields
-      .filter((item) => item.field)
-      .map((item) => {
-        const field = fields.find((field) => field.name === item.field);
-        return {
-          ...item,
-          alias: item.alias || field.label,
-        };
-      });
-  };
-  const appendAliasToQuery = (query: QueryProps) => {
-    const { dimensions = [], measures = [] } = query;
-    return {
-      ...query,
-      dimensions: appendAlias(dimensions),
-      measures: appendAlias(measures),
-    };
-  };
-
+  const queryWithAlias = useQueryWithAlias(fields, query);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
   const { loading, run } = useRequest(
@@ -94,7 +78,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
           method: 'POST',
           data: {
             collection,
-            ...appendAliasToQuery(query),
+            ...queryWithAlias,
           },
         })
         .then((res) => {
@@ -137,7 +121,8 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
   const [library, type] = chartType.split('-');
   const chart = useChart(library, type);
   const Component = chart?.component;
-  const transformer = chart?.transformer;
+  const meta = useFieldTransformer(transformer);
+  const chartTansformer = chart?.transformer;
   const C = () =>
     Component ? (
       <ErrorBoundary
@@ -146,7 +131,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...{ ...general, ...advanced, data: transformer ? transformer(data) : data }} />
+        <Component {...{ ...general, ...advanced, data: chartTansformer ? chartTansformer(data) : data, meta }} />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />

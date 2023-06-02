@@ -95,11 +95,12 @@ export const ChartConfigure: React.FC<{
       title={t('Configure chart')}
       open={visible}
       onOk={() => {
-        const { query, config, mode } = form.values;
+        const { query, config, transformer, mode } = form.values;
         const rendererProps = {
           query,
           config,
           collection,
+          transformer,
           mode: mode || 'builder',
         };
         if (schema && schema['x-uid']) {
@@ -219,14 +220,16 @@ ChartConfigure.Renderer = function Renderer() {
   return (
     <FormConsumer>
       {(form) => {
-        // Any change of config will trigger rerender
+        // Any change of config and transformer will trigger rerender
         // Change of query only trigger rerender when "Run query" button is clicked
         const config = cloneDeep(form.values.config);
+        const transformer = cloneDeep(form.values.transformer);
         return (
           <ChartRenderer
             collection={collection}
             query={form.values.query}
             config={config}
+            transformer={transformer}
             configuring={true}
             mode={form.values.mode}
           />
