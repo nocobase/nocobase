@@ -2,12 +2,11 @@ import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager }
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
-import { filterTypedFields } from '../../variable';
+import { filterTypedFields, useCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
-import { JOB_STATUS } from '../../constants';
 
 const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
@@ -88,7 +87,6 @@ export default {
     AssigneesSelect,
   },
   useVariables({ config }, { types }) {
-    const { getCollectionFields } = useCollectionManager();
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -98,22 +96,19 @@ export default {
       .map((formKey) => {
         const form = config.forms[formKey];
 
-        const fields = (
-          typeof form.collection === 'string' ? getCollectionFields(form.collection) : form.collection?.fields ?? []
-        ).map((field) => ({
-          key: field.name,
-          value: field.name,
-          label: field.uiSchema.title,
-          title: field.uiSchema.title,
-        }));
-        const filteredFields = filterTypedFields(fields, types);
-        return filteredFields.length
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const options = useCollectionFieldOptions({
+          fields: form.collection?.fields,
+          collection: form.collection,
+          types,
+        });
+        return options.length
           ? {
               key: formKey,
               value: formKey,
               label: form.title || formKey,
               title: form.title || formKey,
-              children: filteredFields,
+              children: options,
             }
           : null;
       })
