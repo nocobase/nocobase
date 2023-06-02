@@ -64,17 +64,22 @@ export const getConfigSchema = (general: any) => ({
                 general,
               },
             },
-            advanced: {
-              type: 'json',
-              title: '{{t("JSON config")}}',
-              'x-decorator': 'FormItem',
-              'x-decorator-props': {
-                extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
-              },
-              'x-component': 'Input.JSON',
-              'x-component-props': {
-                autoSize: {
-                  minRows: 5,
+            [uid()]: {
+              type: 'void',
+              properties: {
+                advanced: {
+                  type: 'json',
+                  title: '{{t("JSON config")}}',
+                  'x-decorator': 'FormItem',
+                  'x-decorator-props': {
+                    extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
+                  },
+                  'x-component': 'Input.JSON',
+                  'x-component-props': {
+                    autoSize: {
+                      minRows: 5,
+                    },
+                  },
                 },
               },
             },

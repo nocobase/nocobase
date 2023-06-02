@@ -181,7 +181,7 @@ ChartRenderer.Designer = function Designer() {
               type: 'void',
               'x-decorator': 'CardItem',
               'x-component': 'ChartRenderer',
-              'x-component-props': cloneDeep(schema['x-component-props']),
+              'x-component-props': schema['x-component-props'],
               'x-initializer': 'ChartInitializers',
               'x-designer': 'ChartRenderer.Designer',
             },

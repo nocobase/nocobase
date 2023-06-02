@@ -69,12 +69,7 @@ export const ChartConfigure: React.FC<{
   const form = useMemo(
     () =>
       createForm({
-        initialValues: {
-          query: schema?.['x-component-props']?.query,
-          config: schema?.['x-component-props']?.config,
-          collection,
-          mode: schema?.['x-component-props']?.mode || 'builder',
-        },
+        initialValues: schema?.['x-component-props'],
       }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
