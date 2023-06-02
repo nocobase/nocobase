@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, userEvent } from 'testUtils';
+import { render, screen, userEvent } from '../../../../test';
 import App from '../demos/icon-picker';
 
 describe('IconPicker', () => {

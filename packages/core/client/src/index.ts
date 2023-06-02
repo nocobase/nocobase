@@ -22,9 +22,11 @@ export * from './record-provider';
 export * from './route-switch';
 export * from './schema-component';
 export * from './schema-initializer';
+export * from './schema-items';
 export * from './schema-settings';
 export * from './schema-templates';
-export * from './schema-items';
 export * from './settings-form';
 export * from './system-settings';
+export * from './test';
 export * from './user';
+

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, userEvent } from 'testUtils';
+import { render, screen, userEvent } from '../../../../test';
 import App1 from '../demos/demo1';
 
 describe('TreeSelect', () => {

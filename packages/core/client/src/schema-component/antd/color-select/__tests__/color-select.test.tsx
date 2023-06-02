@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from 'testUtils';
+import { fireEvent, render, screen } from '../../../../test';
 import App from '../demos/demo1';
 
 describe('ColorSelect', () => {

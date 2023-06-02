@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen, sleep, userEvent } from 'testUtils';
+import { fireEvent, render, screen, sleep, userEvent } from '../../../../test';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from 'testUtils';
+import { render, screen } from '../../test';
 import App1 from '../demos/antd-icon';
 import App3 from '../demos/custom-icon';
 import App2 from '../demos/iconfont';
