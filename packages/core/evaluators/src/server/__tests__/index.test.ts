@@ -54,4 +54,9 @@ describe('evaluate', () => {
     const result = mathEval('{{a.1}}', { a: { 1: 1 } });
     expect(result).toBe(1);
   });
+
+  it('number lead string path to object member (formula.js)', () => {
+    const result = formulaEval('{{a.1a}}', { a: { '1a': 1 } });
+    expect(result).toBe(1);
+  });
 });
