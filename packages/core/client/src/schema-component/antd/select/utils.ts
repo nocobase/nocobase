@@ -1,39 +1,53 @@
+import { isPlainObject } from '@nocobase/utils';
 import { castArray } from 'lodash';
 
-export const defaultFieldNames = {
+export interface FieldNames {
+  label: string;
+  value: string;
+  color: string;
+  options: string;
+}
+
+export const defaultFieldNames: FieldNames = {
   label: 'label',
   value: 'value',
   color: 'color',
   options: 'children',
 };
 
-export const getCurrentOptions = (values, dataSource, fieldNames) => {
-  function flatData(data) {
-    const newArr = [];
+interface Option {
+  label: string;
+  value: string;
+  icon?: any;
+}
 
-    if (!Array.isArray(data)) return newArr;
-
-    for (let i = 0; i < data.length; i++) {
-      const children = data[i][fieldNames.options];
-      if (Array.isArray(children)) {
-        newArr.push(...flatData(children));
-      }
-      newArr.push({ ...data[i] });
+function flatData(data: any[], fieldNames: FieldNames): any[] {
+  const newArr: any[] = [];
+  for (let i = 0; i < data.length; i++) {
+    const children = data[i][fieldNames.options];
+    if (Array.isArray(children)) {
+      newArr.push(...flatData(children, fieldNames));
     }
-    return newArr;
+    newArr.push({ ...data[i] });
   }
-  const result = flatData(dataSource);
-  values = castArray(values)
+  return newArr;
+}
+
+export function getCurrentOptions(values: string | string[], dataSource: any[], fieldNames: FieldNames): Option[] {
+  const result = flatData(dataSource, fieldNames);
+  const arrValues = castArray(values)
     .filter((item) => item != null)
-    .map((val) => (typeof val === 'object' ? val[fieldNames.value] : val));
-  const findOptions = (options: any[]) => {
+    .map((val) => (isPlainObject(val) ? val[fieldNames.value] : val)) as string[];
+
+  function findOptions(options: any[]): Option[] {
     if (!options) return [];
-    const current = [];
-    for (const value of values) {
-      const option = options.find((v) => v[fieldNames.value] === value) || { value: value, label: value };
+    const current: Option[] = [];
+    for (const value of arrValues) {
+      const option = options.find((v) => v[fieldNames.value] === value) || { value, label: value };
       current.push(option);
     }
     return current;
-  };
+  }
+
   return findOptions(result);
-};
+}
