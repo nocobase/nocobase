@@ -13,6 +13,7 @@ import {
   Radio,
   useDesignable,
   useFilterFieldOptions,
+  AutoComplete,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { getConfigSchema, querySchema } from './schemas/configure';
@@ -72,7 +73,7 @@ export const ChartConfigure: React.FC<{
           query: schema?.['x-component-props']?.query,
           config: schema?.['x-component-props']?.config,
           collection,
-          mode: 'builder',
+          mode: schema?.['x-component-props']?.mode || 'builder',
         },
       }),
     // visible, collection added here to re-initialize form when visible, collection change
@@ -91,11 +92,12 @@ export const ChartConfigure: React.FC<{
       title={t('Configure chart')}
       open={visible}
       onOk={() => {
-        const { query, config } = form.values;
+        const { query, config, mode } = form.values;
         const rendererProps = {
           query,
           config,
           collection,
+          mode: mode || 'builder',
         };
         if (schema && schema['x-uid']) {
           schema['x-component-props'] = rendererProps;
@@ -202,7 +204,15 @@ ChartConfigure.Renderer = function Renderer() {
         // Any change of config will trigger rerender
         // Change of query only trigger rerender when "Run query" button is clicked
         const config = cloneDeep(form.values.config);
-        return <ChartRenderer collection={collection} query={form.values.query} config={config} configuring={true} />;
+        return (
+          <ChartRenderer
+            collection={collection}
+            query={form.values.query}
+            config={config}
+            configuring={true}
+            mode={form.values.mode}
+          />
+        );
       }}
     </FormConsumer>
   );
@@ -280,7 +290,7 @@ ChartConfigure.Config = function Config() {
           <SchemaComponent
             schema={getConfigSchema(schema)}
             scope={{ t, chartTypes, useChartFields }}
-            components={{ Card, Select, Input, FormItem, ArrayItems, Space }}
+            components={{ Card, Select, Input, FormItem, ArrayItems, Space, AutoComplete }}
           />
         );
       }}

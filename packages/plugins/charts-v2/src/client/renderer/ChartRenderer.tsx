@@ -1,4 +1,11 @@
-import { GeneralSchemaDesigner, SchemaSettings, useAPIClient, useRequest } from '@nocobase/client';
+import {
+  GeneralSchemaDesigner,
+  SchemaSettings,
+  gridRowColWrap,
+  useAPIClient,
+  useDesignable,
+  useRequest,
+} from '@nocobase/client';
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
@@ -7,6 +14,7 @@ import { useFieldSchema, useField } from '@formily/react';
 import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFields } from '../hooks';
+import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
 export type QueryProps = Partial<{
@@ -20,11 +28,16 @@ export type QueryProps = Partial<{
     alias?: string;
     format?: string;
   }[];
-  sort: {
+  orders: {
     field: string;
     order: 'asc' | 'desc';
-  };
+  }[];
   filter: any;
+  limit: number;
+  sql: {
+    fields?: string;
+    clauses?: string;
+  };
 }>;
 
 export type ChartRendererProps = {
@@ -37,6 +50,7 @@ export type ChartRendererProps = {
   };
   // A flag to indicate whether it is the renderer of the configuration pane.
   configuring?: boolean;
+  mode?: 'builder' | 'sql';
 };
 
 export const ChartRenderer: React.FC<ChartRendererProps> & {
@@ -113,7 +127,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
    */
   const changedQuery = configuring ? query : JSON.stringify(query);
   useEffect(() => {
-    if (query?.measures?.length && query?.dimensions?.length) {
+    if ((query?.measures?.length && query?.dimensions?.length) || (query?.sql?.fields && query?.sql?.clauses)) {
       run();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -146,6 +160,7 @@ ChartRenderer.Designer = function Designer() {
   const { setVisible, setCurrent } = useContext(ChartConfigContext);
   const field = useField();
   const schema = useFieldSchema();
+  const { insertAdjacent } = useDesignable();
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.Item
@@ -156,6 +171,27 @@ ChartRenderer.Designer = function Designer() {
         }}
       >
         {t('Configure')}
+      </SchemaSettings.Item>
+      <SchemaSettings.Item
+        key="duplicate"
+        onClick={() =>
+          insertAdjacent(
+            'afterEnd',
+            {
+              type: 'void',
+              'x-decorator': 'CardItem',
+              'x-component': 'ChartRenderer',
+              'x-component-props': cloneDeep(schema['x-component-props']),
+              'x-initializer': 'ChartInitializers',
+              'x-designer': 'ChartRenderer.Designer',
+            },
+            {
+              wrap: gridRowColWrap,
+            },
+          )
+        }
+      >
+        {t('Duplicate')}
       </SchemaSettings.Item>
       <SchemaSettings.Divider />
       <SchemaSettings.Remove

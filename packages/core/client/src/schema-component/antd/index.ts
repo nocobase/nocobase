@@ -1,6 +1,7 @@
 export * from './action';
 export * from './association-field';
 export * from './association-select';
+export * from './auto-complete';
 export * from './block-item';
 export * from './calendar';
 export * from './card-item';

@@ -2,9 +2,33 @@ import { Context, Next } from '@nocobase/actions';
 import { formatter } from './formatter';
 import { FilterParser } from '@nocobase/database';
 
-export const query = async (ctx: Context, next: Next) => {
-  const { collection, measures, dimensions, orders, filter, limit } = ctx.action.params.values || {};
+type QueryParams = Partial<{
+  collection: string;
+  measures: {
+    field: string;
+    aggregate?: string;
+    alias?: string;
+  }[];
+  dimensions: {
+    field: string;
+    alias?: string;
+    format?: string;
+  }[];
+  orders: {
+    field: string;
+    order: 'asc' | 'desc';
+  }[];
+  filter: any;
+  limit: number;
+  sql: {
+    fields?: string;
+    clauses?: string;
+  };
+}>;
+
+const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const { sequelize } = ctx.db;
+  const { collection, measures, dimensions, orders, filter, limit } = builder;
   const repository = ctx.db.getRepository(collection);
   const fields = repository.collection.fields;
   const attributes = [];
@@ -48,13 +72,32 @@ export const query = async (ctx: Context, next: Next) => {
     collection: repository.collection,
   });
 
-  ctx.body = await repository.find({
+  return {
     attributes,
     group,
     order,
     limit: limit > 2000 ? 2000 : limit,
     ...filterParser.toSequelizeParams(),
-  });
+  };
+};
+
+export const query = async (ctx: Context, next: Next) => {
+  const { collection, measures, dimensions, orders, filter, limit, sql } = ctx.action.params.values as QueryParams;
+  const repository = ctx.db.getRepository(collection);
+
+  if (!sql) {
+    ctx.body = await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
+    return next();
+  }
+
+  const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
+  try {
+    const [data] = await ctx.db.sequelize.query(statement);
+    ctx.body = data;
+  } catch (err) {
+    ctx.app.logger.error('charts query', statement, err);
+    ctx.throw(500, err);
+  }
 
   await next();
 };

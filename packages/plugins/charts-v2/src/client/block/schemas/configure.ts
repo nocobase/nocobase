@@ -341,13 +341,14 @@ export const querySchema: ISchema = {
                 },
                 placeholder: 'Fields',
               },
+              required: true,
             },
             from: {
               type: 'void',
               'x-decorator': 'p',
               'x-component': 'FromSql',
             },
-            sql: {
+            clauses: {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'Input.TextArea',
@@ -357,6 +358,7 @@ export const querySchema: ISchema = {
                 },
                 placeholder: 'Join, Where, Group By, Having, Order By, Limit',
               },
+              required: true,
             },
           },
         },
