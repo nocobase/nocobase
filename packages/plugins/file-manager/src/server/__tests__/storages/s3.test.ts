@@ -33,7 +33,7 @@ describe('storage:s3', () => {
 
   describe('direct attachment', () => {
     itif('upload file should be ok', async () => {
-      const { body } = await agent.resource('attachments').upload({
+      const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
 
