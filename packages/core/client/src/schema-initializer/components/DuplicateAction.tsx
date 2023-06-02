@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState } from 'react';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { RecordProvider, ActionContext, useActionContext, useRecord, useCollection } from '../../';
 import { useTranslation } from 'react-i18next';
+import { css, cx } from '@emotion/css';
 import { useAPIClient, useBlockRequestContext } from '../../';
 import { actionDesignerCss } from './CreateRecordAction';
 import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
@@ -26,7 +27,8 @@ export const DuplicateAction = observer((props) => {
   const ctx = useActionContext();
   const { name } = useCollection();
   const { t } = useTranslation();
-  const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields, collection: name };
+  console.log(duplicateFields)
+  const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
   const handelQuickDuplicate = () => {
     fetchTemplateData(api, template, t).then(async (data) => {
       await resource.create({
@@ -39,7 +41,19 @@ export const DuplicateAction = observer((props) => {
     });
   };
   return (
-    <div className={actionDesignerCss}>
+    <div
+      className={cx(
+        actionDesignerCss,
+        css`
+          .general-schema-designer {
+            top: -10px;
+            bottom: -10px;
+            left: -10px;
+            right: -10px;
+          }
+        `,
+      )}
+    >
       <DuplicatefieldsContext.Provider
         value={{
           display: false,
@@ -54,7 +68,6 @@ export const DuplicateAction = observer((props) => {
                 handelQuickDuplicate();
               } else {
                 setVisible(true);
-                console.log(8);
               }
             }}
           >
