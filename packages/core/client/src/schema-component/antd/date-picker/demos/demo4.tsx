@@ -3,6 +3,7 @@
  */
 import { FormItem } from '@formily/antd';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import moment from 'moment';
 import React from 'react';
 
 const schema = {
@@ -15,6 +16,7 @@ const schema = {
       'x-component': 'DatePicker.RangePicker',
       'x-component-props': {
         gmt: true,
+        defaultPickerValue: [moment('2023-05-01')],
       },
       'x-reactions': [
         {
@@ -43,6 +45,7 @@ const schema = {
       'x-component': 'DatePicker.RangePicker',
       'x-component-props': {
         gmt: true,
+        defaultPickerValue: [moment('2023-05-01')],
       },
     },
     read2: {
