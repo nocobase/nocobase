@@ -27,7 +27,7 @@ export const WorkflowPage = () => {
                   resource: 'workflows',
                   action: 'get',
                   params: {
-                    filter: params,
+                    filter: { id: params.id },
                     appends: [
                       'nodes',
                       'revisions.id',
