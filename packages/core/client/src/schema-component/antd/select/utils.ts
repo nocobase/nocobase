@@ -10,6 +10,9 @@ export const defaultFieldNames = {
 export const getCurrentOptions = (values, dataSource, fieldNames) => {
   function flatData(data) {
     const newArr = [];
+
+    if (!Array.isArray(data)) return newArr;
+
     for (let i = 0; i < data.length; i++) {
       const children = data[i][fieldNames.options];
       if (Array.isArray(children)) {
