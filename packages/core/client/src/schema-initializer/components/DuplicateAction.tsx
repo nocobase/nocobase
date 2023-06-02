@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useState } from 'react';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { RecordProvider, ActionContext, useActionContext, useRecord, useCollection } from '../../';
-import { t } from 'i18next';
+import { useTranslation } from 'react-i18next';
+import { useAPIClient, useBlockRequestContext } from '../../';
 import { actionDesignerCss } from './CreateRecordAction';
+import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
+import { message } from 'antd';
 
 const DuplicatefieldsContext = createContext(null);
 
@@ -14,27 +17,44 @@ export const DuplicateAction = observer((props) => {
   const { children } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
+  const api = useAPIClient();
   const [visible, setVisible] = useState(false);
-  const { duplicateFields, duplicateMode } = field.componentProps;
+  const { resource, service } = useBlockRequestContext();
+
+  const { duplicateFields, duplicateMode = 'quickDulicate' } = field.componentProps;
   const { id } = useRecord();
   const ctx = useActionContext();
   const { name } = useCollection();
+  const { t } = useTranslation();
+  const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields, collection: name };
+  const handelQuickDuplicate = () => {
+    fetchTemplateData(api, template, t).then(async (data) => {
+      await resource.create({
+        values: {
+          ...data,
+        },
+      });
+      message.success(t('Saved successfully'));
+      await service?.refresh?.();
+    });
+  };
   return (
     <div className={actionDesignerCss}>
       <DuplicatefieldsContext.Provider
         value={{
           display: false,
           enabled: true,
-          defaultTemplate: { key: 'duplicate', dataId: id, default: true, fields: duplicateFields, collection: name },
+          defaultTemplate: template,
         }}
       >
         <RecordProvider record={null}>
           <a
             onClick={async () => {
               if (duplicateMode === 'quickDulicate') {
-                console.log(duplicateMode);
+                handelQuickDuplicate();
               } else {
                 setVisible(true);
+                console.log(8);
               }
             }}
           >

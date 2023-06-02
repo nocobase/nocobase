@@ -148,7 +148,7 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
   if (template.fields.length === 0) {
     return;
   }

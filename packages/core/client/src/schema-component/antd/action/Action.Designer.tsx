@@ -234,8 +234,7 @@ export const ActionDesigner = (props) => {
               } as ISchema
             }
             onSubmit={({ duplicateMode, duplicateFields }) => {
-              console.log(duplicateFields);
-              const fields = duplicateFields?.checked || [];
+              const fields = Array.isArray(duplicateFields) ? duplicateFields : duplicateFields.checked || [];
               field.componentProps.duplicateMode = duplicateMode;
               field.componentProps.duplicateFields = fields;
               fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};

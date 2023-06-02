@@ -13,14 +13,6 @@ export const DuplicateActionInitializer = (props) => {
       openMode: 'drawer',
       component: 'DuplicateAction',
     },
-    // title: '{{ t("Duplicate") }}',
-    // 'x-action': 'duplicate',
-    // 'x-designer': 'Action.Designer',
-    // 'x-component': DuplicateAction,
-    // 'x-component-props': {
-    //   openMode: 'drawer',
-    //   icon: 'EditOutlined',
-    // },
     properties: {
       drawer: {
         type: 'void',
