@@ -1,5 +1,5 @@
+import { fireEvent, render, screen } from '@nocobase/test/client';
 import React from 'react';
-import { fireEvent, render, screen } from 'testUtils';
 import App2 from '../demos/addonBefore&addonAfter';
 import App3 from '../demos/highPrecisionDecimals';
 import App1 from '../demos/inputNumber';

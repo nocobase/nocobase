@@ -15,6 +15,7 @@ export default defineConfig({
     alias: [
       { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
       { find: '@nocobase/utils/client', replacement: 'packages/core/utils/src/client' },
+      { find: '@nocobase/test/client', replacement: 'packages/core/test/src/client' },
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
       { find: /^@nocobase\/app-(.*)/, replacement: 'packages/$1/src' },
       { find: /^@nocobase\/plugin-sample-(.*)/, replacement: 'packages/samples/$1/src' },

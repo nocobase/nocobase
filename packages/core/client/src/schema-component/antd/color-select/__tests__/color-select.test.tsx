@@ -1,5 +1,5 @@
+import { fireEvent, render, screen } from '@nocobase/test/client';
 import React from 'react';
-import { fireEvent, render, screen } from 'testUtils';
 import App from '../demos/demo1';
 
 describe('ColorSelect', () => {

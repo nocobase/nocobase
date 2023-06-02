@@ -38,6 +38,9 @@
       "@nocobase/utils/client": [
         "packages/core/utils/src/client"
       ],
+      "@nocobase/test/client": [
+        "packages/core/test/src/client"
+      ],
       "@nocobase/*": [
         "packages/core/*/src"
       ]

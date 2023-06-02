@@ -1,6 +1,6 @@
+import { render, screen } from '@nocobase/test/client';
 import moment from 'moment';
 import React from 'react';
-import { render, screen } from 'testUtils';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 
