@@ -2,11 +2,11 @@ import { ISchema } from '@formily/react';
 import { lang } from '../../locale';
 import { uid } from '@formily/shared';
 
-const getArraySchema = (fields = {}) => ({
+const getArraySchema = (fields = {}, extra = {}) => ({
   type: 'array',
   'x-decorator': 'FormItem',
   'x-component': 'ArrayItems',
-  // 'x-component-props': { style: { maxWidth: 550 } },
+  ...extra,
   items: {
     type: 'object',
     properties: {
@@ -44,42 +44,36 @@ export const getConfigSchema = (general: any) => ({
     config: {
       type: 'object',
       properties: {
-        card: {
+        chartType: {
+          type: 'string',
+          title: '{{t("Chart type")}}',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          'x-component-props': {
+            placeholder: '{{t("Please select a chart type.")}}',
+          },
+          enum: '{{ chartTypes }}',
+        },
+        [uid()]: {
           type: 'void',
-          'x-component': 'Card',
           properties: {
-            chartType: {
-              type: 'string',
-              title: '{{t("Chart type")}}',
+            general,
+          },
+        },
+        [uid()]: {
+          type: 'void',
+          properties: {
+            advanced: {
+              type: 'json',
+              title: '{{t("JSON config")}}',
               'x-decorator': 'FormItem',
-              'x-component': 'Select',
+              'x-decorator-props': {
+                extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
+              },
+              'x-component': 'Input.JSON',
               'x-component-props': {
-                placeholder: '{{t("Please select a chart type.")}}',
-              },
-              enum: '{{ chartTypes }}',
-            },
-            [uid()]: {
-              type: 'void',
-              properties: {
-                general,
-              },
-            },
-            [uid()]: {
-              type: 'void',
-              properties: {
-                advanced: {
-                  type: 'json',
-                  title: '{{t("JSON config")}}',
-                  'x-decorator': 'FormItem',
-                  'x-decorator-props': {
-                    extra: lang('Same properties set in the form above will be overwritten by this JSON config.'),
-                  },
-                  'x-component': 'Input.JSON',
-                  'x-component-props': {
-                    autoSize: {
-                      minRows: 5,
-                    },
-                  },
+                autoSize: {
+                  minRows: 5,
                 },
               },
             },
@@ -375,5 +369,53 @@ export const querySchema: ISchema = {
         },
       },
     },
+  },
+};
+
+export const transformerSchema: ISchema = {
+  type: 'void',
+  properties: {
+    transformer: getArraySchema(
+      {
+        field: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'AutoComplete',
+          'x-component-props': {
+            placeholder: '{{t("Field")}}',
+            style: {
+              'min-width': '200px',
+            },
+          },
+          'x-reactions': '{{ useChartFields }}',
+        },
+        type: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          'x-component-props': {
+            placeholder: '{{t("Type")}}',
+          },
+          'x-reactions': '{{ useFieldTypeOptions }}',
+        },
+        format: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          'x-component': 'Select',
+          'x-component-props': {
+            placeholder: '{{t("Format")}}',
+          },
+          'x-reactions': '{{ useTransformers }}',
+          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+        },
+      },
+      {
+        'x-decorator-props': {
+          style: {
+            width: '50%',
+          },
+        },
+      },
+    ),
   },
 };

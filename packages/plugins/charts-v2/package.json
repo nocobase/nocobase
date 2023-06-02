@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ant-design/plots": "^1.2.5",
+    "dayjs": "^1.11.7",
     "react-error-boundary": "^4.0.4"
   }
 }

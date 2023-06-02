@@ -16,13 +16,20 @@ import {
   AutoComplete,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
-import { getConfigSchema, querySchema } from './schemas/configure';
+import { getConfigSchema, querySchema, transformerSchema } from './schemas/configure';
 import { ISchema, FormConsumer } from '@formily/react';
 import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { useFields, useAllFields, useFormatters, useCollectionOptions } from '../hooks';
+import {
+  useFields,
+  useChartFields,
+  useFormatters,
+  useCollectionOptions,
+  useTransformers,
+  useFieldTypes,
+} from '../hooks';
 import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
@@ -60,6 +67,7 @@ export const ChartConfigure: React.FC<{
   Renderer: React.FC;
   Config: React.FC;
   Query: React.FC;
+  Transformer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { visible, setVisible, current, data } = useContext(ChartConfigContext);
@@ -149,7 +157,22 @@ export const ChartConfigure: React.FC<{
                   width: 100%;
                 `}
               >
-                <ChartConfigure.Config />
+                <Card>
+                  <Tabs
+                    items={[
+                      {
+                        label: t('Chart'),
+                        key: 'chart',
+                        children: <ChartConfigure.Config />,
+                      },
+                      {
+                        label: t('Transformer'),
+                        key: 'transformer',
+                        children: <ChartConfigure.Transformer />,
+                      },
+                    ]}
+                  />
+                </Card>
               </Col>
             </Row>
           </Col>
@@ -268,7 +291,7 @@ ChartConfigure.Config = function Config() {
   const chartTypes = useChartTypes();
   const fields = useFields();
   const libraries = useContext(ChartLibraryContext);
-  const useChartFields = useAllFields(fields);
+  const getChartFields = useChartFields(fields);
   return (
     <FormConsumer>
       {(form) => {
@@ -284,11 +307,25 @@ ChartConfigure.Config = function Config() {
         return (
           <SchemaComponent
             schema={getConfigSchema(schema)}
-            scope={{ t, chartTypes, useChartFields }}
+            scope={{ t, chartTypes, useChartFields: getChartFields }}
             components={{ Card, Select, Input, FormItem, ArrayItems, Space, AutoComplete }}
           />
         );
       }}
     </FormConsumer>
+  );
+};
+
+ChartConfigure.Transformer = function Transformer() {
+  const { t } = useChartsTranslation();
+  const fields = useFields();
+  const useFieldTypeOptions = useFieldTypes(fields);
+  const getChartFields = useChartFields(fields);
+  return (
+    <SchemaComponent
+      schema={transformerSchema}
+      components={{ Select, FormItem, ArrayItems, Space, AutoComplete }}
+      scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
+    />
   );
 };
