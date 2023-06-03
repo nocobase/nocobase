@@ -200,6 +200,7 @@ function isReverseAssociationPair(a: any, b: any) {
 
     return (
       sourceAssoc.source.name === targetAssoc.target.name &&
+      sourceAssoc.target.name === targetAssoc.source.name &&
       sourceAssoc.foreignKey === targetAssoc.foreignKey &&
       sourceAssoc.sourceKey === targetAssoc.targetKey
     );
@@ -339,12 +340,14 @@ export async function updateSingleAssociation(
     }
 
     const instance = await model[createAccessor](value, { context, transaction });
+
     await updateAssociations(instance, value, {
       ...options,
       transaction,
       associationContext: association,
       updateAssociationValues: keys,
     });
+
     model.setDataValue(key, instance);
     // @ts-ignore
     if (association.targetKey) {
