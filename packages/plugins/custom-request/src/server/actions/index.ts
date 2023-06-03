@@ -1,9 +1,10 @@
 import { Context } from '@nocobase/actions';
 import axios from 'axios';
-import { formatParamsIntoObject, NAME_SPACE } from './utils';
+import { formatParamsIntoObject, NAME_SPACE, parseFilter } from './utils';
 import isEmpty from 'lodash/isEmpty';
 import { checkSendPermission } from '../send-middleware';
-import { getDateVars, parseFilter } from '@nocobase/utils';
+import { getDateVars } from '@nocobase/utils';
+import { pick } from 'lodash';
 
 export const getRepositoryFromCtx = (ctx: Context, name = 'customRequest') => {
   return ctx.db.getCollection(name).repository;
@@ -100,19 +101,20 @@ export const customRequestActions = {
         $currentRecord: values.values,
         $date: getDateVars(),
         ctx: { state },
-        $user: async () => state.currentUser,
+        $user: state.currentUser,
+        $currentRole: state.currentRole,
       },
     });
-    const parsedData = await parseFilter(data || {}, generateOptions());
-    const parsedHeaders = await parseFilter(formatParamsIntoObject(headers || {}), generateOptions());
-    const parsedParams = await parseFilter(formatParamsIntoObject(params || {}), generateOptions());
+    const parsedData = parseFilter(data || {}, generateOptions());
+    const parsedHeaders = parseFilter(formatParamsIntoObject(headers || {}), generateOptions());
+    const parsedParams = parseFilter(formatParamsIntoObject(params || {}), generateOptions());
 
     const tempParams = {
       url,
       method,
       headers: {
         ...parsedHeaders,
-        'Content-Type': 'application/json; charset=UTF-8;',
+        'Content-Type': 'application/json',
       },
       params: parsedParams,
       data: parsedData,
@@ -124,7 +126,7 @@ export const customRequestActions = {
       }
       tempParams.headers = {
         ...tempParams.headers,
-        ...ctx.request.header,
+        ...pick(ctx.request.header, ['authorization']),
       };
     }
 
