@@ -71,6 +71,7 @@ export abstract class SingleRelationRepository extends RelationRepository {
         model: this.targetModel,
         rootAttributes: findOptions.attributes,
         includeOption: findOptions.include,
+        db: this.db,
       });
 
       await eagerLoadingTree.load([templateModel.get(this.targetModel.primaryKeyAttribute)], transaction);
