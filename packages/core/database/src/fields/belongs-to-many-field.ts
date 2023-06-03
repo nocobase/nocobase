@@ -135,7 +135,8 @@ export class BelongsToManyField extends RelationField {
     // 删掉 model 的关联字段
 
     const association = collection.model.associations[this.name];
-    if (association) {
+
+    if (association && !this.options.inherit) {
       this.references(association).forEach((reference) => this.database.referenceMap.removeReference(reference));
     }
 

@@ -127,14 +127,17 @@ export function Input(props) {
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
-  const variableOptions = useMemo(() => (typeof scope === 'function' ? scope() : scope ?? []), [scope]);
+
+  // 当 scope 是一个函数时，可能是一个 hook，所以不能使用 useMemo
+  const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
+
   const [variableText, setVariableText] = React.useState('');
 
-  const loadData = async (selectedOptions: Option[]) => {
+  const loadData = (selectedOptions: Option[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (option.loadChildren) {
       // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
-      await option.loadChildren(option);
+      option.loadChildren(option);
     }
   };
 
@@ -205,8 +208,8 @@ export function Input(props) {
       }
     };
 
-    // 弹窗动画的延迟时间是 300 毫秒，动画结束之后再执行，防止动画卡顿
-    setTimeout(run, 300);
+    // 如果没有这个延迟，会导致选择父节点时不展开子节点
+    setTimeout(run);
   }, [variable]);
 
   const disabled = props.disabled || form.disabled;
