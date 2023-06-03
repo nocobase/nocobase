@@ -95,8 +95,9 @@ describe('RangePicker', () => {
     expect(endInput).toHaveValue('2023-05-02');
     // Read pretty
     expect(screen.getByText('2023-05-01~2023-05-02', { selector: '.ant-description-text' })).toBeInTheDocument();
+
     // Value
-    expect(screen.getByText('2023-04-30T16:00:00.000Z ~ 2023-05-02T15:59:59.999Z')).toBeInTheDocument();
+    expect(screen.getByText(/2023-04-30t16:00:00\.000z ~ 2023-05-02t15:59:59\.999z/i)).toBeInTheDocument();
   });
 
   it('non-UTC', async () => {

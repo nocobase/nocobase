@@ -11,8 +11,8 @@ group:
 
 #### Cron
 
-<code src="./demos/cron.tsx" />
+<code src="./demos/demo1.tsx" />
 
 #### CronSet
 
-<code src="./demos/cron-set.tsx" />
+<code src="./demos/demo2.tsx" />

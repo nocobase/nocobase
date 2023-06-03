@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, userEvent } from 'testUtils';
-import Cron from '../demos/cron';
-import CronSet from '../demos/cron-set';
+import Cron from '../demos/demo1';
+import CronSet from '../demos/demo2';
 
 describe('Cron', () => {
   it('should render correctly', () => {

@@ -180,7 +180,7 @@ const InternalRemoteSelect = connect(
         autoClearSearchValue
         filterOption={false}
         filterSort={null}
-        fieldNames={fieldNames}
+        fieldNames={fieldNames as any}
         onSearch={onSearch}
         onDropdownVisibleChange={onDropdownVisibleChange}
         objectValue={objectValue}
