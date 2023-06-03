@@ -121,6 +121,10 @@ pgOnly()('collection inherits', () => {
 
     const user = users[0];
 
+    const assoc = user.get('assocs')[0];
+    expect(assoc.get('__tableName')).toEqual(childCollection.model.tableName);
+    expect(assoc.get('__schemaName')).toEqual(childCollection.collectionSchema());
+
     expect(user.get('assocs')[0].get('__collection')).toBe('child');
   });
 
