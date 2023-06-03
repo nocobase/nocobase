@@ -1,4 +1,4 @@
-import { isPlainObject } from '@nocobase/utils';
+import { isPlainObject } from '@nocobase/utils/client';
 import { castArray } from 'lodash';
 
 export interface FieldNames {
