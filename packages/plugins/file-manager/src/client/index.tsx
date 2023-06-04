@@ -60,7 +60,7 @@ export default function (props) {
           icon: 'FileOutlined',
           tabs: {
             storages: {
-              title: `{{t("Storages", { ns: "${NAMESPACE}" })}}`,
+              title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
               component: FileStoragePane,
             },
           },

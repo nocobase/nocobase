@@ -1,5 +1,5 @@
 export default {
-  'File manager': 'File storages',
+  'File manager': 'File manager',
   'Attachment': 'Attachment',
   'MIME type': 'MIME type',
   'Storage display name': 'Storage display name',
