@@ -1,6 +1,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './';
 import { AdjacencyListRepository } from '../tree-repository/adjacency-list-repository';
+import { HasManyRepository } from '@nocobase/database';
 
 describe('tree test', function () {
   let db: Database;
@@ -14,6 +15,70 @@ describe('tree test', function () {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should list tree data in relation repository', async () => {
+    const Categories = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    const A = db.collection({
+      name: 'A',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'hasMany',
+          name: 'categories',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const a1 = await A.repository.create({
+      values: {
+        name: 'a1',
+        categories: [
+          {
+            name: 'c1',
+            children: [
+              {
+                name: 'c11',
+              },
+              {
+                name: 'c12',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const RelationRepository = db.getRepository<HasManyRepository>('A.categories', a1.get('id'));
+
+    const treeData = await RelationRepository.find({});
+
+    const treeItem = treeData[0];
+    const treeItemData = treeItem.toJSON();
+
+    expect(treeItemData.children).toBeDefined();
   });
 
   it('should works with appends option', async () => {
