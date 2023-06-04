@@ -1,11 +1,16 @@
 import { MockServer } from '@nocobase/test';
 import { createApp } from '../index';
 import { uid } from '@nocobase/utils';
+import { Database, Repository } from '@nocobase/database';
 
 describe('view collection', () => {
   let app: MockServer;
+  let db: Database;
   let agent;
   let testViewName;
+  let collectionRepository: Repository;
+
+  let fieldsRepository: Repository;
 
   beforeEach(async () => {
     app = await createApp({
@@ -13,6 +18,12 @@ describe('view collection', () => {
         tablePrefix: '',
       },
     });
+
+    db = app.db;
+
+    collectionRepository = app.db.getCollection('collections').repository;
+    fieldsRepository = app.db.getCollection('fields').repository;
+
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
     const dropSQL = `DROP VIEW IF EXISTS ${testViewName}`;
@@ -407,5 +418,81 @@ SELECT * FROM numbers;
     const viewFieldsResponse = await agent.resource('collections.fields', viewName).list({});
     const nameField = viewFieldsResponse.body.data.find((item) => item.name === 'name');
     expect(nameField.uiSchema.title).toEqual('bars');
+  });
+
+  it('should create view collection with belongs to field', async () => {
+    // not support sqlite
+    if (db.inDialect('sqlite')) {
+      return;
+    }
+    await collectionRepository.create({
+      values: {
+        name: 'groups',
+        fields: [{ name: 'name', type: 'string' }],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { name: 'name', type: 'string' },
+          { type: 'belongsTo', name: 'group', foreignKey: 'groupId', interface: 'test-interface' },
+        ],
+      },
+      context: {},
+    });
+
+    const User = db.getCollection('users');
+
+    const assoc = User.model.associations.group;
+    const foreignKey = assoc.foreignKey;
+    const foreignField = User.model.rawAttributes[foreignKey].field;
+
+    const viewName = `test_view_${uid(6)}`;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+    const queryInterface = db.sequelize.getQueryInterface();
+
+    const createSQL = `CREATE VIEW ${queryInterface.quoteIdentifier(
+      viewName,
+    )} AS SELECT id, ${queryInterface.quoteIdentifier(foreignField)}, name FROM ${db
+      .getCollection('users')
+      .quotedTableName()}`;
+
+    await db.sequelize.query(createSQL);
+
+    const response = await agent.resource('dbViews').get({
+      filterByTk: viewName,
+      schema: db.inDialect('postgres') ? 'public' : undefined,
+      pageSize: 20,
+    });
+
+    expect(response.status).toEqual(200);
+    const fields = response.body.data.fields;
+
+    await collectionRepository.create({
+      values: {
+        name: viewName,
+        view: true,
+        fields: Object.values(fields),
+        schema: db.inDialect('postgres') ? 'public' : undefined,
+      },
+      context: {},
+    });
+
+    const viewFieldsResponse = await agent.resource('collections.fields', viewName).list({});
+    expect(viewFieldsResponse.status).toEqual(200);
+    const viewFields = viewFieldsResponse.body.data;
+    const groupField = viewFields.find((item) => item.name === 'group');
+
+    expect(groupField.type).toEqual('belongsTo');
+    expect(groupField.interface).toEqual('test-interface');
+
+    const listResponse1 = await agent.resource(viewName).list({
+      appends: ['group'],
+    });
+
+    expect(listResponse1.status).toEqual(200);
   });
 });

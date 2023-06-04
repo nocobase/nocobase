@@ -1,4 +1,4 @@
-import Database, { Repository, ViewCollection } from '@nocobase/database';
+import Database, { Repository, ViewCollection, ViewFieldInference } from '@nocobase/database';
 import Application from '@nocobase/server';
 import { createApp } from '../index';
 import { uid } from '@nocobase/utils';
@@ -26,6 +26,68 @@ describe('view collection', function () {
 
   afterEach(async () => {
     await app.destroy();
+  });
+
+  it('should create view collection with belongs to association', async () => {
+    await collectionRepository.create({
+      values: {
+        name: 'groups',
+        fields: [{ name: 'name', type: 'string' }],
+      },
+      context: {},
+    });
+
+    await collectionRepository.create({
+      values: {
+        name: 'users',
+        fields: [
+          { name: 'name', type: 'string' },
+          { type: 'belongsTo', name: 'group', foreignKey: 'group_id' },
+        ],
+      },
+      context: {},
+    });
+
+    const User = db.getCollection('users');
+
+    const assoc = User.model.associations.group;
+    const foreignKey = assoc.foreignKey;
+    const foreignField = User.model.rawAttributes[foreignKey].field;
+
+    const viewName = `test_view_${uid(6)}`;
+    await db.sequelize.query(`DROP VIEW IF EXISTS ${viewName}`);
+
+    const createSQL = `CREATE VIEW ${viewName} AS SELECT id, ${foreignField}, name FROM ${db
+      .getCollection('users')
+      .quotedTableName()}`;
+
+    await db.sequelize.query(createSQL);
+
+    const inferredFields = await ViewFieldInference.inferFields({
+      db,
+      viewName,
+      viewSchema: 'public',
+    });
+
+    if (!db.inDialect('sqlite')) {
+      expect(inferredFields['group_id'].type).toBe('bigInt');
+
+      expect(inferredFields['group'].type).toBe('belongsTo');
+
+      await collectionRepository.create({
+        values: {
+          name: viewName,
+          view: true,
+          fields: Object.values(inferredFields),
+          schema: db.inDialect('postgres') ? 'public' : undefined,
+        },
+        context: {},
+      });
+
+      const viewCollection = db.getCollection(viewName);
+      const group = viewCollection.getField('group');
+      expect(group.foreignKey).toEqual('group_id');
+    }
   });
 
   it('should use view collection as through collection', async () => {
@@ -235,7 +297,7 @@ describe('view collection', function () {
         name: 'view_collection',
         viewName: 'test_view',
         isView: true,
-        fields: [{ type: 'string', name: 'Uppercase', field: 'Uppercase' }],
+        fields: [{ type: 'string', name: 'upper_case', field: 'Uppercase' }],
         schema: db.inDialect('postgres') ? 'public' : undefined,
       },
       context: {},
@@ -243,7 +305,7 @@ describe('view collection', function () {
 
     const viewCollection = db.getCollection('view_collection');
 
-    expect(viewCollection.model.rawAttributes['Uppercase'].field).toEqual('Uppercase');
+    expect(viewCollection.model.rawAttributes['upper_case'].field).toEqual('Uppercase');
     const results = await viewCollection.repository.find();
     expect(results.length).toBe(1);
   });
