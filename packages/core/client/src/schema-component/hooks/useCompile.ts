@@ -5,9 +5,10 @@ export const useCompile = () => {
   const options = useContext(SchemaOptionsContext);
   const scope = useContext(SchemaExpressionScopeContext);
   return (source: any, ext?: any) => {
-    if (!source) {
-      return source;
+    // source : '{{ t('Add new') }}' or ReactNode
+    if (typeof source === 'object' || (typeof source === 'string' && source.includes('{{'))) {
+      return Schema.compile(source, { ...options.scope, ...scope, ...ext });
     }
-    return Schema.compile(source, { ...options.scope, ...scope, ...ext });
+    return source;
   };
 };
