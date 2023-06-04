@@ -9,7 +9,7 @@ export const CollectionFieldProvider: React.FC<{
   field?: CollectionFieldOptions;
   fallback?: React.ReactElement;
 }> = (props) => {
-  const { name, field, children, fallback } = props;
+  const { name, field, children, fallback = null } = props;
   const fieldSchema = useFieldSchema();
   const { getField } = useCollection();
   const { getCollectionJoinField } = useCollectionManager();

@@ -9,16 +9,23 @@ export class AdjacencyListRepository extends Repository {
     });
   }
 
-  async find(options?: FindOptions & { addIndex?: boolean }): Promise<any> {
-    const parentNodes = await super.find(lodash.omit(options));
+  async find(options: FindOptions & { addIndex?: boolean } = {}): Promise<any> {
+    if (options.raw || !options.tree) {
+      return await super.find(options);
+    }
 
+    const collection = this.collection;
+    const primaryKey = collection.model.primaryKeyAttribute;
+
+    if (options.fields && !options.fields.includes(primaryKey)) {
+      options.fields.push(primaryKey);
+    }
+
+    const parentNodes = await super.find(options);
     if (parentNodes.length === 0) {
       return [];
     }
 
-    const templateModel = parentNodes[0];
-    const collection = this.database.modelCollection.get(templateModel.constructor);
-    const primaryKey = collection.model.primaryKeyAttribute;
     const { treeParentField } = collection;
     const foreignKey = treeParentField.options.foreignKey;
 
@@ -75,7 +82,10 @@ export class AdjacencyListRepository extends Repository {
       }
 
       return children.map((child) => {
-        child.setDataValue(childrenKey, buildTree(child.id));
+        const childrenValues = buildTree(child.id);
+        if (childrenValues.length > 0) {
+          child.setDataValue(childrenKey, childrenValues);
+        }
         return child;
       });
     }
@@ -83,7 +93,9 @@ export class AdjacencyListRepository extends Repository {
     for (const parent of parentNodes) {
       const parentId = parent[primaryKey];
       const children = buildTree(parentId);
-      parent.setDataValue(childrenKey, children);
+      if (children.length > 0) {
+        parent.setDataValue(childrenKey, children);
+      }
     }
 
     this.addIndex(parentNodes, childrenKey, options);

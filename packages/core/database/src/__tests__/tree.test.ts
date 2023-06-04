@@ -16,6 +16,169 @@ describe('tree test', function () {
     await db.close();
   });
 
+  it('should works with appends option', async () => {
+    const collection = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await collection.repository.create({
+      values: [
+        {
+          name: 'c1',
+          children: [
+            {
+              name: 'c11',
+            },
+            {
+              name: 'c12',
+            },
+          ],
+        },
+        {
+          name: 'c2',
+        },
+      ],
+    });
+
+    const tree = await collection.repository.find({
+      tree: true,
+      filter: {
+        parentId: null,
+      },
+      fields: ['name'],
+    });
+
+    expect(tree.length).toBe(2);
+  });
+
+  it('should not return children property when child nodes are empty', async () => {
+    const collection = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await collection.repository.create({
+      values: [
+        {
+          name: 'c1',
+          children: [
+            {
+              name: 'c11',
+            },
+            {
+              name: 'c12',
+            },
+          ],
+        },
+        {
+          name: 'c2',
+        },
+      ],
+    });
+
+    const tree = await collection.repository.find({
+      filter: {
+        parentId: null,
+      },
+      tree: true,
+    });
+
+    const c2 = tree.find((item) => item.name === 'c2');
+    expect(c2.toJSON()['children']).toBeUndefined();
+
+    const c11 = tree
+      .find((item) => item.name === 'c1')
+      .get('children')
+      .find((item) => item.name === 'c11');
+
+    expect(c11.toJSON()['children']).toBeUndefined();
+  });
+
+  it('should add sort field', async () => {
+    const Tasks = db.collection({
+      name: 'tasks',
+      tree: 'adjacency-list',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+        {
+          type: 'string',
+          name: 'status',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Tasks.repository.create({
+      values: {
+        name: 'task1',
+        status: 'doing',
+      },
+    });
+
+    await Tasks.repository.create({
+      values: {
+        name: 'task2',
+        status: 'pending',
+      },
+    });
+
+    await Tasks.repository.create({
+      values: {
+        name: 'task3',
+        status: 'pending',
+      },
+    });
+
+    Tasks.setField('sort', { type: 'sort', scopeKey: 'status' });
+
+    await db.sync();
+  });
+
   it('should be auto completed', () => {
     const collection = db.collection({
       name: 'categories',

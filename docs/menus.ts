@@ -49,7 +49,17 @@ export default {
       'title.zh-CN': '路线图 & 发布',
       'title.TR-TR': 'Sürüm',
       type: 'group',
-      children: ['/welcome/release/roadmap', '/welcome/release/index', '/welcome/release/v08-changelog'],
+      children: [
+        '/welcome/release/roadmap',
+        {
+          type: 'item',
+          title: 'Changelog',
+          'title.zh-CN': '更新日志',
+          link: 'https://github.com/nocobase/nocobase/blob/main/CHANGELOG.md',
+        },
+        // '/welcome/release/index',
+        '/welcome/release/v08-changelog',
+      ],
     },
     {
       title: 'Community',

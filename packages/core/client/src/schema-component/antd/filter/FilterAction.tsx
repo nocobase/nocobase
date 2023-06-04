@@ -24,8 +24,8 @@ export const FilterAction = observer((props: any) => {
       <Popover
         destroyTooltipOnHide
         placement={'bottomLeft'}
-        visible={visible}
-        onVisibleChange={(visible) => {
+        open={visible}
+        onOpenChange={(visible) => {
           setVisible(visible);
         }}
         trigger={'click'}

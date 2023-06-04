@@ -6,4 +6,6 @@ export default {
   'Pin to menu': '在菜单上显示',
   'Custom domain': '自定义域名',
   'Manage applications': '管理应用',
+  'Standalone deployment': '独立部署',
+  'Auto start': '自动启动',
 };

@@ -48,7 +48,7 @@ describe('mapDatePicker', () => {
     const props = {
       showTime: true,
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment.utc('2022-02-22 22:22:22'));
@@ -59,7 +59,7 @@ describe('mapDatePicker', () => {
     const props = {
       showTime: true,
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-22 22:22:22');
@@ -71,7 +71,7 @@ describe('mapDatePicker', () => {
     const props = {
       showTime: false,
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment.utc('2022-02-22'));
@@ -82,7 +82,7 @@ describe('mapDatePicker', () => {
     const props = {
       showTime: false,
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-22');
@@ -94,7 +94,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'year',
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment.utc('2022-01-01T00:00:00.000Z'));
@@ -105,7 +105,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'year',
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-01 00:00:00');
@@ -117,7 +117,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'month',
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment.utc('2022-02-22T00:00:00.000Z'));
@@ -128,7 +128,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'month',
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-01 00:00:00');
@@ -140,7 +140,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'quarter',
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment.utc('2022-02-22T00:00:00.000Z'));
@@ -151,7 +151,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'quarter',
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-01 00:00:00');
@@ -163,7 +163,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'week',
       gmt: true,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment.utc('2022-02-21T00:00:00.000Z');
@@ -175,7 +175,7 @@ describe('mapDatePicker', () => {
     const props = {
       picker: 'week',
       gmt: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     const m = moment('2022-02-21 00:00:00');
@@ -188,7 +188,7 @@ describe('mapDatePicker', () => {
       showTime: true,
       gmt: true,
       utc: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment('2022-02-22 22:22:22'));
@@ -200,7 +200,7 @@ describe('mapDatePicker', () => {
       showTime: false,
       gmt: true,
       utc: false,
-      onChange: jest.fn(),
+      onChange: vi.fn(),
     };
     const result = mapDatePicker()(props);
     result.onChange(moment('2022-01-01 23:00:00'));

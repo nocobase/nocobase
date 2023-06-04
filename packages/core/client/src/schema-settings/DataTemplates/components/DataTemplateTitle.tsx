@@ -9,7 +9,7 @@ import { clone } from 'lodash';
 import React, { Fragment, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const DataTemplateTitle = (props) => {
+const DataTemplateTitle = observer<{ index: number; item: any }>((props) => {
   const array = ArrayBase.useArray();
   const index = ArrayBase.useIndex(props.index);
   const { t } = useTranslation();
@@ -22,17 +22,18 @@ const DataTemplateTitle = (props) => {
       value.title = `${t('Template name')} ${array?.field?.value?.length}`;
     }
   }, []);
+
   return (
     <Input.TextArea
       value={value.title}
       placeholder={t('Template name')}
       onChange={(ev) => {
         ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
+        value.title = ev.target.value;
       }}
       onBlur={(ev) => {
         ev.stopPropagation();
-        array.field.value.splice(index, 1, { ...value, title: ev.target.value });
+        value.title = ev.target.value;
       }}
       autoSize
       style={{ width: '70%', border: 'none' }}
@@ -41,7 +42,7 @@ const DataTemplateTitle = (props) => {
       }}
     />
   );
-};
+});
 
 export interface IArrayCollapseProps extends CollapseProps {
   defaultOpenPanelCount?: number;

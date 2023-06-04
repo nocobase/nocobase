@@ -4,6 +4,7 @@ import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { RecordProvider } from '../record-provider';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
+import { useAssociationNames } from './hooks';
 
 export const DetailsBlockContext = createContext<any>({});
 
@@ -38,9 +39,15 @@ const InternalDetailsBlockProvider = (props) => {
 };
 
 export const DetailsBlockProvider = (props) => {
+  const params = { ...props.params };
+  const { collection } = props;
+  const { appends } = useAssociationNames(collection);
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
   return (
-    <BlockProvider {...props}>
-      <InternalDetailsBlockProvider {...props} />
+    <BlockProvider {...props} params={params}>
+      <InternalDetailsBlockProvider {...props} params={params} />
     </BlockProvider>
   );
 };

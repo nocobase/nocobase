@@ -102,6 +102,7 @@ export class PresetNocoBase extends Plugin {
       );
       await this.app.reload({ method: 'upgrade' });
       await this.app.db.sync();
+      await this.app.db.getRepository<any>('collections').load();
     });
 
     this.app.on('beforeInstall', async () => {
