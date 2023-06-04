@@ -297,6 +297,10 @@ export class CollectionManagerPlugin extends Plugin {
           // find original field
           const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
 
+          if (!collectionField) {
+            continue;
+          }
+
           const newOptions = {};
 
           // write original field options

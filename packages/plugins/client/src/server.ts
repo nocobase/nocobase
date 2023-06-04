@@ -97,7 +97,7 @@ export class ClientPlugin extends Plugin {
     this.app.acl.allow('plugins', '*', 'public');
     this.app.acl.registerSnippet({
       name: 'app',
-      actions: ['app:reload', 'app:reboot'],
+      actions: ['app:reboot', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
     const locales = require('./locale').default;
@@ -173,8 +173,8 @@ export class ClientPlugin extends Plugin {
             .map((item) => item.name);
           await next();
         },
-        async reload(ctx, next) {
-          await ctx.app.reload();
+        async clearCache(ctx, next) {
+          await ctx.cache.reset();
           await next();
         },
         reboot(ctx) {

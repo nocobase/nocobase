@@ -1,6 +1,6 @@
 {
   "name": "dumi-theme-nocobase",
-  "version": "0.9.3-alpha.1",
+  "version": "0.9.4-alpha.2",
   "private": true,
   "files": [
     "es",
@@ -16,11 +16,6 @@
     "rc-motion": "^2.4.1",
     "rc-tabs": "^11.7.1",
     "rc-tree": "^5.2.0"
-  },
-  "devDependencies": {
-    "@testing-library/jest-dom": "^5.11.3",
-    "@testing-library/react": "^10.4.8",
-    "react-test-renderer": "^16.13.1"
   },
   "peerDependencies": {
     "@umijs/preset-dumi": "1.x",

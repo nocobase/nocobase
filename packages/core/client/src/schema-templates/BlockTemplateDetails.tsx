@@ -1,4 +1,4 @@
-import { Input, PageHeader as AntdPageHeader, Spin } from 'antd';
+import { PageHeader as AntdPageHeader, Input, Spin } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useHistory, useRouteMatch } from 'react-router-dom';
 import { useAPIClient, useRequest, useSchemaTemplateManager } from '..';

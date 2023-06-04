@@ -8,12 +8,15 @@ module.exports = {
   verbose: true,
   testEnvironment: 'jsdom',
   preset: 'ts-jest',
-  testMatch: ['**/__tests__/**/*.test.[jt]s?(x)'],
+  testMatch: ['**/__tests__/**/*.test.[jt]s'],
   setupFiles: ['./jest.setup.ts'],
   setupFilesAfterEnv: [require.resolve('jest-dom/extend-expect'), './jest.setupAfterEnv.ts'],
-  moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths, {
-    prefix: '<rootDir>/',
-  }),
+  moduleNameMapper: {
+    ...pathsToModuleNameMapper(compilerOptions.paths, {
+      prefix: '<rootDir>/',
+    }),
+    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.js',
+  },
   globals: {
     'ts-jest': {
       babelConfig: false,
@@ -21,7 +24,7 @@ module.exports = {
       diagnostics: false,
     },
   },
-  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/'],
+  modulePathIgnorePatterns: ['/esm/', '/es/', '/dist/', '/lib/', '/client/', '/sdk/', '\\.test\\.tsx$'],
   // add .mjs .cjs for formula.js
   moduleFileExtensions: [...defaults.moduleFileExtensions, 'mjs', 'cjs'],
   coveragePathIgnorePatterns: [
