@@ -48,7 +48,7 @@ describe('action', () => {
         size: 13,
         mimetype: 'text/plain',
         meta: {},
-        storageId: 1
+        storageId: 1,
       };
 
       // 文件上传和解析是否正常
@@ -93,7 +93,20 @@ describe('action', () => {
 
   describe('specific storage', () => {
     it('fail as 400 because file size greater than rules', async () => {
-      const response = await agent.resource('storages.attachments', 'local1').create({
+      db.collection({
+        name: 'customers',
+        fields: [
+          {
+            name: 'avatar',
+            type: 'belongsTo',
+            target: 'attachments',
+            storage: 'local1',
+          },
+        ],
+      });
+
+      const response = await agent.resource('attachments').create({
+        sourceField: 'customers.avatar',
         file: path.resolve(__dirname, './files/image.jpg'),
       });
       expect(response.status).toBe(400);
@@ -105,11 +118,26 @@ describe('action', () => {
         type: STORAGE_TYPE_LOCAL,
         baseUrl: DEFAULT_LOCAL_BASE_URL,
         rules: {
-          mimetype: ['text/*']
+          mimetype: ['text/*'],
         },
       });
 
-      const response = await agent.resource('storages.attachments', textStorage.name).create({
+      db.collection({
+        name: 'customers',
+        fields: [
+          {
+            name: 'avatar',
+            type: 'belongsTo',
+            target: 'attachments',
+            storage: textStorage.name,
+          },
+        ],
+      });
+
+      // await db.sync();
+
+      const response = await agent.resource('attachments').create({
+        sourceField: 'customers.avatar',
         file: path.resolve(__dirname, './files/image.jpg'),
       });
 
@@ -134,8 +162,21 @@ describe('action', () => {
         },
       });
 
-      const { body } = await agent.resource('storages.attachments', storage.name).create({
-        file: path.resolve(__dirname, './files/text.txt')
+      db.collection({
+        name: 'customers',
+        fields: [
+          {
+            name: 'file',
+            type: 'belongsTo',
+            target: 'attachments',
+            storage: storage.name,
+          },
+        ],
+      });
+
+      const { body } = await agent.resource('attachments').create({
+        sourceField: 'customers.file',
+        file: path.resolve(__dirname, './files/text.txt'),
       });
 
       // 文件的 url 是否正常生成

@@ -5,13 +5,8 @@ export default function ({ app }) {
     name: 'attachments',
     actions: {
       create: attachmentCreate,
-    },
-  });
-
-  app.resource({
-    name: 'storages.attachments',
-    actions: {
-      create: attachmentCreate,
+      // @Deprecated
+      upload: attachmentCreate,
     },
   });
 

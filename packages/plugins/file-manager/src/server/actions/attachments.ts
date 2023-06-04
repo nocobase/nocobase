@@ -48,18 +48,18 @@ function getFileData(ctx: Context) {
 }
 
 export async function attachmentCreate(ctx: Context, next: Next) {
-  const { associatedIndex } = ctx.action.params;
+  const { sourceField } = ctx.action.params;
 
   // NOTE:
   // 1. 存储引擎选择依赖于字段定义
-  // 2. 字段定义中需包含引擎的外键值
-  // 3. 无字段时按 storages 表的默认项
+  // 2. 上传参数中通过字段名找到字段配置对应的 storage
+  // 3. 未配置时按 storages 表的默认项
   // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
 
   const StorageRepo = ctx.db.getRepository('storages');
   // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
   const storage = await StorageRepo.findOne({
-    filter: associatedIndex ? { name: associatedIndex } : { default: true },
+    filter: sourceField ? { name: ctx.db.getFieldByPath(sourceField).options.storage } : { default: true }
   });
 
   // 传递已取得的存储引擎，避免重查

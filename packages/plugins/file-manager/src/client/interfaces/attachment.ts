@@ -27,9 +27,9 @@ export const attachment: IField = {
       schema['x-component-props']['size'] = 'small';
     }
 
-    schema['x-component-props']['action'] = field.storage
-      ? `/storages/${field.storage}/attachments:create`
-      : '/attachments:create';
+    schema['x-component-props']['action'] = `${field.target}:create${
+      field.storage ? `?sourceField=${field.collectionName}.${field.name}` : ''
+    }`;
   },
   initialize: (values: any) => {
     if (!values.through) {
