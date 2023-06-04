@@ -108,6 +108,19 @@ describe('update-guard', () => {
     });
   });
 
+  test('association with null array', () => {
+    const values = {
+      name: 'u1',
+      posts: [null],
+    };
+
+    const guard = new UpdateGuard();
+    guard.setModel(User.model);
+    const sanitized = guard.sanitize(values);
+
+    expect(sanitized).toEqual({ name: 'u1', posts: [null] });
+  });
+
   test('association black list', () => {
     const values = {
       name: 'username123',

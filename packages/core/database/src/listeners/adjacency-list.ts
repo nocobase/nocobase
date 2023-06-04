@@ -1,6 +1,4 @@
-import lodash from 'lodash';
-import { Collection, CollectionOptions } from '../collection';
-import { Model } from '../model';
+import { CollectionOptions } from '../collection';
 
 export const beforeDefineAdjacencyListCollection = (options: CollectionOptions) => {
   if (!options.tree) {

@@ -150,4 +150,26 @@ describe('multiple apps create', () => {
 
     expect(jestFn).toBeCalled();
   });
+
+  it('should start automatically', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {},
+      },
+    });
+    await app.appManager.removeApplication(subAppName);
+    await app.start();
+    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+    await subApp.update({
+      options: {
+        autoStart: true,
+      },
+    });
+    await app.appManager.removeApplication(subAppName);
+    await app.start();
+    expect(app.appManager.applications.get(subAppName)).toBeDefined();
+  });
 });

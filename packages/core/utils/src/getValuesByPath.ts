@@ -10,22 +10,27 @@ export const getValuesByPath = (obj: object, path: string, defaultValue?: any) =
     const key = keys[i];
 
     if (Array.isArray(currentValue)) {
-      for (let j = 0; j < currentValue.length; j++) {
-        const value = getValuesByPath(currentValue[j], keys.slice(i).join('.'), defaultValue);
+      for (const element of currentValue) {
+        const value = getValuesByPath(element, keys.slice(i).join('.'), defaultValue);
         result = result.concat(value);
       }
       break;
     }
 
-    currentValue = currentValue[key] === undefined ? defaultValue : currentValue[key];
-
-    if (currentValue == null) {
+    if (currentValue?.[key] === undefined) {
       break;
     }
+    currentValue = currentValue[key];
 
     if (i === keys.length - 1) {
       result.push(currentValue);
     }
+  }
+
+  result = result.filter(Boolean);
+
+  if (result.length === 0) {
+    return defaultValue;
   }
 
   return result.length === 1 ? result[0] : result;

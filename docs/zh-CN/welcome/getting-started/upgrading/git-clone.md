@@ -38,6 +38,5 @@ yarn dev
 # 编译
 yarn build
 # 启动
-yarn start # 暂不支持在 win 平台下运行
+yarn start
 ```
-

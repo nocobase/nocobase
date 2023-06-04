@@ -181,7 +181,7 @@ export class HasOneField extends RelationField {
 
     const association = collection.model.associations[this.name];
 
-    if (association) {
+    if (association && !this.options.inherit) {
       this.database.referenceMap.removeReference(this.reference(association));
     }
 

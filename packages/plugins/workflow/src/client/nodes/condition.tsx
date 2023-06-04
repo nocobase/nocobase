@@ -161,6 +161,7 @@ function Calculation({ calculator, operands = [], onChange }) {
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
+        dropdownMatchSelectWidth={false}
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))
@@ -316,6 +317,7 @@ export default {
   title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
+  description: `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     rejectOnFalse: {
       type: 'boolean',

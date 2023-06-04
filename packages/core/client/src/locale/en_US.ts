@@ -708,4 +708,5 @@ export default {
   "Render Failed": "Render Failed",
   "Feedback": "Feedback",
   "Try again": "Try again",
+  "Data template": "Data template",
 };

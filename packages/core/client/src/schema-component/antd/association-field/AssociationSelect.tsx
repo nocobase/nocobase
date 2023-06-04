@@ -1,10 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema } from '@formily/react';
 import { Input } from 'antd';
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { useFieldTitle } from '../../hooks';
+import React from 'react';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions from './hooks';
+import { RecordProvider } from '../../../';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;
@@ -17,31 +17,11 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const fieldSchema = useFieldSchema();
   const service = useServiceOptions(props);
   const isAllowAddNew = fieldSchema['x-add-new'];
-  const normalizeValues = useCallback(
-    (obj) => {
-      if (!objectValue && typeof obj === 'object') {
-        return obj[fieldNames?.value];
-      }
-      return obj;
-    },
-    [objectValue, fieldNames?.value],
-  );
-  const value = useMemo(() => {
-    if (props.value === undefined || props.value === null || !Object.keys(props.value).length) {
-      return;
-    }
-    if (Array.isArray(props.value)) {
-      return props.value;
-    } else {
-      return props.value;
-    }
-  }, [props.value, normalizeValues]);
-  useEffect(() => {
-    field.value = value;
-  }, []);
+  const value = Array.isArray(props.value) ? props.value.filter(Boolean) : props.value;
+
   return (
     <div key={fieldSchema.name}>
-      <Input.Group compact style={{ display: 'flex' }}>
+      <Input.Group compact style={{ display: 'flex', lineHeight: '32px' }}>
         <RemoteSelect
           style={{ width: '100%' }}
           {...props}
@@ -51,14 +31,16 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
         ></RemoteSelect>
 
         {isAllowAddNew && (
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'Action';
-            }}
-          />
+          <RecordProvider record={null}>
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'Action';
+              }}
+            />
+          </RecordProvider>
         )}
       </Input.Group>
     </div>
@@ -75,9 +57,8 @@ export const AssociationSelect = InternalAssociationSelect as unknown as Associa
 
 export const AssociationSelectReadPretty = connect(
   (props: any) => {
+    const service = useServiceOptions(props);
     if (props.fieldNames) {
-      const service = useServiceOptions(props);
-      useFieldTitle();
       return <RemoteSelect.ReadPretty {...props} service={service}></RemoteSelect.ReadPretty>;
     }
     return null;
