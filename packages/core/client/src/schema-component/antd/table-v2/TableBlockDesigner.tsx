@@ -16,7 +16,7 @@ import { FilterDynamicComponent } from './FilterDynamicComponent';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField, getCollection } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -43,7 +43,9 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
+  const treeCollection = resource?.includes('.')
+    ? getCollection(getCollectionField(resource)?.target)?.tree
+    : !!collection?.tree;
   const dataScopeSchema = useMemo(() => {
     return {
       type: 'object',
@@ -90,7 +92,7 @@ export const TableBlockDesigner = () => {
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={treeChildren ? field.decoratorProps.treeTable !== false : false}
+          checked={treeCollection ? field.decoratorProps.treeTable !== false : false}
           onChange={(flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
