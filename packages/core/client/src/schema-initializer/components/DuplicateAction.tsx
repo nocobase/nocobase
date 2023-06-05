@@ -21,13 +21,11 @@ export const DuplicateAction = observer((props) => {
   const api = useAPIClient();
   const [visible, setVisible] = useState(false);
   const { resource, service } = useBlockRequestContext();
-
-  const { duplicateFields, duplicateMode = 'quickDulicate' } = field.componentProps;
+  const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props']
   const { id } = useRecord();
   const ctx = useActionContext();
   const { name } = useCollection();
   const { t } = useTranslation();
-  console.log(duplicateFields)
   const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
   const handelQuickDuplicate = () => {
     fetchTemplateData(api, template, t).then(async (data) => {

@@ -172,7 +172,7 @@ export const ActionDesigner = (props) => {
                     'x-decorator': 'FormItem',
                     'x-component': 'Radio.Group',
                     title: t('Duplicate mode'),
-                    default: field.componentProps.duplicateMode || 'quickDulicate',
+                    default: fieldSchema['x-component-props']?.duplicateMode || 'quickDulicate',
                     enum: [
                       { value: 'quickDulicate', label: '{{t("Quick duplicate")}}' },
                       { value: 'continueduplicate', label: '{{t("Duplicate and continue")}}' },
