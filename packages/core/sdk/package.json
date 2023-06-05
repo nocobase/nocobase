@@ -5,9 +5,6 @@
   "main": "lib",
   "module": "es/index.js",
   "typings": "es/index.d.ts",
-  "exports": {
-    "import": "./es/index.js"
-  },
   "dependencies": {
     "axios": "^0.26.1",
     "qs": "^6.10.1"
