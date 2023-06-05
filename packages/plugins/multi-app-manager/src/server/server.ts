@@ -4,7 +4,7 @@ import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
-import { sleep } from '@nocobase/utils/src/server';
+import { sleep } from '@nocobase/utils';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
