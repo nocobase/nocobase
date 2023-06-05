@@ -182,20 +182,29 @@ const todoCollection = {
   ],
 };
 
-const NodeColumn = observer(() => {
-  const field = useField<any>();
-  return field?.value?.title ?? `#${field.value?.id}`;
-});
+const NodeColumn = observer(
+  () => {
+    const field = useField<any>();
+    return field?.value?.title ?? `#${field.value?.id}`;
+  },
+  { displayName: 'NodeColumn' },
+);
 
-const WorkflowColumn = observer(() => {
-  const field = useField<any>();
-  return field?.value?.title ?? `#${field.value?.id}`;
-});
+const WorkflowColumn = observer(
+  () => {
+    const field = useField<any>();
+    return field?.value?.title ?? `#${field.value?.id}`;
+  },
+  { displayName: 'WorkflowColumn' },
+);
 
-const UserColumn = observer(() => {
-  const field = useField<any>();
-  return field?.value?.nickname ?? field.value?.id;
-});
+const UserColumn = observer(
+  () => {
+    const field = useField<any>();
+    return field?.value?.nickname ?? field.value?.id;
+  },
+  { displayName: 'UserColumn' },
+);
 
 export function WorkflowTodo() {
   return (

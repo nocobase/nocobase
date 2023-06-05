@@ -126,17 +126,20 @@ const schema = {
   },
 };
 
-export const StorageOptions = observer((props) => {
-  const form = useForm();
-  const field = useField<Field>();
-  const [s, setSchema] = useState(new Schema({}));
-  useEffect(() => {
-    // form.clearFormGraph('options.*');
-    setSchema(new Schema(schema[form.values.type] || {}));
-  }, [form.values.type]);
-  return (
-    <FormLayout layout={'vertical'}>
-      <RecursionField key={form.values.type || 'local'} basePath={field.address} onlyRenderProperties schema={s} />
-    </FormLayout>
-  );
-});
+export const StorageOptions = observer(
+  (props) => {
+    const form = useForm();
+    const field = useField<Field>();
+    const [s, setSchema] = useState(new Schema({}));
+    useEffect(() => {
+      // form.clearFormGraph('options.*');
+      setSchema(new Schema(schema[form.values.type] || {}));
+    }, [form.values.type]);
+    return (
+      <FormLayout layout={'vertical'}>
+        <RecursionField key={form.values.type || 'local'} basePath={field.address} onlyRenderProperties schema={s} />
+      </FormLayout>
+    );
+  },
+  { displayName: 'StorageOptions' },
+);

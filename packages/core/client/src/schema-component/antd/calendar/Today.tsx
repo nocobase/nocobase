@@ -6,18 +6,21 @@ import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../hooks';
 import { CalendarToolbarContext } from './context';
 
-export const Today = observer((props) => {
-  const { DesignableBar } = useDesignable();
-  const { onNavigate } = useContext(CalendarToolbarContext);
-  const { t } = useTranslation();
-  return (
-    <Button
-      onClick={() => {
-        onNavigate(navigate.TODAY);
-      }}
-    >
-      {t('Today')}
-      <DesignableBar />
-    </Button>
-  );
-});
+export const Today = observer(
+  (props) => {
+    const { DesignableBar } = useDesignable();
+    const { onNavigate } = useContext(CalendarToolbarContext);
+    const { t } = useTranslation();
+    return (
+      <Button
+        onClick={() => {
+          onNavigate(navigate.TODAY);
+        }}
+      >
+        {t('Today')}
+        <DesignableBar />
+      </Button>
+    );
+  },
+  { displayName: 'Today' },
+);

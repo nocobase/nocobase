@@ -97,16 +97,19 @@ const schema: ISchema = {
   },
 };
 
-const Hello = observer((props: any) => {
-  const fieldSchema = useFieldSchema();
-  return (
-    <div>
-      <pre>{JSON.stringify(props, null, 2)}</pre>
-      <pre>{JSON.stringify(fieldSchema.toJSON(), null, 2)}</pre>
-      <SettingsForm schema={schema} />
-    </div>
-  );
-});
+const Hello = observer(
+  (props: any) => {
+    const fieldSchema = useFieldSchema();
+    return (
+      <div>
+        <pre>{JSON.stringify(props, null, 2)}</pre>
+        <pre>{JSON.stringify(fieldSchema.toJSON(), null, 2)}</pre>
+        <SettingsForm schema={schema} />
+      </div>
+    );
+  },
+  { displayName: 'Hello' },
+);
 
 export default () => {
   return (
