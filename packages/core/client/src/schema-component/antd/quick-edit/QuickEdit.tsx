@@ -1,7 +1,8 @@
 import React from 'react';
 import { EditOutlined } from '@ant-design/icons';
-import { Popover } from 'antd';
-import { useField, observer, useFieldSchema, RecursionField, useForm } from '@formily/react';
+import { Popover, Tooltip } from 'antd';
+import { useField, observer, useFieldSchema, RecursionField } from '@formily/react';
+import { EllipsisWithTooltip } from '../input';
 import { FormItem, FormLayout } from '@formily/antd';
 import CollectionField from '../../../collection-manager/CollectionField';
 import { useCollectionManager } from '../../../collection-manager';
@@ -16,7 +17,6 @@ export const QuickEdit = observer((props) => {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
     'x-component': 'CollectionField',
-    required: true,
     default: field.value,
     'x-component-props': {
       onChange: async (e) => {
@@ -33,7 +33,6 @@ export const QuickEdit = observer((props) => {
           }
         }
         field.onInput(field.value);
-        field.setValidating()
       },
     },
   };
@@ -46,12 +45,23 @@ export const QuickEdit = observer((props) => {
       </FormProvider>
     </div>
   );
+
   return (
     <Popover content={content} trigger="click">
       <span style={{ maxHeight: 30, display: 'block', cursor: 'pointer' }}>
-        <FormItem {...props}>
-          <EditOutlined style={{ marginRight: '8px', lineHeight: '35px', float: 'left' }} />
-          <CollectionField value={field.value} name={fieldSchema.name} readPretty />
+        <Tooltip
+          title={field.selfErrors}
+          overlayInnerStyle={{ color: 'red' }}
+          color="white"
+          visible={field.selfErrors.length > 0}
+        >
+          <EditOutlined
+            style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
+          />
+        </Tooltip>
+        <EllipsisWithTooltip ellipsis>{field.value}</EllipsisWithTooltip>
+        <FormItem {...props} wrapperStyle={{ visibility: 'hidden' }}>
+          <CollectionField value={field.value ?? null} />
         </FormItem>
       </span>
     </Popover>
