@@ -1,6 +1,7 @@
 import { ArrayField } from '@formily/core';
-import { observer } from '@formily/react';
+import { observer, useFieldSchema } from '@formily/react';
 import { Button } from 'antd';
+import { FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,26 +13,28 @@ export const SubTable: any = observer((props: any) => {
   const { t } = useTranslation();
   return (
     <div>
-      <Table
-        className={css`
-          .ant-select-selector {
-            min-height: 31px;
-          }
-          .ant-formily-item {
-            margin-bottom: 0px;
-          }
-          .ant-formily-editable {
-            vertical-align: sub;
-          }
-        `}
-        size={'small'}
-        field={field}
-        showIndex
-        dragSort={field.editable}
-        showDel={field.editable}
-        pagination={false}
-        rowSelection={{ type: 'none', hideSelectAll: true }}
-      />
+      <FormItem feedbackLayout="none" labelStyle={{ display: 'none' }}>
+        <Table
+          className={css`
+            .ant-select-selector {
+              min-height: 31px;
+            }
+            .ant-formily-item {
+              margin-bottom: 0px;
+            }
+            .ant-formily-editable {
+              vertical-align: sub;
+            }
+          `}
+          size={'small'}
+          field={field}
+          showIndex
+          dragSort={field.editable}
+          showDel={field.editable}
+          pagination={false}
+          rowSelection={{ type: 'none', hideSelectAll: true }}
+        />
+      </FormItem>
       {field.editable && (
         <Button
           type={'dashed'}

@@ -33,6 +33,7 @@ export const QuickEdit = observer((props) => {
           }
         }
         field.onInput(field.value);
+        field.setValidating()
       },
     },
   };
