@@ -4,7 +4,7 @@ import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
-import { sleep } from '@nocobase/utils';
+import { Mutex } from 'async-mutex';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -70,18 +70,7 @@ export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
 
-  private beforeGetApplicationLock = 0;
-
-  private async acquireBeforeGetApplicationLock() {
-    while (Date.now() - this.beforeGetApplicationLock < 5 * 60 * 1000) {
-      await sleep(10);
-    }
-    this.beforeGetApplicationLock = Date.now();
-  }
-
-  private releaseBeforeGetApplicationLock() {
-    this.beforeGetApplicationLock = 0;
-  }
+  private beforeGetApplicationMutex = new Mutex();
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory;
@@ -164,43 +153,37 @@ export class PluginMultiAppManager extends Plugin {
     this.app.on(
       'beforeGetApplication',
       async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
-        await this.acquireBeforeGetApplicationLock();
+        await this.beforeGetApplicationMutex.runExclusive(async () => {
+          if (appManager.applications.has(name)) {
+            return;
+          }
 
-        if (appManager.applications.has(name)) {
-          this.releaseBeforeGetApplicationLock();
-          return;
-        }
+          const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+            filter: {
+              name,
+            },
+          })) as ApplicationModel | null;
 
-        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-          filter: {
-            name,
-          },
-        })) as ApplicationModel | null;
+          const instanceOptions = applicationRecord.get('options');
 
-        const instanceOptions = applicationRecord.get('options');
+          // skip standalone deployment application
+          if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+            return;
+          }
 
-        // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
-          this.releaseBeforeGetApplicationLock();
-          return;
-        }
+          if (!applicationRecord) {
+            return;
+          }
 
-        if (!applicationRecord) {
-          this.releaseBeforeGetApplicationLock();
-          return;
-        }
+          const subApp = await applicationRecord.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
 
-        const subApp = await applicationRecord.registerToMainApp(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
+          // must skip load on upgrade
+          if (!options?.upgrading) {
+            await subApp.load();
+          }
         });
-
-        // must skip load on upgrade
-        if (!options?.upgrading) {
-          await subApp.load();
-        }
-
-        this.releaseBeforeGetApplicationLock();
-        return;
       },
     );
 
