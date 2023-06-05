@@ -14,6 +14,23 @@ export const ReadPrettyFormActionInitializers = {
       children: [
         {
           type: 'item',
+          title: '{{t("Duplicate")}}',
+          component: 'DuplicateActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-action': 'duplicate',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              type: 'primary',
+            },
+          },
+          visible: () => {
+            const collection = useCollection();
+            return (collection as any).template !== 'view';
+          },
+        },
+        {
+          type: 'item',
           title: '{{t("Edit")}}',
           component: 'UpdateActionInitializer',
           schema: {

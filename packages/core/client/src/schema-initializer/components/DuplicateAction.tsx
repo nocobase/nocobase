@@ -6,7 +6,7 @@ import { css, cx } from '@emotion/css';
 import { useAPIClient, useBlockRequestContext } from '../../';
 import { actionDesignerCss } from './CreateRecordAction';
 import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
-import { message } from 'antd';
+import { Button, message } from 'antd';
 
 const DuplicatefieldsContext = createContext(null);
 
@@ -20,13 +20,14 @@ export const DuplicateAction = observer((props) => {
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
   const [visible, setVisible] = useState(false);
-  const { resource, service } = useBlockRequestContext();
-  const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props']
+  const { resource, service, __parent, block } = useBlockRequestContext();
+  const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props'];
   const { id } = useRecord();
   const ctx = useActionContext();
   const { name } = useCollection();
   const { t } = useTranslation();
   const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
+  const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = () => {
     fetchTemplateData(api, template, t).then(async (data) => {
       await resource.create({
@@ -35,22 +36,25 @@ export const DuplicateAction = observer((props) => {
         },
       });
       message.success(t('Saved successfully'));
-      await service?.refresh?.();
+      if (block === 'form') {
+        __parent?.service.refresh?.();
+      } else {
+        await service?.refresh?.();
+      }
     });
   };
   return (
     <div
-      className={cx(
-        actionDesignerCss,
-        css`
+      className={cx(actionDesignerCss, {
+        [css`
           .general-schema-designer {
             top: -10px;
             bottom: -10px;
             left: -10px;
             right: -10px;
           }
-        `,
-      )}
+        `]: isLinkBtn,
+      })}
     >
       <DuplicatefieldsContext.Provider
         value={{
@@ -60,17 +64,32 @@ export const DuplicateAction = observer((props) => {
         }}
       >
         <RecordProvider record={null}>
-          <a
-            onClick={async () => {
-              if (duplicateMode === 'quickDulicate') {
-                handelQuickDuplicate();
-              } else {
-                setVisible(true);
-              }
-            }}
-          >
-            {children || t('Duplicate')}
-          </a>
+          {isLinkBtn ? (
+            <a
+              onClick={async () => {
+                if (duplicateMode === 'quickDulicate') {
+                  handelQuickDuplicate();
+                } else {
+                  setVisible(true);
+                }
+              }}
+            >
+              {children || t('Duplicate')}
+            </a>
+          ) : (
+            <Button
+              {...props}
+              onClick={async () => {
+                if (duplicateMode === 'quickDulicate') {
+                  handelQuickDuplicate();
+                } else {
+                  setVisible(true);
+                }
+              }}
+            >
+              {children || t('Duplicate')}
+            </Button>
+          )}
           <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </ActionContext.Provider>
