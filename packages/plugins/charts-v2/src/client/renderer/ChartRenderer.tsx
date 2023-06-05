@@ -47,7 +47,7 @@ export type ChartRendererProps = {
     general: any;
     advanced: string;
   };
-  transformer?: {
+  transform?: {
     field: string;
     type: string;
     format: string;
@@ -62,7 +62,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData } = useContext(ChartConfigContext);
-  const { query, config, collection, transformer, configuring } = props;
+  const { query, config, collection, transform, configuring } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
 
@@ -121,7 +121,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
   const [library, type] = chartType.split('-');
   const chart = useChart(library, type);
   const Component = chart?.component;
-  const meta = useFieldTransformer(transformer);
+  const meta = useFieldTransformer(transform);
   const chartTansformer = chart?.transformer;
   const C = () =>
     Component ? (
@@ -131,7 +131,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...{ ...general, ...advanced, data: chartTansformer ? chartTansformer(data) : data, meta }} />
+        <Component {...{ data: chartTansformer ? chartTansformer(data) : data, meta, ...general, ...advanced }} />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />

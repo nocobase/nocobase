@@ -372,10 +372,10 @@ export const querySchema: ISchema = {
   },
 };
 
-export const transformerSchema: ISchema = {
+export const transformSchema: ISchema = {
   type: 'void',
   properties: {
-    transformer: getArraySchema(
+    transform: getArraySchema(
       {
         field: {
           type: 'string',

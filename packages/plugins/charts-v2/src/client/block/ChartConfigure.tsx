@@ -16,7 +16,7 @@ import {
   AutoComplete,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
-import { getConfigSchema, querySchema, transformerSchema } from './schemas/configure';
+import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { ISchema, FormConsumer } from '@formily/react';
 import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
@@ -67,7 +67,7 @@ export const ChartConfigure: React.FC<{
   Renderer: React.FC;
   Config: React.FC;
   Query: React.FC;
-  Transformer: React.FC;
+  Transform: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { visible, setVisible, current, data } = useContext(ChartConfigContext);
@@ -95,12 +95,12 @@ export const ChartConfigure: React.FC<{
       title={t('Configure chart')}
       open={visible}
       onOk={() => {
-        const { query, config, transformer, mode } = form.values;
+        const { query, config, transform, mode } = form.values;
         const rendererProps = {
           query,
           config,
           collection,
-          transformer,
+          transform,
           mode: mode || 'builder',
         };
         if (schema && schema['x-uid']) {
@@ -167,9 +167,9 @@ export const ChartConfigure: React.FC<{
                         children: <ChartConfigure.Config />,
                       },
                       {
-                        label: t('Transformer'),
-                        key: 'transformer',
-                        children: <ChartConfigure.Transformer />,
+                        label: t('Transform'),
+                        key: 'transform',
+                        children: <ChartConfigure.Transform />,
                       },
                     ]}
                   />
@@ -220,16 +220,16 @@ ChartConfigure.Renderer = function Renderer() {
   return (
     <FormConsumer>
       {(form) => {
-        // Any change of config and transformer will trigger rerender
+        // Any change of config and transform will trigger rerender
         // Change of query only trigger rerender when "Run query" button is clicked
         const config = cloneDeep(form.values.config);
-        const transformer = cloneDeep(form.values.transformer);
+        const transform = cloneDeep(form.values.transform);
         return (
           <ChartRenderer
             collection={collection}
             query={form.values.query}
             config={config}
-            transformer={transformer}
+            transform={transform}
             configuring={true}
             mode={form.values.mode}
           />
@@ -319,14 +319,14 @@ ChartConfigure.Config = function Config() {
   );
 };
 
-ChartConfigure.Transformer = function Transformer() {
+ChartConfigure.Transform = function Transform() {
   const { t } = useChartsTranslation();
   const fields = useFields();
   const useFieldTypeOptions = useFieldTypes(fields);
   const getChartFields = useChartFields(fields);
   return (
     <SchemaComponent
-      schema={transformerSchema}
+      schema={transformSchema}
       components={{ Select, FormItem, ArrayItems, Space, AutoComplete }}
       scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
     />

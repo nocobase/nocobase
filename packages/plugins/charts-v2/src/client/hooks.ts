@@ -173,7 +173,7 @@ export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
         };
       });
   };
-  const { dimensions = [], measures = [] } = query;
+  const { dimensions = [], measures = [] } = query || {};
   return {
     ...query,
     dimensions: appendAlias(dimensions),
@@ -181,8 +181,8 @@ export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
   };
 };
 
-export const useFieldTransformer = (transformer: ChartRendererProps['transformer']) => {
-  return (transformer || [])
+export const useFieldTransformer = (transform: ChartRendererProps['transform']) => {
+  return (transform || [])
     .filter((item) => item.field && item.type && item.format)
     .reduce((meta, item) => {
       const formatter = transformers[item.type][item.format];
