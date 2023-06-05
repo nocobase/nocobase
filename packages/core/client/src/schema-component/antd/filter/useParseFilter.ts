@@ -1,5 +1,5 @@
 import { SchemaOptionsContext, useForm, useField, Schema } from '@formily/react';
-import { mapValues, isArray, isPlainObject, isString, nth, get } from 'lodash';
+import { mapValues, isArray, isPlainObject, isString, nth, get, isNumber } from 'lodash';
 import { useContext, useEffect, useState, useRef, useCallback } from 'react';
 
 export function findDecoratorFilterDeep(schema: Schema) {
@@ -44,22 +44,31 @@ export function useParseFilter(filterParams, onChange?: () => void) {
           return parseFilter(value);
         }
         if (isString(value) && value.includes('$currentForm')) {
+          // keys 可能的字符串为 $currentFrom.id 或者 $currentFrom.someSource.id
           const keys = value.replaceAll(/\{|\}/g, '').split('.');
           const name = nth(keys, -2);
           const nameField = nth(keys, -1);
-          const formPath = [...field.path.segments];
-          if (name !== '$currentForm') {
+          let formPath = name === '$currentForm' ? [nameField] : keys.slice(1, -1);
+          let formPathField = keys.slice(1);
+          // 子表单数据
+          if (field.path.segments.some((k) => isNumber(k))) {
+            formPath = [...field.path.segments];
             formPath[formPath.length - 1] = name;
+            formPathField = [...formPath, nameField];
           }
+          // 表头数据
           const formValue = get(form.values, formPath);
-          let formValueField = formValue?.[nameField] || null;
-          if (isArray(formValue)) {
-            formValueField = formValue.map((v) => v?.[nameField]);
-          }
+          // 字段数据
+          const formValueField = isArray(formValue)
+            ? formValue.map((v) => v?.[nameField])
+            : get(form.values, formPathField);
 
           const formPathStr = formPath.join('.');
-          const formPathFieldStr = [...formPath, nameField].join('.');
-          if (formChangedPath.current === formPathStr || formChangedPath.current === formPathFieldStr) {
+          const formPathFieldStr = formPathField.join('.');
+          if (
+            !field.path.segments.includes(formChangedPath.current) &&
+            (formPathStr.includes(formChangedPath.current) || formPathFieldStr.includes(formChangedPath.current))
+          ) {
             onChange?.();
           }
           deps.current = {
@@ -67,7 +76,7 @@ export function useParseFilter(filterParams, onChange?: () => void) {
             [formPathStr]: formValue,
             [formPathFieldStr]: formValueField,
           };
-          return formValueField;
+          return formValueField || null;
         }
         return value;
       });
