@@ -1,7 +1,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './';
 import { AdjacencyListRepository } from '../tree-repository/adjacency-list-repository';
-import { HasManyRepository } from '@nocobase/database';
+import { BelongsToManyRepository, HasManyRepository } from '@nocobase/database';
 
 describe('tree test', function () {
   let db: Database;
@@ -17,7 +17,73 @@ describe('tree test', function () {
     await db.close();
   });
 
-  it('should list tree data in relation repository', async () => {
+  it('should list tree data in belongs to many relation repository', async () => {
+    const Categories = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    const A = db.collection({
+      name: 'A',
+      fields: [
+        {
+          type: 'string',
+          name: 'name',
+        },
+        {
+          type: 'belongsToMany',
+          name: 'categories',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const a1 = await A.repository.create({
+      values: {
+        name: 'a1',
+        categories: [
+          {
+            name: 'c1',
+            children: [
+              {
+                name: 'c11',
+              },
+              {
+                name: 'c12',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const RelationRepository = db.getRepository<BelongsToManyRepository>('A.categories', a1.get('id'));
+
+    const treeData = await RelationRepository.find({
+      tree: true,
+    });
+
+    const treeItem = treeData[0];
+    const treeItemData = treeItem.toJSON();
+
+    expect(treeItemData.children).toBeDefined();
+  });
+
+  it('should list tree data in has many relation repository', async () => {
     const Categories = db.collection({
       name: 'categories',
       tree: 'adjacency-list',
@@ -73,7 +139,9 @@ describe('tree test', function () {
 
     const RelationRepository = db.getRepository<HasManyRepository>('A.categories', a1.get('id'));
 
-    const treeData = await RelationRepository.find({});
+    const treeData = await RelationRepository.find({
+      tree: true,
+    });
 
     const treeItem = treeData[0];
     const treeItemData = treeItem.toJSON();

@@ -1,4 +1,4 @@
-import { MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
+import { HasOne, MultiAssociationAccessors, Sequelize, Transaction, Transactionable } from 'sequelize';
 import {
   CommonFindOptions,
   CountOptions,
@@ -13,7 +13,6 @@ import {
 import { updateModelByValues } from '../update-associations';
 import { UpdateGuard } from '../update-guard';
 import { RelationRepository, transaction } from './relation-repository';
-import { EagerLoadingTree } from '../eager-loading/eager-loading-tree';
 
 export type FindAndCountOptions = CommonFindOptions;
 
@@ -27,66 +26,28 @@ export abstract class MultipleRelationRepository extends RelationRepository {
   }
 
   async find(options?: FindOptions): Promise<any> {
-    const transaction = await this.getTransaction(options);
+    const targetRepository = this.targetCollection.repository;
 
-    const findOptions = {
-      ...this.extendFindOptions(
-        this.buildQueryOptions({
-          ...options,
-        }),
-      ),
-      subQuery: false,
+    const association = this.association as any;
+
+    const pivotAssoc = new HasOne(association.target, association.through.model, {
+      as: '_pivot_',
+      foreignKey: association.otherKey,
+      sourceKey: association.targetKey,
+    });
+
+    const appendFilter = {
+      fromFilter: true,
+      association: pivotAssoc,
+      where: {
+        [association.foreignKey]: this.sourceKeyValue,
+      },
     };
 
-    const getAccessor = this.accessors().get;
-    const sourceModel = await this.getSourceModel(transaction);
-
-    if (!sourceModel) return [];
-
-    if (findOptions.include && findOptions.include.length > 0) {
-      const ids = (
-        await sourceModel[getAccessor]({
-          ...findOptions,
-          includeIgnoreAttributes: false,
-          attributes: [this.targetKey()],
-          group: `${this.targetModel.name}.${this.targetKey()}`,
-          transaction,
-        })
-      ).map((row) => {
-        return { row, pk: row.get(this.targetKey()) };
-      });
-
-      if (ids.length == 0) {
-        return [];
-      }
-
-      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
-        model: this.targetModel,
-        rootAttributes: findOptions.attributes,
-        includeOption: findOptions.include,
-        rootOrder: findOptions.order,
-      });
-
-      await eagerLoadingTree.load(
-        ids.map((i) => i.pk),
-        transaction,
-      );
-
-      return eagerLoadingTree.root.instances;
-    }
-
-    const data = await sourceModel[getAccessor]({
-      ...findOptions,
-      transaction,
+    return targetRepository.find({
+      include: [appendFilter],
+      ...options,
     });
-
-    await this.collection.db.emitAsync('afterRepositoryFind', {
-      findOptions: options,
-      dataCollection: this.collection,
-      data,
-    });
-
-    return data;
   }
 
   async findAndCount(options?: FindAndCountOptions): Promise<[any[], number]> {
