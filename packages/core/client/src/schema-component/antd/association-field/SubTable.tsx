@@ -1,5 +1,5 @@
 import { ArrayField } from '@formily/core';
-import { observer, useFieldSchema } from '@formily/react';
+import { observer } from '@formily/react';
 import { Button } from 'antd';
 import { FormItem } from '@formily/antd';
 import { css } from '@emotion/css';
@@ -12,7 +12,13 @@ export const SubTable: any = observer((props: any) => {
   const { field } = useAssociationFieldContext<ArrayField>();
   const { t } = useTranslation();
   return (
-    <div>
+    <div
+      className={css`
+        .ant-formily-item-error-help {
+          display: none;
+        }
+      `}
+    >
       <FormItem feedbackLayout="none" labelStyle={{ display: 'none' }}>
         <Table
           className={css`
