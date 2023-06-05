@@ -3,7 +3,7 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { RecordProvider, ActionContext, useActionContext, useRecord, useCollection } from '../../';
 import { useTranslation } from 'react-i18next';
 import { css, cx } from '@emotion/css';
-import { useAPIClient, useBlockRequestContext } from '../../';
+import { useAPIClient, useBlockRequestContext, useDesignable } from '../../';
 import { actionDesignerCss } from './CreateRecordAction';
 import { fetchTemplateData } from '../../schema-component/antd/form-v2/Templates';
 import { Button, message } from 'antd';
@@ -14,11 +14,13 @@ export const useDuplicatefieldsContext = () => {
   return useContext(DuplicatefieldsContext);
 };
 
-export const DuplicateAction = observer((props) => {
+export const DuplicateAction = observer((props: any) => {
   const { children } = props;
   const field = useField();
   const fieldSchema = useFieldSchema();
   const api = useAPIClient();
+  const disabled: boolean = field.disabled || props.disabled;
+  const { designable } = useDesignable();
   const [visible, setVisible] = useState(false);
   const { resource, service, __parent, block } = useBlockRequestContext();
   const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props'];
@@ -66,11 +68,18 @@ export const DuplicateAction = observer((props) => {
         <RecordProvider record={null}>
           {isLinkBtn ? (
             <a
+              //@ts-ignore
+              disabled={disabled}
+              style={{
+                opacity: designable && field?.data?.hidden && 0.1,
+              }}
               onClick={async () => {
-                if (duplicateMode === 'quickDulicate') {
-                  handelQuickDuplicate();
-                } else {
-                  setVisible(true);
+                if (!disabled) {
+                  if (duplicateMode === 'quickDulicate') {
+                    handelQuickDuplicate();
+                  } else {
+                    setVisible(true);
+                  }
                 }
               }}
             >
@@ -78,6 +87,10 @@ export const DuplicateAction = observer((props) => {
             </a>
           ) : (
             <Button
+              disabled={disabled}
+              style={{
+                opacity: designable && field?.data?.hidden && 0.1,
+              }}
               {...props}
               onClick={async () => {
                 if (duplicateMode === 'quickDulicate') {
