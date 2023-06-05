@@ -61,11 +61,13 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
-  const { setData: setQueryData } = useContext(ChartConfigContext);
+  const { setData: setQueryData, current } = useContext(ChartConfigContext);
   const { query, config, collection, transform, configuring } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
 
+  const schema = useFieldSchema();
+  const currentSchema = schema || current?.schema;
   const fields = useFields(collection);
   const queryWithAlias = useQueryWithAlias(fields, query);
   const api = useAPIClient();
@@ -77,6 +79,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
           url: 'charts:query',
           method: 'POST',
           data: {
+            uid: currentSchema?.['x-uid'],
             collection,
             ...queryWithAlias,
           },

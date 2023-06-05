@@ -362,10 +362,28 @@ export const querySchema: ISchema = {
           },
         },
         cache: {
-          type: 'boolean',
-          title: '{{t("Enable cache")}}',
-          'x-decorator': 'FormItem',
-          'x-component': 'Switch',
+          type: 'object',
+          properties: {
+            enabled: {
+              type: 'boolean',
+              title: '{{t("Enable cache")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'Switch',
+            },
+            ttl: {
+              type: 'number',
+              title: '{{t("TTL (second)")}}',
+              'x-decorator': 'FormItem',
+              'x-component': 'InputNumber',
+              'x-component-props': {
+                defaultValue: 60,
+                min: 1,
+                style: {
+                  width: '100px',
+                },
+              },
+            },
+          },
         },
       },
     },

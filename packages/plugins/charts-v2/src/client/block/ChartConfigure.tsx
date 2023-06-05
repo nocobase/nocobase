@@ -135,7 +135,13 @@ export const ChartConfigure: React.FC<{
       }}
     >
       <Form layout="vertical" form={form}>
-        <Row gutter={8}>
+        <Row
+          gutter={8}
+          style={{
+            height: 'calc(100vh - 300px)',
+            overflow: 'scroll',
+          }}
+        >
           <Col span={15}>
             <Row>
               <Col

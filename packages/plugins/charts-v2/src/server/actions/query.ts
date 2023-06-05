@@ -1,8 +1,10 @@
 import { Context, Next } from '@nocobase/actions';
 import { formatter } from './formatter';
 import { FilterParser } from '@nocobase/database';
+import ChartsV2Plugin from '../plugin';
 
 type QueryParams = Partial<{
+  uid: string;
   collection: string;
   measures: {
     field: string;
@@ -23,6 +25,10 @@ type QueryParams = Partial<{
   sql: {
     fields?: string;
     clauses?: string;
+  };
+  cache: {
+    enabled: boolean;
+    ttl: number;
   };
 }>;
 
@@ -81,21 +87,52 @@ const parseBuilder = (ctx: Context, builder: QueryParams) => {
   };
 };
 
-export const query = async (ctx: Context, next: Next) => {
-  const { collection, measures, dimensions, orders, filter, limit, sql } = ctx.action.params.values as QueryParams;
+const queryData = async (ctx: Context, builder: QueryParams) => {
+  const { collection, measures, dimensions, orders, filter, limit, sql } = builder;
   const repository = ctx.db.getRepository(collection);
 
   if (!sql) {
-    ctx.body = await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
-    return next();
+    return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
   }
 
   const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
+  const [data] = await ctx.db.sequelize.query(statement);
+  return data;
+};
+
+export const query = async (ctx: Context, next: Next) => {
+  const {
+    uid,
+    collection,
+    measures,
+    dimensions,
+    orders,
+    filter,
+    limit,
+    sql,
+    cache: cacheConfig,
+  } = ctx.action.params.values as QueryParams;
+  console.log(uid);
+  const plugin = ctx.app.getPlugin('charts-v2') as ChartsV2Plugin;
+  if (cacheConfig?.enabled && uid) {
+    const cache = plugin.cache;
+    const data = await cache.get(uid);
+    if (data) {
+      console.log('cache hit');
+      ctx.body = data;
+      return next();
+    }
+  }
+
   try {
-    const [data] = await ctx.db.sequelize.query(statement);
+    const data = await queryData(ctx, { collection, measures, dimensions, orders, filter, limit, sql });
+    if (cacheConfig?.enabled && uid) {
+      const cache = plugin.cache;
+      await cache.set(uid, data, cacheConfig.ttl);
+    }
     ctx.body = data;
   } catch (err) {
-    ctx.app.logger.error('charts query', statement, err);
+    ctx.app.logger.error('charts query', err);
     ctx.throw(500, err);
   }
 
