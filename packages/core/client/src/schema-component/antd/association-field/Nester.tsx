@@ -4,7 +4,7 @@ import { ArrayField } from '@formily/core';
 import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
-import { Card, Divider, Tooltip } from 'antd';
+import { Button, Card, Divider, Tooltip } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AssociationFieldContext } from './context';
@@ -29,7 +29,7 @@ const ToManyNester = observer((props) => {
   const fieldSchema = useFieldSchema();
   const { options, field, allowMultiple, allowDissociate } = useAssociationFieldContext<ArrayField>();
   const { t } = useTranslation();
-  return (
+  return (field.value || []).length > 0 ? (
     <Card
       bordered={true}
       style={{ position: 'relative' }}
@@ -46,65 +46,71 @@ const ToManyNester = observer((props) => {
         }
         return (
           <>
-            {!field.readPretty && allowed && (
-              <div style={{ textAlign: 'right' }}>
-                {[
-                  field.editable && allowMultiple && (
-                    <Tooltip key={'add'} title={t('Add new')}>
-                      <PlusOutlined
-                        style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
-                        onClick={() => {
-                          action(() => {
-                            if (!Array.isArray(field.value)) {
-                              field.value = [];
-                            }
-                            spliceArrayState(field as any, {
-                              startIndex: index + 1,
-                              insertCount: 1,
-                            });
-                            field.value.splice(index + 1, 0, null);
-                            return field.onInput(field.value);
-                          });
-                        }}
-                      />
-                    </Tooltip>
-                  ),
-                  <Tooltip key={'remove'} title={t('Remove')}>
-                    <CloseOutlined
-                      style={{ zIndex: 1000, color: '#a8a3a3' }}
-                      onClick={() => {
-                        action(() => {
-                          spliceArrayState(field as any, {
-                            startIndex: index,
-                            deleteCount: 1,
-                          });
-                          field.value.splice(index, 1);
-                          return field.onInput(field.value);
+            <div style={{ textAlign: 'right' }}>
+              {field.editable && allowMultiple && (
+                <Tooltip key={'add'} title={t('Add new')}>
+                  <PlusOutlined
+                    style={{ zIndex: 1000, marginRight: '10px', color: '#a8a3a3' }}
+                    onClick={() => {
+                      action(() => {
+                        if (!Array.isArray(field.value)) {
+                          field.value = [];
+                        }
+                        spliceArrayState(field as any, {
+                          startIndex: index + 1,
+                          insertCount: 1,
                         });
-                      }}
-                    />
-                  </Tooltip>,
-                ]}
-              </div>
-            )}
+                        field.value.splice(index + 1, 0, null);
+                        return field.onInput(field.value);
+                      });
+                    }}
+                  />
+                </Tooltip>
+              )}
+              {!field.readPretty && allowed && (
+                <Tooltip key={'remove'} title={t('Remove')}>
+                  <CloseOutlined
+                    style={{ zIndex: 1000, color: '#a8a3a3' }}
+                    onClick={() => {
+                      action(() => {
+                        spliceArrayState(field as any, {
+                          startIndex: index,
+                          deleteCount: 1,
+                        });
+                        field.value.splice(index, 1);
+                        return field.onInput(field.value);
+                      });
+                    }}
+                  />
+                </Tooltip>
+              )}
+            </div>
             <RecursionField onlyRenderProperties basePath={field.address.concat(index)} schema={fieldSchema} />
             <Divider />
           </>
         );
       })}
-      {/* {field.editable && allowMultiple && (
-        <Button
-          type={'dashed'}
-          block
-          onClick={() => {
-            const result = field.value;
-            result.push({});
-            field.value = result;
-          }}
-        >
-          {t('Add new')}
-        </Button>
-      )} */}
     </Card>
+  ) : (
+    <>
+      {field.editable && allowMultiple && (
+        <Tooltip key={'add'} title={t('Add new')}>
+          <Button
+            type={'default'}
+            className={css`
+              border: 1px solid #f0f0f0 !important;
+              box-shadow: none;
+            `}
+            block
+            icon={<PlusOutlined />}
+            onClick={() => {
+              const result = field.value;
+              result.push({});
+              field.value = result;
+            }}
+          ></Button>
+        </Tooltip>
+      )}
+    </>
   );
 });

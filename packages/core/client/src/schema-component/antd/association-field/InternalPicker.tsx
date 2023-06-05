@@ -19,6 +19,7 @@ import { ActionContext } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
+import { RecordProvider } from '../../../';
 
 const useTableSelectorProps = () => {
   const field: any = useField();
@@ -159,14 +160,16 @@ export const InternalPicker = observer((props: any) => {
           />
         </div>
         {isAllowAddNew && (
-          <RecursionField
-            onlyRenderProperties
-            basePath={field.address}
-            schema={fieldSchema}
-            filterProperties={(s) => {
-              return s['x-component'] === 'Action';
-            }}
-          />
+          <RecordProvider record={null}>
+            <RecursionField
+              onlyRenderProperties
+              basePath={field.address}
+              schema={fieldSchema}
+              filterProperties={(s) => {
+                return s['x-component'] === 'Action';
+              }}
+            />
+          </RecordProvider>
         )}
       </Input.Group>
       <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
