@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
@@ -95,6 +95,16 @@ export const Action: ComposedAction = observer(
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
+    const renderTitle = useMemo(() => {
+      if (title) {
+        return title;
+      }
+      if (fieldSchema.title) {
+        return compile(fieldSchema.title);
+      }
+      return null;
+    }, [compile, fieldSchema.title, title]);
+
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -141,7 +151,7 @@ export const Action: ComposedAction = observer(
           component={tarComponent || Button}
           className={classnames(className, actionDesignerCss)}
         >
-          {title || compile(fieldSchema.title)}
+          {renderTitle}
           <Designer {...designerProps} />
         </SortableItem>
       );
