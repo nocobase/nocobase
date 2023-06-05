@@ -78,6 +78,7 @@ export const attachment: IField = {
             // pageSize: -1
           },
         },
+        manual: false,
         fieldNames: {
           label: 'title',
           value: 'name',
