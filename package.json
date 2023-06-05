@@ -53,7 +53,7 @@
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
     "dumi": "^2.2.0",
-    "dumi-theme-nocobase": "^0.2.8",
+    "dumi-theme-nocobase": "^0.2.9",
     "ghooks": "^2.0.4",
     "prettier": "^2.2.1",
     "pretty-format": "^24.0.0",
