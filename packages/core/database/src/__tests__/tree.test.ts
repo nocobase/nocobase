@@ -81,6 +81,37 @@ describe('tree test', function () {
     const treeItemData = treeItem.toJSON();
 
     expect(treeItemData.children).toBeDefined();
+
+    const a2 = await A.repository.create({
+      values: {
+        name: 'a2',
+        categories: [
+          {
+            name: 'c2',
+            children: [
+              {
+                name: 'c21',
+              },
+              {
+                name: 'c22',
+              },
+            ],
+          },
+        ],
+      },
+    });
+
+    const RelationRepository2 = db.getRepository<BelongsToManyRepository>('A.categories', a2.get('id'));
+
+    const treeData2 = await RelationRepository2.find({
+      tree: true,
+
+      filter: {
+        parentId: 1,
+      },
+    });
+
+    expect(treeData2).toHaveLength(0);
   });
 
   it('should list tree data in has many relation repository', async () => {

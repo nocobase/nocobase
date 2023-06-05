@@ -62,6 +62,13 @@ export class AdjacencyListRepository extends Repository {
       });
     }
 
+    if (findChildrenOptions.include) {
+      findChildrenOptions.include = lodash.castArray(findChildrenOptions.include).filter((include) => {
+        // @ts-ignore
+        return !include.isPivotFilter;
+      });
+    }
+
     const childInstances = await super.find(findChildrenOptions);
 
     const nodeMap = {};
@@ -143,15 +150,13 @@ export class AdjacencyListRepository extends Repository {
     const q = queryInterface.quoteIdentifier.bind(queryInterface);
 
     return `
-      WITH RECURSIVE cte AS (
-        SELECT ${q(primaryKey)}, ${q(foreignKeyField)}, 1 AS level
-        FROM ${collection.quotedTableName()}
-        WHERE ${q(foreignKeyField)} IN (${rootIds.join(',')})
-        UNION ALL
-        SELECT t.${q(primaryKey)}, t.${q(foreignKeyField)}, cte.level + 1 AS level
-        FROM ${collection.quotedTableName()} t
-               JOIN cte ON t.${q(foreignKeyField)} = cte.${q(primaryKey)}
-      )
+      WITH RECURSIVE cte AS (SELECT ${q(primaryKey)}, ${q(foreignKeyField)}, 1 AS level
+                             FROM ${collection.quotedTableName()}
+                             WHERE ${q(foreignKeyField)} IN (${rootIds.join(',')})
+                             UNION ALL
+                             SELECT t.${q(primaryKey)}, t.${q(foreignKeyField)}, cte.level + 1 AS level
+                             FROM ${collection.quotedTableName()} t
+                                    JOIN cte ON t.${q(foreignKeyField)} = cte.${q(primaryKey)})
       SELECT ${q(primaryKey)}, ${q(foreignKeyField)} as ${q(foreignKey)}, level
       FROM cte
     `;

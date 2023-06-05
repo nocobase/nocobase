@@ -38,6 +38,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const appendFilter = {
       fromFilter: true,
+      isPivotFilter: true,
       association: pivotAssoc,
       where: {
         [association.foreignKey]: this.sourceKeyValue,
