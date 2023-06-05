@@ -21,7 +21,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
-  CustomDropdownRender?: any;
+  CustomDropdownRender?: (v: any) =>any;
 };
 
 const InternalRemoteSelect = connect(

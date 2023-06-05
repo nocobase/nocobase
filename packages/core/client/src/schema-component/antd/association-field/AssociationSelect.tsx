@@ -32,27 +32,22 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   const targetCollection = getCollection(collectionField.target);
   const handleCreateAction = async (props) => {
     const { search: value, callBack } = props;
-    const { data } = await resource.create({
+    const {
+      data: { data },
+    } = await resource.create({
       values: {
         [field?.componentProps?.fieldNames?.label || 'id']: value,
       },
     });
     if (data) {
       if (['m2m', 'o2m'].includes(collectionField?.interface) && multiple !== false) {
-        const values = JSON.parse(JSON.stringify(form.values[fieldSchema.name] || []));
-        values.push({
-          ...data?.data,
-        });
-        setTimeout(() => {
-          form.setValuesIn(field.props.name, values);
-        }, 100);
+        const values = form.getValuesIn(field.path) || [];
+        values.push(data);
+        form.setValuesIn(field.path, values);
+        field.onInput(values);
       } else {
-        const value = {
-          ...data?.data,
-        };
-        setTimeout(() => {
-          form.setValuesIn(field.props.name, value);
-        }, 100);
+        form.setValuesIn(field.path, data);
+        field.onInput(data);
       }
       isFunction(callBack) && callBack?.();
       message.success(t('Saved successfully'));
@@ -63,7 +58,7 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
       <div>
         <span style={{ color: 'black' }}>
           {`${t('Not found') + '.'}`}
-          {t('Add') + ` ${props.search} ` + t('to') + ' Collection' + ` ${t(targetCollection.title)}? `}
+          {t('Add') + ` ${props.search} ` + t('to') + t('Collection') + ` ${t(targetCollection.title)}? `}
         </span>
         <Button type="primary" onClick={() => handleCreateAction(props)}>
           {t('Ok')}
