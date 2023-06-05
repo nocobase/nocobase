@@ -45,6 +45,19 @@ export const DuplicateAction = observer((props: any) => {
       }
     });
   };
+  const handelDuplicate = () => {
+    if (!disabled) {
+      if (duplicateFields?.length > 0) {
+        if (duplicateMode === 'quickDulicate') {
+          handelQuickDuplicate();
+        } else {
+          setVisible(true);
+        }
+      } else {
+        message.error(t('Please configure the duplicate fields'));
+      }
+    }
+  };
   return (
     <div
       className={cx(actionDesignerCss, {
@@ -65,7 +78,7 @@ export const DuplicateAction = observer((props: any) => {
           defaultTemplate: template,
         }}
       >
-        <RecordProvider record={null}>
+        <div>
           {isLinkBtn ? (
             <a
               //@ts-ignore
@@ -73,15 +86,7 @@ export const DuplicateAction = observer((props: any) => {
               style={{
                 opacity: designable && field?.data?.hidden && 0.1,
               }}
-              onClick={async () => {
-                if (!disabled) {
-                  if (duplicateMode === 'quickDulicate') {
-                    handelQuickDuplicate();
-                  } else {
-                    setVisible(true);
-                  }
-                }
-              }}
+              onClick={handelDuplicate}
             >
               {children || t('Duplicate')}
             </a>
@@ -92,13 +97,7 @@ export const DuplicateAction = observer((props: any) => {
                 opacity: designable && field?.data?.hidden && 0.1,
               }}
               {...props}
-              onClick={async () => {
-                if (duplicateMode === 'quickDulicate') {
-                  handelQuickDuplicate();
-                } else {
-                  setVisible(true);
-                }
-              }}
+              onClick={handelDuplicate}
             >
               {children || t('Duplicate')}
             </Button>
@@ -106,7 +105,7 @@ export const DuplicateAction = observer((props: any) => {
           <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </ActionContext.Provider>
-        </RecordProvider>
+        </div>
       </DuplicatefieldsContext.Provider>
     </div>
   );
