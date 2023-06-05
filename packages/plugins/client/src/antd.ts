@@ -1,8 +1,9 @@
 export const getAntdLocale = (lang) => {
   const lng = lang.replace('-', '_');
   try {
-    return import(`antd/es/locale/${lng}`);
+    require.resolve(`antd/lib/locale/${lng}`);
+    return require(`antd/lib/locale/${lng}`).default;
   } catch (error) {
-    return import(`antd/es/locale/en_US`);
+    return require(`antd/lib/locale/en_US`).default;
   }
 };

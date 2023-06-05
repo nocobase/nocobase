@@ -1,19 +1,16 @@
-import { error } from '@nocobase/utils/client';
-
-export const getCronLocale = async (lang: string) => {
+export const getCronLocale = (lang: string) => {
   const packageName = '@nocobase/client';
   let locale = null;
   try {
     const file = `${packageName}/src/locale`;
-    locale = (await import(file)).cron?.[lang];
-  } catch (err) {
-    error(err);
+    require.resolve(file);
+    locale = require(file).cron?.[lang];
+  } catch (error) {
     try {
       const file = `${packageName}/lib/locale`;
-      locale = (await import(file)).cron?.[lang];
-    } catch (err) {
-      error(err);
-    }
+      require.resolve(file);
+      locale = require(file).cron?.[lang];
+    } catch (error) {}
   }
   return locale;
 };

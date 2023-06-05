@@ -1,5 +1,4 @@
 import { PluginManager } from '@nocobase/server';
-import { error } from '@nocobase/utils/client';
 
 const arr2obj = (items: any[]) => {
   const obj = {};
@@ -9,7 +8,7 @@ const arr2obj = (items: any[]) => {
   return obj;
 };
 
-const getResource = async (packageName: string, lang: string) => {
+const getResource = (packageName: string, lang: string) => {
   const resources = [];
   const prefixes = ['src', 'lib'];
   const localeKeys = ['locale', 'client/locale', 'server/locale'];
@@ -17,26 +16,25 @@ const getResource = async (packageName: string, lang: string) => {
     for (const localeKey of localeKeys) {
       try {
         const file = `${packageName}/${prefix}/${localeKey}/${lang}`;
-        const resource = await import(file);
+        require.resolve(file);
+        const resource = require(file).default;
         resources.push(resource);
-      } catch (err) {
-        error(err);
-      }
+      } catch (error) {}
     }
     if (resources.length) {
       break;
     }
   }
   if (resources.length === 0 && lang.replace('-', '_') !== lang) {
-    return await getResource(packageName, lang.replace('-', '_'));
+    return getResource(packageName, lang.replace('-', '_'));
   }
   return arr2obj(resources);
 };
 
 export const getResourceLocale = async (lang: string, db: any) => {
   const resources = {};
-  const res = await getResource('@nocobase/client', lang);
-  const defaults = await getResource('@nocobase/client', 'zh-CN');
+  const res = getResource('@nocobase/client', lang);
+  const defaults = getResource('@nocobase/client', 'zh-CN');
   for (const key in defaults) {
     if (Object.prototype.hasOwnProperty.call(defaults, key)) {
       defaults[key] = key;
@@ -54,8 +52,8 @@ export const getResourceLocale = async (lang: string, db: any) => {
   });
   for (const plugin of plugins) {
     const packageName = PluginManager.getPackageName(plugin.get('name'));
-    const res = await getResource(packageName, lang);
-    const defaults = await getResource(packageName, 'zh-CN');
+    const res = getResource(packageName, lang);
+    const defaults = getResource(packageName, 'zh-CN');
     for (const key in defaults) {
       if (Object.prototype.hasOwnProperty.call(defaults, key)) {
         defaults[key] = key;

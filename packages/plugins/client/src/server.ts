@@ -99,7 +99,7 @@ export class ClientPlugin extends Plugin {
       actions: ['app:reboot', 'app:clearCache'],
     });
     const dialect = this.app.db.sequelize.getDialect();
-    const locales = await import('./locale');
+    const locales = require('./locale').default;
     const restartMark = resolve(process.cwd(), 'storage', 'restart');
     this.app.on('beforeStart', async () => {
       if (fs.existsSync(restartMark)) {
@@ -137,13 +137,13 @@ export class ClientPlugin extends Plugin {
             locales[lang].resources = await getResourceLocale(lang, ctx.db);
           }
           if (isEmpty(locales[lang].antd)) {
-            locales[lang].antd = await getAntdLocale(lang);
+            locales[lang].antd = getAntdLocale(lang);
           }
           if (isEmpty(locales[lang].cronstrue)) {
-            locales[lang].cronstrue = await getCronstrueLocale(lang);
+            locales[lang].cronstrue = getCronstrueLocale(lang);
           }
           if (isEmpty(locales[lang].cron)) {
-            locales[lang].cron = await getCronLocale(lang);
+            locales[lang].cron = getCronLocale(lang);
           }
           ctx.body = {
             lang,

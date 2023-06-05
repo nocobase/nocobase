@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import locale from '../locale';
+const log = require('debug')('i18next');
 
 export const i18n = i18next.createInstance();
 
