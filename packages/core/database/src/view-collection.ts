@@ -4,7 +4,6 @@ export class ViewCollection extends Collection {
   constructor(options: CollectionOptions, context: CollectionContext) {
     options.autoGenId = false;
     options.timestamps = false;
-    options.underscored = false;
 
     super(options, context);
   }

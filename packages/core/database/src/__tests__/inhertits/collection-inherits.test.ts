@@ -16,6 +16,60 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should not remove parent field reference map after child rewrite field', async () => {
+    const through = db.collection({
+      name: 'through',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const rootCollection = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'targets',
+          type: 'belongsToMany',
+          target: 'root-target',
+          through: 'through',
+          foreignKey: 'rootId',
+          otherKey: 'targetId',
+        },
+      ],
+    });
+
+    const rootTarget = db.collection({
+      name: 'root-target',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync({ force: true });
+
+    expect(db.referenceMap.getReferences('root-target')).toHaveLength(1);
+
+    const child = db.collection({
+      name: 'child',
+      inherits: ['root'],
+    });
+
+    const childTarget = db.collection({
+      name: 'child-target',
+      inherits: ['root-target'],
+    });
+
+    await child.setField('targets', {
+      name: 'targets',
+      type: 'belongsToMany',
+      target: 'child-target',
+      through: 'through',
+      foreignKey: 'rootId',
+      otherKey: 'targetId',
+    });
+
+    await db.sync();
+
+    expect(db.referenceMap.getReferences('root-target')).toHaveLength(1);
+  });
+
   it('should list data filtered by child type', async () => {
     const rootCollection = db.collection({
       name: 'root',
