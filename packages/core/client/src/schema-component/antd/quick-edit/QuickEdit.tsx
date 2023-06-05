@@ -50,17 +50,16 @@ export const QuickEdit = observer((props) => {
     <Popover content={content} trigger="click">
       <span style={{ maxHeight: 30, display: 'block', cursor: 'pointer' }}>
         <Tooltip
-          title={field.selfErrors}
+          title={field.selfErrors.length > 0 ? field.selfErrors : null}
           overlayInnerStyle={{ color: 'red' }}
           color="white"
-          visible={field.selfErrors.length > 0}
         >
           <EditOutlined
             style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
           />
         </Tooltip>
         <EllipsisWithTooltip ellipsis>{field.value}</EllipsisWithTooltip>
-        <FormItem {...props} wrapperStyle={{ visibility: 'hidden' }}>
+        <FormItem {...props} wrapperStyle={{ visibility: 'hidden' }} feedbackLayout="none">
           <CollectionField value={field.value ?? null} />
         </FormItem>
       </span>
