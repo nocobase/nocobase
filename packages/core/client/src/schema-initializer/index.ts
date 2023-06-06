@@ -7,6 +7,7 @@ export {
   useRecordCollectionDataSourceItems,
   createTableBlockSchema,
   createFilterFormBlockSchema,
+  createFormBlockSchema,
   useAssociatedTableColumnInitializerFields,
   useInheritsTableColumnInitializerFields,
   useTableColumnInitializerFields,

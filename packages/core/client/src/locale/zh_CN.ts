@@ -112,6 +112,7 @@ export default {
   "Enable SMS authentication": "启用短信登录和注册",
   "Sign out": "注销",
   "Cancel": "取消",
+  "Confirm": "确定",
   "Submit": "提交",
   "Close": "关闭",
   "Set the data scope": "设置数据范围",

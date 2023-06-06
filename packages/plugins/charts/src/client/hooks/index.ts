@@ -8,7 +8,7 @@ const useFieldsById = (queryId: number) => {
     const chartQueryList = ctx?.data;
     if (chartQueryList && Array.isArray(chartQueryList)) {
       const currentQuery = chartQueryList.find((chartQuery) => chartQuery.id === queryId);
-      setFields(currentQuery?.fields);
+      setFields(currentQuery?.fields || []);
     }
   }, [queryId]);
   return {

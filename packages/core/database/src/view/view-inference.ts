@@ -30,52 +30,84 @@ export class ViewFieldInference {
       schema: options.viewSchema,
     });
 
-    // @ts-ignore
-    return Object.fromEntries(
-      Object.entries(columns).map(([name, column]) => {
-        const usage = columnUsage[name];
+    const rawFields = [];
+    for (const [name, column] of Object.entries(columns)) {
+      const inferResult: any = { name };
 
-        if (usage) {
-          const collectionField = (() => {
-            const tableName = `${usage.table_schema ? `${usage.table_schema}.` : ''}${usage.table_name}`;
-            const collection = db.tableNameCollectionMap.get(tableName);
-            if (!collection) return false;
+      const usage = columnUsage[name];
 
-            const fieldValue = Object.values(collection.model.rawAttributes).find(
-              (field) => field.field === usage.column_name,
-            );
+      if (usage) {
+        const collection = db.tableNameCollectionMap.get(
+          `${usage.table_schema ? `${usage.table_schema}.` : ''}${usage.table_name}`,
+        );
 
-            if (!fieldValue) {
-              return false;
-            }
+        const collectionField = (() => {
+          if (!collection) return false;
 
-            // @ts-ignore
-            const fieldName = fieldValue?.fieldName;
+          const fieldAttribute = Object.values(collection.model.rawAttributes).find(
+            (field) => field.field === usage.column_name,
+          );
 
-            return collection.getField(fieldName);
-          })();
-
-          if (collectionField && collectionField.options.interface) {
-            return [
-              name,
-              {
-                name,
-                type: collectionField.type,
-                source: `${collectionField.collection.name}.${collectionField.name}`,
-              },
-            ];
+          if (!fieldAttribute) {
+            return false;
           }
+
+          // @ts-ignore
+          const fieldName = fieldAttribute.fieldName;
+
+          return collection.getField(fieldName);
+        })();
+
+        const belongsToAssociationField = (() => {
+          if (!collection) return false;
+
+          const field = Object.values(collection.model.rawAttributes).find(
+            (field) => field.field === usage.column_name,
+          );
+
+          if (!field) {
+            return false;
+          }
+
+          const association = Object.values(collection.model.associations).find(
+            (association) =>
+              association.associationType === 'BelongsTo' && association.foreignKey === (field as any).fieldName,
+          );
+
+          if (!association) {
+            return false;
+          }
+
+          return collection.getField(association.as);
+        })();
+
+        if (belongsToAssociationField) {
+          rawFields.push([
+            belongsToAssociationField.name,
+            {
+              name: belongsToAssociationField.name,
+              type: belongsToAssociationField.type,
+              source: `${belongsToAssociationField.collection.name}.${belongsToAssociationField.name}`,
+            },
+          ]);
         }
 
-        return [
-          name,
-          {
-            name,
-            ...this.inferToFieldType({ db, name, type: column.type }),
-          },
-        ];
-      }),
-    );
+        if (collectionField) {
+          if (collectionField.options.interface) {
+            inferResult.type = collectionField.type;
+            inferResult.source = `${collectionField.collection.name}.${collectionField.name}`;
+          }
+        }
+      }
+
+      if (!inferResult.type) {
+        Object.assign(inferResult, this.inferToFieldType({ db, name, type: column.type }));
+      }
+
+      rawFields.push([name, inferResult]);
+    }
+
+    return Object.fromEntries(rawFields);
   }
 
   static inferToFieldType(options: { db: Database; name: string; type: string }) {
