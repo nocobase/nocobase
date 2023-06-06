@@ -1,4 +1,4 @@
-import { Association, HasOne, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
+import { Association, HasOne, Includeable, Model, ModelStatic, Op, Transaction } from 'sequelize';
 import lodash from 'lodash';
 
 interface EagerLoadingNode {
@@ -10,6 +10,7 @@ interface EagerLoadingNode {
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
   order?: any;
+  where?: any;
 }
 
 export class EagerLoadingTree {
@@ -68,6 +69,7 @@ export class EagerLoadingTree {
           rawAttributes: lodash.cloneDeep(include.attributes),
           attributes: lodash.cloneDeep(include.attributes),
           parent: eagerLoadingTreeParent,
+          where: include.where,
           children: [],
         };
 
@@ -145,8 +147,15 @@ export class EagerLoadingTree {
           const foreignKey = association.foreignKey;
           const foreignKeyValues = node.parent.instances.map((instance) => instance.get(association.sourceKey));
 
+          let where: any = { [foreignKey]: foreignKeyValues };
+          if (node.where) {
+            where = {
+              [Op.and]: [where, node.where],
+            };
+          }
+
           const findOptions = {
-            where: { [foreignKey]: foreignKeyValues },
+            where,
             attributes: node.attributes,
             order: orderOption(association),
             transaction,

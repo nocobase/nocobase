@@ -143,7 +143,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
       await updateModelByValues(instance, values, {
         ...options,
         sanitized: true,
-        sourceModel: this.sourceInstance,
+        sourceModel: await this.getSourceModel(transaction),
         transaction,
       });
     }
