@@ -65,6 +65,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
         rootAttributes: findOptions.attributes,
         includeOption: findOptions.include,
         rootOrder: findOptions.order,
+        db: this.db,
       });
 
       await eagerLoadingTree.load(

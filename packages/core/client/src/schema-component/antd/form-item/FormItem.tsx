@@ -832,7 +832,7 @@ export function isFileCollection(collection: Collection) {
 FormItem.FilterFormDesigner = FilterFormDesigner;
 
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
-  const result = fieldSchema?.default || collectionField?.defaultValue;
+  const result = fieldSchema?.default ?? collectionField?.defaultValue;
   if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
     return moment(result);
   }
