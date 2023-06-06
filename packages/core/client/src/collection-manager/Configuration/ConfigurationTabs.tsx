@@ -11,7 +11,8 @@ import {
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Badge, Card, Dropdown, Menu, Modal, Tabs } from 'antd';
+import { Badge, Card, Dropdown, Modal, Tabs } from 'antd';
+import _ from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useAPIClient } from '../../api-client';
 import { SchemaComponent, SchemaComponentOptions, useCompile } from '../../schema-component';
@@ -181,28 +182,37 @@ export const ConfigurationTabs = () => {
       value: item.id,
     }));
   };
-  const menu = (item) => (
-    <Menu>
-      <Menu.Item key={'edit'}>
-        <SchemaComponent
-          schema={{
-            type: 'void',
-            properties: {
-              [uid()]: {
-                'x-component': 'EditCategory',
-                'x-component-props': {
-                  item: item,
+
+  const menu = _.memoize((item) => {
+    return {
+      items: [
+        {
+          key: 'edit',
+          label: (
+            <SchemaComponent
+              schema={{
+                type: 'void',
+                properties: {
+                  [uid()]: {
+                    'x-component': 'EditCategory',
+                    'x-component-props': {
+                      item: item,
+                    },
+                  },
                 },
-              },
-            },
-          }}
-        />
-      </Menu.Item>
-      <Menu.Item key="delete" onClick={() => remove(item.id)}>
-        {compile("{{t('Delete category')}}")}
-      </Menu.Item>
-    </Menu>
-  );
+              }}
+            />
+          ),
+        },
+        {
+          key: 'delete',
+          label: compile("{{t('Delete category')}}"),
+          onClick: () => remove(item.id),
+        },
+      ],
+    };
+  });
+
   return (
     <DndProvider>
       <Tabs
@@ -244,7 +254,7 @@ export const ConfigurationTabs = () => {
               key={item.id}
               closable={item.closable}
               closeIcon={
-                <Dropdown overlay={menu(item)}>
+                <Dropdown menu={menu(item)}>
                   <MenuOutlined />
                 </Dropdown>
               }

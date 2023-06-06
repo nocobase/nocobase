@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
-import { Button, Dropdown, Menu, Switch } from 'antd';
+import { Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
@@ -48,65 +48,82 @@ SchemaInitializer.Button = observer(
         insertAdjacent(insertPosition, wrap(schema), { onSuccess });
       }
     };
+
     const renderItems = (items: any) => {
       return items
-        .filter((v) => {
+        .filter((v: any) => {
           return v && (v?.visible ? v.visible() : true);
         })
-        ?.map((item, indexA) => {
+        ?.map((item: any, indexA: number) => {
           if (item.type === 'divider') {
-            return <Menu.Divider key={item.key || `item-${indexA}`} />;
+            return { type: 'divider', key: item.key || `item-${indexA}` };
           }
           if (item.type === 'item' && item.component) {
             const Component = findComponent(item.component);
             item.key = `${item.key || item.title}-${indexA}`;
             return (
-              Component && (
-                <SchemaInitializerItemContext.Provider
-                  key={item.key}
-                  value={{
-                    index: indexA,
-                    item,
-                    info: item,
-                    insert: insertSchema,
-                  }}
-                >
-                  <Component
-                    {...item}
-                    item={{
-                      ...item,
-                      title: compile(item.title),
+              Component && {
+                type: 'item',
+                key: item.key,
+                label: (
+                  <SchemaInitializerItemContext.Provider
+                    key={item.key}
+                    value={{
+                      index: indexA,
+                      item,
+                      info: item,
+                      insert: insertSchema,
                     }}
-                    insert={insertSchema}
-                  />
-                </SchemaInitializerItemContext.Provider>
-              )
+                  >
+                    <Component
+                      {...item}
+                      item={{
+                        ...item,
+                        title: compile(item.title),
+                      }}
+                      insert={insertSchema}
+                    />
+                  </SchemaInitializerItemContext.Provider>
+                ),
+              }
             );
           }
           if (item.type === 'itemGroup') {
             return (
-              !!item.children?.length && (
-                <Menu.ItemGroup key={item.key || `item-group-${indexA}`} title={compile(item.title)}>
-                  {renderItems(item.children)}
-                </Menu.ItemGroup>
-              )
+              !!item.children?.length && {
+                type: 'group',
+                key: item.key || `item-group-${indexA}`,
+                label: compile(item.title),
+                title: compile(item.title),
+                items: renderItems(item.children),
+              }
             );
           }
           if (item.type === 'subMenu') {
             return (
-              !!item.children?.length && (
-                <Menu.SubMenu
-                  key={item.key || `item-group-${indexA}`}
-                  title={compile(item.title)}
-                  popupClassName={menuItemGroupCss}
-                >
-                  {renderItems(item.children)}
-                </Menu.SubMenu>
-              )
+              !!item.children?.length && {
+                type: 'submenu',
+                key: item.key || `item-group-${indexA}`,
+                label: compile(item.title),
+                title: compile(item.title),
+                popupClassName: menuItemGroupCss,
+                items: renderItems(item.children),
+              }
             );
           }
         });
     };
+
+    const menuItems = useMemo<MenuProps['items']>(() => {
+      return renderItems(items);
+    }, [items]);
+
+    const menu = useMemo<MenuProps>(() => {
+      return {
+        style: { maxHeight: '60vh', overflowY: 'auto' },
+        items: menuItems,
+      };
+    }, [menuItems]);
 
     const buttonDom = (
       <Button
@@ -125,7 +142,7 @@ SchemaInitializer.Button = observer(
     if (!items.length) {
       return buttonDom;
     }
-    const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
+
     if (!designable && props.designable !== true) {
       return null;
     }
@@ -148,7 +165,7 @@ SchemaInitializer.Button = observer(
             setVisible(visible);
           }}
           {...dropdown}
-          overlay={menu}
+          menu={menu}
         >
           {component ? component : buttonDom}
         </Dropdown>
