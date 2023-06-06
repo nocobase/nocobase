@@ -15,7 +15,7 @@ exports[`TableV2 > basic 1`] = `
         </span>
       </button>
       <div
-        class="css-1w5c9g1"
+        class="css-1s4dz4u"
       >
         <div
           class="ant-table-wrapper"
@@ -55,7 +55,7 @@ exports[`TableV2 > basic 1`] = `
                       >
                         <tr>
                           <th
-                            class="ant-table-cell ant-table-selection-column css-869xl4"
+                            class="ant-table-cell ant-table-selection-column css-p6py3w"
                           >
                             <div
                               class="ant-table-selection"
@@ -80,14 +80,14 @@ exports[`TableV2 > basic 1`] = `
                             </div>
                           </th>
                           <th
-                            class="ant-table-cell css-869xl4"
+                            class="ant-table-cell css-p6py3w"
                           >
                             <div>
                               Name
                             </div>
                           </th>
                           <th
-                            class="ant-table-cell css-869xl4"
+                            class="ant-table-cell css-p6py3w"
                           >
                             <div>
                               Actions
@@ -136,13 +136,13 @@ exports[`TableV2 > basic 1`] = `
                           data-row-key="1"
                         >
                           <td
-                            class="ant-table-cell ant-table-selection-column css-10vikze"
+                            class="ant-table-cell ant-table-selection-column css-1omg1s0"
                           >
                             <div
-                              class="css-32spd1"
+                              class="css-xl522n"
                             >
                               <div
-                                class="css-1ke8y01"
+                                class="css-2mnx34"
                               >
                                 <div
                                   class="nb-table-index"
@@ -152,7 +152,7 @@ exports[`TableV2 > basic 1`] = `
                                 </div>
                               </div>
                               <div
-                                class="nb-origin-node css-1twf3hv"
+                                class="nb-origin-node css-cdm7wh"
                               >
                                 <label
                                   class="ant-checkbox-wrapper"
@@ -174,7 +174,7 @@ exports[`TableV2 > basic 1`] = `
                             </div>
                           </td>
                           <td
-                            class="ant-table-cell css-10vikze"
+                            class="ant-table-cell css-1omg1s0"
                           >
                             <div
                               class="ant-description-input"
@@ -183,7 +183,7 @@ exports[`TableV2 > basic 1`] = `
                             </div>
                           </td>
                           <td
-                            class="ant-table-cell css-10vikze"
+                            class="ant-table-cell css-1omg1s0"
                           >
                             <button
                               class="ant-btn ant-btn-default css-49hvkh"
@@ -200,13 +200,13 @@ exports[`TableV2 > basic 1`] = `
                           data-row-key="2"
                         >
                           <td
-                            class="ant-table-cell ant-table-selection-column css-10vikze"
+                            class="ant-table-cell ant-table-selection-column css-1omg1s0"
                           >
                             <div
-                              class="css-32spd1"
+                              class="css-xl522n"
                             >
                               <div
-                                class="css-1ke8y01"
+                                class="css-2mnx34"
                               >
                                 <div
                                   class="nb-table-index"
@@ -216,7 +216,7 @@ exports[`TableV2 > basic 1`] = `
                                 </div>
                               </div>
                               <div
-                                class="nb-origin-node css-1twf3hv"
+                                class="nb-origin-node css-cdm7wh"
                               >
                                 <label
                                   class="ant-checkbox-wrapper"
@@ -238,7 +238,7 @@ exports[`TableV2 > basic 1`] = `
                             </div>
                           </td>
                           <td
-                            class="ant-table-cell css-10vikze"
+                            class="ant-table-cell css-1omg1s0"
                           >
                             <div
                               class="ant-description-input"
@@ -247,7 +247,7 @@ exports[`TableV2 > basic 1`] = `
                             </div>
                           </td>
                           <td
-                            class="ant-table-cell css-10vikze"
+                            class="ant-table-cell css-1omg1s0"
                           >
                             <button
                               class="ant-btn ant-btn-default css-49hvkh"

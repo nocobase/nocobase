@@ -3,7 +3,7 @@
 exports[`Table > Table.Array 1`] = `
 <div>
   <div
-    class="css-vt72gv"
+    class="css-16m2tzg"
   >
     <div
       role="presentation"
@@ -83,10 +83,10 @@ exports[`Table > Table.Array 1`] = `
                           class="ant-table-cell ant-table-selection-column css-1cybln7"
                         >
                           <div
-                            class="css-kpm81e"
+                            class="css-lrkx9b"
                           >
                             <div
-                              class="css-1ke8y01"
+                              class="css-2mnx34"
                             >
                               <div
                                 class="nb-table-index"
@@ -96,7 +96,7 @@ exports[`Table > Table.Array 1`] = `
                               </div>
                             </div>
                             <div
-                              class="nb-origin-node css-1twf3hv"
+                              class="nb-origin-node css-cdm7wh"
                             >
                               <label
                                 class="ant-checkbox-wrapper"
@@ -135,10 +135,10 @@ exports[`Table > Table.Array 1`] = `
                           class="ant-table-cell ant-table-selection-column css-1cybln7"
                         >
                           <div
-                            class="css-kpm81e"
+                            class="css-lrkx9b"
                           >
                             <div
-                              class="css-1ke8y01"
+                              class="css-2mnx34"
                             >
                               <div
                                 class="nb-table-index"
@@ -148,7 +148,7 @@ exports[`Table > Table.Array 1`] = `
                               </div>
                             </div>
                             <div
-                              class="nb-origin-node css-1twf3hv"
+                              class="nb-origin-node css-cdm7wh"
                             >
                               <label
                                 class="ant-checkbox-wrapper"
@@ -187,10 +187,10 @@ exports[`Table > Table.Array 1`] = `
                           class="ant-table-cell ant-table-selection-column css-1cybln7"
                         >
                           <div
-                            class="css-kpm81e"
+                            class="css-lrkx9b"
                           >
                             <div
-                              class="css-1ke8y01"
+                              class="css-2mnx34"
                             >
                               <div
                                 class="nb-table-index"
@@ -200,7 +200,7 @@ exports[`Table > Table.Array 1`] = `
                               </div>
                             </div>
                             <div
-                              class="nb-origin-node css-1twf3hv"
+                              class="nb-origin-node css-cdm7wh"
                             >
                               <label
                                 class="ant-checkbox-wrapper"
@@ -326,7 +326,7 @@ exports[`Table > Table.Array 1`] = `
 exports[`Table > Table.RowSelection 1`] = `
 <div>
   <div
-    class="css-vt72gv"
+    class="css-16m2tzg"
   >
     <div
       role="presentation"
@@ -494,7 +494,7 @@ exports[`Table > Table.RowSelection 1`] = `
 exports[`Table > Table.Void 1`] = `
 <div>
   <div
-    class="css-vt72gv"
+    class="css-16m2tzg"
   >
     <div
       role="presentation"
@@ -678,7 +678,7 @@ exports[`Table > With Actions 1`] = `
     </span>
   </button>
   <div
-    class="css-vt72gv"
+    class="css-16m2tzg"
   >
     <div
       role="presentation"
