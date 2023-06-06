@@ -14,7 +14,7 @@ import { SnapshotBlockInitializersDetailItem } from './SnapshotBlock/SnapshotBlo
 import { SnapshotBlockProvider } from './SnapshotBlock/SnapshotBlockProvider';
 import { SnapshotRecordPicker } from './SnapshotRecordPicker';
 
-export default React.memo((props) => {
+const SnapshotField = React.memo((props) => {
   useEffect(() => {
     registerField(snapshot.group, snapshot.name as string, snapshot);
   }, []);
@@ -47,3 +47,6 @@ export default React.memo((props) => {
     </CollectionManagerProvider>
   );
 });
+SnapshotField.displayName = 'SnapshotField';
+
+export default SnapshotField;

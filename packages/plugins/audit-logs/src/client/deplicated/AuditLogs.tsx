@@ -50,46 +50,58 @@ const collection = {
   ],
 };
 
-const Username = observer(() => {
-  const field = useField<any>();
-  return <div>{field?.value?.nickname || field.value?.id}</div>;
-});
+const Username = observer(
+  () => {
+    const field = useField<any>();
+    return <div>{field?.value?.nickname || field.value?.id}</div>;
+  },
+  { displayName: 'Username' },
+);
 
-const Collection = observer(() => {
-  const field = useField<any>();
-  const { title, name } = field.value || {};
-  const compile = useCompile();
-  return <div>{title ? compile(title) : name}</div>;
-});
+const Collection = observer(
+  () => {
+    const field = useField<any>();
+    const { title, name } = field.value || {};
+    const compile = useCompile();
+    return <div>{title ? compile(title) : name}</div>;
+  },
+  { displayName: 'Collection' },
+);
 
-const Field = observer(() => {
-  const field = useField<any>();
-  const compile = useCompile();
-  if (!field.value) {
-    return null;
-  }
-  return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
-});
+const Field = observer(
+  () => {
+    const field = useField<any>();
+    const compile = useCompile();
+    if (!field.value) {
+      return null;
+    }
+    return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
+  },
+  { displayName: 'Field' },
+);
 
-const Value = observer(() => {
-  const field = useField<any>();
-  const record = ArrayTable.useRecord();
-  if (record.field?.uiSchema) {
-    return (
-      <FormProvider>
-        <SchemaComponent
-          schema={{
-            name: record.field.name,
-            ...record.field?.uiSchema,
-            default: field.value,
-            'x-read-pretty': true,
-          }}
-        />
-      </FormProvider>
-    );
-  }
-  return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
-});
+const Value = observer(
+  () => {
+    const field = useField<any>();
+    const record = ArrayTable.useRecord();
+    if (record.field?.uiSchema) {
+      return (
+        <FormProvider>
+          <SchemaComponent
+            schema={{
+              name: record.field.name,
+              ...record.field?.uiSchema,
+              default: field.value,
+              'x-read-pretty': true,
+            }}
+          />
+        </FormProvider>
+      );
+    }
+    return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
+  },
+  { displayName: 'Value' },
+);
 
 const IsAssociationBlock = createContext(null);
 
@@ -446,52 +458,55 @@ export const AuditLogs: any = () => {
   );
 };
 
-AuditLogs.Decorator = observer((props: any) => {
-  const parent = useCollection();
-  const record = useRecord();
-  const { interfaces } = useContext(CollectionManagerContext);
-  let filter = props?.params?.filter;
-  if (parent.name) {
-    const filterByTk = record?.[parent.filterTargetKey || 'id'];
-    if (filter) {
-      filter = {
-        $and: [
-          filter,
-          {
-            collectionName: parent.name,
-            recordId: `${filterByTk}`,
-          },
-        ],
-      };
-    } else {
-      filter = {
-        collectionName: parent.name,
-        recordId: `${filterByTk}`,
-      };
+AuditLogs.Decorator = observer(
+  (props: any) => {
+    const parent = useCollection();
+    const record = useRecord();
+    const { interfaces } = useContext(CollectionManagerContext);
+    let filter = props?.params?.filter;
+    if (parent.name) {
+      const filterByTk = record?.[parent.filterTargetKey || 'id'];
+      if (filter) {
+        filter = {
+          $and: [
+            filter,
+            {
+              collectionName: parent.name,
+              recordId: `${filterByTk}`,
+            },
+          ],
+        };
+      } else {
+        filter = {
+          collectionName: parent.name,
+          recordId: `${filterByTk}`,
+        };
+      }
     }
-  }
-  const defaults = {
-    collection: 'auditLogs',
-    resource: 'auditLogs',
-    action: 'list',
-    params: {
-      pageSize: 20,
-      appends: ['collection', 'user'],
-      ...props.params,
-      filter,
-      sort: '-createdAt',
-    },
-    rowKey: 'id',
-    showIndex: true,
-    dragSort: false,
-  };
-  return (
-    <IsAssociationBlock.Provider value={!!parent.name}>
-      <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
-        <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-      </CollectionManagerProvider>
-    </IsAssociationBlock.Provider>
-  );
-});
+    const defaults = {
+      collection: 'auditLogs',
+      resource: 'auditLogs',
+      action: 'list',
+      params: {
+        pageSize: 20,
+        appends: ['collection', 'user'],
+        ...props.params,
+        filter,
+        sort: '-createdAt',
+      },
+      rowKey: 'id',
+      showIndex: true,
+      dragSort: false,
+    };
+    return (
+      <IsAssociationBlock.Provider value={!!parent.name}>
+        <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+          <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
+        </CollectionManagerProvider>
+      </IsAssociationBlock.Provider>
+    );
+  },
+  { displayName: 'AuditLogs.Decorator' },
+);
 
 AuditLogs.Designer = AuditLogsDesigner;

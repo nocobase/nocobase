@@ -13,7 +13,7 @@ import { MapInitializer } from './initialize';
 import { useMapTranslation } from './locale';
 import './locale';
 
-export default React.memo((props) => {
+const MapProvider = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   const { t } = useMapTranslation();
   return (
@@ -45,3 +45,6 @@ export default React.memo((props) => {
     </CurrentAppInfoProvider>
   );
 });
+MapProvider.displayName = 'MapProvider';
+
+export default MapProvider;
