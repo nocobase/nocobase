@@ -17,7 +17,7 @@ export const UploadActionInitializer = (props) => {
       icon: 'UploadOutlined',
     },
     properties: {
-      modal: {
+      drawer: {
         type: 'void',
         title: '{{ t("Upload files") }}',
         'x-component': 'Action.Container',

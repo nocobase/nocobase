@@ -270,7 +270,7 @@ export default {
           uiSchema: {
             'x-uid': '5xf7izxjny5',
             name: '9az9003ijcm',
-            'x-component-props': { multiple: true, action: 'attachments:upload' },
+            'x-component-props': { multiple: true, action: 'attachments:create' },
             type: 'array',
             'x-component': 'Upload.Attachment',
             title: '附件',
@@ -660,7 +660,7 @@ export default {
           uiSchema: {
             'x-uid': 'wosew16td91',
             name: 'p82ihvtkxtf',
-            'x-component-props': { multiple: true, action: 'attachments:upload' },
+            'x-component-props': { multiple: true, action: 'attachments:create' },
             type: 'array',
             'x-component': 'Upload.Attachment',
             title: '附件',

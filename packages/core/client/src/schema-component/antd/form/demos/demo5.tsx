@@ -69,10 +69,13 @@ export default observer(() => {
     },
   };
 
-  const Output = observer(() => {
-    const form = useForm();
-    return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
-  });
+  const Output = observer(
+    () => {
+      const form = useForm();
+      return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
+    },
+    { displayName: 'Output' },
+  );
 
   const useSubmit = () => {
     const form = useForm();

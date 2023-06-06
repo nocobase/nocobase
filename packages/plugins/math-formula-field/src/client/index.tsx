@@ -6,7 +6,7 @@ import { MathFormula } from './MathFormula';
 
 registerField(mathFormula.group, 'mathFormula', mathFormula);
 
-export default React.memo((props) => {
+const MathFormulaField = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   const { t } = useTranslation();
   return (
@@ -29,3 +29,6 @@ export default React.memo((props) => {
     </SchemaComponentOptions>
   );
 });
+MathFormulaField.displayName = 'MathFormulaField';
+
+export default MathFormulaField;

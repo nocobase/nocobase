@@ -39,3 +39,4 @@ export const GraphCollectionProvider = React.memo((props) => {
     </SettingsCenterProvider>
   );
 });
+GraphCollectionProvider.displayName = 'GraphCollectionProvider';

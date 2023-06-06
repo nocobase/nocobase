@@ -49,7 +49,7 @@ function createLocalServerUpdateHook(app, storages) {
 }
 
 function getDocumentRoot(storage): string {
-  const { documentRoot = 'uploads' } = storage.options || {};
+  const { documentRoot = 'storage/uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
@@ -126,7 +126,7 @@ export default {
   },
   defaults() {
     const { LOCAL_STORAGE_DEST, LOCAL_STORAGE_BASE_URL, APP_PORT } = process.env;
-    const documentRoot = LOCAL_STORAGE_DEST || 'uploads';
+    const documentRoot = LOCAL_STORAGE_DEST || 'storage/uploads';
     return {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,

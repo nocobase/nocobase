@@ -9,7 +9,7 @@ const mock = new MockAdapter(apiClient.axios);
 
 const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
 
-mock.onPost('/attachments:upload').reply(async (config) => {
+mock.onPost('/attachments:create').reply(async (config) => {
   const total = 1024; // mocked file size
   for (const progress of [0, 0.2, 0.4, 0.6, 0.8, 1]) {
     await sleep(500);
