@@ -106,7 +106,7 @@ describe('action', () => {
       });
 
       const response = await agent.resource('attachments').create({
-        sourceField: 'customers.avatar',
+        attachmentField: 'customers.avatar',
         file: path.resolve(__dirname, './files/image.jpg'),
       });
       expect(response.status).toBe(400);
@@ -137,7 +137,7 @@ describe('action', () => {
       // await db.sync();
 
       const response = await agent.resource('attachments').create({
-        sourceField: 'customers.avatar',
+        attachmentField: 'customers.avatar',
         file: path.resolve(__dirname, './files/image.jpg'),
       });
 
@@ -175,7 +175,7 @@ describe('action', () => {
       });
 
       const { body } = await agent.resource('attachments').create({
-        sourceField: 'customers.file',
+        attachmentField: 'customers.file',
         file: path.resolve(__dirname, './files/text.txt'),
       });
 
