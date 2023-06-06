@@ -1,8 +1,8 @@
-import path from 'path';
 import multer from '@koa/multer';
 import { Context, Next } from '@nocobase/actions';
+import path from 'path';
 
-import { FILE_FIELD_NAME, LIMIT_FILES, DEFAULT_MAX_FILE_SIZE } from '../constants';
+import { DEFAULT_MAX_FILE_SIZE, FILE_FIELD_NAME, LIMIT_FILES } from '../constants';
 import * as Rules from '../rules';
 import { getStorageConfig } from '../storages';
 
@@ -43,48 +43,23 @@ function getFileData(ctx: Context) {
     mimetype: file.mimetype,
     // @ts-ignore
     meta: ctx.request.body,
+    storageId: storage.id,
     ...(storageConfig.getFileData ? storageConfig.getFileData(file) : {}),
   };
 }
 
-export async function attachmentCreate(ctx: Context, next: Next) {
-  const { sourceField } = ctx.action.params;
-
-  // NOTE:
-  // 1. 存储引擎选择依赖于字段定义
-  // 2. 上传参数中通过字段名找到字段配置对应的 storage
-  // 3. 未配置时按 storages 表的默认项
-  // 4. 插件初始化后应提示用户添加至少一个存储引擎并设为默认
-
-  const StorageRepo = ctx.db.getRepository('storages');
-  // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
-  const storage = await StorageRepo.findOne({
-    filter: sourceField ? { name: ctx.db.getFieldByPath(sourceField).options.storage } : { default: true }
-  });
-
-  // 传递已取得的存储引擎，避免重查
-  ctx.storage = storage;
-
-  await multipart(ctx, async () => {
-    const values = getFileData(ctx);
-
-    const attachment = await storage.createAttachment(values, { context: ctx });
-
-    ctx.body = attachment;
-
-    await next();
-  });
-}
-
 export async function templateCollectionCreate(ctx: Context, next: Next) {
   const { resourceName, actionName } = ctx.action;
+  const { sourceField } = ctx.action.params;
   const collection = ctx.db.getCollection(resourceName);
+
   if (collection?.options?.template !== 'file' || !['upload', 'create'].includes(actionName)) {
     return next();
   }
 
+  const storageName = ctx.db.getFieldByPath(sourceField)?.options?.storage || collection.options.storage;
   const StorageRepo = ctx.db.getRepository('storages');
-  const storage = await StorageRepo.findOne({ filter: { name: collection.options.storage } });
+  const storage = await StorageRepo.findOne({ filter: storageName ? { name: storageName } : { default: true } });
 
   ctx.storage = storage;
 

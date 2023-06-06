@@ -1,14 +1,7 @@
-import { attachmentCreate, templateCollectionCreate } from './attachments';
+import actions from '@nocobase/actions';
+import { templateCollectionCreate } from './attachments';
 
 export default function ({ app }) {
-  app.resource({
-    name: 'attachments',
-    actions: {
-      create: attachmentCreate,
-      // @Deprecated
-      upload: attachmentCreate,
-    },
-  });
-
   app.resourcer.use(templateCollectionCreate);
+  app.resourcer.registerActionHandler('upload', actions.create);
 }
