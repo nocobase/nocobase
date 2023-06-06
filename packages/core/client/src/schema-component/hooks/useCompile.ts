@@ -1,5 +1,5 @@
 import { Schema, SchemaExpressionScopeContext, SchemaOptionsContext } from '@formily/react';
-import { useContext } from 'react';
+import { useContext, isValidElement } from 'react';
 
 const i18nMap = {};
 const componentMap = {};
@@ -31,7 +31,7 @@ export const useCompile = () => {
     }
 
     // source is Component Object, for example: { 'x-component': "Cascader", type: "array", title: "所属地区(行政区划)" }
-    if (source && typeof source === 'object' && source['x-component']) {
+    if (source && typeof source === 'object' && !isValidElement(source)) {
       try {
         componentMap[JSON.stringify(source)] =
           componentMap[JSON.stringify(source)] || Schema.compile(source, { ...options.scope, ...scope, ...ext });
