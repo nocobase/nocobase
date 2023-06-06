@@ -1,7 +1,7 @@
 import { Database } from '../database';
 import { mockDatabase } from './';
 import { AdjacencyListRepository } from '../tree-repository/adjacency-list-repository';
-import { BelongsToManyRepository, HasManyRepository } from '@nocobase/database';
+import { BelongsToManyRepository, HasManyRepository } from '..';
 
 describe('tree test', function () {
   let db: Database;
