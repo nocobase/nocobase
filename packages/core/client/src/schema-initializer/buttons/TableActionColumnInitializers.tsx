@@ -84,20 +84,6 @@ export const TableActionColumnInitializers = (props: any) => {
           children: [
             {
               type: 'item',
-              title: t('Duplicate'),
-              component: 'DuplicateActionInitializer',
-              schema: {
-                'x-component': 'Action.Link',
-                'x-action': 'duplicate',
-                'x-decorator': 'ACLActionProvider',
-              },
-              visible: () => {
-                const collection = useCollection();
-                return (collection as any).template !== 'view';
-              },
-            },
-            {
-              type: 'item',
               title: t('View'),
               component: 'ViewActionInitializer',
               schema: {
@@ -116,7 +102,6 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },
@@ -142,6 +127,19 @@ export const TableActionColumnInitializers = (props: any) => {
                   'x-decorator': 'ACLActionProvider',
                 },
               },
+            {
+              type: 'item',
+              title: t('Duplicate'),
+              component: 'DuplicateActionInitializer',
+              schema: {
+                'x-component': 'Action.Link',
+                'x-action': 'duplicate',
+                'x-decorator': 'ACLActionProvider',
+              },
+              visible: () => {
+                return (collection as any).template !== 'view';
+              },
+            },
           ],
         },
         {
@@ -225,7 +223,6 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },
@@ -251,7 +248,6 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },

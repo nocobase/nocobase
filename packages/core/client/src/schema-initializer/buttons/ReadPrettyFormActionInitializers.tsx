@@ -1,5 +1,9 @@
 import { useCollection } from '../..';
 
+const useVisibleCollection = () => {
+  const collection = useCollection();
+  return collection.template !== 'view';
+};
 // 表单的操作配置
 export const ReadPrettyFormActionInitializers = {
   title: '{{t("Configure actions")}}',
@@ -14,6 +18,29 @@ export const ReadPrettyFormActionInitializers = {
       children: [
         {
           type: 'item',
+          title: '{{t("Edit")}}',
+          component: 'UpdateActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              type: 'primary',
+            },
+          },
+          visible: useVisibleCollection,
+        },
+        {
+          type: 'item',
+          title: '{{t("Delete")}}',
+          component: 'DestroyActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-decorator': 'ACLActionProvider',
+          },
+          visible: useVisibleCollection,
+        },
+        {
+          type: 'item',
           title: '{{t("Duplicate")}}',
           component: 'DuplicateActionInitializer',
           schema: {
@@ -24,39 +51,7 @@ export const ReadPrettyFormActionInitializers = {
               type: 'primary',
             },
           },
-          visible: () => {
-            const collection = useCollection();
-            return (collection as any).template !== 'view';
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Edit")}}',
-          component: 'UpdateActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
-            'x-component-props': {
-              type: 'primary',
-            },
-          },
-          visible: () => {
-            const collection = useCollection();
-            return (collection as any).template !== 'view';
-          },
-        },
-        {
-          type: 'item',
-          title: '{{t("Delete")}}',
-          component: 'DestroyActionInitializer',
-          schema: {
-            'x-component': 'Action',
-            'x-decorator': 'ACLActionProvider',
-          },
-          visible: () => {
-            const collection = useCollection();
-            return (collection as any).template !== 'view';
-          },
+          visible: useVisibleCollection,
         },
         {
           type: 'item',
@@ -149,10 +144,7 @@ export const ReadPrettyFormActionInitializers = {
               useProps: '{{ useCustomizeUpdateActionProps }}',
             },
           },
-          visible: () => {
-            const collection = useCollection();
-            return (collection as any).template !== 'view';
-          },
+          visible: useVisibleCollection,
         },
         {
           type: 'item',
@@ -176,10 +168,7 @@ export const ReadPrettyFormActionInitializers = {
               useProps: '{{ useCustomizeRequestActionProps }}',
             },
           },
-          visible: () => {
-            const collection = useCollection();
-            return (collection as any).template !== 'view';
-          },
+          visible: useVisibleCollection,
         },
       ],
     },
