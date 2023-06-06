@@ -1,6 +1,8 @@
 import { Context, utils } from '@nocobase/actions';
+
 import Plugin from '../..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
+import ManualInstruction from '.';
 
 export async function submit(context: Context, next) {
   const repository = utils.getRepositoryFromParams(context);
@@ -12,60 +14,58 @@ export async function submit(context: Context, next) {
   }
 
   const plugin: Plugin = context.app.pm.get('workflow') as Plugin;
+  const instruction = plugin.instructions.get('manual') as ManualInstruction;
 
-  const userJob = await context.db.sequelize.transaction(async (transaction) => {
-    const instance = await repository.findOne({
-      filterByTk,
-      // filter: {
-      //   userId: currentUser?.id
-      // },
-      appends: ['job', 'node', 'execution', 'workflow'],
-      context,
-      transaction,
-    });
-
-    if (!instance) {
-      return context.throw(404);
-    }
-
-    const { forms = {} } = instance.node.config;
-    const [form] = Object.keys(values.result ?? {});
-
-    // NOTE: validate status
-    if (
-      instance.status !== JOB_STATUS.PENDING ||
-      instance.job.status !== JOB_STATUS.PENDING ||
-      instance.execution.status !== EXECUTION_STATUS.STARTED ||
-      !instance.workflow.enabled ||
-      !forms[form]?.actions?.includes(values.status)
-    ) {
-      return context.throw(400);
-    }
-
-    instance.execution.workflow = instance.workflow;
-    const processor = plugin.createProcessor(instance.execution, { transaction });
-    await processor.prepare();
-
-    const assignees = processor.getParsedValue(instance.node.config.assignees ?? []);
-    if (!assignees.includes(currentUser.id) || instance.userId !== currentUser.id) {
-      return context.throw(403);
-    }
-
-    // NOTE: validate assignee
-    await instance.update(
-      {
-        status: values.status,
-        result: values.result,
-      },
-      {
-        transaction,
-      },
-    );
-
-    return instance;
+  const userJob = await repository.findOne({
+    filterByTk,
+    // filter: {
+    //   userId: currentUser?.id
+    // },
+    appends: ['job', 'node', 'execution', 'workflow'],
+    context,
   });
 
-  // await transaction.commit();
+  if (!userJob) {
+    return context.throw(404);
+  }
+
+  const { forms = {} } = userJob.node.config;
+  const [formKey] = Object.keys(values.result ?? {});
+
+  // NOTE: validate status
+  if (
+    userJob.status !== JOB_STATUS.PENDING ||
+    userJob.job.status !== JOB_STATUS.PENDING ||
+    userJob.execution.status !== EXECUTION_STATUS.STARTED ||
+    !userJob.workflow.enabled ||
+    !forms[formKey]?.actions?.includes(values.status)
+  ) {
+    return context.throw(400);
+  }
+
+  userJob.execution.workflow = userJob.workflow;
+  const processor = plugin.createProcessor(userJob.execution);
+  await processor.prepare();
+
+  // NOTE: validate assignee
+  const assignees = processor.getParsedValue(userJob.node.config.assignees ?? []);
+  if (!assignees.includes(currentUser.id) || userJob.userId !== currentUser.id) {
+    return context.throw(403);
+  }
+
+  userJob.set({
+    status: values.status,
+    result: values.status ? values.result : Object.assign(userJob.result ?? {}, values.result),
+  });
+
+  const handler = instruction.formTypes.get(forms[formKey].type);
+  if (handler && userJob.status) {
+    await handler.call(instruction, userJob, forms[formKey], processor);
+  }
+
+  await userJob.save({ transaction: processor.transaction });
+
+  await processor.exit(userJob.job);
 
   context.body = userJob;
   context.status = 202;

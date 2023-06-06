@@ -37,7 +37,7 @@ export const AssociationFieldProvider = observer(
         // Nester 子表单时，如果没数据初始化一个 [null] 的占位
         if (currentMode === 'Nester' && Array.isArray(field.value)) {
           if (field.value.length === 0 && ['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-            field.value = [null];
+            field.value = [{}];
           }
         }
         setLoading(false);
@@ -47,7 +47,7 @@ export const AssociationFieldProvider = observer(
         if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
           field.value = {};
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-          field.value = [null];
+          field.value = [{}];
         }
       }
       setLoading(false);

@@ -61,7 +61,7 @@ const ToManyNester = observer(
                             startIndex: index + 1,
                             insertCount: 1,
                           });
-                          field.value.splice(index + 1, 0, null);
+                          field.value.splice(index + 1, 0, {});
                           return field.onInput(field.value);
                         });
                       }}

@@ -9,7 +9,8 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/server": "0.9.4-alpha.2"
+    "@nocobase/server": "0.9.4-alpha.2",
+    "async-mutex": "^0.3.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
