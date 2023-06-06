@@ -12,7 +12,7 @@ const schema = {
     [uid()]: {
       'x-component': 'Action.Drawer',
       type: 'void',
-      title: '{{t("File storages")}}',
+      title: '{{t("File manager")}}',
       properties: {
         storageSchema,
       },
@@ -31,7 +31,7 @@ export const FileStorageShortcut = () => {
           setVisible(true);
         }}
         icon={<FileOutlined />}
-        title={t('File storages')}
+        title={t('File manager')}
       />
       <SchemaComponent components={{ StorageOptions }} schema={schema} />
     </ActionContext.Provider>
