@@ -11,7 +11,6 @@ import { useCollectionField } from './hooks';
 type Props = {
   component: any;
   children?: React.ReactNode;
-  readPretty?: boolean;
 };
 
 // TODO: 初步适配
@@ -57,10 +56,11 @@ const InternalField: React.FC = (props: Props) => {
     if (fieldSchema['x-disabled'] === true) {
       field.disabled = true;
     }
-    if (fieldSchema['x-read-pretty'] === true || uiSchema['x-read-pretty'] === true || props.readPretty) {
+    if (fieldSchema['x-read-pretty'] === true || uiSchema['x-read-pretty'] === true) {
       field.readPretty = true;
     }
     setRequired();
+    console.log(field.required)
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};
