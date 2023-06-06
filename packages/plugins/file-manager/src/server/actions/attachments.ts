@@ -48,7 +48,7 @@ function getFileData(ctx: Context) {
   };
 }
 
-export async function templateCollectionCreate(ctx: Context, next: Next) {
+export async function middleware(ctx: Context, next: Next) {
   const { resourceName, actionName } = ctx.action;
   const { attachmentField } = ctx.action.params;
   const collection = ctx.db.getCollection(resourceName);
@@ -74,7 +74,7 @@ export async function templateCollectionCreate(ctx: Context, next: Next) {
   });
 }
 
-export async function multipart(ctx: Context, next: Next) {
+async function multipart(ctx: Context, next: Next) {
   const { storage } = ctx;
   if (!storage) {
     console.error('[file-manager] no linked or default storage provided');

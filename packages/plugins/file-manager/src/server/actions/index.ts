@@ -1,7 +1,7 @@
 import actions from '@nocobase/actions';
-import { templateCollectionCreate } from './attachments';
+import { middleware } from './attachments';
 
 export default function ({ app }) {
-  app.resourcer.use(templateCollectionCreate);
+  app.resourcer.use(middleware);
   app.resourcer.registerActionHandler('upload', actions.create);
 }
