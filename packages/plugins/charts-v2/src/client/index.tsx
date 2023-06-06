@@ -1,4 +1,9 @@
-import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
+import {
+  SchemaComponentOptions,
+  SchemaInitializerContext,
+  SchemaInitializerProvider,
+  ACLCollectionProvider,
+} from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartV2BlockInitializer, ChartV2BlockDesigner, ChartInitializers, ChartV2Block } from './block';
 import { ChartRenderer, G2PlotLibrary } from './renderer';

@@ -7,13 +7,14 @@ import {
   useRequest,
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
-import { Empty, Result, Typography } from 'antd';
+import { Empty, Result, Typography, message } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField } from '@formily/react';
 import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFields, useQueryWithAlias, useFieldTransformer } from '../hooks';
+import { createRendererSchema } from '../utils';
 const { Paragraph, Text } = Typography;
 
 export type QueryProps = Partial<{
@@ -65,7 +66,6 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
   const { query, config, collection, transform, configuring } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
-
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
   const fields = useFields(collection);
@@ -149,12 +149,13 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
+  const collection = field?.componentProps?.collection;
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.Item
         key="configure"
         onClick={() => {
-          setCurrent({ schema, field, collection: field?.componentProps?.collection });
+          setCurrent({ schema, field, collection });
           setVisible(true);
         }}
       >
@@ -163,20 +164,9 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="duplicate"
         onClick={() =>
-          insertAdjacent(
-            'afterEnd',
-            {
-              type: 'void',
-              'x-decorator': 'CardItem',
-              'x-component': 'ChartRenderer',
-              'x-component-props': schema['x-component-props'],
-              'x-initializer': 'ChartInitializers',
-              'x-designer': 'ChartRenderer.Designer',
-            },
-            {
-              wrap: gridRowColWrap,
-            },
-          )
+          insertAdjacent('afterEnd', createRendererSchema(collection, schema?.['x-component-props']), {
+            wrap: gridRowColWrap,
+          })
         }
       >
         {t('Duplicate')}

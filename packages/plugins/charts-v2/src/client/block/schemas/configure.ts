@@ -149,6 +149,7 @@ export const querySchema: ISchema = {
             options: '{{ collectionOptions }}',
             onChange: '{{ onCollectionChange }}',
             placeholder: lang('Collection'),
+            defaultValue: '{{ collection }}',
           },
         },
       },

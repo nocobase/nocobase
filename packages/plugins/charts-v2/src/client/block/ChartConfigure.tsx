@@ -31,6 +31,7 @@ import {
   useFieldTypes,
 } from '../hooks';
 import { cloneDeep } from 'lodash';
+import { createRendererSchema } from '../utils';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -112,20 +113,10 @@ export const ChartConfigure: React.FC<{
           setVisible(false);
           return;
         }
-        insert(
-          {
-            type: 'void',
-            'x-decorator': 'CardItem',
-            'x-component': 'ChartRenderer',
-            'x-component-props': rendererProps,
-            'x-initializer': 'ChartInitializers',
-            'x-designer': 'ChartRenderer.Designer',
-          },
-          {
-            onSuccess: () => setVisible(false),
-            wrap: gridRowColWrap,
-          },
-        );
+        insert(createRendererSchema(collection, rendererProps), {
+          onSuccess: () => setVisible(false),
+          wrap: gridRowColWrap,
+        });
       }}
       onCancel={() => setVisible(false)}
       maskClosable={false}
@@ -273,7 +264,16 @@ ChartConfigure.Query = function Query() {
   return (
     <SchemaComponent
       schema={querySchema}
-      scope={{ t, formCollapse, fields, filterOptions, collectionOptions, useFormatterOptions, onCollectionChange }}
+      scope={{
+        t,
+        formCollapse,
+        fields,
+        filterOptions,
+        collectionOptions,
+        useFormatterOptions,
+        onCollectionChange,
+        collection: current?.collection,
+      }}
       components={{
         ArrayItems,
         Editable,

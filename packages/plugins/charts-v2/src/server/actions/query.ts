@@ -30,6 +30,8 @@ type QueryParams = Partial<{
     enabled: boolean;
     ttl: number;
   };
+  // Get the latest data from the database
+  refresh: boolean;
 }>;
 
 const parseBuilder = (ctx: Context, builder: QueryParams) => {
@@ -111,14 +113,14 @@ export const query = async (ctx: Context, next: Next) => {
     limit,
     sql,
     cache: cacheConfig,
+    refresh,
   } = ctx.action.params.values as QueryParams;
-  console.log(uid);
   const plugin = ctx.app.getPlugin('charts-v2') as ChartsV2Plugin;
-  if (cacheConfig?.enabled && uid) {
+  const useCache = cacheConfig?.enabled && uid;
+  if (useCache && !refresh) {
     const cache = plugin.cache;
     const data = await cache.get(uid);
     if (data) {
-      console.log('cache hit');
       ctx.body = data;
       return next();
     }
@@ -126,9 +128,9 @@ export const query = async (ctx: Context, next: Next) => {
 
   try {
     const data = await queryData(ctx, { collection, measures, dimensions, orders, filter, limit, sql });
-    if (cacheConfig?.enabled && uid) {
+    if (useCache) {
       const cache = plugin.cache;
-      await cache.set(uid, data, cacheConfig.ttl);
+      await cache.set(uid, data, cacheConfig.ttl || 30);
     }
     ctx.body = data;
   } catch (err) {

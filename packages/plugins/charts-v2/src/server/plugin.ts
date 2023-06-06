@@ -6,16 +6,17 @@ export class ChartsV2Plugin extends Plugin {
 
   afterAdd() {}
 
-  beforeLoad() {}
-
-  async load() {
+  beforeLoad() {
     this.app.resource({
       name: 'charts',
       actions: {
         query,
       },
     });
+    this.app.acl.allow('charts', 'query', 'loggedIn');
+  }
 
+  async load() {
     this.cache = createCache({
       ttl: 30, // seconds
       max: 1000,

@@ -1,4 +1,4 @@
-import { SchemaInitializer, useCollectionDataSourceItems } from '@nocobase/client';
+import { SchemaInitializer, useACLRoleContext, useCollectionDataSourceItems } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ISchema } from '@formily/react';
 import { PieChartOutlined } from '@ant-design/icons';
@@ -24,12 +24,32 @@ const ConfigureButton = itemWrap((props) => {
 export const ChartInitializers = () => {
   const { t } = useChartsTranslation();
   const collections = useCollectionDataSourceItems('Chart');
-  collections[0].children = collections[0].children.map((item) => ({
-    ...item,
-    component: ConfigureButton,
-  }));
+  const { allowAll, parseAction } = useACLRoleContext();
+  const children = collections[0].children
+    .filter((item) => {
+      if (allowAll) {
+        return true;
+      }
+      const params = parseAction(`${item.name}:list`);
+      return params;
+    })
+    .map((item) => ({
+      ...item,
+      component: ConfigureButton,
+    }));
+  if (!children.length) {
+    // Leave a blank item to show the filter component
+    children.push({} as any);
+  }
+  collections[0].children = children;
   return (
-    <SchemaInitializer.Button icon={'PlusOutlined'} items={collections as any}>
+    <SchemaInitializer.Button
+      icon={'PlusOutlined'}
+      items={collections as any}
+      dropdown={{
+        placement: 'bottomLeft',
+      }}
+    >
       {t('Add chart')}
     </SchemaInitializer.Button>
   );
