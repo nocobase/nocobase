@@ -1,5 +1,5 @@
 import React from 'react';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, EyeOutlined } from '@ant-design/icons';
 import { Popover, Tooltip } from 'antd';
 import { useField, observer, useFieldSchema, RecursionField } from '@formily/react';
 import { EllipsisWithTooltip } from '../input';
@@ -45,7 +45,6 @@ export const QuickEdit = observer((props) => {
       </FormProvider>
     </div>
   );
-
   return (
     <Popover content={content} trigger="click">
       <span style={{ maxHeight: 30, display: 'block', cursor: 'pointer' }}>
@@ -54,9 +53,11 @@ export const QuickEdit = observer((props) => {
           overlayInnerStyle={{ color: 'red' }}
           color="white"
         >
-          <EditOutlined
-            style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
-          />
+          {!field.readPretty && (
+            <EditOutlined
+              style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
+            />
+          )}
         </Tooltip>
         <EllipsisWithTooltip ellipsis>{field.value}</EllipsisWithTooltip>
         <FormItem {...props} wrapperStyle={{ visibility: 'hidden' }} feedbackLayout="none">
