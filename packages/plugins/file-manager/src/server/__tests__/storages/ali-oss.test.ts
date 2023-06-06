@@ -21,7 +21,7 @@ describe('storage:ali-oss', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...aliossStorage.defaults(),
-      name: `ali-oss_${db.getTablePrefix()}`,
+      name: 'ali-oss',
       default: true,
       path: 'test/path',
     });
@@ -33,7 +33,7 @@ describe('storage:ali-oss', () => {
 
   describe('direct attachment', () => {
     itif('upload file should be ok', async () => {
-      const { body } = await agent.resource('attachments').upload({
+      const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
 
