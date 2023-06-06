@@ -1,6 +1,7 @@
 import flat from 'flat';
-import _, { every, findIndex, some, isArray } from 'lodash';
+import _, { every, findIndex, isArray, some } from 'lodash';
 import moment from 'moment';
+import { useMemo } from 'react';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';
 
@@ -13,12 +14,14 @@ type VariablesCtx = {
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
 
-  return {
-    $user: data?.data || {},
-    $date: {
-      now: () => moment().toISOString(),
-    },
-  };
+  return useMemo(() => {
+    return {
+      $user: data?.data || {},
+      $date: {
+        now: () => moment().toISOString(),
+      },
+    };
+  }, [data]);
 };
 
 export const isVariable = (str: unknown) => {
@@ -63,7 +66,7 @@ const getFieldValue = (fieldPath, values) => {
   const regex = new RegExp('^' + v + '\\..+\\.' + h + '$'); // 构建匹配的正则表达式
   const matchedValues = [];
   const data = flat.flatten(values, { maxDepth: 3 });
-  for (var key in data) {
+  for (const key in data) {
     if (regex.test(key)) {
       matchedValues.push(data[key]);
     }
