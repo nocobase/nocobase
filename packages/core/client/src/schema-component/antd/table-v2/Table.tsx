@@ -218,24 +218,24 @@ export const Table: any = observer((props: any) => {
   const dataSource = field?.value?.slice?.()?.filter?.(Boolean);
   const isRowSelect = rowSelection.type !== 'none';
 
-    let onRow = null,
-      highlightRow = '';
+  let onRow = null,
+    highlightRow = '';
 
-    if (onClickRow) {
-      onRow = (record) => {
-        return {
-          onClick: () => onClickRow(record, setSelectedRow, selectedRow),
-        };
+  if (onClickRow) {
+    onRow = (record) => {
+      return {
+        onClick: () => onClickRow(record, setSelectedRow, selectedRow),
       };
-      highlightRow = css`
-        & > td {
-          background-color: #caedff !important;
-        }
-        &:hover > td {
-          background-color: #caedff !important;
-        }
-      `;
-    }
+    };
+    highlightRow = css`
+      & > td {
+        background-color: #caedff !important;
+      }
+      &:hover > td {
+        background-color: #caedff !important;
+      }
+    `;
+  }
 
   // useEffect(() => {
   //   field.setValidator((value) => {
@@ -246,107 +246,107 @@ export const Table: any = observer((props: any) => {
   //   });
   // }, [requiredValidator]);
 
-    useEffect(() => {
-      if (treeTable !== false) {
-        const keys = getIdsWithChildren(field.value?.slice?.());
-        setAllIncludesChildren(keys);
-      }
-    }, [field.value]);
-    useEffect(() => {
-      if (expandFlag) {
-        setExpandesKeys(allIncludesChildren);
-      } else {
-        setExpandesKeys([]);
-      }
-    }, [expandFlag, allIncludesChildren]);
+  useEffect(() => {
+    if (treeTable !== false) {
+      const keys = getIdsWithChildren(field.value?.slice?.());
+      setAllIncludesChildren(keys);
+    }
+  }, [field.value]);
+  useEffect(() => {
+    if (expandFlag) {
+      setExpandesKeys(allIncludesChildren);
+    } else {
+      setExpandesKeys([]);
+    }
+  }, [expandFlag, allIncludesChildren]);
 
-    const components = useMemo(() => {
-      return {
-        header: {
-          wrapper: (props) => {
-            return (
-              <DndContext>
-                <thead {...props} />
-              </DndContext>
-            );
-          },
-          cell: (props) => {
-            return (
-              <th
-                {...props}
-                className={cls(
-                  props.className,
-                  css`
-                    max-width: 300px;
-                    white-space: nowrap;
-                    &:hover .general-schema-designer {
-                      display: block;
-                    }
-                  `,
-                )}
-              />
-            );
-          },
+  const components = useMemo(() => {
+    return {
+      header: {
+        wrapper: (props) => {
+          return (
+            <DndContext>
+              <thead {...props} />
+            </DndContext>
+          );
         },
-        body: {
-          wrapper: (props) => {
-            return (
-              <DndContext
-                onDragEnd={(e) => {
-                  if (!e.active || !e.over) {
-                    console.warn('move cancel');
-                    return;
-                  }
-
-                  const fromIndex = e.active?.data.current?.sortable?.index;
-                  const toIndex = e.over?.data.current?.sortable?.index;
-                  const from = field.value[fromIndex];
-                  const to = field.value[toIndex];
-                  field.move(fromIndex, toIndex);
-                  onRowDragEnd({ fromIndex, toIndex, from, to });
-                }}
-              >
-                <tbody {...props} />
-              </DndContext>
-            );
-          },
-          row: (props) => {
-            return <SortableRow {...props}></SortableRow>;
-          },
-          cell: (props) => (
-            <td
+        cell: (props) => {
+          return (
+            <th
               {...props}
-              className={classNames(
+              className={cls(
                 props.className,
                 css`
                   max-width: 300px;
                   white-space: nowrap;
-                  .nb-read-pretty-input-number {
-                    text-align: right;
+                  &:hover .general-schema-designer {
+                    display: block;
                   }
                 `,
               )}
             />
-          ),
+          );
         },
-      };
-    }, [field, onRowDragEnd, dragSort]);
+      },
+      body: {
+        wrapper: (props) => {
+          return (
+            <DndContext
+              onDragEnd={(e) => {
+                if (!e.active || !e.over) {
+                  console.warn('move cancel');
+                  return;
+                }
 
-    const defaultRowKey = (record: any) => {
-      return field.value?.indexOf?.(record);
+                const fromIndex = e.active?.data.current?.sortable?.index;
+                const toIndex = e.over?.data.current?.sortable?.index;
+                const from = field.value[fromIndex];
+                const to = field.value[toIndex];
+                field.move(fromIndex, toIndex);
+                onRowDragEnd({ fromIndex, toIndex, from, to });
+              }}
+            >
+              <tbody {...props} />
+            </DndContext>
+          );
+        },
+        row: (props) => {
+          return <SortableRow {...props}></SortableRow>;
+        },
+        cell: (props) => (
+          <td
+            {...props}
+            className={classNames(
+              props.className,
+              css`
+                max-width: 300px;
+                white-space: nowrap;
+                .nb-read-pretty-input-number {
+                  text-align: right;
+                }
+              `,
+            )}
+          />
+        ),
+      },
     };
+  }, [field, onRowDragEnd, dragSort]);
 
-    const getRowKey = (record: any) => {
-      if (typeof rowKey === 'string') {
-        return record[rowKey]?.toString();
-      } else {
-        return (rowKey ?? defaultRowKey)(record)?.toString();
-      }
-    };
+  const defaultRowKey = (record: any) => {
+    return field.value?.indexOf?.(record);
+  };
 
-    const restProps = {
-      rowSelection: rowSelection
-        ? {
+  const getRowKey = (record: any) => {
+    if (typeof rowKey === 'string') {
+      return record[rowKey]?.toString();
+    } else {
+      return (rowKey ?? defaultRowKey)(record)?.toString();
+    }
+  };
+
+  const restProps = {
+    rowSelection: rowSelection
+      ? {
           type: 'checkbox',
           selectedRowKeys: selectedRowKeys,
           onChange(selectedRowKeys: any[], selectedRows: any[]) {
@@ -407,11 +407,11 @@ export const Table: any = observer((props: any) => {
                   className={classNames(
                     checked ? 'checked' : null,
                     css`
-                        position: relative;
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-evenly;
-                      `,
+                      position: relative;
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-evenly;
+                    `,
                   )}
                 >
                   {dragSort && <SortHandle id={getRowKey(record)} />}
@@ -449,14 +449,14 @@ export const Table: any = observer((props: any) => {
             items: field.value?.map(getRowKey),
             children: children,
           })
-          : React.createElement(React.Fragment, {
+        : React.createElement(React.Fragment, {
             children,
           });
-      },
-      [field, dragSort],
-    );
-    const fieldSchema = useFieldSchema();
-    const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
+    },
+    [field, dragSort],
+  );
+  const fieldSchema = useFieldSchema();
+  const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 
   const { height: tableHeight, tableSizeRefCallback } = useTableSize();
   const scroll = useMemo(() => {
@@ -465,7 +465,7 @@ export const Table: any = observer((props: any) => {
           x: 'max-content',
           y: tableHeight,
         }
-        : {
+      : {
           x: 'max-content',
         };
   }, [fixedBlock, tableHeight]);
