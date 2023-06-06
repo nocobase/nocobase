@@ -4,6 +4,7 @@ import {
   CollectionManagerContext,
   CollectionManagerProvider,
   FormProvider,
+  generateFilterParams,
   SchemaComponent,
   TableBlockProvider,
   useCollection,
@@ -458,55 +459,35 @@ export const AuditLogs: any = () => {
   );
 };
 
-AuditLogs.Decorator = observer(
-  (props: any) => {
-    const parent = useCollection();
-    const record = useRecord();
-    const { interfaces } = useContext(CollectionManagerContext);
-    let filter = props?.params?.filter;
-    if (parent.name) {
-      const filterByTk = record?.[parent.filterTargetKey || 'id'];
-      if (filter) {
-        filter = {
-          $and: [
-            filter,
-            {
-              collectionName: parent.name,
-              recordId: `${filterByTk}`,
-            },
-          ],
-        };
-      } else {
-        filter = {
-          collectionName: parent.name,
-          recordId: `${filterByTk}`,
-        };
-      }
-    }
-    const defaults = {
-      collection: 'auditLogs',
-      resource: 'auditLogs',
-      action: 'list',
-      params: {
-        pageSize: 20,
-        appends: ['collection', 'user'],
-        ...props.params,
-        filter,
-        sort: '-createdAt',
-      },
-      rowKey: 'id',
-      showIndex: true,
-      dragSort: false,
-    };
-    return (
-      <IsAssociationBlock.Provider value={!!parent.name}>
-        <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
-          <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
-        </CollectionManagerProvider>
-      </IsAssociationBlock.Provider>
-    );
-  },
-  { displayName: 'AuditLogs.Decorator' },
-);
+AuditLogs.Decorator = observer((props: any) => {
+  const parent = useCollection();
+  const record = useRecord();
+  const { interfaces } = useContext(CollectionManagerContext);
+  const filter = generateFilterParams(record, parent.name, parent.filterTargetKey, props?.params?.filter) || {};
+  const defaults = {
+    collection: 'auditLogs',
+    resource: 'auditLogs',
+    action: 'list',
+    params: {
+      pageSize: 20,
+      appends: ['collection', 'user'],
+      ...props.params,
+      filter,
+      sort: '-createdAt',
+    },
+    rowKey: 'id',
+    showIndex: true,
+    dragSort: false,
+  };
+  return (
+    <IsAssociationBlock.Provider value={!!parent.name}>
+      <CollectionManagerProvider collections={[collection]} interfaces={interfaces}>
+        <TableBlockProvider {...defaults}>{props.children}</TableBlockProvider>
+      </CollectionManagerProvider>
+    </IsAssociationBlock.Provider>
+  );
+}, {
+  displayName: 'AuditLogs.Decorator'
+});
 
 AuditLogs.Designer = AuditLogsDesigner;
