@@ -1,6 +1,7 @@
 import { Repository } from '@nocobase/database';
 import { CollectionsGraph } from '@nocobase/utils';
 import { CollectionModel } from '../models/collection';
+import lodash from 'lodash';
 
 interface LoadOptions {
   filter?: any;
@@ -16,7 +17,9 @@ export class CollectionRepository extends Repository {
 
     const graph = new graphlib.Graph();
 
-    const nameMap = {};
+    const nameMap: {
+      [key: string]: CollectionModel;
+    } = {};
 
     const viewCollections = [];
 
@@ -60,14 +63,39 @@ export class CollectionRepository extends Repository {
 
     const sortedNames = graphlib.alg.topsort(graph);
 
+    const lazyCollectionFields: {
+      [key: string]: Array<string>;
+    } = {};
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist, skipField: viewCollections.includes(instanceName) });
+
+      const skipField = (() => {
+        if (viewCollections.includes(instanceName)) {
+          return true;
+        }
+
+        const fields = nameMap[instanceName].get('fields');
+
+        return fields
+          .filter((field) => field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target']))
+          .map((field) => field.get('name'));
+      })();
+
+      if (lodash.isArray(skipField) && skipField.length) {
+        lazyCollectionFields[instanceName] = skipField;
+      }
+
+      await nameMap[instanceName].load({ skipField });
     }
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
       await nameMap[viewCollectionName].loadFields({});
+    }
+
+    // load lazy collection field
+    for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
+      await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
   }
 
