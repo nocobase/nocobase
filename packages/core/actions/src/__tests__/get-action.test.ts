@@ -81,6 +81,7 @@ describe('get action', () => {
       });
 
     const body = response.body;
+
     expect(body['id']).toEqual(p1.get('id'));
   });
 
