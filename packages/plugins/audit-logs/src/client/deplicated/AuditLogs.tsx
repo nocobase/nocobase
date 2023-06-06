@@ -51,46 +51,58 @@ const collection = {
   ],
 };
 
-const Username = observer(() => {
-  const field = useField<any>();
-  return <div>{field?.value?.nickname || field.value?.id}</div>;
-});
+const Username = observer(
+  () => {
+    const field = useField<any>();
+    return <div>{field?.value?.nickname || field.value?.id}</div>;
+  },
+  { displayName: 'Username' },
+);
 
-const Collection = observer(() => {
-  const field = useField<any>();
-  const { title, name } = field.value || {};
-  const compile = useCompile();
-  return <div>{title ? compile(title) : name}</div>;
-});
+const Collection = observer(
+  () => {
+    const field = useField<any>();
+    const { title, name } = field.value || {};
+    const compile = useCompile();
+    return <div>{title ? compile(title) : name}</div>;
+  },
+  { displayName: 'Collection' },
+);
 
-const Field = observer(() => {
-  const field = useField<any>();
-  const compile = useCompile();
-  if (!field.value) {
-    return null;
-  }
-  return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
-});
+const Field = observer(
+  () => {
+    const field = useField<any>();
+    const compile = useCompile();
+    if (!field.value) {
+      return null;
+    }
+    return <div>{field.value?.uiSchema?.title ? compile(field.value?.uiSchema?.title) : field.value.name}</div>;
+  },
+  { displayName: 'Field' },
+);
 
-const Value = observer(() => {
-  const field = useField<any>();
-  const record = ArrayTable.useRecord();
-  if (record.field?.uiSchema) {
-    return (
-      <FormProvider>
-        <SchemaComponent
-          schema={{
-            name: record.field.name,
-            ...record.field?.uiSchema,
-            default: field.value,
-            'x-read-pretty': true,
-          }}
-        />
-      </FormProvider>
-    );
-  }
-  return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
-});
+const Value = observer(
+  () => {
+    const field = useField<any>();
+    const record = ArrayTable.useRecord();
+    if (record.field?.uiSchema) {
+      return (
+        <FormProvider>
+          <SchemaComponent
+            schema={{
+              name: record.field.name,
+              ...record.field?.uiSchema,
+              default: field.value,
+              'x-read-pretty': true,
+            }}
+          />
+        </FormProvider>
+      );
+    }
+    return <div>{field.value ? JSON.stringify(field.value) : null}</div>;
+  },
+  { displayName: 'Value' },
+);
 
 const IsAssociationBlock = createContext(null);
 
@@ -474,6 +486,8 @@ AuditLogs.Decorator = observer((props: any) => {
       </CollectionManagerProvider>
     </IsAssociationBlock.Provider>
   );
+}, {
+  displayName: 'AuditLogs.Decorator'
 });
 
 AuditLogs.Designer = AuditLogsDesigner;

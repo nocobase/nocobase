@@ -58,6 +58,6 @@ export const CollectionSelect = connect(
           ))}
         </div>
       );
-    }),
+    }, { displayName: 'CollectionSelectObserver' }),
   ),
 );

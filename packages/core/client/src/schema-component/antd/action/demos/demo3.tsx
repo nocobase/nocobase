@@ -18,30 +18,33 @@ const useCloseAction = () => {
   };
 };
 
-const Editable = observer((props) => {
-  const field = useField<Field>();
-  const schema = useFieldSchema();
-  return (
-    <div>
-      <div style={{ marginBottom: 24 }}>
-        打开方式：
-        <Select
-          value={field.componentProps.openMode}
-          style={{ width: 100 }}
-          onChange={(value) => {
-            field.componentProps.openMode = value;
-            schema['x-component-props']['openMode'] = value;
-          }}
-        >
-          <Select.Option value={'drawer'}>Drawer</Select.Option>
-          <Select.Option value={'modal'}>Modal</Select.Option>
-          <Select.Option value={'page'}>Page</Select.Option>
-        </Select>
+const Editable = observer(
+  (props) => {
+    const field = useField<Field>();
+    const schema = useFieldSchema();
+    return (
+      <div>
+        <div style={{ marginBottom: 24 }}>
+          打开方式：
+          <Select
+            value={field.componentProps.openMode}
+            style={{ width: 100 }}
+            onChange={(value) => {
+              field.componentProps.openMode = value;
+              schema['x-component-props']['openMode'] = value;
+            }}
+          >
+            <Select.Option value={'drawer'}>Drawer</Select.Option>
+            <Select.Option value={'modal'}>Modal</Select.Option>
+            <Select.Option value={'page'}>Page</Select.Option>
+          </Select>
+        </div>
+        {props.children}
       </div>
-      {props.children}
-    </div>
-  );
-});
+    );
+  },
+  { displayName: 'Editable' },
+);
 
 const schema: ISchema = {
   type: 'object',
