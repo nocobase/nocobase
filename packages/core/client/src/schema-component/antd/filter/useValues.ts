@@ -31,7 +31,7 @@ export const useValues = () => {
   };
   const value2data = () => {
     field.data = field.data || {};
-    const values = flat(field.value);
+    const values = flat(field.value || {});
     const path = Object.keys(values).shift() || '';
     if (!path || !options) {
       return;

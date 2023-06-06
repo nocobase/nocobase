@@ -54,10 +54,13 @@ export default observer(() => {
     },
   };
 
-  const Output = observer(() => {
-    const form = useForm();
-    return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
-  });
+  const Output = observer(
+    () => {
+      const form = useForm();
+      return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
+    },
+    { displayName: 'Output' },
+  );
 
   return (
     <SchemaComponentProvider scope={{ useCloseAction }} components={{ Output, Form, Action, Input, FormItem }}>

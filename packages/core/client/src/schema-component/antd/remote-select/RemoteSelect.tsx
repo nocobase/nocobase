@@ -180,9 +180,9 @@ const InternalRemoteSelect = connect(
 
     const options = useMemo(() => {
       if (!data?.data?.length) {
-        return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
+        return value != null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
+      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
     const onDropdownVisibleChange = () => {

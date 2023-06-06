@@ -166,107 +166,113 @@ export const ds = {
   useDestroyAction,
 };
 
-export const SubFieldDataSourceProvider = observer((props) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [dataSource, setDataSource] = useState([]);
-  const record = useRecord();
-  const api = useAPIClient();
-  const service = useRequest(
-    () => {
-      if (record.interface === 'subTable') {
-        if (record?.children?.length) {
-          return Promise.resolve({
-            data: record?.children || [],
-          });
+export const SubFieldDataSourceProvider = observer(
+  (props) => {
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [dataSource, setDataSource] = useState([]);
+    const record = useRecord();
+    const api = useAPIClient();
+    const service = useRequest(
+      () => {
+        if (record.interface === 'subTable') {
+          if (record?.children?.length) {
+            return Promise.resolve({
+              data: record?.children || [],
+            });
+          }
+          return api
+            .resource('fields')
+            .list({
+              paginate: false,
+              // appends: ['uiSchema'],
+              sort: 'sort',
+              filter: {
+                parentKey: record.key,
+              },
+            })
+            .then((res) => res?.data);
         }
-        return api
-          .resource('fields')
-          .list({
-            paginate: false,
-            // appends: ['uiSchema'],
-            sort: 'sort',
-            filter: {
-              parentKey: record.key,
-            },
-          })
-          .then((res) => res?.data);
-      }
-      return Promise.resolve({
-        data: [],
-      });
-    },
-    {
-      onSuccess(data) {
-        console.log('dataSource1', data?.data);
-        setDataSource(data?.data);
+        return Promise.resolve({
+          data: [],
+        });
       },
-    },
-  );
-  return (
-    <CollectionProvider collection={collection}>
-      <DataSourceContext.Provider
-        value={{
-          rowKey: 'name',
-          service,
-          dataSource,
-          setDataSource,
-          selectedRowKeys,
-          setSelectedRowKeys,
-        }}
-      >
-        {props.children}
-      </DataSourceContext.Provider>
-    </CollectionProvider>
-  );
-});
+      {
+        onSuccess(data) {
+          console.log('dataSource1', data?.data);
+          setDataSource(data?.data);
+        },
+      },
+    );
+    return (
+      <CollectionProvider collection={collection}>
+        <DataSourceContext.Provider
+          value={{
+            rowKey: 'name',
+            service,
+            dataSource,
+            setDataSource,
+            selectedRowKeys,
+            setSelectedRowKeys,
+          }}
+        >
+          {props.children}
+        </DataSourceContext.Provider>
+      </CollectionProvider>
+    );
+  },
+  { displayName: 'SubFieldDataSourceProvider' },
+);
 
-export const DataSourceProvider = observer((props: any) => {
-  const { rowKey, collection, association } = props;
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [dataSource, setDataSource] = useState([]);
-  const record = useRecord();
-  const api = useAPIClient();
-  const { getCollection } = useCollectionManager();
-  const coll = getCollection(collection);
-  const resourceOf = record?.[association.targetKey || 'id'];
-  const service = useRequest(
-    () => {
-      if (resourceOf) {
-        return api
-          .request({
-            resource: `${association.collectionName}.${association.name}`,
-            resourceOf,
-            action: 'list',
-            params: {
-              appends: coll?.fields?.filter((field) => field.target)?.map((field) => field.name),
-            },
-          })
-          .then((res) => res.data);
-      }
-      return Promise.resolve({
-        data: record?.[association.name] || [],
-      });
-    },
-    {
-      onSuccess(data) {
-        setDataSource(data?.data);
+export const DataSourceProvider = observer(
+  (props: any) => {
+    const { rowKey, collection, association } = props;
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [dataSource, setDataSource] = useState([]);
+    const record = useRecord();
+    const api = useAPIClient();
+    const { getCollection } = useCollectionManager();
+    const coll = getCollection(collection);
+    const resourceOf = record?.[association.targetKey || 'id'];
+    const service = useRequest(
+      () => {
+        if (resourceOf) {
+          return api
+            .request({
+              resource: `${association.collectionName}.${association.name}`,
+              resourceOf,
+              action: 'list',
+              params: {
+                appends: coll?.fields?.filter((field) => field.target)?.map((field) => field.name),
+              },
+            })
+            .then((res) => res.data);
+        }
+        return Promise.resolve({
+          data: record?.[association.name] || [],
+        });
       },
-    },
-  );
-  return (
-    <CollectionProvider collection={coll}>
-      <DataSourceContext.Provider
-        value={{
-          rowKey,
-          service,
-          dataSource,
-          setDataSource,
-          selectedRowKeys,
-          setSelectedRowKeys,
-        }}
-      >
-        {props.children}
-      </DataSourceContext.Provider>
-    </CollectionProvider>
-  );
-});
+      {
+        onSuccess(data) {
+          setDataSource(data?.data);
+        },
+      },
+    );
+    return (
+      <CollectionProvider collection={coll}>
+        <DataSourceContext.Provider
+          value={{
+            rowKey,
+            service,
+            dataSource,
+            setDataSource,
+            selectedRowKeys,
+            setSelectedRowKeys,
+          }}
+        >
+          {props.children}
+        </DataSourceContext.Provider>
+      </CollectionProvider>
+    );
+  },
+  { displayName: 'DataSourceProvider' },
+);

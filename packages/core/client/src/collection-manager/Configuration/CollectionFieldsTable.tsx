@@ -31,36 +31,39 @@ const useDef = (options, props) => {
   }
 };
 
-export const CollectionFieldsTable: React.FC<TableVoidProps> = observer((props) => {
-  const { rowKey = 'id', useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
-  const field = useField<Field>();
-  const fieldSchema = useFieldSchema();
-  const form = useMemo(() => createForm(), []);
-  const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
-  const result = useDataSource(
-    {
-      uid: fieldSchema['x-uid'],
-      onSuccess(data) {
-        form.setValues({
-          [fieldSchema.name]: data?.data,
-        });
+export const CollectionFieldsTable: React.FC<TableVoidProps> = observer(
+  (props) => {
+    const { rowKey = 'id', useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const form = useMemo(() => createForm(), []);
+    const f = useAttach(form.createArrayField({ ...field.props, basePath: '' }));
+    const result = useDataSource(
+      {
+        uid: fieldSchema['x-uid'],
+        onSuccess(data) {
+          form.setValues({
+            [fieldSchema.name]: data?.data,
+          });
+        },
       },
-    },
-    props,
-  );
-  return (
-    <AsyncDataProvider value={result}>
-      <FormContext.Provider value={form}>
-        <FieldContext.Provider value={f}>
-          <CollectionFieldsTableArray
-            {...props}
-            rowKey={rowKey}
-            loading={result?.['loading']}
-            useSelectedRowKeys={useSelectedRowKeys}
-            pagination={false}
-          />
-        </FieldContext.Provider>
-      </FormContext.Provider>
-    </AsyncDataProvider>
-  );
-});
+      props,
+    );
+    return (
+      <AsyncDataProvider value={result}>
+        <FormContext.Provider value={form}>
+          <FieldContext.Provider value={f}>
+            <CollectionFieldsTableArray
+              {...props}
+              rowKey={rowKey}
+              loading={result?.['loading']}
+              useSelectedRowKeys={useSelectedRowKeys}
+              pagination={false}
+            />
+          </FieldContext.Provider>
+        </FormContext.Provider>
+      </AsyncDataProvider>
+    );
+  },
+  { displayName: 'CollectionFieldsTable' },
+);
