@@ -12,6 +12,19 @@ export const DetailsActionInitializers = {
       children: [
         {
           type: 'item',
+          title: '{{t("Duplicate")}}',
+          component: 'DuplicateActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-action': 'duplicate',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              type: 'primary',
+            },
+          },
+        },
+        {
+          type: 'item',
           title: '{{t("Edit")}}',
           component: 'UpdateActionInitializer',
           schema: {
