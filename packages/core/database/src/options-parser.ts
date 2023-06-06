@@ -36,6 +36,23 @@ export class OptionsParser {
     this.context = context;
   }
 
+  static appendInheritInspectAttribute(include, collection): any {
+    include.push([
+      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${collection.name}".tableoid)`),
+      '__tableName',
+    ]);
+
+    include.push([
+      Sequelize.literal(`
+        (SELECT n.nspname
+        FROM pg_class c
+               JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.oid = "${collection.name}".tableoid)
+      `),
+      '__schemaName',
+    ]);
+  }
+
   isAssociation(key: string) {
     return this.model.associations[key] !== undefined;
   }
@@ -118,23 +135,6 @@ export class OptionsParser {
     return filterParams;
   }
 
-  protected inheritFromSubQuery(include): any {
-    include.push([
-      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
-      '__tableName',
-    ]);
-
-    include.push([
-      Sequelize.literal(`
-        (SELECT n.nspname
-        FROM pg_class c
-               JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.oid = "${this.collection.name}".tableoid)
-      `),
-      '__schemaName',
-    ]);
-  }
-
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -151,13 +151,13 @@ export class OptionsParser {
     }; // out put all fields by default
 
     if (this.collection.isParent()) {
-      this.inheritFromSubQuery(attributes.include);
+      OptionsParser.appendInheritInspectAttribute(attributes.include, this.collection);
     }
 
     if (this.options?.fields) {
       attributes = [];
       if (this.collection.isParent()) {
-        this.inheritFromSubQuery(attributes);
+        OptionsParser.appendInheritInspectAttribute(attributes, this.collection);
       }
 
       // 将fields拆分为 attributes 和 appends

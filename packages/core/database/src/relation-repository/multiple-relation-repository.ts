@@ -30,6 +30,7 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const association = this.association as any;
 
+
     const oneFromTargetOptions = {
       as: '_pivot_',
       foreignKey: association.otherKey,
