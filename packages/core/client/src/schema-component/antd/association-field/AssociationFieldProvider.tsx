@@ -50,6 +50,9 @@ export const AssociationFieldProvider = observer(
           field.value = [{}];
         }
       }
+      if (currentMode === 'SubTable') {
+        field.value = [];
+      }
       setLoading(false);
     }, [currentMode, collectionField, field.value]);
 
