@@ -1,7 +1,7 @@
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { Layout, Menu, Result, Spin, Tabs } from 'antd';
-import { sortBy } from 'lodash';
+import _, { sortBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
@@ -203,7 +203,7 @@ const settings = {
   },
 };
 
-export const getPluginsTabs = (items, snippets) => {
+export const getPluginsTabs = _.memoize((items, snippets) => {
   const pluginsTabs = Object.keys(items).map((plugin) => {
     const tabsObj = items[plugin].tabs;
     const tabs = sortBy(
@@ -224,7 +224,7 @@ export const getPluginsTabs = (items, snippets) => {
     };
   });
   return sortBy(pluginsTabs, (o) => !o.isAllow);
-};
+});
 
 const SettingsCenter = (props) => {
   const { snippets = [] } = useACLRoleContext();
