@@ -209,7 +209,7 @@ export const Table: any = observer((props: any) => {
   const { expandFlag } = ctx;
   const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
   const paginationProps = usePaginationProps(pagination1, pagination2);
-  const requiredValidator = field.required || required;
+  // const requiredValidator = field.required || required;
   const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
   const [expandedKeys, setExpandesKeys] = useState([]);
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
@@ -237,14 +237,14 @@ export const Table: any = observer((props: any) => {
     `;
   }
 
-  useEffect(() => {
-    field.setValidator((value) => {
-      if (requiredValidator) {
-        return Array.isArray(value) && value.length > 0 ? null : 'The field value is required';
-      }
-      return;
-    });
-  }, [requiredValidator]);
+  // useEffect(() => {
+  //   field.setValidator((value) => {
+  //     if (requiredValidator) {
+  //       return Array.isArray(value) && value.length > 0 ? null : 'The field value is required';
+  //     }
+  //     return;
+  //   });
+  // }, [requiredValidator]);
 
   useEffect(() => {
     if (treeTable !== false) {
