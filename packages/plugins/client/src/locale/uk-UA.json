@@ -121,7 +121,7 @@
       "Are you sure you want to delete it?": "Ви впевнені, що хочете видалити це?",
       "This is a demo text, **supports Markdown syntax**.": "Це демонстраційний текст, **підтримує синтаксис Markdown**.",
       "Filter": "Фільтр",
-      "Connect data blocks": "З\'єднати блоки даних",
+      "Connect data blocks": "З'єднати блоки даних",
       "Action type": "Тип дії",
       "Actions": "Дії",
       "Insert": "Вставити",
@@ -397,7 +397,7 @@
       "Cyan": "Блакитний",
       "Blue": "Синій",
       "Geek blue": "Голубий",
-      "Purple": "Фіолетовий"
+      "Purple": "Фіолетовий",
       "Default": "Default",
       "Add card": "Add card",
       "edit title": "edit title",
@@ -631,10 +631,10 @@
       "UpdatedAt": "Записує дату останнього оновлення рядка"
     },
     "error-handler": {
-    "unique violation": "{{field}} має бути унікальним",
-    "notNull violation": "порушення notNull",
-    "Validation error": "Помилка перевірки {{field}}",
-    "notNull Violation": "{{field}} не може бути порожнім"
+      "unique violation": "{{field}} має бути унікальним",
+      "notNull violation": "порушення notNull",
+      "Validation error": "Помилка перевірки {{field}}",
+      "notNull Violation": "{{field}} не може бути порожнім"
     },
     "collection-manager": {},
     "ui-schema-storage": {},
@@ -999,42 +999,69 @@
         "quarterPlaceholder": "Оберіть квартал",
         "monthPlaceholder": "Оберіть місяць",
         "weekPlaceholder": "Оберіть тиждень",
-        "rangePlaceholder": ["Початкова дата", "Кінцева дата"],
-        "rangeYearPlaceholder": ["Початковий рік", "Кінцевий рік"],
-        "rangeQuarterPlaceholder": ["Початковий квартал", "Кінцевий квартал"],
-        "rangeMonthPlaceholder": ["Початковий місяць", "Кінцевий місяць"],
-        "rangeWeekPlaceholder": ["Початковий тиждень", "Кінцевий тиждень"],
-        "locale": "uk",
+        "rangePlaceholder": [
+          "Початкова дата",
+          "Кінцева дата"
+        ],
+        "rangeYearPlaceholder": [
+          "Початковий рік",
+          "Кінцевий рік"
+        ],
+        "rangeQuarterPlaceholder": [
+          "Початковий квартал",
+          "Кінцевий квартал"
+        ],
+        "rangeMonthPlaceholder": [
+          "Початковий місяць",
+          "Кінцевий місяць"
+        ],
+        "rangeWeekPlaceholder": [
+          "Початковий тиждень",
+          "Кінцевий тиждень"
+        ],
+        "locale": "uk_UA",
         "today": "Сьогодні",
         "now": "Зараз",
         "backToToday": "Повернутися до сьогодні",
-        "ok": "OK",
+        "ok": "ОК",
         "clear": "Очистити",
         "month": "Місяць",
         "year": "Рік",
         "timeSelect": "вибрати час",
         "dateSelect": "вибрати дату",
-        "weekSelect": "Виберіть тиждень",
-        "monthSelect": "Виберіть місяць",
-        "yearSelect": "Виберіть рік",
-        "decadeSelect": "Виберіть десятиліття",
+        "weekSelect": "Обрати тиждень",
+        "monthSelect": "Обрати місяць",
+        "yearSelect": "Обрати рік",
+        "decadeSelect": "Обрати десятиліття",
         "yearFormat": "YYYY",
-        "dateFormat": "M/D/YYYY",
+        "dateFormat": "D/M/YYYY",
         "dayFormat": "D",
-        "dateTimeFormat": "M/D/YYYY HH:mm:ss",
+        "dateTimeFormat": "D/M/YYYY HH:mm:ss",
         "monthBeforeYear": true,
         "previousMonth": "Попередній місяць (PageUp)",
         "nextMonth": "Наступний місяць (PageDown)",
-        "previousYear": "Попередній рік (Control + вліво)",
-        "nextYear": "Наступний рік (Control + вправо)",
-        "previousDecade": "Попереднє десятиліття",
+        "previousYear": "Минулий рік (Control + left)",
+        "nextYear": "Наступний рік (Control + right)",
+        "previousDecade": "Минуле десятиліття",
         "nextDecade": "Наступне десятиліття",
-        "previousCentury": "Попереднє століття",
+        "previousCentury": "Минуле століття",
         "nextCentury": "Наступне століття"
       },
-      "timePickerLocale": { "placeholder": "Виберіть час", "rangePlaceholder": ["Час початку", "Час завершення"] }
+      "timePickerLocale": {
+        "placeholder": "Оберіть час",
+        "rangePlaceholder": [
+          "Початковий час",
+          "Кінцевий час"
+        ]
+      }
     },
-    "TimePicker": { "placeholder": "Виберіть час", "rangePlaceholder": ["Час початку", "Час завершення"] },
+    "TimePicker": {
+      "placeholder": "Оберіть час",
+      "rangePlaceholder": [
+        "Початковий час",
+        "Кінцевий час"
+      ]
+    },
     "Calendar": {
       "lang": {
         "placeholder": "Оберіть дату",
@@ -1042,66 +1069,99 @@
         "quarterPlaceholder": "Оберіть квартал",
         "monthPlaceholder": "Оберіть місяць",
         "weekPlaceholder": "Оберіть тиждень",
-        "rangePlaceholder": ["Початкова дата", "Кінцева дата"],
-        "rangeYearPlaceholder": ["Початковий рік", "Кінцевий рік"],
-        "rangeQuarterPlaceholder": ["Початковий квартал", "Кінцевий квартал"],
-        "rangeMonthPlaceholder": ["Початковий місяць", "Кінцевий місяць"],
-        "rangeWeekPlaceholder": ["Початковий тиждень", "Кінцевий тиждень"],
-        "locale": "en_US",
+        "rangePlaceholder": [
+          "Початкова дата",
+          "Кінцева дата"
+        ],
+        "rangeYearPlaceholder": [
+          "Початковий рік",
+          "Кінцевий рік"
+        ],
+        "rangeQuarterPlaceholder": [
+          "Початковий квартал",
+          "Кінцевий квартал"
+        ],
+        "rangeMonthPlaceholder": [
+          "Початковий місяць",
+          "Кінцевий місяць"
+        ],
+        "rangeWeekPlaceholder": [
+          "Початковий тиждень",
+          "Кінцевий тиждень"
+        ],
+        "locale": "uk_UA",
         "today": "Сьогодні",
         "now": "Зараз",
-        "backToToday": "Повернутись до сьогодні",
-        "ok": "OK",
+        "backToToday": "Повернутися до сьогодні",
+        "ok": "ОК",
         "clear": "Очистити",
         "month": "Місяць",
         "year": "Рік",
-        "timeSelect": "виберіть час",
-        "dateSelect": "виберіть дату",
+        "timeSelect": "вибрати час",
+        "dateSelect": "вибрати дату",
         "weekSelect": "Обрати тиждень",
         "monthSelect": "Обрати місяць",
         "yearSelect": "Обрати рік",
         "decadeSelect": "Обрати десятиліття",
         "yearFormat": "YYYY",
-        "dateFormat": "M/D/YYYY",
+        "dateFormat": "D/M/YYYY",
         "dayFormat": "D",
-        "dateTimeFormat": "M/D/YYYY HH:mm:ss",
+        "dateTimeFormat": "D/M/YYYY HH:mm:ss",
         "monthBeforeYear": true,
         "previousMonth": "Попередній місяць (PageUp)",
         "nextMonth": "Наступний місяць (PageDown)",
-        "previousYear": "Попередній рік (Control + вліво)",
-        "nextYear": "Наступний рік (Control + вправо)",
-        "previousDecade": "Попереднє десятиліття",
+        "previousYear": "Минулий рік (Control + left)",
+        "nextYear": "Наступний рік (Control + right)",
+        "previousDecade": "Минуле десятиліття",
         "nextDecade": "Наступне десятиліття",
-        "previousCentury": "Попереднє століття",
+        "previousCentury": "Минуле століття",
         "nextCentury": "Наступне століття"
       },
-      "timePickerLocale": { "placeholder": "Select time", "rangePlaceholder": ["Час початку", "Час завершення"] }
+      "timePickerLocale": {
+        "placeholder": "Оберіть час",
+        "rangePlaceholder": [
+          "Початковий час",
+          "Кінцевий час"
+        ]
+      }
     },
-    "global": { "placeholder": "Please select" },
+    "global": {
+      "placeholder": "Будь ласка, оберіть"
+    },
     "Table": {
-      "filterTitle": "Меню фільтрів",
+      "filterTitle": "Меню фільтру",
       "filterConfirm": "OK",
       "filterReset": "Скинути",
-      "filterEmptyText": "Без фільтрів",
+      "filterEmptyText": "Фільтри відсутні",
       "filterCheckall": "Вибрати всі елементи",
-      "filterSearchPlaceholder": "Шукати у фільтрах",
-      "emptyText": "Немає даних",
+      "filterSearchPlaceholder": "Пошук в фільтрах",
+      "emptyText": "Дані відсутні",
       "selectAll": "Вибрати поточну сторінку",
       "selectInvert": "Інвертувати поточну сторінку",
       "selectNone": "Очистити всі дані",
-      "selectionAll": "Виділити всі дані",
+      "selectionAll": "Вибрати всі дані",
       "sortTitle": "Сортувати",
       "expand": "Розгорнути рядок",
       "collapse": "Згорнути рядок",
       "triggerDesc": "Натисніть, щоб відсортувати за спаданням",
-      "triggerAsc": "Натисніть для сортування за зростанням",
+      "triggerAsc": "Натисніть, щоб відсортувати за зростанням",
       "cancelSort": "Натисніть, щоб скасувати сортування"
     },
-    "Modal": { "okText": "OK", "cancelText": "Cancel", "justOkText": "OK" },
-    "Popconfirm": { "okText": "OK", "cancelText": "Cancel" },
+    "Modal": {
+      "okText": "OK",
+      "cancelText": "Скасувати",
+      "justOkText": "OK"
+    },
+    "Popconfirm": {
+      "okText": "OK",
+      "cancelText": "Скасувати"
+    },
     "Transfer": {
-      "titles": ["", ""],
-      "searchPlaceholder": "Пошук",
+      "titles": [
+        "",
+        ""
+      ],
+      "searchPlaceholder": "Пошук тут",
       "itemUnit": "елемент",
       "itemsUnit": "елементи",
       "remove": "Видалити",
@@ -1118,59 +1178,74 @@
       "previewFile": "Попередній перегляд файлу",
       "downloadFile": "Завантажити файл"
     },
-    "Empty": { "description": "Немає даних" },
-    "Icon": { "icon": "іконка" },
-    "Text": { "edit": "Редагувати", "copy": "Копіювати", "copied": "Скопійовано", "expand": "Розгорнути" },
-    "PageHeader": { "back": "Назад" },
+    "Empty": {
+      "description": "Дані відсутні"
+    },
+    "Icon": {
+      "icon": "іконка"
+    },
+    "Text": {
+      "edit": "Редагувати",
+      "copy": "Копіювати",
+      "copied": "Скопійовано",
+      "expand": "Розгорнути"
+    },
+    "PageHeader": {
+      "back": "Назад"
+    },
     "Form": {
       "optional": "(необов'язково)",
       "defaultValidateMessages": {
-        "default": "Помилка перевірки поля ${label}",
+        "default": "Помилка перевірки поля для ${label}",
         "required": "Будь ласка, введіть ${label}",
-        "enum": "${label} повинно бути одним із [${enum}]",
-        "whitespace": "${label} не може бути пробілом"
+        "enum": "${label} повинен бути одним з [${enum}]",
+        "whitespace": "${label} не може бути пустим символом",
         "date": {
-          "format": "Невірний формат дати для поля ${label}",
-          "parse": "${label} не може бути перетворено у дату",
-          "invalid": "${label} є неприпустимою датою"
+          "format": "Невірний формат дати ${label}",
+          "parse": "${label} не може бути перетворено в дату",
+          "invalid": "${label} - невірна дата"
         },
         "types": {
-          "string": "${label} не є допустимим ${type}",
-          "method": "${label} не є допустимим ${type}",
-          "array": "${label} не є допустимим ${type}",
-          "object": "${label} не є допустимим ${type}",
-          "number": "${label} не є допустимим ${type}",
-          "date": "${label} не є допустимим ${type}",
-          "boolean": "${label} не є допустимим ${type}",
-          "integer": "${label} не є допустимим ${type}",
-          "float": "${label} не є допустимим ${type}",
-          "regexp": "${label} не є допустимим ${type}",
-          "email": "${label} не є допустимим ${type}",
-          "url": "${label} не є допустимим ${type}",
-          "hex": "${label} не є допустимим ${type}"
+          "string": "${label} не є валідним ${type}",
+          "method": "${label} не є валідним ${type}",
+          "array": "${label} не є валідним ${type}",
+          "object": "${label} не є валідним ${type}",
+          "number": "${label} не є валідним ${type}",
+          "date": "${label} не є валідним ${type}",
+          "boolean": "${label} не є валідним ${type}",
+          "integer": "${label} не є валідним ${type}",
+          "float": "${label} не є валідним ${type}",
+          "regexp": "${label} не є валідним ${type}",
+          "email": "${label} не є валідним ${type}",
+          "url": "${label} не є валідним ${type}",
+          "hex": "${label} не є валідним ${type}"
         },
         "string": {
-          "len": "${label} повинно містити ${len} символів",
-          "min": "${label} повинно містити принаймні ${min} символів",
-          "max": "${label} може містити до ${max} символів",
-          "range": "${label} повинно містити від ${min} до ${max} символів"
+          "len": "${label} повинен містити ${len} символи",
+          "min": "${label} повинен містити принаймні ${min} символи",
+          "max": "${label} повинен містити до ${max} символів",
+          "range": "${label} повинен містити від ${min} до ${max} символів"
         },
         "number": {
-          "len": "${label} повинно бути рівним ${len}",
-          "min": "${label} повинно бути не менше ${min}",
-          "max": "${label} повинно бути не більше ${max}",
-          "range": "${label} повинно бути в межах від ${min} до ${max}"
+          "len": "${label} повинен бути рівним ${len}",
+          "min": "${label} повинен бути мінімум ${min}",
+          "max": "${label} повинен бути максимум ${max}",
+          "range": "${label} повинен бути між ${min}-${max}"
         },
         "array": {
           "len": "Повинно бути ${len} ${label}",
-          "min": "Мінімум ${min} ${label}",
-          "max": "Максимум ${max} ${label}",
-          "range": "Кількість ${label} повинна бути в діапазоні від ${min} до ${max}"
+          "min": "Повинно бути принаймні ${min} ${label}",
+          "max": "Повинно бути не більше ніж ${max} ${label}",
+          "range": "Кількість ${label} повинна бути між ${min}-${max}"
         },
-        "pattern": { "mismatch": "${label} не відповідає шаблону ${pattern}" }
+        "pattern": {
+          "mismatch": "${label} не відповідає шаблону ${pattern}"
+        }
       }
     },
-    "Image": { "preview": "Перегляд" }
+    "Image": {
+      "preview": "Попередній перегляд"
+    }
   },
   "cronstrue": {
     "atX0SecondsPastTheMinuteGt20": null,
@@ -1178,66 +1253,74 @@
     "commaMonthX0ThroughMonthX1": null,
     "commaYearX0ThroughYearX1": null,
     "use24HourTimeFormatByDefault": false,
-    "anErrorOccuredWhenGeneratingTheExpressionD": "Під час генерації опису виразу сталася помилка. Перевірте синтаксис виразу cron.",
-    "everyMinute": "кожну хвилину",
-    "everyHour": "кожну годину",
+    "anErrorOccuredWhenGeneratingTheExpressionD": "Сталася помилка при генеруванні опису виразу. Перевірте синтаксис виразу cron.",
+    "everyMinute": "кожна хвилина",
+    "everyHour": "кожна година",
     "atSpace": "О ",
-    "everyMinuteBetweenX0AndX1": "Кожну хвилину між %s і %s",
+    "everyMinuteBetweenX0AndX1": "Кожна хвилина між %s та %s",
     "at": "О",
-    "spaceAnd": " і",
-    "everySecond": "кожну секунду",
-    "everyX0Seconds": "кожні %s секунд",
-    "secondsX0ThroughX1PastTheMinute": "секунди від %s до %s після хвилини",
-    "atX0SecondsPastTheMinute": "о %s секунді після хвилини",
-    "everyX0Minutes": "кожні %s хвилин",
-    "minutesX0ThroughX1PastTheHour": "хвилини від %s до %s після години",
-    "atX0MinutesPastTheHour": "о %s хвилині після години",
-    "everyX0Hours": "кожні %s годин",
-    "betweenX0AndX1": "між %s і %s",
+    "spaceAnd": " та",
+    "everySecond": "кожна секунда",
+    "everyX0Seconds": "кожні %s секунди",
+    "secondsX0ThroughX1PastTheMinute": "секунди %s до %s після хвилини",
+    "atX0SecondsPastTheMinute": "о %s секундах після хвилини",
+    "everyX0Minutes": "кожні %s хвилини",
+    "minutesX0ThroughX1PastTheHour": "хвилини %s до %s після години",
+    "atX0MinutesPastTheHour": "о %s хвилинах після години",
+    "everyX0Hours": "кожні %s години",
+    "betweenX0AndX1": "між %s та %s",
     "atX0": "о %s",
     "commaEveryDay": ", щодня",
-    "commaEveryX0DaysOfTheWeek": ", щоденно впродовж %s днів тижня",
-    "commaX0ThroughX1": ", від %s до %s",
+    "commaEveryX0DaysOfTheWeek": ", кожні %s дні тижня",
+    "commaX0ThroughX1": ", %s до %s",
     "commaAndX0ThroughX1": ", %s до %s",
     "first": "перший",
     "second": "другий",
     "third": "третій",
     "fourth": "четвертий",
     "fifth": "п'ятий",
-    "commaOnThe": ", у ",
+    "commaOnThe": ", в ",
     "spaceX0OfTheMonth": " %s місяця",
     "lastDay": "останній день",
-    "commaOnTheLastX0OfTheMonth": ", на останній %s місяця",
+    "commaOnTheLastX0OfTheMonth": ", в останню %s місяця",
     "commaOnlyOnX0": ", тільки в %s",
-    "commaAndOnX0": ", і в %s",
-    "commaEveryX0Months": ", кожні %s місяців",
+    "commaAndOnX0": ", та в %s",
+    "commaEveryX0Months": ", кожні %s місяці",
     "commaOnlyInX0": ", тільки в %s",
     "commaOnTheLastDayOfTheMonth": ", в останній день місяця",
-    "commaOnTheLastWeekdayOfTheMonth": ", в останній робочий день місяця",
+    "commaOnTheLastWeekdayOfTheMonth": ", в останній будень місяця",
     "commaDaysBeforeTheLastDayOfTheMonth": ", %s днів до останнього дня місяця",
-    "firstWeekday": "перший робочий день",
-    "weekdayNearestDayX0": "робочий день найближчий до дня %s",
-    "commaOnTheX0OfTheMonth": ", на %s місяця",
-    "commaEveryX0Days": ", кожні %s днів",
+    "firstWeekday": "перший будень",
+    "weekdayNearestDayX0": "будень, найближчий до дня %s",
+    "commaOnTheX0OfTheMonth": ", в %s місяця",
+    "commaEveryX0Days": ", кожні %s дні",
     "commaBetweenDayX0AndX1OfTheMonth": ", між днями %s та %s місяця",
-    "commaOnDayX0OfTheMonth": ", на %s день місяця",
-    "commaEveryHour": ", кожну годину",
-    "commaEveryX0Years": ", кожні %s років",
-    "commaStartingX0": ", починаючи з %s",
-    "daysOfTheWeek": ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота"],
+    "commaOnDayX0OfTheMonth": ", в день %s місяця",
+    "commaEveryHour": ", кожна година",
+    "commaEveryX0Years": ", кожні %s роки",
+    "commaStartingX0": ", починаючи %s",
+    "daysOfTheWeek": [
+      "неділя",
+      "понеділок",
+      "вівторок",
+      "середа",
+      "четвер",
+      "п'ятниця",
+      "субота"
+    ],
     "monthsOfTheYear": [
-      "Січень",
-      "Лютий",
-      "Березень",
-      "Квітень",
-      "Травень",
-      "Червень",
-      "Липень",
-      "Серпень",
-      "Вересень",
-      "Жовтень",
-      "Листопад",
-      "Грудень"
+      "січень",
+      "лютий",
+      "березень",
+      "квітень",
+      "травень",
+      "червень",
+      "липень",
+      "серпень",
+      "вересень",
+      "жовтень",
+      "листопад",
+      "грудень"
     ]
   },
   "cron": {
@@ -1247,9 +1330,9 @@
     "emptyMonthDaysShort": "день місяця",
     "emptyWeekDays": "кожен день тижня",
     "emptyWeekDaysShort": "день тижня",
-    "emptyHours": "кожну годину",
-    "emptyMinutes": "кожну хвилину",
-    "emptyMinutesForHourPeriod": "кожні",
+    "emptyHours": "кожна година",
+    "emptyMinutes": "кожна хвилина",
+    "emptyMinutesForHourPeriod": "кожен",
     "yearOption": "рік",
     "monthOption": "місяць",
     "weekOption": "тиждень",
@@ -1258,32 +1341,61 @@
     "minuteOption": "хвилина",
     "rebootOption": "перезавантаження",
     "prefixPeriod": "Кожен",
-    "prefixMonths": "в",
-    "prefixMonthDays": "в",
-    "prefixWeekDays": "в",
-    "prefixWeekDaysForMonthAndYearPeriod": "і",
+    "prefixMonths": "у",
+    "prefixMonthDays": "на",
+    "prefixWeekDays": "на",
+    "prefixWeekDaysForMonthAndYearPeriod": "та",
     "prefixHours": "о",
     "prefixMinutes": ":",
     "prefixMinutesForHourPeriod": "о",
-    "suffixMinutesForHourPeriod": "хвилин(и)",
-    "errorInvalidCron": "Невірний вираз cron",
+    "suffixMinutesForHourPeriod": "хвилина(и)",
+    "errorInvalidCron": "Неправильний вираз cron",
     "clearButtonText": "Очистити",
-    "weekDays": ["Неділя", "Понеділок", "Вівторок", "Середа", "Четвер", "П'ятниця", "Субота"],
-    "months": [
-      "Січень",
-      "Лютий",
-      "Березень",
-      "Квітень",
-      "Травень",
-      "Червень",
-      "Липень",
-      "Серпень",
-      "Вересень",
-      "Жовтень",
-      "Листопад",
-      "Грудень"
+    "weekDays": [
+      "неділя",
+      "понеділок",
+      "вівторок",
+      "середа",
+      "четвер",
+      "п'ятниця",
+      "субота"
     ],
-    "altWeekDays": ["НД", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"],
-    "altMonths": ["СІЧ", "ЛЮТ", "БЕР", "КВІ", "ТРА", "ЧЕР", "ЛИП", "СЕР", "ВЕР", "ЖОВ", "ЛИС", "ГРУ"]
+    "months": [
+      "січень",
+      "лютий",
+      "березень",
+      "квітень",
+      "травень",
+      "червень",
+      "липень",
+      "серпень",
+      "вересень",
+      "жовтень",
+      "листопад",
+      "грудень"
+    ],
+    "altWeekDays": [
+      "НЕД",
+      "ПОН",
+      "ВІВ",
+      "СЕР",
+      "ЧЕТ",
+      "П'ЯТ",
+      "СУБ"
+    ],
+    "altMonths": [
+      "СІЧ",
+      "ЛЮТ",
+      "БЕР",
+      "КВІ",
+      "ТРА",
+      "ЧЕР",
+      "ЛИП",
+      "СЕР",
+      "ВЕР",
+      "ЖОВ",
+      "ЛИС",
+      "ГРУ"
+    ]
   }
 }
