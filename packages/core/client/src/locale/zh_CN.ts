@@ -791,5 +791,6 @@ export default {
   "Duplicate":"复制",
   "Duplicate mode":"复制方式",
   "Quick duplicate":"快速复制",
-  "Duplicate and continue":"复制并继续"
+  "Duplicate and continue":"复制并继续",
+  "Please configure the duplicate fields":"请配置要复制的字段"
 }

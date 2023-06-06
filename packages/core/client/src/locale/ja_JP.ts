@@ -621,5 +621,6 @@ export default {
   "Duplicate":"レプリケーション",
   "Duplicate mode":"コピーモード",
   "Quick duplicate":"今すぐコピー",
-  "Duplicate and continue":"コピーして続行"
+  "Duplicate and continue":"コピーして続行",
+  "Please configure the duplicate fields":"コピーするフィールドを設定してください"
 }
