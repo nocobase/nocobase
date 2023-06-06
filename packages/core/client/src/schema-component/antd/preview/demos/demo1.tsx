@@ -16,7 +16,7 @@ const schema = {
       'x-decorator': 'FormItem',
       'x-component': 'Preview',
       'x-component-props': {
-        action: 'attachments:upload',
+        action: 'attachments:create',
         // multiple: true,
       },
       'x-reactions': {

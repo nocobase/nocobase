@@ -3107,100 +3107,85 @@
   version "8.39.0"
   resolved "https://registry.npmjs.org/@eslint/js/-/js-8.39.0.tgz#58b536bcc843f4cd1e02a7e6171da5c040f4d44b"
 
-"@formily/antd@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/antd/-/antd-2.0.20.tgz#8a60ce0473ffa55df63c911a4e11330dd0ddfe2b"
+"@formily/antd@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/antd/-/antd-2.2.24.tgz#d536cba6d4691b9c2089efd818cb85681a6d4c9b"
+  integrity sha512-jMrbg63FMQvkwT+y4mum2DE2mRlSuqwd1cuvWiUsH2RkaQM/SQhVdwigIsKFwzj69ujN75IeQCmAhZJIBFoLvQ==
   dependencies:
-    "@formily/core" "2.0.20"
-    "@formily/grid" "2.0.20"
-    "@formily/json-schema" "2.0.20"
-    "@formily/react" "2.0.20"
-    "@formily/reactive" "2.0.20"
-    "@formily/reactive-react" "2.0.20"
-    "@formily/shared" "2.0.20"
+    "@formily/core" "2.2.24"
+    "@formily/grid" "2.2.24"
+    "@formily/json-schema" "2.2.24"
+    "@formily/react" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/reactive-react" "2.2.24"
+    "@formily/shared" "2.2.24"
     classnames "^2.2.6"
     react-sortable-hoc "^1.11.0"
     react-sticky-box "^0.9.3"
 
-"@formily/core@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.0.20.tgz#a8e8ea74e60d55c4ac61afb467084dcae4948049"
+"@formily/core@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.24.tgz#b96b72def806ee4c71c0a0279b678ffcc23828bf"
+  integrity sha512-FjyhtSwSxSK18C5L+D2U2uqkVh5J0BnWmk/OyvOGNoQ3gdCHJFyH8gr6NNt11B8xL2oXKIEpaC0nw8iOcGf8eA==
   dependencies:
-    "@formily/reactive" "2.0.20"
-    "@formily/shared" "2.0.20"
-    "@formily/validator" "2.0.20"
+    "@formily/reactive" "2.2.24"
+    "@formily/shared" "2.2.24"
+    "@formily/validator" "2.2.24"
 
-"@formily/core@2.2.21":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/core/-/core-2.2.21.tgz#fc2a34284f59dce34b985e96ef3092a0648c1f3c"
+"@formily/grid@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.2.24.tgz#e5e1163ef9597a4417fc2f2f4e438d48c0d3dd59"
+  integrity sha512-w0IWWYDG8NwzdrLRsbUkX/L5OuFATTwyJc+tswtxVi2nrF9hZeHSYwvMh4dBI9rF2l0LKORvnVnk1O/kufnWug==
   dependencies:
-    "@formily/reactive" "2.2.21"
-    "@formily/shared" "2.2.21"
-    "@formily/validator" "2.2.21"
-
-"@formily/grid@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/grid/-/grid-2.0.20.tgz#76a0cabebf9d98f5169f60864cfa29c0204c0088"
-  dependencies:
-    "@formily/reactive" "2.0.20"
+    "@formily/reactive" "2.2.24"
     "@juggle/resize-observer" "^3.3.1"
 
-"@formily/json-schema@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/json-schema/-/json-schema-2.0.20.tgz#1432fba50277e431074eaf96551e162a3528c560"
+"@formily/json-schema@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/json-schema/-/json-schema-2.2.24.tgz#b23b9ae18a24fbcb716cd0e23677c8597abc5689"
+  integrity sha512-3aEMEO5D0B1p5rM/lzWmhx3rYqid4OKzCXAdxBsyicacFK9dVqxlOBt8d6auOsppMZ675q52jSVDxNSgh4xKqg==
   dependencies:
-    "@formily/core" "2.0.20"
-    "@formily/reactive" "2.0.20"
-    "@formily/shared" "2.0.20"
+    "@formily/core" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/shared" "2.2.24"
 
-"@formily/json-schema@^2.0.15":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/json-schema/-/json-schema-2.2.21.tgz#6765dbafd391ac6d642c824ed9c7548ee7e9421f"
+"@formily/path@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.24.tgz#1c15352dc72f78ef3e8924633a9d8a8182364d6b"
+  integrity sha512-DrRBIPvlqGr7+xQ/74MY/j7WSbUzvWeHOsjfXTIllbijKAdUm+DovpQuHMXR16I3gnuQ8CvyMzCizP9RKVnhzw==
+
+"@formily/react@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/react/-/react-2.2.24.tgz#415ca8df2c445ba43fe596d0a6e8bd4236abe8d6"
+  integrity sha512-Bq5LQzK9u0E8BBwHqWY1jXtbdVAJV/gMkZAssAHVXu01YvDUVugHXcbxuzKZKY5MrZFIyM7Jod0TbhjEPr2bhA==
   dependencies:
-    "@formily/core" "2.2.21"
-    "@formily/reactive" "2.2.21"
-    "@formily/shared" "2.2.21"
-
-"@formily/path@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.0.20.tgz#1047cb1737d1878182427bdbebf69a86be8b414f"
-
-"@formily/path@2.2.21":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/path/-/path-2.2.21.tgz#55b0844dbfb65b1beee1a34525042b575cc7b7f6"
-
-"@formily/react@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/react/-/react-2.0.20.tgz#57d9be728a2a297e11ba1def0da28915707c8d0d"
-  dependencies:
-    "@formily/core" "2.0.20"
-    "@formily/json-schema" "2.0.20"
-    "@formily/reactive" "2.0.20"
-    "@formily/reactive-react" "2.0.20"
-    "@formily/shared" "2.0.20"
-    "@formily/validator" "2.0.20"
+    "@formily/core" "2.2.24"
+    "@formily/json-schema" "2.2.24"
+    "@formily/reactive" "2.2.24"
+    "@formily/reactive-react" "2.2.24"
+    "@formily/shared" "2.2.24"
+    "@formily/validator" "2.2.24"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive-react@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.0.20.tgz#63ec73aca01f3a8de5ef6e18f07e80b7b72551f8"
+"@formily/reactive-react@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/reactive-react/-/reactive-react-2.2.24.tgz#187e6f07b1aab09f41134c4335200b38afdcc67c"
+  integrity sha512-MSS2ug+19+GzVJFhWjwOp6QWe/Bc3xC9YXYB7lfriJBQCC5lGlX0xaOZNkOH4yFz9OvSR59wwManOpOh329/EQ==
   dependencies:
-    "@formily/reactive" "2.0.20"
+    "@formily/reactive" "2.2.24"
     hoist-non-react-statics "^3.3.2"
 
-"@formily/reactive@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.0.20.tgz#e8701a49e94bb53c362da945170c6eeffe931540"
+"@formily/reactive@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.24.tgz#758b0fb26568970cbd326e1abb86f0264713f0c1"
+  integrity sha512-b3+43v7pmUCC8C57XO27M0x+2aE8k6lNndaOuo15Du+tLQyr+g+JBpEZsbIJfy9ScgdK6mIttxIhJiU+xUAmvg==
 
-"@formily/reactive@2.2.21":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/reactive/-/reactive-2.2.21.tgz#f39eeb13bee086d2a85feab73f5b8eb4bb01e462"
-
-"@formily/shared@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/shared/-/shared-2.0.20.tgz#8d638598ade03a07e67fb66ebb7de2ba0bb57248"
+"@formily/shared@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/shared/-/shared-2.2.24.tgz#f7939d8a36796db7fce580c2e6c52d04fed1b13b"
+  integrity sha512-PU3gBgbybSU6yv/Act2fn5sYnYTuiVJtpiYEMQGyn7wuWguOQfOpIkuaVim4h64PARO8WmnjENeDl5R5evgIYQ==
   dependencies:
-    "@formily/path" "2.0.20"
+    "@formily/path" "2.2.24"
     camel-case "^4.1.1"
     lower-case "^2.0.1"
     no-case "^3.0.4"
@@ -3208,29 +3193,12 @@
     pascal-case "^3.1.1"
     upper-case "^2.0.1"
 
-"@formily/shared@2.2.21":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/shared/-/shared-2.2.21.tgz#01fbdb9fcf92516a17d4afec204cb10936aaf533"
+"@formily/validator@2.2.24":
+  version "2.2.24"
+  resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.2.24.tgz#03fc909fe93694e895d73e6d9e445a9f89bc1d51"
+  integrity sha512-EDZiArnLdDbp2k7/PHknjkX5FgsJXoqWbBrrhXCyzwC2ebBG4VTxWZUB+MWGT17A77Tl7xPsY7JPpJohcuQ+4Q==
   dependencies:
-    "@formily/path" "2.2.21"
-    camel-case "^4.1.1"
-    lower-case "^2.0.1"
-    no-case "^3.0.4"
-    param-case "^3.0.4"
-    pascal-case "^3.1.1"
-    upper-case "^2.0.1"
-
-"@formily/validator@2.0.20":
-  version "2.0.20"
-  resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.0.20.tgz#956c612603fe87430efd6193fe683803f0b22b30"
-  dependencies:
-    "@formily/shared" "2.0.20"
-
-"@formily/validator@2.2.21":
-  version "2.2.21"
-  resolved "https://registry.yarnpkg.com/@formily/validator/-/validator-2.2.21.tgz#661d45c9cf1eeac44cb23e5ed03009cfa8548e4a"
-  dependencies:
-    "@formily/shared" "2.2.21"
+    "@formily/shared" "2.2.24"
 
 "@formulajs/formulajs@4.2.0", "@formulajs/formulajs@^4.2.0":
   version "4.2.0"

@@ -12,29 +12,32 @@ type Composed = {
   Object?: React.FC<any>;
 };
 
-export const ReadPretty = observer((props: any) => {
-  const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
-  const field = useField<any>();
-  const compile = useCompile();
+export const ReadPretty = observer(
+  (props: any) => {
+    const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
+    const field = useField<any>();
+    const compile = useCompile();
 
-  if (!isValid(props.value)) {
-    return <div />;
-  }
-  if (isArrayField(field) && field?.value?.length === 0) {
-    return <div />;
-  }
-  const dataSource = field.dataSource || props.options || [];
-  const options = getCurrentOptions(field.value, dataSource, fieldNames);
+    if (!isValid(props.value)) {
+      return <div />;
+    }
+    if (isArrayField(field) && field?.value?.length === 0) {
+      return <div />;
+    }
+    const dataSource = field.dataSource || props.options || [];
+    const options = getCurrentOptions(field.value, dataSource, fieldNames);
 
-  return (
-    <div>
-      <EllipsisWithTooltip ellipsis={props.ellipsis}>
-        {options.map((option, key) => (
-          <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
-            {compile(option[fieldNames.label])}
-          </Tag>
-        ))}
-      </EllipsisWithTooltip>
-    </div>
-  );
-});
+    return (
+      <div>
+        <EllipsisWithTooltip ellipsis={props.ellipsis}>
+          {options.map((option, key) => (
+            <Tag key={key} color={option[fieldNames.color]} icon={option.icon}>
+              {compile(option[fieldNames.label])}
+            </Tag>
+          ))}
+        </EllipsisWithTooltip>
+      </div>
+    );
+  },
+  { displayName: 'ReadPretty' },
+);
