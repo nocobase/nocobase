@@ -709,5 +709,4 @@ export default {
   "Feedback": "Зворотній зв'язок",
   "Try again": "Спробуйте ще раз",
   "Data template": "Шаблон даних",
-  "Template fields have been removed and need to be reconfigured": "Поля шаблону були видалені і потребують повторної конфігурації"
 };
