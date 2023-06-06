@@ -48,7 +48,7 @@ function getFileData(ctx: Context) {
 }
 
 export async function attachmentCreate(ctx: Context, next: Next) {
-  const { sourceField } = ctx.action.params;
+  const { attachementField } = ctx.action.params;
 
   // NOTE:
   // 1. 存储引擎选择依赖于字段定义
@@ -59,7 +59,7 @@ export async function attachmentCreate(ctx: Context, next: Next) {
   const StorageRepo = ctx.db.getRepository('storages');
   // 如果没有包含关联，则直接按默认文件上传至默认存储引擎
   const storage = await StorageRepo.findOne({
-    filter: sourceField ? { name: ctx.db.getFieldByPath(sourceField).options.storage } : { default: true }
+    filter: attachementField ? { name: ctx.db.getFieldByPath(attachementField).options.storage } : { default: true }
   });
 
   // 传递已取得的存储引擎，避免重查

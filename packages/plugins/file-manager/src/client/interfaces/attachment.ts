@@ -28,7 +28,7 @@ export const attachment: IField = {
     }
 
     schema['x-component-props']['action'] = `${field.target}:create${
-      field.storage ? `?sourceField=${field.collectionName}.${field.name}` : ''
+      field.storage ? `?attachementField=${field.collectionName}.${field.name}` : ''
     }`;
   },
   initialize: (values: any) => {
