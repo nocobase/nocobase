@@ -33,9 +33,12 @@ export interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const data = useDuplicatefieldsContext();
   const { getCollectionJoinField } = useCollectionManager();
-
+  if (data) {
+    return data;
+  }
+  const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
   items.forEach((item) => {
     try {
@@ -71,7 +74,7 @@ const useDataTemplates = () => {
 };
 
 export const Templates = ({ style = {}, form }) => {
-  const { templates, display, enabled, defaultTemplate } = useDuplicatefieldsContext() || useDataTemplates();
+  const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
