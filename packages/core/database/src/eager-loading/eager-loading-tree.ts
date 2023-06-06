@@ -56,7 +56,10 @@ export class EagerLoadingTree {
           continue;
         }
 
-        const association = eagerLoadingTreeParent.model.associations[include.association];
+        const association = lodash.isString(include.association)
+          ? eagerLoadingTreeParent.model.associations[include.association]
+          : include.association;
+
         const associationType = association.associationType;
 
         const child = {
@@ -240,7 +243,8 @@ export class EagerLoadingTree {
               }
 
               if (associationType == 'HasOne') {
-                parentInstance.setDataValue(association.as, instance);
+                const key = association.options.realAs || association.as;
+                parentInstance[key] = parentInstance.dataValues[key] = instance;
               }
             }
           }

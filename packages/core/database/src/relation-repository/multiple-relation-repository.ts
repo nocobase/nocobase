@@ -30,14 +30,16 @@ export abstract class MultipleRelationRepository extends RelationRepository {
 
     const association = this.association as any;
 
-    const pivotAssoc = new HasOne(association.target, association.through.model, {
+    const oneFromTargetOptions = {
       as: '_pivot_',
       foreignKey: association.otherKey,
       sourceKey: association.targetKey,
-    });
+      realAs: association.through.model.name,
+    };
+
+    const pivotAssoc = new HasOne(association.target, association.through.model, oneFromTargetOptions);
 
     const appendFilter = {
-      fromFilter: true,
       isPivotFilter: true,
       association: pivotAssoc,
       where: {
