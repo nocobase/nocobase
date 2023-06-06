@@ -30,8 +30,9 @@ export const DuplicateAction = observer((props: any) => {
   const { t } = useTranslation();
   const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
-  const handelQuickDuplicate = () => {
-    fetchTemplateData(api, template, t).then(async (data) => {
+  const handelQuickDuplicate = async () => {
+    try {
+      const data = await fetchTemplateData(api, template, t);
       await resource.create({
         values: {
           ...data,
@@ -39,12 +40,15 @@ export const DuplicateAction = observer((props: any) => {
       });
       message.success(t('Saved successfully'));
       if (block === 'form') {
-        __parent?.service.refresh?.();
+        __parent?.service?.refresh?.();
       } else {
         await service?.refresh?.();
       }
-    });
+    } catch (error) {
+      console.error(error); // Handle or log the error appropriately
+    }
   };
+
   const handelDuplicate = () => {
     if (!disabled) {
       if (duplicateFields?.length > 0) {
