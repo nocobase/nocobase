@@ -91,50 +91,50 @@ export const querySchema: ISchema = {
       type: 'void',
       'x-component': 'FormItem',
       properties: {
-        mode: {
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: '45%',
-            },
-          },
-          'x-component': 'Radio.Group',
-          'x-component-props': {
-            defaultValue: 'builder',
-            optionType: 'button',
-            buttonStyle: 'solid',
-          },
-          enum: [
-            {
-              label: lang('Builder mode'),
-              value: 'builder',
-            },
-            {
-              label: lang('SQL mode'),
-              value: 'sql',
-            },
-          ],
-          'x-reactions': [
-            {
-              target: 'query.builder',
-              fulfill: {
-                state: {
-                  visible: '{{ $self.value !== "sql" }}',
-                },
-              },
-            },
-            {
-              target: 'query.sql',
-              fulfill: {
-                state: {
-                  visible: '{{ $self.value === "sql" }}',
-                },
-              },
-            },
-          ],
-        },
+        // mode: {
+        //   type: 'string',
+        //   'x-decorator': 'FormItem',
+        //   'x-decorator-props': {
+        //     style: {
+        //       display: 'inline-block',
+        //       width: '45%',
+        //     },
+        //   },
+        //   'x-component': 'Radio.Group',
+        //   'x-component-props': {
+        //     defaultValue: 'builder',
+        //     optionType: 'button',
+        //     buttonStyle: 'solid',
+        //   },
+        //   enum: [
+        //     {
+        //       label: lang('Builder mode'),
+        //       value: 'builder',
+        //     },
+        //     {
+        //       label: lang('SQL mode'),
+        //       value: 'sql',
+        //     },
+        //   ],
+        //   'x-reactions': [
+        //     {
+        //       target: 'query.builder',
+        //       fulfill: {
+        //         state: {
+        //           visible: '{{ $self.value !== "sql" }}',
+        //         },
+        //       },
+        //     },
+        //     {
+        //       target: 'query.sql',
+        //       fulfill: {
+        //         state: {
+        //           visible: '{{ $self.value === "sql" }}',
+        //         },
+        //       },
+        //     },
+        //   ],
+        // },
         collection: {
           type: 'string',
           'x-decorator': 'FormItem',
@@ -319,49 +319,49 @@ export const querySchema: ISchema = {
             },
           },
         },
-        sql: {
-          type: 'object',
-          properties: {
-            select: {
-              type: 'void',
-              'x-decorator': 'p',
-              'x-component': 'Text',
-              'x-component-props': {
-                code: true,
-              },
-              'x-content': 'SELECT',
-            },
-            fields: {
-              type: 'string',
-              'x-decorator': 'FormItem',
-              'x-component': 'Input.TextArea',
-              'x-component-props': {
-                autoSize: {
-                  minRows: 2,
-                },
-                placeholder: 'Fields',
-              },
-              required: true,
-            },
-            from: {
-              type: 'void',
-              'x-decorator': 'p',
-              'x-component': 'FromSql',
-            },
-            clauses: {
-              type: 'string',
-              'x-decorator': 'FormItem',
-              'x-component': 'Input.TextArea',
-              'x-component-props': {
-                autoSize: {
-                  minRows: 5,
-                },
-                placeholder: 'Join, Where, Group By, Having, Order By, Limit',
-              },
-              required: true,
-            },
-          },
-        },
+        // sql: {
+        //   type: 'object',
+        //   properties: {
+        //     select: {
+        //       type: 'void',
+        //       'x-decorator': 'p',
+        //       'x-component': 'Text',
+        //       'x-component-props': {
+        //         code: true,
+        //       },
+        //       'x-content': 'SELECT',
+        //     },
+        //     fields: {
+        //       type: 'string',
+        //       'x-decorator': 'FormItem',
+        //       'x-component': 'Input.TextArea',
+        //       'x-component-props': {
+        //         autoSize: {
+        //           minRows: 2,
+        //         },
+        //         placeholder: 'Fields',
+        //       },
+        //       required: true,
+        //     },
+        //     from: {
+        //       type: 'void',
+        //       'x-decorator': 'p',
+        //       'x-component': 'FromSql',
+        //     },
+        //     clauses: {
+        //       type: 'string',
+        //       'x-decorator': 'FormItem',
+        //       'x-component': 'Input.TextArea',
+        //       'x-component-props': {
+        //         autoSize: {
+        //           minRows: 5,
+        //         },
+        //         placeholder: 'Join, Where, Group By, Having, Order By, Limit',
+        //       },
+        //       required: true,
+        //     },
+        //   },
+        // },
         cache: {
           type: 'object',
           properties: {

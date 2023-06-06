@@ -114,7 +114,11 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
    */
   const changedQuery = configuring ? query : JSON.stringify(query);
   useEffect(() => {
-    if ((query?.measures?.length && query?.dimensions?.length) || (query?.sql?.fields && query?.sql?.clauses)) {
+    if (
+      query?.measures?.length &&
+      query?.dimensions?.length
+      // || (query?.sql?.fields && query?.sql?.clauses)
+    ) {
       run();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

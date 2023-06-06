@@ -92,14 +92,14 @@ const parseBuilder = (ctx: Context, builder: QueryParams) => {
 const queryData = async (ctx: Context, builder: QueryParams) => {
   const { collection, measures, dimensions, orders, filter, limit, sql } = builder;
   const repository = ctx.db.getRepository(collection);
+  return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
+  // if (!sql) {
+  //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
+  // }
 
-  if (!sql) {
-    return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
-  }
-
-  const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
-  const [data] = await ctx.db.sequelize.query(statement);
-  return data;
+  // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
+  // const [data] = await ctx.db.sequelize.query(statement);
+  // return data;
 };
 
 export const query = async (ctx: Context, next: Next) => {
