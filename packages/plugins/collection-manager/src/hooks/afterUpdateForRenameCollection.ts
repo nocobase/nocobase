@@ -18,6 +18,11 @@ export function afterUpdateForRenameCollection(db: Database) {
       const prevCollection = db.getCollection(prevName);
       const prevCollectionTableName = prevCollection.getTableNameWithSchema();
 
+      /**
+       * rename foreign key
+       * eg: rename 'users' to 'members', rename 'user_id' to 'member_id'
+       * @param foreignKey
+       */
       const updateForeignKey = (foreignKey) => {
         return foreignKey.replace(
           new RegExp(`^${inflection.singularize(prevName)}`),
@@ -172,6 +177,7 @@ export function afterUpdateForRenameCollection(db: Database) {
 
       // update inherited collections
       const children = db.inheritanceMap.getChildren(prevName);
+
       if (children.size > 0) {
         const childrenModels = await db.getRepository('collections').find({
           filter: {

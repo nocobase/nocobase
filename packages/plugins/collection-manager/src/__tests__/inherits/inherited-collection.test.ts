@@ -74,60 +74,92 @@ pgOnly()('Inherited Collection', () => {
     });
   });
 
-  it('should rename inherited collection', async () => {
-    const parent = await collectionRepository.create({
-      values: {
-        name: 'parent',
-        timestamps: false,
-        fields: [
-          {
-            name: 'parent-name',
-            type: 'string',
-          },
-        ],
-      },
-      context: {},
+  describe('rename inherit collection', async () => {
+    beforeEach(async () => {
+      await collectionRepository.create({
+        values: {
+          name: 'parent',
+          timestamps: false,
+          fields: [
+            {
+              name: 'parent-name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
+
+      await collectionRepository.create({
+        values: {
+          name: 'child1',
+          timestamps: false,
+          inherits: ['parent'],
+          fields: [
+            {
+              name: 'child-name',
+              type: 'string',
+            },
+          ],
+        },
+        context: {},
+      });
     });
 
-    const child1 = await collectionRepository.create({
-      values: {
-        name: 'child1',
-        timestamps: false,
-        inherits: [parent.get('name')],
-        fields: [
-          {
-            name: 'child-name',
-            type: 'string',
-          },
-        ],
-      },
-      context: {},
+    it('should rename parent', async () => {
+      // rename parent
+      await db.getCollection('collections').repository.update({
+        filter: {
+          name: 'parent',
+        },
+        values: {
+          name: 'root',
+        },
+        context: {},
+      });
+
+      const child1Collection = db.getCollection('child1');
+      expect(child1Collection.options.inherits).toEqual(['root']);
+
+      await child1Collection.repository.create({
+        values: {
+          child_name: 'child1',
+          parent_name: 'root',
+        },
+      });
+
+      const rootCollection = db.getCollection('root');
+      const rootRecords = await rootCollection.repository.find({});
+
+      expect(rootRecords.length).toEqual(1);
     });
 
-    // rename parents
-    await db.getCollection('collections').repository.update({
-      filter: {
-        name: 'parent',
-      },
-      values: {
-        name: 'root',
-      },
-      context: {},
+    it('should rename child', async () => {
+      // rename parents
+      await db.getCollection('collections').repository.update({
+        filter: {
+          name: 'child1',
+        },
+        values: {
+          name: 'child-1',
+        },
+        context: {},
+      });
+
+      const child1Collection = db.getCollection('child-1');
+      expect(child1Collection.options.inherits).toEqual(['parent']);
+
+      await child1Collection.repository.create({
+        values: {
+          child_name: 'child1',
+          parent_name: 'root',
+        },
+      });
+      const rootCollection = db.getCollection('root');
+      const rootRecords = await rootCollection.repository.find({});
+
+      expect(rootRecords.length).toEqual(1);
     });
-
-    const child1Collection = db.getCollection('child1');
-    expect(child1Collection.options.inherits).toEqual(['root']);
-
-    await child1Collection.repository.create({
-      values: {
-        child_name: 'child1',
-        parent_name: 'root',
-      },
-    });
-    const rootCollection = db.getCollection('root');
-    const rootRecords = await rootCollection.repository.find({});
-
-    expect(rootRecords.length).toEqual(1);
   });
 
   it('should change inherits option', async () => {
