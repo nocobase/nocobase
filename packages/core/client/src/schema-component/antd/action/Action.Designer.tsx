@@ -17,6 +17,7 @@ import { getCustomRequestSchema } from './utils';
 import isEmpty from 'lodash/isEmpty';
 import Variable from '../variable/Variable';
 import { useDateVariable } from '../../../schema-settings/VariableInput/hooks/useDateVariable';
+import { useCollectionOptions } from '../../../collection-manager/action-hooks';
 
 const MenuGroup = (props) => {
   const fieldSchema = useFieldSchema();
@@ -48,18 +49,21 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
 
-  const { name, currentFields } = useCollection();
+  const { name } = useCollection();
   const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
 
-  const recordOption = currentFields
-    .filter((item) => item?.uiSchema)
-    .map(({ name, uiSchema }) => ({
+  const dataSource = useCollectionOptions(name);
+  const generateOption = ({ title, children = [], name }) => {
+    return {
       key: name,
-      label: uiSchema.title,
+      label: title,
       value: name,
-    }));
+      children: children.map((item) => generateOption(item)),
+    };
+  };
+  const recordOption = dataSource.map((item) => generateOption(item));
   const currentRecordOptions = {
     label: t('Current record'),
     value: '$currentRecord',
