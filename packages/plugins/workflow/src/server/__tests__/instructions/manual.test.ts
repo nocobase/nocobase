@@ -11,6 +11,7 @@ describe('workflow > instructions > manual', () => {
   let userAgents;
   let db: Database;
   let PostRepo;
+  let CommentRepo;
   let WorkflowModel;
   let workflow;
   let UserModel;
@@ -25,6 +26,7 @@ describe('workflow > instructions > manual', () => {
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
+    CommentRepo = db.getCollection('comments').repository;
     UserModel = db.getCollection('users').model;
     UserJobModel = db.getModel('users_jobs');
 
@@ -611,6 +613,248 @@ describe('workflow > instructions > manual', () => {
       const [j1, j2] = await e2.getJobs({ order: [['createdAt', 'ASC']] });
       expect(j2.status).toBe(JOB_STATUS.RESOLVED);
       expect(j2.result).toBe(2);
+    });
+
+    it('save all forms, only reserve submitted ones', async () => {
+      const n1 = await workflow.createNode({
+        type: 'manual',
+        config: {
+          assignees: [users[0].id, users[1].id],
+          forms: {
+            f1: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING] },
+            f2: { actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING] },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const UserJobModel = db.getModel('users_jobs');
+      const pendingJobs = await UserJobModel.findAll({
+        order: [['userId', 'ASC']],
+      });
+      expect(pendingJobs.length).toBe(2);
+
+      const res1 = await userAgents[0].resource('users_jobs').submit({
+        filterByTk: pendingJobs[0].get('id'),
+        values: {
+          status: JOB_STATUS.PENDING,
+          result: { f1: { number: 1 } },
+        },
+      });
+      expect(res1.status).toBe(202);
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+      const [j1] = await e1.getJobs({ order: [['createdAt', 'ASC']] });
+      expect(j1.status).toBe(JOB_STATUS.PENDING);
+      expect(j1.result).toMatchObject({ f1: { number: 1 } });
+
+      const res2 = await userAgents[0].resource('users_jobs').submit({
+        filterByTk: pendingJobs[0].get('id'),
+        values: {
+          status: JOB_STATUS.PENDING,
+          result: { f2: { number: 2 } },
+        },
+      });
+      expect(res2.status).toBe(202);
+
+      await sleep(500);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toBe(EXECUTION_STATUS.STARTED);
+      const [j2] = await e2.getJobs({ order: [['createdAt', 'ASC']] });
+      expect(j2.status).toBe(JOB_STATUS.PENDING);
+      expect(j2.result).toMatchObject({
+        f1: { number: 1 },
+        f2: { number: 2 },
+      });
+
+      const res3 = await userAgents[0].resource('users_jobs').submit({
+        filterByTk: pendingJobs[0].get('id'),
+        values: {
+          status: JOB_STATUS.RESOLVED,
+          result: { f2: { number: 3 } },
+        },
+      });
+      expect(res3.status).toBe(202);
+
+      await sleep(500);
+
+      const [e3] = await workflow.getExecutions();
+      expect(e3.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [j3] = await e3.getJobs({ order: [['createdAt', 'ASC']] });
+      expect(j3.status).toBe(JOB_STATUS.RESOLVED);
+      expect(j3.result).toMatchObject({ f2: { number: 3 } });
+    });
+  });
+
+  describe('forms', () => {
+    describe('create', () => {
+      it('create as configured', async () => {
+        const n1 = await workflow.createNode({
+          type: 'manual',
+          config: {
+            assignees: [users[0].id],
+            forms: {
+              f1: {
+                type: 'create',
+                actions: [JOB_STATUS.RESOLVED],
+                collection: 'comments',
+              },
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const UserJobModel = db.getModel('users_jobs');
+        const pendingJobs = await UserJobModel.findAll({
+          order: [['userId', 'ASC']],
+        });
+        expect(pendingJobs.length).toBe(1);
+
+        const res1 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.RESOLVED,
+            result: { f1: { status: 1 } },
+          },
+        });
+        expect(res1.status).toBe(202);
+
+        await sleep(1000);
+
+        const [e1] = await workflow.getExecutions();
+        expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j1] = await e1.getJobs();
+        expect(j1.status).toBe(JOB_STATUS.RESOLVED);
+        expect(j1.result).toMatchObject({ f1: { status: 1 } });
+
+        const comments = await CommentRepo.find();
+        expect(comments.length).toBe(1);
+        expect(comments[0]).toMatchObject({ status: 1 });
+      });
+
+      it('save first and then commit', async () => {
+        const n1 = await workflow.createNode({
+          type: 'manual',
+          config: {
+            assignees: [users[0].id],
+            forms: {
+              f1: {
+                type: 'create',
+                actions: [JOB_STATUS.RESOLVED, JOB_STATUS.PENDING],
+                collection: 'comments',
+              },
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const UserJobModel = db.getModel('users_jobs');
+        const pendingJobs = await UserJobModel.findAll({
+          order: [['userId', 'ASC']],
+        });
+        expect(pendingJobs.length).toBe(1);
+
+        const res1 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.PENDING,
+            result: { f1: { status: 1 } },
+          },
+        });
+        expect(res1.status).toBe(202);
+
+        await sleep(500);
+
+        const [e1] = await workflow.getExecutions();
+        expect(e1.status).toBe(EXECUTION_STATUS.STARTED);
+        const [j1] = await e1.getJobs();
+        expect(j1.status).toBe(JOB_STATUS.PENDING);
+        expect(j1.result).toMatchObject({ f1: { status: 1 } });
+
+        const c1 = await CommentRepo.find();
+        expect(c1.length).toBe(0);
+
+        const res2 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.RESOLVED,
+            result: { f1: { status: 1 } },
+          },
+        });
+
+        await sleep(500);
+
+        const [e2] = await workflow.getExecutions();
+        expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j2] = await e2.getJobs();
+        expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+        expect(j2.result).toMatchObject({ f1: { status: 1 } });
+
+        const c2 = await CommentRepo.find();
+        expect(c2.length).toBe(1);
+      });
+    });
+
+    describe('update', () => {
+      it('update as configured', async () => {
+        const n1 = await workflow.createNode({
+          type: 'manual',
+          config: {
+            assignees: [users[0].id],
+            forms: {
+              f1: {
+                type: 'update',
+                actions: [JOB_STATUS.RESOLVED],
+                collection: 'posts',
+              },
+            },
+          },
+        });
+
+        const post = await PostRepo.create({ values: { title: 't1' } });
+
+        await sleep(500);
+
+        const UserJobModel = db.getModel('users_jobs');
+        const pendingJobs = await UserJobModel.findAll({
+          order: [['userId', 'ASC']],
+        });
+        expect(pendingJobs.length).toBe(1);
+
+        const res1 = await userAgents[0].resource('users_jobs').submit({
+          filterByTk: pendingJobs[0].get('id'),
+          values: {
+            status: JOB_STATUS.RESOLVED,
+            result: { f1: { title: 't2' } },
+          },
+        });
+        expect(res1.status).toBe(202);
+
+        await sleep(1000);
+
+        const [e2] = await workflow.getExecutions();
+        expect(e2.status).toBe(EXECUTION_STATUS.RESOLVED);
+        const [j1] = await e2.getJobs();
+        expect(j1.status).toBe(JOB_STATUS.RESOLVED);
+        expect(j1.result).toMatchObject({ f1: { title: 't2' } });
+
+        const postsAfter = await PostRepo.find();
+        expect(postsAfter.length).toBe(1);
+        expect(postsAfter[0]).toMatchObject({ title: 't2' });
+      });
     });
   });
 });
