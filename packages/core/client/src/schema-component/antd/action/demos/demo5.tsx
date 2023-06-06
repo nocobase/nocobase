@@ -71,52 +71,55 @@ function TypeSelect(props) {
   );
 }
 
-const EditOptions = observer((props) => {
-  const record = ArrayTable.useRecord();
-  const field = useField<Field>();
-  console.log(record.type);
-  return (
-    <div>
-      <a
-        onClick={() => {
-          FormDrawer('Pop-up form', () => {
-            return (
-              <FormLayout labelCol={6} wrapperCol={10}>
-                <SchemaField
-                  schema={{
-                    type: 'object',
-                    properties: record.type ? types[record.type] || {} : {},
-                  }}
-                />
-                <FormDrawer.Footer>
-                  <FormButtonGroup align="right">
-                    <Submit
-                      onSubmit={() => {
-                        return new Promise((resolve) => {
-                          setTimeout(resolve, 1000);
-                        });
-                      }}
-                    >
-                      Submit
-                    </Submit>
-                  </FormButtonGroup>
-                </FormDrawer.Footer>
-              </FormLayout>
-            );
-          })
-            .open({
-              initialValues: field.value,
+const EditOptions = observer(
+  (props) => {
+    const record = ArrayTable.useRecord();
+    const field = useField<Field>();
+    console.log(record.type);
+    return (
+      <div>
+        <a
+          onClick={() => {
+            FormDrawer('Pop-up form', () => {
+              return (
+                <FormLayout labelCol={6} wrapperCol={10}>
+                  <SchemaField
+                    schema={{
+                      type: 'object',
+                      properties: record.type ? types[record.type] || {} : {},
+                    }}
+                  />
+                  <FormDrawer.Footer>
+                    <FormButtonGroup align="right">
+                      <Submit
+                        onSubmit={() => {
+                          return new Promise((resolve) => {
+                            setTimeout(resolve, 1000);
+                          });
+                        }}
+                      >
+                        Submit
+                      </Submit>
+                    </FormButtonGroup>
+                  </FormDrawer.Footer>
+                </FormLayout>
+              );
             })
-            .then((values) => {
-              field.value = values;
-            });
-        }}
-      >
-        Edit
-      </a>
-    </div>
-  );
-});
+              .open({
+                initialValues: field.value,
+              })
+              .then((values) => {
+                field.value = values;
+              });
+          }}
+        >
+          Edit
+        </a>
+      </div>
+    );
+  },
+  { displayName: 'EditOptions' },
+);
 
 const SchemaField = createSchemaField({
   components: {

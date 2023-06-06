@@ -14,18 +14,30 @@ const randomString = (prefix = '') => {
 
 Schema.silent(true);
 
+const results = {};
+
 const Registry = {
   silent: true,
   compile(expression: string, scope = {}) {
-    if (Registry.silent) {
-      try {
+    const fn = () => {
+      if (Registry.silent) {
+        try {
+          return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+        } catch {
+          return `{{${expression}}}`;
+        }
+      } else {
         return new Function('$root', `with($root) { return (${expression}); }`)(scope);
-      } catch {
-        return `{{${expression}}}`;
       }
-    } else {
-      return new Function('$root', `with($root) { return (${expression}); }`)(scope);
+    };
+    if (results[expression]) {
+      return results[expression];
     }
+    if (expression.trim().startsWith('t(')) {
+      results[expression] = fn();
+      return results[expression];
+    }
+    return fn();
   },
 };
 

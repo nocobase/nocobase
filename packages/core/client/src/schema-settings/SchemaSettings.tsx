@@ -772,6 +772,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     </>
   );
 });
+SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
 SchemaSettings.ModalItem = function ModalItem(props) {
   const {

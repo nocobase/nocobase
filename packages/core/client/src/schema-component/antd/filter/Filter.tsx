@@ -15,35 +15,38 @@ const useDef = (options) => {
   return useRequest(() => Promise.resolve({ data: field.dataSource }), options);
 };
 
-export const Filter: any = observer((props: any) => {
-  const { useDataSource = useDef } = props;
-  const { options, dynamicComponent, className } = useProps(props);
-  const field = useField<ObjectFieldModel>();
-  const fieldSchema = useFieldSchema();
-  useDataSource({
-    onSuccess(data) {
-      field.dataSource = data?.data || [];
-    },
-  });
-  return (
-    <div className={className}>
-      <DatePickerProvider value={{ utc: false }}>
-        <FilterContext.Provider
-          value={{
-            field,
-            fieldSchema,
-            dynamicComponent,
-            options: options || field.dataSource || [],
-            disabled: props.disabled,
-          }}
-        >
-          <FilterGroup {...props} bordered={false} />
-          {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
-        </FilterContext.Provider>
-      </DatePickerProvider>
-    </div>
-  );
-});
+export const Filter: any = observer(
+  (props: any) => {
+    const { useDataSource = useDef } = props;
+    const { options, dynamicComponent, className } = useProps(props);
+    const field = useField<ObjectFieldModel>();
+    const fieldSchema = useFieldSchema();
+    useDataSource({
+      onSuccess(data) {
+        field.dataSource = data?.data || [];
+      },
+    });
+    return (
+      <div className={className}>
+        <DatePickerProvider value={{ utc: false }}>
+          <FilterContext.Provider
+            value={{
+              field,
+              fieldSchema,
+              dynamicComponent,
+              options: options || field.dataSource || [],
+              disabled: props.disabled,
+            }}
+          >
+            <FilterGroup {...props} bordered={false} />
+            {/* <pre>{JSON.stringify(field.value, null, 2)}</pre> */}
+          </FilterContext.Provider>
+        </DatePickerProvider>
+      </div>
+    );
+  },
+  { displayName: 'Filter' },
+);
 
 Filter.SaveDefaultValue = SaveDefaultValue;
 

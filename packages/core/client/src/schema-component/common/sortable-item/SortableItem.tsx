@@ -55,21 +55,24 @@ const useSortableItemId = (props) => {
   return field.address.toString();
 };
 
-export const SortableItem: React.FC<any> = observer((props) => {
-  const { schema, id, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
-  return (
-    <SortableProvider
-      id={id}
-      data={{
-        insertAdjacent: 'afterEnd',
-        schema: schema,
-        removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
-      }}
-    >
-      <Sortable {...others}>{props.children}</Sortable>
-    </SortableProvider>
-  );
-});
+export const SortableItem: React.FC<any> = observer(
+  (props) => {
+    const { schema, id, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
+    return (
+      <SortableProvider
+        id={id}
+        data={{
+          insertAdjacent: 'afterEnd',
+          schema: schema,
+          removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
+        }}
+      >
+        <Sortable {...others}>{props.children}</Sortable>
+      </SortableProvider>
+    );
+  },
+  { displayName: 'SortableItem' },
+);
 
 export const DragHandler = (props) => {
   const { draggable } = useContext(SortableContext);
