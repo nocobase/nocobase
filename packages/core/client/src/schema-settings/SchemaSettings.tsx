@@ -755,7 +755,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
             title={compile(title)}
             {...others}
             destroyOnClose
-            visible={visible}
+            open={visible}
             onCancel={cancelHandler}
             footer={
               <Space>

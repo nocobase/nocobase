@@ -163,17 +163,6 @@
     classnames "^2.2.6"
     rc-util "^5.9.4"
 
-"@ant-design/icons@^5.1.0":
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/@ant-design/icons/-/icons-5.1.2.tgz#6dc30c5caff0670f11b6391f0839ed41847c72e6"
-  integrity sha512-sSorFv+4e5nkSq9vD7UHG2IQYUmR8jCO49+z4vn3MUeiM1G1qxCqh7JiR5pexVY0hZywHes/uxiNflAQZCWZ8Q==
-  dependencies:
-    "@ant-design/colors" "^7.0.0"
-    "@ant-design/icons-svg" "^4.2.1"
-    "@babel/runtime" "^7.11.2"
-    classnames "^2.2.6"
-    rc-util "^5.31.1"
-
 "@ant-design/icons@^5.1.3":
   version "5.1.3"
   resolved "https://registry.yarnpkg.com/@ant-design/icons/-/icons-5.1.3.tgz#950dc7e809e23166fe8f76759f54d267603d7c83"
@@ -184,6 +173,52 @@
     "@babel/runtime" "^7.11.2"
     classnames "^2.2.6"
     rc-util "^5.31.1"
+
+"@ant-design/pro-layout@^7.14.3":
+  version "7.14.3"
+  resolved "https://registry.npmmirror.com/@ant-design/pro-layout/-/pro-layout-7.14.3.tgz#01063883a334060c41b72ec084c3e83200673952"
+  integrity sha512-FcKj23f/laod2hfSSYfBbkjb9r74lZLgan8dylI+tngQnZKQc1o1a1f9If7CggkrhEdgDyIkIyFl9Ii/tfDa+A==
+  dependencies:
+    "@ant-design/icons" "^5.0.0"
+    "@ant-design/pro-provider" "^2.10.2"
+    "@ant-design/pro-utils" "^2.11.3"
+    "@babel/runtime" "^7.18.0"
+    "@umijs/route-utils" "^4.0.0"
+    "@umijs/use-params" "^1.0.9"
+    classnames "^2.3.2"
+    lodash.merge "^4.6.2"
+    omit.js "^2.0.2"
+    path-to-regexp "2.4.0"
+    rc-resize-observer "^1.1.0"
+    rc-util "^5.0.6"
+    swr "^2.0.0"
+    use-json-comparison "^1.0.3"
+    use-media-antd-query "^1.1.0"
+    warning "^4.0.3"
+
+"@ant-design/pro-provider@^2.10.2":
+  version "2.10.2"
+  resolved "https://registry.npmmirror.com/@ant-design/pro-provider/-/pro-provider-2.10.2.tgz#3338afa88f35fe06da8f3573e7cf31c323cad456"
+  integrity sha512-I0wfnP/fJUgGrl/9P5haMtITg8oHe2NOm83QKFVjqQWGYnA2V4O5rVqD+vdWveuaJ6rtCW8mEoeelfHF6nOnxw==
+  dependencies:
+    "@ant-design/cssinjs" "^1.9.1"
+    "@babel/runtime" "^7.18.0"
+    "@ctrl/tinycolor" "^3.4.0"
+    rc-util "^5.0.1"
+    swr "^2.0.0"
+
+"@ant-design/pro-utils@^2.11.3":
+  version "2.11.3"
+  resolved "https://registry.npmmirror.com/@ant-design/pro-utils/-/pro-utils-2.11.3.tgz#847da90763f4157bc5e273bf0aa018af13ec28ae"
+  integrity sha512-Sd2oHzhQlSJ0svaD3Ih3v2VeXPnYWwJ05ul+ek8i9GWAGnFWD0yDTawGj7pDZwCQwJYaLpAzPHhfNvq3Led0/w==
+  dependencies:
+    "@ant-design/icons" "^5.0.0"
+    "@ant-design/pro-provider" "^2.10.2"
+    "@babel/runtime" "^7.18.0"
+    classnames "^2.3.2"
+    dayjs "^1.11.4"
+    rc-util "^5.0.6"
+    swr "^2.0.0"
 
 "@ant-design/react-slick@~0.29.1":
   version "0.29.2"
@@ -3394,7 +3429,7 @@
 
 "@emotion/hash@^0.8.0":
   version "0.8.0"
-  resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"
+  resolved "https://registry.npmmirror.com/@emotion/hash/-/hash-0.8.0.tgz#bbbff68978fefdbe68ccb533bc8cbe1d1afb5413"
   integrity sha512-kBJtf7PH6aWwZ6fka3zQ0p6SBYzx4fl1LoZXE2RrnYST9Xljm7WfKJrU4g/Xr3Beg72MLrp1AWNUmuYJTL7Cow==
 
 "@emotion/hash@^0.9.1":
@@ -7327,6 +7362,11 @@
   dependencies:
     tsx "^3.12.2"
 
+"@umijs/route-utils@^4.0.0":
+  version "4.0.1"
+  resolved "https://registry.npmmirror.com/@umijs/route-utils/-/route-utils-4.0.1.tgz#156df5b3f2328059722d3ee7dd8f65e18c3cde8b"
+  integrity sha512-+1ixf1BTOLuH+ORb4x8vYMPeIt38n9q0fJDwhv9nSxrV46mxbLF0nmELIo9CKQB2gHfuC4+hww6xejJ6VYnBHQ==
+
 "@umijs/preset-umi@4.0.69":
   version "4.0.69"
   resolved "https://registry.yarnpkg.com/@umijs/preset-umi/-/preset-umi-4.0.69.tgz#b4ab5560014878399c7210e125137a956a6d4de2"
@@ -7386,6 +7426,11 @@
     react "18.1.0"
     react-dom "18.1.0"
     react-router-dom "6.3.0"
+
+"@umijs/use-params@^1.0.9":
+  version "1.0.9"
+  resolved "https://registry.npmmirror.com/@umijs/use-params/-/use-params-1.0.9.tgz#0ae4a87f4922d8e8e3fb4495b0f8f4de9ca38c52"
+  integrity sha512-QlN0RJSBVQBwLRNxbxjQ5qzqYIGn+K7USppMoIOVlf7fxXHsnQZ2bEsa6Pm74bt6DVQxpUE8HqvdStn6Y9FV1w==
 
 "@umijs/test@4.0.69":
   version "4.0.69"
@@ -11113,9 +11158,10 @@ dateformat@^3.0.0:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
 
-dayjs@1.x, dayjs@^1.11.1, dayjs@^1.11.7, dayjs@^1.9.1, dayjs@~1.11.5:
-  version "1.11.7"
-  resolved "https://registry.yarnpkg.com/dayjs/-/dayjs-1.11.7.tgz#4b296922642f70999544d1144a2c25730fce63e2"
+dayjs@^1.11.4:
+  version "1.11.8"
+  resolved "https://registry.npmmirror.com/dayjs/-/dayjs-1.11.8.tgz#4282f139c8c19dd6d0c7bd571e30c2d0ba7698ea"
+  integrity sha512-LcgxzFoWMEPO7ggRv1Y2N31hUf2R0Vj7fuy/m+Bg1K8rr+KAs1AEy4y9jd5DXe8pbHgX+srkHNS7TH6Q6ZhYeQ==
 
 dayjs@~1.8.24:
   version "1.8.36"
@@ -19231,6 +19277,11 @@ oidc-token-hash@^5.0.3:
   version "5.0.3"
   resolved "https://registry.yarnpkg.com/oidc-token-hash/-/oidc-token-hash-5.0.3.tgz#9a229f0a1ce9d4fc89bcaee5478c97a889e7b7b6"
 
+omit.js@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.npmmirror.com/omit.js/-/omit.js-2.0.2.tgz#dd9b8436fab947a5f3ff214cb2538631e313ec2f"
+  integrity sha512-hJmu9D+bNB40YpL9jYebQl4lsTW6yEHRTroJzNLqQJYHm7c+NQnJGfZmIWh8S3q3KoaxV1aLhV6B3+0N0/kyJg==
+
 omit-deep@0.3.0:
   version "0.3.0"
   resolved "https://registry.yarnpkg.com/omit-deep/-/omit-deep-0.3.0.tgz#21c8af3499bcadd29651a232cbcacbc52445ebec"
@@ -19873,6 +19924,11 @@ path-to-regexp@1.7.0:
 path-to-regexp@2.2.1:
   version "2.2.1"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-2.2.1.tgz#90b617025a16381a879bc82a38d4e8bdeb2bcf45"
+
+path-to-regexp@2.4.0:
+  version "2.4.0"
+  resolved "https://registry.npmmirror.com/path-to-regexp/-/path-to-regexp-2.4.0.tgz#35ce7f333d5616f1c1e1bfe266c3aba2e5b2e704"
+  integrity sha512-G6zHoVqC6GGTQkZwF4lkuEyMbVOjoBKAEybQUypI1WTkqinCOrq2x6U2+phkJ1XsEMTy4LjtwPI7HW+NVrRR2w==
 
 path-to-regexp@^6.1.0:
   version "6.2.1"
@@ -21905,15 +21961,6 @@ rc-util@^5.30.0:
   dependencies:
     "@babel/runtime" "^7.18.3"
     react-is "^16.12.0"
-
-rc-virtual-list@^3.2.0:
-  version "3.4.13"
-  resolved "https://registry.yarnpkg.com/rc-virtual-list/-/rc-virtual-list-3.4.13.tgz#20acc934b263abcf7b7c161f50ef82281b2f7e8d"
-  dependencies:
-    "@babel/runtime" "^7.20.0"
-    classnames "^2.2.6"
-    rc-resize-observer "^1.0.0"
-    rc-util "^5.15.0"
 
 rc-virtual-list@^3.4.8, rc-virtual-list@^3.5.2:
   version "3.5.2"
@@ -24266,9 +24313,9 @@ stylelint-config-standard@25.0.0:
   dependencies:
     stylelint-config-recommended "^7.0.0"
 
-stylis@4.2.0, stylis@^4.0.13:
-  version "4.2.0"
-  resolved "https://registry.yarnpkg.com/stylis/-/stylis-4.2.0.tgz#79daee0208964c8fe695a42fcffcac633a211a51"
+stylis@4.1.3, stylis@^4.0.13:
+  version "4.1.3"
+  resolved "https://registry.yarnpkg.com/stylis/-/stylis-4.1.3.tgz#fd2fbe79f5fed17c55269e16ed8da14c84d069f7"
   integrity sha512-Orov6g6BB1sDfYgzWfTHDOxamtX1bE/zo104Dh9e6fqJ3PooipYyfJ0pUmrZO2wAvO8YbEyeFrkV91XTsGMSrw==
 
 stylis@^4.1.2:
@@ -25641,13 +25688,23 @@ use-isomorphic-layout-effect@^1.1.1:
   resolved "https://registry.yarnpkg.com/use-isomorphic-layout-effect/-/use-isomorphic-layout-effect-1.1.2.tgz#497cefb13d863d687b08477d9e5a164ad8c1a6fb"
   integrity sha512-49L8yCO3iGT/ZF9QttjwLF/ZD9Iwto5LnH5LmEdk/6cFmXddqi2ulF0edxTwjj+7mqvpVVGQWvbXZdn32wRSHA==
 
+use-json-comparison@^1.0.3:
+  version "1.0.6"
+  resolved "https://registry.npmmirror.com/use-json-comparison/-/use-json-comparison-1.0.6.tgz#a012bbc258ce745db1f56745dc653f575226cb21"
+  integrity sha512-xPadt5yMRbEmVfOSGFSMqjjICrq7nLbfSH3rYIXsrtcuFX7PmbYDN/ku8ObBn3v8o/yZelO1OxUS5+5TI3+fUw==
+
+use-media-antd-query@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.npmmirror.com/use-media-antd-query/-/use-media-antd-query-1.1.0.tgz#f083ad7e292c1c0261b6bbfaac0edc3e0920d85d"
+  integrity sha512-B6kKZwNV4R+l4Rl11sWO7HqOay9alzs1Vp1b4YJqjz33YxbltBCZtt/yxXxkXN9rc1S7OeEL/GbwC30Wmqhw6Q==
+
 use-memo-one@^1.1.1:
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/use-memo-one/-/use-memo-one-1.1.3.tgz#2fd2e43a2169eabc7496960ace8c79efef975e99"
 
 use-sync-external-store@1.2.0, use-sync-external-store@^1.2.0:
   version "1.2.0"
-  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
+  resolved "https://registry.npmmirror.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
 
 use@^3.1.0:
   version "3.1.1"

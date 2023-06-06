@@ -1,4 +1,4 @@
-import { PageHeader as AntdPageHeader } from 'antd';
+import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionManagerProvider } from '../collection-manager';

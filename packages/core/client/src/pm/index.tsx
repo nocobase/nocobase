@@ -1,5 +1,6 @@
+import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
+import { Layout, Menu, Result, Spin, Tabs } from 'antd';
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
