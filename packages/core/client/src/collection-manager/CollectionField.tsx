@@ -60,7 +60,6 @@ const InternalField: React.FC = (props: Props) => {
       field.readPretty = true;
     }
     setRequired();
-    console.log(field.required)
     // @ts-ignore
     field.dataSource = uiSchema.enum;
     const originalProps = compile(uiSchema['x-component-props']) || {};

@@ -49,6 +49,7 @@ export const SubTable: any = observer((props: any) => {
           onClick={() => {
             field.value = field.value || [];
             field.value.push({});
+            field.onInput(field.value)
           }}
         >
           {t('Add new')}
