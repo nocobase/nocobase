@@ -69,10 +69,6 @@ export class CollectionRepository extends Repository {
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
 
-      if (viewCollections.includes(instanceName)) {
-        console.log('load view collection', instanceName);
-      }
-
       const skipField = (() => {
         if (viewCollections.includes(instanceName)) {
           return true;
