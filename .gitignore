@@ -21,3 +21,4 @@ docker/**/storage
 cache/diskstore-*
 *.nbdump
 storage/duplicator/*
+.eslintcache
