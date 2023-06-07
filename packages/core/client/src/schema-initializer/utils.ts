@@ -1323,8 +1323,6 @@ export const createTableBlockSchema = (options) => {
     TableBlockDesigner,
     blockType,
     pageSize = 20,
-    // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
-    crypticFilter = {},
     ...others
   } = options;
   const schema: ISchema = {
@@ -1337,7 +1335,6 @@ export const createTableBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize,
-        crypticFilter,
       },
       rowKey,
       showIndex: true,
