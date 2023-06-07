@@ -38,7 +38,7 @@ export const TableColumnDesigner = (props) => {
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
-  const { currentMode } = useAssociationFieldContext();
+  const { currentMode, field: tableField } = useAssociationFieldContext();
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -191,9 +191,14 @@ export const TableColumnDesigner = (props) => {
             const schema = {
               ['x-uid']: fieldSchema['x-uid'],
             };
-            field.required = required;
             fieldSchema['required'] = required;
             schema['required'] = required;
+            const path = field.path?.splice(field.path.length - 1, 1);
+            tableField?.value.map((_, index) => {
+              field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                f.required = required;
+              });
+            });
             dn.emit('patch', {
               schema,
             });
