@@ -1,7 +1,7 @@
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Input, Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
-import React, { useContext, useEffect, useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import {
   FormProvider,
   RecordPickerContext,
@@ -9,6 +9,7 @@ import {
   SchemaComponentOptions,
   useActionContext,
 } from '../..';
+import { RecordProvider } from '../../../';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -19,7 +20,6 @@ import { ActionContext } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
-import { RecordProvider } from '../../../';
 
 const useTableSelectorProps = () => {
   const field: any = useField();

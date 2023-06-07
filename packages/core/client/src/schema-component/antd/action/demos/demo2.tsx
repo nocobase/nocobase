@@ -1,9 +1,10 @@
-import { FormItem, Input } from '@formily/antd';
 import { ISchema, observer, useForm } from '@formily/react';
 import {
   Action,
   ActionContext,
   Form,
+  FormItem,
+  Input,
   SchemaComponent,
   SchemaComponentProvider,
   useActionContext,

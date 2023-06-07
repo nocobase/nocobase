@@ -1,7 +1,7 @@
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Radio as AntdRadio, Tag } from 'antd';
-import type { RadioGroupProps, RadioProps } from 'antd/lib/radio';
+import type { RadioGroupProps, RadioProps } from 'antd/es/radio';
 import React from 'react';
 import Select from '../select/Select';
 

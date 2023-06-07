@@ -689,4 +689,9 @@ export default {
   "Feedback": "Feedback",
   "Try again": "Try again",
   "Data template": "Data template",
+  "Duplicate":"Duplicate",
+  "Duplicate mode":"Duplicate mode",
+  "Quick duplicate":"Quick duplicate",
+  "Duplicate and continue":"Duplicate and continue",
+  "Please configure the duplicate fields":"Please configure the duplicate fields"
 };

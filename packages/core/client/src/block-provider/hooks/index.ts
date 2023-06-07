@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -1074,25 +1074,32 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
+function getAssociationPath(str) {
+  const lastIndex = str.lastIndexOf('.');
+  if (lastIndex !== -1) {
+    return str.substring(0, lastIndex);
+  }
+  return str;
+}
+
 export const useAssociationNames = () => {
   const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
-  const updateAssociationValues = [];
-  const appends = [];
+  const updateAssociationValues = new Set([]);
+  const appends = new Set([]);
   const getAssociationAppends = (schema, str) => {
     schema.reduceProperties((pre, s) => {
       const prefix = pre || str;
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationSubfield = s.name.includes('.');
-      if (
-        collectionfield &&
-        (['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) || isAssociationSubfield) &&
-        s['x-component'] !== 'TableField'
-      ) {
-        const path = prefix === '' || !prefix ? s.name : prefix + '.' + s.name;
-        appends.push(path);
+      const isAssociationField =
+        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+        appends.add(path);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
-          updateAssociationValues.push(path);
+          updateAssociationValues.add(path);
           const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
           getAssociationAppends(s, bufPrefix);
         }
@@ -1115,5 +1122,5 @@ export const useAssociationNames = () => {
     }, str);
   };
   getAssociationAppends(fieldSchema, '');
-  return { appends: uniq(appends), updateAssociationValues };
+  return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
 };
