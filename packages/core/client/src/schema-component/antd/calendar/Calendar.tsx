@@ -1,12 +1,12 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
+import { eq } from 'date-arithmetic';
 import get from 'lodash/get';
 import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -247,7 +247,7 @@ export const Calendar: any = observer(
             agendaDateFormat: 'M-DD',
             dayHeaderFormat: 'Y-M-DD',
             dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-              if (dates.eq(start, end, 'month')) {
+              if (eq(start, end, 'month')) {
                 return local.format(start, 'Y-M', culture);
               }
               return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;

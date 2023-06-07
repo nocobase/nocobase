@@ -1,4 +1,11 @@
 import '@testing-library/jest-dom';
+
+/**
+ * 解决 TypeError: URL.createObjectURL is not a function
+ * 解决 ReferenceError: Worker is not defined
+ */
+import 'jsdom-worker';
+
 import { vi } from 'vitest';
 import '../packages/core/client/src/i18n';
 

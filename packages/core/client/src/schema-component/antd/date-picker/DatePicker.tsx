@@ -3,7 +3,7 @@ import { DatePicker as AntdDatePicker } from 'antd';
 import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps,
-} from 'antd/lib/date-picker';
+} from 'antd/es/date-picker';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ReadPretty } from './ReadPretty';
@@ -40,7 +40,7 @@ export const DatePicker = (props) => {
   return <_DatePicker {...props} />;
 };
 
-DatePicker.RangePicker = (props) => {
+DatePicker.RangePicker = function RangePicker(props) {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
