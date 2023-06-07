@@ -70,6 +70,11 @@ export class AuthPlugin extends Plugin {
         authType: presetAuthType,
         description: 'Sign in with email and password.',
         enabled: true,
+        options: {
+          public: {
+            allowSignUp: true,
+          },
+        },
       },
     });
   }
