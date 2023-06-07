@@ -1,7 +1,7 @@
-import { Registry } from '@nocobase/utils';
-import { AuthExtend, Auth } from './auth';
-import { Model } from '@nocobase/database';
 import { Context, Next } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import { Registry } from '@nocobase/utils';
+import { Auth, AuthExtend } from './auth';
 
 type Storer = {
   get: (name: string) => Promise<Model>;
@@ -83,7 +83,7 @@ export class AuthManager {
         ctx.auth = authenticator;
       } catch (err) {
         ctx.auth = {} as Auth;
-        ctx.app.logger.warn(`authCheck, ${err.message}, ${err.stack}`);
+        ctx.app.logger.warn(`auth, ${err.message}, ${err.stack}`);
         return next();
       }
       if (authenticator) {
