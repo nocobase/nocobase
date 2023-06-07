@@ -25,6 +25,7 @@ export class PresetNocoBase extends Plugin {
     'formula-field',
     'charts',
     'auth',
+    'sms-auth',
   ];
 
   localPlugins = [
@@ -36,7 +37,6 @@ export class PresetNocoBase extends Plugin {
     'map',
     'snapshot-field',
     'graph-collection-manager',
-    'sms-auth',
   ];
 
   splitNames(name: string) {

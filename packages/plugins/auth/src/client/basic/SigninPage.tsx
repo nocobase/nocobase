@@ -55,7 +55,7 @@ export default (props: { authenticator: Authenticator }) => {
   const authenticator = props.authenticator;
   const { authType, name, options } = authenticator;
   const signupPages = useContext(SignupPageContext);
-  const allowSignUp = !!signupPages[authType] && !options?.disabledSignup;
+  const allowSignUp = !!signupPages[authType] && options?.allowSignup;
   const signupLink = `/signup?authType=${authType}&name=${name}`;
 
   const useBasicSignIn = () => {

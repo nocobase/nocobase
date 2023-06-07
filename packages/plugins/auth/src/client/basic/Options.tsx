@@ -13,11 +13,14 @@ export const Options = () => {
           public: {
             type: 'object',
             properties: {
-              disabledSignup: {
+              allowSignup: {
                 'x-decorator': 'FormItem',
                 type: 'boolean',
-                title: '{{t("Not allowed to sign up")}}',
+                title: '{{t("Allow to sign up")}}',
                 'x-component': 'Checkbox',
+                'x-component-props': {
+                  defaultChecked: true,
+                },
               },
             },
           },

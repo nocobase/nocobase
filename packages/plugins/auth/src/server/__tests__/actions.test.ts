@@ -127,7 +127,7 @@ describe('actions', () => {
         values: {
           options: {
             public: {
-              disabledSignUp: true,
+              allowSignUp: false,
             },
           },
         },

@@ -37,7 +37,7 @@ export class BasicAuth extends BaseAuth {
   async signUp() {
     const ctx = this.ctx;
     const options = this.authenticator.options?.public || {};
-    if (options.disabledSignUp) {
+    if (!options.allowSignUp) {
       ctx.throw(403, ctx.t('Not allowed to sign up', { ns: namespace }));
     }
     const User = ctx.db.getRepository('users');
