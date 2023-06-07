@@ -261,9 +261,9 @@ export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   return options;
 };
 // 通用
-export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2) => {
+export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2, excludes = []) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName);
+  const fields = getCollectionFields(collectionName).filter((v) => !excludes.includes(v.interface));
 
   const field2option = (field, depth, prefix?) => {
     if (!field.interface) {
@@ -297,7 +297,7 @@ export const useCollectionFieldsOptions = (collectionName: string, maxDepth = 2)
       });
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
+      const targetFields = getCollectionFields(field.target).filter((v) => !excludes.includes(v.interface));
       const options = getOptions(targetFields, depth + 1, field.name).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);

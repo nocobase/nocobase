@@ -68,7 +68,7 @@ export const ActionDesigner = (props) => {
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
-  const options = useCollectionFieldsOptions(name, 1);
+  const options = useCollectionFieldsOptions(name, 1, ['id']);
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
