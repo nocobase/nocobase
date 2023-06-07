@@ -1,7 +1,7 @@
 import { ArrayField, createForm } from '@formily/core';
 import { FormContext, useField, useFieldSchema } from '@formily/react';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { useCollection, useCollectionManager } from '../collection-manager';
+import { useCollectionManager } from '../collection-manager';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { useRecord } from '../record-provider';
 import { FixedBlockWrapper, SchemaComponentOptions, removeNullCondition } from '../schema-component';
@@ -102,13 +102,8 @@ export const TableBlockProvider = (props) => {
   const record = useRecord();
   const fieldSchema = useFieldSchema();
   const { getCollection, getCollectionField } = useCollectionManager();
-  const parent = useCollection();
-  const filter = generateFilterParams(record, parent.name, parent.filterTargetKey, {});
   const collection = getCollection(props.collection);
   const { treeTable } = fieldSchema?.['x-decorator-props'] || {};
-  if (filter) {
-    params.filter = filter;
-  }
   if (props.dragSort) {
     params['sort'] = ['sort'];
   }
@@ -254,29 +249,4 @@ export const useTableBlockProps = () => {
       ctx?.field.onExpandClick?.(expanded, record);
     },
   };
-};
-
-export const generateFilterParams = (record, parentName, filterTargetKey, defaultFilter) => {
-  let filter = defaultFilter;
-
-  if (parentName) {
-    const filterByTk = `${record?.[filterTargetKey || 'id']}`;
-    if (filter) {
-      filter = {
-        $and: [
-          filter,
-          {
-            collectionName: parentName,
-            recordId: filterByTk,
-          },
-        ],
-      };
-    } else {
-      filter = {
-        collectionName: parentName,
-        recordId: filterByTk,
-      };
-    }
-  }
-  return filter;
 };
