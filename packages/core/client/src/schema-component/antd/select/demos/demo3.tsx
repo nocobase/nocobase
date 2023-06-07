@@ -6,6 +6,19 @@ import { ISchema } from '@formily/react';
 import { SchemaComponent, SchemaComponentProvider, Select } from '@nocobase/client';
 import React from 'react';
 
+const options = [
+  {
+    title: '福建',
+    id: 'FuJian',
+    children: [
+      { title: '福州', id: 'FZ' },
+      { title: '莆田', id: 'PT' },
+    ],
+  },
+  { title: '江苏', id: 'XZ' },
+  { title: '浙江', id: 'ZX' },
+];
+
 const schema: ISchema = {
   type: 'object',
   properties: {
@@ -18,18 +31,7 @@ const schema: ISchema = {
         // mode: 'tags',
         objectValue: true,
         fieldNames: { label: 'title', value: 'id' },
-        options: [
-          {
-            title: '福建',
-            id: 'FuJian',
-            children: [
-              { title: '福州', id: 'FZ' },
-              { title: '莆田', id: 'PT' },
-            ],
-          },
-          { title: '江苏', id: 'XZ' },
-          { title: '浙江', id: 'ZX' },
-        ],
+        options,
       },
       default: { title: '福州', id: 'FZ' },
       'x-reactions': {
@@ -51,18 +53,7 @@ const schema: ISchema = {
         // mode: 'tags',
         objectValue: true,
         fieldNames: { label: 'title', value: 'id' },
-        options: [
-          {
-            title: '福建',
-            id: 'FuJian',
-            children: [
-              { title: '福州', id: 'FZ' },
-              { title: '莆田', id: 'PT' },
-            ],
-          },
-          { title: '江苏', id: 'XZ' },
-          { title: '浙江', id: 'ZX' },
-        ],
+        options,
       },
     },
   },

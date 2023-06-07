@@ -11,4 +11,4 @@ group:
 
 ### IconPicker
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/icon-picker.tsx" />

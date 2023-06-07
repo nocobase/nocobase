@@ -102,10 +102,10 @@ export const TableActionColumnInitializers = (props: any) => {
                 'x-decorator': 'ACLActionProvider',
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },
+
             modifyFlag && {
               type: 'item',
               title: t('Delete'),
@@ -127,6 +127,19 @@ export const TableActionColumnInitializers = (props: any) => {
                   'x-decorator': 'ACLActionProvider',
                 },
               },
+            {
+              type: 'item',
+              title: t('Duplicate'),
+              component: 'DuplicateActionInitializer',
+              schema: {
+                'x-component': 'Action.Link',
+                'x-action': 'duplicate',
+                'x-decorator': 'ACLActionProvider',
+              },
+              visible: () => {
+                return (collection as any).template !== 'view';
+              },
+            },
           ],
         },
         {
@@ -210,7 +223,6 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },
@@ -236,7 +248,6 @@ export const TableActionColumnInitializers = (props: any) => {
                 },
               },
               visible: () => {
-                const collection = useCollection();
                 return (collection as any).template !== 'view';
               },
             },

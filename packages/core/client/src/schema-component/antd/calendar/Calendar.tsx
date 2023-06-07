@@ -1,12 +1,12 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
-import { observer, RecursionField, Schema, useFieldSchema } from '@formily/react';
+import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
+import { eq } from 'date-arithmetic';
 import get from 'lodash/get';
 import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
-import * as dates from 'react-big-calendar/lib/utils/dates';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -190,71 +190,74 @@ const CalendarRecordViewer = (props) => {
   );
 };
 
-export const Calendar: any = observer((props: any) => {
-  const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
-  const [date, setDate] = useState<Date>(new Date());
-  const [view, setView] = useState<(typeof Weeks)[number]>('month');
-  const events = useEvents(dataSource, fieldNames, date, view);
-  const [visible, setVisible] = useState(false);
-  const [record, setRecord] = useState<any>({});
+export const Calendar: any = observer(
+  (props: any) => {
+    const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
+    const [date, setDate] = useState<Date>(new Date());
+    const [view, setView] = useState<(typeof Weeks)[number]>('month');
+    const events = useEvents(dataSource, fieldNames, date, view);
+    const [visible, setVisible] = useState(false);
+    const [record, setRecord] = useState<any>({});
 
-  const components = useMemo(() => {
-    return {
-      toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
-      week: {
-        header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
-      },
-      month: {
-        dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
-      },
-    };
-  }, [showLunar]);
+    const components = useMemo(() => {
+      return {
+        toolbar: (props) => <Toolbar {...props} showLunar={showLunar}></Toolbar>,
+        week: {
+          header: (props) => <Header {...props} type="week" showLunar={showLunar}></Header>,
+        },
+        month: {
+          dateHeader: (props) => <Header {...props} showLunar={showLunar}></Header>,
+        },
+      };
+    }, [showLunar]);
 
-  return (
-    <div style={{ height: fixedBlock ? '100%' : 700 }}>
-      <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
-      <BigCalendar
-        popup
-        selectable
-        events={events}
-        view={view}
-        views={Weeks}
-        date={date}
-        step={60}
-        showMultiDayTimes
-        messages={messages}
-        onNavigate={setDate}
-        onView={setView}
-        onSelectSlot={(slotInfo) => {
-          console.log('onSelectSlot', slotInfo);
-        }}
-        onDoubleClickEvent={(event) => {
-          console.log('onDoubleClickEvent');
-        }}
-        onSelectEvent={(event) => {
-          const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
-          if (!record) {
-            return;
-          }
-          record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
-
-          setRecord(record);
-          setVisible(true);
-        }}
-        formats={{
-          monthHeaderFormat: 'Y-M',
-          agendaDateFormat: 'M-DD',
-          dayHeaderFormat: 'Y-M-DD',
-          dayRangeHeaderFormat: ({ start, end }, culture, local) => {
-            if (dates.eq(start, end, 'month')) {
-              return local.format(start, 'Y-M', culture);
+    return (
+      <div style={{ height: fixedBlock ? '100%' : 700 }}>
+        <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
+        <BigCalendar
+          popup
+          selectable
+          events={events}
+          view={view}
+          views={Weeks}
+          date={date}
+          step={60}
+          showMultiDayTimes
+          messages={messages}
+          onNavigate={setDate}
+          onView={setView}
+          onSelectSlot={(slotInfo) => {
+            console.log('onSelectSlot', slotInfo);
+          }}
+          onDoubleClickEvent={(event) => {
+            console.log('onDoubleClickEvent');
+          }}
+          onSelectEvent={(event) => {
+            const record = dataSource?.find((item) => item[fieldNames.id] === event.id);
+            if (!record) {
+              return;
             }
-            return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
-          },
-        }}
-        components={components}
-        localizer={localizer}
-      />
-    </div>
-  );
-});
+            record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
+
+            setRecord(record);
+            setVisible(true);
+          }}
+          formats={{
+            monthHeaderFormat: 'Y-M',
+            agendaDateFormat: 'M-DD',
+            dayHeaderFormat: 'Y-M-DD',
+            dayRangeHeaderFormat: ({ start, end }, culture, local) => {
+              if (eq(start, end, 'month')) {
+                return local.format(start, 'Y-M', culture);
+              }
+              return `${local.format(start, 'Y-M', culture)} - ${local.format(end, 'Y-M', culture)}`;
+            },
+          }}
+          components={components}
+          localizer={localizer}
+        />
+      </div>
+    );
+  },
+  { displayName: 'Calendar' },
+);

@@ -4,44 +4,47 @@ import { Action, Form, SchemaComponent, SchemaComponentProvider } from '@nocobas
 import { Card } from 'antd';
 import React from 'react';
 
-export default observer(() => {
-  const schema: ISchema = {
-    type: 'object',
-    properties: {
-      form1: {
-        type: 'void',
-        'x-component': 'Form',
-        'x-component-props': {
-          initialValue: {
-            field1: 'aaa',
-          },
+const schema: ISchema = {
+  type: 'object',
+  properties: {
+    form1: {
+      type: 'void',
+      'x-component': 'Form',
+      'x-component-props': {
+        initialValue: {
+          field1: 'aaa',
         },
-        properties: {
-          field1: {
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-            title: 'T1',
-          },
-          out: {
-            'x-component': 'Output',
-          },
-          action1: {
-            // type: 'void',
-            'x-component': 'Action',
-            title: 'Submit',
-            'x-component-props': {
-              useAction: '{{ useSubmit }}',
-            },
+      },
+      properties: {
+        field1: {
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          title: 'T1',
+        },
+        out: {
+          'x-component': 'Output',
+        },
+        action1: {
+          // type: 'void',
+          'x-component': 'Action',
+          title: 'Submit',
+          'x-component-props': {
+            useAction: '{{ useSubmit }}',
           },
         },
       },
     },
-  };
+  },
+};
 
-  const Output = observer(() => {
-    const form = useForm();
-    return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
-  });
+export default observer(() => {
+  const Output = observer(
+    () => {
+      const form = useForm();
+      return <pre>{JSON.stringify(form.values, null, 2)}</pre>;
+    },
+    { displayName: 'Output' },
+  );
 
   const useSubmit = () => {
     const form = useForm();
