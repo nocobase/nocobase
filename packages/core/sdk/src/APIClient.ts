@@ -173,7 +173,7 @@ export class Auth {
   async signOut() {
     await this.api.request({
       method: 'post',
-      url: 'users:signOut',
+      url: 'auth:signOut',
     });
     this.setAuth(null);
   }

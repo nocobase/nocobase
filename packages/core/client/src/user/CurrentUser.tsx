@@ -110,8 +110,7 @@ export const CurrentUser = () => {
               <Menu.Item
                 key="signout"
                 onClick={async () => {
-                  await api.resource('auth').signOut();
-                  api.auth.setAuth(null);
+                  await api.auth.signOut();
                   history.push('/signin');
                 }}
               >

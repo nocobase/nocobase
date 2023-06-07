@@ -1,5 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
+import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
@@ -19,7 +20,6 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { AuthManager, actions as authActions } from '@nocobase/auth';
 
 const packageJson = require('../package.json');
 
@@ -291,10 +291,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       name: 'auth',
       actions: authActions,
     });
-    this._resourcer.use(this._authManager.middleware(), { tag: 'authCheck' });
+    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
 
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['authCheck'] });
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
     registerMiddlewares(this, options);
