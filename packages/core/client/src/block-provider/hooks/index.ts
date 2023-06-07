@@ -1,7 +1,7 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -1092,7 +1092,8 @@ export const useAssociationNames = () => {
       const prefix = pre || str;
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
       const isAssociationSubfield = s.name.includes('.');
-      const isAssociationField = collectionfield&&['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      const isAssociationField =
+        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
       if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
         const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
         const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
