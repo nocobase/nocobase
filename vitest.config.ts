@@ -13,6 +13,7 @@ export default defineConfig({
     css: false,
     threads: true,
     alias: [
+      { find: 'testUtils', replacement: 'testUtils.ts' },
       { find: '@nocobase/evaluators/client', replacement: 'packages/core/evaluators/src/client' },
       { find: '@nocobase/utils/client', replacement: 'packages/core/utils/src/client' },
       { find: /^~antd\/(.*)/, replacement: 'antd/$1' },
