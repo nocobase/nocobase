@@ -1,7 +1,6 @@
 import Database from '@nocobase/database';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import jwt from 'jsonwebtoken';
 
 describe('actions', () => {
   let app: MockServer;
@@ -28,18 +27,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: adminUser.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    adminAgent = app.agent().login(adminUser);
   });
 
   afterEach(async () => {
@@ -77,19 +65,16 @@ describe('actions', () => {
       },
     });
 
-    let response = await agent
-      .post('/auth:signIn')
-      .send({
-        email: 'test2@nocobase.com',
-        password: '123456',
-      })
-      .set('X-Authenticator', 'basic');
+    let response = await agent.post('/auth:signIn').send({
+      email: 'test2@nocobase.com',
+      password: '123456',
+    });
 
     expect(response.statusCode).toEqual(200);
 
     const token = response.body.data.token;
 
-    const loggedAgent = app.agent().auth(token, { type: 'bearer' }).set('X-Authenticator', 'basic');
+    const loggedAgent = app.agent().auth(token, { type: 'bearer' });
 
     const rolesCheckResponse = (await loggedAgent.set('Accept', 'application/json').get('/roles:check')) as any;
 
@@ -99,13 +84,10 @@ describe('actions', () => {
       filterByTk: 'test',
     });
 
-    response = await agent
-      .post('/auth:signIn')
-      .send({
-        email: 'test2@nocobase.com',
-        password: '123456',
-      })
-      .set('X-Authenticator', 'basic');
+    response = await agent.post('/auth:signIn').send({
+      email: 'test2@nocobase.com',
+      password: '123456',
+    });
 
     expect(response.statusCode).toEqual(200);
 

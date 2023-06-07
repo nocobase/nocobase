@@ -2,7 +2,6 @@ import { Database } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import jwt from 'jsonwebtoken';
 
 describe('role check action', () => {
   let app: MockServer;
@@ -37,18 +36,7 @@ describe('role check action', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    const agent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: user.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    const agent = app.agent().login(user);
 
     // @ts-ignore
     const response = await agent.resource('roles').check();

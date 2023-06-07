@@ -3,7 +3,6 @@ import UserPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { getApp, sleep } from '..';
 import { EXECUTION_STATUS, JOB_STATUS } from '../../constants';
-import jwt from 'jsonwebtoken';
 
 // NOTE: skipped because time is not stable on github ci, but should work in local
 describe('workflow > instructions > manual', () => {
@@ -38,20 +37,7 @@ describe('workflow > instructions > manual', () => {
     ]);
 
     const userPlugin = app.getPlugin('users') as UserPlugin;
-    userAgents = users.map((user) =>
-      app
-        .agent()
-        .auth(
-          jwt.sign(
-            {
-              userId: user.id,
-            },
-            'test-key',
-          ),
-          { type: 'bearer' },
-        )
-        .set('X-Authenticator', 'basic'),
-    );
+    userAgents = users.map((user) => app.agent().login(user));
 
     workflow = await WorkflowModel.create({
       enabled: true,

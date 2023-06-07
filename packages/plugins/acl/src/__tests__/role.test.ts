@@ -1,7 +1,6 @@
 import { ArrayFieldRepository, Database, Model } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
-import jwt from 'jsonwebtoken';
 import { prepareApp } from './prepare';
 
 describe('role api', () => {
@@ -37,18 +36,7 @@ describe('role api', () => {
       });
 
       const userPlugin = app.getPlugin('users') as UsersPlugin;
-      adminAgent = app
-        .agent()
-        .auth(
-          jwt.sign(
-            {
-              userId: admin.get('id'),
-            },
-            'test-key',
-          ),
-          { type: 'bearer' },
-        )
-        .set('X-Authenticator', 'basic');
+      adminAgent = app.agent().login(admin);
     });
 
     it('should list actions', async () => {

@@ -286,6 +286,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this._authManager = new AuthManager({
       authKey: 'X-Authenticator',
+      default: 'basic',
     });
     this.resource({
       name: 'auth',

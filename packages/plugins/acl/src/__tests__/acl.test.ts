@@ -4,7 +4,6 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import jwt from 'jsonwebtoken';
 
 describe('acl', () => {
   let app: MockServer;
@@ -33,19 +32,7 @@ describe('acl', () => {
       },
     });
 
-    adminAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: admin.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
-
+    adminAgent = app.agent().login(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
@@ -253,18 +240,7 @@ describe('acl', () => {
     });
     const userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const adminAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: rootUser.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    const adminAgent = app.agent().login(rootUser);
 
     expect(await db.getCollection('roles').repository.count()).toBe(3);
 
@@ -770,18 +746,7 @@ describe('acl', () => {
       },
     });
 
-    const userAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: user.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    const userAgent = app.agent().login(user);
 
     const schema = {
       'x-uid': 'test',
@@ -843,18 +808,7 @@ describe('acl', () => {
       filterByTk: 1,
     });
 
-    const rootAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: rootUser.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    const rootAgent = app.agent().login(rootUser);
 
     const response = await rootAgent
       // @ts-ignore

@@ -1,6 +1,5 @@
 import { MockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
-import jwt from 'jsonwebtoken';
 
 describe('snippet', () => {
   let app: MockServer;
@@ -28,19 +27,7 @@ describe('snippet', () => {
     });
 
     const userPlugin: any = app.getPlugin('users');
-    const userAgent: any = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: user.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
-
+    const userAgent: any = app.agent().login(user);
     const createCollectionResponse = await userAgent.resource('collections').create({});
 
     expect(createCollectionResponse.statusCode).toEqual(403);

@@ -1,9 +1,8 @@
 import Database from '@nocobase/database';
+import AuthPlugin from '@nocobase/plugin-auth';
 import { mockServer, MockServer } from '@nocobase/test';
 import PluginUsers from '../server';
 import { userPluginConfig } from './utils';
-import jwt from 'jsonwebtoken';
-import AuthPlugin from '@nocobase/plugin-auth';
 
 describe('actions', () => {
   let app: MockServer;
@@ -32,18 +31,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app
-      .agent()
-      .auth(
-        jwt.sign(
-          {
-            userId: adminUser.get('id'),
-          },
-          'test-key',
-        ),
-        { type: 'bearer' },
-      )
-      .set('X-Authenticator', 'basic');
+    adminAgent = app.agent().login(adminUser);
   });
 
   afterEach(async () => {

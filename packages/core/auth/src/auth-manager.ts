@@ -9,6 +9,7 @@ type Storer = {
 
 type AuthManagerOptions = {
   authKey: string;
+  default?: string;
 };
 
 type AuthConfig = {
@@ -76,7 +77,7 @@ export class AuthManager {
    */
   middleware() {
     return async (ctx: Context & { auth: Auth }, next: Next) => {
-      const name = ctx.get(this.options.authKey);
+      const name = ctx.get(this.options.authKey) || this.options.default;
       let authenticator: Auth;
       try {
         authenticator = await ctx.app.authManager.get(name, ctx);
