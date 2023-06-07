@@ -25,27 +25,23 @@ export interface IResource {
 export class Auth {
   protected api: APIClient;
 
-  protected NOCOBASE_LOCALE_KEY = 'NOCOBASE_LOCALE';
-
-  protected NOCOBASE_ROLE_KEY = 'NOCOBASE_ROLE';
-
-  protected NOCOBASE_AUTH_KEY = 'NOCOBASE_AUTH';
+  protected KEYS = {
+    locale: 'NOCOBASE_LOCALE',
+    role: 'NOCOBASE_ROLE',
+    token: 'NOCOBASE_TOKEN',
+    authenticator: 'NOCOBASE_AUTH',
+  };
 
   protected options = {
     locale: null,
     role: null,
-    auth: {
-      authenticator: null,
-      token: null,
-    },
+    authenticator: null,
+    token: null,
   };
 
   constructor(api: APIClient) {
     this.api = api;
     this.initKeys();
-    this.locale = this.getLocale();
-    this.role = this.getRole();
-    this.auth = this.getAuth();
     this.api.axios.interceptors.request.use(this.middleware.bind(this));
   }
 
@@ -58,15 +54,15 @@ export class Auth {
       return;
     }
     const appName = match[1];
-    this.NOCOBASE_LOCALE_KEY = `${appName.toUpperCase()}_NOCOBASE_LOCALE`;
-    this.NOCOBASE_ROLE_KEY = `${appName.toUpperCase()}_NOCOBASE_ROLE`;
+    this.KEYS['role'] = `${appName.toUpperCase()}_` + this.KEYS['role'];
+    this.KEYS['locale'] = `${appName.toUpperCase()}_` + this.KEYS['locale'];
   }
 
   get locale() {
     return this.getLocale();
   }
 
-  set locale(value) {
+  set locale(value: string) {
     this.setLocale(value);
   }
 
@@ -74,16 +70,70 @@ export class Auth {
     return this.getRole();
   }
 
-  set role(value) {
+  set role(value: string) {
     this.setRole(value);
   }
 
-  get auth() {
-    return this.getAuth();
+  get token() {
+    return this.getToken();
   }
 
-  set auth(value) {
-    this.setAuth(value);
+  set token(value: string) {
+    this.setToken(value);
+  }
+
+  get authenticator() {
+    return this.getAuthenticator();
+  }
+
+  set authenticator(value: string) {
+    this.setAuthenticator(value);
+  }
+
+  getOption(key: string) {
+    if (!this.KEYS[key]) {
+      return;
+    }
+    return this.api.storage.getItem(this.KEYS[key]);
+  }
+
+  setOption(key: string, value?: string) {
+    if (!this.KEYS[key]) {
+      return;
+    }
+    return this.api.storage.setItem(this.KEYS[key], value || '');
+  }
+
+  getLocale() {
+    return this.getOption('locale');
+  }
+
+  setLocale(locale: string) {
+    this.setOption('locale', locale);
+  }
+
+  getRole() {
+    return this.getOption('role');
+  }
+
+  setRole(role: string) {
+    this.setOption('role', role);
+  }
+
+  getToken() {
+    return this.getOption('token');
+  }
+
+  setToken(token: string) {
+    this.setOption('token', token);
+  }
+
+  getAuthenticator() {
+    return this.getOption('authenticator');
+  }
+
+  setAuthenticator(authenticator: string) {
+    this.setOption('authenticator', authenticator);
   }
 
   middleware(config: AxiosRequestConfig) {
@@ -93,53 +143,13 @@ export class Auth {
     if (this.role) {
       config.headers['X-Role'] = this.role;
     }
-    if (this.auth?.authenticator && !config.headers['X-Authenticator']) {
-      config.headers['X-Authenticator'] = this.auth.authenticator;
+    if (this.authenticator && !config.headers['X-Authenticator']) {
+      config.headers['X-Authenticator'] = this.authenticator;
     }
-    if (this.auth?.token) {
-      config.headers['Authorization'] = `Bearer ${this.auth.token}`;
+    if (this.token) {
+      config.headers['Authorization'] = `Bearer ${this.token}`;
     }
     return config;
-  }
-
-  getLocale() {
-    return this.api.storage.getItem(this.NOCOBASE_LOCALE_KEY);
-  }
-
-  setLocale(locale: string) {
-    this.options.locale = locale;
-    this.api.storage.setItem(this.NOCOBASE_LOCALE_KEY, locale || '');
-  }
-
-  getAuth() {
-    const auth = this.api.storage.getItem('NOCOBASE_AUTH');
-    if (!auth) {
-      return null;
-    }
-    return JSON.parse(auth);
-  }
-
-  setAuth(auth: { authenticator: string; token: string }) {
-    this.options.auth = auth;
-    this.api.storage.setItem('NOCOBASE_AUTH', JSON.stringify(auth));
-    if (!auth?.token) {
-      this.setRole(null);
-      // this.setLocale(null);
-    }
-  }
-
-  getToken() {
-    const auth = this.getAuth();
-    return auth?.token;
-  }
-
-  getRole() {
-    return this.api.storage.getItem(this.NOCOBASE_ROLE_KEY);
-  }
-
-  setRole(role: string) {
-    this.options.role = role;
-    this.api.storage.setItem(this.NOCOBASE_ROLE_KEY, role || '');
   }
 
   async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
@@ -152,10 +162,8 @@ export class Auth {
       },
     });
     const data = response?.data?.data;
-    this.setAuth({
-      authenticator,
-      token: data?.token,
-    });
+    this.setToken(data?.token);
+    this.setAuthenticator(authenticator);
     return response;
   }
 
@@ -171,11 +179,14 @@ export class Auth {
   }
 
   async signOut() {
-    await this.api.request({
+    const response = await this.api.request({
       method: 'post',
       url: 'auth:signOut',
     });
-    this.setAuth(null);
+    this.setToken(null);
+    this.setRole(null);
+    this.setAuthenticator(null);
+    return response;
   }
 }
 
