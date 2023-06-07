@@ -31,12 +31,7 @@ describe('middleware', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app.agent().login(admin);
 
     await db.getRepository('collections').create({
       values: {
