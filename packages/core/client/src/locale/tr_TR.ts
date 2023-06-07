@@ -504,6 +504,4 @@ export default {
   'Display data template selector': 'Veri şablonu seçicisini görüntüle',
   'Form data templates': 'Form veri şablonları',
   "Data template": "Veri şablonu",
-  "Not found":"Bulmadı",
-  "Add":"Ekle"
 }

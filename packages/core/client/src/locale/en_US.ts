@@ -690,7 +690,7 @@ export default {
   "Try again": "Try again",
   "Data template": "Data template",
   "Not found":"Not found",
-  "Add":"Add",
+  "Add":"Create",
   "Add new mode":"Add new mode",
   "Quick add":"Quick add",
   "Modal add":"Modal add",

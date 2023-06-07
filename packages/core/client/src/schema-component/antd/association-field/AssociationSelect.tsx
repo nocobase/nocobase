@@ -1,4 +1,4 @@
-import { LoadingOutlined } from '@ant-design/icons';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Input, Button, message } from 'antd';
 import React from 'react';
@@ -55,14 +55,9 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   };
   const QuickAddContent = (props) => {
     return (
-      <div>
-        <span style={{ color: 'black' }}>
-          {`${t('Not found') + '.'}`}
-          {t('Add') + ` ${props.search} ` + t('to') + t('Collection') + ` ${t(targetCollection.title)}? `}
-        </span>
-        <Button type="primary" onClick={() => handleCreateAction(props)}>
-          {t('Ok')}
-        </Button>
+      <div onClick={() => handleCreateAction(props)} style={{ cursor: 'pointer', paddingLeft: 10, color: 'black' }}>
+        <PlusOutlined />
+        <span style={{ paddingLeft: 5 }}>{t('Add') + ` “${props.search}” `}</span>
       </div>
     );
   };
