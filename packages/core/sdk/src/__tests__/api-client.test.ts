@@ -27,11 +27,13 @@ describe('api-client', () => {
     mock.onPost('auth:signIn').reply(200, {
       data: { id: 1, name: 'John Smith', token: '123' },
     });
-    const response = await api.auth.signIn({});
+    const response = await api.auth.signIn({}, 'basic');
     expect(response.status).toBe(200);
     expect(api.auth.getToken()).toBe('123');
-    const local = JSON.parse(localStorage.getItem('NOCOBASE_AUTH'));
-    expect(local.token).toBe('123');
+    const token = localStorage.getItem('NOCOBASE_TOKEN');
+    expect(token).toBe('123');
+    const auth = localStorage.getItem('NOCOBASE_AUTH');
+    expect(auth).toBe('basic');
   });
 
   test('resource action', async () => {
@@ -80,9 +82,8 @@ describe('api-client', () => {
     const response = await api.auth.signIn({});
     expect(response.status).toBe(200);
     expect(api.auth.getToken()).toBe('123');
-    console.log(items.get('NOCOBASE_AUTH'));
-    const local = JSON.parse(items.get('NOCOBASE_AUTH'));
-    expect(local.token).toBe('123');
+    const token = items.get('NOCOBASE_TOKEN');
+    expect(token).toBe('123');
   });
 
   test('custom auth', async () => {
@@ -94,7 +95,8 @@ describe('api-client', () => {
           data: values,
         });
         const data = response?.data?.data;
-        this.setAuth({ authenticator: 'test', token: data?.token });
+        this.setAuthenticator('test');
+        this.setToken(data?.token);
         return response;
       }
     }
@@ -114,7 +116,9 @@ describe('api-client', () => {
     const response = await api.auth.signIn({});
     expect(response.status).toBe(200);
     expect(api.auth.getToken()).toBe('123');
-    const local = JSON.parse(localStorage.getItem('NOCOBASE_AUTH'));
-    expect(local.token).toBe('123');
+    const token = localStorage.getItem('NOCOBASE_TOKEN');
+    expect(token).toBe('123');
+    const auth = localStorage.getItem('NOCOBASE_AUTH');
+    expect(auth).toBe('test');
   });
 });
