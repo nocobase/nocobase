@@ -170,21 +170,24 @@ export const Form: React.FC<FormProps> & {
   FilterDesigner?: any;
   ReadPrettyDesigner?: any;
   Templates?: any;
-} = observer((props) => {
-  const field = useField<Field>();
-  const { form, disabled, ...others } = useProps(props);
-  const formDisabled = disabled || field.disabled;
-  return (
-    <ConfigProvider componentDisabled={formDisabled}>
-      <form>
-        <Spin spinning={field.loading || false}>
-          {form ? (
-            <WithForm form={form} {...others} disabled={formDisabled} />
-          ) : (
-            <WithoutForm {...others} disabled={formDisabled} />
-          )}
-        </Spin>
-      </form>
-    </ConfigProvider>
-  );
-});
+} = observer(
+  (props) => {
+    const field = useField<Field>();
+    const { form, disabled, ...others } = useProps(props);
+    const formDisabled = disabled || field.disabled;
+    return (
+      <ConfigProvider componentDisabled={formDisabled}>
+        <form>
+          <Spin spinning={field.loading || false}>
+            {form ? (
+              <WithForm form={form} {...others} disabled={formDisabled} />
+            ) : (
+              <WithoutForm {...others} disabled={formDisabled} />
+            )}
+          </Spin>
+        </form>
+      </ConfigProvider>
+    );
+  },
+  { displayName: 'Form' },
+);

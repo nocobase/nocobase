@@ -113,15 +113,19 @@ export class MockServer extends Application {
 
                     const queryString = qs.stringify(restParams, { arrayFormat: 'brackets' });
 
+                    let request;
+
                     switch (method) {
-                      case 'upload':
-                        return agent.post(`${url}?${queryString}`).attach('file', file).field(values);
                       case 'list':
                       case 'get':
-                        return agent.get(`${url}?${queryString}`);
+                        request = agent.get(`${url}?${queryString}`);
+                        break;
                       default:
-                        return agent.post(`${url}?${queryString}`).send(values);
+                        request = agent.post(`${url}?${queryString}`);
+                        break;
                     }
+
+                    return file ? request.attach('file', file).field(values) : request.send(values);
                   };
                 },
               },

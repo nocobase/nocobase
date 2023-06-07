@@ -23,7 +23,7 @@ const CustomSignupPage = (props) => {
   );
 };
 
-export default React.memo((props) => {
+const CustomSignupPageMemo = React.memo((props) => {
   const ctx = useContext(RouteSwitchContext);
   return (
     <RouteSwitchContext.Provider value={{ ...ctx, components: { ...ctx.components, SignupPage: CustomSignupPage } }}>
@@ -31,3 +31,6 @@ export default React.memo((props) => {
     </RouteSwitchContext.Provider>
   );
 });
+CustomSignupPageMemo.displayName = 'CustomSignupPageMemo';
+
+export default CustomSignupPageMemo;

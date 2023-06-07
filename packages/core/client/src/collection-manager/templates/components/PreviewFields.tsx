@@ -217,3 +217,4 @@ function areEqual(prevProps, nextProps) {
 }
 
 export const PreviewFields = React.memo(PreviewCom, areEqual);
+PreviewFields.displayName = 'PreviewFields';

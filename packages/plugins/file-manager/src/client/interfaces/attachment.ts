@@ -1,13 +1,13 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { defaultProps, operators } from './properties';
-import { IField } from './types';
+import { IField, interfacesProperties } from '@nocobase/client';
+import { NAMESPACE } from '../locale';
 
 export const attachment: IField = {
   name: 'attachment',
   type: 'object',
   group: 'media',
-  title: '{{t("Attachment")}}',
+  title: `{{t("Attachment", { ns: "${NAMESPACE}" })}}`,
   isAssociation: true,
   default: {
     type: 'belongsToMany',
@@ -17,17 +17,19 @@ export const attachment: IField = {
       type: 'array',
       // title,
       'x-component': 'Upload.Attachment',
-      'x-component-props': {
-        action: 'attachments:upload',
-      },
+      'x-component-props': {},
     },
   },
   availableTypes: ['belongsToMany'],
-  schemaInitialize(schema: ISchema, { block }) {
+  schemaInitialize(schema: ISchema, { block, field }) {
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['size'] = 'small';
     }
+
+    schema['x-component-props']['action'] = `${field.target}:create${
+      field.storage ? `?attachementField=${field.collectionName}.${field.name}` : ''
+    }`;
   },
   initialize: (values: any) => {
     if (!values.through) {
@@ -47,20 +49,41 @@ export const attachment: IField = {
     }
   },
   properties: {
-    ...defaultProps,
+    ...interfacesProperties.defaultProps,
     'uiSchema.x-component-props.accept': {
       type: 'string',
-      title: '{{t("Accept")}}',
+      title: `{{t("MIME type", { ns: "${NAMESPACE}" })}}`,
       'x-component': 'Input',
       'x-decorator': 'FormItem',
-      description: 'Example: .doc,.docx',
+      description: 'Example: image/png',
+      default: 'image/*',
     },
     'uiSchema.x-component-props.multiple': {
       type: 'boolean',
-      'x-content': "{{t('Allow uploading multiple files')}}",
+      'x-content': `{{t('Allow uploading multiple files', { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       default: true,
+    },
+    storage: {
+      type: 'string',
+      title: `{{t("Storage", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t('Default storage will be used when not selected', { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'RemoteSelect',
+      'x-component-props': {
+        service: {
+          resource: 'storages',
+          params: {
+            // pageSize: -1
+          },
+        },
+        manual: false,
+        fieldNames: {
+          label: 'title',
+          value: 'name',
+        },
+      },
     },
   },
   filterable: {
@@ -80,10 +103,10 @@ export const attachment: IField = {
       },
       {
         name: 'filename',
-        title: '{{t("Filename")}}',
-        operators: operators.string,
+        title: `{{t("Filename", { ns: "${NAMESPACE}" })}}`,
+        operators: interfacesProperties.operators.string,
         schema: {
-          title: '{{t("Filename")}}',
+          title: `{{t("Filename", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-component': 'Input',
         },
