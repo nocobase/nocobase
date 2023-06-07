@@ -8,6 +8,8 @@ group:
 
 ## Examples
 
+<code src="./demos/demo1.tsx"></code>
+
 ## API
 
 基于 Ant Design 的 [Select](https://ant.design/components/select/#API)，相关扩展属性有：
@@ -23,3 +25,4 @@ export const defaultFieldNames = {
   options: 'children',
 };
 ```
+

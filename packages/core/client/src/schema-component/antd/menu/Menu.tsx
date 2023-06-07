@@ -115,6 +115,16 @@ const designerCss = css`
   }
 `;
 
+const antdMenuClass = css`
+  .ant-menu-item:hover {
+    > .ant-menu-title-content > div {
+      .general-schema-designer {
+        display: block;
+      }
+    }
+  }
+`;
+
 type ComposedMenu = React.FC<any> & {
   Item?: React.FC<any>;
   URL?: React.FC<any>;
@@ -155,6 +165,7 @@ export const Menu: ComposedMenu = observer(
     const api = useAPIClient();
     const { render } = useSchemaInitializer(schema['x-initializer']);
     const sideMenuRef = useSideMenuRef();
+    const [selectedKeys, setSelectedKeys] = useState<string[]>();
     const [defaultSelectedKeys, setDefaultSelectedKeys] = useState(() => {
       if (dSelectedKeys) {
         return dSelectedKeys;
@@ -182,8 +193,12 @@ export const Menu: ComposedMenu = observer(
       return null;
     });
     useEffect(() => {
+      if (!selectedUid) {
+        return;
+      }
+
       const keys = findKeysByUid(schema, selectedUid);
-      setDefaultSelectedKeys(keys);
+      setSelectedKeys(keys);
       if (['inline', 'mix'].includes(mode)) {
         setDefaultOpenKeys(dOpenKeys || keys);
       }
@@ -218,20 +233,7 @@ export const Menu: ComposedMenu = observer(
           <MenuModeContext.Provider value={mode}>
             <AntdMenu
               {...others}
-              style={
-                {
-                  // width: mode === 'mix' ? '100%' : undefined,
-                }
-              }
-              className={css`
-                .ant-menu-item:hover {
-                  > .ant-menu-title-content > div {
-                    .general-schema-designer {
-                      display: block;
-                    }
-                  }
-                }
-              `}
+              className={antdMenuClass}
               onSelect={(info: any) => {
                 const s = schema.properties[info.key];
                 if (mode === 'mix') {
@@ -267,7 +269,7 @@ export const Menu: ComposedMenu = observer(
               mode={mode === 'mix' ? 'horizontal' : mode}
               defaultOpenKeys={defaultOpenKeys}
               defaultSelectedKeys={defaultSelectedKeys}
-              selectedKeys={defaultSelectedKeys}
+              selectedKeys={selectedKeys}
             >
               {designable && (
                 <AntdMenu.Item disabled key="x-designer-button" style={{ padding: '0 8px', order: 9999 }}>
@@ -279,18 +281,18 @@ export const Menu: ComposedMenu = observer(
             {loading
               ? null
               : mode === 'mix' &&
-              sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
-              sideMenuRef?.current?.firstChild &&
-              createPortal(
-                <MenuModeContext.Provider value={'inline'}>
-                  <AntdMenu
-                    mode={'inline'}
-                    defaultOpenKeys={defaultOpenKeys}
-                    defaultSelectedKeys={defaultSelectedKeys}
-                    onSelect={(info) => {
-                      onSelect && onSelect(info);
-                    }}
-                    className={css`
+                sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
+                sideMenuRef?.current?.firstChild &&
+                createPortal(
+                  <MenuModeContext.Provider value={'inline'}>
+                    <AntdMenu
+                      mode={'inline'}
+                      defaultOpenKeys={defaultOpenKeys}
+                      defaultSelectedKeys={defaultSelectedKeys}
+                      onSelect={(info) => {
+                        onSelect && onSelect(info);
+                      }}
+                      className={css`
                         height: 100%;
                         overflow-y: auto;
                         overflow-x: hidden;
@@ -322,25 +324,25 @@ export const Menu: ComposedMenu = observer(
                           }
                         }
                       `}
-                  >
-                    <RecursionField schema={sideMenuSchema} onlyRenderProperties />
-                    {render({
-                      style: { margin: 8 },
-                      insert: (s) => {
-                        const dn = createDesignable({
-                          t,
-                          api,
-                          refresh,
-                          current: sideMenuSchema,
-                        });
-                        dn.loadAPIClientEvents();
-                        dn.insertAdjacent('beforeEnd', s);
-                      },
-                    })}
-                  </AntdMenu>
-                </MenuModeContext.Provider>,
-                sideMenuRef.current.firstChild,
-              )}
+                    >
+                      <RecursionField schema={sideMenuSchema} onlyRenderProperties />
+                      {render({
+                        style: { margin: 8 },
+                        insert: (s) => {
+                          const dn = createDesignable({
+                            t,
+                            api,
+                            refresh,
+                            current: sideMenuSchema,
+                          });
+                          dn.loadAPIClientEvents();
+                          dn.insertAdjacent('beforeEnd', s);
+                        },
+                      })}
+                    </AntdMenu>
+                  </MenuModeContext.Provider>,
+                  sideMenuRef.current.firstChild,
+                )}
           </MenuModeContext.Provider>
         </MenuItemDesignerContext.Provider>
       </DndContext>

@@ -14,23 +14,23 @@ group:
 
 ### DatePicker (GMT)
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/demo2.tsx"></code>
 
 ### DatePicker (non-UTC)
 
-<code src="./demos/demo5.tsx"></code>
+<code src="./demos/demo3.tsx"></code>
 
 ### RangePicker (GMT)
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/demo4.tsx"></code>
 
 ### RangePicker (non-GMT)
 
-<code src="./demos/demo6.tsx"></code>
+<code src="./demos/demo5.tsx"></code>
 
 ### RangePicker (non-UTC)
 
-<code src="./demos/demo7.tsx"></code>
+<code src="./demos/demo6.tsx"></code>
 
 ## API
 

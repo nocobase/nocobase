@@ -8,4 +8,8 @@ group:
 
 ## TableBlock
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/demo1.tsx"></code>
+
+## Tree Table
+
+<code src="./demos/demo2.tsx"></code>

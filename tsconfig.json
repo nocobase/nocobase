@@ -62,6 +62,7 @@
     "packages/**/dist",
     "packages/**/public",
     "packages/core/build/bin",
-    "packages/**/lib"
+    "packages/**/lib",
+    "packages/**/es"
   ]
 }

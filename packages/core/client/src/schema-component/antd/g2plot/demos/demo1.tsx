@@ -1,12 +1,17 @@
-import { APIClient, APIClientProvider, G2Plot, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
+import {
+  APIClient,
+  APIClientProvider,
+  CardItem,
+  G2Plot,
+  SchemaComponent,
+  SchemaComponentProvider,
+} from '@nocobase/client';
 import React from 'react';
+import { mockAPIClient } from '../../../../test';
 
-const api = new APIClient();
+const { apiClient, mockRequest } = mockAPIClient();
 
-const mock = new MockAdapter(api.axios);
-
-mock.onGet('/test').reply(200, {
+mockRequest.onGet('/test').reply(200, {
   data: [
     {
       Date: '2010-01',
@@ -77,9 +82,9 @@ const schema = {
 
 export default () => {
   return (
-    <APIClientProvider apiClient={api}>
-      <SchemaComponentProvider>
-        <SchemaComponent schema={schema} components={{ G2Plot }} scope={{ requestChartData }} />
+    <APIClientProvider apiClient={apiClient}>
+      <SchemaComponentProvider components={{ G2Plot, CardItem }} scope={{ requestChartData }}>
+        <SchemaComponent schema={schema} />
       </SchemaComponentProvider>
     </APIClientProvider>
   );

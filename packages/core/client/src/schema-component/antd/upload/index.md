@@ -12,6 +12,4 @@ group:
 
 <code src="./demos/demo1.tsx"></code>
 
-### Upload
-
 <code src="./demos/demo2.tsx"></code>

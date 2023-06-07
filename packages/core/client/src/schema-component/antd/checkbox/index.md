@@ -10,8 +10,8 @@ group:
 
 ### 勾选
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/checkbox.tsx"></code>
 
 ### 组
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/checkbox.group.tsx"></code>

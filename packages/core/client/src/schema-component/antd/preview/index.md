@@ -11,7 +11,3 @@ group:
 ### Preview
 
 <code src="./demos/demo1.tsx"></code>
-
-### Preview
-
-<code src="./demos/demo2.tsx"></code>

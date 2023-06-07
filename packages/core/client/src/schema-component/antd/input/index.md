@@ -16,16 +16,16 @@ group:
 
 ### Input
 
-<code src="./demos/demo1.tsx"></code>
+<code src="./demos/input.tsx"></code>
 
 ### Textarea
 
-<code src="./demos/demo2.tsx"></code>
+<code src="./demos/textarea.tsx"></code>
 
 ### URL
 
-<code src="./demos/demo3.tsx"></code>
+<code src="./demos/url.tsx"></code>
 
 ### JSON
 
-<code src="./demos/demo4.tsx"></code>
+<code src="./demos/json.tsx"></code>

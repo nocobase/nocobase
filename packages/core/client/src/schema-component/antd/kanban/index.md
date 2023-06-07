@@ -6,6 +6,6 @@ group:
 
 # Kanban
 
-## 示例
+## Example
 
 <code src="./demos/demo1.tsx"></code>

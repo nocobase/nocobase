@@ -4,9 +4,11 @@ group:
   order: 3
 ---
 
-# RemoteSelect
+# AssociationSelect
 
 ## Examples
+
+<code src="./demos/demo1.tsx"></code>
 
 ## API
 

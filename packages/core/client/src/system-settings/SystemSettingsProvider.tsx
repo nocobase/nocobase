@@ -1,4 +1,4 @@
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import { Result } from 'ahooks/es/useRequest/src/types';
 import { Spin } from 'antd';
 import React, { createContext, ReactNode, useContext } from 'react';
 import { useRequest } from '..';

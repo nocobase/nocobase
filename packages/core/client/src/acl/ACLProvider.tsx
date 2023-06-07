@@ -29,20 +29,6 @@ const getRouteUrl = (props) => {
   return props && getRouteUrl(props?.children?.props);
 };
 
-const getRouteAclCheck = (match, snippets) => {
-  const { url, params } = match;
-  if (url === '/admin/pm/list' || params?.pluginName || params?.name?.includes('settings')) {
-    const pmAclCheck = url === '/admin/pm/list' && snippets.includes('pm');
-    const pluginTabByName = params?.name.split('/');
-    pluginTabByName.shift();
-    const pluginName = params.pluginName || pluginTabByName[0];
-    const tabName = params.tabName || pluginTabByName[1];
-    const pluginTabSnippet = pluginName && tabName && `!pm.${pluginName}.${tabName}`;
-    const pluginTabAclCheck = pluginTabSnippet && !snippets.includes(pluginTabSnippet);
-    return pmAclCheck || pluginTabAclCheck;
-  }
-  return true;
-};
 export const ACLRolesCheckProvider = (props) => {
   const route = getRouteUrl(props.children.props);
   const { setDesignable } = useDesignable();
@@ -180,11 +166,11 @@ export const ACLCollectionProvider = (props) => {
   const { allowAll, parseAction } = useACLRoleContext();
   const schema = useFieldSchema();
   if (allowAll) {
-    return <>{props.children}</>;
+    return props.children;
   }
   const actionPath = schema['x-acl-action'];
   if (!actionPath) {
-    return <>{props.children}</>;
+    return props.children;
   }
   const params = parseAction(actionPath, { schema });
   if (!params) {
@@ -288,5 +274,3 @@ export const ACLMenuItemProvider = (props) => {
   }
   return null;
 };
-
-export default ACLProvider;
