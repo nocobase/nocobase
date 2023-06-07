@@ -1,12 +1,12 @@
 import { FormButtonGroup, FormDialog, FormDrawer, FormItem, FormLayout, Reset, Submit } from '@formily/antd';
-import { createForm, Field, ObjectField, onFormValuesChange } from '@formily/core';
+import { Field, ObjectField, createForm, onFormValuesChange } from '@formily/core';
 import {
   FieldContext,
   FormContext,
-  observer,
   RecursionField,
   Schema,
   SchemaOptionsContext,
+  observer,
   useField,
   useFieldSchema,
   useForm,
@@ -84,7 +84,7 @@ SettingsForm.Divider = () => {
   return <Menu.Divider />;
 };
 
-SettingsForm.Remove = (props) => {
+SettingsForm.Remove = function Remove(props) {
   const field = useField();
   const { dn, setDropdownVisible } = useSettingsFormContext();
   return (
@@ -161,7 +161,7 @@ SettingsForm.Select = observer(
   { displayName: 'SettingsForm' },
 );
 
-SettingsForm.Modal = () => {
+SettingsForm.Modal = function Modal() {
   const form = useForm();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
@@ -200,7 +200,7 @@ SettingsForm.Modal = () => {
   );
 };
 
-SettingsForm.Drawer = () => {
+SettingsForm.Drawer = function Drawer() {
   const form = useForm();
   const field = useField<ObjectField>();
   const fieldSchema = useFieldSchema();
@@ -253,7 +253,7 @@ SettingsForm.Drawer = () => {
   );
 };
 
-SettingsForm.SubMenu = () => {
+SettingsForm.SubMenu = function SubMenu() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   return (
@@ -265,7 +265,7 @@ SettingsForm.SubMenu = () => {
   );
 };
 
-SettingsForm.ItemGroup = () => {
+SettingsForm.ItemGroup = function ItemGroup() {
   const field = useField();
   const fieldSchema = useFieldSchema();
   return (
