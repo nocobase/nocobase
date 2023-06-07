@@ -103,11 +103,10 @@ export class InheritedModelSyncRunner {
   // check table exists or not
   static async tableExists(tableName, db, transaction) {
     const sql = `
-    SELECT EXISTS (
-        SELECT FROM information_schema.tables
-        WHERE  table_schema = '${tableName.schema}'
-        AND    table_name   = '${tableName.tableName}'
-    );
+      SELECT EXISTS (SELECT
+                     FROM information_schema.tables
+                     WHERE table_schema = '${tableName.schema}'
+                       AND table_name = '${tableName.tableName}');
     `;
 
     const result = await db.sequelize.query(sql, { type: 'SELECT', transaction });
@@ -120,21 +119,22 @@ export class InheritedModelSyncRunner {
 
     // find all parents of table
     const querySql = `
-        SELECT child_schema.nspname  AS child_schema,
-               child_table.relname   AS child_table,
-               parent_schema.nspname AS parent_schema,
-               parent_table.relname  AS parent_table
-        FROM pg_inherits
-               JOIN pg_class child_table ON child_table.oid = pg_inherits.inhrelid
-               JOIN pg_class parent_table ON parent_table.oid = pg_inherits.inhparent
-               JOIN pg_namespace child_schema ON child_schema.oid = child_table.relnamespace
-               JOIN pg_namespace parent_schema ON parent_schema.oid = parent_table.relnamespace
-        WHERE child_schema.nspname = '${collection.collectionSchema()}'
-          AND child_table.relname = '${collection.model.tableName}';
-      `;
+      SELECT child_schema.nspname  AS child_schema,
+             child_table.relname   AS child_table,
+             parent_schema.nspname AS parent_schema,
+             parent_table.relname  AS parent_table
+      FROM pg_inherits
+             JOIN pg_class child_table ON child_table.oid = pg_inherits.inhrelid
+             JOIN pg_class parent_table ON parent_table.oid = pg_inherits.inhparent
+             JOIN pg_namespace child_schema ON child_schema.oid = child_table.relnamespace
+             JOIN pg_namespace parent_schema ON parent_schema.oid = parent_table.relnamespace
+      WHERE child_schema.nspname = '${collection.collectionSchema()}'
+        AND child_table.relname = '${collection.model.tableName}';
+    `;
 
     const queryRes = await db.sequelize.query(querySql, {
       type: 'SELECT',
+      transaction,
     });
 
     const existParentsTables = queryRes.map((row) => {
@@ -144,11 +144,15 @@ export class InheritedModelSyncRunner {
       };
     });
 
+    console.log('existParentsTables', existParentsTables);
+
     const existParentCollections = existParentsTables.map((x) => {
       return db.tableNameCollectionMap.get(`${x.schema}.${x.tableName}`);
     });
 
     const newParents = collection.options.inherits;
+
+    console.log('newParents', newParents);
 
     const shouldRemove = existParentCollections.filter((x) => !newParents.includes(x.name));
 
@@ -188,9 +192,10 @@ export class InheritedModelSyncRunner {
 
     // query child table columns
     const childColumns = await db.sequelize.query(
-      `SELECT column_name FROM information_schema.columns WHERE table_name = '${
-        childCollection.model.tableName
-      }' AND table_schema = '${childCollection.collectionSchema()}';`,
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_name = '${childCollection.model.tableName}'
+         AND table_schema = '${childCollection.collectionSchema()}';`,
       {
         type: 'SELECT',
         transaction,
@@ -249,7 +254,8 @@ export class InheritedModelSyncRunner {
 
       const maxId = await db.sequelize.query(
         `
-        SELECT MAX(id) FROM ${connectedCollection.quotedTableName()};`,
+          SELECT MAX(id)
+          FROM ${connectedCollection.quotedTableName()};`,
         {
           transaction,
         },
@@ -274,7 +280,7 @@ export class InheritedModelSyncRunner {
     for (const connectedCollection of connectedCollectionsWithId) {
       await db.sequelize.query(
         `alter table ${connectedCollection.quotedTableName()}
-            alter column id set default nextval('${rootSequence}')`,
+          alter column id set default nextval('${rootSequence}')`,
         {
           transaction,
         },

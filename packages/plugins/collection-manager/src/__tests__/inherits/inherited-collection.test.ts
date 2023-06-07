@@ -155,10 +155,11 @@ pgOnly()('Inherited Collection', () => {
           parent_name: 'root',
         },
       });
-      const rootCollection = db.getCollection('root');
-      const rootRecords = await rootCollection.repository.find({});
 
-      expect(rootRecords.length).toEqual(1);
+      const parentCollection = db.getCollection('parent');
+      const parentRecords = await parentCollection.repository.find({});
+
+      expect(parentRecords.length).toEqual(1);
     });
   });
 
