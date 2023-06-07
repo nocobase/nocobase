@@ -101,6 +101,7 @@ export class Auth {
     if (!this.KEYS[key]) {
       return;
     }
+    this.options[key] = value;
     return this.api.storage.setItem(this.KEYS[key], value || '');
   }
 
