@@ -479,6 +479,7 @@ export const Table: any = observer((props: any) => {
           tableLayout={'auto'}
           scroll={scroll}
           columns={columns}
+          childrenColumnName="children"
           expandable={{
             onExpand: (flag, record) => {
               const newKeys = flag ? [...expandedKeys, record.id] : expandedKeys.filter((i) => record.id !== i);
