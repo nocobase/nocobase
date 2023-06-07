@@ -769,8 +769,7 @@ export default {
   "Duplicate mode":"复制方式",
   "Quick duplicate":"快速复制",
   "Duplicate and continue":"复制并继续",
-  "Please configure the duplicate fields":"请配置要复制的字段"
-  "Not found":"不存在该值",
+  "Please configure the duplicate fields":"请配置要复制的字段",
   "Add":"创建",
   "Add new mode":"添加方式",
   "Quick add":"快捷添加",

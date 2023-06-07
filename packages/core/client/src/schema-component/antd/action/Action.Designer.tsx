@@ -1,9 +1,8 @@
 import { ISchema, useField, useFieldSchema, connect, mapProps } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
 import { Menu, Tree as AntdTree } from 'antd';
-import { ArrayField } from '@formily/core';
-import { uniq } from 'lodash';
-import React, { useEffect, useState, useCallback } from 'react';
+import { cloneDeep } from 'lodash';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
 import { useCollection, useCollectionManager, useCollectionFieldsOptions } from '../../../collection-manager';
@@ -59,7 +58,9 @@ export const ActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup','duplicate'].includes(fieldSchema['x-action'] || '');
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
+    fieldSchema['x-action'] || '',
+  );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
@@ -68,6 +69,9 @@ export const ActionDesigner = (props) => {
   const isLink = fieldSchema['x-component'] === 'Action.Link';
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
+  const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
+  const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
+  const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const options = useCollectionFieldsOptions(name, 1, ['id']);
   useEffect(() => {
     const schemaUid = uid();

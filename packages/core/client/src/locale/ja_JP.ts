@@ -604,8 +604,7 @@ export default {
   "Duplicate mode":"コピーモード",
   "Quick duplicate":"今すぐコピー",
   "Duplicate and continue":"コピーして続行",
-  "Please configure the duplicate fields":"コピーするフィールドを設定してください"
-  "Not found":"存在しない",
+  "Please configure the duplicate fields":"コピーするフィールドを設定してください",
   "Add":"追加",
   "Add new mode":"追加モード",
   "Quick add":"すばやい",
