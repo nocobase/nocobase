@@ -15,55 +15,18 @@ import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFields, useQueryWithAlias, useFieldTransformer } from '../hooks';
 import { createRendererSchema } from '../utils';
+import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
-export type QueryProps = Partial<{
-  measures: {
-    field: string;
-    aggregate?: string;
-    alias?: string;
-  }[];
-  dimensions: {
-    field: string;
-    alias?: string;
-    format?: string;
-  }[];
-  orders: {
-    field: string;
-    order: 'asc' | 'desc';
-  }[];
-  filter: any;
-  limit: number;
-  sql: {
-    fields?: string;
-    clauses?: string;
-  };
-}>;
-
-export type ChartRendererProps = {
-  collection: string;
-  query?: QueryProps;
-  config?: {
-    chartType: string;
-    general: any;
-    advanced: string;
-  };
-  transform?: {
-    field: string;
-    type: string;
-    format: string;
-  }[];
-  // A flag to indicate whether it is the renderer of the configuration pane.
+export const ChartRenderer: React.FC<{
   configuring?: boolean;
-  mode?: 'builder' | 'sql';
-};
-
-export const ChartRenderer: React.FC<ChartRendererProps> & {
+}> & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData, current } = useContext(ChartConfigContext);
-  const { query, config, collection, transform, configuring } = props;
+  const { query, config, collection, transform } = useContext(ChartRendererContext);
+  const { configuring } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
@@ -101,6 +64,7 @@ export const ChartRenderer: React.FC<ChartRendererProps> & {
           return;
         }
         const sampleData = data.length > 10 ? data.slice(0, 10) : data;
+        console.log(sampleData);
         setQueryData(JSON.stringify(sampleData, null, 2));
       },
     },
@@ -153,7 +117,7 @@ ChartRenderer.Designer = function Designer() {
   const field = useField();
   const schema = useFieldSchema();
   const { insertAdjacent } = useDesignable();
-  const collection = field?.componentProps?.collection;
+  const collection = field?.decoratorProps?.collection;
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.Item
@@ -175,6 +139,7 @@ ChartRenderer.Designer = function Designer() {
       >
         {t('Duplicate')}
       </SchemaSettings.Item>
+      <SchemaSettings.BlockTitleItem />
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         // removeParentsIfNoChildren

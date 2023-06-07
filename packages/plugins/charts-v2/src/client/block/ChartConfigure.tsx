@@ -18,7 +18,7 @@ import {
 import { css } from '@emotion/css';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { ISchema, FormConsumer } from '@formily/react';
-import { ChartLibraryContext, ChartRenderer, useChartTypes } from '../renderer';
+import { ChartLibraryContext, ChartRenderer, ChartRendererProvider, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
@@ -78,7 +78,7 @@ export const ChartConfigure: React.FC<{
   const form = useMemo(
     () =>
       createForm({
-        initialValues: schema?.['x-component-props'],
+        initialValues: schema?.['x-decorator-props'],
       }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,8 +105,8 @@ export const ChartConfigure: React.FC<{
           mode: mode || 'builder',
         };
         if (schema && schema['x-uid']) {
-          schema['x-component-props'] = rendererProps;
-          field.componentProps = rendererProps;
+          schema['x-decorator-props'] = rendererProps;
+          field.decoratorProps = rendererProps;
           dn.emit('patch', {
             schema,
           });
@@ -222,14 +222,15 @@ ChartConfigure.Renderer = function Renderer() {
         const config = cloneDeep(form.values.config);
         const transform = cloneDeep(form.values.transform);
         return (
-          <ChartRenderer
+          <ChartRendererProvider
             collection={collection}
             query={form.values.query}
             config={config}
             transform={transform}
-            configuring={true}
             mode={form.values.mode}
-          />
+          >
+            <ChartRenderer configuring={true} />
+          </ChartRendererProvider>
         );
       }}
     </FormConsumer>
@@ -249,7 +250,7 @@ ChartConfigure.Query = function Query() {
     setCurrent({
       schema: {
         ...schema,
-        'x-component-props': {},
+        'x-decorator-props': {},
       },
       field,
       collection: value,

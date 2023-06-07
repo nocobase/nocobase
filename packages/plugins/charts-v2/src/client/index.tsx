@@ -6,7 +6,7 @@ import {
 } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartV2BlockInitializer, ChartV2BlockDesigner, ChartInitializers, ChartV2Block } from './block';
-import { ChartRenderer, G2PlotLibrary } from './renderer';
+import { ChartRenderer, G2PlotLibrary, ChartRendererProvider } from './renderer';
 import { ChartLibraryProvider } from './renderer/ChartLibrary';
 
 const Chart: React.FC = (props) => {
@@ -22,7 +22,9 @@ const Chart: React.FC = (props) => {
     });
   }
   return (
-    <SchemaComponentOptions components={{ ChartV2BlockInitializer, ChartRenderer, ChartV2BlockDesigner, ChartV2Block }}>
+    <SchemaComponentOptions
+      components={{ ChartV2BlockInitializer, ChartRenderer, ChartV2BlockDesigner, ChartV2Block, ChartRendererProvider }}
+    >
       <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
         <ChartLibraryProvider name="G2Plot" charts={G2PlotLibrary}>
           {props.children}

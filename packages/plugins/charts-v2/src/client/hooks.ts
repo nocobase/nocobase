@@ -169,7 +169,7 @@ export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
         const field = fields.find((field) => field.name === item.field);
         return {
           ...item,
-          alias: item.alias || field.label,
+          alias: item.alias || field?.label,
         };
       });
   };

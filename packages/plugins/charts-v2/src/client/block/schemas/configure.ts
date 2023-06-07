@@ -399,7 +399,7 @@ export const transformSchema: ISchema = {
         field: {
           type: 'string',
           'x-decorator': 'FormItem',
-          'x-component': 'AutoComplete',
+          'x-component': 'Select',
           'x-component-props': {
             placeholder: '{{t("Field")}}',
             style: {
