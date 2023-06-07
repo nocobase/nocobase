@@ -22,7 +22,6 @@ const useDataSource = (options) => {
   const ctx = useContext(DataSourceContext);
   return useRequest(
     () => {
-      console.log('ctx.dataSource', ctx.dataSource);
       return Promise.resolve({
         data: ctx.dataSource,
       });
@@ -38,7 +37,6 @@ const useCreateAction = () => {
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
-      console.log(ctx.dataSource);
       const dataSource = ctx.dataSource || [];
       dataSource.push({
         id: uid(),
@@ -67,7 +65,6 @@ const useBulkDestroyAction = () => {
 
 const useUpdateAction = () => {
   const record = useRecord();
-  // const form = useForm();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
@@ -204,7 +201,6 @@ const DataSourceProvider = observer(
         },
       },
     );
-    console.log('dataSource1', dataSource);
     return (
       <DataSourceContext.Provider
         value={{

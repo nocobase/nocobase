@@ -1,9 +1,9 @@
-import { usePrefixCls } from '@formily/antd/lib/__builtins__';
+import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { Field } from '@formily/core';
 import { observer, useField } from '@formily/react';
 import { isArr } from '@formily/shared';
 import { Tag } from 'antd';
-import { TreeSelectProps } from 'antd/lib/tree-select';
+import { TreeSelectProps } from 'antd/es/tree-select';
 import cls from 'classnames';
 import React from 'react';
 

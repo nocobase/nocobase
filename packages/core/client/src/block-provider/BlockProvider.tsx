@@ -2,13 +2,12 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
-import merge from 'deepmerge';
 import { Col, Row } from 'antd';
+import merge from 'deepmerge';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ACLCollectionProvider,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
@@ -16,12 +15,14 @@ import {
   useDesignable,
   useRecord,
 } from '../';
+import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 import _ from 'lodash';
 import { useAssociationNames } from './hooks';
+
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -161,7 +162,7 @@ export const MaybeCollectionProvider = (props) => {
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
     </CollectionProvider>
   ) : (
-    <>{props.children}</>
+    props.children
   );
 };
 

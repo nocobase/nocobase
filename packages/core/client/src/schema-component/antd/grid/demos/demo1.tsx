@@ -6,7 +6,10 @@ const Block = observer(
   (props) => {
     const fieldSchema = useFieldSchema();
     return (
-      <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
+      <div
+        className="block-item"
+        style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}
+      >
         Block {fieldSchema.title}
         <DragHandler />
       </div>
@@ -20,7 +23,6 @@ const schema = {
   version: '2.0',
   type: 'void',
   name: 'grid1',
-  'x-decorator': 'CardItem',
   'x-component': 'Grid',
   properties: {
     row1: {
