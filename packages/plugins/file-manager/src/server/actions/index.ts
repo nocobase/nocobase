@@ -1,7 +1,9 @@
 import actions from '@nocobase/actions';
-import { middleware } from './attachments';
+import { createMiddleware, destroyMiddleware } from './attachments';
 
 export default function ({ app }) {
-  app.resourcer.use(middleware);
+  app.resourcer.use(createMiddleware);
   app.resourcer.registerActionHandler('upload', actions.create);
+
+  app.resourcer.use(destroyMiddleware);
 }

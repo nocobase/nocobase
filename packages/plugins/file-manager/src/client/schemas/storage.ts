@@ -76,6 +76,16 @@ const collection = {
         'x-component': 'Checkbox',
       } as ISchema,
     },
+    {
+      type: 'boolean',
+      name: 'paranoid',
+      interface: 'boolean',
+      uiSchema: {
+        title: `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
+        type: 'boolean',
+        'x-component': 'Checkbox',
+      } as ISchema,
+    },
   ],
 };
 
@@ -183,6 +193,12 @@ export const storageSchema: ISchema = {
                       'x-decorator': 'FormItem',
                       title: '',
                       'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
+                    },
+                    paranoid: {
+                      title: '',
+                      'x-component': 'CollectionField',
+                      'x-decorator': 'FormItem',
+                      'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
                     },
                     footer: {
                       type: 'void',
@@ -318,7 +334,13 @@ export const storageSchema: ISchema = {
                               title: '',
                               'x-component': 'CollectionField',
                               'x-decorator': 'FormItem',
-                              'x-content': '{{t("Default storage")}}',
+                              'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
+                            },
+                            paranoid: {
+                              title: '',
+                              'x-component': 'CollectionField',
+                              'x-decorator': 'FormItem',
+                              'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
                             },
                             footer: {
                               type: 'void',
