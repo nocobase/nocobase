@@ -30,7 +30,7 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-export default React.memo((props) => {
+const CustomBlock = React.memo((props) => {
   const items = useContext(SchemaInitializerContext);
   const children = items.BlockInitializers.items[2].children;
   children.push({
@@ -45,3 +45,6 @@ export default React.memo((props) => {
     </SchemaComponentOptions>
   );
 });
+CustomBlock.displayName = 'CustomBlock';
+
+export default CustomBlock;

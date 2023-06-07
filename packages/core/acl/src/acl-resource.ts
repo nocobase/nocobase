@@ -1,5 +1,6 @@
 import { ACLRole, RoleActionParams } from './acl-role';
 import { ACL, ListenerContext } from './acl';
+import lodash from 'lodash';
 
 export type ResourceActions = { [key: string]: RoleActionParams };
 
@@ -35,7 +36,15 @@ export class ACLResource {
   }
 
   getAction(name: string) {
-    return this.actions.get(name) || this.actions.get(this.acl.resolveActionAlias(name));
+    const result = this.actions.get(name) || this.actions.get(this.acl.resolveActionAlias(name));
+    if (!result) {
+      return null;
+    }
+
+    if (Array.isArray(result.fields) && result.fields.length > 0) {
+      result.fields = lodash.uniq(result.fields);
+    }
+    return lodash.cloneDeep(result);
   }
 
   setAction(name: string, params: RoleActionParams) {

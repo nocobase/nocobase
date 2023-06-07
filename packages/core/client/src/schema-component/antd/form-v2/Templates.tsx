@@ -1,5 +1,5 @@
 import { useFieldSchema } from '@formily/react';
-import { forEach, showToast } from '@nocobase/utils/client';
+import { error, forEach } from '@nocobase/utils/client';
 import { Select } from 'antd';
 import _ from 'lodash';
 import React, { useCallback, useEffect } from 'react';
@@ -7,8 +7,17 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
+import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 
-interface ITemplate {
+export interface ITemplate {
+  config?: {
+    [key: string]: {
+      /** 设置的数据范围 */
+      filter?: any;
+      /** 设置的标题字段 */
+      titleField?: string;
+    };
+  };
   items: {
     key: string;
     title: string;
@@ -24,20 +33,28 @@ interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const data = useDuplicatefieldsContext();
   const { getCollectionJoinField } = useCollectionManager();
-
+  if (data) {
+    return data;
+  }
+  const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
   items.forEach((item) => {
-    item.fields = item.fields
-      .map((field) => {
-        const joinField = getCollectionJoinField(`${item.collection}.${field}`);
-        if (joinField) {
-          return field;
-        }
-        return '';
-      })
-      .filter(Boolean);
+    try {
+      item.fields = item.fields
+        ?.map((field) => {
+          const joinField = getCollectionJoinField(`${item.collection}.${field}`);
+          if (joinField) {
+            return field;
+          }
+          return '';
+        })
+        .filter(Boolean);
+    } catch (err) {
+      error(err);
+      item.fields = [];
+    }
   });
 
   const templates: any = [
@@ -52,7 +69,7 @@ const useDataTemplates = () => {
     templates,
     display,
     defaultTemplate,
-    enabled: items.length > 0,
+    enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
 
@@ -63,10 +80,10 @@ export const Templates = ({ style = {}, form }) => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (defaultTemplate) {
+    if (enabled && defaultTemplate) {
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
@@ -86,7 +103,10 @@ export const Templates = ({ style = {}, form }) => {
     if (option.key !== 'none') {
       fetchTemplateData(api, option, t)
         .then((data) => {
-          if (form) {
+          if (form && data) {
+            // 切换之前先把之前的数据清空
+            form.reset();
+
             forEach(data, (value, key) => {
               if (value) {
                 form.values[key] = value;
@@ -131,9 +151,9 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
   if (template.fields.length === 0) {
-    return showToast(t('Template fields have been removed and need to be reconfigured'));
+    return;
   }
   return api
     .resource(template.collection)

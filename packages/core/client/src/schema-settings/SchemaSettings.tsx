@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } fr
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { error } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
@@ -31,6 +32,7 @@ import {
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
+  SchemaComponentContext,
   SchemaComponentOptions,
   createDesignable,
   findFormBlock,
@@ -47,9 +49,9 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
+import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { EnableChildCollections } from './EnableChildCollections';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -117,8 +119,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [visible, setVisible] = useState(false);
   const DropdownMenu = (
     <Dropdown
-      visible={visible}
-      onVisibleChange={(visible) => {
+      open={visible}
+      onOpenChange={(visible) => {
         setVisible(visible);
       }}
       overlay={<Menu>{props.children}</Menu>}
@@ -509,7 +511,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
                 ['x-uid']: uid,
                 'x-filter-targets': targets,
               },
-            });
+            }).catch(error);
             dn.refresh();
           }}
           onMouseEnter={onHover}
@@ -770,6 +772,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     </>
   );
 });
+SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
 SchemaSettings.ModalItem = function ModalItem(props) {
   const {
@@ -815,6 +818,10 @@ SchemaSettings.ModalItem = function ModalItem(props) {
           })
           .then((values) => {
             onSubmit(values);
+            return values;
+          })
+          .catch((err) => {
+            console.error(err);
           });
       }}
     >
@@ -897,7 +904,7 @@ SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
                       field: {
                         type: 'string',
                         enum: sortFields,
-                        required:true,
+                        required: true,
                         'x-decorator': 'FormItem',
                         'x-component': 'Select',
                         'x-component-props': {
@@ -1007,8 +1014,15 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   );
 };
 
-export const useDataTemplates = () => {
+export const useDataTemplates = (schema?: Schema) => {
   const fieldSchema = useFieldSchema();
+
+  if (schema) {
+    return {
+      templateData: _.cloneDeep(schema['x-data-templates']),
+    };
+  }
+
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   return {
     templateData: _.cloneDeep(formSchema?.['x-data-templates']),
@@ -1016,6 +1030,7 @@ export const useDataTemplates = () => {
 };
 
 SchemaSettings.DataTemplates = function DataTemplates(props) {
+  const designerCtx = useContext(SchemaComponentContext);
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1023,43 +1038,51 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   const { templateData } = useDataTemplates();
 
-  return (
-    <SchemaSettings.ModalItem
-      title={t('Form data templates')}
-      components={{ ArrayCollapse, FormLayout }}
-      width={770}
-      schema={
-        {
-          type: 'object',
-          title: t('Form data templates'),
-          properties: {
-            fieldReaction: {
-              'x-component': FormDataTemplates,
-              'x-component-props': {
-                useProps: () => {
-                  return {
-                    defaultValues: templateData,
-                    collectionName,
-                  };
-                },
-              },
+  const schema = useMemo(
+    () => ({
+      type: 'object',
+      title: t('Form data templates'),
+      properties: {
+        fieldReaction: {
+          'x-component': FormDataTemplates,
+          'x-component-props': {
+            designerCtx,
+            formSchema,
+            useProps: () => {
+              return {
+                defaultValues: templateData,
+                collectionName,
+              };
             },
           },
-        } as ISchema
-      }
-      onSubmit={(v) => {
-        const data = v.fieldReaction || {};
-        const schema = {
-          ['x-uid']: formSchema['x-uid'],
-          ['x-data-templates']: data,
-        };
-        formSchema['x-data-templates'] = data;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
-    />
+        },
+      },
+    }),
+    [templateData],
+  );
+  const onSubmit = useCallback((v) => {
+    const data = { ...(formSchema['x-data-templates'] || {}), ...v.fieldReaction };
+
+    // 当 Tree 组件开启 checkStrictly 属性时，会导致 checkedKeys 的值是一个对象，而不是数组，所以这里需要转换一下以支持旧版本
+    data.items.forEach((item) => {
+      item.fields = Array.isArray(item.fields) ? item.fields : item.fields.checked;
+    });
+
+    const schema = {
+      ['x-uid']: formSchema['x-uid'],
+      ['x-data-templates']: data,
+    };
+    formSchema['x-data-templates'] = data;
+    dn.emit('patch', {
+      schema,
+    });
+    dn.refresh();
+  }, []);
+  const title = useMemo(() => t('Form data templates'), []);
+  const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
+
+  return (
+    <SchemaSettings.ModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 

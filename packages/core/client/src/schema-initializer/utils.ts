@@ -946,7 +946,6 @@ export const createDetailsBlockSchema = (options) => {
       },
     },
   };
-  console.log(JSON.stringify(schema, null, 2));
   return schema;
 };
 
@@ -1129,7 +1128,10 @@ export const createFormBlockSchema = (options) => {
     resource,
     association,
     action,
+    actions = {},
+    'x-designer': designer = 'FormV2.Designer',
     template,
+    title,
     ...others
   } = options;
   const resourceName = resource || association || collection;
@@ -1149,8 +1151,11 @@ export const createFormBlockSchema = (options) => {
       // action: 'get',
       // useParams: '{{ useParamsFromRecord }}',
     },
-    'x-designer': 'FormV2.Designer',
+    'x-designer': designer,
     'x-component': 'CardItem',
+    'x-component-props': {
+      title,
+    },
     properties: {
       [uid()]: {
         type: 'void',
@@ -1175,7 +1180,7 @@ export const createFormBlockSchema = (options) => {
                 marginTop: 24,
               },
             },
-            properties: {},
+            properties: actions,
           },
         },
       },
@@ -1318,6 +1323,8 @@ export const createTableBlockSchema = (options) => {
     TableBlockDesigner,
     blockType,
     pageSize = 20,
+    // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
+    crypticFilter = {},
     ...others
   } = options;
   const schema: ISchema = {
@@ -1330,6 +1337,7 @@ export const createTableBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize,
+        crypticFilter,
       },
       rowKey,
       showIndex: true,

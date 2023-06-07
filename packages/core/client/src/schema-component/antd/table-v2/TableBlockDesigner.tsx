@@ -1,6 +1,6 @@
 import { ArrayItems } from '@formily/antd';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockContext } from '../../../block-provider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
@@ -9,14 +9,16 @@ import { useCollectionFilterOptions, useSortFields } from '../../../collection-m
 import { FilterBlockType } from '../../../filter-provider/utils';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useSchemaTemplate } from '../../../schema-templates';
-import { useDesignable } from '../../hooks';
+import { useCompile, useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
+import cloneDeep from 'lodash/cloneDeep';
+import isEmpty from 'lodash/isEmpty';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
-  const { getCollectionField } = useCollectionManager();
+  const { getCollectionField, getCollection } = useCollectionManager();
   const field = useField();
   const fieldSchema = useFieldSchema();
   const dataSource = useCollectionFilterOptions(name);
@@ -24,7 +26,10 @@ export const TableBlockDesigner = () => {
   const { service } = useTableBlockContext();
   const { t } = useTranslation();
   const { dn } = useDesignable();
-  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
+  const compile = useCompile();
+  const defaultFilter = removeNullCondition(fieldSchema?.['x-decorator-props']?.params?.filter || {});
+  // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
+  const crypticFilter = fieldSchema?.['x-decorator-props']?.params?.crypticFilter;
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -42,7 +47,52 @@ export const TableBlockDesigner = () => {
   const template = useSchemaTemplate();
   const collection = useCollection();
   const { dragSort, resource } = field.decoratorProps;
-  const treeChildren = resource?.includes('.') ? getCollectionField(resource)?.treeChildren : !!collection?.tree;
+  const treeCollection = resource?.includes('.')
+    ? getCollection(getCollectionField(resource)?.target)?.tree
+    : !!collection?.tree;
+  const dataScopeSchema = useMemo(() => {
+    return {
+      type: 'object',
+      title: t('Set the data scope'),
+      properties: {
+        filter: {
+          default: defaultFilter,
+          // title: '数据范围',
+          enum: compile(dataSource),
+          'x-component': 'Filter',
+          'x-component-props': {
+            dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+          },
+        },
+      },
+    } as ISchema;
+  }, [dataSource, defaultFilter]);
+  const onDataScopeSubmit = useCallback(
+    ({ filter }) => {
+      filter = removeNullCondition(filter);
+      const params = field.decoratorProps.params || {};
+      let tempFilter = !isEmpty(crypticFilter) ? crypticFilter : filter;
+      if (!isEmpty(filter)) {
+        tempFilter = !isEmpty(crypticFilter) ? mergeFilter([filter, tempFilter]) : cloneDeep(filter);
+      }
+      params.filter = filter;
+      field.decoratorProps.params = params;
+      fieldSchema['x-decorator-props']['params'] = params;
+      const filters = service.params?.[1]?.filters || {};
+      service.run(
+        { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), tempFilter]), page: 1 },
+        { filters },
+      );
+      dn.emit('patch', {
+        schema: {
+          ['x-uid']: fieldSchema['x-uid'],
+          'x-decorator-props': fieldSchema['x-decorator-props'],
+        },
+      });
+    },
+    [field, crypticFilter],
+  );
+
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaSettings.BlockTitleItem />
@@ -50,7 +100,7 @@ export const TableBlockDesigner = () => {
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={treeChildren ? field.decoratorProps.treeTable !== false : false}
+          checked={treeCollection ? field.decoratorProps.treeTable !== false : false}
           onChange={(flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
@@ -84,44 +134,7 @@ export const TableBlockDesigner = () => {
         />
       )}
       <FixedBlockDesignerItem />
-      <SchemaSettings.ModalItem
-        title={t('Set the data scope')}
-        schema={
-          {
-            type: 'object',
-            title: t('Set the data scope'),
-            properties: {
-              filter: {
-                default: defaultFilter,
-                // title: '数据范围',
-                enum: dataSource,
-                'x-component': 'Filter',
-                'x-component-props': {
-                  dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
-                },
-              },
-            },
-          } as ISchema
-        }
-        onSubmit={({ filter }) => {
-          filter = removeNullCondition(filter);
-          const params = field.decoratorProps.params || {};
-          params.filter = filter;
-          field.decoratorProps.params = params;
-          fieldSchema['x-decorator-props']['params'] = params;
-          const filters = service.params?.[1]?.filters || {};
-          service.run(
-            { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
-            { filters },
-          );
-          dn.emit('patch', {
-            schema: {
-              ['x-uid']: fieldSchema['x-uid'],
-              'x-decorator-props': fieldSchema['x-decorator-props'],
-            },
-          });
-        }}
-      />
+      <SchemaSettings.ModalItem title={t('Set the data scope')} schema={dataScopeSchema} onSubmit={onDataScopeSubmit} />
       {!dragSort && (
         <SchemaSettings.ModalItem
           title={t('Set default sorting rules')}
@@ -151,7 +164,7 @@ export const TableBlockDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
-                            required:true,
+                            required: true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {

@@ -4,6 +4,7 @@ import lodash from 'lodash';
 import * as path from 'path';
 import { resolve } from 'path';
 import { ApplicationModel } from './models/application';
+import { Mutex } from 'async-mutex';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -68,6 +69,8 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
 export class PluginMultiAppManager extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
+
+  private beforeGetApplicationMutex = new Mutex();
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
     this.appOptionsFactory = factory;
@@ -150,37 +153,76 @@ export class PluginMultiAppManager extends Plugin {
     this.app.on(
       'beforeGetApplication',
       async ({ appManager, name, options }: { appManager: AppManager; name: string; options: any }) => {
-        if (appManager.applications.has(name)) {
-          return;
-        }
+        await this.beforeGetApplicationMutex.runExclusive(async () => {
+          if (appManager.applications.has(name)) {
+            return;
+          }
 
-        const applicationRecord = (await this.app.db.getRepository('applications').findOne({
-          filter: {
-            name,
-          },
-        })) as ApplicationModel | null;
+          const applicationRecord = (await this.app.db.getRepository('applications').findOne({
+            filter: {
+              name,
+            },
+          })) as ApplicationModel | null;
 
-        const instanceOptions = applicationRecord.get('options');
+          const instanceOptions = applicationRecord.get('options');
 
-        // skip standalone deployment application
-        if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
-          return;
-        }
+          // skip standalone deployment application
+          if (instanceOptions?.standaloneDeployment && appManager.runningMode !== 'single') {
+            return;
+          }
 
-        if (!applicationRecord) {
-          return;
-        }
+          if (!applicationRecord) {
+            return;
+          }
 
-        const subApp = await applicationRecord.registerToMainApp(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
+          const subApp = await applicationRecord.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+
+          // must skip load on upgrade
+          if (!options?.upgrading) {
+            await subApp.load();
+          }
         });
-
-        // must skip load on upgrade
-        if (!options?.upgrading) {
-          await subApp.load();
-        }
       },
     );
+
+    this.app.on('afterStart', async (app) => {
+      const repository = this.db.getRepository('applications');
+      const appManager = this.app.appManager;
+      if (appManager.runningMode == 'single') {
+        // If the sub application is running in single mode, register the application automatically
+        try {
+          const subApp = await repository.findOne({
+            filter: {
+              name: appManager.singleAppName,
+            },
+          });
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
+        } catch (err) {
+          console.error('Auto register sub application in single mode failed: ', appManager.singleAppName, err);
+        }
+        return;
+      }
+      try {
+        const subApps = await repository.find({
+          filter: {
+            'options.autoStart': true,
+          },
+        });
+        for (const subApp of subApps) {
+          const registeredApp = await subApp.registerToMainApp(this.app, {
+            appOptionsFactory: this.appOptionsFactory,
+          });
+          await registeredApp.load();
+        }
+      } catch (err) {
+        console.error('Auto register sub applications failed: ', err);
+      }
+    });
 
     this.app.on('afterUpgrade', async (app, options) => {
       const cliArgs = options?.cliArgs;

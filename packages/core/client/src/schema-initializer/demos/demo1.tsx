@@ -10,14 +10,17 @@ import {
 } from '@nocobase/client';
 import React from 'react';
 
-const Hello = observer((props) => {
-  const field = useField<Field>();
-  return (
-    <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
-      {field.title}
-    </div>
-  );
-});
+const Hello = observer(
+  (props) => {
+    const field = useField<Field>();
+    return (
+      <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
+        {field.title}
+      </div>
+    );
+  },
+  { displayName: 'Hello' },
+);
 
 const TableBlockInitializer = SchemaInitializer.itemWrap((props) => {
   const { insert } = props;
@@ -84,10 +87,13 @@ const initializers = {
   },
 };
 
-const AddBlockButton = observer((props: any) => {
-  const { render } = useSchemaInitializer('AddBlock');
-  return <>{render()}</>;
-});
+const AddBlockButton = observer(
+  (props: any) => {
+    const { render } = useSchemaInitializer('AddBlock');
+    return <>{render()}</>;
+  },
+  { displayName: 'AddBlockButton' },
+);
 
 export default function App() {
   return (

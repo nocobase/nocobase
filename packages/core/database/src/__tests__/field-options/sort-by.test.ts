@@ -214,6 +214,7 @@ describe('associated field order', () => {
     });
 
     const p1JSON = p1Result.toJSON();
+
     const p1Images = p1JSON['images'];
     expect(p1Images.map((i) => i['url'])).toEqual(['t2', 't1']);
   });

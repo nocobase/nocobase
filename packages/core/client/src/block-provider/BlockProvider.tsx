@@ -2,13 +2,12 @@ import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import { useRequest } from 'ahooks';
-import merge from 'deepmerge';
 import { Col, Row } from 'antd';
+import merge from 'deepmerge';
 import template from 'lodash/template';
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ACLCollectionProvider,
   TableFieldResource,
   WithoutTableFieldResource,
   useAPIClient,
@@ -16,11 +15,14 @@ import {
   useDesignable,
   useRecord,
 } from '../';
+import { ACLCollectionProvider } from '../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../collection-manager';
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
 import _ from 'lodash';
+import { useAssociationNames } from './hooks';
+
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
@@ -51,6 +53,8 @@ const useResource = (props: UseResourceProps) => {
   const { block, resource, useSourceId } = props;
   const record = useRecord();
   const api = useAPIClient();
+  const { fieldSchema } = useActionContext();
+  const isCreateAction = fieldSchema?.['x-action'] === 'create';
   const association = useAssociation(props);
   const sourceId = useSourceId?.();
   const field = useField<Field>();
@@ -59,7 +63,9 @@ const useResource = (props: UseResourceProps) => {
       field,
       api,
       resource,
-      sourceId: sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id'],
+      sourceId: !isCreateAction
+        ? sourceId || record[association?.sourceKey || 'id'] || record?.__parent?.[association?.sourceKey || 'id']
+        : undefined,
     };
     return new TableFieldResource(options);
   }
@@ -134,7 +140,6 @@ export const useResourceAction = (props, opts = {}) => {
       refreshDeps: [runWhenParamsChanged ? null : JSON.stringify(params.appends)],
     },
   );
-
   // automatic run service when params has changed
   const firstRun = useRef(false);
   useEffect(() => {
@@ -157,11 +162,11 @@ export const MaybeCollectionProvider = (props) => {
       <ACLCollectionProvider>{props.children}</ACLCollectionProvider>
     </CollectionProvider>
   ) : (
-    <>{props.children}</>
+    props.children
   );
 };
 
-const BlockRequestProvider = (props) => {
+export const BlockRequestProvider = (props) => {
   const field = useField();
   const resource = useBlockResource();
   const [allowedActions, setAllowedActions] = useState({});
@@ -185,7 +190,16 @@ const BlockRequestProvider = (props) => {
   const __parent = useContext(BlockRequestContext);
   return (
     <BlockRequestContext.Provider
-      value={{ allowedActions, block: props.block, props, field, service, resource, __parent }}
+      value={{
+        allowedActions,
+        block: props.block,
+        props,
+        field,
+        service,
+        resource,
+        __parent,
+        updateAssociationValues: props?.updateAssociationValues || [],
+      }}
     >
       {props.children}
     </BlockRequestContext.Provider>
@@ -261,13 +275,21 @@ export const RenderChildrenWithAssociationFilter: React.FC<any> = (props) => {
 export const BlockProvider = (props) => {
   const { collection, association } = props;
   const resource = useResource(props);
+  const params = { ...props.params };
+  const { appends, updateAssociationValues } = useAssociationNames();
+  if (!Object.keys(params).includes('appends')) {
+    params['appends'] = appends;
+  }
+
   return (
     <MaybeCollectionProvider collection={collection}>
       <BlockAssociationContext.Provider value={association}>
         <BlockResourceContext.Provider value={resource}>
-          <BlockRequestProvider {...props}>
-            <SharedFilterProvider {...props}>
-              <FilterBlockRecord {...props}>{props.children}</FilterBlockRecord>
+          <BlockRequestProvider {...props} updateAssociationValues={updateAssociationValues} params={params}>
+            <SharedFilterProvider {...props} params={params}>
+              <FilterBlockRecord {...props} params={params}>
+                {props.children}
+              </FilterBlockRecord>
             </SharedFilterProvider>
           </BlockRequestProvider>
         </BlockResourceContext.Provider>

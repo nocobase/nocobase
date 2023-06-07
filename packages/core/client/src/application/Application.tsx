@@ -61,6 +61,8 @@ const App = React.memo((props: any) => {
   return <C />;
 });
 
+App.displayName = 'App';
+
 export class Application {
   providers = [];
   mainComponent = null;

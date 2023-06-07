@@ -1,18 +1,25 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
+import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps } from 'antd';
-import { Select as AntdSelect } from 'antd';
+import { Select as AntdSelect, Empty, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty } from './ReadPretty';
-import { defaultFieldNames, getCurrentOptions } from './shared';
+import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
+type Props = SelectProps<any, any> & {
+  objectValue?: boolean;
+  onChange?: (v: any) => void;
+  multiple: boolean;
+  rawOptions: any[];
+  fieldNames: FieldNames;
+};
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, ...others } = props;
+  const { value, options, onChange, fieldNames, mode, loading, rawOptions, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -20,24 +27,25 @@ const ObjectSelect = (props: Props) => {
     const values = toArr(v)
       .filter((item) => item)
       .map((val) => {
-        return typeof val === 'object' ? val[fieldNames.value] : val;
+        return isPlainObject(val) ? val[fieldNames.value] : val;
       });
-    const current = getCurrentOptions(values, options, fieldNames)?.map((val) => {
+    const currentOptions = getCurrentOptions(values, options, fieldNames)?.map((val) => {
       return {
         label: val[fieldNames.label],
         value: val[fieldNames.value],
       };
     });
     if (['tags', 'multiple'].includes(mode) || props.multiple) {
-      return current;
+      return currentOptions;
     }
-    return current.shift();
+    return currentOptions.shift();
   };
   return (
     <AntdSelect
       value={toValue(value)}
       allowClear
       labelInValue
+      notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
       options={options}
       fieldNames={fieldNames}
       showSearch
@@ -51,13 +59,13 @@ const ObjectSelect = (props: Props) => {
       onChange={(changed) => {
         const current = getCurrentOptions(
           toArr(changed).map((v) => v.value),
-          options,
+          rawOptions || options,
           fieldNames,
         );
-        if (['tags', 'multiple'].includes(mode) || props.multiple) {
-          onChange(current);
+        if (['tags', 'multiple'].includes(mode as string) || props.multiple) {
+          onChange?.(current);
         } else {
-          onChange(current.shift() || null);
+          onChange?.(current.shift() || null);
         }
       }}
       mode={mode}
@@ -70,21 +78,28 @@ const filterOption = (input, option) => (option?.label ?? '').toLowerCase().incl
 
 const InternalSelect = connect(
   (props: Props) => {
-    const { objectValue, value, ...others } = props;
+    const { objectValue, loading, value, ...others } = props;
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
     if (objectValue) {
-      return <ObjectSelect {...others} value={value} mode={mode} />;
+      return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
+    const toValue = (v) => {
+      if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
+        return toArr(v);
+      }
+      return v;
+    };
     return (
       <AntdSelect
         showSearch
         filterOption={filterOption}
         allowClear
         dropdownMatchSelectWidth={false}
-        value={value}
+        notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+        value={toValue(value)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);

@@ -9,6 +9,10 @@ group:
 
 ## JSON Schema
 
+### Examples
+
+<code src="./demos/demo1.tsx"/>
+
 通过弹窗选择可选项，可选项用表格展示，在特定的 `RecordPicker.RowSelection` 节点里配置，仅当 `x-read-pretty: false` 时有效。
 
 ```ts
@@ -76,7 +80,3 @@ group:
   },
 }
 ```
-
-## Examples
-
-<code src="./demos/demo1.tsx"/>
