@@ -4,10 +4,13 @@ import { BlockItem, DndContext, DragHandler, SchemaComponent, SchemaComponentPro
 import React from 'react';
 
 const Block = observer(
-  (props) => {
+  () => {
     const fieldSchema = useFieldSchema();
     return (
-      <div style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}>
+      <div
+        className="nc-block-item"
+        style={{ marginBottom: 20, padding: '0 20px', height: 50, lineHeight: '50px', background: '#f1f1f1' }}
+      >
         Block {fieldSchema.name}
         <DragHandler />
       </div>
@@ -16,34 +19,34 @@ const Block = observer(
   { displayName: 'Block' },
 );
 
+const schema = {
+  type: 'void',
+  name: 'page',
+  'x-component': 'DndContext',
+  'x-uid': uid(),
+  properties: {
+    block1: {
+      'x-decorator': 'BlockItem',
+      'x-component': 'Block',
+      'x-uid': uid(),
+    },
+    block2: {
+      'x-decorator': 'BlockItem',
+      'x-component': 'Block',
+      'x-uid': uid(),
+    },
+    block3: {
+      'x-decorator': 'BlockItem',
+      'x-component': 'Block',
+      'x-uid': uid(),
+    },
+  },
+};
+
 export default function App() {
   return (
     <SchemaComponentProvider components={{ DndContext, BlockItem, Block }}>
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          name: 'page',
-          'x-component': 'DndContext',
-          'x-uid': uid(),
-          properties: {
-            block1: {
-              'x-decorator': 'BlockItem',
-              'x-component': 'Block',
-              'x-uid': uid(),
-            },
-            block2: {
-              'x-decorator': 'BlockItem',
-              'x-component': 'Block',
-              'x-uid': uid(),
-            },
-            block3: {
-              'x-decorator': 'BlockItem',
-              'x-component': 'Block',
-              'x-uid': uid(),
-            },
-          },
-        }}
-      />
+      <SchemaComponent schema={schema} />
     </SchemaComponentProvider>
   );
 }

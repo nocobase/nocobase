@@ -73,12 +73,20 @@ pgOnly()('collection inherits', () => {
   it('should append collection name in eager load', async () => {
     const rootCollection = db.collection({
       name: 'assoc',
-      fields: [{ name: 'name', type: 'string' }],
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'belongsToMany', name: 'other-assocs' },
+      ],
     });
 
     const childCollection = db.collection({
       name: 'child',
       inherits: ['assoc'],
+    });
+
+    const otherAssoc = db.collection({
+      name: 'other-assocs',
+      fields: [{ name: 'name', type: 'string' }],
     });
 
     const User = db.collection({
@@ -116,7 +124,7 @@ pgOnly()('collection inherits', () => {
     });
 
     const users = await User.repository.find({
-      appends: ['assocs'],
+      appends: ['assocs.other-assocs'],
     });
 
     const user = users[0];

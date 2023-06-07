@@ -27,6 +27,12 @@ const EagerLoadingNodeProto = {
     const collection = db.modelCollection.get(this.model);
 
     if (collection && collection.isParent()) {
+      if (!this.attributes) {
+        this.attributes = {
+          include: [],
+        };
+      }
+
       OptionsParser.appendInheritInspectAttribute(this.attributes.include, collection);
       this.inspectInheritAttribute = true;
     }

@@ -4,6 +4,7 @@ import {
   CardItem,
   Grid,
   Markdown,
+  MarkdownBlockInitializer,
   SchemaComponent,
   SchemaComponentProvider,
   SchemaInitializer,
@@ -70,7 +71,7 @@ const schema: ISchema = {
 export default function App() {
   return (
     <SchemaComponentProvider components={{ Grid, CardItem, Markdown }}>
-      <SchemaInitializerProvider initializers={{ AddBlockButton }}>
+      <SchemaInitializerProvider initializers={{ AddBlockButton }} components={{ MarkdownBlockInitializer }}>
         <SchemaComponent schema={schema} />
       </SchemaInitializerProvider>
     </SchemaComponentProvider>

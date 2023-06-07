@@ -4782,19 +4782,6 @@
     lz-string "^1.4.4"
     pretty-format "^27.0.2"
 
-"@testing-library/dom@^9.0.0":
-  version "9.3.0"
-  resolved "https://registry.npmmirror.com/@testing-library/dom/-/dom-9.3.0.tgz#ed8ce10aa5e05eb6eaf0635b5b8975d889f66075"
-  dependencies:
-    "@babel/code-frame" "^7.10.4"
-    "@babel/runtime" "^7.12.5"
-    "@types/aria-query" "^5.0.1"
-    aria-query "^5.0.0"
-    chalk "^4.1.0"
-    dom-accessibility-api "^0.5.9"
-    lz-string "^1.5.0"
-    pretty-format "^27.0.2"
-
 "@testing-library/jest-dom@^5.16.5":
   version "5.16.5"
   resolved "https://registry.npmmirror.com/@testing-library/jest-dom/-/jest-dom-5.16.5.tgz#3912846af19a29b2dbf32a6ae9c31ef52580074e"
@@ -4809,21 +4796,19 @@
     lodash "^4.17.15"
     redent "^3.0.0"
 
-"@testing-library/react@^12.1.2":
+"@testing-library/react@^12.1.2", "@testing-library/react@^12.1.5":
   version "12.1.5"
-  resolved "https://registry.yarnpkg.com/@testing-library/react/-/react-12.1.5.tgz#bb248f72f02a5ac9d949dea07279095fa577963b"
+  resolved "https://registry.npmmirror.com/@testing-library/react/-/react-12.1.5.tgz#bb248f72f02a5ac9d949dea07279095fa577963b"
+  integrity sha512-OfTXCJUFgjd/digLUuPxa0+/3ZxsQmE7ub9kcbW/wi96Bh3o/p5vrETcBGfP17NWPGqeYYl5LTRpwyGoMC4ysg==
   dependencies:
     "@babel/runtime" "^7.12.5"
     "@testing-library/dom" "^8.0.0"
     "@types/react-dom" "<18.0.0"
 
-"@testing-library/react@^14.0.0":
-  version "14.0.0"
-  resolved "https://registry.npmmirror.com/@testing-library/react/-/react-14.0.0.tgz#59030392a6792450b9ab8e67aea5f3cc18d6347c"
-  dependencies:
-    "@babel/runtime" "^7.12.5"
-    "@testing-library/dom" "^9.0.0"
-    "@types/react-dom" "^18.0.0"
+"@testing-library/user-event@^14.4.3":
+  version "14.4.3"
+  resolved "https://registry.npmmirror.com/@testing-library/user-event/-/user-event-14.4.3.tgz#af975e367743fa91989cd666666aec31a8f50591"
+  integrity sha512-kCUc5MEwaEMakkO5x7aoD+DLi02ehmEM2QCGWvNqAS1dV/fAvORWEjnjsEIvml59M7Y5kCkWN6fCCyPOe8OL6Q==
 
 "@tootallnate/once@1":
   version "1.1.2"
@@ -5245,7 +5230,7 @@
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/@types/range-parser/-/range-parser-1.2.4.tgz#cd667bcfdd025213aafb7ca5915a932590acdcdc"
 
-"@types/react-dom@<18.0.0", "@types/react-dom@^16.9.8", "@types/react-dom@^17.0.0", "@types/react-dom@^18.0.0":
+"@types/react-dom@<18.0.0", "@types/react-dom@^16.9.8", "@types/react-dom@^17.0.0":
   version "17.0.19"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-17.0.19.tgz#36feef3aa35d045cacd5ed60fe0eef5272f19492"
   dependencies:
@@ -5754,40 +5739,45 @@
     "@babel/plugin-transform-react-jsx-source" "^7.19.6"
     react-refresh "^0.14.0"
 
-"@vitest/expect@0.31.1":
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/@vitest/expect/-/expect-0.31.1.tgz#db8cb5a14a91167b948f377b9d29442229c73747"
+"@vitest/expect@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/@vitest/expect/-/expect-0.32.0.tgz#5b10cdc822d54cb870aef917462fbf847202e4e0"
+  integrity sha512-VxVHhIxKw9Lux+O9bwLEEk2gzOUe93xuFHy9SzYWnnoYZFYg1NfBtnfnYWiJN7yooJ7KNElCK5YtA7DTZvtXtg==
   dependencies:
-    "@vitest/spy" "0.31.1"
-    "@vitest/utils" "0.31.1"
+    "@vitest/spy" "0.32.0"
+    "@vitest/utils" "0.32.0"
     chai "^4.3.7"
 
-"@vitest/runner@0.31.1":
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/@vitest/runner/-/runner-0.31.1.tgz#fc06260d4824dde624abaeea1825d6a75bad4583"
+"@vitest/runner@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/@vitest/runner/-/runner-0.32.0.tgz#d2a391bf4bb373e324cf2f372d8bb913ab323f08"
+  integrity sha512-QpCmRxftHkr72xt5A08xTEs9I4iWEXIOCHWhQQguWOKE4QH7DXSKZSOFibuwEIMAD7G0ERvtUyQn7iPWIqSwmw==
   dependencies:
-    "@vitest/utils" "0.31.1"
+    "@vitest/utils" "0.32.0"
     concordance "^5.0.4"
     p-limit "^4.0.0"
     pathe "^1.1.0"
 
-"@vitest/snapshot@0.31.1":
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/@vitest/snapshot/-/snapshot-0.31.1.tgz#7fc3f1e48f0c4313e6cb795c17a2c1aa909a7d64"
+"@vitest/snapshot@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/@vitest/snapshot/-/snapshot-0.32.0.tgz#49c6a08da12ab903ab4582386c97d70b293bc644"
+  integrity sha512-yCKorPWjEnzpUxQpGlxulujTcSPgkblwGzAUEL+z01FTUg/YuCDZ8dxr9sHA08oO2EwxzHXNLjQKWJ2zc2a19Q==
   dependencies:
     magic-string "^0.30.0"
     pathe "^1.1.0"
     pretty-format "^27.5.1"
 
-"@vitest/spy@0.31.1":
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/@vitest/spy/-/spy-0.31.1.tgz#1c3b6a3eec4ce81b8889e19c7fac6a603b600b14"
+"@vitest/spy@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/@vitest/spy/-/spy-0.32.0.tgz#3ccb4e6dd4cbda7bb837c467d8405e2f8cc107a2"
+  integrity sha512-MruAPlM0uyiq3d53BkwTeShXY0rYEfhNGQzVO5GHBmmX3clsxcWp79mMnkOVcV244sNTeDcHbcPFWIjOI4tZvw==
   dependencies:
     tinyspy "^2.1.0"
 
-"@vitest/utils@0.31.1":
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/@vitest/utils/-/utils-0.31.1.tgz#b810a458b37ef16931ab0d384ce79a9500f34e07"
+"@vitest/utils@0.32.0":
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/@vitest/utils/-/utils-0.32.0.tgz#ffbc023083e0ef8401a3562086de0ff1b0599635"
+  integrity sha512-53yXunzx47MmbuvcOPpLaVljHaeSu1G2dHdmy7+9ngMnQIkBQcvwOcoclWFnxDMxFbnq8exAfh3aKSZaK71J5A==
   dependencies:
     concordance "^5.0.4"
     loupe "^2.3.6"
@@ -13766,6 +13756,14 @@ jscodeshift@^0.6.2:
     temp "^0.8.1"
     write-file-atomic "^2.3.0"
 
+jsdom-worker@^0.3.0:
+  version "0.3.0"
+  resolved "https://registry.npmmirror.com/jsdom-worker/-/jsdom-worker-0.3.0.tgz#aff32ec089d17f56a5a344a426b6fb2f56e7de54"
+  integrity sha512-nlPmN0i93+e6vxzov8xqLMR+MBs/TAYeSviehivzqovHH0AgooVx9pQ/otrygASppPvdR+V9Jqx5SMe8+FcADg==
+  dependencies:
+    mitt "^3.0.0"
+    uuid-v4 "^0.1.0"
+
 jsdom@^11.5.1:
   version "11.12.0"
   resolved "https://registry.yarnpkg.com/jsdom/-/jsdom-11.12.0.tgz#1a80d40ddd378a1de59656e9e6dc5a3ba8657bc8"
@@ -14602,7 +14600,7 @@ luxon@^3.2.1:
   version "3.3.0"
   resolved "https://registry.yarnpkg.com/luxon/-/luxon-3.3.0.tgz#d73ab5b5d2b49a461c47cedbc7e73309b4805b48"
 
-lz-string@^1.4.4, lz-string@^1.5.0:
+lz-string@^1.4.4:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/lz-string/-/lz-string-1.5.0.tgz#c1ab50f77887b712621201ba9fd4e3a6ed099941"
 
@@ -15314,6 +15312,11 @@ mississippi@^2.0.0:
     pumpify "^1.3.3"
     stream-each "^1.1.0"
     through2 "^2.0.0"
+
+mitt@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.npmmirror.com/mitt/-/mitt-3.0.0.tgz#69ef9bd5c80ff6f57473e8d89326d01c414be0bd"
+  integrity sha512-7dX2/10ITVyqh4aOSVI9gdape+t9l2/8QxHrFmUXu4EEUpdlxl6RudZUPZoc+zuY2hk1j7XxVroIVIan/pD/SQ==
 
 mixin-deep@^1.2.0:
   version "1.3.2"
@@ -21863,6 +21866,11 @@ utility@^1.16.1, utility@^1.17.0, utility@^1.8.0:
     mz "^2.7.0"
     unescape "^1.0.1"
 
+uuid-v4@^0.1.0:
+  version "0.1.0"
+  resolved "https://registry.npmmirror.com/uuid-v4/-/uuid-v4-0.1.0.tgz#62d7b310406f6cecfea1528c69f1e8e0bcec5a3a"
+  integrity sha512-m11RYDtowtAIihBXMoGajOEKpAXrKbpKlpmxqyztMYQNGSY5nZAZ/oYch/w2HNS1RMA4WLGcZvuD8/wFMuCEzA==
+
 uuid@^3.2.1, uuid@^3.3.2:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.4.0.tgz#b23e4358afa8a202fe7a100af1f5f883f02007ee"
@@ -22003,9 +22011,10 @@ vinyl@^2.0.0, vinyl@^2.1.0:
     remove-trailing-separator "^1.0.1"
     replace-ext "^1.0.0"
 
-vite-node@0.31.1:
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/vite-node/-/vite-node-0.31.1.tgz#9fea18cbf9552ab262b969068249a8b8e7fb8b38"
+vite-node@0.32.0:
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/vite-node/-/vite-node-0.32.0.tgz#8ee54539fa75d1271adaa9788c8ba526480f4519"
+  integrity sha512-220P/y8YacYAU+daOAqiGEFXx2A8AwjadDzQqos6wSukjvvTWNqleJSwoUn0ckyNdjHIKoxn93Nh1vWBqEKr3Q==
   dependencies:
     cac "^6.7.14"
     debug "^4.3.4"
@@ -22024,18 +22033,19 @@ vite-node@0.31.1:
   optionalDependencies:
     fsevents "~2.3.2"
 
-vitest@^0.31.1:
-  version "0.31.1"
-  resolved "https://registry.npmmirror.com/vitest/-/vitest-0.31.1.tgz#e3d1b68a44e76e24f142c1156fe9772ef603e52c"
+vitest@^0.32.0:
+  version "0.32.0"
+  resolved "https://registry.npmmirror.com/vitest/-/vitest-0.32.0.tgz#125212b8abbfdae047fa72e516bc7257fd0a67db"
+  integrity sha512-SW83o629gCqnV3BqBnTxhB10DAwzwEx3z+rqYZESehUB+eWsJxwcBQx7CKy0otuGMJTYh7qCVuUX23HkftGl/Q==
   dependencies:
     "@types/chai" "^4.3.5"
     "@types/chai-subset" "^1.3.3"
     "@types/node" "*"
-    "@vitest/expect" "0.31.1"
-    "@vitest/runner" "0.31.1"
-    "@vitest/snapshot" "0.31.1"
-    "@vitest/spy" "0.31.1"
-    "@vitest/utils" "0.31.1"
+    "@vitest/expect" "0.32.0"
+    "@vitest/runner" "0.32.0"
+    "@vitest/snapshot" "0.32.0"
+    "@vitest/spy" "0.32.0"
+    "@vitest/utils" "0.32.0"
     acorn "^8.8.2"
     acorn-walk "^8.2.0"
     cac "^6.7.14"
@@ -22051,7 +22061,7 @@ vitest@^0.31.1:
     tinybench "^2.5.0"
     tinypool "^0.5.0"
     vite "^3.0.0 || ^4.0.0"
-    vite-node "0.31.1"
+    vite-node "0.32.0"
     why-is-node-running "^2.2.2"
 
 vizion@~2.2.1:

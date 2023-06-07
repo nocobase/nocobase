@@ -17,7 +17,9 @@ export const ViewSelect = observer(
       <div className="ant-btn-group">
         <Select value={view} onChange={onView}>
           {views.map((name) => (
-            <Select.Option value={name}>{messages[name]}</Select.Option>
+            <Select.Option key={name} value={name}>
+              {messages[name]}
+            </Select.Option>
           ))}
         </Select>
         <DesignableBar />

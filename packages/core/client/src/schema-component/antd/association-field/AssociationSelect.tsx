@@ -2,6 +2,7 @@ import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Input, Button, message } from 'antd';
 import React from 'react';
+import { RecordProvider } from '../../../';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';

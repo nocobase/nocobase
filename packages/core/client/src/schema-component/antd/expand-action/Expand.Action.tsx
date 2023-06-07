@@ -1,9 +1,8 @@
-import React from 'react';
-import { useFieldSchema } from '@formily/react';
-import { useTranslation } from 'react-i18next';
-import { useTableBlockContext, useTableSelectorContext } from '../../../block-provider';
-import { Button } from 'antd';
 import { css } from '@emotion/css';
+import { useFieldSchema } from '@formily/react';
+import { Button } from 'antd';
+import React from 'react';
+import { useTableBlockContext, useTableSelectorContext } from '../../../block-provider';
 import { Icon } from '../../../icon';
 
 const actionDesignerCss = css`
@@ -46,10 +45,9 @@ const actionDesignerCss = css`
 `;
 
 export const ExpandAction = (props) => {
-  const { t } = useTranslation();
   const schema = useFieldSchema();
-  const ctxSelector = useTableSelectorContext()
-  const ctxBlock = useTableBlockContext()
+  const ctxSelector = useTableSelectorContext();
+  const ctxBlock = useTableBlockContext();
   const isTableSelector = schema.parent?.parent?.['x-decorator'] === 'TableSelectorProvider';
   const ctx = isTableSelector ? ctxSelector : ctxBlock;
   const { titleExpand, titleCollapse, iconExpand, iconCollapse } = schema['x-component-props'] || {};
@@ -64,7 +62,7 @@ export const ExpandAction = (props) => {
           type={props.type}
         >
           {props.children[1]}
-          <span style={{ marginLeft: 10 }}>{ ctx?.expandFlag ? titleCollapse : titleExpand }</span>
+          <span style={{ marginLeft: 10 }}>{ctx?.expandFlag ? titleCollapse : titleExpand}</span>
         </Button>
       )}
     </div>

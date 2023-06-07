@@ -600,6 +600,11 @@ export default {
   'Display data template selector': 'データテンプレートセレクターを表示',
   'Form data templates': 'フォームデータテンプレート',
   "Data template": "データテンプレート",
+  "Duplicate":"レプリケーション",
+  "Duplicate mode":"コピーモード",
+  "Quick duplicate":"今すぐコピー",
+  "Duplicate and continue":"コピーして続行",
+  "Please configure the duplicate fields":"コピーするフィールドを設定してください"
   "Not found":"存在しない",
   "Add":"追加",
   "Add new mode":"追加モード",

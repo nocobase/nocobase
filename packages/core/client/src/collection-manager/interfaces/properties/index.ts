@@ -335,47 +335,6 @@ export const defaultProps = {
   },
 };
 
-export const recordPickerSelector: ISchema = {
-  type: 'void',
-  title: '{{ t("Select record") }}',
-  'x-component': 'RecordPicker.Selector',
-  'x-component-props': {
-    className: 'nb-record-picker-selector',
-  },
-  properties: {
-    grid: {
-      type: 'void',
-      'x-component': 'Grid',
-      'x-initializer': 'TableSelectorInitializers',
-      properties: {},
-    },
-    footer: {
-      'x-component': 'Action.Container.Footer',
-      'x-component-props': {},
-      properties: {
-        actions: {
-          type: 'void',
-          'x-component': 'ActionBar',
-          'x-component-props': {},
-          properties: {
-            submit: {
-              title: '{{ t("Submit") }}',
-              'x-action': 'submit',
-              'x-component': 'Action',
-              'x-designer': 'Action.Designer',
-              'x-component-props': {
-                type: 'primary',
-                htmlType: 'submit',
-                useProps: '{{ usePickActionProps }}',
-              },
-            },
-          },
-        },
-      },
-    },
-  },
-};
-
 export const recordPickerViewer = {
   type: 'void',
   title: '{{ t("View record") }}',
