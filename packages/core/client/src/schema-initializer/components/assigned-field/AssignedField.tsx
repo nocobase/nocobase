@@ -172,7 +172,6 @@ export const AssignedField = (props: any) => {
   const userChangeHandler = (val) => {
     setUserValue(val);
   };
-
   const useFieldMemo = useMemo(() => {
     if (!collectionField) {
       return <DeletedField />;
@@ -192,7 +191,7 @@ export const AssignedField = (props: any) => {
         </Select>
       );
     }
-  }, [collectionField, type, value, fieldType]);
+  }, [collectionField, type, value, fieldType, options]);
 
   return (
     <Space>
