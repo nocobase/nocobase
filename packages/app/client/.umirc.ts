@@ -35,6 +35,7 @@ export default defineConfig({
   },
   fastRefresh: true,
   mfsu: false,
+  esbuildMinifyIIFE: true,
   // srcTranspiler: 'esbuild', // 不行，各种报错
   // mfsu: {
   //   esbuild: true // 不行，各种报错
