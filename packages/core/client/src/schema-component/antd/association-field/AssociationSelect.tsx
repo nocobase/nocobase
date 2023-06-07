@@ -2,9 +2,9 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { RecursionField, connect, mapProps, observer, useField, useFieldSchema } from '@formily/react';
 import { Input } from 'antd';
 import React from 'react';
+import { RecordProvider } from '../../../';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions from './hooks';
-import { RecordProvider } from '../../../';
 
 export type AssociationSelectProps<P = any> = RemoteSelectProps<P> & {
   action?: string;

@@ -29,15 +29,16 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
           value={openModeValue}
           onChange={(value) => {
             field.componentProps.openMode = value;
-            fieldSchema['x-component-props'] = field.componentProps;
-
+            const schema = {
+              'x-uid': fieldSchema['x-uid'],
+            };
+            schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            schema['x-component-props'].openMode = value;
+            fieldSchema['x-component-props'].openMode = value;
             // when openMode change, set openSize value to default
             Reflect.deleteProperty(fieldSchema['x-component-props'], 'openSize');
             dn.emit('patch', {
-              schema: {
-                'x-uid': fieldSchema['x-uid'],
-                'x-component-props': fieldSchema['x-component-props'],
-              },
+              schema: schema,
             });
             dn.refresh();
           }}
@@ -60,12 +61,14 @@ export const OpenModeSchemaItems: React.FC<Options> = (options) => {
               }
               onChange={(value) => {
                 field.componentProps.openSize = value;
-                fieldSchema['x-component-props'] = field.componentProps;
+                const schema = {
+                  'x-uid': fieldSchema['x-uid'],
+                };
+                schema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                schema['x-component-props'].openSize = value;
+                fieldSchema['x-component-props'].openSize = value;
                 dn.emit('patch', {
-                  schema: {
-                    'x-uid': fieldSchema['x-uid'],
-                    'x-component-props': fieldSchema['x-component-props'],
-                  },
+                  schema: schema,
                 });
                 dn.refresh();
               }}

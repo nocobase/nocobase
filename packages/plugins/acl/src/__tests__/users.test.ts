@@ -99,7 +99,7 @@ describe('actions', () => {
     const rolesCheckResponse2 = (await loggedAgent.set('Accept', 'application/json').get('/roles:check')) as any;
 
     expect(rolesCheckResponse2.status).toEqual(500);
-    expect(rolesCheckResponse2.body.errors[0].message).toEqual('Role not found');
+    expect(rolesCheckResponse2.body.errors[0].message).toEqual('User role not found');
   });
 
   it('should destroy through table record when destroy role', async () => {
