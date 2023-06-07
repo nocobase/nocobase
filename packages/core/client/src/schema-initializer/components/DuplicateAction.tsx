@@ -22,6 +22,7 @@ export const DuplicateAction = observer((props: any) => {
   const disabled: boolean = field.disabled || props.disabled;
   const { designable } = useDesignable();
   const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { resource, service, __parent, block } = useBlockRequestContext();
   const { duplicateFields, duplicateMode = 'quickDulicate' } = fieldSchema['x-component-props'];
   const { id } = useRecord();
@@ -31,6 +32,7 @@ export const DuplicateAction = observer((props: any) => {
   const template = { key: 'duplicate', dataId: id, default: true, fields: duplicateFields || [], collection: name };
   const isLinkBtn = fieldSchema['x-component'] === 'Action.Link';
   const handelQuickDuplicate = async () => {
+    setLoading(true);
     try {
       const data = await fetchTemplateData(api, template, t);
       await resource.create({
@@ -44,13 +46,15 @@ export const DuplicateAction = observer((props: any) => {
       } else {
         await service?.refresh?.();
       }
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       console.error(error); // Handle or log the error appropriately
     }
   };
 
   const handelDuplicate = () => {
-    if (!disabled) {
+    if (!disabled && !loading) {
       if (duplicateFields?.length > 0) {
         if (duplicateMode === 'quickDulicate') {
           handelQuickDuplicate();
@@ -89,10 +93,11 @@ export const DuplicateAction = observer((props: any) => {
               disabled={disabled}
               style={{
                 opacity: designable && field?.data?.hidden && 0.1,
+                cursor: loading ? 'not-allowed' : 'pointer',
               }}
               onClick={handelDuplicate}
             >
-              {children || t('Duplicate')}
+              {loading ? t('Duplicating') : children || t('Duplicate')}
             </a>
           ) : (
             <Button
@@ -103,7 +108,7 @@ export const DuplicateAction = observer((props: any) => {
               {...props}
               onClick={handelDuplicate}
             >
-              {children || t('Duplicate')}
+              {loading ? t('Duplicating') : children || t('Duplicate')}
             </Button>
           )}
           <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
