@@ -172,4 +172,38 @@ describe('multiple apps create', () => {
     await app.start();
     expect(app.appManager.applications.get(subAppName)).toBeDefined();
   });
+
+  it('should get same obj ref when asynchronously access with same sub app name', async () => {
+    const subAppName = `t_${uid()}`;
+
+    const subApp = await app.db.getRepository('applications').create({
+      values: {
+        name: subAppName,
+        options: {},
+      },
+    });
+
+    await app.appManager.removeApplication(subAppName);
+    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+
+    const instances = [];
+
+    app.on('afterSubAppAdded', (subApp) => {
+      instances.push(subApp);
+    });
+
+    const promises = [];
+    for (let i = 0; i < 3; i++) {
+      promises.push(
+        (async () => {
+          await app.appManager.getApplication(subAppName);
+        })(),
+      );
+    }
+    await Promise.all(promises);
+
+    expect(instances.length).toBe(1);
+    expect(instances[0]).toBeDefined();
+    expect(instances[0].name == subAppName).toBeTruthy();
+  });
 });

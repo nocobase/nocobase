@@ -20,24 +20,27 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { lang, useChartsTranslation } from './locale';
 import { templates } from './templates';
 
-export const Options = observer((props) => {
-  const form = useForm<ChartFormInterface>();
-  const field = useField<Field>();
-  const [s, setSchema] = useState(new Schema({}));
-  const [chartType, setChartType] = useState(form.values.type);
-  useEffect(() => {
-    // form.clearFormGraph('options.*');
-    setChartType(form?.values?.type);
-    if (chartType !== form?.values?.type) {
-      form.clearFormGraph('options.*');
-    }
-    if (form.values.type) {
-      const template = templates.get(form.values.type);
-      setSchema(new Schema(template.configurableProperties || {}));
-    }
-  }, [form.values.type]);
-  return <RecursionField schema={s} />;
-});
+export const Options = observer(
+  (props) => {
+    const form = useForm<ChartFormInterface>();
+    const field = useField<Field>();
+    const [s, setSchema] = useState(new Schema({}));
+    const [chartType, setChartType] = useState(form.values.type);
+    useEffect(() => {
+      // form.clearFormGraph('options.*');
+      setChartType(form?.values?.type);
+      if (chartType !== form?.values?.type) {
+        form.clearFormGraph('options.*');
+      }
+      if (form.values.type) {
+        const template = templates.get(form.values.type);
+        setSchema(new Schema(template.configurableProperties || {}));
+      }
+    }, [form.values.type]);
+    return <RecursionField schema={s} />;
+  },
+  { displayName: 'Options' },
+);
 
 interface ChartFormInterface {
   type: string;

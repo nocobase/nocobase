@@ -53,61 +53,64 @@ const divWrap = (schema: ISchema) => {
   };
 };
 
-export const FormItem: any = observer((props: any) => {
-  useEnsureOperatorsValid();
+export const FormItem: any = observer(
+  (props: any) => {
+    useEnsureOperatorsValid();
 
-  const field = useField<Field>();
-  const ctx = useContext(BlockRequestContext);
-  const schema = useFieldSchema();
-  const variablesCtx = useVariablesCtx();
+    const field = useField<Field>();
+    const ctx = useContext(BlockRequestContext);
+    const schema = useFieldSchema();
+    const variablesCtx = useVariablesCtx();
 
-  useEffect(() => {
-    if (ctx?.block === 'form') {
-      ctx.field.data = ctx.field.data || {};
-      ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-      ctx.field.data.activeFields.add(schema.name);
-      // 如果默认值是一个变量，则需要解析之后再显示出来
-      if (isVariable(schema?.default)) {
-        field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+    useEffect(() => {
+      if (ctx?.block === 'form') {
+        ctx.field.data = ctx.field.data || {};
+        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+        ctx.field.data.activeFields.add(schema.name);
+        // 如果默认值是一个变量，则需要解析之后再显示出来
+        if (isVariable(schema?.default)) {
+          field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+        }
       }
-    }
-  }, []);
-  const showTitle = schema['x-decorator-props']?.showTitle ?? true;
-  return (
-    <ACLCollectionFieldProvider>
-      <BlockItem className={'nb-form-item'}>
-        <Item
-          className={cx(
-            css`
-              & .ant-space {
-                flex-wrap: wrap;
-              }
-            `,
-            {
-              [css`
-                > .ant-formily-item-label {
-                  display: none;
+    }, []);
+    const showTitle = schema['x-decorator-props']?.showTitle ?? true;
+    return (
+      <ACLCollectionFieldProvider>
+        <BlockItem className={'nb-form-item'}>
+          <Item
+            className={cx(
+              css`
+                & .ant-space {
+                  flex-wrap: wrap;
                 }
-              `]: showTitle === false,
-            },
-          )}
-          {...props}
-          extra={
-            typeof field.description === 'string' ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-                }}
-              />
-            ) : (
-              field.description
-            )
-          }
-        />
-      </BlockItem>
-    </ACLCollectionFieldProvider>
-  );
-});
+              `,
+              {
+                [css`
+                  > .ant-formily-item-label {
+                    display: none;
+                  }
+                `]: showTitle === false,
+              },
+            )}
+            {...props}
+            extra={
+              typeof field.description === 'string' ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+                  }}
+                />
+              ) : (
+                field.description
+              )
+            }
+          />
+        </BlockItem>
+      </ACLCollectionFieldProvider>
+    );
+  },
+  { displayName: 'FormItem' },
+);
 
 FormItem.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
@@ -130,7 +133,7 @@ FormItem.Designer = function Designer() {
     ? getCollectionFields(collectionField?.target)
     : getCollectionFields(collectionField?.targetCollection) ?? [];
   const fieldModeOptions = useFieldModeOptions();
-  const isAssociationField = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(collectionField?.type);
+  const isAssociationField = ['obo', 'oho', 'o2o', 'o2m', 'm2m', 'm2o'].includes(collectionField?.interface);
   const isTableField = fieldSchema['x-component'] === 'TableField';
   const isFileField = isFileCollection(targetCollection);
   const initialValue = {
@@ -160,7 +163,7 @@ FormItem.Designer = function Designer() {
   const sortFields = useSortFields(collectionField?.target);
   const defaultSort = field.componentProps?.service?.params?.sort || [];
   const fieldMode = field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select');
-  const isSelectFieldMode = fieldMode === 'Select';
+  const isSelectFieldMode = isAssociationField && fieldMode === 'Select';
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
       ? {
@@ -179,7 +182,6 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
-
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -663,7 +665,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {IsShowMultipleSwitch() ? (
+      {isAssociationField && IsShowMultipleSwitch() ? (
         <SchemaSettings.SwitchItem
           key="multiple"
           title={t('Allow multiple')}
@@ -833,7 +835,7 @@ export function isFileCollection(collection: Collection) {
 FormItem.FilterFormDesigner = FilterFormDesigner;
 
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
-  const result = fieldSchema?.default || collectionField?.defaultValue;
+  const result = fieldSchema?.default ?? collectionField?.defaultValue;
   if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
     return moment(result);
   }

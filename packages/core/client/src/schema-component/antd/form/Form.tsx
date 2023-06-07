@@ -83,34 +83,37 @@ const useDefaultValues = (opts: any = {}, props: FormProps = {}) => {
 
 const FormBlockContext = createContext<any>(null);
 
-export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
-  const { request, effects, initialValue, useValues = useDefaultValues, ...others } = props;
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const form = useMemo(() => createForm({ effects }), []);
-  const result = useValues(
-    {
-      uid: fieldSchema['x-uid'],
-      async onSuccess(data) {
-        await form.reset();
-        form.setValues(data?.data);
+export const Form: React.FC<FormProps> & { Designer?: any } = observer(
+  (props) => {
+    const { request, effects, initialValue, useValues = useDefaultValues, ...others } = props;
+    const fieldSchema = useFieldSchema();
+    const field = useField();
+    const form = useMemo(() => createForm({ effects }), []);
+    const result = useValues(
+      {
+        uid: fieldSchema['x-uid'],
+        async onSuccess(data) {
+          await form.reset();
+          form.setValues(data?.data);
+        },
       },
-    },
-    props,
-  );
-  const parent = useContext(FormBlockContext);
-  return (
-    <FormBlockContext.Provider value={{ parent, form, result, field, fieldSchema }}>
-      <Spin spinning={result?.loading || false}>
-        {fieldSchema['x-decorator'] === 'Form' ? (
-          <FormDecorator form={form} {...others} />
-        ) : (
-          <FormComponent form={form} {...others} />
-        )}
-      </Spin>
-    </FormBlockContext.Provider>
-  );
-});
+      props,
+    );
+    const parent = useContext(FormBlockContext);
+    return (
+      <FormBlockContext.Provider value={{ parent, form, result, field, fieldSchema }}>
+        <Spin spinning={result?.loading || false}>
+          {fieldSchema['x-decorator'] === 'Form' ? (
+            <FormDecorator form={form} {...others} />
+          ) : (
+            <FormComponent form={form} {...others} />
+          )}
+        </Spin>
+      </FormBlockContext.Provider>
+    );
+  },
+  { displayName: 'Form' },
+);
 
 Form.Designer = () => {
   const { name, title } = useCollection();

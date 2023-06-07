@@ -3,6 +3,8 @@ const postgres = {
   varchar: 'string',
   text: 'text',
   char: 'string',
+  oid: 'string',
+  name: 'string',
 
   smallint: 'integer',
   integer: 'integer',

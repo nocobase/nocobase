@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } fr
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { error } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
@@ -512,7 +513,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
                 ['x-uid']: uid,
                 'x-filter-targets': targets,
               },
-            });
+            }).catch(error);
             dn.refresh();
           }}
           onMouseEnter={onHover}
@@ -773,6 +774,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     </>
   );
 });
+SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
 SchemaSettings.ModalItem = function ModalItem(props) {
   const {

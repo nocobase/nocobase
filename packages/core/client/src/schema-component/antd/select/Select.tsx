@@ -7,12 +7,17 @@ import React from 'react';
 import { ReadPretty } from './ReadPretty';
 import { defaultFieldNames, getCurrentOptions } from './shared';
 
-type Props = SelectProps<any, any> & { objectValue?: boolean; onChange?: (v: any) => void; multiple: boolean };
+type Props = SelectProps<any, any> & {
+  objectValue?: boolean;
+  onChange?: (v: any) => void;
+  multiple: boolean;
+  rawOptions: any[];
+};
 
 const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' && Object.keys(val).length === 0);
 
 const ObjectSelect = (props: Props) => {
-  const { value, options, onChange, fieldNames, mode, loading, ...others } = props;
+  const { value, options, onChange, fieldNames, mode, loading, rawOptions, ...others } = props;
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -52,7 +57,7 @@ const ObjectSelect = (props: Props) => {
       onChange={(changed) => {
         const current = getCurrentOptions(
           toArr(changed).map((v) => v.value),
-          options,
+          rawOptions,
           fieldNames,
         );
         if (['tags', 'multiple'].includes(mode) || props.multiple) {
@@ -79,6 +84,12 @@ const InternalSelect = connect(
     if (objectValue) {
       return <ObjectSelect {...others} value={value} mode={mode} loading={loading} />;
     }
+    const toValue = (v) => {
+      if (['tags', 'multiple'].includes(props.mode) || props.multiple) {
+        return toArr(v);
+      }
+      return v;
+    };
     return (
       <AntdSelect
         showSearch
@@ -86,7 +97,7 @@ const InternalSelect = connect(
         allowClear
         dropdownMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
-        value={value?value:undefined}
+        value={toValue(value)}
         {...others}
         onChange={(changed) => {
           props.onChange?.(changed === undefined ? null : changed);

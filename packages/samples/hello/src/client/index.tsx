@@ -36,7 +36,7 @@ export const HelloBlockInitializer = (props) => {
   );
 };
 
-export default React.memo((props) => {
+const Hello = React.memo((props) => {
   const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[1].children;
   children.push({
@@ -66,3 +66,6 @@ export default React.memo((props) => {
     </SettingsCenterProvider>
   );
 });
+Hello.displayName = 'Hello';
+
+export default Hello;

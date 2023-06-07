@@ -39,7 +39,7 @@ registerValidateRules({
   },
 });
 
-export default React.memo((props) => {
+const Charts = React.memo((props) => {
   const api = useAPIClient();
   const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
@@ -99,3 +99,6 @@ export default React.memo((props) => {
     </ChartQueryMetadataProvider>
   );
 });
+Charts.displayName = 'Charts';
+
+export default Charts;

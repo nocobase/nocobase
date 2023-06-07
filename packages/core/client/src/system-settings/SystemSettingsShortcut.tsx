@@ -94,7 +94,7 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
-            action: 'attachments:upload',
+            action: 'attachments:create',
             multiple: false,
             // accept: 'jpg,png'
           },
@@ -187,7 +187,7 @@ const schema2: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
-            action: 'attachments:upload',
+            action: 'attachments:create',
             multiple: false,
             // accept: 'jpg,png'
           },

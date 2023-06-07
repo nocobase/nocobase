@@ -1,5 +1,8 @@
 import React from 'react';
 
-export default React.memo((props) => {
+const RateLimit = React.memo((props) => {
   return <>{props.children}</>;
 });
+RateLimit.displayName = 'RateLimit';
+
+export default RateLimit;
