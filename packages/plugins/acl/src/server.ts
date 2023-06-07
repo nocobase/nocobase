@@ -128,11 +128,21 @@ export class PluginACL extends Plugin {
     })) as RoleModel[];
 
     for (const role of roles) {
-      role.writeToAcl({ acl: this.acl });
+      await this.writeRoleToACL(role);
+    }
+  }
 
-      for (const resource of role.get('resources') as RoleResourceModel[]) {
-        await this.writeResourceToACL(resource, null);
-      }
+  async writeRoleToACL(role: RoleModel, transaction: any = null) {
+    role.writeToAcl({ acl: this.acl });
+
+    let resources = role.get('resources') as RoleResourceModel[];
+
+    if (!resources) {
+      resources = await role.getResources({ transaction });
+    }
+
+    for (const resource of resources as RoleResourceModel[]) {
+      await this.writeResourceToACL(resource, transaction);
     }
   }
 
@@ -217,16 +227,14 @@ export class PluginACL extends Plugin {
       }
     });
 
+    this.app.on('acl:writeRoleToACL', async (roleModel: RoleModel) => {
+      await this.writeRoleToACL(roleModel);
+    });
+
     this.app.db.on('roles.afterSaveWithAssociations', async (model, options) => {
       const { transaction } = options;
 
-      model.writeToAcl({
-        acl: this.acl,
-      });
-
-      for (const resource of (await model.getResources({ transaction })) as RoleResourceModel[]) {
-        await this.writeResourceToACL(resource, transaction);
-      }
+      await this.writeRoleToACL(model, transaction);
 
       // model is default
       if (model.get('default')) {

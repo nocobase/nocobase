@@ -5,23 +5,26 @@ import { observer, useField, useForm } from '@formily/react';
 import { useEffect } from 'react';
 import { Input, useRecord } from '@nocobase/client';
 
-export const RedirectURLInput = observer(() => {
-  const form = useForm();
-  const field = useField<Field>();
-  const record = useRecord();
+export const RedirectURLInput = observer(
+  () => {
+    const form = useForm();
+    const field = useField<Field>();
+    const record = useRecord();
 
-  const clientId = form.values.clientId ?? record.clientId;
+    const clientId = form.values.clientId ?? record.clientId;
 
-  useEffect(() => {
-    const { protocol, host } = window.location;
-    field.setValue(`${protocol}//${host}/api/oidc:redirect?clientId=${clientId}`);
-  }, [clientId]);
+    useEffect(() => {
+      const { protocol, host } = window.location;
+      field.setValue(`${protocol}//${host}/api/oidc:redirect?clientId=${clientId}`);
+    }, [clientId]);
 
-  return (
-    <div>
-      <FormLayout layout={'vertical'}>
-        <Input disabled value={field.value} />
-      </FormLayout>
-    </div>
-  );
-});
+    return (
+      <div>
+        <FormLayout layout={'vertical'}>
+          <Input disabled value={field.value} />
+        </FormLayout>
+      </div>
+    );
+  },
+  { displayName: 'RedirectURLInput' },
+);

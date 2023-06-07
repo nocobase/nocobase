@@ -1,6 +1,7 @@
 import { Repository, Transactionable } from '@nocobase/database';
 import { CollectionModel } from '../models/collection';
 import { CollectionsGraph } from '@nocobase/utils';
+import lodash from 'lodash';
 
 interface LoadOptions extends Transactionable {
   filter?: any;
@@ -68,13 +69,35 @@ export class CollectionRepository extends Repository {
 
     const sortedNames = graphlib.alg.topsort(graph);
 
+    const lazyCollectionFields: {
+      [key: string]: Array<string>;
+    } = {};
+
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
+
+      const skipField = (() => {
+        if (viewCollections.includes(instanceName)) {
+          return true;
+        }
+
+        const fields = nameMap[instanceName].get('fields');
+
+        return fields
+          .filter((field) => field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target']))
+          .map((field) => field.get('name'));
+      })();
+
+      if (lodash.isArray(skipField) && skipField.length) {
+        lazyCollectionFields[instanceName] = skipField;
+      }
+
+      await nameMap[instanceName].load({ skipField });
 
       await nameMap[instanceName].load({
         skipExist,
         transaction,
-        skipField: viewCollections.includes(instanceName),
+        skipField,
         replaceCollection: options.replaceCollection,
       });
     }
@@ -84,6 +107,11 @@ export class CollectionRepository extends Repository {
       await nameMap[viewCollectionName].loadFields({
         transaction,
       });
+    }
+
+    // load lazy collection field
+    for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
+      await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
   }
 

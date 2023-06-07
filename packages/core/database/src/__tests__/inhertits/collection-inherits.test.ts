@@ -254,6 +254,72 @@ pgOnly()('collection inherits', () => {
     expect(db.referenceMap.getReferences('root-target')).toHaveLength(1);
   });
 
+  it('should append collection name in eager load', async () => {
+    const rootCollection = db.collection({
+      name: 'assoc',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'belongsToMany', name: 'other-assocs' },
+      ],
+    });
+
+    const childCollection = db.collection({
+      name: 'child',
+      inherits: ['assoc'],
+    });
+
+    const otherAssoc = db.collection({
+      name: 'other-assocs',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'assocs',
+          type: 'hasMany',
+          target: 'assoc',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const child = await childCollection.repository.create({
+      values: {
+        name: 'child1',
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'user1',
+        assocs: [
+          {
+            id: child.get('id'),
+          },
+        ],
+      },
+    });
+
+    const users = await User.repository.find({
+      appends: ['assocs.other-assocs'],
+    });
+
+    const user = users[0];
+
+    const assoc = user.get('assocs')[0];
+    expect(assoc.get('__tableName')).toEqual(childCollection.model.tableName);
+    expect(assoc.get('__schemaName')).toEqual(childCollection.collectionSchema());
+
+    expect(user.get('assocs')[0].get('__collection')).toBe('child');
+  });
+
   it('should list data filtered by child type', async () => {
     const rootCollection = db.collection({
       name: 'root',

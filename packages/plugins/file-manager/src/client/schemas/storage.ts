@@ -1,6 +1,7 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useActionContext, useRequest } from '@nocobase/client';
+import { NAMESPACE } from '../locale';
 
 const collection = {
   name: 'storages',
@@ -10,7 +11,7 @@ const collection = {
       name: 'title',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Storage display name")}}',
+        title: '{{t("Title")}}',
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -21,7 +22,8 @@ const collection = {
       name: 'name',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Storage name")}}',
+        title: `{{t("Storage name", { ns: "${NAMESPACE}" })}}`,
+        descriptions: `{{t("Will be used for API", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Input',
       } as ISchema,
@@ -31,15 +33,15 @@ const collection = {
       name: 'type',
       interface: 'select',
       uiSchema: {
-        title: '{{t("Storage type")}}',
+        title: `{{t("Storage type", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Select',
         required: true,
         enum: [
-          { label: '{{t("Local storage")}}', value: 'local' },
-          { label: '{{t("Aliyun OSS")}}', value: 'ali-oss' },
-          { label: '{{t("Amazon S3")}}', value: 's3' },
-          { label: '{{t("Tencent COS")}}', value: 'tx-cos' },
+          { label: `{{t("Local storage", { ns: "${NAMESPACE}" })}}`, value: 'local' },
+          { label: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`, value: 'ali-oss' },
+          { label: `{{t("Amazon S3", { ns: "${NAMESPACE}" })}}`, value: 's3' },
+          { label: `{{t("Tencent COS", { ns: "${NAMESPACE}" })}}`, value: 'tx-cos' },
         ],
       } as ISchema,
     },
@@ -48,7 +50,7 @@ const collection = {
       name: 'baseUrl',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Storage base URL")}}',
+        title: `{{t("Storage base URL", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Input',
         required: true,
@@ -59,7 +61,7 @@ const collection = {
       name: 'path',
       interface: 'input',
       uiSchema: {
-        title: '{{t("Path")}}',
+        title: `{{t("Path", { ns: "${NAMESPACE}" })}}`,
         type: 'string',
         'x-component': 'Input',
       } as ISchema,
@@ -69,7 +71,7 @@ const collection = {
       name: 'default',
       interface: 'boolean',
       uiSchema: {
-        title: '{{t("Default storage")}}',
+        title: `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
         type: 'boolean',
         'x-component': 'Checkbox',
       } as ISchema,
@@ -117,14 +119,14 @@ export const storageSchema: ISchema = {
               'x-component-props': {
                 useAction: '{{ cm.useBulkDestroyAction }}',
                 confirm: {
-                  title: "{{t('Delete storage')}}",
+                  title: "{{t('Delete')}}",
                   content: "{{t('Are you sure you want to delete it?')}}",
                 },
               },
             },
             create: {
               type: 'void',
-              title: '{{t("Add storage")}}',
+              title: '{{t("Add new")}}',
               'x-component': 'Action',
               'x-component-props': {
                 type: 'primary',
@@ -148,7 +150,7 @@ export const storageSchema: ISchema = {
                       );
                     },
                   },
-                  title: '{{t("Add storage")}}',
+                  title: '{{t("Add new")}}',
                   properties: {
                     title: {
                       'x-component': 'CollectionField',
@@ -180,7 +182,7 @@ export const storageSchema: ISchema = {
                       'x-component': 'CollectionField',
                       'x-decorator': 'FormItem',
                       title: '',
-                      'x-content': '{{t("Default storage")}}',
+                      'x-content': `{{t("Default storage", { ns: "${NAMESPACE}" })}}`,
                     },
                     footer: {
                       type: 'void',
@@ -284,7 +286,7 @@ export const storageSchema: ISchema = {
                           'x-decorator-props': {
                             useValues: '{{ cm.useValuesFromRecord }}',
                           },
-                          title: '{{t("Edit storage")}}',
+                          title: '{{t("Edit")}}',
                           properties: {
                             title: {
                               'x-component': 'CollectionField',
@@ -349,8 +351,8 @@ export const storageSchema: ISchema = {
                       'x-component': 'Action.Link',
                       'x-component-props': {
                         confirm: {
-                          title: "{{t('Delete role')}}",
-                          content: "{{t('Are you sure you want to delete it?')}}",
+                          title: '{{t("Delete")}}',
+                          content: '{{t("Are you sure you want to delete it?")}}',
                         },
                         useAction: '{{cm.useDestroyAction}}',
                       },

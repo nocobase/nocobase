@@ -9,28 +9,31 @@ import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
 import { TabsDesigner } from './Tabs.Designer';
 
-export const Tabs: any = observer((props: TabsProps) => {
-  const fieldSchema = useFieldSchema();
-  const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
-  return (
-    <DndContext>
-      <AntdTabs
-        style={props.style}
-        tabBarExtraContent={{
-          right: render(),
-        }}
-      >
-        {fieldSchema.mapProperties((schema, key) => {
-          return (
-            <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
-              <RecursionField name={key} schema={schema} onlyRenderProperties />
-            </AntdTabs.TabPane>
-          );
-        })}
-      </AntdTabs>
-    </DndContext>
-  );
-});
+export const Tabs: any = observer(
+  (props: TabsProps) => {
+    const fieldSchema = useFieldSchema();
+    const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+    return (
+      <DndContext>
+        <AntdTabs
+          style={props.style}
+          tabBarExtraContent={{
+            right: render(),
+          }}
+        >
+          {fieldSchema.mapProperties((schema, key) => {
+            return (
+              <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
+                <RecursionField name={key} schema={schema} onlyRenderProperties />
+              </AntdTabs.TabPane>
+            );
+          })}
+        </AntdTabs>
+      </DndContext>
+    );
+  },
+  { displayName: 'Tabs' },
+);
 
 const designerCss = css`
   position: relative;
@@ -79,15 +82,18 @@ const designerCss = css`
   }
 `;
 
-Tabs.TabPane = observer((props: TabPaneProps & { icon?: any }) => {
-  const Designer = useDesigner();
-  const field = useField();
-  return (
-    <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
-      {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
-      <Designer />
-    </SortableItem>
-  );
-});
+Tabs.TabPane = observer(
+  (props: TabPaneProps & { icon?: any }) => {
+    const Designer = useDesigner();
+    const field = useField();
+    return (
+      <SortableItem className={classNames('nb-action-link', designerCss, props.className)}>
+        {props.icon && <Icon style={{ marginRight: 2 }} type={props.icon} />} {props.tab || field.title}
+        <Designer />
+      </SortableItem>
+    );
+  },
+  { displayName: 'TabPane' },
+);
 
 Tabs.Designer = TabsDesigner;

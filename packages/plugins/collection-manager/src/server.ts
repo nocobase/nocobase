@@ -296,7 +296,7 @@ export class CollectionManagerPlugin extends Plugin {
         if (field.get('source')) {
           const [collectionSource, fieldSource] = field.get('source').split('.');
           // find original field
-          const collectionField = this.app.db.getCollection(collectionSource).getField(fieldSource);
+          const collectionField = this.app.db.getCollection(collectionSource)?.getField(fieldSource);
 
           if (!collectionField) {
             continue;

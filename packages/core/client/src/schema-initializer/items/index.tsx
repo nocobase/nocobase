@@ -51,4 +51,5 @@ export * from './TableCollectionFieldInitializer';
 export * from './TableSelectorInitializer';
 export * from './UpdateActionInitializer';
 export * from './UpdateSubmitActionInitializer';
+export * from './DuplicateActionInitializer';
 export * from './ViewActionInitializer';
