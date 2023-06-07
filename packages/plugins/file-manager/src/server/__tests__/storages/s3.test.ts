@@ -21,7 +21,7 @@ describe('storage:s3', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...s3Storage.defaults(),
-      name: `s3_${db.getTablePrefix()}`,
+      name: 's3',
       default: true,
       path: 'test/path',
     });
@@ -33,7 +33,7 @@ describe('storage:s3', () => {
 
   describe('direct attachment', () => {
     itif('upload file should be ok', async () => {
-      const { body } = await agent.resource('attachments').upload({
+      const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
 

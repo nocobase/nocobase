@@ -28,15 +28,18 @@ export const useValuesFromRecord = (options, data) => {
   return result;
 };
 
-export const SourceCollection = observer(() => {
-  const { record } = useContext(GraphCollectionContext);
-  const compile = useCompile();
-  return (
-    <div>
-      <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
-    </div>
-  );
-});
+export const SourceCollection = observer(
+  () => {
+    const { record } = useContext(GraphCollectionContext);
+    const compile = useCompile();
+    return (
+      <div>
+        <Select disabled value={record.name} options={[{ value: record.name, label: compile(record.title) }]} />
+      </div>
+    );
+  },
+  { displayName: 'SourceCollection' },
+);
 
 export const useCancelAction = () => {
   const form = useForm();

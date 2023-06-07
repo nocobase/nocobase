@@ -417,6 +417,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         rootAttributes: opts.attributes,
         includeOption: opts.include,
         rootOrder: opts.order,
+        db: this.database,
       });
 
       await eagerLoadingTree.load(

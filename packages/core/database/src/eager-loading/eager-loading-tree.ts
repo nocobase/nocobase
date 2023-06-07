@@ -1,5 +1,8 @@
 import { Association, HasOne, Includeable, Model, ModelStatic, Transaction } from 'sequelize';
 import lodash from 'lodash';
+import Database from '../database';
+import { OptionsParser } from '../options-parser';
+import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -10,10 +13,29 @@ interface EagerLoadingNode {
   parent?: EagerLoadingNode;
   instances?: Array<Model>;
   order?: any;
+  inspectInheritAttribute?: boolean;
 }
+
+const pushAttribute = (node, attribute) => {
+  if (lodash.isArray(node.attributes) && !node.attributes.includes(attribute)) {
+    node.attributes.push(attribute);
+  }
+};
+
+const EagerLoadingNodeProto = {
+  afterBuild(db: Database) {
+    const collection = db.modelCollection.get(this.model);
+
+    if (collection && collection.isParent()) {
+      OptionsParser.appendInheritInspectAttribute(this.attributes.include, collection);
+      this.inspectInheritAttribute = true;
+    }
+  },
+};
 
 export class EagerLoadingTree {
   public root: EagerLoadingNode;
+  db: Database;
 
   constructor(root: EagerLoadingNode) {
     this.root = root;
@@ -24,23 +46,24 @@ export class EagerLoadingTree {
     rootAttributes: Array<string>;
     rootOrder?: any;
     includeOption: Includeable | Includeable[];
+    db: Database;
   }): EagerLoadingTree {
-    const { model, rootAttributes, includeOption } = options;
+    const { model, rootAttributes, includeOption, db } = options;
 
-    const root = {
+    const buildNode = (node) => {
+      Object.setPrototypeOf(node, EagerLoadingNodeProto);
+      node.afterBuild(db);
+      return node;
+    };
+
+    const root = buildNode({
       model,
       association: null,
       rawAttributes: lodash.cloneDeep(rootAttributes),
       attributes: lodash.cloneDeep(rootAttributes),
       order: options.rootOrder,
       children: [],
-    };
-
-    const pushAttribute = (node, attribute) => {
-      if (lodash.isArray(node.attributes) && !node.attributes.includes(attribute)) {
-        node.attributes.push(attribute);
-      }
-    };
+    });
 
     const traverseIncludeOption = (includeOption, eagerLoadingTreeParent) => {
       const includeOptions = lodash.castArray(includeOption);
@@ -59,14 +82,14 @@ export class EagerLoadingTree {
         const association = eagerLoadingTreeParent.model.associations[include.association];
         const associationType = association.associationType;
 
-        const child = {
+        const child = buildNode({
           model: association.target,
           association,
           rawAttributes: lodash.cloneDeep(include.attributes),
           attributes: lodash.cloneDeep(include.attributes),
           parent: eagerLoadingTreeParent,
           children: [],
-        };
+        });
 
         if (associationType == 'HasOne' || associationType == 'HasMany') {
           const { sourceKey, foreignKey } = association;
@@ -97,7 +120,9 @@ export class EagerLoadingTree {
 
     traverseIncludeOption(includeOption, root);
 
-    return new EagerLoadingTree(root);
+    const tree = new EagerLoadingTree(root);
+    tree.db = db;
+    return tree;
   }
 
   async load(pks: Array<string | number>, transaction?: Transaction) {
@@ -297,7 +322,17 @@ export class EagerLoadingTree {
 
     await loadRecursive(this.root, pks);
 
+    const appendChildCollectionName = appendChildCollectionNameAfterRepositoryFind(this.db);
+
     const setInstanceAttributes = (node) => {
+      if (node.inspectInheritAttribute) {
+        appendChildCollectionName({
+          findOptions: {},
+          data: node.instances,
+          dataCollection: this.db.modelCollection.get(node.model),
+        });
+      }
+
       const nodeRawAttributes = node.rawAttributes;
 
       if (!lodash.isArray(nodeRawAttributes)) {
