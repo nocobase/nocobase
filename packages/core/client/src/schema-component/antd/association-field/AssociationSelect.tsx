@@ -6,7 +6,6 @@ import { RecordProvider } from '../../../';
 import { useTranslation } from 'react-i18next';
 import { RemoteSelect, RemoteSelectProps } from '../remote-select';
 import useServiceOptions, { useAssociationFieldContext } from './hooks';
-import { RecordProvider } from '../../../';
 import { useAPIClient, useCollectionManager } from '../../../';
 import { isFunction } from 'mathjs';
 
