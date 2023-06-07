@@ -144,15 +144,11 @@ export class InheritedModelSyncRunner {
       };
     });
 
-    console.log('existParentsTables', existParentsTables);
-
     const existParentCollections = existParentsTables.map((x) => {
       return db.tableNameCollectionMap.get(`${x.schema}.${x.tableName}`);
     });
 
     const newParents = collection.options.inherits;
-
-    console.log('newParents', newParents);
 
     const shouldRemove = existParentCollections.filter((x) => !newParents.includes(x.name));
 
