@@ -21,6 +21,7 @@ export const BlockTemplate = observer(
     const template = useMemo(() => getTemplateById(templateId), [templateId]);
     const onSuccess = (data) => {
       fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
+      fieldSchema.setProperties(data?.data?.properties);
     };
     return template ? (
       <BlockTemplateContext.Provider value={{ dn, field, fieldSchema, template }}>
