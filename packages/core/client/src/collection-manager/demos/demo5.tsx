@@ -82,7 +82,7 @@ const FormItemInitializer = (props) => {
         collection.fields.push(options);
         form.setValuesIn(name, uid());
 
-        const { values } = await FormDrawer('Add field', () => {
+        await FormDrawer('Add field', () => {
           return (
             <CollectionManagerContext.Provider value={cm}>
               <AntdSchemaComponentProvider>

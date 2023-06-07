@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
+import { error } from '@nocobase/utils/client';
 import { Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useContext, useState } from 'react';
@@ -13,6 +14,23 @@ import {
   SchemaInitializerItemOptions,
   SchemaInitializerItemProps,
 } from './types';
+
+const menuClassName = css`
+  background-color: transparent;
+  border-right: none;
+
+  .ant-menu-item {
+    padding: 0;
+    margin: 0;
+    line-height: 1.5715;
+    height: fit-content;
+    :active,
+    :hover {
+      color: currentColor;
+      background-color: transparent;
+    }
+  }
+`;
 
 const defaultWrap = (s: ISchema) => s;
 
@@ -60,33 +78,34 @@ SchemaInitializer.Button = observer(
           }
           if (item.type === 'item' && item.component) {
             const Component = findComponent(item.component);
+            if (!Component) {
+              error(`SchemaInitializer: component "${item.component}" not found`);
+              return null;
+            }
             item.key = `${item.key || item.title}-${indexA}`;
-            return (
-              Component && {
-                type: 'item',
-                key: item.key,
-                label: (
-                  <SchemaInitializerItemContext.Provider
-                    key={item.key}
-                    value={{
-                      index: indexA,
-                      item,
-                      info: item,
-                      insert: insertSchema,
+            return {
+              key: item.key,
+              label: (
+                <SchemaInitializerItemContext.Provider
+                  key={item.key}
+                  value={{
+                    index: indexA,
+                    item,
+                    info: item,
+                    insert: insertSchema,
+                  }}
+                >
+                  <Component
+                    {...item}
+                    item={{
+                      ...item,
+                      title: compile(item.title),
                     }}
-                  >
-                    <Component
-                      {...item}
-                      item={{
-                        ...item,
-                        title: compile(item.title),
-                      }}
-                      insert={insertSchema}
-                    />
-                  </SchemaInitializerItemContext.Provider>
-                ),
-              }
-            );
+                    insert={insertSchema}
+                  />
+                </SchemaInitializerItemContext.Provider>
+              ),
+            };
           }
           if (item.type === 'itemGroup') {
             return (
@@ -95,19 +114,18 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label: compile(item.title),
                 title: compile(item.title),
-                items: renderItems(item.children),
+                children: renderItems(item.children),
               }
             );
           }
           if (item.type === 'subMenu') {
             return (
               !!item.children?.length && {
-                type: 'submenu',
                 key: item.key || `item-group-${indexA}`,
                 label: compile(item.title),
                 title: compile(item.title),
                 popupClassName: menuItemGroupCss,
-                items: renderItems(item.children),
+                children: renderItems(item.children),
               }
             );
           }
@@ -175,10 +193,11 @@ SchemaInitializer.Button = observer(
   { displayName: 'SchemaInitializer.Button' },
 );
 
-SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
-  const { index, info } = useContext(SchemaInitializerItemContext);
+SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
+  const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
-  const { eventKey, items = [], children = info?.title, icon, onClick, ...others } = props;
+  const { items = [], children = info?.title, icon, onClick } = props;
+
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
       if (!items?.length) {
@@ -186,77 +205,69 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
       }
       return items.map((item, indexA) => {
         if (item.type === 'divider') {
-          return <Menu.Divider key={`divider-${indexA}`} />;
+          return { type: 'divider', key: `divider-${indexA}` };
         }
         if (item.type === 'itemGroup') {
-          return (
-            <Menu.ItemGroup
-              // @ts-ignore
-              eventKey={item.key || `item-group-${indexA}`}
-              key={item.key || `item-group-${indexA}`}
-              title={compile(item.title)}
-              className={menuItemGroupCss}
-            >
-              {renderMenuItem(item.children)}
-            </Menu.ItemGroup>
-          );
+          const label = compile(item.title);
+          return {
+            type: 'group',
+            key: item.key || `item-group-${indexA}`,
+            label,
+            title: label,
+            className: menuItemGroupCss,
+            children: renderMenuItem(item.children),
+          } as MenuProps['items'][0];
         }
         if (item.type === 'subMenu') {
-          return (
-            <Menu.SubMenu
-              // @ts-ignore
-              eventKey={item.key || `sub-menu-${indexA}`}
-              key={item.key || `sub-menu-${indexA}`}
-              title={compile(item.title)}
-            >
-              {renderMenuItem(item.children)}
-            </Menu.SubMenu>
-          );
+          const label = compile(item.title);
+          return {
+            key: item.key || `sub-menu-${indexA}`,
+            label,
+            title: label,
+            children: renderMenuItem(item.children),
+          };
         }
-        return (
-          <Menu.Item
-            eventKey={item.key}
-            key={item.key}
-            onClick={(info) => {
-              item?.clearKeywords?.();
-              if (item.onClick) {
-                item.onClick({ ...info, item });
-              } else {
-                onClick({ ...info, item });
-              }
-            }}
-          >
-            {compile(item.title)}
-          </Menu.Item>
-        );
+        const label = compile(item.title);
+        return {
+          key: item.key,
+          label,
+          title: label,
+          eventKey: item.key,
+          onClick: (info) => {
+            item?.clearKeywords?.();
+            if (item.onClick) {
+              item.onClick({ ...info, item });
+            } else {
+              onClick({ ...info, item });
+            }
+          },
+        };
       });
     };
-    return (
-      <Menu.SubMenu
-        // @ts-ignore
-        eventKey={eventKey ? `${eventKey}-${index}` : info.key}
-        key={info.key}
-        title={compile(children)}
-        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      >
-        {renderMenuItem(items)}
-      </Menu.SubMenu>
-    );
+
+    const item = {
+      key: info.key,
+      label: compile(children),
+      icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+      children: renderMenuItem(items),
+    };
+
+    return <Menu className={menuClassName} items={[item]} selectable={false}></Menu>;
   }
-  return (
-    <Menu.Item
-      // {...others}
-      key={info.key}
-      eventKey={eventKey ? `${eventKey}-${index}` : info.key}
-      icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      onClick={(opts) => {
-        info?.clearKeywords?.();
-        onClick({ ...opts, item: info });
-      }}
-    >
-      {compile(children)}
-    </Menu.Item>
-  );
+
+  const label = compile(children);
+  const item = {
+    key: info.key,
+    label,
+    title: label,
+    icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
+    onClick: (opts) => {
+      info?.clearKeywords?.();
+      onClick({ ...opts, item: info });
+    },
+  };
+
+  return <Menu className={menuClassName} items={[item]} selectable={false}></Menu>;
 };
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
