@@ -7,6 +7,7 @@ import authenticatorsActions from './actions/authenticators';
 import { enUS, zhCN } from './locale';
 import { namespace } from '../preset';
 import { AuthModel } from './model/authenticator';
+import { Model } from '@nocobase/database';
 
 export class AuthPlugin extends Plugin {
   afterAdd() {}
@@ -34,7 +35,9 @@ export class AuthPlugin extends Plugin {
     this.app.authManager.setStorer({
       get: async (name: string) => {
         const repo = this.db.getRepository('authenticators');
-        return await repo.findOne({ filter: { name, enabled: true } });
+        const authenticators = await repo.find({ filter: { enabled: true } });
+        const authenticator = authenticators.find((authenticator: Model) => authenticator.name === name);
+        return authenticator || authenticators[0];
       },
     });
     this.app.authManager.registerTypes(presetAuthType, {
