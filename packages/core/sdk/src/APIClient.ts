@@ -112,7 +112,7 @@ export class Auth {
   }
 
   getAuth() {
-    const auth = this.api.storage.getItem('NOCOBASE_AUTH');
+    const auth = this.api.storage.getItem(this.NOCOBASE_AUTH_KEY);
     if (!auth) {
       return null;
     }
@@ -121,7 +121,7 @@ export class Auth {
 
   setAuth(auth: { authenticator: string; token: string }) {
     this.options.auth = auth;
-    this.api.storage.setItem('NOCOBASE_AUTH', JSON.stringify(auth));
+    this.api.storage.setItem(this.NOCOBASE_AUTH_KEY, JSON.stringify(auth));
     if (!auth?.token) {
       this.setRole(null);
       // this.setLocale(null);
