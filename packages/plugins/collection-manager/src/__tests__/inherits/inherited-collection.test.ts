@@ -74,7 +74,7 @@ pgOnly()('Inherited Collection', () => {
     });
   });
 
-  describe('rename inherit collection', async () => {
+  describe('rename inherit collection', () => {
     beforeEach(async () => {
       await collectionRepository.create({
         values: {
@@ -107,7 +107,7 @@ pgOnly()('Inherited Collection', () => {
     });
 
     it('should rename parent', async () => {
-      // rename parent
+      // rename parent to root
       await db.getCollection('collections').repository.update({
         filter: {
           name: 'parent',

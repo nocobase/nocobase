@@ -12,13 +12,14 @@ interface LoadOptions extends Transactionable {
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist, transaction, replaceCollection } = options;
-    const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
+    const instances = (await this.find({ filter, appends: ['fields'], transaction })) as CollectionModel[];
 
     if (replaceCollection) {
       instances.forEach((instance) => {
         this.database.removeCollection(instance.get('name'));
       });
     }
+
     const graphlib = CollectionsGraph.graphlib();
 
     const graph = new graphlib.Graph();
@@ -92,8 +93,6 @@ export class CollectionRepository extends Repository {
         lazyCollectionFields[instanceName] = skipField;
       }
 
-      await nameMap[instanceName].load({ skipField });
-
       await nameMap[instanceName].load({
         skipExist,
         transaction,
@@ -111,7 +110,7 @@ export class CollectionRepository extends Repository {
 
     // load lazy collection field
     for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
-      await nameMap[collectionName].loadFields({ includeFields: skipField });
+      await nameMap[collectionName].loadFields({ includeFields: skipField, transaction });
     }
   }
 

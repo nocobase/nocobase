@@ -67,6 +67,8 @@ export class CollectionManagerPlugin extends Plugin {
 
     this.app.db.on('collections.afterSave', async (model, options) => {
       if (options.reload) {
+        this.app.log.info('reload collections');
+
         await this.db.getRepository<CollectionRepository>('collections').load({
           transaction: options.transaction,
           replaceCollection: true,
