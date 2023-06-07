@@ -1,19 +1,14 @@
-import { FormItem, Input } from '@formily/antd';
 import { Field } from '@formily/core';
-import { ISchema, observer, useField, useFieldSchema, useForm } from '@formily/react';
-import { Action, Form, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
-import { Select } from 'antd';
+import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
+import { Action, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
+import { Radio } from 'antd';
 import React, { useRef } from 'react';
 
 const useCloseAction = () => {
   const { setVisible } = useActionContext();
-  const form = useForm();
   return {
     async run() {
       setVisible(false);
-      form.submit((values) => {
-        console.log(values);
-      });
     },
   };
 };
@@ -26,18 +21,17 @@ const Editable = observer(
       <div>
         <div style={{ marginBottom: 24 }}>
           打开方式：
-          <Select
+          <Radio.Group
             value={field.componentProps.openMode}
-            style={{ width: 100 }}
-            onChange={(value) => {
-              field.componentProps.openMode = value;
-              schema['x-component-props']['openMode'] = value;
+            onChange={(e) => {
+              field.componentProps.openMode = e.target.value;
+              schema['x-component-props']['openMode'] = e.target.value;
             }}
           >
-            <Select.Option value={'drawer'}>Drawer</Select.Option>
-            <Select.Option value={'modal'}>Modal</Select.Option>
-            <Select.Option value={'page'}>Page</Select.Option>
-          </Select>
+            <Radio.Button value="drawer">Drawer</Radio.Button>
+            <Radio.Button value="modal">Modal</Radio.Button>
+            <Radio.Button value="page">Page</Radio.Button>
+          </Radio.Group>
         </div>
         {props.children}
       </div>
@@ -50,6 +44,8 @@ const schema: ISchema = {
   type: 'object',
   properties: {
     action1: {
+      type: 'void',
+      title: 'Open',
       'x-decorator': 'Editable',
       'x-component': 'Action',
       'x-component-props': {
@@ -57,22 +53,20 @@ const schema: ISchema = {
         openMode: 'modal',
         containerRefKey: 'containerRef',
       },
-      type: 'void',
-      title: 'Open',
       properties: {
         drawer1: {
-          'x-component': 'Action.Container',
-          'x-component-props': {},
           type: 'void',
           title: 'Modal Title',
+          'x-component': 'Action.Container',
+          'x-component-props': {},
           properties: {
             hello1: {
               title: 'T1',
               'x-content': 'Hello',
             },
             footer1: {
-              'x-component': 'Action.Container.Footer',
               type: 'void',
+              'x-component': 'Action.Container.Footer',
               properties: {
                 close1: {
                   title: 'Close',
@@ -99,12 +93,9 @@ const schema: ISchema = {
 };
 
 export default observer(() => {
-  const containerRef = useRef();
+  const containerRef = useRef(null);
   return (
-    <SchemaComponentProvider
-      scope={{ containerRef, useCloseAction }}
-      components={{ Editable, Form, Action, Input, FormItem }}
-    >
+    <SchemaComponentProvider scope={{ useCloseAction, containerRef }} components={{ Editable, Action }}>
       <SchemaComponent schema={schema} />
       <div ref={containerRef}></div>
     </SchemaComponentProvider>

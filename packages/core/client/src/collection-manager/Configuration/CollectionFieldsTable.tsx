@@ -1,10 +1,10 @@
 import { createForm, Field } from '@formily/core';
 import { FieldContext, FormContext, observer, useField, useFieldSchema } from '@formily/react';
-import { Options, Result } from 'ahooks/lib/useRequest/src/types';
+import { useAttach } from '@formily/react/esm/hooks/useAttach';
+import { Options, Result } from 'ahooks/es/useRequest/src/types';
+import { TableProps } from 'antd';
 import React, { useMemo } from 'react';
 import { AsyncDataProvider, useAsyncData, useRequest } from '../..';
-import { useAttach } from '@formily/react/lib/hooks/useAttach';
-import { TableProps } from 'antd';
 import { CollectionFieldsTableArray } from './CollectionFieldsTableArray';
 
 type TableVoidProps = TableProps<any> & {

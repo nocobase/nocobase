@@ -1,10 +1,40 @@
 /**
  * title: 勾选
  */
-import { FormItem } from '@formily/antd';
 import { ISchema } from '@formily/react';
-import { Action, Input, RecordPicker, SchemaComponent, SchemaComponentProvider, Table } from '@nocobase/client';
+import {
+  APIClientProvider,
+  Action,
+  ActionBar,
+  BlockItem,
+  CollectionField,
+  CollectionManagerProvider,
+  FormItem,
+  Input,
+  RecordPicker,
+  SchemaComponent,
+  SchemaComponentProvider,
+  TableSelectorProvider,
+  TableV2,
+} from '@nocobase/client';
 import React from 'react';
+import { mainCollections, mockAPIClient } from '../../../../test';
+import data from './mockData';
+
+const { apiClient, mockRequest } = mockAPIClient();
+
+mockRequest.onGet('/tt_bd_range:list').reply(({ params }) => {
+  // 已选中的 id
+  const ids = JSON.parse(params.filter).$and?.[0]?.['id.$ne'] || [];
+
+  return [
+    200,
+    {
+      ...data,
+      data: data.data.filter((item: any) => !ids.includes(item.id)),
+    },
+  ];
+});
 
 const schema: ISchema = {
   type: 'object',
@@ -12,17 +42,16 @@ const schema: ISchema = {
     input: {
       type: 'array',
       title: `编辑模式`,
-      default: [
-        { id: 1, name: 'name1' },
-        { id: 2, name: 'name2' },
-      ],
       'x-decorator': 'FormItem',
       'x-component': 'RecordPicker',
       'x-component-props': {
-        mode: 'tags',
         fieldNames: {
           label: 'name',
           value: 'id',
+        },
+        multiple: true,
+        association: {
+          target: 'tt_bd_range',
         },
       },
       'x-reactions': {
@@ -34,37 +63,73 @@ const schema: ISchema = {
         },
       },
       properties: {
-        options: {
-          'x-component': 'RecordPicker.Options',
+        selector: {
           type: 'void',
-          title: 'Drawer Title',
+          title: '{{ t("Select record") }}',
+          'x-component': 'RecordPicker.Selector',
+          'x-component-props': {
+            className: 'nb-record-picker-selector',
+          },
           properties: {
-            input: {
-              type: 'array',
-              title: `编辑模式`,
-              'x-component': 'Table.RowSelection',
-              'x-component-props': {
-                rowKey: 'id',
-                objectValue: true,
-                rowSelection: {
-                  type: 'checkbox',
+            tableBlock: {
+              type: 'void',
+              'x-decorator': 'TableSelectorProvider',
+              'x-decorator-props': {
+                collection: 'tt_bd_range',
+                resource: 'tt_bd_range',
+                action: 'list',
+                params: {
+                  pageSize: 20,
                 },
-                dataSource: [
-                  { id: 1, name: 'Name1' },
-                  { id: 2, name: 'Name2' },
-                  { id: 3, name: 'Name3' },
-                ],
+                rowKey: 'id',
               },
+              'x-component': 'BlockItem',
               properties: {
-                column1: {
-                  type: 'void',
-                  title: 'Name',
-                  'x-component': 'Table.Column',
+                value: {
+                  type: 'array',
+                  'x-component': 'TableV2.Selector',
+                  'x-component-props': {
+                    rowKey: 'id',
+                    rowSelection: {
+                      type: 'checkbox',
+                    },
+                    useProps: '{{ useTableSelectorProps }}',
+                  },
                   properties: {
-                    name: {
-                      type: 'string',
-                      'x-component': 'Input',
-                      'x-read-pretty': true,
+                    column1: {
+                      type: 'void',
+                      'x-decorator': 'TableV2.Column.Decorator',
+                      'x-component': 'TableV2.Column',
+                      properties: {
+                        name: {
+                          type: 'string',
+                          'x-component': 'CollectionField',
+                          'x-read-pretty': true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            footer: {
+              'x-component': 'Action.Container.Footer',
+              'x-component-props': {},
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'ActionBar',
+                  'x-component-props': {},
+                  properties: {
+                    submit: {
+                      title: '{{ t("Submit") }}',
+                      'x-action': 'submit',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        htmlType: 'submit',
+                        useProps: '{{ usePickActionProps }}',
+                      },
                     },
                   },
                 },
@@ -80,46 +145,38 @@ const schema: ISchema = {
       'x-read-pretty': true,
       'x-decorator': 'FormItem',
       'x-component': 'RecordPicker',
-      properties: {
-        item: {
-          'x-component': 'RecordPicker.SelectedItem',
-          properties: {
-            drawer1: {
-              'x-component': 'Action.Drawer',
-              type: 'void',
-              title: 'Drawer Title',
-              properties: {
-                hello1: {
-                  'x-content': 'Hello',
-                  title: 'T1',
-                },
-                footer1: {
-                  'x-component': 'Action.Drawer.Footer',
-                  type: 'void',
-                  properties: {
-                    close1: {
-                      type: 'void',
-                      title: 'Close',
-                      'x-component': 'Action',
-                      'x-component-props': {
-                        // useAction: '{{ useCloseAction }}',
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
+      'x-component-props': {
+        mode: 'tags',
+        fieldNames: {
+          label: 'name',
+          value: 'id',
         },
       },
+      'x-collection-field': 'tt_mnt_org.range',
     },
   },
 };
 
 export default () => {
+  const components = {
+    TableSelectorProvider,
+    TableV2,
+    CollectionField,
+    BlockItem,
+    Input,
+    RecordPicker,
+    FormItem,
+    Action,
+    ActionBar,
+  };
+
   return (
-    <SchemaComponentProvider components={{ Table, Input, RecordPicker, FormItem, Action }}>
-      <SchemaComponent schema={schema} />
-    </SchemaComponentProvider>
+    <APIClientProvider apiClient={apiClient}>
+      <CollectionManagerProvider collections={mainCollections}>
+        <SchemaComponentProvider components={components}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CollectionManagerProvider>
+    </APIClientProvider>
   );
 };

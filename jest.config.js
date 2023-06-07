@@ -15,7 +15,6 @@ module.exports = {
     ...pathsToModuleNameMapper(compilerOptions.paths, {
       prefix: '<rootDir>/',
     }),
-    '\\.(css|less)$': '<rootDir>/__mocks__/styleMock.js',
   },
   globals: {
     'ts-jest': {

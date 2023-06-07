@@ -10,9 +10,9 @@ import {
   NumberPicker,
   Submit,
 } from '@formily/antd';
-import { Select } from 'antd';
-import { createForm, Field, onFieldValueChange } from '@formily/core';
+import { Field, createForm, onFieldValueChange } from '@formily/core';
 import { connect, createSchemaField, observer, useField, useForm, useFormEffects } from '@formily/react';
+import { Select } from 'antd';
 import React from 'react';
 
 const ViewOptions = connect((props) => {
@@ -110,6 +110,10 @@ const EditOptions = observer(
               })
               .then((values) => {
                 field.value = values;
+                return values;
+              })
+              .catch((err) => {
+                console.error(err);
               });
           }}
         >

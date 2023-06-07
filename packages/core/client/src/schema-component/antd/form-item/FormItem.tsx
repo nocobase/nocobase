@@ -2,14 +2,14 @@ import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { Select } from 'antd';
 import _ from 'lodash';
 import moment from 'moment';
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { BlockRequestContext, useFormBlockContext } from '../../../block-provider';
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   Collection,
   CollectionFieldOptions,
@@ -40,25 +40,12 @@ const defaultInputStyle = css`
   }
 `;
 
-const divWrap = (schema: ISchema) => {
-  return {
-    type: 'void',
-    'x-component': 'div',
-    'x-component-props': {
-      className: 'nb-block-wrap',
-    },
-    properties: {
-      [schema.name || uid()]: schema,
-    },
-  };
-};
-
 export const FormItem: any = observer(
   (props: any) => {
     useEnsureOperatorsValid();
 
     const field = useField<Field>();
-    const ctx = useContext(BlockRequestContext);
+    const ctx = useBlockRequestContext();
     const schema = useFieldSchema();
     const variablesCtx = useVariablesCtx();
 

@@ -64,7 +64,7 @@ const useLoadData = () => {
         },
       ];
       field.dataSource = [...field.dataSource];
-    }, 500);
+    }, 300);
   };
 };
 
