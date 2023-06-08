@@ -1,9 +1,11 @@
 import {
+  CollectionManagerProvider,
   PluginManagerContext,
   SchemaComponentOptions,
   SchemaInitializerContext,
   SchemaInitializerProvider,
   SettingsCenterProvider,
+  registerField,
   registerTemplate,
   useCollection,
 } from '@nocobase/client';
@@ -14,11 +16,15 @@ import { FileStorageShortcut } from './FileStorageShortcut';
 import * as hooks from './hooks';
 import * as initializers from './initializers';
 import * as templates from './templates';
+import { NAMESPACE } from './locale';
+import { attachment } from './interfaces/attachment';
 
 // 注册之后就可以在 Crete collection 按钮中选择创建了
 forEach(templates, (template, key: string) => {
   registerTemplate(key, template);
 });
+
+registerField(attachment.group, 'attachment', attachment);
 
 export default function (props) {
   const initializes = useContext(SchemaInitializerContext);
@@ -38,6 +44,7 @@ export default function (props) {
         },
       },
       visible: () => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
         const collection = useCollection();
         return collection.template === 'file';
       },
@@ -49,11 +56,11 @@ export default function (props) {
     <SettingsCenterProvider
       settings={{
         'file-manager': {
-          title: '{{t("File manager")}}',
+          title: `{{t("File manager", { ns: "${NAMESPACE}" })}}`,
           icon: 'FileOutlined',
           tabs: {
             storages: {
-              title: '{{t("File storages")}}',
+              title: `{{t("File storage", { ns: "${NAMESPACE}" })}}`,
               component: FileStoragePane,
             },
           },
@@ -68,9 +75,11 @@ export default function (props) {
           },
         }}
       >
-        <SchemaComponentOptions scope={hooks}>
-          <SchemaInitializerProvider components={initializers}>{props.children}</SchemaInitializerProvider>
-        </SchemaComponentOptions>
+        <CollectionManagerProvider interfaces={{ attachment }}>
+          <SchemaComponentOptions scope={hooks}>
+            <SchemaInitializerProvider components={initializers}>{props.children}</SchemaInitializerProvider>
+          </SchemaComponentOptions>
+        </CollectionManagerProvider>
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );

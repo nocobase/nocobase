@@ -1,17 +1,24 @@
 import { ISchema } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  APIClient,
   APIClientProvider,
   BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
 import React from 'react';
+import { mockAPIClient } from '../../../../test';
 import collections from './collections';
 import data from './data';
+
+const { apiClient, mockRequest } = mockAPIClient();
+const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
+
+mockRequest.onGet('/t_j6omof6tza8:list').reply(async (config) => {
+  await sleep(200);
+  return [200, data];
+});
 
 const schema: ISchema = {
   type: 'object',
@@ -59,27 +66,11 @@ const schema: ISchema = {
   },
 };
 
-const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
-
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:3000/api',
-});
-
-const mock = (api: APIClient) => {
-  const mock = new MockAdapter(api.axios);
-  mock.onGet('/t_j6omof6tza8:list').reply(async (config) => {
-    await sleep(200);
-    return [200, data];
-  });
-};
-
-mock(apiClient);
-
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
       <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
+        <CollectionManagerProvider collections={collections}>
           <AntdSchemaComponentProvider>
             <BlockSchemaComponentProvider>
               <SchemaComponent schema={schema} />

@@ -33,12 +33,7 @@ describe('role resource api', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app.agent().login(admin);
   });
 
   it('should grant resource by createRepository', async () => {

@@ -27,5 +27,5 @@ export function convertToText(markdownText: string) {
   temp.innerHTML = content;
   const text = temp.innerText;
   temp = null;
-  return text.replace(/[\n\r]/g, '');
+  return text?.replace(/[\n\r]/g, '') || '';
 }

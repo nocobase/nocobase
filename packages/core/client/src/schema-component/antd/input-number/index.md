@@ -11,12 +11,12 @@ group:
 
 ### InputNumber
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/inputNumber.tsx"/>
 
 ### addonBefore/addonAfter
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/addonBefore&addonAfter.tsx"/>
 
 ### High precision decimals
 
-<code src="./demos/demo3.tsx" />
+<code src="./demos/highPrecisionDecimals.tsx"/>

@@ -1,7 +1,7 @@
 import { useField, useForm } from '@formily/react';
 import { message } from 'antd';
 import omit from 'lodash/omit';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useCollectionManager } from '.';
 import { useCompile } from '..';
@@ -109,6 +109,101 @@ export const useChildrenCollections = (collectionName: string) => {
 };
 
 export const useCollectionFilterOptions = (collectionName: string) => {
+  const { getCollectionFields, getInterface, getChildrenCollections, getCollection } = useCollectionManager();
+  const compile = useCompile();
+
+  return useMemo(() => {
+    const fields = getCollectionFields(collectionName);
+    const field2option = (field, depth) => {
+      if (!field.interface) {
+        return;
+      }
+      const fieldInterface = getInterface(field.interface);
+      if (!fieldInterface?.filterable) {
+        return;
+      }
+      const { nested, children, operators } = fieldInterface.filterable;
+      const option = {
+        name: field.name,
+        title: field?.uiSchema?.title || field.name,
+        schema: field?.uiSchema,
+        operators:
+          operators?.filter?.((operator) => {
+            return !operator?.visible || operator.visible(field);
+          }) || [],
+        interface: field.interface,
+      };
+      if (field.target && depth > 2) {
+        return;
+      }
+      if (depth > 2) {
+        return option;
+      }
+      if (children?.length) {
+        option['children'] = children;
+      }
+      if (nested) {
+        const targetFields = getCollectionFields(field.target);
+        const options = getOptions(targetFields, depth + 1).filter(Boolean);
+        option['children'] = option['children'] || [];
+        option['children'].push(...options);
+      }
+      return option;
+    };
+    const getOptions = (fields, depth) => {
+      const options = [];
+      fields.forEach((field) => {
+        const option = field2option(field, depth);
+        if (option) {
+          options.push(option);
+        }
+      });
+      return options;
+    };
+    const options = getOptions(fields, 1);
+    const collection = getCollection(collectionName);
+    const childrenCollections = getChildrenCollections(collectionName);
+    if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
+      options.push({
+        name: 'tableoid',
+        type: 'string',
+        title: '{{t("Table OID(Inheritance)")}}',
+        schema: {
+          'x-component': 'Select',
+          enum: [{ value: collectionName, label: compile(collection.title) }].concat(
+            childrenCollections.map((v) => {
+              return {
+                value: v.name,
+                label: compile(v.title),
+              };
+            }),
+          ),
+        },
+        operators: [
+          {
+            label: '{{t("contains")}}',
+            value: '$childIn',
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': { mode: 'tags' },
+            },
+          },
+          {
+            label: '{{t("does not contain")}}',
+            value: '$childNotIn',
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': { mode: 'tags' },
+            },
+          },
+        ],
+      });
+    }
+    return options;
+  }, [collectionName]);
+};
+
+export const useLinkageCollectionFilterOptions = (collectionName: string) => {
   const { getCollectionFields, getInterface } = useCollectionManager();
   const fields = getCollectionFields(collectionName);
   const field2option = (field, depth) => {
@@ -140,100 +235,12 @@ export const useCollectionFilterOptions = (collectionName: string) => {
       option['children'] = children;
     }
     if (nested) {
-      const targetFields = getCollectionFields(field.target);
-      const options = getOptions(targetFields, depth + 1).filter(Boolean);
-      option['children'] = option['children'] || [];
-      option['children'].push(...options);
-    }
-    return option;
-  };
-  const getOptions = (fields, depth) => {
-    const options = [];
-    fields.forEach((field) => {
-      const option = field2option(field, depth);
-      if (option) {
-        options.push(option);
-      }
-    });
-    return options;
-  };
-  const options = getOptions(fields, 1);
-  const compile = useCompile();
-  const { getChildrenCollections, getCollection } = useCollectionManager();
-  const collection = getCollection(collectionName);
-  const childrenCollections = getChildrenCollections(collectionName);
-  if (childrenCollections.length > 0 && !options.find((v) => v.name == 'tableoid')) {
-    options.push({
-      name: 'tableoid',
-      type: 'string',
-      title: '{{t("Table OID(Inheritance)")}}',
-      schema: {
-        'x-component': 'Select',
-        enum: [{ value: collectionName, label: compile(collection.title) }].concat(
-          childrenCollections.map((v) => {
-            return {
-              value: v.name,
-              label: compile(v.title),
-            };
-          }),
-        ),
-      },
-      operators: [
-        {
-          label: '{{t("contains")}}',
-          value: '$childIn',
-          schema: {
-            'x-component': 'Select',
-            'x-component-props': { mode: 'tags' },
-          },
-        },
-        {
-          label: '{{t("does not contain")}}',
-          value: '$childNotIn',
-          schema: {
-            'x-component': 'Select',
-            'x-component-props': { mode: 'tags' },
-          },
-        },
-      ],
-    });
-  }
-  return options;
-};
-
-export const useLinkageCollectionFilterOptions = (collectionName: string) => {
-  const { getCollectionFields, getInterface } = useCollectionManager();
-  const fields = getCollectionFields(collectionName).filter((v) => !['o2m', 'm2m'].includes(v.interface));
-  const field2option = (field, depth) => {
-    if (!field.interface) {
-      return;
-    }
-    const fieldInterface = getInterface(field.interface);
-    if (!fieldInterface?.filterable) {
-      return;
-    }
-    const { nested, children, operators } = fieldInterface.filterable;
-    const option = {
-      name: field.name,
-      title: field?.uiSchema?.title || field.name,
-      schema: field?.uiSchema,
-      operators:
-        operators?.filter?.((operator) => {
-          return !operator?.visible || operator.visible(field);
-        }) || [],
-      interface: field.interface,
-    };
-    if (field.target && depth > 2) {
-      return;
-    }
-    if (depth > 2) {
-      return option;
-    }
-    if (children?.length) {
-      option['children'] = children;
-    }
-    if (nested) {
-      const targetFields = getCollectionFields(field.target).filter((v) => !['o2m', 'm2m'].includes(v.interface));
+      const targetFields = getCollectionFields(field.target).filter((v) => {
+        if (['hasMany', 'belongsToMany'].includes(field.type)) {
+          return !['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(v.type);
+        }
+        return !['hasMany', 'belongsToMany'].includes(v.type);
+      });
       const options = getOptions(targetFields, depth + 1).filter(Boolean);
       option['children'] = option['children'] || [];
       option['children'].push(...options);
@@ -355,11 +362,16 @@ export const useUpdateAction = () => {
       await form.submit();
       field.data = field.data || {};
       field.data.loading = true;
-      await resource.update({ filterByTk, values: form.values });
-      ctx.setVisible(false);
-      await form.reset();
-      field.data.loading = false;
-      refresh();
+      try {
+        await resource.update({ filterByTk, values: form.values });
+        ctx.setVisible(false);
+        await form.reset();
+        refresh();
+      } catch (e) {
+        console.log(e);
+      } finally {
+        field.data.loading = false;
+      }
     },
   };
 };

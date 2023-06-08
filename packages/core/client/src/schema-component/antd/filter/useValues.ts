@@ -1,6 +1,6 @@
 import { useField } from '@formily/react';
 import { merge } from '@formily/shared';
-import flat from 'flat';
+import flat, { unflatten } from 'flat';
 import cloneDeep from 'lodash/cloneDeep';
 import get from 'lodash/get';
 import { useContext, useEffect } from 'react';
@@ -30,7 +30,7 @@ export const useValues = () => {
   };
   const value2data = () => {
     field.data = field.data || {};
-    const values = flat(field.value);
+    const values: object = flat(field.value || {});
     const path = Object.keys(values).shift() || '';
     if (!path || !options) {
       return;
@@ -45,7 +45,7 @@ export const useValues = () => {
     field.data.operators = operators;
     field.data.operator = operator;
     field.data.schema = merge(option?.schema, operator?.schema);
-    field.data.value = get(field.value, `${fieldPath}.$${operatorValue}`);
+    field.data.value = get(unflatten(field.value), `${fieldPath}.$${operatorValue}`);
   };
   useEffect(value2data, [field.path]);
   return {

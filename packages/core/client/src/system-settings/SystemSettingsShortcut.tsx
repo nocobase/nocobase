@@ -94,7 +94,7 @@ const schema: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
-            action: 'attachments:upload',
+            action: 'attachments:create',
             multiple: false,
             // accept: 'jpg,png'
           },
@@ -121,20 +121,20 @@ const schema: ISchema = {
             });
           },
         },
-        allowSignUp: {
-          type: 'boolean',
-          default: true,
-          'x-content': '{{t("Allow sign up")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
-        smsAuthEnabled: {
-          type: 'boolean',
-          default: false,
-          'x-content': '{{t("Enable SMS authentication")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
+        // allowSignUp: {
+        //   type: 'boolean',
+        //   default: true,
+        //   'x-content': '{{t("Allow sign up")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
+        // smsAuthEnabled: {
+        //   type: 'boolean',
+        //   default: false,
+        //   'x-content': '{{t("Enable SMS authentication")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
         footer1: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
@@ -187,7 +187,7 @@ const schema2: ISchema = {
           'x-decorator': 'FormItem',
           'x-component': 'Upload.Attachment',
           'x-component-props': {
-            action: 'attachments:upload',
+            action: 'attachments:create',
             multiple: false,
             // accept: 'jpg,png'
           },
@@ -227,20 +227,20 @@ const schema2: ISchema = {
             });
           },
         },
-        allowSignUp: {
-          type: 'boolean',
-          default: true,
-          'x-content': '{{t("Allow sign up")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
-        smsAuthEnabled: {
-          type: 'boolean',
-          default: false,
-          'x-content': '{{t("Enable SMS authentication")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
+        // allowSignUp: {
+        //   type: 'boolean',
+        //   default: true,
+        //   'x-content': '{{t("Allow sign up")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
+        // smsAuthEnabled: {
+        //   type: 'boolean',
+        //   default: false,
+        //   'x-content': '{{t("Enable SMS authentication")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
         footer1: {
           type: 'void',
           'x-component': 'ActionBar',

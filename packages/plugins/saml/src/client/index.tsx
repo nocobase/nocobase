@@ -1,42 +1,15 @@
-import { PluginManagerContext, SettingsCenterProvider, SigninPageExtensionProvider } from '@nocobase/client';
+import { AuthenticatorsContext, OptionsComponentProvider, SigninPageExtensionProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { useSamlTranslation } from './locale';
-import { SAMLList } from './SAMLList';
-import { SAMLPanel } from './SAMLPanel';
+import { SAMLButton } from './SAMLButton';
+import { Options } from './Options';
+import { authType } from '../constants';
 
 export default function (props) {
-  const ctx = useContext(PluginManagerContext);
-  const { t } = useSamlTranslation();
-
   return (
-    <SigninPageExtensionProvider component={SAMLList}>
-      <SettingsCenterProvider
-        settings={{
-          saml: {
-            title: t('SAML manager'),
-            icon: 'FileOutlined',
-            tabs: {
-              providers: {
-                title: t('SAML Providers'),
-                component: SAMLPanel,
-              },
-            },
-          },
-        }}
-        scope={{
-          t,
-        }}
-      >
-        <PluginManagerContext.Provider
-          value={{
-            components: {
-              ...ctx?.components,
-            },
-          }}
-        >
-          {props.children}
-        </PluginManagerContext.Provider>
-      </SettingsCenterProvider>
+    <SigninPageExtensionProvider component={SAMLButton} authType={authType}>
+      <OptionsComponentProvider authType={authType} component={Options}>
+        {props.children}
+      </OptionsComponentProvider>
     </SigninPageExtensionProvider>
   );
 }

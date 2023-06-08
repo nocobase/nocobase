@@ -25,6 +25,8 @@ export class PresetNocoBase extends Plugin {
     'formula-field',
     'charts',
     'charts-v2',
+    'auth',
+    'sms-auth',
   ];
 
   localPlugins = [

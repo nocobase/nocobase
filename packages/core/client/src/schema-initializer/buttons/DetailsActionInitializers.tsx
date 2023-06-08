@@ -31,6 +31,19 @@ export const DetailsActionInitializers = {
             'x-decorator': 'ACLActionProvider',
           },
         },
+        {
+          type: 'item',
+          title: '{{t("Duplicate")}}',
+          component: 'DuplicateActionInitializer',
+          schema: {
+            'x-component': 'Action',
+            'x-action': 'duplicate',
+            'x-decorator': 'ACLActionProvider',
+            'x-component-props': {
+              type: 'primary',
+            },
+          },
+        },
       ],
     },
   ],

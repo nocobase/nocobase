@@ -5,9 +5,11 @@ group:
   path: /schema-components
 ---
 
-# RemoteSelect
+# AssociationSelect
 
 ## Examples
+
+<code src="./demos/demo1.tsx"/>
 
 ## API
 
