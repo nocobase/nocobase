@@ -1,6 +1,7 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
-import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { createContext, useContext } from 'react';
+import { cx } from '@emotion/css';
+import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import React, { createContext, HTMLAttributes, useContext } from 'react';
 
 export const DraggableContext = createContext(null);
 export const SortableContext = createContext(null);
@@ -19,18 +20,21 @@ export const SortableProvider = (props) => {
 };
 
 export const Sortable = (props: any) => {
-  const { component, style, children, openMode, ...others } = props;
-  const { droppable } = useContext(SortableContext);
+  const { component, overStyle, style, children, openMode, ...others } = props;
+  const { draggable, droppable } = useContext(SortableContext);
   const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };
 
-  if (isOver) {
-    droppableStyle['color'] = 'rgba(241, 139, 98, .1)';
+  if (isOver && draggable?.active?.id !== droppable?.over?.id) {
+    droppableStyle[component === 'a' ? 'color' : 'background'] = 'rgba(241, 139, 98, .15)';
+    Object.assign(droppableStyle, overStyle);
   }
+
   return React.createElement(
     component || 'div',
     {
       ...others,
+      className: cx('nb-sortable-designer', props.className),
       ref: setNodeRef,
       style: droppableStyle,
     },
@@ -55,9 +59,15 @@ const useSortableItemId = (props) => {
   return field.address.toString();
 };
 
-export const SortableItem: React.FC<any> = observer(
+interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
+  eid?: string;
+  schema?: Schema;
+  removeParentsIfNoChildren?: boolean;
+}
+
+export const SortableItem: React.FC<SortableItemProps> = observer(
   (props) => {
-    const { schema, id, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
+    const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
     return (
       <SortableProvider
         id={id}
@@ -67,7 +77,9 @@ export const SortableItem: React.FC<any> = observer(
           removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
         }}
       >
-        <Sortable {...others}>{props.children}</Sortable>
+        <Sortable id={eid} {...others}>
+          {props.children}
+        </Sortable>
       </SortableProvider>
     );
   },

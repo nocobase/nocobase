@@ -31,6 +31,11 @@ const titleCss = css`
   }
 `;
 
+const overrideAntdCSS = css`
+  & .ant-space-item .anticon {
+    margin: 0;
+  }
+`;
 export const GeneralSchemaDesigner = (props: any) => {
   const { disableInitializer, title, template, draggable = true } = props;
   const { dn, designable } = useDesignable();
@@ -62,7 +67,7 @@ export const GeneralSchemaDesigner = (props: any) => {
   }
 
   return (
-    <div className={'general-schema-designer'}>
+    <div className={classNames('general-schema-designer', overrideAntdCSS)}>
       {title && (
         <div className={classNames('general-schema-designer-title', titleCss)}>
           <Space size={2}>
