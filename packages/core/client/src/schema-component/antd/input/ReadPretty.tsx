@@ -1,12 +1,12 @@
-import { usePrefixCls } from '@formily/antd/lib/__builtins__';
-import { InputProps, TextAreaProps } from 'antd/lib/input';
+import { css, cx } from '@emotion/css';
+import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { Typography } from 'antd';
+import { InputProps, TextAreaProps } from 'antd/es/input';
 import cls from 'classnames';
 import React from 'react';
 import { useCompile } from '../..';
 import { EllipsisWithTooltip } from './EllipsisWithTooltip';
 import { HTMLEncode } from './shared';
-import { cx, css } from '@emotion/css';
-import { Typography } from 'antd';
 
 type Composed = {
   Input: React.FC<InputProps & { ellipsis?: any }>;
@@ -72,7 +72,7 @@ function convertToText(html: string) {
   const temp = document.createElement('div');
   temp.innerHTML = html;
   const text = temp.innerText;
-  return text.replace(/[\n\r]/g, '');
+  return text?.replace(/[\n\r]/g, '') || '';
 }
 
 ReadPretty.Html = (props) => {

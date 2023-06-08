@@ -1383,3 +1383,4 @@ export const GraphDrawPage = React.memo(() => {
     </Layout>
   );
 });
+GraphDrawPage.displayName = 'GraphDrawPage';

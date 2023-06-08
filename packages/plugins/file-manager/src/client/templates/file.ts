@@ -72,7 +72,7 @@ export const file = {
         deletable: false,
         uiSchema: {
           type: 'string',
-          title: `{{t("Mime type", { ns: "${NAMESPACE}" })}}`,
+          title: `{{t("MIME type", { ns: "${NAMESPACE}" })}}`,
           'x-component': 'Input',
           'x-read-pretty': true,
         },

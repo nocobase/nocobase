@@ -4,27 +4,30 @@ import { SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
 import { Table, TableColumnType } from 'antd';
 import React from 'react';
 
-const ArrayTable = observer((props: any) => {
-  const { rowKey } = props;
-  const field = useField<ArrayField>();
-  const schema = useFieldSchema();
-  const columnSchemas = schema.reduceProperties((buf, s) => {
-    if (s['x-component'] === 'ArrayTable.Column') {
-      buf.push(s);
-    }
-    return buf;
-  }, []);
+const ArrayTable = observer(
+  (props: any) => {
+    const { rowKey } = props;
+    const field = useField<ArrayField>();
+    const schema = useFieldSchema();
+    const columnSchemas = schema.reduceProperties((buf, s) => {
+      if (s['x-component'] === 'ArrayTable.Column') {
+        buf.push(s);
+      }
+      return buf;
+    }, []);
 
-  const columns = columnSchemas.map((s) => {
-    return {
-      render: (value, record) => {
-        return <RecursionField name={record.__path} schema={s} onlyRenderProperties />;
-      },
-    } as TableColumnType<any>;
-  });
+    const columns = columnSchemas.map((s) => {
+      return {
+        render: (value, record) => {
+          return <RecursionField name={record.__path} schema={s} onlyRenderProperties />;
+        },
+      } as TableColumnType<any>;
+    });
 
-  return <Table rowKey={rowKey} columns={columns} dataSource={field.value} />;
-});
+    return <Table rowKey={rowKey} columns={columns} dataSource={field.value} />;
+  },
+  { displayName: 'ArrayTable' },
+);
 
 const Value = connect((props) => {
   return <li>value: {props.value}</li>;

@@ -15,38 +15,41 @@ function isNumeric(str: string | undefined) {
   ); // ...and ensure strings of whitespace fail
 }
 
-export const Iframe: any = observer((props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
-  const { url, htmlId, mode = 'url', height, html, ...others } = props;
+export const Iframe: any = observer(
+  (props: IIframe & { html?: string; htmlId?: number; mode: string }) => {
+    const { url, htmlId, mode = 'url', height, html, ...others } = props;
 
-  const { t } = useTranslation();
-  const api = useAPIClient();
-  const field = useField();
+    const { t } = useTranslation();
+    const api = useAPIClient();
+    const field = useField();
 
-  const src = React.useMemo(() => {
-    if (mode === 'html') {
-      return `/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+    const src = React.useMemo(() => {
+      if (mode === 'html') {
+        return `/api/iframeHtml:getHtml/${htmlId}?token=${api.auth.getToken()}&v=${field.data?.v || ''}`;
+      }
+      return url;
+    }, [url, mode, htmlId, field.data?.v]);
+
+    if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
+      return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
     }
-    return url;
-  }, [url, mode, htmlId, field.data?.v]);
 
-  if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
-    return <Card style={{ marginBottom: 24 }}>{t('Please fill in the iframe URL')}</Card>;
-  }
-
-  return (
-    <RIframe
-      url={src}
-      width="100%"
-      display="block"
-      position="relative"
-      styles={{
-        height: isNumeric(height) ? `${height}px` : height,
-        marginBottom: '24px',
-        border: 0,
-      }}
-      {...others}
-    />
-  );
-});
+    return (
+      <RIframe
+        url={src}
+        width="100%"
+        display="block"
+        position="relative"
+        styles={{
+          height: isNumeric(height) ? `${height}px` : height,
+          marginBottom: '24px',
+          border: 0,
+        }}
+        {...others}
+      />
+    );
+  },
+  { displayName: 'Iframe' },
+);
 
 Iframe.Designer = IframeDesigner;

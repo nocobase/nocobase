@@ -1,26 +1,43 @@
 import { ISchema, useForm } from '@formily/react';
 import {
-  AntdSchemaComponentProvider,
-  APIClient,
   APIClientProvider,
-  BlockSchemaComponentProvider,
+  Action,
+  CollectionField,
   CollectionManagerProvider,
+  FormBlockProvider,
+  FormItem,
+  FormV2,
+  Input,
   SchemaComponent,
   SchemaComponentProvider,
   useFormBlockContext,
 } from '@nocobase/client';
+import { notification } from 'antd';
 import React from 'react';
+import { useFilterByTk } from '../../../../block-provider/BlockProvider';
+import { mockAPIClient } from '../../../../test';
 import collections from './collections';
+
+const { apiClient, mockRequest } = mockAPIClient();
+
+mockRequest.onPost('/users:update').reply((params) => {
+  notification.success({
+    message: params.data,
+  });
+  return [200, JSON.parse(params.data)];
+});
 
 function useAction() {
   const ctx = useFormBlockContext();
   const form = useForm();
+  const filterByTk = useFilterByTk();
   return {
     async run() {
       console.log('form.values', form.values);
-      // await ctx.resource.create({
-      //   values: form.values,
-      // });
+      await ctx.resource.update({
+        filterByTk,
+        values: form.values,
+      });
     },
   };
 }
@@ -47,7 +64,7 @@ const schema: ISchema = {
               'x-component': 'CollectionField',
             },
             button: {
-              title: '提交',
+              title: 'Submit',
               'x-component': 'Action',
               'x-component-props': {
                 htmlType: 'submit',
@@ -62,22 +79,14 @@ const schema: ISchema = {
   },
 };
 
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:3000/api',
-});
-
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
-          <AntdSchemaComponentProvider>
-            <BlockSchemaComponentProvider>
-              <SchemaComponent schema={schema} />
-            </BlockSchemaComponentProvider>
-          </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
-      </SchemaComponentProvider>
+      <CollectionManagerProvider collections={collections}>
+        <SchemaComponentProvider components={{ FormBlockProvider, FormV2, FormItem, CollectionField, Action, Input }}>
+          <SchemaComponent schema={schema} />
+        </SchemaComponentProvider>
+      </CollectionManagerProvider>
     </APIClientProvider>
   );
 };

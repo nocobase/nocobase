@@ -1,6 +1,8 @@
-import { SchemaComponent } from '@nocobase/client';
-import { Card } from 'antd';
 import React from 'react';
+import { Card } from 'antd';
+
+import { SchemaComponent } from '@nocobase/client';
+
 import { StorageOptions } from './StorageOptions';
 import { storageSchema } from './schemas/storage';
 

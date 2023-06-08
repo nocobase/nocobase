@@ -3,7 +3,6 @@ import { FormContext, useField } from '@formily/react';
 import { css, cx } from '@emotion/css';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { FormLayout } from '@formily/antd';
-import { useAssociationNames } from '../../../block-provider/hooks';
 import { BlockProvider, useBlockRequestContext } from '../../../block-provider';
 
 export const ListBlockContext = createContext<any>({});
@@ -57,15 +56,8 @@ const InternalListBlockProvider = (props) => {
 };
 
 export const ListBlockProvider = (props) => {
-  const params = { ...props.params };
-  const { collection } = props;
-  const { appends } = useAssociationNames(collection);
-  if (!Object.keys(params).includes('appends')) {
-    params['appends'] = appends;
-  }
-
   return (
-    <BlockProvider {...props} params={params}>
+    <BlockProvider {...props}>
       <InternalListBlockProvider {...props} />
     </BlockProvider>
   );

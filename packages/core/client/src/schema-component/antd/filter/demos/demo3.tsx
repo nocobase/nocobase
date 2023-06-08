@@ -1,12 +1,11 @@
 import { ISchema, useForm } from '@formily/react';
 import {
   AntdSchemaComponentProvider,
-  SharedFilter,
+  Filter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  useActionContext,
-  useRequest,
+  useActionContext
 } from '@nocobase/client';
 import React from 'react';
 
@@ -74,6 +73,21 @@ const dataSource = [
   },
 ];
 
+const defaultValue = {
+  $or: [
+    {
+      name: {
+        $ne: 'aa',
+      },
+    },
+    {
+      'tags.title': {
+        $eq: 'aaa',
+      },
+    },
+  ],
+};
+
 const schema: ISchema = {
   type: 'object',
   properties: {
@@ -99,31 +113,10 @@ const schema: ISchema = {
           properties: {
             filter: {
               type: 'object',
-              default: {
-                $or: [
-                  {
-                    name: {
-                      $ne: 'aa',
-                    },
-                  },
-                  {
-                    'tags.title': {
-                      $eq: 'aaa',
-                    },
-                  },
-                ],
-              },
+              default: defaultValue,
               'x-component': 'Filter',
               'x-component-props': {
-                useDataSource(options) {
-                  return useRequest(
-                    () =>
-                      Promise.resolve({
-                        data: dataSource,
-                      }),
-                    options,
-                  );
-                },
+                options: dataSource,
               },
             },
             footer: {

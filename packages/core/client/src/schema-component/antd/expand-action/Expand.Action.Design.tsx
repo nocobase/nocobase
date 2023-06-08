@@ -1,15 +1,15 @@
+import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useTranslation } from 'react-i18next';
-import { useFieldSchema, useField, ISchema } from '@formily/react';
 import { useDesignable } from '../..';
+import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 
 export const ExpandActionDesign = (props) => {
   const { t } = useTranslation();
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { dn } = useDesignable();
-  const { titleExpand, titleCollapse, iconExpand, iconCollapse } = fieldSchema['x-component-props'] || {}
+  const { titleExpand, titleCollapse, iconExpand, iconCollapse } = fieldSchema['x-component-props'] || {};
 
   return (
     <GeneralSchemaDesigner {...props} disableInitializer>
@@ -24,13 +24,13 @@ export const ExpandActionDesign = (props) => {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: `${t('Button title')} - ${t('Expand all')}`,
-                default: titleExpand
+                default: titleExpand,
               },
               titleCollapse: {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
                 title: `${t('Button title')} - ${t('Collapse all')}`,
-                default: titleCollapse
+                default: titleCollapse,
               },
               iconExpand: {
                 'x-decorator': 'FormItem',
@@ -75,14 +75,14 @@ export const ExpandActionDesign = (props) => {
             iconExpand,
             iconCollapse,
             type,
-            danger: type === 'danger'
+            danger: type === 'danger',
           };
           dn.emit('patch', {
             schema: {
               'x-uid': fieldSchema['x-uid'],
               'x-component-props': fieldSchema['x-component-props'],
               title: fieldSchema.title,
-            }
+            },
           });
           dn.refresh();
         }}

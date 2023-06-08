@@ -5,7 +5,7 @@ export async function prepareApp(): Promise<MockServer> {
   const app = mockServer({
     registerActions: true,
     acl: true,
-    plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager'],
+    plugins: ['error-handler', 'users', 'ui-schema-storage', 'collection-manager', 'auth'],
   });
 
   app.plugin(PluginACL, {
