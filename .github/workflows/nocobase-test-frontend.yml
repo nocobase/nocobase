@@ -1,0 +1,80 @@
+name: NocoBase Test Lite
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'packages/**'
+      - '!packages/core/acl/**'
+      - '!packages/core/actions/**'
+      - '!packages/core/database/**'
+      - '!packages/core/server/**'
+      - '!packages/plugins/**/src/server/**'
+  pull_request:
+    paths:
+      - 'packages/**'
+      - '!packages/core/acl/**'
+      - '!packages/core/actions/**'
+      - '!packages/core/database/**'
+      - '!packages/core/server/**'
+      - '!packages/plugins/**/src/server/**'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        node_version: [ '18' ]
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'yarn'
+      - uses: actions/upload-artifact@v3
+        with:
+          name: node-modules
+          path: node_modules
+    timeout-minutes: 15
+  build-test:
+    strategy:
+      matrix:
+        node_version: [ '18' ]
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: node-modules
+          path: node_modules
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'yarn'
+      - run: yarn test
+
+  client-test:
+    strategy:
+      matrix:
+        node_version: [ '18' ]
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: node-modules
+          path: node_modules
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+          cache: 'yarn'
+      - name: Test Client
+        run: yarn test:client
