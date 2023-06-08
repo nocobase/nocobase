@@ -27,12 +27,7 @@ describe('actions', () => {
     });
 
     agent = app.agent();
-    adminAgent = app.agent().auth(
-      pluginUser.jwtService.sign({
-        userId: adminUser.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app.agent().login(adminUser);
   });
 
   afterEach(async () => {
@@ -70,7 +65,7 @@ describe('actions', () => {
       },
     });
 
-    let response = await agent.post('/users:signin').send({
+    let response = await agent.post('/auth:signIn').send({
       email: 'test2@nocobase.com',
       password: '123456',
     });
@@ -89,7 +84,7 @@ describe('actions', () => {
       filterByTk: 'test',
     });
 
-    response = await agent.post('/users:signin').send({
+    response = await agent.post('/auth:signIn').send({
       email: 'test2@nocobase.com',
       password: '123456',
     });

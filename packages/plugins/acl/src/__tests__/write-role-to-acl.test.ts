@@ -1,7 +1,6 @@
 import { MockServer } from '@nocobase/test';
 import { Database } from '@nocobase/database';
 import { prepareApp } from './prepare';
-import UsersPlugin from '@nocobase/plugin-users';
 
 describe('write role to acl', () => {
   let app: MockServer;
@@ -32,13 +31,7 @@ describe('write role to acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-    const agent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const agent = app.agent().login(user);
 
     // @ts-ignore
     const response = await agent.resource('roles').check();

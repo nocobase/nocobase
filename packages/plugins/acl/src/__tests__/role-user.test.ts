@@ -2,6 +2,8 @@ import Database, { BelongsToManyRepository } from '@nocobase/database';
 import PluginACL from '@nocobase/plugin-acl';
 import UsersPlugin from '@nocobase/plugin-users';
 import { MockServer, mockServer } from '@nocobase/test';
+import jwt from 'jsonwebtoken';
+import AuthPlugin from '@nocobase/plugin-auth';
 
 describe('role', () => {
   let api: MockServer;
@@ -14,6 +16,7 @@ describe('role', () => {
     await api.cleanDb();
     api.plugin(UsersPlugin, { name: 'users' });
     api.plugin(PluginACL, { name: 'acl' });
+    api.plugin(AuthPlugin, { name: 'auth' });
     await api.loadAndInstall();
 
     db = api.db;
@@ -102,7 +105,7 @@ describe('role', () => {
     await userRolesRepo.add('test1');
     await userRolesRepo.add('test2');
 
-    const userToken = usersPlugin.jwtService.sign({ userId: user.get('id') });
+    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
     const response = await api
       .agent()
       .post('/users:setDefaultRole')
@@ -111,6 +114,7 @@ describe('role', () => {
       })
       .set({
         Authorization: `Bearer ${userToken}`,
+        'X-Authenticator': 'basic',
       });
 
     expect(response.statusCode).toEqual(200);

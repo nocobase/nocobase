@@ -1,5 +1,6 @@
 import { Database, mockDatabase } from '@nocobase/database';
 import Application, { ApplicationOptions, PluginManager } from '@nocobase/server';
+import jwt from 'jsonwebtoken';
 import qs from 'qs';
 import supertest, { SuperAgentTest } from 'supertest';
 
@@ -80,11 +81,30 @@ export class MockServer extends Application {
     await this.db.clean({ drop: true });
   }
 
-  agent(): SuperAgentTest & { resource: (name: string, resourceOf?: any) => Resource } {
+  agent(): SuperAgentTest & {
+    login: (user: any) => SuperAgentTest;
+    loginUsingId: (userId: number) => SuperAgentTest;
+    resource: (name: string, resourceOf?: any) => Resource;
+  } {
     const agent = supertest.agent(this.appManager.callback());
     const prefix = this.resourcer.options.prefix;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
+        if (['login', 'loginUsingId'].includes(method)) {
+          return (userOrId: any) => {
+            return proxy
+              .auth(
+                jwt.sign(
+                  {
+                    userId: typeof userOrId === 'number' ? userOrId : userOrId?.id,
+                  },
+                  process.env.APP_KEY,
+                ),
+                { type: 'bearer' },
+              )
+              .set('X-Authenticator', 'basic');
+          };
+        }
         if (method === 'resource') {
           return (name: string, resourceOf?: any) => {
             const keys = name.split('.');

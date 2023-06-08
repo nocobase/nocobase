@@ -757,6 +757,7 @@ export default {
   'Form data templates': '表单数据模板',
   'Data template': '数据模板',
 
+  'No configuration available.': '无可配置项。',
   'Reload application': '重载应用',
   'The application is reloading, please do not close the page.': '应用正在重新加载，请勿关闭页面。',
   'Application reloading': '应用重新加载中',
