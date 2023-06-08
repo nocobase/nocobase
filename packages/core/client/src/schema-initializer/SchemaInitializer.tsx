@@ -1,9 +1,9 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
-import { Dropdown, Menu, Switch } from 'antd';
+import { Button, Dropdown, Menu, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
@@ -285,12 +285,12 @@ interface SchemaInitializerActionModalProps {
   onSubmit?: (values: any) => void;
   buttonText?: any;
 }
-SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
+SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerActionModalProps) {
   const { title, schema, buttonText, onCancel, onSubmit } = props;
+  const form = useForm();
+  const ctx = useActionContext();
 
   const useCancelAction = useCallback(() => {
-    const form = useForm();
-    const ctx = useActionContext();
     return {
       async run() {
         await onCancel?.();
@@ -298,11 +298,9 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
         form.reset();
       },
     };
-  }, [onCancel]);
+  }, [ctx, form, onCancel]);
 
   const useSubmitAction = useCallback(() => {
-    const form = useForm();
-    const ctx = useActionContext();
     return {
       async run() {
         await form.validate();
@@ -311,7 +309,7 @@ SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
         form.reset();
       },
     };
-  }, [onSubmit]);
+  }, [ctx, form, onSubmit]);
   const defaultSchema = useMemo(() => {
     return {
       type: 'void',

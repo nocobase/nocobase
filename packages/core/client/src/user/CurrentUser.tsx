@@ -1,10 +1,10 @@
 import { css } from '@emotion/css';
 import { error } from '@nocobase/utils/client';
-import { Dropdown, MenuProps, Modal } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import { Dropdown, Menu, MenuProps, Modal } from 'antd';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { useACLRoleContext, useAPIClient } from '..';
+import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { useChangePassword } from './ChangePassword';
 import { useEditProfile } from './EditProfile';
@@ -28,6 +28,7 @@ const useApplicationVersion = () => {
 export const SettingsMenu: React.FC<{
   redirectUrl?: string;
 }> = (props) => {
+  const { setVisible } = useContext(DropdownVisibleContext);
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
@@ -103,29 +104,27 @@ export const SettingsMenu: React.FC<{
       divider,
     ];
   }, [appAllowed, check]);
-  const menu = useMemo<MenuProps>(() => {
-    return {
-      items: [
-        appVersion,
-        divider,
-        editProfile,
-        changePassword,
-        divider,
-        switchRole,
-        languageSettings,
-        themeSettings,
-        divider,
-        ...controlApp,
-        {
-          key: 'signout',
-          label: t('Sign out'),
-          onClick: async () => {
-            await api.auth.signOut();
-            navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
-          },
+  const items = useMemo<MenuProps['items']>(() => {
+    return [
+      appVersion,
+      divider,
+      editProfile,
+      changePassword,
+      divider,
+      switchRole,
+      languageSettings,
+      themeSettings,
+      divider,
+      ...controlApp,
+      {
+        key: 'signout',
+        label: t('Sign out'),
+        onClick: async () => {
+          await api.auth.signOut();
+          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
         },
-      ],
-    };
+      },
+    ];
   }, [
     appVersion,
     changePassword,
@@ -138,6 +137,14 @@ export const SettingsMenu: React.FC<{
     themeSettings,
   ]);
 
+  return <Menu items={items} />;
+};
+
+export const DropdownVisibleContext = createContext(null);
+export const CurrentUser = () => {
+  const [visible, setVisible] = useState(false);
+  const { data } = useCurrentUserContext();
+
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>
@@ -146,7 +153,9 @@ export const SettingsMenu: React.FC<{
           onOpenChange={(visible) => {
             setVisible(visible);
           }}
-          menu={menu}
+          dropdownRender={() => {
+            return <SettingsMenu />;
+          }}
         >
           <span
             className={css`
