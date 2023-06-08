@@ -8,6 +8,7 @@ import CollectionField from '../../../collection-manager/CollectionField';
 import { useCollectionManager } from '../../../collection-manager';
 import { FormProvider } from '../../core';
 import { ReadPretty as InputReadPretty } from '../input';
+import { ReadPretty as UploadReadPretty } from '../upload/ReadPretty';
 
 export const QuickEdit = observer((props) => {
   const field: any = useField();
@@ -22,12 +23,14 @@ export const QuickEdit = observer((props) => {
     'x-component-props': {
       onChange: async (e) => {
         const data = e.target?.value;
-        if (['hasMany', 'belongsToMany'].includes(collectionField.type)) {
+        if (['o2m', 'm2m'].includes(collectionField.interface)) {
           const result = field.value || [];
           result.push(data);
           field.value = result;
         } else {
-          if (['circle', 'point', 'richText', 'polygon', 'lineString'].includes(collectionField.interface)) {
+          if (
+            ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment'].includes(collectionField.interface)
+          ) {
             field.value = e;
           } else {
             field.value = data;
@@ -59,6 +62,8 @@ export const QuickEdit = observer((props) => {
             {field.value?.map((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',')}
           </EllipsisWithTooltip>
         );
+      case 'attachment':
+        return <UploadReadPretty.File {...props} value={field.value} size="small" />;
       default:
         return <InputReadPretty.TextArea {...props} autop={false} value={field.value} ellipsis />;
     }
