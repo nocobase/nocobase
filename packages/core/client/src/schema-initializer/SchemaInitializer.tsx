@@ -1,12 +1,13 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
-import { error } from '@nocobase/utils/client';
+import { error, isString } from '@nocobase/utils/client';
 import { Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
+import { useCollectMenuItem, useMenuItem } from './hooks/useMenuItem';
 import './style.less';
 import {
   SchemaInitializerButtonProps,
@@ -15,20 +16,10 @@ import {
   SchemaInitializerItemProps,
 } from './types';
 
-const menuClassName = css`
-  background-color: transparent;
-  border-right: none;
-
-  .ant-menu-item {
-    padding: 0;
-    margin: 0;
-    line-height: 1.5715;
-    height: fit-content;
-    :active,
-    :hover {
-      color: currentColor;
-      background-color: transparent;
-    }
+const overlayClassName = css`
+  .ant-dropdown-menu-item-group-list {
+    max-height: 40vh;
+    overflow: auto;
   }
 `;
 
@@ -59,80 +50,89 @@ SchemaInitializer.Button = observer(
     const compile = useCompile();
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
-    const insertSchema = (schema) => {
-      if (props.insert) {
-        props.insert(wrap(schema));
-      } else {
-        insertAdjacent(insertPosition, wrap(schema), { onSuccess });
-      }
-    };
+    const { Component: CollectionComponent, getMenuItem, clean, cloneItemsWhenChanged } = useMenuItem();
+    const insertSchema = useCallback(
+      (schema) => {
+        if (insert) {
+          insert(wrap(schema));
+        } else {
+          insertAdjacent(insertPosition, wrap(schema), { onSuccess });
+        }
+      },
+      [insert, insertPosition, onSuccess, wrap],
+    );
 
-    const renderItems = (items: any) => {
-      return items
-        .filter((v: any) => {
-          return v && (v?.visible ? v.visible() : true);
-        })
-        ?.map((item: any, indexA: number) => {
-          if (item.type === 'divider') {
-            return { type: 'divider', key: item.key || `item-${indexA}` };
-          }
-          if (item.type === 'item' && item.component) {
-            const Component = findComponent(item.component);
-            if (!Component) {
-              error(`SchemaInitializer: component "${item.component}" not found`);
-              return null;
+    const renderItems = useCallback(
+      (items: any) => {
+        return items
+          .filter((v: any) => {
+            return v && (v?.visible ? v.visible() : true);
+          })
+          ?.map((item: any, indexA: number) => {
+            if (item.type === 'divider') {
+              return { type: 'divider', key: item.key || `item-${indexA}` };
             }
-            item.key = `${item.key || item.title}-${indexA}`;
-            return {
-              key: item.key,
-              label: (
-                <SchemaInitializerItemContext.Provider
-                  key={item.key}
-                  value={{
-                    index: indexA,
-                    item,
-                    info: item,
-                    insert: insertSchema,
-                  }}
-                >
-                  <Component
-                    {...item}
-                    item={{
-                      ...item,
-                      title: compile(item.title),
+            if (item.type === 'item' && item.component) {
+              const Component = findComponent(item.component);
+              if (!Component) {
+                error(`SchemaInitializer: component "${item.component}" not found`);
+                return null;
+              }
+              item.key = `${item.key || item.title}-${indexA}`;
+              return getMenuItem(() => {
+                return (
+                  <SchemaInitializerItemContext.Provider
+                    key={item.key}
+                    value={{
+                      index: indexA,
+                      item,
+                      info: item,
+                      insert: insertSchema,
                     }}
-                    insert={insertSchema}
-                  />
-                </SchemaInitializerItemContext.Provider>
-              ),
-            };
-          }
-          if (item.type === 'itemGroup') {
-            return (
-              !!item.children?.length && {
-                type: 'group',
-                key: item.key || `item-group-${indexA}`,
-                label: compile(item.title),
-                title: compile(item.title),
-                children: renderItems(item.children),
-              }
-            );
-          }
-          if (item.type === 'subMenu') {
-            return (
-              !!item.children?.length && {
-                key: item.key || `item-group-${indexA}`,
-                label: compile(item.title),
-                title: compile(item.title),
-                popupClassName: menuItemGroupCss,
-                children: renderItems(item.children),
-              }
-            );
-          }
-        });
-    };
+                  >
+                    <Component
+                      {...item}
+                      item={{
+                        ...item,
+                        title: compile(item.title),
+                      }}
+                      insert={insertSchema}
+                    />
+                  </SchemaInitializerItemContext.Provider>
+                );
+              });
+            }
+            if (item.type === 'itemGroup') {
+              const label = compile(item.title);
+              return (
+                !!item.children?.length && {
+                  type: 'group',
+                  key: item.key || `item-group-${indexA}`,
+                  label,
+                  title: label,
+                  children: renderItems(item.children),
+                }
+              );
+            }
+            if (item.type === 'subMenu') {
+              const label = compile(item.title);
+              return (
+                !!item.children?.length && {
+                  key: item.key || `item-group-${indexA}`,
+                  label,
+                  title: label,
+                  popupClassName: menuItemGroupCss,
+                  children: renderItems(item.children),
+                }
+              );
+            }
+          });
+      },
+      [insertSchema],
+    );
 
     const menuItems = useMemo<MenuProps['items']>(() => {
+      clean();
       return renderItems(items);
     }, [items]);
 
@@ -166,24 +166,19 @@ SchemaInitializer.Button = observer(
     }
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
+        <CollectionComponent />
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
           openClassName={`nb-schema-initializer-button-open`}
-          overlayClassName={classNames(
-            'nb-schema-initializer-button-overlay',
-            css`
-              .ant-dropdown-menu-item-group-list {
-                max-height: 40vh;
-                overflow: auto;
-              }
-            `,
-          )}
+          overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
           onOpenChange={(visible) => {
             setVisible(visible);
           }}
+          dropdownRender={() => {
+            return <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }} items={cloneItemsWhenChanged(menuItems)} />;
+          }}
           {...dropdown}
-          menu={menu}
         >
           {component ? component : buttonDom}
         </Dropdown>
@@ -197,6 +192,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick } = props;
+  const { collectMenuItem, onChange } = useCollectMenuItem();
+
+  if (!collectMenuItem) {
+    error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
+    return null;
+  }
 
   if (items?.length > 0) {
     const renderMenuItem = (items: SchemaInitializerItemOptions[]) => {
@@ -229,10 +230,9 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
         }
         const label = compile(item.title);
         return {
-          key: item.key,
+          key: item.key || indexA,
           label,
           title: label,
-          eventKey: item.key,
           onClick: (info) => {
             item?.clearKeywords?.();
             if (item.onClick) {
@@ -240,6 +240,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             } else {
               onClick({ ...info, item });
             }
+            onChange();
           },
         };
       });
@@ -247,15 +248,16 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
 
     const item = {
       key: info.key,
-      label: compile(children),
+      label: isString(children) ? compile(children) : children,
       icon: typeof icon === 'string' ? <Icon type={icon as string} /> : icon,
       children: renderMenuItem(items),
     };
 
-    return <Menu className={menuClassName} items={[item]} selectable={false}></Menu>;
+    collectMenuItem(item);
+    return null;
   }
 
-  const label = compile(children);
+  const label = isString(children) ? compile(children) : children;
   const item = {
     key: info.key,
     label,
@@ -264,10 +266,12 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     onClick: (opts) => {
       info?.clearKeywords?.();
       onClick({ ...opts, item: info });
+      onChange();
     },
   };
 
-  return <Menu className={menuClassName} items={[item]} selectable={false}></Menu>;
+  collectMenuItem(item);
+  return null;
 };
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {

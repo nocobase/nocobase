@@ -1,6 +1,6 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { useFieldSchema } from '@formily/react';
-import { createDesignable, Resizable, SchemaInitializer, useAPIClient, useDesignable } from '@nocobase/client';
+import { createDesignable, SchemaInitializer, useAPIClient, useDesignable } from '@nocobase/client';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -51,11 +51,12 @@ export const AuditLogsTableActionColumnInitializers = (props: any) => {
         {
           type: 'divider',
         },
-        {
-          type: 'item',
-          title: t('Column width'),
-          component: Resizable,
-        },
+        // TODO
+        // {
+        //   type: 'item',
+        //   title: t('Column width'),
+        //   component: Resizable,
+        // },
       ]}
       component={<MenuOutlined style={{ cursor: 'pointer' }} />}
     />

@@ -1,12 +1,12 @@
 import { MenuOutlined } from '@ant-design/icons';
 import { ISchema, useFieldSchema } from '@formily/react';
+import _ from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SchemaInitializer, SchemaSettings } from '../..';
 import { useAPIClient } from '../../api-client';
 import { useCollection } from '../../collection-manager';
 import { createDesignable, useDesignable } from '../../schema-component';
-import _ from 'lodash';
 
 export const Resizable = (props) => {
   const { t } = useTranslation();
@@ -256,11 +256,12 @@ export const TableActionColumnInitializers = (props: any) => {
         {
           type: 'divider',
         },
-        {
-          type: 'item',
-          title: t('Column width'),
-          component: Resizable,
-        },
+        // TODO
+        // {
+        //   type: 'item',
+        //   title: t('Column width'),
+        //   component: Resizable,
+        // },
       ]}
       component={<MenuOutlined style={{ cursor: 'pointer' }} />}
     />
