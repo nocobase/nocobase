@@ -23,19 +23,15 @@ export const QuickEdit = observer((props) => {
     default: field.value,
     'x-component-props': {
       onChange: async (e) => {
-        const data = e.target?.value;
-        if (['o2m', 'm2m'].includes(collectionField.interface)) {
-          const result = field.value || [];
-          result.push(data);
-          field.value = result;
+        const data = e?.target?.value;
+        if (
+          ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment', 'json'].includes(
+            collectionField.interface,
+          )
+        ) {
+          field.value = e;
         } else {
-          if (
-            ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment'].includes(collectionField.interface)
-          ) {
-            field.value = e;
-          } else {
-            field.value = data;
-          }
+          field.value = data;
         }
         field.onInput(field.value);
       },
@@ -67,6 +63,8 @@ export const QuickEdit = observer((props) => {
         return field.value ? <MarkdownReadPretty {...props} value={field.value} ellipsis /> : null;
       case 'attachment':
         return <UploadReadPretty.File {...props} value={field.value} size="small" />;
+      case 'json':
+        return <InputReadPretty.JSON {...props} value={field.value} space={1} />;
       default:
         return <InputReadPretty.TextArea {...props} autop={false} value={field.value} ellipsis />;
     }
