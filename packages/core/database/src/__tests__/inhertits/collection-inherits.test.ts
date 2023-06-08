@@ -16,6 +16,51 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should append __collection with eager load', async () => {
+    const Root = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'bs',
+          type: 'hasMany',
+          target: 'b',
+          foreignKey: 'root_id',
+        },
+      ],
+    });
+
+    const Child = db.collection({
+      name: 'child',
+      inherits: ['root'],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync();
+
+    await Child.repository.create({
+      values: {
+        name: 'child1',
+        bs: [
+          {
+            name: 'b1',
+          },
+        ],
+      },
+    });
+
+    const data = await Root.repository.findOne({
+      fields: ['bs.name'],
+    });
+
+    expect(data.get('__collection')).toEqual('child');
+    expect(data.get('bs')[0].get('name')).toEqual('b1');
+  });
+
   it('should not remove parent field reference map after child rewrite field', async () => {
     const through = db.collection({
       name: 'through',

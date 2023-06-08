@@ -2,11 +2,15 @@ export const appendChildCollectionNameAfterRepositoryFind = (db) => {
   return ({ findOptions, dataCollection, data }) => {
     if (dataCollection.isParent()) {
       for (const row of data) {
-        const rowCollection = db.tableNameCollectionMap.get(
-          findOptions.raw
-            ? `${row['__schemaName']}.${row['__tableName']}`
-            : `${row.get('__schemaName')}.${row.get('__tableName')}`,
-        );
+        if (row.__collection) {
+          continue;
+        }
+        
+        const fullTableName = findOptions.raw
+          ? `${row['__schemaName']}.${row['__tableName']}`
+          : `${row.get('__schemaName')}.${row.get('__tableName')}`;
+
+        const rowCollection = db.tableNameCollectionMap.get(fullTableName);
 
         if (!rowCollection) {
           db.logger.warn(
