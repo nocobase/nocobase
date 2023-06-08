@@ -53,8 +53,10 @@ const useResource = (props: UseResourceProps) => {
   const api = useAPIClient();
   const { fieldSchema } = useActionContext();
   const isCreateAction = fieldSchema?.['x-action'] === 'create';
+  const isAddChildAction = fieldSchema?.['x-component-props']?.addChild;
   const association = useAssociation(props);
-  const sourceId = useSourceId?.();
+  const sourceId = useSourceId?.() || (isAddChildAction && record?.__parent?.[association?.sourceKey || 'id']);
+
   const field = useField<Field>();
   if (block === 'TableField') {
     const options = {

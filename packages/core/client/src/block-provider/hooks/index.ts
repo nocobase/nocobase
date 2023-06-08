@@ -159,10 +159,8 @@ export const useCreateActionProps = () => {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
-      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
-        values[treeParentField?.name ?? 'parent'] = currentRecord;
         values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
       }
       actionField.data = field.data || {};
