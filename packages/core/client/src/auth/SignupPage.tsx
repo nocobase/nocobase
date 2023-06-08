@@ -1,7 +1,7 @@
 import { message } from 'antd';
 import React, { useContext, createContext, FunctionComponent, createElement } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle } from '..';
 import { useForm } from '@formily/react';
 
@@ -34,7 +34,7 @@ export interface UseSignupProps {
 }
 
 export const useSignup = (props?: UseSignupProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const form = useForm();
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -44,7 +44,7 @@ export const useSignup = (props?: UseSignupProps) => {
       await api.auth.signUp(form.values, props?.authenticator);
       message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
-        history.push('/signin');
+        navigate('/signin');
       }, 2000);
     },
   };
