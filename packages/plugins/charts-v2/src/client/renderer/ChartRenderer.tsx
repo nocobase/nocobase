@@ -64,7 +64,6 @@ export const ChartRenderer: React.FC<{
           return;
         }
         const sampleData = data.length > 10 ? data.slice(0, 10) : data;
-        console.log(sampleData);
         setQueryData(JSON.stringify(sampleData, null, 2));
       },
     },
@@ -79,8 +78,7 @@ export const ChartRenderer: React.FC<{
   const changedQuery = configuring ? query : JSON.stringify(query);
   useEffect(() => {
     if (
-      query?.measures?.length &&
-      query?.dimensions?.length
+      query?.measures?.length
       // || (query?.sql?.fields && query?.sql?.clauses)
     ) {
       run();

@@ -115,6 +115,12 @@ export const query = async (ctx: Context, next: Next) => {
     cache: cacheConfig,
     refresh,
   } = ctx.action.params.values as QueryParams;
+  const roleName = ctx.state.currentRole || 'anonymous';
+  const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
+  if (!can && roleName !== 'root') {
+    ctx.throw(403, 'No permissions');
+  }
+
   const plugin = ctx.app.getPlugin('charts-v2') as ChartsV2Plugin;
   const useCache = cacheConfig?.enabled && uid;
   if (useCache && !refresh) {

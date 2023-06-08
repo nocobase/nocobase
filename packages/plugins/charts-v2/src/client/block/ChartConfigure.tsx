@@ -75,10 +75,11 @@ export const ChartConfigure: React.FC<{
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
+  const initialValues = schema?.['x-decorator-props'] || { collection };
   const form = useMemo(
     () =>
       createForm({
-        initialValues: schema?.['x-decorator-props'],
+        initialValues,
       }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -113,7 +114,7 @@ export const ChartConfigure: React.FC<{
           setVisible(false);
           return;
         }
-        insert(createRendererSchema(collection, rendererProps), {
+        insert(createRendererSchema(rendererProps), {
           onSuccess: () => setVisible(false),
           wrap: gridRowColWrap,
         });

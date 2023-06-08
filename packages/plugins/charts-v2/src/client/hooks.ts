@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { ChartConfigContext, SelectedField } from './block/ChartConfigure';
-import { useCollectionManager } from '@nocobase/client';
+import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
 import { operators } from '@nocobase/client';
@@ -108,11 +108,20 @@ export const useFormatters = (fields: FieldOption[]) => (field: any) => {
 export const useCollectionOptions = () => {
   const { t } = useTranslation();
   const { collections } = useCollectionManager();
-  const options = collections.map((collection: { name: string; title: string }) => ({
-    label: collection.title,
-    value: collection.name,
-    key: collection.name,
-  }));
+  const { allowAll, parseAction } = useACLRoleContext();
+  const options = collections
+    .filter((collection: { name: string }) => {
+      if (allowAll) {
+        return true;
+      }
+      const params = parseAction(`${collection.name}:list`);
+      return params;
+    })
+    .map((collection: { name: string; title: string }) => ({
+      label: collection.title,
+      value: collection.name,
+      key: collection.name,
+    }));
   return Schema.compile(options, { t });
 };
 
