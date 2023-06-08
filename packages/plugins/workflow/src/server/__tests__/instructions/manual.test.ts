@@ -20,8 +20,9 @@ describe('workflow > instructions > manual', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users'],
+      plugins: ['users', 'auth'],
     });
+    await app.getPlugin('auth').install();
     agent = app.agent();
     db = app.db;
     WorkflowModel = db.getCollection('workflows').model;
@@ -36,14 +37,7 @@ describe('workflow > instructions > manual', () => {
     ]);
 
     const userPlugin = app.getPlugin('users') as UserPlugin;
-    userAgents = users.map((user) =>
-      app.agent().auth(
-        userPlugin.jwtService.sign({
-          userId: user.id,
-        }),
-        { type: 'bearer' },
-      ),
-    );
+    userAgents = users.map((user) => app.agent().login(user));
 
     workflow = await WorkflowModel.create({
       enabled: true,

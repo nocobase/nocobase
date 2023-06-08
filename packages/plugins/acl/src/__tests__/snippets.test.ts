@@ -27,13 +27,7 @@ describe('snippet', () => {
     });
 
     const userPlugin: any = app.getPlugin('users');
-    const userAgent: any = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
-
+    const userAgent: any = app.agent().login(user);
     const createCollectionResponse = await userAgent.resource('collections').create({});
 
     expect(createCollectionResponse.statusCode).toEqual(403);
