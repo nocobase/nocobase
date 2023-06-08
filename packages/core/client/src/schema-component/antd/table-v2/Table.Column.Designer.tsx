@@ -193,8 +193,8 @@ export const TableColumnDesigner = (props) => {
             };
             fieldSchema['required'] = required;
             schema['required'] = required;
-            const path = field.path?.splice(field.path.length - 1, 1);
-            tableField?.value.map((_, index) => {
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            (tableField as any)?.value.map((_, index) => {
               field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
                 f.required = required;
               });
