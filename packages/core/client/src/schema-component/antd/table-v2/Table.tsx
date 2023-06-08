@@ -121,7 +121,7 @@ const SortableRow = (props) => {
   });
 
   const className =
-    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable.index ?? -1)
+    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
       ? topActiveClass
       : bottomActiveClass;
 
