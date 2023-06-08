@@ -58,7 +58,6 @@ export interface Trigger {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
 }
@@ -178,7 +177,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList ?? []) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
