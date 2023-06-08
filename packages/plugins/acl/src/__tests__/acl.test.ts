@@ -32,15 +32,7 @@ describe('acl', () => {
       },
     });
 
-    userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
-
+    adminAgent = app.agent().login(admin);
     uiSchemaRepository = db.getRepository('uiSchemas');
   });
 
@@ -248,12 +240,7 @@ describe('acl', () => {
     });
     const userPlugin = app.getPlugin('users') as UsersPlugin;
 
-    const adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: rootUser.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const adminAgent = app.agent().login(rootUser);
 
     expect(await db.getCollection('roles').repository.count()).toBe(3);
 
@@ -759,13 +746,7 @@ describe('acl', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-    const userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const userAgent = app.agent().login(user);
 
     const schema = {
       'x-uid': 'test',
@@ -823,21 +804,11 @@ describe('acl', () => {
   });
 
   it('should destroy new role when user are root user', async () => {
-    const roles = await db.getRepository('roles').find();
-
-    const users = await db.getRepository('users').find();
     const rootUser = await db.getRepository('users').findOne({
       filterByTk: 1,
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    const rootAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: rootUser.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const rootAgent = app.agent().login(rootUser);
 
     const response = await rootAgent
       // @ts-ignore

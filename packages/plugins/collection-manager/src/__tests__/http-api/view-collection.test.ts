@@ -113,11 +113,6 @@ SELECT * FROM numbers;
         2,
       ),
     );
-
-    // cannot get field type in sqlite
-    // if (app.db.options.dialect === 'sqlite') {
-    //   expect(data.fields.n.possibleTypes).toBeTruthy();
-    // }
   });
 
   it('should return possible types for json fields', async () => {
@@ -145,6 +140,83 @@ SELECT * FROM numbers;
       expect(data.fields.json_field.type).toBe('json');
     }
     expect(data.fields.json_field.possibleTypes).toBeTruthy();
+  });
+
+  it('should not throw error when source collection destroyed', async () => {
+    await app.db.getCollection('collections').repository.create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            interface: 'text',
+            uiSchema: 'name-uiSchema',
+          },
+          {
+            name: 'age',
+            type: 'integer',
+            interface: 'number',
+            uiSchema: 'age-uiSchema',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await app.db.sync();
+    const UserCollection = app.db.getCollection('users');
+
+    const viewName = `t_${uid(6)}`;
+    const dropSQL = `DROP VIEW IF EXISTS ${viewName}`;
+    await app.db.sequelize.query(dropSQL);
+    const viewSQL = `CREATE VIEW ${viewName} AS SELECT * FROM ${UserCollection.quotedTableName()}`;
+    await app.db.sequelize.query(viewSQL);
+
+    // create view collection
+    const viewCollection = await app.db.getCollection('collections').repository.create({
+      values: {
+        name: viewName,
+        view: true,
+        schema: app.db.inDialect('postgres') ? 'public' : undefined,
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            source: 'users.name',
+          },
+          {
+            name: 'age',
+            type: 'integer',
+            source: 'users.age',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const response = await agent.resource('collections').list({
+      appends: ['fields'],
+      paginate: false,
+    });
+
+    expect(response.status).toBe(200);
+
+    // drop view first
+    await app.db.sequelize.query(dropSQL);
+
+    // remove source collection
+    await app.db.getCollection('collections').repository.destroy({
+      filterByTk: 'users',
+      context: {},
+    });
+
+    const response2 = await agent.resource('collections').list({
+      appends: ['fields'],
+      paginate: false,
+    });
+
+    expect(response2.statusCode).toBe(200);
   });
 
   it('should list collections fields with source interface', async () => {

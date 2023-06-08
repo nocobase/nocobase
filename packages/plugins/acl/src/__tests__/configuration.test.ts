@@ -46,19 +46,9 @@ describe('configuration', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app.agent().login(admin);
 
-    userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    userAgent = app.agent().login(user);
 
     guestAgent = app.agent();
   });

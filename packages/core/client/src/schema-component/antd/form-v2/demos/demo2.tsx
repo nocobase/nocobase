@@ -1,18 +1,41 @@
 import { ISchema, useForm } from '@formily/react';
 import {
-  AntdSchemaComponentProvider,
-  APIClient,
   APIClientProvider,
+  Action,
   BlockSchemaComponentProvider,
+  CollectionField,
   CollectionManagerProvider,
-  RecordProvider,
+  FormBlockProvider,
+  FormItem,
+  FormV2,
+  Input,
+  Password,
   SchemaComponent,
   SchemaComponentProvider,
-  useFilterByTk,
   useFormBlockContext,
 } from '@nocobase/client';
+import { notification } from 'antd';
 import React from 'react';
+import { useFilterByTk } from '../../../../block-provider/BlockProvider';
+import { mockAPIClient } from '../../../../test';
 import collections from './collections';
+
+const { apiClient, mockRequest } = mockAPIClient();
+
+mockRequest.onGet('/users:get').reply(200, {
+  data: {
+    id: 1,
+    nickname: '张三',
+    password: '123456',
+  },
+});
+
+mockRequest.onPost('/users:update').reply((params) => {
+  notification.success({
+    message: params.data,
+  });
+  return [200, JSON.parse(params.data)];
+});
 
 const useAction = () => {
   const ctx = useFormBlockContext();
@@ -39,7 +62,6 @@ const schema: ISchema = {
         collection: 'users',
         resource: 'users',
         action: 'get',
-        useParams: '{{ useParamsFromRecord }}',
       },
       properties: {
         form: {
@@ -53,15 +75,21 @@ const schema: ISchema = {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-component': 'CollectionField',
+              'x-component-props': {
+                className: 'nickname',
+              },
             },
             password: {
               type: 'string',
               'x-decorator': 'FormItem',
               'x-designer': 'FormItem.Designer',
               'x-component': 'CollectionField',
+              'x-component-props': {
+                className: 'password',
+              },
             },
             button: {
-              title: '提交',
+              title: 'Submit',
               'x-component': 'Action',
               'x-component-props': {
                 htmlType: 'submit',
@@ -76,28 +104,18 @@ const schema: ISchema = {
   },
 };
 
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:3000/api',
-});
-
-const record = {
-  id: 1,
-};
-
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
-          <AntdSchemaComponentProvider>
-            <RecordProvider record={record}>
-              <BlockSchemaComponentProvider>
-                <SchemaComponent schema={schema} />
-              </BlockSchemaComponentProvider>
-            </RecordProvider>
-          </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
-      </SchemaComponentProvider>
+      <CollectionManagerProvider collections={collections}>
+        <SchemaComponentProvider
+          components={{ FormBlockProvider, FormItem, CollectionField, Input, Action, FormV2, Password }}
+        >
+          <BlockSchemaComponentProvider>
+            <SchemaComponent schema={schema} />
+          </BlockSchemaComponentProvider>
+        </SchemaComponentProvider>
+      </CollectionManagerProvider>
     </APIClientProvider>
   );
 };

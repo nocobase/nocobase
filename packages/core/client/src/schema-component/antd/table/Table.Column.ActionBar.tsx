@@ -42,12 +42,15 @@ export const designerCss = css`
   }
 `;
 
-export const TableColumnActionBar = observer((props) => {
-  const Designer = useDesigner();
-  return (
-    <SortableItem className={designerCss}>
-      <Designer />
-      {props.children}
-    </SortableItem>
-  );
-});
+export const TableColumnActionBar = observer(
+  (props) => {
+    const Designer = useDesigner();
+    return (
+      <SortableItem className={designerCss}>
+        <Designer />
+        {props.children}
+      </SortableItem>
+    );
+  },
+  { displayName: 'TableColumnActionBar' },
+);

@@ -51,13 +51,13 @@ const ReadPretty = (props) => {
 };
 
 const SingleText = connect(
-  Input, 
+  Input,
   mapProps((props, field) => {
     return {
       ...props,
       suffix: '后缀',
     }
-  }), 
+  }),
   mapReadPretty(ReadPretty),
 );
 
@@ -103,7 +103,7 @@ const SingleText = connect(Input);
 const UsedObserver = observer((props) => {
   const form = useForm();
   return <div>UsedObserver: {form.values.t1}</div>
-});
+}, { displayName: 'UsedObserver' });
 
 const NotUsedObserver = (props) => {
   const form = useForm();
@@ -193,7 +193,7 @@ export default () => {
 };
 ```
 
-各类型 properties 渲染结果对比 
+各类型 properties 渲染结果对比
 
 ```tsx
 import React from 'react';
@@ -312,7 +312,7 @@ const ArrayList = observer((props) => {
       </ul>
     </>
   );
-});
+}, { displayName: 'ArrayList' });
 
 const Value = connect((props) => {
   return <li>value: {props.value}</li>
@@ -369,7 +369,7 @@ const ArrayList = observer((props) => {
       })}
     </ul>
   );
-});
+}, { displayName: 'ArrayList' });
 
 const Value = connect((props) => {
   return <li>value: {props.value}</li>
@@ -434,7 +434,7 @@ const ArrayTable = observer((props: any) => {
   });
 
   return <Table rowKey={rowKey} columns={columns} dataSource={field.value} />;
-});
+}, { displayName: 'ArrayTable' });
 
 const Value = connect((props) => {
   return <li>value: {props.value}</li>;

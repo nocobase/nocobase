@@ -1,0 +1,28 @@
+import React from 'react';
+import { render, screen } from 'testUtils';
+import App1 from '../demos/demo1';
+import App2 from '../demos/demo2';
+import App3 from '../demos/demo3';
+
+describe('Grid', () => {
+  it('block', () => {
+    render(<App1 />);
+
+    const blocks = document.querySelectorAll('.block-item');
+
+    expect(blocks.length).toBe(6);
+    expect(screen.getByText('Block 1')).toBeInTheDocument();
+  });
+
+  it('input', () => {
+    render(<App2 />);
+
+    const inputs = document.querySelectorAll('.ant-input');
+
+    expect(inputs.length).toBe(3);
+  });
+
+  it('initializer', () => {
+    render(<App3 />);
+  });
+});
