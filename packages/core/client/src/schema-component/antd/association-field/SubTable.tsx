@@ -36,9 +36,25 @@ export const SubTable: any = observer((props: any) => {
         .ant-formily-item-error-help {
           display: none;
         }
+        .ant-table-cell .ant-formily-item-error-help {
+          display: block;
+          position: absolute;
+          font-size: 12px;
+          top: 100%;
+          background: #fff;
+          width: 100%;
+          margin-top: 3px;
+          padding: 3px;
+          z-index: 1;
+          border-radius: 3px;
+          box-shadow: 0 0 10px #eee;
+          animation: none;
+          transform: translateY(0);
+          opacity: 1;
+        }
       `}
     >
-      <FormItem feedbackLayout="none" labelStyle={{ display: 'none' }}>
+      <FormItem labelStyle={{ display: 'none' }} wrapperStyle={{ marginBottom: -22 }}>
         <Table
           className={css`
             .ant-select-selector {
@@ -49,6 +65,9 @@ export const SubTable: any = observer((props: any) => {
             }
             .ant-formily-editable {
               vertical-align: sub;
+            }
+            .ant-table table {
+              margin-bottom: 15px;
             }
           `}
           size={'small'}
@@ -64,7 +83,6 @@ export const SubTable: any = observer((props: any) => {
         <Button
           type={'dashed'}
           block
-          style={{ marginTop: 12 }}
           onClick={() => {
             field.value = field.value || [];
             field.value.push({});
