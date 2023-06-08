@@ -77,7 +77,7 @@ export const QuickEdit = observer((props) => {
         <Tooltip
           title={field.selfErrors.length > 0 ? field.selfErrors : null}
           overlayInnerStyle={{ color: 'red' }}
-          color="white"
+          color="#fff"
         >
           {!field.readPretty && (
             <EditOutlined
