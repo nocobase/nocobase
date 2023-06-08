@@ -22,7 +22,7 @@ on:
       - '!packages/plugins/**/src/server/**'
 
 jobs:
-  build:
+  yarn-install:
     strategy:
       matrix:
         node_version: [ '18' ]
@@ -36,53 +36,37 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
-      - name: Archive node_modules
-        run: tar -czf node_modules.tar.gz node_modules
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: node-modules
-          path: node_modules.tar.gz
     timeout-minutes: 15
+
   build-test:
     strategy:
       matrix:
         node_version: [ '18' ]
-    needs: build
+    needs: yarn-install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: node-modules
-          path: node_modules.tar.gz
-      - name: Extract node_modules
-        run: tar -xzf node_modules.tar.gz
       - name: Setup node
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
-      - run: yarn test
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
 
   client-test:
     strategy:
       matrix:
         node_version: [ '18' ]
-    needs: build
+    needs: yarn-install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/download-artifact@v3
-        with:
-          name: node-modules
-          path: node_modules.tar.gz
-      - name: Extract node_modules
-        run: tar -xzf node_modules.tar.gz
       - name: Setup node
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
+      - run: yarn install --frozen-lockfile
       - name: Test Client
         run: yarn test:client

@@ -15,7 +15,7 @@ const useCloseAction = () => {
 
 const Editable = observer(
   (props) => {
-    // console.log 1232
+    // console.log 12324
     const field = useField<Field>();
     const schema = useFieldSchema();
     return (
