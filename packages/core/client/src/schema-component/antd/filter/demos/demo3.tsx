@@ -5,7 +5,7 @@ import {
   Input,
   SchemaComponent,
   SchemaComponentProvider,
-  useActionContext
+  useActionContext,
 } from '@nocobase/client';
 import React from 'react';
 

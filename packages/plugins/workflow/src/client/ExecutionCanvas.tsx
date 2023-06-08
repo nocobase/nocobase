@@ -141,7 +141,7 @@ export function ExecutionCanvas() {
         nodes,
         execution,
         viewJob,
-        setViewJob
+        setViewJob,
       }}
     >
       <div className="workflow-toolbar">

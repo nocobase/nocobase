@@ -237,7 +237,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const chunks = key.split('.');
       return chunks
         .filter((chunk) => {
-          return !Boolean(chunk.match(/\d+/));
+          return !chunk.match(/\d+/);
         })
         .join('.');
     };

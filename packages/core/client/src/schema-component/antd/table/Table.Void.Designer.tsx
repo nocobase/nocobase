@@ -107,7 +107,7 @@ export const TableVoidDesigner = () => {
                         field: {
                           type: 'string',
                           enum: sortFields,
-                          required:true,
+                          required: true,
                           'x-decorator': 'FormItem',
                           'x-component': 'Select',
                           'x-component-props': {

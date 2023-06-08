@@ -39,25 +39,28 @@ export const CollectionSelect = connect(
     );
   },
   mapReadPretty(
-    observer((props: CollectionSelectProps) => {
-      const { mode } = props;
-      const compile = useCompile();
-      const options = useOptions(props).filter((option) => {
-        if (mode === 'multiple') {
-          return (props.value ?? []).includes(option.value);
-        }
-        return props.value === option.value;
-      });
+    observer(
+      (props: CollectionSelectProps) => {
+        const { mode } = props;
+        const compile = useCompile();
+        const options = useOptions(props).filter((option) => {
+          if (mode === 'multiple') {
+            return (props.value ?? []).includes(option.value);
+          }
+          return props.value === option.value;
+        });
 
-      return (
-        <div>
-          {options.map((option) => (
-            <Tag key={option.value} color={option.color}>
-              {compile(option.label)}
-            </Tag>
-          ))}
-        </div>
-      );
-    }, { displayName: 'CollectionSelectObserver' }),
+        return (
+          <div>
+            {options.map((option) => (
+              <Tag key={option.value} color={option.color}>
+                {compile(option.label)}
+              </Tag>
+            ))}
+          </div>
+        );
+      },
+      { displayName: 'CollectionSelectObserver' },
+    ),
   ),
 );

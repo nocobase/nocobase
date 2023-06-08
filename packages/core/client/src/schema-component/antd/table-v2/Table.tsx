@@ -184,7 +184,7 @@ export const Table: any = observer(
     const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
     const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
     const { expandFlag } = ctx;
-    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => { }));
+    const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
     const paginationProps = usePaginationProps(pagination1, pagination2);
     const requiredValidator = field.required || required;
     const { treeTable } = schema?.parent?.['x-decorator-props'] || {};
@@ -322,33 +322,33 @@ export const Table: any = observer(
     const restProps = {
       rowSelection: rowSelection
         ? {
-          type: 'checkbox',
-          selectedRowKeys: selectedRowKeys,
-          onChange(selectedRowKeys: any[], selectedRows: any[]) {
-            field.data = field.data || {};
-            field.data.selectedRowKeys = selectedRowKeys;
-            setSelectedRowKeys(selectedRowKeys);
-            onRowSelectionChange?.(selectedRowKeys, selectedRows);
-          },
-          renderCell: (checked, record, index, originNode) => {
-            if (!dragSort && !showIndex) {
-              return originNode;
-            }
-            const current = props?.pagination?.current;
-            const pageSize = props?.pagination?.pageSize || 20;
-            if (current) {
-              index = index + (current - 1) * pageSize + 1;
-            } else {
-              index = index + 1;
-            }
-            if (record.__index) {
-              index = extractIndex(record.__index);
-            }
-            return (
-              <div
-                className={classNames(
-                  checked ? 'checked' : null,
-                  css`
+            type: 'checkbox',
+            selectedRowKeys: selectedRowKeys,
+            onChange(selectedRowKeys: any[], selectedRows: any[]) {
+              field.data = field.data || {};
+              field.data.selectedRowKeys = selectedRowKeys;
+              setSelectedRowKeys(selectedRowKeys);
+              onRowSelectionChange?.(selectedRowKeys, selectedRows);
+            },
+            renderCell: (checked, record, index, originNode) => {
+              if (!dragSort && !showIndex) {
+                return originNode;
+              }
+              const current = props?.pagination?.current;
+              const pageSize = props?.pagination?.pageSize || 20;
+              if (current) {
+                index = index + (current - 1) * pageSize + 1;
+              } else {
+                index = index + 1;
+              }
+              if (record.__index) {
+                index = extractIndex(record.__index);
+              }
+              return (
+                <div
+                  className={classNames(
+                    checked ? 'checked' : null,
+                    css`
                       position: relative;
                       display: flex;
                       float: left;
@@ -372,27 +372,27 @@ export const Table: any = observer(
                         }
                       }
                     `,
-                )}
-              >
-                <div
-                  className={classNames(
-                    checked ? 'checked' : null,
-                    css`
+                  )}
+                >
+                  <div
+                    className={classNames(
+                      checked ? 'checked' : null,
+                      css`
                         position: relative;
                         display: flex;
                         align-items: center;
                         justify-content: space-evenly;
                       `,
-                  )}
-                >
-                  {dragSort && <SortHandle id={getRowKey(record)} />}
-                  {showIndex && <TableIndex index={index} />}
-                </div>
-                <div
-                  className={classNames(
-                    'nb-origin-node',
-                    checked ? 'checked' : null,
-                    css`
+                    )}
+                  >
+                    {dragSort && <SortHandle id={getRowKey(record)} />}
+                    {showIndex && <TableIndex index={index} />}
+                  </div>
+                  <div
+                    className={classNames(
+                      'nb-origin-node',
+                      checked ? 'checked' : null,
+                      css`
                         position: absolute;
                         right: 50%;
                         transform: translateX(50%);
@@ -400,15 +400,15 @@ export const Table: any = observer(
                           display: none;
                         }
                       `,
-                  )}
-                >
-                  {originNode}
+                    )}
+                  >
+                    {originNode}
+                  </div>
                 </div>
-              </div>
-            );
-          },
-          ...rowSelection,
-        }
+              );
+            },
+            ...rowSelection,
+          }
         : undefined,
     };
 
@@ -416,12 +416,12 @@ export const Table: any = observer(
       ({ children }) => {
         return dragSort
           ? React.createElement(SortableContext, {
-            items: field.value.map(getRowKey),
-            children: children,
-          })
+              items: field.value.map(getRowKey),
+              children: children,
+            })
           : React.createElement(React.Fragment, {
-            children,
-          });
+              children,
+            });
       },
       [field, dragSort],
     );
@@ -433,12 +433,12 @@ export const Table: any = observer(
     const scroll = useMemo(() => {
       return fixedBlock
         ? {
-          x: 'max-content',
-          y: tableHeight,
-        }
+            x: 'max-content',
+            y: tableHeight,
+          }
         : {
-          x: 'max-content',
-        };
+            x: 'max-content',
+          };
     }, [fixedBlock, tableHeight]);
 
     return (

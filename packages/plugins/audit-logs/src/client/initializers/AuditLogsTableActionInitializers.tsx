@@ -1,4 +1,3 @@
-
 // 操作记录表格操作配置
 export const AuditLogsTableActionInitializers = {
   title: "{{t('Configure actions')}}",

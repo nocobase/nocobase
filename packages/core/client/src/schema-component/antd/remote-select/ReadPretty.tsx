@@ -17,20 +17,20 @@ export const ReadPretty = observer(
     const { data } = useRequest(
       snapshot
         ? async () => ({
-          data: record[fieldSchema.name],
-        })
+            data: record[fieldSchema.name],
+          })
         : {
-          action: 'list',
-          ...props.service,
-          params: {
-            paginate: false,
-            filter: {
-              [fieldNames.value]: {
-                $in: getValues(field.value, fieldNames),
+            action: 'list',
+            ...props.service,
+            params: {
+              paginate: false,
+              filter: {
+                [fieldNames.value]: {
+                  $in: getValues(field.value, fieldNames),
+                },
               },
             },
           },
-        },
       {
         refreshDeps: [props.service, field.value],
       },

@@ -1,10 +1,6 @@
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import {
-  defaultProps,
-  relationshipType,
-  reverseFieldProperties
-} from './properties';
+import { defaultProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
 
 export const m2m: IField = {

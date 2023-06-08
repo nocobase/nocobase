@@ -23,7 +23,6 @@ import { SharedFilterProvider } from './SharedFilterProvider';
 import _ from 'lodash';
 import { useAssociationNames } from './hooks';
 
-
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);
 export const BlockRequestContext = createContext<any>({});

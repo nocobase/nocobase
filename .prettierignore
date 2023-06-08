@@ -3,6 +3,7 @@
 **/*.ejs
 **/*.html
 package.json
+.dumi
 .umi
 .umi-production
 .umi-test
@@ -10,3 +11,5 @@ packages/**/lib/**
 packages/**/esm/**
 packages/**/node_modules/**
 packages/core/client/src/locale/*
+**/locale/*
+packages/core/database/src/sql-parser

@@ -41,13 +41,13 @@ export const ActionBar = observer(
           !designable && !hasActions
             ? undefined
             : {
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              overflowX: 'auto',
-              flexShrink: 0,
-              ...style,
-            }
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                overflowX: 'auto',
+                flexShrink: 0,
+                ...style,
+              }
         }
         {...others}
         className={cx(others.className, 'nb-action-bar')}
