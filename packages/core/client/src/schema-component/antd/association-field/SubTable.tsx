@@ -54,7 +54,7 @@ export const SubTable: any = observer((props: any) => {
         }
       `}
     >
-      <FormItem labelStyle={{ display: 'none' }} wrapperStyle={{ marginBottom: -22 }}>
+      <FormItem labelStyle={{ display: 'none' }} wrapperStyle={{ marginBottom: -30 }}>
         <Table
           className={css`
             .ant-select-selector {
@@ -67,7 +67,7 @@ export const SubTable: any = observer((props: any) => {
               vertical-align: sub;
             }
             .ant-table table {
-              margin-bottom: 15px;
+              margin-bottom: 20px;
             }
           `}
           size={'small'}
