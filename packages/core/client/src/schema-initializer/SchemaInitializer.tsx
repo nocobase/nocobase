@@ -4,10 +4,10 @@ import { error, isString } from '@nocobase/utils/client';
 import { Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useCallback, useContext, useState } from 'react';
+import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import { useCollectMenuItem, useMenuItem } from './hooks/useMenuItem';
 import './style.less';
 import {
   SchemaInitializerButtonProps,
