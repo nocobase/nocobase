@@ -1,5 +1,5 @@
 import React from 'react';
-import { EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 import { Popover, Tooltip } from 'antd';
 import { useField, observer, useFieldSchema, RecursionField } from '@formily/react';
 import { EllipsisWithTooltip } from '../input';
@@ -7,6 +7,7 @@ import { FormItem, FormLayout } from '@formily/antd';
 import CollectionField from '../../../collection-manager/CollectionField';
 import { useCollectionManager } from '../../../collection-manager';
 import { FormProvider } from '../../core';
+import { ReadPretty as InputReadPretty } from '../input';
 
 export const QuickEdit = observer((props) => {
   const field: any = useField();
@@ -45,6 +46,23 @@ export const QuickEdit = observer((props) => {
       </FormProvider>
     </div>
   );
+  const ReadPrettyField = () => {
+    switch (collectionField.interface) {
+      case 'richText':
+        return <InputReadPretty.Html {...props} value={field.value} ellipsis />;
+      case 'circle':
+      case 'point':
+      case 'polygon':
+      case 'lineString':
+        return (
+          <EllipsisWithTooltip ellipsis={true}>
+            {field.value?.map((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',')}
+          </EllipsisWithTooltip>
+        );
+      default:
+        return <InputReadPretty.TextArea {...props} autop={false} value={field.value} ellipsis />;
+    }
+  };
   return (
     <Popover content={content} trigger="click">
       <span style={{ maxHeight: 30, display: 'block', cursor: 'pointer' }}>
@@ -59,7 +77,7 @@ export const QuickEdit = observer((props) => {
             />
           )}
         </Tooltip>
-        <EllipsisWithTooltip ellipsis>{field.value}</EllipsisWithTooltip>
+        <ReadPrettyField />
         <FormItem {...props} wrapperStyle={{ visibility: 'hidden' }} feedbackLayout="none">
           <CollectionField value={field.value ?? null} />
         </FormItem>
