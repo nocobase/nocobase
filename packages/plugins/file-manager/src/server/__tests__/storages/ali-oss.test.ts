@@ -11,6 +11,8 @@ describe('storage:ali-oss', () => {
   let app: MockServer;
   let agent;
   let db: Database;
+  let AttachmentRepo;
+  let StorageRepo;
   let storage;
 
   beforeEach(async () => {
@@ -18,12 +20,16 @@ describe('storage:ali-oss', () => {
     agent = app.agent();
     db = app.db;
 
-    const Storage = db.getCollection('storages').model;
-    storage = await Storage.create({
-      ...aliossStorage.defaults(),
-      name: 'ali-oss',
-      default: true,
-      path: 'test/path',
+    AttachmentRepo = db.getCollection('attachments').repository;
+    StorageRepo = db.getCollection('storages').repository;
+
+    storage = await StorageRepo.create({
+      values: {
+        ...aliossStorage.defaults(),
+        name: 'ali-oss',
+        default: true,
+        path: 'test/path',
+      },
     });
   });
 
@@ -31,7 +37,7 @@ describe('storage:ali-oss', () => {
     await db.close();
   });
 
-  describe('direct attachment', () => {
+  describe('upload', () => {
     itif('upload file should be ok', async () => {
       const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
@@ -64,6 +70,58 @@ describe('storage:ali-oss', () => {
       const content = await requestFile(attachment.url, agent);
 
       expect(content.text).toBe('Hello world!\n');
+    });
+  });
+
+  describe('destroy', () => {
+    itif('destroy record should also delete file', async () => {
+      const { body } = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
+      });
+      // 通过 url 是否能正确访问
+      const content1 = await requestFile(body.data.url, agent);
+      expect(content1.text).toBe('Hello world!\n');
+
+      const res = await agent.resource('attachments').destroy({
+        filterByTk: body.data.id,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const count = await AttachmentRepo.count();
+      expect(count).toBe(0);
+
+      const content2 = await requestFile(body.data.url, agent);
+      expect(content2.status).toBe(404);
+    });
+
+    itif('destroy record should not delete file when paranoid', async () => {
+      const paranoidStorage = await StorageRepo.create({
+        values: {
+          ...aliossStorage.defaults(),
+          name: 'ali-oss-2',
+          path: 'test/nocobase',
+          paranoid: true,
+          default: true,
+        },
+      });
+
+      const { body } = await agent.resource('attachments').create({
+        [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
+      });
+      // 通过 url 是否能正确访问
+      const content1 = await requestFile(body.data.url, agent);
+      expect(content1.text).toBe('Hello world!\n');
+
+      const res = await agent.resource('attachments').destroy({
+        filterByTk: body.data.id,
+      });
+
+      expect(res.statusCode).toBe(200);
+      const count = await AttachmentRepo.count();
+      expect(count).toBe(0);
+
+      const content2 = await requestFile(body.data.url, agent);
+      expect(content2.status).toBe(200);
     });
   });
 });

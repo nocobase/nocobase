@@ -89,14 +89,7 @@ describe('association test', () => {
       },
     });
 
-    const userPlugin = app.getPlugin('users') as UsersPlugin;
-
-    const userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    const userAgent = app.agent().login(user);
 
     //@ts-ignore
     const response = await userAgent.resource('posts').list({});
@@ -153,19 +146,9 @@ describe('association field acl', () => {
     });
 
     const userPlugin = app.getPlugin('users') as UsersPlugin;
-    userAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: user.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    userAgent = app.agent().login(user);
 
-    adminAgent = app.agent().auth(
-      userPlugin.jwtService.sign({
-        userId: admin.get('id'),
-      }),
-      { type: 'bearer' },
-    );
+    adminAgent = app.agent().login(admin);
 
     await db.getRepository('collections').create({
       values: {

@@ -70,13 +70,14 @@ export default class VerificationPlugin extends Plugin {
 
     //   }
     // });
-
-    await next();
-
-    // or delete
-    await item.update({
-      status: CODE_STATUS_USED,
-    });
+    try {
+      await next();
+    } finally {
+      // or delete
+      await item.update({
+        status: CODE_STATUS_USED,
+      });
+    }
   };
 
   async install() {

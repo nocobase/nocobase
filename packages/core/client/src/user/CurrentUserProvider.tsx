@@ -12,7 +12,7 @@ export const useCurrentUserContext = () => {
 export const CurrentUserProvider = (props) => {
   const location = useLocation();
   const result = useRequest({
-    url: 'users:check',
+    url: 'auth:check',
   });
   if (result.loading) {
     return <Spin />;

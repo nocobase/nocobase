@@ -32,7 +32,7 @@ export async function checkAction(ctx, next) {
   let role = ctx.app.acl.getRole(currentRole);
 
   if (!role) {
-    await ctx.app.emit('acl:writeRoleToACL', roleInstance);
+    await ctx.app.emitAsync('acl:writeRoleToACL', roleInstance);
     role = ctx.app.acl.getRole(currentRole);
   }
 
