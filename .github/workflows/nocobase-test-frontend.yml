@@ -35,6 +35,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
+      - run: yarn install --frozen-lockfile
       - uses: actions/upload-artifact@v3
         with:
           name: node-modules
