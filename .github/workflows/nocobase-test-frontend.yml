@@ -36,10 +36,13 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'yarn'
       - run: yarn install --frozen-lockfile
+      - name: Archive node_modules
+        run: tar -czf node_modules.tar.gz node_modules
+
       - uses: actions/upload-artifact@v3
         with:
           name: node-modules
-          path: node_modules
+          path: node_modules.tar.gz
     timeout-minutes: 15
   build-test:
     strategy:
@@ -52,7 +55,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: node-modules
-          path: node_modules
+          path: node_modules.tar.gz
+      - name: Extract node_modules
+        run: tar -xzf node_modules.tar.gz
       - name: Setup node
         uses: actions/setup-node@v3
         with:
@@ -71,7 +76,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: node-modules
-          path: node_modules
+          path: node_modules.tar.gz
+      - name: Extract node_modules
+        run: tar -xzf node_modules.tar.gz
       - name: Setup node
         uses: actions/setup-node@v3
         with:
