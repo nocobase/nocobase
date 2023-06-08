@@ -59,7 +59,6 @@ const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const params = useParams<any>();
-  const location = useLocation();
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
@@ -69,6 +68,7 @@ const MenuEditor = (props) => {
     setTitle(schema.title);
     navigate(`/admin/${schema['x-uid']}`);
   };
+
   const { data, loading } = useRequest(
     {
       url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
@@ -77,23 +77,25 @@ const MenuEditor = (props) => {
       refreshDeps: [route.uiSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
-        // 不是  // "admin" | "admin/km5wokseg39" 的情况下，返回
-        const paramsArr = params['*'].split('/');
-        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 1) return;
-
-        if (defaultSelectedUid) {
-          const s = findByUid(schema, defaultSelectedUid);
+        // url 为 `/admin` 的情况
+        if (params['*'] === 'admin') {
+          const s = findMenuItem(schema);
           if (s) {
+            navigate(`/admin/${s['x-uid']}`);
             setTitle(s.title);
           } else {
-            const s = findMenuItem(schema);
-            if (s) {
-              navigate(`/admin/${s['x-uid']}`);
-              setTitle(s.title);
-            } else {
-              navigate(`/admin/`);
-            }
+            navigate(`/admin/`);
           }
+        }
+
+        // url 不为 `/admin/xxx` 的情况，不做处理
+        const paramsArr = params['*'].split('/');
+        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 2) return;
+
+        // url 为 `admin/xxx` 的情况
+        const s = findByUid(schema, defaultSelectedUid);
+        if (s) {
+          setTitle(s.title);
         } else {
           const s = findMenuItem(schema);
           if (s) {
