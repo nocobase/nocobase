@@ -31,4 +31,5 @@ export type RouteRedirectProps = RedirectProps | RouteProps;
 export interface RouteSwitchProps {
   routes?: RouteRedirectProps[];
   components?: any;
+  base?: string;
 }

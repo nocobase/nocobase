@@ -1,11 +1,13 @@
-import React from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { Redirect, Route, Switch, useLocation, useRouteMatch } from 'react-router-dom';
 import { RouteContext } from './context';
-import { useRouteComponent } from './hooks';
+import { useRoute, useRouteComponent } from './hooks';
 import { RouteSwitchProps } from './types';
 
 export function RouteSwitch(props: RouteSwitchProps) {
   const { routes = [] } = props;
+  const { url: base, path } = useRouteMatch();
+
   if (!routes.length) {
     return null;
   }
@@ -28,21 +30,20 @@ export function RouteSwitch(props: RouteSwitchProps) {
         if (!route.path && Array.isArray(route.routes)) {
           route.path = route.routes.map((r) => r.path) as any;
         }
+        let nextPath = route.path;
+        if (route.path && typeof route.path === 'string' && !route.path.startsWith('/')) {
+          nextPath = `${base.endsWith('/') ? base : base + '/'}${route.path}`;
+        }
         return (
           <Route
-            key={index}
-            path={route.path}
+            key={[nextPath].flat().join(',') as string}
+            path={nextPath}
             exact={route.exact}
             strict={route.strict}
             sensitive={route.sensitive}
-            render={(props) => {
-              return (
-                <RouteContext.Provider value={route}>
-                  <ComponentRenderer {...props} route={route} />
-                </RouteContext.Provider>
-              );
-            }}
-          />
+          >
+            <ComponentRenderer route={route} />
+          </Route>
         );
       })}
     </Switch>
@@ -50,10 +51,16 @@ export function RouteSwitch(props: RouteSwitchProps) {
 }
 
 function ComponentRenderer(props) {
-  const Component = useRouteComponent(props?.route?.component);
+  const { route } = props;
+  const Component = useRouteComponent(route?.component);
+  if (React.isValidElement(Component)) {
+    return React.cloneElement(Component, props, <RouteSwitch routes={route.routes} />);
+  }
   return (
-    <Component {...props}>
-      <RouteSwitch routes={props.route.routes} />
-    </Component>
+    <RouteContext.Provider value={route}>
+      <Component {...props}>
+        <RouteSwitch routes={route?.routes} />
+      </Component>
+    </RouteContext.Provider>
   );
 }

@@ -1,13 +1,12 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
-import { WithoutTableFieldResource } from '../../../block-provider';
-import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
+import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { Preview } from '../preview';
 import { isShowFilePicker } from './InputRecordPicker';
@@ -56,8 +55,7 @@ export const ReadPrettyRecordPicker: React.FC = observer(
         const text = getLabelFormatValue(labelUiSchema, val, true);
         return (
           <Fragment key={`${record.id}_${index}`}>
-            {/* test-record-picker-read-pretty-item 用于在单元测试中方便选中元素 */}
-            <span className="test-record-picker-read-pretty-item">
+            <span>
               {snapshot || isTagsMode ? (
                 text
               ) : (
@@ -112,11 +110,11 @@ export const ReadPrettyRecordPicker: React.FC = observer(
             <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
-            <ActionContext.Provider
+            <ActionContextProvider
               value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
             >
               {renderRecordProvider()}
-            </ActionContext.Provider>
+            </ActionContextProvider>
           </CollectionProvider>
         </BlockAssociationContext.Provider>
       </div>

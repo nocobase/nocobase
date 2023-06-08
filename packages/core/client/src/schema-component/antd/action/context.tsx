@@ -1,7 +1,18 @@
 import { Schema } from '@formily/react';
-import { createContext } from 'react';
+import { DrawerProps, ModalProps } from 'antd';
+import React, { createContext } from 'react';
+import { useActionContext } from './hooks';
 
 export const ActionContext = createContext<ActionContextProps>({});
+
+export const ActionContextProvider: React.FC<ActionContextProps & { value?: ActionContextProps }> = (props) => {
+  const contextProps = useActionContext();
+  return (
+    <ActionContext.Provider value={{ ...contextProps, ...props, ...props?.value }}>
+      {props.children}
+    </ActionContext.Provider>
+  );
+};
 
 export type OpenSize = 'small' | 'middle' | 'large';
 export interface ActionContextProps {
@@ -15,4 +26,6 @@ export interface ActionContextProps {
   formValueChanged?: boolean;
   setFormValueChanged?: (v: boolean) => void;
   fieldSchema?: Schema;
+  drawerProps?: DrawerProps;
+  modalProps?: ModalProps;
 }

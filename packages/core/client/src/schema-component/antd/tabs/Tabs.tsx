@@ -7,15 +7,18 @@ import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
+import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const contextProps = useTabsContext();
     return (
       <DndContext>
         <AntdTabs
+          {...contextProps}
           style={props.style}
           tabBarExtraContent={{
             right: render(),
@@ -93,7 +96,7 @@ Tabs.TabPane = observer(
       </SortableItem>
     );
   },
-  { displayName: 'TabPane' },
+  { displayName: 'Tabs.TabPane' },
 );
 
 Tabs.Designer = TabsDesigner;

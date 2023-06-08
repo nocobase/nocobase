@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
 import { Button, Modal, Popover } from 'antd';
 import classnames from 'classnames';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useActionContext } from '../..';
 import { useDesignable } from '../../';
 import { Icon } from '../../../icon';
@@ -16,7 +16,7 @@ import { ActionDrawer } from './Action.Drawer';
 import { ActionLink } from './Action.Link';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
-import { ActionContext } from './context';
+import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
@@ -95,16 +95,6 @@ export const Action: ComposedAction = observer(
     const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
     const { designable } = useDesignable();
     const tarComponent = useComponent(component) || component;
-    const renderTitle = useMemo(() => {
-      if (title) {
-        return title;
-      }
-      if (fieldSchema.title) {
-        return compile(fieldSchema.title);
-      }
-      return null;
-    }, [compile, fieldSchema.title, title]);
-
     useEffect(() => {
       field.linkageProperty = {};
       linkageRules
@@ -127,6 +117,7 @@ export const Action: ComposedAction = observer(
           icon={<Icon type={icon} />}
           disabled={disabled}
           style={{
+            ...others.style,
             opacity: designable && field?.data?.hidden && 0.1,
           }}
           onClick={(e: React.MouseEvent) => {
@@ -151,30 +142,28 @@ export const Action: ComposedAction = observer(
           component={tarComponent || Button}
           className={classnames(className, actionDesignerCss)}
         >
-          {renderTitle}
+          {title || compile(fieldSchema.title)}
           <Designer {...designerProps} />
         </SortableItem>
       );
     };
 
     return (
-      <ActionContext.Provider
-        value={{
-          button: renderButton(),
-          visible,
-          setVisible,
-          formValueChanged,
-          setFormValueChanged,
-          openMode,
-          openSize,
-          containerRefKey,
-          fieldSchema,
-        }}
+      <ActionContextProvider
+        button={renderButton()}
+        visible={visible}
+        setVisible={setVisible}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
+        openMode={openMode}
+        openSize={openSize}
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
         {!popover && props.children}
-      </ActionContext.Provider>
+      </ActionContextProvider>
     );
   },
   { displayName: 'Action' },
