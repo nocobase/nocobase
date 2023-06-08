@@ -10,7 +10,6 @@ import { EditProfile } from './EditProfile';
 import { LanguageSettings } from './LanguageSettings';
 import { SwitchRole } from './SwitchRole';
 import { ThemeSettings } from './ThemeSettings';
-
 const ApplicationVersion = () => {
   const data = useCurrentAppInfo();
   return (
@@ -104,8 +103,7 @@ export const SettingsMenu: React.FC<{
       <Menu.Item
         key="signout"
         onClick={async () => {
-          await api.resource('users').signout();
-          api.auth.setToken(null);
+          await api.auth.signOut();
           history.push(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
         }}
       >
@@ -114,13 +112,10 @@ export const SettingsMenu: React.FC<{
     </Menu>
   );
 };
-
 export const DropdownVisibleContext = createContext(null);
-
 export const CurrentUser = () => {
   const [visible, setVisible] = useState(false);
   const { data } = useCurrentUserContext();
-
   return (
     <div style={{ display: 'inline-flex', verticalAlign: 'top' }}>
       <DropdownVisibleContext.Provider value={{ visible, setVisible }}>

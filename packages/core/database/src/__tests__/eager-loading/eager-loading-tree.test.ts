@@ -198,6 +198,7 @@ describe('Eager loading tree', () => {
       model: User.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
 
     await eagerLoadingTree.load(users.map((item) => item.id));
@@ -248,6 +249,7 @@ describe('Eager loading tree', () => {
       model: User.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
 
     await eagerLoadingTree.load([1, 2]);
@@ -298,6 +300,7 @@ describe('Eager loading tree', () => {
       model: User.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
 
     await eagerLoadingTree.load(users.map((item) => item.id));
@@ -353,6 +356,7 @@ describe('Eager loading tree', () => {
       model: Post.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
 
     await eagerLoadingTree.load([1, 2]);
@@ -415,6 +419,7 @@ describe('Eager loading tree', () => {
       model: Post.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
     await eagerLoadingTree.load([1, 2]);
     const root = eagerLoadingTree.root;
@@ -517,6 +522,7 @@ describe('Eager loading tree', () => {
       model: User.model,
       rootAttributes: findOptions.attributes,
       includeOption: findOptions.include,
+      db: db,
     });
 
     expect(eagerLoadingTree.root.children).toHaveLength(1);

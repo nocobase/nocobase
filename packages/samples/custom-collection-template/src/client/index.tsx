@@ -47,6 +47,9 @@ const myCollectionTemplate: ICollectionTemplate = {
 
 registerTemplate('myCollection', myCollectionTemplate);
 
-export default React.memo((props) => {
+const CustomCollectionTemplateMemo = React.memo((props) => {
   return <>{props.children}</>;
 });
+CustomCollectionTemplateMemo.displayName = 'CustomCollectionTemplateMemo';
+
+export default CustomCollectionTemplateMemo;

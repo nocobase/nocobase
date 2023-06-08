@@ -30,8 +30,8 @@ import { ErrorFallback } from '../schema-component/antd/error-fallback';
 import { SchemaInitializerProvider } from '../schema-initializer';
 import { BlockTemplateDetails, BlockTemplatePage } from '../schema-templates';
 import { SystemSettingsProvider } from '../system-settings';
-import { SigninPage, SignupPage } from '../user';
-import { SigninPageExtensionProvider } from '../user/SigninPageExtension';
+import { SigninPage, SignupPage } from '../auth';
+import { SigninPageExtensionProvider } from '../auth/SigninPageExtension';
 import { compose } from './compose';
 
 export interface ApplicationOptions {
@@ -58,6 +58,8 @@ const App = React.memo((props: any) => {
   });
   return <C />;
 });
+
+App.displayName = 'App';
 
 export class Application {
   providers = [];

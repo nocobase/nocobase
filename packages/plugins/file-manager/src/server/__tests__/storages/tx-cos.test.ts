@@ -21,7 +21,7 @@ describe('storage:tx-cos', () => {
     const Storage = db.getCollection('storages').model;
     storage = await Storage.create({
       ...txStorage.defaults(),
-      name: `tx-cos_${db.getTablePrefix()}`,
+      name: 'tx-cos',
       default: true,
       path: 'test/path',
     });
@@ -33,7 +33,7 @@ describe('storage:tx-cos', () => {
 
   describe('direct attachment', () => {
     itif('upload file should be ok', async () => {
-      const { body } = await agent.resource('attachments').upload({
+      const { body } = await agent.resource('attachments').create({
         [FILE_FIELD_NAME]: path.resolve(__dirname, '../files/text.txt'),
       });
 

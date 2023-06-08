@@ -1,8 +1,8 @@
-import { connect, mapReadPretty, mapProps } from '@formily/react';
+import { connect, mapReadPretty } from '@formily/react';
 import { InputNumber } from 'antd';
+import * as math from 'mathjs';
 import React from 'react';
 import { ReadPretty } from '../input-number/ReadPretty';
-import * as math from 'mathjs';
 
 export const Percent = connect(
   (props) => {

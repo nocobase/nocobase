@@ -3,7 +3,6 @@ import { observer, RecursionField, useField, useFieldSchema } from '@formily/rea
 import { Modal, ModalProps } from 'antd';
 import classNames from 'classnames';
 import React from 'react';
-import { createPortal } from 'react-dom';
 import { OpenSize, useActionContext } from '.';
 import { ComposedActionDrawer } from './types';
 
@@ -12,99 +11,105 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['middle', '60%'],
   ['large', '80%'],
 ]);
-export const ActionModal: ComposedActionDrawer<ModalProps> = observer((props) => {
-  const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
-  const { visible, setVisible, openSize = 'large', modalProps } = useActionContext();
-  const actualWidth = width ?? openSizeWidthMap.get(openSize);
-  const schema = useFieldSchema();
-  const field = useField();
-  const footerSchema = schema.reduceProperties((buf, s) => {
-    if (s['x-component'] === footerNodeName) {
-      return s;
-    }
-    return buf;
-  });
-  return (
-    <Modal
-      width={actualWidth}
-      title={field.title}
-      {...(others as ModalProps)}
-      {...modalProps}
-      style={{
-        ...modalProps?.style,
-        ...others?.style,
-      }}
-      destroyOnClose
-      open={visible}
-      onCancel={() => setVisible(false, true)}
-      className={classNames(
-        others.className,
-        modalProps?.className,
-        css`
-          &.nb-action-popup {
-            .ant-modal-header {
-              display: none;
-            }
-
-            .ant-modal-body {
-              padding-top: 16px;
-            }
-
-            .ant-modal-body {
-              background: #f0f2f5;
-            }
-
-            .ant-modal-close-x {
-              width: 32px;
-              height: 32px;
-              line-height: 32px;
-            }
-          }
-        `,
-      )}
-      footer={
-        footerSchema ? (
-          <div
-            className={css`
-              display: flex;
-              justify-content: flex-end;
-              width: 100%;
-
-              .ant-btn {
-                margin-right: 8px;
-              }
-            `}
-          >
-            <RecursionField
-              basePath={field.address}
-              schema={schema}
-              onlyRenderProperties
-              filterProperties={(s) => {
-                return s['x-component'] === footerNodeName;
-              }}
-            />
-          </div>
-        ) : (
-          false
-        )
+export const ActionModal: ComposedActionDrawer<ModalProps> = observer(
+  (props) => {
+    const { footerNodeName = 'Action.Modal.Footer', width, ...others } = props;
+    const { visible, setVisible, openSize = 'large', modalProps } = useActionContext();
+    const actualWidth = width ?? openSizeWidthMap.get(openSize);
+    const schema = useFieldSchema();
+    const field = useField();
+    const footerSchema = schema.reduceProperties((buf, s) => {
+      if (s['x-component'] === footerNodeName) {
+        return s;
       }
-    >
-      <RecursionField
-        basePath={field.address}
-        schema={schema}
-        onlyRenderProperties
-        filterProperties={(s) => {
-          return s['x-component'] !== footerNodeName;
+      return buf;
+    });
+    return (
+      <Modal
+        width={actualWidth}
+        title={field.title}
+        {...(others as ModalProps)}
+        {...modalProps}
+        style={{
+          ...modalProps?.style,
+          ...others?.style,
         }}
-      />
-    </Modal>
-  );
-});
+        destroyOnClose
+        open={visible}
+        onCancel={() => setVisible(false, true)}
+        className={classNames(
+          others.className,
+          modalProps?.className,
+          css`
+            &.nb-action-popup {
+              .ant-modal-header {
+                display: none;
+              }
 
-ActionModal.Footer = observer(() => {
-  const field = useField();
-  const schema = useFieldSchema();
-  return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
-});
+              .ant-modal-body {
+                padding-top: 16px;
+              }
+
+              .ant-modal-body {
+                background: #f0f2f5;
+              }
+
+              .ant-modal-close-x {
+                width: 32px;
+                height: 32px;
+                line-height: 32px;
+              }
+            }
+          `,
+        )}
+        footer={
+          footerSchema ? (
+            <div
+              className={css`
+                display: flex;
+                justify-content: flex-end;
+                width: 100%;
+
+                .ant-btn {
+                  margin-right: 8px;
+                }
+              `}
+            >
+              <RecursionField
+                basePath={field.address}
+                schema={schema}
+                onlyRenderProperties
+                filterProperties={(s) => {
+                  return s['x-component'] === footerNodeName;
+                }}
+              />
+            </div>
+          ) : (
+            false
+          )
+        }
+      >
+        <RecursionField
+          basePath={field.address}
+          schema={schema}
+          onlyRenderProperties
+          filterProperties={(s) => {
+            return s['x-component'] !== footerNodeName;
+          }}
+        />
+      </Modal>
+    );
+  },
+  { displayName: 'ActionModal' },
+);
+
+ActionModal.Footer = observer(
+  () => {
+    const field = useField();
+    const schema = useFieldSchema();
+    return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
+  },
+  { displayName: 'ActionModal.Footer' },
+);
 
 export default ActionModal;

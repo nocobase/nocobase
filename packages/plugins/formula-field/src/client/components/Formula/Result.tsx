@@ -1,10 +1,18 @@
+import React, { useState } from 'react';
 import { onFormValuesChange } from '@formily/core';
+import { toJS } from '@formily/reactive';
 import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
-import { Checkbox, DatePicker, InputNumber, Input as InputString, useCollection, useCollectionManager } from '@nocobase/client';
+import {
+  Checkbox,
+  DatePicker,
+  InputNumber,
+  Input as InputString,
+  useCollection,
+  useCollectionManager,
+  useFormBlockContext,
+} from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
-import cloneDeep from 'lodash/cloneDeep';
-import React from 'react';
 
 import { toDbType } from '../../../utils';
 
@@ -31,17 +39,23 @@ function useTargetCollectionField() {
   return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
 }
 
-export const Result = (props) => {
+export function Result(props) {
   const { value, ...others } = props;
   const fieldSchema = useFieldSchema();
-  const { name, dataType, expression, engine = 'math.js' } = useTargetCollectionField() ?? {};
+  const { dataType, expression, engine = 'math.js' } = useTargetCollectionField() ?? {};
+  const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
+  const formBlockContext = useFormBlockContext();
   useFormEffects(() => {
     onFormValuesChange((form) => {
-      if ((fieldSchema.name as string).indexOf('.') >= 0) {
+      if (
+        (fieldSchema.name as string).indexOf('.') >= 0 ||
+        !formBlockContext?.form ||
+        formBlockContext.form?.readPretty
+      ) {
         return;
       }
-      const scope = cloneDeep(form.values);
+      const scope = toJS(form.values);
       let v;
       try {
         v = evaluate(expression, scope);
@@ -49,14 +63,16 @@ export const Result = (props) => {
       } catch (error) {
         v = null;
       }
-      if ((v == null && value == null) || JSON.stringify(v) === JSON.stringify(value)) {
+      if ((v == null && editingValue == null) || JSON.stringify(v) === JSON.stringify(editingValue)) {
         return;
       }
-      form.setValuesIn(name, v);
+      setEditingValue(v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
-  return <Component {...others} value={dataType === 'double' ? toFixedByStep(value, props.step) : value} />;
-};
+  return (
+    <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />
+  );
+}
 
 export default Result;

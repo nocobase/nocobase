@@ -9,25 +9,28 @@ import { useRecord, Variable } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { useCollectionFieldOptions } from '../variable';
 
-const InternalExpression = observer((props: any) => {
-  const { onChange } = props;
-  const { values } = useForm();
-  const [collection, setCollection] = useState(values?.sourceCollection);
+const InternalExpression = observer(
+  (props: any) => {
+    const { onChange } = props;
+    const { values } = useForm();
+    const [collection, setCollection] = useState(values?.sourceCollection);
 
-  useFormEffects(() => {
-    onFormInitialValuesChange((form) => {
-      setCollection(form.values.sourceCollection);
+    useFormEffects(() => {
+      onFormInitialValuesChange((form) => {
+        setCollection(form.values.sourceCollection);
+      });
+      onFieldInputValueChange('sourceCollection', (f) => {
+        setCollection(f.value);
+        onChange(null);
+      });
     });
-    onFieldInputValueChange('sourceCollection', (f) => {
-      setCollection(f.value);
-      onChange(null);
-    });
-  });
 
-  const options = useCollectionFieldOptions({ collection: collection });
+    const options = useCollectionFieldOptions({ collection: collection });
 
-  return <Variable.TextArea {...props} scope={options} />;
-});
+    return <Variable.TextArea {...props} scope={options} />;
+  },
+  { displayName: 'InternalExpression' },
+);
 
 function Result(props) {
   const { t } = useTranslation();

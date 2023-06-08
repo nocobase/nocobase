@@ -182,6 +182,7 @@ const HelloProvider = React.memo((props) => {
   }
   return <>{props.children}</>
 });
+HelloProvider.displayName = 'HelloProvider'
 
 app.use(HelloProvider);
 

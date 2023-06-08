@@ -1,7 +1,7 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { cx } from '@emotion/css';
-import { Schema, observer, useField, useFieldSchema } from '@formily/react';
-import React, { HTMLAttributes, createContext, useContext } from 'react';
+import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import React, { createContext, HTMLAttributes, useContext } from 'react';
 
 export const DraggableContext = createContext(null);
 export const SortableContext = createContext(null);
@@ -65,23 +65,26 @@ interface SortableItemProps extends HTMLAttributes<HTMLDivElement> {
   removeParentsIfNoChildren?: boolean;
 }
 
-export const SortableItem: React.FC<SortableItemProps> = observer((props) => {
-  const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
-  return (
-    <SortableProvider
-      id={id}
-      data={{
-        insertAdjacent: 'afterEnd',
-        schema: schema,
-        removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
-      }}
-    >
-      <Sortable id={eid} {...others}>
-        {props.children}
-      </Sortable>
-    </SortableProvider>
-  );
-});
+export const SortableItem: React.FC<SortableItemProps> = observer(
+  (props) => {
+    const { schema, id, eid, removeParentsIfNoChildren, ...others } = useSortableItemProps(props);
+    return (
+      <SortableProvider
+        id={id}
+        data={{
+          insertAdjacent: 'afterEnd',
+          schema: schema,
+          removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
+        }}
+      >
+        <Sortable id={eid} {...others}>
+          {props.children}
+        </Sortable>
+      </SortableProvider>
+    );
+  },
+  { displayName: 'SortableItem' },
+);
 
 export const DragHandler = (props) => {
   const { draggable } = useContext(SortableContext);
