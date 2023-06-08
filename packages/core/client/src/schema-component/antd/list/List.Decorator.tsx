@@ -35,9 +35,6 @@ const InternalListBlockProvider = (props) => {
           <div
             className={cx(
               css`
-                .ant-card-body {
-                  padding: 15px 20px;
-                }
                 .ant-description-input {
                   line-height: 34px;
                 }

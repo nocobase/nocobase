@@ -44,9 +44,6 @@ const InternalGridCardBlockProvider = (props) => {
                   background: #fff;
                 }
               }
-              .ant-card-body {
-                padding: 15px 20px;
-              }
               .ant-formily-item-layout-vertical {
                 margin-bottom: 0px;
               }
