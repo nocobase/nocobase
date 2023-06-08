@@ -1,14 +1,13 @@
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { isValid } from '@formily/shared';
 import { Checkbox as AntdCheckbox, Tag } from 'antd';
 import type { CheckboxGroupProps, CheckboxProps } from 'antd/es/checkbox';
 import uniq from 'lodash/uniq';
 import React from 'react';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
-import Select from '../select/Select';
 
-type ComposedCheckbox = any & {
+type ComposedCheckbox = React.FC<CheckboxProps> & {
   Group?: React.FC<CheckboxGroupProps>;
   __ANT_CHECKBOX?: boolean;
 };
@@ -34,15 +33,8 @@ export const Checkbox: ComposedCheckbox = connect(
 
 Checkbox.__ANT_CHECKBOX = true;
 
-const InputCheckboxGroup: React.FC<CheckboxGroupProps> = (props: any) => {
-  const fieldSchema = useFieldSchema();
-  const isDisplayInTable = fieldSchema.parent?.['x-component'] === 'TableV2.Column';
-
-  return isDisplayInTable ? <Select {...props} multiple={true} mode="multiple" /> : <AntdCheckbox.Group {...props} />;
-};
-
 Checkbox.Group = connect(
-  InputCheckboxGroup,
+  AntdCheckbox.Group,
   mapProps({
     dataSource: 'options',
   }),
