@@ -1,4 +1,4 @@
-import { FormLayout, FormItem } from '@formily/antd';
+import { FormLayout } from '@formily/antd';
 import { RecursionField, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect } from 'react';
 import { CollectionProvider } from '../../../collection-manager';
