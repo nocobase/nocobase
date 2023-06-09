@@ -1,4 +1,4 @@
-name: NocoBase Test Full
+name: NocoBase Backend Test
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       - 'packages/core/database/**'
       - 'packages/core/server/**'
       - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
     paths:
       - 'packages/core/acl/**'
@@ -18,30 +19,14 @@ on:
       - 'packages/core/database/**'
       - 'packages/core/server/**'
       - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-backend.yml'
 
 jobs:
-  build-test:
-    strategy:
-      matrix:
-        node_version: ['18']
-    runs-on: ubuntu-latest
-    container: node:${{ matrix.node_version }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
-      - run: yarn install
-      - run: yarn build
-    timeout-minutes: 15
-
   sqlite-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     steps:
@@ -53,7 +38,7 @@ jobs:
           cache: 'yarn'
       - run: yarn install
       - name: Test with Sqlite
-        run: yarn nocobase install -f && yarn test && yarn test:client
+        run: yarn nocobase install -f && yarn test
         env:
           DB_DIALECT: sqlite
           DB_STORAGE: /tmp/db.sqlite
@@ -63,10 +48,10 @@ jobs:
   postgres-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
-        schema: [public, nocobase]
-        collection_schema: [public, user_schema]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
+        schema: [ public, nocobase ]
+        collection_schema: [ public, user_schema ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -94,7 +79,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with postgres
-        run: yarn nocobase install -f && yarn test && yarn test:client
+        run: yarn nocobase install -f && yarn test
         env:
           DB_DIALECT: postgres
           DB_HOST: postgres
@@ -110,8 +95,8 @@ jobs:
   mysql-test:
     strategy:
       matrix:
-        node_version: ['18']
-        underscored: [true, false]
+        node_version: [ '18' ]
+        underscored: [ true, false ]
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:
@@ -131,7 +116,7 @@ jobs:
       - run: yarn install
       # - run: yarn build
       - name: Test with MySQL
-        run: yarn nocobase install -f && yarn test && yarn test:client
+        run: yarn nocobase install -f && yarn test
         env:
           DB_DIALECT: mysql
           DB_HOST: mysql
