@@ -6,20 +6,20 @@ on:
       - main
       - develop
     paths:
-      - '.github/workflows/nocobase-test-backend.yml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
       - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-backend.yml'
   pull_request:
     paths:
-      - '.github/workflows/nocobase-test-backend.yml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
       - 'packages/core/server/**'
       - 'packages/plugins/**/src/server/**'
+      - '.github/workflows/nocobase-test-backend.yml'
 
 jobs:
   sqlite-test:
