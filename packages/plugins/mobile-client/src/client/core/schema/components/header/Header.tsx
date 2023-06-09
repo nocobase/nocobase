@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
 import { SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { HeaderDesigner } from './Header.Designer';
 import { useField, useFieldSchema } from '@formily/react';
@@ -15,7 +15,14 @@ const InternalHeader = (props: HeaderProps) => {
   const { title = '{{ t("Untitled") }}', showBack = false } = { ...props, ...field?.componentProps };
   const Designer = useDesigner();
   const compile = useCompile();
+  const compiledTitle = compile(title);
   const history = useHistory();
+
+  useEffect(() => {
+    // sync title
+    document.title = `${compiledTitle} - NocoBase`;
+  }, [compiledTitle]);
+
   return (
     <SortableItem
       className={cx(
@@ -27,7 +34,7 @@ const InternalHeader = (props: HeaderProps) => {
       )}
     >
       <NavBar backArrow={showBack} onBack={history.goBack}>
-        {compile(title)}
+        {compiledTitle}
       </NavBar>
       <Designer />
     </SortableItem>
