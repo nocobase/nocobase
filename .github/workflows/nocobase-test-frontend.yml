@@ -7,6 +7,7 @@ on:
       - develop
     paths:
       - 'packages/**'
+      - '.github/workflows/nocobase-test-frontend.yml'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
       - '!packages/core/database/**'
@@ -14,6 +15,7 @@ on:
       - '!packages/plugins/**/src/server/**'
   pull_request:
     paths:
+      - '.github/workflows/nocobase-test-backend.yml'
       - 'packages/**'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
