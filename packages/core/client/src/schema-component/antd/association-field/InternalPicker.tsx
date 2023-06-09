@@ -16,7 +16,7 @@ import {
 } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
-import { ActionContext } from '../action';
+import { ActionContextProvider } from '../action';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
 import { flatData, getLabelFormatValue, useLabelUiSchema } from './util';
@@ -175,9 +175,7 @@ export const InternalPicker = observer(
             </RecordProvider>
           )}
         </Input.Group>
-        <ActionContext.Provider
-          value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}
-        >
+        <ActionContextProvider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
           <RecordPickerProvider {...pickerProps}>
             <CollectionProvider name={collectionField?.target}>
               <FormProvider>
@@ -196,7 +194,7 @@ export const InternalPicker = observer(
               </FormProvider>
             </CollectionProvider>
           </RecordPickerProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </>
     );
   },
