@@ -1,6 +1,6 @@
 import { FileOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, PluginManager, SchemaComponent } from '@nocobase/client';
+import { ActionContextProvider, PluginManager, SchemaComponent } from '@nocobase/client';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { storageSchema } from './schemas/storage';
@@ -24,7 +24,7 @@ export const FileStorageShortcut = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         eventKey={'FileStorage'}
         onClick={() => {
@@ -34,6 +34,6 @@ export const FileStorageShortcut = () => {
         title={t('File manager')}
       />
       <SchemaComponent components={{ StorageOptions }} schema={schema} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

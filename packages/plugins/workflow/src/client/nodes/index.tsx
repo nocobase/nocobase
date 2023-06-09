@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -371,7 +371,7 @@ export function NodeDefaultView(props) {
         </div>
         <RemoveButton />
         <JobButton />
-        <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+        <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
           <SchemaComponent
             scope={instruction.scope}
             components={instruction.components}
@@ -486,7 +486,7 @@ export function NodeDefaultView(props) {
               },
             }}
           />
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </div>
       {children}
     </div>
