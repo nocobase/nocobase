@@ -1,0 +1,42 @@
+name: NocoBase FrontEnd Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'packages/**'
+      - '.github/workflows/nocobase-test-frontend.yml'
+      - '!packages/core/acl/**'
+      - '!packages/core/actions/**'
+      - '!packages/core/database/**'
+      - '!packages/core/server/**'
+      - '!packages/plugins/**/src/server/**'
+  pull_request:
+    paths:
+      - '.github/workflows/nocobase-test-frontend.yml'
+      - 'packages/**'
+      - '!packages/core/acl/**'
+      - '!packages/core/actions/**'
+      - '!packages/core/database/**'
+      - '!packages/core/server/**'
+      - '!packages/plugins/**/src/server/**'
+
+jobs:
+  frontend-test:
+    strategy:
+      matrix:
+        node_version: [ '18' ]
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+      - run: yarn install
+      - run: yarn test:client
+    timeout-minutes: 15
