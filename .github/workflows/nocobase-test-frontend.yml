@@ -1,4 +1,4 @@
-name: NocoBase Test Lite
+name: NocoBase FrontEnd Test
 
 on:
   push:
