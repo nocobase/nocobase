@@ -52,9 +52,7 @@ export type PluginCallback = () => Promise<any>;
 const App = React.memo((props: any) => {
   const C = compose(...props.providers)(() => {
     const routes = useRoutes();
-    return (
-      <RouteSwitch routes={routes} />
-    );
+    return <RouteSwitch routes={routes} />;
   });
   return <C />;
 });

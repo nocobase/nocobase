@@ -5,7 +5,7 @@ export const appendChildCollectionNameAfterRepositoryFind = (db) => {
         if (row.__collection) {
           continue;
         }
-        
+
         const fullTableName = findOptions.raw
           ? `${row['__schemaName']}.${row['__tableName']}`
           : `${row.get('__schemaName')}.${row.get('__tableName')}`;

@@ -287,18 +287,18 @@ export const InternalAdminLayout = (props: any) => {
 };
 
 export const AdminProvider = (props) => {
-  return <CurrentAppInfoProvider>
-    <CurrentUserProvider>
-      <RemoteSchemaTemplateManagerProvider>
-        <RemoteCollectionManagerProvider>
-          <ACLRolesCheckProvider>
-            {props.children}
-          </ACLRolesCheckProvider>
-        </RemoteCollectionManagerProvider>
-      </RemoteSchemaTemplateManagerProvider>
-    </CurrentUserProvider>
-  </CurrentAppInfoProvider>
-}
+  return (
+    <CurrentAppInfoProvider>
+      <CurrentUserProvider>
+        <RemoteSchemaTemplateManagerProvider>
+          <RemoteCollectionManagerProvider>
+            <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
+          </RemoteCollectionManagerProvider>
+        </RemoteSchemaTemplateManagerProvider>
+      </CurrentUserProvider>
+    </CurrentAppInfoProvider>
+  );
+};
 
 export const AdminLayout = (props) => {
   return (
