@@ -21946,7 +21946,15 @@ rc-util@^5.0.1, rc-util@^5.0.6, rc-util@^5.15.0, rc-util@^5.16.0, rc-util@^5.16.
     "@babel/runtime" "^7.18.3"
     react-is "^16.12.0"
 
-rc-util@^5.30.0, rc-util@^5.31.1:
+rc-util@^5.30.0:
+  version "5.30.0"
+  resolved "https://registry.yarnpkg.com/rc-util/-/rc-util-5.30.0.tgz#76ae9019ff72a5b519ce51465cd77b2e451207e3"
+  integrity sha512-uaWpF/CZGyXuhQG71MWxkU+0bWkPEgqZUxEv251Cu7p3kpHDNm5+Ygu/U8ux0a/zbfGW8PsKcJL0XVBOMrlIZg==
+  dependencies:
+    "@babel/runtime" "^7.18.3"
+    react-is "^16.12.0"
+
+rc-util@^5.31.1:
   version "5.33.0"
   resolved "https://registry.yarnpkg.com/rc-util/-/rc-util-5.33.0.tgz#8e673700e467b24c722014f2fe2f2f77aa6c2c07"
   integrity sha512-mq2NkEAnHklq4fgU/JqjiE0PS8+8u33gEWw2bDUNDPck3OroPpSgw/8oEyuFrvPgaZEmt9BgQdh59JfQt2cU+w==
@@ -25704,7 +25712,7 @@ use-memo-one@^1.1.1:
 
 use-sync-external-store@1.2.0, use-sync-external-store@^1.2.0:
   version "1.2.0"
-  resolved "https://registry.npmmirror.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
+  resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.2.0.tgz#7dbefd6ef3fe4e767a0cf5d7287aacfb5846928a"
 
 use@^3.1.0:
   version "3.1.1"
