@@ -1,6 +1,6 @@
 import { observable } from '@formily/reactive';
 import { error } from '@nocobase/utils/client';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
@@ -49,6 +49,8 @@ const getChildren = (options: FieldOption[], { schema, depth, maxDepth, loadChil
 export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDepth?: number }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
+  const schemaRef = useRef(schema);
+  schemaRef.current = schema;
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -63,7 +65,7 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
       setTimeout(() => {
         const children =
           getChildren(getFilterOptions(collectionName), {
-            schema,
+            schema: schemaRef.current,
             depth: option.depth + 1,
             maxDepth,
             loadChildren,
@@ -90,7 +92,7 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
       depth: 0,
       loadChildren,
     } as Option);
-  }, [schema]);
+  }, []);
 
   // 必须使用 observable 包一下，使其变成响应式对象，不然 children 加载后不会更新 UI
   return observable(result);

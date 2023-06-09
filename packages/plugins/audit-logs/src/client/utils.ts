@@ -1,6 +1,4 @@
 import { uid } from '@formily/shared';
-import { Schema } from '@formily/react';
-import cloneDeep from 'lodash/cloneDeep';
 
 export const createSchema = () => {
   const filterSchema = {
@@ -303,18 +301,3 @@ export const createSchema = () => {
   };
   return schema;
 };
-
-/**
- * 获取 TableBlockDesigner 或 DetailsDesigner 的 resource
- */
-export function getResourceOfBlockDesigner(schema: Schema) {
-  let tempSchema = cloneDeep(schema);
-  while (
-    tempSchema &&
-    ((tempSchema?.['x-designer'] !== 'TableBlockDesigner' && tempSchema?.['x-designer'] !== 'DetailsDesigner') ||
-      tempSchema?.['x-decorator-props']?.['resource'] === 'auditLogs')
-  ) {
-    tempSchema = tempSchema.parent;
-  }
-  return tempSchema?.['x-decorator-props']?.['resource'];
-}

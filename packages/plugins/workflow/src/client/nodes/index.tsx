@@ -51,7 +51,7 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): JSX.Element;
+  component?(props): JSX.Element;
   endding?: boolean;
   useVariables?(node, options?): VariableOptions;
   useScopeVariables?(node, options?): VariableOptions;
@@ -137,13 +137,13 @@ export function useUpstreamScopes(node) {
 }
 
 export function Node({ data }) {
-  const instruction = instructions.get(data.type);
+  const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(nodeBlockClass)}>
-        {instruction.render ? instruction.render(data) : <NodeDefaultView data={data} />}
-        {!instruction.endding ? (
+        <Component data={data} />
+        {!endding ? (
           <AddButton upstream={data} />
         ) : (
           <div

@@ -1,9 +1,10 @@
 import { css } from '@emotion/css';
-import { ISchema, observer } from '@formily/react';
+import { ISchema, observer, useForm } from '@formily/react';
 import { Button, Dropdown, Menu, Switch } from 'antd';
 import classNames from 'classnames';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { Icon } from '../icon';
+import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
 import './style.less';
 import {
@@ -106,6 +107,24 @@ SchemaInitializer.Button = observer(
           }
         });
     };
+
+    const buttonDom = (
+      <Button
+        type={'dashed'}
+        style={{
+          borderColor: '#f18b62',
+          color: '#f18b62',
+          ...style,
+        }}
+        {...others}
+        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+      >
+        {compile(props.children || props.title)}
+      </Button>
+    );
+    if (!items.length) {
+      return buttonDom;
+    }
     const menu = <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>{renderItems(items)}</Menu>;
     if (!designable && props.designable !== true) {
       return null;
@@ -131,22 +150,7 @@ SchemaInitializer.Button = observer(
           {...dropdown}
           overlay={menu}
         >
-          {component ? (
-            component
-          ) : (
-            <Button
-              type={'dashed'}
-              style={{
-                borderColor: '#f18b62',
-                color: '#f18b62',
-                ...style,
-              }}
-              {...others}
-              icon={<Icon type={icon as string} />}
-            >
-              {compile(props.children || props.title)}
-            </Button>
-          )}
+          {component ? component : buttonDom}
         </Dropdown>
       </SchemaInitializerButtonContext.Provider>
     );
@@ -240,6 +244,102 @@ SchemaInitializer.Item = (props: SchemaInitializerItemProps) => {
 
 SchemaInitializer.itemWrap = (component?: SchemaInitializerItemComponent) => {
   return component;
+};
+
+interface SchemaInitializerActionModalProps {
+  title: string;
+  schema: any;
+  onCancel?: () => void;
+  onSubmit?: (values: any) => void;
+  buttonText?: any;
+}
+SchemaInitializer.ActionModal = (props: SchemaInitializerActionModalProps) => {
+  const { title, schema, buttonText, onCancel, onSubmit } = props;
+
+  const useCancelAction = useCallback(() => {
+    const form = useForm();
+    const ctx = useActionContext();
+    return {
+      async run() {
+        await onCancel?.();
+        ctx.setVisible(false);
+        form.reset();
+      },
+    };
+  }, [onCancel]);
+
+  const useSubmitAction = useCallback(() => {
+    const form = useForm();
+    const ctx = useActionContext();
+    return {
+      async run() {
+        await form.validate();
+        await onSubmit?.(form.values);
+        ctx.setVisible(false);
+        form.reset();
+      },
+    };
+  }, [onSubmit]);
+  const defaultSchema = useMemo(() => {
+    return {
+      type: 'void',
+      properties: {
+        action1: {
+          type: 'void',
+          'x-component': 'Action',
+          'x-component-props': {
+            icon: 'PlusOutlined',
+            style: {
+              borderColor: 'rgb(241, 139, 98)',
+              color: 'rgb(241, 139, 98)',
+            },
+            title: buttonText,
+            type: 'dashed',
+          },
+          properties: {
+            drawer1: {
+              'x-decorator': 'Form',
+              'x-component': 'Action.Modal',
+              'x-component-props': {
+                style: {
+                  maxWidth: '520px',
+                  width: '100%',
+                },
+              },
+              type: 'void',
+              title,
+              properties: {
+                ...(schema?.properties || schema),
+                footer: {
+                  'x-component': 'Action.Modal.Footer',
+                  type: 'void',
+                  properties: {
+                    cancel: {
+                      title: '{{t("Cancel")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        useAction: useCancelAction,
+                      },
+                    },
+                    submit: {
+                      title: '{{t("Submit")}}',
+                      'x-component': 'Action',
+                      'x-component-props': {
+                        type: 'primary',
+                        useAction: useSubmitAction,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    };
+  }, [buttonText, schema, title, useCancelAction, useSubmitAction]);
+
+  return <SchemaComponent schema={defaultSchema as any} />;
 };
 
 SchemaInitializer.SwitchItem = (props) => {

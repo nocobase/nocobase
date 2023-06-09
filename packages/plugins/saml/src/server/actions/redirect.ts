@@ -14,7 +14,10 @@ export const redirect = async (ctx: Context, next) => {
     </head>
     <body>
       <script>
-        window.opener.postMessage(${JSON.stringify({ clientId: params.clientId, samlResponse: params.values })}, '*');
+        window.opener.postMessage(${JSON.stringify({
+          authenticator: params.authenticator,
+          samlResponse: params.values,
+        })}, '*');
       </script>
     </body>
     </html>
