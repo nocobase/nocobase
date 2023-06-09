@@ -89,6 +89,7 @@ export const Templates = ({ style = {}, form }) => {
                 form.values[key] = value;
               }
             });
+            form.data = data;
           }
           return data;
         })
