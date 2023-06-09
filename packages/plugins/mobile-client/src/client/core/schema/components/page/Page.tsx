@@ -36,12 +36,14 @@ const InternalPage: React.FC = (props) => {
     hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid'], 2) === 1;
   } else if (tabsSchema.properties) {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
-    history.replace({
-      pathname: location.pathname,
-      search: new URLSearchParams({
-        tab: schema.name.toString(),
-      }).toString(),
-    });
+    if (schema) {
+      history.replace({
+        pathname: location.pathname,
+        search: new URLSearchParams({
+          tab: schema.name.toString(),
+        }).toString(),
+      });
+    }
   }
 
   const onTabsChange = useCallback<TabsProps['onChange']>(
