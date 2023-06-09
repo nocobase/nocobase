@@ -6,6 +6,7 @@ import { CollectionProvider } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
+import { useDesignable } from '../../';
 import { ActionContext, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
@@ -35,6 +36,7 @@ export const ReadPrettyInternalViewer: React.FC = observer(
     const { options: collectionField } = useAssociationFieldContext();
     const [record, setRecord] = useState({});
     const compile = useCompile();
+    const { designable } = useDesignable();
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const { snapshot } = useActionContext();
     const ellipsisWithTooltipRef = useRef<IEllipsisWithTooltipRef>();
@@ -53,7 +55,9 @@ export const ReadPrettyInternalViewer: React.FC = observer(
                   onClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
-                    insertViewer(schema.Viewer);
+                    if (designable) {
+                      insertViewer(schema.Viewer);
+                    }
                     setVisible(true);
                     setRecord(record);
                     ellipsisWithTooltipRef?.current?.setPopoverVisible(false);
