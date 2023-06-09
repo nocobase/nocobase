@@ -85,7 +85,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: cx(nodeJobButtonClass, 'workflow-node-job-button'),
+          className: nodeJobButtonClass,
           type: 'primary',
         },
         properties: {
