@@ -1,5 +1,5 @@
 import { useField } from '@formily/react';
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import { Result } from 'ahooks/es/useRequest/src/types';
 import React, { createContext, useContext, useEffect } from 'react';
 import { useCollectionManager } from '.';
 import { CollectionProvider, useRecord } from '..';

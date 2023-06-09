@@ -2,14 +2,14 @@ import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { uid } from '@formily/shared';
 import { Select } from 'antd';
 import _ from 'lodash';
 import moment from 'moment';
-import React, { useContext, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
-import { BlockRequestContext, useFormBlockContext } from '../../../block-provider';
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
+import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import {
   Collection,
   CollectionFieldOptions,
@@ -40,74 +40,64 @@ const defaultInputStyle = css`
   }
 `;
 
-const divWrap = (schema: ISchema) => {
-  return {
-    type: 'void',
-    'x-component': 'div',
-    'x-component-props': {
-      className: 'nb-block-wrap',
-    },
-    properties: {
-      [schema.name || uid()]: schema,
-    },
-  };
-};
+export const FormItem: any = observer(
+  (props: any) => {
+    useEnsureOperatorsValid();
 
-export const FormItem: any = observer((props: any) => {
-  useEnsureOperatorsValid();
+    const field = useField<Field>();
+    const ctx = useBlockRequestContext();
+    const schema = useFieldSchema();
+    const variablesCtx = useVariablesCtx();
 
-  const field = useField<Field>();
-  const ctx = useContext(BlockRequestContext);
-  const schema = useFieldSchema();
-  const variablesCtx = useVariablesCtx();
-
-  useEffect(() => {
-    if (ctx?.block === 'form') {
-      ctx.field.data = ctx.field.data || {};
-      ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
-      ctx.field.data.activeFields.add(schema.name);
-      // 如果默认值是一个变量，则需要解析之后再显示出来
-      if (isVariable(schema?.default)) {
-        field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+    useEffect(() => {
+      if (ctx?.block === 'form') {
+        ctx.field.data = ctx.field.data || {};
+        ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
+        ctx.field.data.activeFields.add(schema.name);
+        // 如果默认值是一个变量，则需要解析之后再显示出来
+        if (isVariable(schema?.default)) {
+          field.setInitialValue?.(parseVariables(schema.default, variablesCtx));
+        }
       }
-    }
-  }, []);
-  const showTitle = schema['x-decorator-props']?.showTitle ?? true;
-  return (
-    <ACLCollectionFieldProvider>
-      <BlockItem className={'nb-form-item'}>
-        <Item
-          className={cx(
-            css`
-              & .ant-space {
-                flex-wrap: wrap;
-              }
-            `,
-            {
-              [css`
-                > .ant-formily-item-label {
-                  display: none;
+    }, []);
+    const showTitle = schema['x-decorator-props']?.showTitle ?? true;
+    return (
+      <ACLCollectionFieldProvider>
+        <BlockItem className={'nb-form-item'}>
+          <Item
+            className={cx(
+              css`
+                & .ant-space {
+                  flex-wrap: wrap;
                 }
-              `]: showTitle === false,
-            },
-          )}
-          {...props}
-          extra={
-            typeof field.description === 'string' ? (
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: HTMLEncode(field.description).split('\n').join('<br/>'),
-                }}
-              />
-            ) : (
-              field.description
-            )
-          }
-        />
-      </BlockItem>
-    </ACLCollectionFieldProvider>
-  );
-});
+              `,
+              {
+                [css`
+                  > .ant-formily-item-label {
+                    display: none;
+                  }
+                `]: showTitle === false,
+              },
+            )}
+            {...props}
+            extra={
+              typeof field.description === 'string' ? (
+                <div
+                  dangerouslySetInnerHTML={{
+                    __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+                  }}
+                />
+              ) : (
+                field.description
+              )
+            }
+          />
+        </BlockItem>
+      </ACLCollectionFieldProvider>
+    );
+  },
+  { displayName: 'FormItem' },
+);
 
 FormItem.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();

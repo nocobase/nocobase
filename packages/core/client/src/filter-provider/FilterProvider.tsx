@@ -1,11 +1,11 @@
 import { useField, useFieldSchema } from '@formily/react';
+import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
-import { useBlockRequestContext } from '../block-provider';
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
 import { useAssociatedFields } from './utils';
-import { uniqBy } from 'lodash';
 
 type Collection = ReturnType<typeof useCollection>;
 

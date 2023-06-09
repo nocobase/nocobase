@@ -28,7 +28,17 @@ const EagerLoadingNodeProto = {
     const collection = db.modelCollection.get(this.model);
 
     if (collection && collection.isParent()) {
-      OptionsParser.appendInheritInspectAttribute(this.attributes.include, collection);
+      if (!this.attributes) {
+        this.attributes = {
+          include: [],
+        };
+      }
+
+      OptionsParser.appendInheritInspectAttribute(
+        lodash.isArray(this.attributes) ? this.attributes : this.attributes.include,
+        collection,
+      );
+
       this.inspectInheritAttribute = true;
     }
   },
@@ -353,7 +363,12 @@ export class EagerLoadingTree {
       }
 
       const nodeChildrenAs = node.children.map((child) => child.association.as);
+
       const includeAttributes = [...nodeRawAttributes, ...nodeChildrenAs];
+
+      if (node.inspectInheritAttribute) {
+        includeAttributes.push('__schemaName', '__tableName', '__collection');
+      }
 
       for (const instance of node.instances) {
         const attributes = lodash.pick(instance.dataValues, includeAttributes);

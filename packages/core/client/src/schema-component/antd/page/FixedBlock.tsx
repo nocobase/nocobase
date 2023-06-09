@@ -11,11 +11,13 @@ const FixedBlockContext = React.createContext<{
   height: number | string;
   fixedBlockUID: boolean | string;
   fixedBlockUIDRef: React.MutableRefObject<boolean | string>;
+  inFixedBlock: boolean;
 }>({
   setFixedBlock: () => {},
   height: 0,
   fixedBlockUID: false,
   fixedBlockUIDRef: { current: false },
+  inFixedBlock: false,
 });
 
 export const useFixedSchema = () => {
@@ -69,8 +71,9 @@ export const FixedBlockDesignerItem = () => {
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
   const record = useRecord();
+  const { inFixedBlock } = useFixedBlock();
 
-  if (Object.keys(record).length) {
+  if (Object.keys(record).length || !inFixedBlock) {
     return null;
   }
   return (
@@ -127,7 +130,7 @@ const FixedBlock: React.FC<FixedBlockProps> = (props) => {
     _setFixedBlock(v);
   };
   return (
-    <FixedBlockContext.Provider value={{ height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
+    <FixedBlockContext.Provider value={{ inFixedBlock: true, height, setFixedBlock, fixedBlockUID, fixedBlockUIDRef }}>
       <div
         className={fixedBlockUID ? fixedBlockCss : ''}
         style={{

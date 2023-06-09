@@ -160,31 +160,13 @@ const InternalRemoteSelect = connect(
       });
     };
 
-    const getOptionsByFieldNames = useCallback(
-      (item) => {
-        return Object.keys(fieldNames).reduce((obj, key) => {
-          return obj;
-        }, {} as any);
-      },
-      [fieldNames],
-    );
-    const normalizeOptions = useCallback(
-      (obj) => {
-        if (objectValue || typeof obj === 'object') {
-          return getOptionsByFieldNames(obj);
-        }
-        return { [fieldNames.value]: obj, [fieldNames.label]: obj };
-      },
-      [objectValue, getOptionsByFieldNames],
-    );
-
     const options = useMemo(() => {
       if (!data?.data?.length) {
-        return value !== undefined && value !== null ? (Array.isArray(value) ? value : [value]) : [];
+        return value != null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      const valueOptions = (value !== undefined && value !== null && (Array.isArray(value) ? value : [value])) || [];
+      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
-    }, [data?.data, getOptionsByFieldNames, normalizeOptions, value]);
+    }, [data?.data, value]);
     const onDropdownVisibleChange = () => {
       if (firstRun.current) {
         return;
@@ -198,7 +180,7 @@ const InternalRemoteSelect = connect(
         autoClearSearchValue
         filterOption={false}
         filterSort={null}
-        fieldNames={fieldNames}
+        fieldNames={fieldNames as any}
         onSearch={onSearch}
         onDropdownVisibleChange={onDropdownVisibleChange}
         objectValue={objectValue}

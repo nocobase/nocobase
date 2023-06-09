@@ -36,7 +36,7 @@ function renderExpressionDescription(key: string) {
   ) : null;
 }
 
-export default React.memo((props) => {
+const FormulaField = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   return (
     <SchemaComponentOptions
@@ -63,3 +63,6 @@ export default React.memo((props) => {
     </SchemaComponentOptions>
   );
 });
+FormulaField.displayName = 'FormulaField';
+
+export default FormulaField;

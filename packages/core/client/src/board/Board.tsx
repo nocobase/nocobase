@@ -1,4 +1,3 @@
-import { useField } from '@formily/react';
 import React, { forwardRef, useState } from 'react';
 import { DragDropContext } from 'react-beautiful-dnd';
 import Column from './Column';

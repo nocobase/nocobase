@@ -7,11 +7,3 @@ exports[`route-switch > case 1 1`] = `
   </h1>
 </div>
 `;
-
-exports[`route-switch case 1 1`] = `
-<div>
-  <h1>
-    Home
-  </h1>
-</div>
-`;

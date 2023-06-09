@@ -1,5 +1,8 @@
 import React from 'react';
 
-export default React.memo((props) => {
+const ShopEvents = React.memo((props) => {
   return <>{props.children}</>;
 });
+ShopEvents.displayName = 'ShopEvents';
+
+export default ShopEvents;

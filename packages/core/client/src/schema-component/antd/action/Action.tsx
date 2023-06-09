@@ -16,7 +16,7 @@ import { ActionDrawer } from './Action.Drawer';
 import { ActionLink } from './Action.Link';
 import { ActionModal } from './Action.Modal';
 import { ActionPage } from './Action.Page';
-import { ActionContext } from './context';
+import { ActionContextProvider } from './context';
 import { useA } from './hooks';
 import { ComposedAction } from './types';
 import { linkageAction } from './utils';
@@ -64,139 +64,147 @@ export const actionDesignerCss = css`
   }
 `;
 
-export const Action: ComposedAction = observer((props: any) => {
-  const {
-    popover,
-    confirm,
-    openMode: om,
-    containerRefKey,
-    component,
-    useAction = useA,
-    className,
-    icon,
-    title,
-    ...others
-  } = props;
-  const { onClick } = useProps(props);
-  const [visible, setVisible] = useState(false);
-  const [formValueChanged, setFormValueChanged] = useState(false);
-  const Designer = useDesigner();
-  const field = useField<any>();
-  const { run } = useAction();
-  const fieldSchema = useFieldSchema();
-  const compile = useCompile();
-  const form = useForm();
-  const values = useRecord();
-  const designerProps = fieldSchema['x-designer-props'];
-  const openMode = fieldSchema?.['x-component-props']?.['openMode'];
-  const disabled = form.disabled || field.disabled || props.disabled;
-  const openSize = fieldSchema?.['x-component-props']?.['openSize'];
-  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
-  const { designable } = useDesignable();
-  const tarComponent = useComponent(component) || component;
-  useEffect(() => {
-    field.linkageProperty = {};
-    linkageRules
-      .filter((k) => !k.disabled)
-      .forEach((v) => {
-        return v.actions?.map((h) => {
-          linkageAction(h.operator, field, v.condition, values);
+export const Action: ComposedAction = observer(
+  (props: any) => {
+    const {
+      popover,
+      confirm,
+      openMode: om,
+      containerRefKey,
+      component,
+      useAction = useA,
+      className,
+      icon,
+      title,
+      ...others
+    } = props;
+    const { onClick } = useProps(props);
+    const [visible, setVisible] = useState(false);
+    const [formValueChanged, setFormValueChanged] = useState(false);
+    const Designer = useDesigner();
+    const field = useField<any>();
+    const { run } = useAction();
+    const fieldSchema = useFieldSchema();
+    const compile = useCompile();
+    const form = useForm();
+    const values = useRecord();
+    const designerProps = fieldSchema['x-designer-props'];
+    const openMode = fieldSchema?.['x-component-props']?.['openMode'];
+    const disabled = form.disabled || field.disabled || props.disabled;
+    const openSize = fieldSchema?.['x-component-props']?.['openSize'];
+    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const { designable } = useDesignable();
+    const tarComponent = useComponent(component) || component;
+    useEffect(() => {
+      field.linkageProperty = {};
+      linkageRules
+        .filter((k) => !k.disabled)
+        .forEach((v) => {
+          return v.actions?.map((h) => {
+            linkageAction(h.operator, field, v.condition, values);
+          });
         });
-      });
-  }, [linkageRules, values, designable]);
+    }, [linkageRules, values, designable]);
 
-  const renderButton = () => {
-    if (!designable && field?.data?.hidden) {
-      return null;
-    }
-    return (
-      <SortableItem
-        {...others}
-        loading={field?.data?.loading}
-        icon={<Icon type={icon} />}
-        disabled={disabled}
-        style={{
-          opacity: designable && field?.data?.hidden && 0.1,
-        }}
-        onClick={(e: React.MouseEvent) => {
-          if (!disabled) {
-            e.preventDefault();
-            e.stopPropagation();
-            const onOk = () => {
-              onClick?.(e);
-              setVisible(true);
-              run();
-            };
-            if (confirm) {
-              Modal.confirm({
-                ...confirm,
-                onOk,
-              });
-            } else {
-              onOk();
+    const renderButton = () => {
+      if (!designable && field?.data?.hidden) {
+        return null;
+      }
+      return (
+        <SortableItem
+          {...others}
+          loading={field?.data?.loading}
+          icon={<Icon type={icon} />}
+          disabled={disabled}
+          style={{
+            ...others.style,
+            opacity: designable && field?.data?.hidden && 0.1,
+          }}
+          onClick={(e: React.MouseEvent) => {
+            if (!disabled) {
+              e.preventDefault();
+              e.stopPropagation();
+              const onOk = () => {
+                onClick?.(e);
+                setVisible(true);
+                run();
+              };
+              if (confirm) {
+                Modal.confirm({
+                  ...confirm,
+                  onOk,
+                });
+              } else {
+                onOk();
+              }
             }
-          }
-        }}
-        component={tarComponent || Button}
-        className={classnames(className, actionDesignerCss)}
+          }}
+          component={tarComponent || Button}
+          className={classnames(className, actionDesignerCss)}
+        >
+          {title || compile(fieldSchema.title)}
+          <Designer {...designerProps} />
+        </SortableItem>
+      );
+    };
+
+    return (
+      <ActionContextProvider
+        button={renderButton()}
+        visible={visible}
+        setVisible={setVisible}
+        formValueChanged={formValueChanged}
+        setFormValueChanged={setFormValueChanged}
+        openMode={openMode}
+        openSize={openSize}
+        containerRefKey={containerRefKey}
+        fieldSchema={fieldSchema}
       >
-        {title || compile(fieldSchema.title)}
-        <Designer {...designerProps} />
-      </SortableItem>
+        {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
+        {!popover && renderButton()}
+        {!popover && props.children}
+      </ActionContextProvider>
     );
-  };
+  },
+  { displayName: 'Action' },
+);
 
-  return (
-    <ActionContext.Provider
-      value={{
-        button: renderButton(),
-        visible,
-        setVisible,
-        formValueChanged,
-        setFormValueChanged,
-        openMode,
-        openSize,
-        containerRefKey,
-        fieldSchema,
-      }}
-    >
-      {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
-      {!popover && renderButton()}
-      {!popover && props.children}
-    </ActionContext.Provider>
-  );
-});
+Action.Popover = observer(
+  (props) => {
+    const { button, visible, setVisible } = useActionContext();
+    return (
+      <Popover
+        {...props}
+        destroyTooltipOnHide
+        open={visible}
+        onOpenChange={(visible) => {
+          setVisible(visible);
+        }}
+        content={props.children}
+      >
+        {button}
+      </Popover>
+    );
+  },
+  { displayName: 'Action.Popover' },
+);
 
-Action.Popover = observer((props) => {
-  const { button, visible, setVisible } = useActionContext();
-  return (
-    <Popover
-      {...props}
-      destroyTooltipOnHide
-      open={visible}
-      onOpenChange={(visible) => {
-        setVisible(visible);
-      }}
-      content={props.children}
-    >
-      {button}
-    </Popover>
-  );
-});
-
-Action.Popover.Footer = observer((props) => {
-  return (
-    <div
-      className={css`
-        display: flex;
-        justify-content: flex-end;
-        width: 100%;
-      `}
-    >
-      {props.children}
-    </div>
-  );
-});
+Action.Popover.Footer = observer(
+  (props) => {
+    return (
+      <div
+        className={css`
+          display: flex;
+          justify-content: flex-end;
+          width: 100%;
+        `}
+      >
+        {props.children}
+      </div>
+    );
+  },
+  { displayName: 'Action.Popover.Footer' },
+);
 
 Action.Link = ActionLink;
 Action.Designer = ActionDesigner;

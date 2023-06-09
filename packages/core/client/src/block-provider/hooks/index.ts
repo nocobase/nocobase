@@ -1,7 +1,7 @@
-import { Schema, SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
+import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { parse } from '@nocobase/utils/client';
 import { Modal, message } from 'antd';
-import { cloneDeep, uniq } from 'lodash';
+import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import { ChangeEvent, useContext, useEffect } from 'react';
@@ -16,7 +16,6 @@ import { transformToFilter } from '../../filter-provider/utils';
 import { useRecord } from '../../record-provider';
 import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
 import { BulkEditFormItemValueType } from '../../schema-initializer/components';
-import { useSchemaTemplateManager } from '../../schema-templates';
 import { useCurrentUserContext } from '../../user';
 import { useBlockRequestContext, useFilterByTk } from '../BlockProvider';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
@@ -1073,120 +1072,53 @@ export const useAssociationFilterBlockProps = () => {
   };
 };
 
-const getTemplateSchema = (schema) => {
-  const conf = {
-    url: `/uiSchemas:getJsonSchema/${schema?.uid}`,
-  };
-  const { data, loading, run } = useRequest(conf, { manual: true });
-  if (loading) {
+function getAssociationPath(str) {
+  const lastIndex = str.lastIndexOf('.');
+  if (lastIndex !== -1) {
+    return str.substring(0, lastIndex);
   }
-  useEffect(() => {
-    if (schema?.uid) {
-      run();
-    }
-  }, [schema?.uid]);
-  return schema?.uid ? new Schema(data?.data) : null;
-};
+  return str;
+}
 
-export const useAssociationNames = (collection) => {
+export const useAssociationNames = () => {
   const { getCollectionJoinField } = useCollectionManager();
-  const { getTemplateById } = useSchemaTemplateManager();
   const fieldSchema = useFieldSchema();
-  const associationValues = [];
-  const formSchema = fieldSchema.reduceProperties((buf, schema) => {
-    if (['FormV2', 'Details', 'List', 'GridCard'].includes(schema['x-component'])) {
-      return schema;
-    }
-    return buf;
-  }, new Schema({}));
-
-  const templateSchema = formSchema.reduceProperties((buf, schema) => {
-    if (schema['x-component'] === 'BlockTemplate') {
-      return schema;
-    }
-    return buf;
-  }, null);
-
-  const getAssociationAppends = (schema, arr = []) => {
-    const data = schema.reduceProperties((buf, s) => {
+  const updateAssociationValues = new Set([]);
+  const appends = new Set([]);
+  const getAssociationAppends = (schema, str) => {
+    schema.reduceProperties((pre, s) => {
+      const prefix = pre || str;
       const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
-      if (
-        collectionfield &&
-        ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type) &&
-        s['x-component'] !== 'TableField'
-      ) {
-        buf.push(s.name);
+      const isAssociationSubfield = s.name.includes('.');
+      const isAssociationField =
+        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+        appends.add(path);
         if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
-          associationValues.push(s.name);
+          updateAssociationValues.add(path);
+          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+          getAssociationAppends(s, bufPrefix);
         }
-        if (s['x-component-props']?.mode === 'Nester') {
-          return getAssociationAppends(s, buf);
-        }
-        return buf;
-      } else {
-        if (s['x-component'] === 'Grid.Row') {
-          const kk = buf?.concat?.();
-          return getNesterAppends(s, kk || []);
-        } else {
-          return !s['x-component']?.includes('Action.') && s['x-component'] !== 'TableField'
-            ? getAssociationAppends(s, buf)
-            : buf;
-        }
+      } else if (
+        ![
+          'ActionBar',
+          'Action',
+          'Action.Link',
+          'Action.Modal',
+          'Selector',
+          'Viewer',
+          'AddNewer',
+          'AssociationField.Selector',
+          'AssociationField.AddNewer',
+          'TableField',
+        ].includes(s['x-component'])
+      ) {
+        getAssociationAppends(s, str);
       }
-    }, arr);
-    return data || [];
+    }, str);
   };
-
-  function flattenNestedList(nestedList) {
-    const flattenedList = [];
-    function flattenHelper(list, prefix) {
-      for (let i = 0; i < list.length; i++) {
-        if (Array.isArray(list[i])) {
-          `${prefix}` !== `${list[i][0]}` && flattenHelper(list[i], `${prefix}.${list[i][0]}`);
-        } else {
-          const searchTerm = `.${list[i]}`;
-          const lastIndex = prefix.lastIndexOf(searchTerm);
-          let str = '';
-          if (lastIndex !== -1) {
-            str = prefix.slice(0, lastIndex) + prefix.slice(lastIndex + searchTerm.length);
-          }
-          if (!str) {
-            !list.includes(str) && flattenedList.push(`${list[i]}`);
-          } else {
-            !list.includes(str) ? flattenedList.push(`${str}.${list[i]}`) : flattenedList.push(str);
-          }
-        }
-      }
-    }
-    for (let i = 0; i < nestedList.length; i++) {
-      flattenHelper(nestedList[i], nestedList[i][0]);
-    }
-    return uniq(flattenedList.filter((obj) => !obj?.startsWith('.')));
-  }
-  const getNesterAppends = (gridSchema, data) => {
-    gridSchema.reduceProperties((buf, s) => {
-      buf.push(getAssociationAppends(s));
-      return buf;
-    }, data);
-    return data.filter((g) => g.length);
-  };
-
-  const template = getTemplateById(templateSchema?.['x-component-props']?.templateId);
-  const schema = getTemplateSchema(template);
-  if (schema) {
-    const associations = getAssociationAppends(schema);
-    const appends = flattenNestedList(associations);
-    return {
-      appends,
-      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
-    };
-  }
-  if (!schema) {
-    const associations = getAssociationAppends(formSchema);
-    const appends = flattenNestedList(associations);
-    return {
-      appends,
-      updateAssociationValues: appends.filter((item) => associationValues.some((suffix) => item.endsWith(suffix))),
-    };
-  }
+  getAssociationAppends(fieldSchema, '');
+  return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
 };

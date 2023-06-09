@@ -2,7 +2,7 @@ import {
   AntdSchemaComponentProvider,
   CollectionManagerProvider,
   CollectionProvider,
-  SharedFilter,
+  Filter,
   Input,
   SchemaComponent,
   SchemaComponentProvider,

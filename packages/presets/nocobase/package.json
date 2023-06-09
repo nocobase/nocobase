@@ -7,6 +7,7 @@
   "dependencies": {
     "@nocobase/plugin-acl": "0.9.4-alpha.2",
     "@nocobase/plugin-audit-logs": "0.9.4-alpha.2",
+    "@nocobase/plugin-auth": "0.9.4-alpha.2",
     "@nocobase/plugin-charts": "0.9.4-alpha.2",
     "@nocobase/plugin-china-region": "0.9.4-alpha.2",
     "@nocobase/plugin-client": "0.9.4-alpha.2",
@@ -26,6 +27,7 @@
     "@nocobase/plugin-multi-app-share-collection": "0.9.4-alpha.2",
     "@nocobase/plugin-oidc": "0.9.4-alpha.2",
     "@nocobase/plugin-saml": "0.9.4-alpha.2",
+    "@nocobase/plugin-sms-auth": "0.9.4-alpha.2",
     "@nocobase/plugin-sample-hello": "0.9.4-alpha.2",
     "@nocobase/plugin-sequence-field": "0.9.4-alpha.2",
     "@nocobase/plugin-snapshot-field": "0.9.4-alpha.2",
@@ -35,7 +37,8 @@
     "@nocobase/plugin-users": "0.9.4-alpha.2",
     "@nocobase/plugin-verification": "0.9.4-alpha.2",
     "@nocobase/plugin-workflow": "0.9.4-alpha.2",
-    "@nocobase/server": "0.9.4-alpha.2"
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/plugin-mobile-client": "0.9.4-alpha.2"
   },
   "repository": {
     "type": "git",

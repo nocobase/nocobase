@@ -4,9 +4,7 @@ import { SchemaComponent, useActionContext, useDesignable, useRecordIndex } from
 
 export const TabPaneInitializers = (props?: any) => {
   const { designable, insertBeforeEnd } = useDesignable();
-  if (!designable) {
-    return null;
-  }
+
   const useSubmitAction = () => {
     const form = useForm();
     const ctx = useActionContext();
@@ -118,6 +116,11 @@ export const TabPaneInitializers = (props?: any) => {
       },
     };
   }, []);
+
+  if (!designable) {
+    return null;
+  }
+
   return <SchemaComponent schema={schema} />;
 };
 

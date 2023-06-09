@@ -18,7 +18,7 @@ export function FormBlockProvider(props) {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const formBlockRef = useRef(null);
-  const { appends, updateAssociationValues } = useAssociationNames(props.collection);
+  const { appends, updateAssociationValues } = useAssociationNames();
   const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
   const values = userJob?.result?.[formKey];
 
