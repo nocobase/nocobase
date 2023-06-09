@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
 import { sortBy } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
@@ -262,8 +262,21 @@ const SettingsCenter = (props) => {
       };
     });
   return (
-    <div>
-      <Layout>
+    <div
+      className={cx(
+        'nb-setting-center',
+        css`
+          &.nb-setting-center {
+            flex: 1;
+          }
+        `,
+      )}
+    >
+      <Layout
+        className={css`
+          height: 100%;
+        `}
+      >
         <div
           style={
             {
@@ -302,7 +315,12 @@ const SettingsCenter = (props) => {
             items={menuItems as any}
           />
         </Layout.Sider>
-        <Layout.Content>
+        <Layout.Content
+          className={css`
+            display: flex;
+            flex-direction: column;
+          `}
+        >
           {aclPluginTabCheck && (
             <PageHeader
               ghost={false}
@@ -321,7 +339,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div className={'m24'} style={{ margin: 24 }}>
+          <div className={'m24'} style={{ margin: 24, flex: 1 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (

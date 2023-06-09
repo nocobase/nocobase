@@ -7,7 +7,7 @@ import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
-import { ActionContext, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 
 export const actionDesignerCss = css`
@@ -102,7 +102,7 @@ export const CreateRecordAction = observer(
     }, [linkageRules, values]);
     return (
       <div className={actionDesignerCss}>
-        <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
+        <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
           <CreateAction
             {...props}
             onClick={(name) => {
@@ -113,7 +113,7 @@ export const CreateRecordAction = observer(
           <CollectionProvider name={currentCollection}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
           </CollectionProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </div>
     );
   },
