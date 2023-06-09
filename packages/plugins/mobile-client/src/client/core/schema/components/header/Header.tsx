@@ -4,7 +4,7 @@ import { NavBar, NavBarProps } from 'antd-mobile';
 import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { HeaderDesigner } from './Header.Designer';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField } from '@formily/react';
 
 export interface HeaderProps extends NavBarProps {
   title?: string;
