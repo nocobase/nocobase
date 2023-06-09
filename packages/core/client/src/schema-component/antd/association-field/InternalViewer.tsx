@@ -7,7 +7,7 @@ import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
 import { useDesignable } from '../../';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { useAssociationFieldContext, useFieldNames, useInsertSchema } from './hooks';
 import schema from './schema';
@@ -108,11 +108,11 @@ export const ReadPrettyInternalViewer: React.FC = observer(
             <EllipsisWithTooltip ellipsis={true} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
-            <ActionContext.Provider
+            <ActionContextProvider
               value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField?.interface === 'snapshot' }}
             >
               {renderRecordProvider()}
-            </ActionContext.Provider>
+            </ActionContextProvider>
           </CollectionProvider>
         </BlockAssociationContext.Provider>
       </div>
