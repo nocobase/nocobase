@@ -22,7 +22,7 @@ on:
       - '!packages/plugins/**/src/server/**'
 
 jobs:
-  build-test:
+  frontend-test:
     strategy:
       matrix:
         node_version: [ '18' ]
@@ -36,5 +36,5 @@ jobs:
           node-version: ${{ matrix.node_version }}
           cache: 'yarn'
       - run: yarn install
-      - run: yarn build
+      - run: yarn test:client
     timeout-minutes: 15
