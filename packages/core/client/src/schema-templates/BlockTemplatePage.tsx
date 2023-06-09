@@ -10,7 +10,7 @@ export const BlockTemplatePage = () => {
   const { t } = useTranslation();
   return (
     <div>
-      <AntdPageHeader ghost={false} title={t('Block templates')} />
+      <AntdPageHeader style={{ backgroundColor: 'white' }} ghost={false} title={t('Block templates')} />
       <div style={{ margin: 'var(--nb-spacing)' }}>
         <CollectionManagerProvider collections={[uiSchemaTemplatesCollection]}>
           <SchemaComponent schema={uiSchemaTemplatesSchema} />

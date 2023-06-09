@@ -169,6 +169,7 @@ export const Page = (props) => {
           {!disablePageHeader && (
             <AntdPageHeader
               className={css`
+                background-color: white;
                 &.has-footer {
                   padding-top: 12px;
                   .ant-page-header-heading-left {

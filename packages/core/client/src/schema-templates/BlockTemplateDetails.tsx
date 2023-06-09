@@ -76,6 +76,7 @@ export const BlockTemplateDetails = () => {
   return (
     <div>
       <AntdPageHeader
+        style={{ backgroundColor: 'white' }}
         onBack={() => {
           navigate('/admin/plugins/block-templates');
         }}

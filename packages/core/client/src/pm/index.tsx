@@ -127,6 +127,9 @@ const PluginList = (props) => {
   return snippets.includes('pm') ? (
     <div>
       <PageHeader
+        style={{
+          backgroundColor: 'white',
+        }}
         ghost={false}
         title={t('Plugin manager')}
         footer={
@@ -297,6 +300,7 @@ const SettingsCenter = (props) => {
         <Layout.Content>
           {aclPluginTabCheck && (
             <PageHeader
+              style={{ backgroundColor: 'white' }}
               ghost={false}
               title={compile(items[pluginName]?.title)}
               footer={
