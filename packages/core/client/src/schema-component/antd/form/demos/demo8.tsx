@@ -2,7 +2,7 @@ import { FormItem } from '@formily/antd';
 import { ISchema, observer } from '@formily/react';
 import {
   Action,
-  ActionContext,
+  ActionContextProvider,
   Form,
   Input,
   SchemaComponent,
@@ -71,7 +71,7 @@ export default observer(() => {
 
   return (
     <SchemaComponentProvider components={{ Action, Input, FormItem, Form }} scope={{ useCloseAction }}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <Button
           onClick={() => {
             setVisible(true);
@@ -80,7 +80,7 @@ export default observer(() => {
           Edit
         </Button>
         <SchemaComponent schema={schema} />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </SchemaComponentProvider>
   );
 });

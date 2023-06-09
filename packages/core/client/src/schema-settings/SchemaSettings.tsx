@@ -25,7 +25,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
-  ActionContext,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
@@ -664,7 +664,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
@@ -681,7 +681,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
           ...schema,
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 

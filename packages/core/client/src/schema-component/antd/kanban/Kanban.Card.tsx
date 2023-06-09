@@ -4,7 +4,7 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { Card } from 'antd';
 import React, { useContext, useState } from 'react';
 import cls from 'classnames';
-import { ActionContext } from '..';
+import { ActionContextProvider } from '..';
 import { DndContext } from '../..';
 import { RecordProvider } from '../../../record-provider';
 import { SchemaComponentOptions } from '../../core/SchemaComponentOptions';
@@ -86,7 +86,7 @@ export const KanbanCard: any = observer(
           </DndContext>
         </Card>
         {cardViewerSchema && (
-          <ActionContext.Provider
+          <ActionContextProvider
             value={{
               openMode: fieldSchema['x-component-props']?.['openMode'] || 'drawer',
               openSize: fieldSchema['x-component-props']?.['openSize'],
@@ -101,7 +101,7 @@ export const KanbanCard: any = observer(
                 onlyRenderProperties
               />
             </RecordProvider>
-          </ActionContext.Provider>
+          </ActionContextProvider>
         )}
       </SchemaComponentOptions>
     );

@@ -3,7 +3,7 @@ import { createForm } from '@formily/core';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   useActionContext,
   useRecord,
@@ -129,14 +129,14 @@ export const AddNewQuery = () => {
     </Menu>
   );
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown overlay={menu}>
         <Button icon={<PlusOutlined />} type={'primary'}>
           {lang('Add query')} <DownOutlined />
         </Button>
       </Dropdown>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useCreateAction }} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 
@@ -146,7 +146,7 @@ export const EditQuery = () => {
   const form = useMemo(() => createForm(), []);
   const schema = getSchema(record, { form, isNewRecord: false });
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <a
         onClick={() => {
           form.setValues(record);
@@ -156,6 +156,6 @@ export const EditQuery = () => {
         {lang('Edit')}
       </a>
       <SchemaComponent schema={schema} scope={{ useCloseAction, useSubmitAction: useUpdateAction }} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
