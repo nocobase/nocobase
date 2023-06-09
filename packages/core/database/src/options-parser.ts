@@ -36,6 +36,11 @@ export class OptionsParser {
   }
 
   static appendInheritInspectAttribute(include, collection): any {
+    // if include already has __tableName, __schemaName, skip
+    if (include.find((item) => item?.[1] === '__tableName')) {
+      return;
+    }
+
     include.push([
       Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${collection.name}".tableoid)`),
       '__tableName',
@@ -147,6 +152,7 @@ export class OptionsParser {
 
     if (this.options?.fields) {
       attributes = [];
+
       if (this.collection.isParent()) {
         OptionsParser.appendInheritInspectAttribute(attributes, this.collection);
       }

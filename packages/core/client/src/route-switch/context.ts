@@ -1,4 +1,4 @@
-import { createContext } from 'react';
+import { createContext, useContext } from 'react';
 import { RouteProps } from './types';
 
 export const RouteSwitchContext = createContext({
@@ -7,3 +7,5 @@ export const RouteSwitchContext = createContext({
 });
 
 export const RouteContext = createContext<RouteProps>(null);
+
+export const useRouteSwitchContext = () => useContext(RouteSwitchContext);

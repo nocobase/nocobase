@@ -11,7 +11,7 @@ import {
   InitializerWithSwitch,
   SchemaInitializerProvider,
   gridRowColWrap,
-  ActionContext,
+  ActionContextProvider,
   GeneralSchemaDesigner,
   SchemaSettings,
   useCompile,
@@ -360,7 +360,7 @@ export function SchemaConfigButton(props) {
       <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </div>
-      <ActionContext.Provider value={{ visible, setVisible }}>{props.children}</ActionContext.Provider>
+      <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
     </>
   );
 }
