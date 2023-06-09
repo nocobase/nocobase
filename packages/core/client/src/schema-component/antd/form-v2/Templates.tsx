@@ -81,6 +81,7 @@ export const Templates = ({ style = {}, form }) => {
 
   useEffect(() => {
     if (enabled && defaultTemplate) {
+      form.__template = true;
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
           if (form && data) {
@@ -106,6 +107,7 @@ export const Templates = ({ style = {}, form }) => {
           if (form && data) {
             // 切换之前先把之前的数据清空
             form.reset();
+            form.__template = true;
 
             forEach(data, (value, key) => {
               if (value) {
