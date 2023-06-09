@@ -59,7 +59,6 @@ const ShopI18n = React.memo((props) => {
         value={{
           components: {
             ...ctx?.components,
-            ShopShortcut,
           },
         }}
       >
