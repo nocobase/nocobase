@@ -1,15 +1,7 @@
-import { ShopOutlined } from '@ant-design/icons';
-import {
-  i18n,
-  PluginManager,
-  PluginManagerContext,
-  RouteSwitchContext,
-  SettingsCenterProvider,
-} from '@nocobase/client';
+import { i18n, PluginManagerContext, RouteSwitchContext, SettingsCenterProvider } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
 
 const ns = '@nocobase/plugin-sample-shop-i18n';
 
@@ -43,21 +35,6 @@ function OrderStatusSelect() {
     </Select>
   );
 }
-
-export const ShopShortcut = () => {
-  const { t } = useTranslation();
-  const history = useHistory();
-  return (
-    <PluginManager.Toolbar.Item
-      key="workflow"
-      icon={<ShopOutlined />}
-      title={t('Workflow')}
-      onClick={() => {
-        history.push('/admin/settings/workflow/workflows');
-      }}
-    />
-  );
-};
 
 const ShopI18n = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
