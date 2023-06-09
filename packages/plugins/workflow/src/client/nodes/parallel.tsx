@@ -44,7 +44,7 @@ export default {
     },
   },
   view: {},
-  render(data) {
+  component: function Component({ data }) {
     const {
       id,
       config: { mode },
