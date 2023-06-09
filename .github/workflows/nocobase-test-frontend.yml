@@ -15,7 +15,7 @@ on:
       - '!packages/plugins/**/src/server/**'
   pull_request:
     paths:
-      - '.github/workflows/nocobase-test-backend.yml'
+      - '.github/workflows/nocobase-test-frontend.yml'
       - 'packages/**'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
