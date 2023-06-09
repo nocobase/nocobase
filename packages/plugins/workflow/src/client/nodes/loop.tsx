@@ -47,7 +47,7 @@ export default {
     },
   },
   view: {},
-  render: function Renderer(data) {
+  component: function Component({ data }) {
     const { nodes } = useFlowContext();
     const entry = nodes.find((node) => node.upstreamId === data.id && node.branchIndex != null);
 
