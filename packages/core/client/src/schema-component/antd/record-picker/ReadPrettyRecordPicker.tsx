@@ -1,7 +1,9 @@
 import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
-import { BlockAssociationContext, WithoutTableFieldResource } from '../../../block-provider';
+import { WithoutTableFieldResource } from '../../../block-provider';
+// TODO: 不要使用 '../../../block-provider' 这个路径引用 BlockAssociationContext，在 Vitest 中会报错，待修复
+import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
@@ -55,7 +57,8 @@ export const ReadPrettyRecordPicker: React.FC = observer(
         const text = getLabelFormatValue(labelUiSchema, val, true);
         return (
           <Fragment key={`${record.id}_${index}`}>
-            <span>
+            {/* test-record-picker-read-pretty-item 用于在单元测试中方便选中元素 */}
+            <span className="test-record-picker-read-pretty-item">
               {snapshot || isTagsMode ? (
                 text
               ) : (
