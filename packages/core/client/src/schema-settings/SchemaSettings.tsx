@@ -11,8 +11,8 @@ import {
   CascaderProps,
   Dropdown,
   Empty,
-  Menu,
   MenuItemProps,
+  MenuProps,
   Modal,
   Select,
   Space,
@@ -46,6 +46,7 @@ import {
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
 import { FilterBlockType, isSameCollection, useSupportedBlocks } from '../filter-provider/utils';
+import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import { getTargetKey } from '../schema-component/antd/association-filter/utilts';
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
@@ -53,7 +54,6 @@ import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
-import { MenuDividerProps } from 'antd/lib/menu';
 
 interface SchemaSettingsProps {
   title?: any;
@@ -117,28 +117,39 @@ export const SchemaSettingsProvider: React.FC<SchemaSettingsProviderProps> = (pr
   );
 };
 
+const overlayClassName = classNames(
+  'nb-schema-initializer-button-overlay',
+  css`
+    .ant-dropdown-menu-item-group-list {
+      max-height: 40vh;
+      overflow: auto;
+    }
+  `,
+);
+
 export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNested = (props) => {
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
+  const { Component, getMenuItems } = useMenuItem();
+
+  const menu = useMemo(() => {
+    return { items: getMenuItems(() => props.children) };
+  }, [props.children]);
+
   const DropdownMenu = (
-    <Dropdown
-      open={visible}
-      onOpenChange={(visible) => {
-        setVisible(visible);
-      }}
-      overlay={<Menu>{props.children as any}</Menu>}
-      overlayClassName={classNames(
-        'nb-schema-initializer-button-overlay',
-        css`
-          .ant-dropdown-menu-item-group-list {
-            max-height: 40vh;
-            overflow: auto;
-          }
-        `,
-      )}
-    >
-      {typeof title === 'string' ? <span>{title}</span> : title}
-    </Dropdown>
+    <>
+      <Component />
+      <Dropdown
+        open={visible}
+        onOpenChange={(visible) => {
+          setVisible(visible);
+        }}
+        menu={menu}
+        overlayClassName={overlayClassName}
+      >
+        {typeof title === 'string' ? <span>{title}</span> : title}
+      </Dropdown>
+    </>
   );
   if (dn) {
     return (
@@ -388,35 +399,69 @@ SchemaSettings.FormItemTemplate = function FormItemTemplate(props) {
 };
 
 SchemaSettings.Item = function Item(props) {
+  const { pushMenuItem } = useCollectMenuItems();
+  const { collectMenuItem } = useCollectMenuItem();
   const { eventKey } = props;
   const key = useMemo(() => uid(), []);
-  return (
-    <Menu.Item
-      key={key}
-      eventKey={(eventKey as any) || key}
-      {...props}
-      onClick={(info) => {
-        info.domEvent.preventDefault();
-        info.domEvent.stopPropagation();
-        props?.onClick?.(info);
-      }}
-      style={{ minWidth: 120 }}
-    >
-      {props.children || props.title}
-    </Menu.Item>
-  );
+  const item = {
+    key,
+    eventKey: (eventKey as any) || key,
+    onClick: (info) => {
+      info.domEvent.preventDefault();
+      info.domEvent.stopPropagation();
+      props?.onClick?.(info);
+    },
+    style: { minWidth: 120 },
+    label: props.children || props.title,
+    title: props.title,
+  } as MenuProps['items'][0];
+
+  pushMenuItem?.(item);
+  collectMenuItem?.(item);
+  return null;
 };
 
-SchemaSettings.ItemGroup = (props) => {
-  return <Menu.ItemGroup {...props} />;
+SchemaSettings.ItemGroup = function ItemGroup(props) {
+  const { Component, getMenuItems } = useMenuItem();
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    type: 'group',
+    title: props.title,
+    label: props.title,
+    children: getMenuItems(() => props.children),
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return <Component />;
 };
 
-SchemaSettings.SubMenu = (props) => {
-  return <Menu.SubMenu {...props} />;
+SchemaSettings.SubMenu = function SubMenu(props) {
+  const { Component, getMenuItems } = useMenuItem();
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    label: props.title,
+    title: props.title,
+    children: getMenuItems(() => props.children),
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return <Component />;
 };
 
-SchemaSettings.Divider = (props: MenuDividerProps) => {
-  return <Menu.Divider {...props} />;
+SchemaSettings.Divider = function Divider(props: MenuDividerProps) {
+  const { pushMenuItem } = useCollectMenuItems();
+  const key = useMemo(() => uid(), []);
+  const item = {
+    key,
+    type: 'divider',
+  } as MenuProps['items'][0];
+
+  pushMenuItem(item);
+  return null;
 };
 
 SchemaSettings.Remove = function Remove(props: any) {
@@ -578,11 +623,13 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
       {Content.length ? (
         Content
       ) : (
-        <Empty
-          style={{ width: 160, padding: '0 1em' }}
-          description={emptyDescription}
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-        />
+        <SchemaSettings.Item>
+          <Empty
+            style={{ width: 160, padding: '0 1em' }}
+            description={emptyDescription}
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        </SchemaSettings.Item>
       )}
     </SchemaSettings.SubMenu>
   );

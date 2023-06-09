@@ -50,7 +50,7 @@ SchemaInitializer.Button = observer(
     const compile = useCompile();
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
-    const { Component: CollectionComponent, getMenuItem, clean, cloneItemsWhenChanged } = useMenuItem();
+    const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
     const insertSchema = useCallback(
       (schema) => {
         if (insert) {
@@ -136,13 +136,6 @@ SchemaInitializer.Button = observer(
       return renderItems(items);
     }, [items]);
 
-    const menu = useMemo<MenuProps>(() => {
-      return {
-        style: { maxHeight: '60vh', overflowY: 'auto' },
-        items: menuItems,
-      };
-    }, [menuItems]);
-
     const buttonDom = (
       <Button
         type={'dashed'}
@@ -176,7 +169,7 @@ SchemaInitializer.Button = observer(
             setVisible(visible);
           }}
           dropdownRender={() => {
-            return <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }} items={cloneItemsWhenChanged(menuItems)} />;
+            return <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }} items={menuItems} />;
           }}
           {...dropdown}
         >
@@ -192,7 +185,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
   const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick } = props;
-  const { collectMenuItem, onChange } = useCollectMenuItem();
+  const { collectMenuItem } = useCollectMenuItem();
 
   if (!collectMenuItem) {
     error('SchemaInitializer.Item: collectMenuItem is undefined, please check the context');
@@ -240,7 +233,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             } else {
               onClick({ ...info, item });
             }
-            onChange();
           },
         };
       });
@@ -266,7 +258,6 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
     onClick: (opts) => {
       info?.clearKeywords?.();
       onClick({ ...opts, item: info });
-      onChange();
     },
   };
 

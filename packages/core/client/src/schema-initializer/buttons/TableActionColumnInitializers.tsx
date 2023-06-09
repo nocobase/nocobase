@@ -256,12 +256,11 @@ export const TableActionColumnInitializers = (props: any) => {
         {
           type: 'divider',
         },
-        // TODO
-        // {
-        //   type: 'item',
-        //   title: t('Column width'),
-        //   component: Resizable,
-        // },
+        {
+          type: 'item',
+          title: t('Column width'),
+          component: Resizable,
+        },
       ]}
       component={<MenuOutlined style={{ cursor: 'pointer' }} />}
     />

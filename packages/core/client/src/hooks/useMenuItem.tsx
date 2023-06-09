@@ -1,9 +1,10 @@
 import { MenuProps } from 'antd';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { ReactNode, createContext, useCallback, useContext, useRef } from 'react';
 
 type Item = MenuProps['items'][0];
 
 export const GetMenuItemContext = createContext<{ collectMenuItem?(item: Item): void; onChange?: () => void }>(null);
+export const GetMenuItemsContext = createContext<{ pushMenuItem?(item: Item): void }>(null);
 
 /**
  * 用于为 SchemaInitializer.Item 组件提供一些方法，比如收集菜单项数据
@@ -13,23 +14,61 @@ export const useCollectMenuItem = () => {
   return useContext(GetMenuItemContext) || {};
 };
 
+export const useCollectMenuItems = () => {
+  return useContext(GetMenuItemsContext) || {};
+};
+
 /**
  * 用于在 antd 从 4.x 升级到 5.x 中，用于把 SchemaInitializer.Item 组件这种写法转换成 Menu 组件的 items 写法
  * @returns
  */
 export const useMenuItem = () => {
-  const [list, setList] = useState<any[]>([]);
-  const [isChanged, setIsChanged] = useState(false);
+  const list = useRef<any[]>([]);
+  const renderItems = useRef<() => JSX.Element>(null);
+  const shouldRerender = useRef(false);
 
   const Component = useCallback(() => {
+    if (!shouldRerender.current) {
+      return null;
+    }
+    shouldRerender.current = false;
+
+    if (renderItems.current) {
+      return renderItems.current();
+    }
+
     return (
       <>
-        {list.map((Com, index) => (
+        {list.current.map((Com, index) => (
           <Com key={index} />
         ))}
       </>
     );
-  }, [list]);
+  }, []);
+
+  const getMenuItems = useCallback((Com: () => ReactNode): Item[] => {
+    const items: Item[] = [];
+
+    const pushMenuItem = (item: Item) => {
+      items.push(item);
+    };
+
+    shouldRerender.current = true;
+    renderItems.current = () => {
+      items.length = 0;
+      return (
+        <GetMenuItemsContext.Provider
+          value={{
+            pushMenuItem,
+          }}
+        >
+          {Com()}
+        </GetMenuItemsContext.Provider>
+      );
+    };
+
+    return items;
+  }, []);
 
   const getMenuItem = useCallback((Com: () => JSX.Element): Item => {
     const item = {} as Item;
@@ -38,20 +77,9 @@ export const useMenuItem = () => {
       Object.assign(item, menuItem);
     };
 
-    const onChange = () => {
-      setIsChanged(true);
-    };
-
-    setList((prev) => {
-      if (prev) {
-        prev.push(() => {
-          return (
-            <GetMenuItemContext.Provider value={{ collectMenuItem, onChange }}>{Com()}</GetMenuItemContext.Provider>
-          );
-        });
-        return prev;
-      }
-      return [];
+    shouldRerender.current = true;
+    list.current.push(() => {
+      return <GetMenuItemContext.Provider value={{ collectMenuItem }}>{Com()}</GetMenuItemContext.Provider>;
     });
 
     return item;
@@ -59,22 +87,8 @@ export const useMenuItem = () => {
 
   // 防止 list 有重复元素
   const clean = useCallback(() => {
-    setList([]);
+    list.current = [];
   }, []);
 
-  /**
-   * 当列表的状态发生变化时，需要返回一个新的列表，否则不会更新 UI
-   */
-  const cloneItemsWhenChanged = useCallback(
-    (items: Item[]) => {
-      if (isChanged) {
-        setIsChanged(false);
-        return [...items];
-      }
-      return items;
-    },
-    [isChanged],
-  );
-
-  return { Component, getMenuItem, clean, cloneItemsWhenChanged };
+  return { Component, getMenuItems, getMenuItem, clean };
 };

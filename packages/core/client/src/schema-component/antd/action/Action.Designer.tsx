@@ -1,6 +1,6 @@
 import { connect, ISchema, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Tree as AntdTree, Menu } from 'antd';
+import { Tree as AntdTree } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,7 +46,11 @@ const MenuGroup = (props) => {
   ) {
     return <>{props.children}</>;
   }
-  return <Menu.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>{props.children}</Menu.ItemGroup>;
+  return (
+    <SchemaSettings.ItemGroup title={`${t('Customize')} > ${actionTitles[actionType]}`}>
+      {props.children}
+    </SchemaSettings.ItemGroup>
+  );
 };
 
 export const ActionDesigner = (props) => {
@@ -54,7 +58,7 @@ export const ActionDesigner = (props) => {
   const field = useField();
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
-  const { getChildrenCollections, getCollection, getCollectionField } = useCollectionManager();
+  const { getChildrenCollections } = useCollectionManager();
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
