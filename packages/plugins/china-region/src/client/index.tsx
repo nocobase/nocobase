@@ -6,6 +6,7 @@ import React from 'react';
 const useChinaRegionDataSource = (options) => {
   const field = useField<ArrayField>();
   const maxLevel = field.componentProps.maxLevel;
+  console.log(8);
   return useRequest(
     {
       resource: 'chinaRegions',
@@ -31,6 +32,7 @@ const useChinaRegionDataSource = (options) => {
             }) || [],
         });
       },
+      manual: true,
     },
   );
 };
