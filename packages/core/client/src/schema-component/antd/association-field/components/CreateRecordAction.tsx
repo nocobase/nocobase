@@ -2,7 +2,7 @@ import { RecursionField, observer, useField, useFieldSchema } from '@formily/rea
 import React, { useState } from 'react';
 import { CollectionProvider } from '../../../../collection-manager';
 import { CreateAction } from '../../../../schema-initializer/components';
-import { ActionContext, useActionContext } from '../../action';
+import { ActionContextProvider, useActionContext } from '../../action';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
 import schema from '../schema';
 
@@ -23,7 +23,7 @@ export const CreateRecordAction = observer(
     return (
       <CollectionProvider name={collectionField?.target}>
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
-        <ActionContext.Provider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
+        <ActionContextProvider value={{ ...ctx, visible: visibleAddNewer, setVisible: setVisibleAddNewer }}>
           <CollectionProvider name={currentCollection}>
             <RecursionField
               onlyRenderProperties
@@ -34,7 +34,7 @@ export const CreateRecordAction = observer(
               }}
             />
           </CollectionProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </CollectionProvider>
     );
   },

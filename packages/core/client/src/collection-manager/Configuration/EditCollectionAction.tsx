@@ -7,7 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -128,7 +128,7 @@ export const EditCollectionAction = (props) => {
 
   return (
     <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
             const templateConf = getTemplate(record.template);
@@ -158,7 +158,7 @@ export const EditCollectionAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

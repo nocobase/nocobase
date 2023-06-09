@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -199,7 +199,7 @@ export const TriggerConfig = () => {
         />
       </div>
       <TriggerExecution />
-      <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+      <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
             type: 'void',
@@ -293,7 +293,7 @@ export const TriggerConfig = () => {
           scope={scope}
           components={components}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </div>
   );
 };

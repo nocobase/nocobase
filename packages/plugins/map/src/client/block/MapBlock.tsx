@@ -1,7 +1,14 @@
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { RecursionField, Schema, useFieldSchema } from '@formily/react';
-import { ActionContext, RecordProvider, useCollection, useCompile, useFilterAPI, useProps } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  RecordProvider,
+  useCollection,
+  useCompile,
+  useFilterAPI,
+  useProps,
+} from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -272,11 +279,11 @@ const MapBlockDrawer = (props) => {
 
   return (
     schema && (
-      <ActionContext.Provider value={{ visible: !!record, setVisible }}>
+      <ActionContextProvider value={{ visible: !!record, setVisible }}>
         <RecordProvider record={record}>
           <RecursionField schema={schema} name={schema.name} />
         </RecordProvider>
-      </ActionContext.Provider>
+      </ActionContextProvider>
     )
   );
 };
