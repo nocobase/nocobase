@@ -37,7 +37,7 @@ const { Paragraph, Text } = Typography;
 export type ChartConfigCurrent = {
   schema: ISchema;
   field: any;
-  collection: any;
+  collection: string;
 };
 
 export type SelectedField = {
@@ -65,7 +65,10 @@ export const ChartConfigure: React.FC<{
     },
   ) => void;
 }> & {
-  Renderer: React.FC;
+  Renderer: React.FC<{
+    beforeQuery?: () => void;
+    afterQuery?: () => void;
+  }>;
   Config: React.FC;
   Query: React.FC;
   Transform: React.FC;
@@ -75,20 +78,24 @@ export const ChartConfigure: React.FC<{
   const { schema, field, collection } = current || {};
   const { dn } = useDesignable();
   const { insert } = props;
-  const initialValues = schema?.['x-decorator-props'] || { collection };
   const form = useMemo(
     () =>
       createForm({
-        initialValues,
+        initialValues: { ...schema?.['x-decorator-props'], collection, data: '' },
       }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schema, visible, collection],
   );
+  const [loading, setLoading] = React.useState(false);
   const RunButton: React.FC = () => (
     // apply cloneDeep to trigger form change and ChartRenderer will rerender
-    <Button type="link" onClick={() => (form.values.query = cloneDeep(form.values.query))}>
-      <RightSquareOutlined />
+    <Button
+      type="link"
+      loading={loading}
+      icon={<RightSquareOutlined />}
+      onClick={() => (form.values.query = cloneDeep(form.values.query))}
+    >
       {t('Run query')}
     </Button>
   );
@@ -108,6 +115,7 @@ export const ChartConfigure: React.FC<{
         if (schema && schema['x-uid']) {
           schema['x-decorator-props'] = rendererProps;
           field.decoratorProps = rendererProps;
+          field['x-acl-action'] = `${collection}:list`;
           dn.emit('patch', {
             schema,
           });
@@ -146,7 +154,7 @@ export const ChartConfigure: React.FC<{
                     margin-bottom: 10px;
                   `}
                 >
-                  <ChartConfigure.Renderer />
+                  <ChartConfigure.Renderer beforeQuery={() => setLoading(true)} afterQuery={() => setLoading(false)} />
                 </Card>
               </Col>
             </Row>
@@ -212,7 +220,7 @@ export const ChartConfigure: React.FC<{
   );
 };
 
-ChartConfigure.Renderer = function Renderer() {
+ChartConfigure.Renderer = function Renderer(props) {
   const { current } = useContext(ChartConfigContext);
   const { collection } = current || {};
   return (
@@ -230,7 +238,7 @@ ChartConfigure.Renderer = function Renderer() {
             transform={transform}
             mode={form.values.mode}
           >
-            <ChartRenderer configuring={true} />
+            <ChartRenderer configuring={true} beforeQuery={props.beforeQuery} afterQuery={props.afterQuery} />
           </ChartRendererProvider>
         );
       }}
@@ -248,11 +256,10 @@ ChartConfigure.Query = function Query() {
   const formCollapse = FormCollapse.createFormCollapse(['measures', 'dimensions', 'sort', 'filter']);
   const onCollectionChange = (value: string) => {
     const { schema, field } = current;
+    schema['x-decorator-props'] = { collection: value };
+    schema['x-acl-action'] = `${value}:list`;
     setCurrent({
-      schema: {
-        ...schema,
-        'x-decorator-props': {},
-      },
+      schema,
       field,
       collection: value,
     });

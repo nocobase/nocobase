@@ -1,6 +1,6 @@
 import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
-import { lang } from '../locale';
-import { Charts } from './ChartLibrary';
+import { lang } from '../../locale';
+import { Charts, usePropsFunc } from '../ChartLibrary';
 
 const basicSchema = {
   type: 'object',
@@ -198,4 +198,13 @@ export const G2PlotLibrary: Charts = {
     component: Scatter,
     schema: basicSchema,
   },
+};
+
+export const useG2PlotProps: usePropsFunc = ({ data, meta, general, advanced }) => {
+  return {
+    data,
+    meta,
+    ...general,
+    ...advanced,
+  };
 };

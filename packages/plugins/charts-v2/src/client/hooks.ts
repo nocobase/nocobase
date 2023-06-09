@@ -24,7 +24,7 @@ export const useFields = (collection?: string) => {
   const { t } = useTranslation();
   const { current } = useContext(ChartConfigContext);
   if (!collection) {
-    collection = current?.collection || {};
+    collection = current?.collection || '';
   }
   const { getCollectionFields } = useCollectionManager();
   const fields = (getCollectionFields(collection) || [])
@@ -190,13 +190,13 @@ export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
   };
 };
 
-export const useFieldTransformer = (transform: ChartRendererProps['transform']) => {
+export const useFieldTransformer = (transform: ChartRendererProps['transform'], locale = 'en-US') => {
   return (transform || [])
     .filter((item) => item.field && item.type && item.format)
     .reduce((meta, item) => {
       const formatter = transformers[item.type][item.format];
       meta[item.field] = {
-        formatter: (val: any) => formatter(val),
+        formatter: (val: any) => formatter(val, locale),
       };
       return meta;
     }, {});

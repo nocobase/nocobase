@@ -20,13 +20,15 @@ const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{
   configuring?: boolean;
+  beforeQuery?: () => void;
+  afterQuery?: () => void;
 }> & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData, current } = useContext(ChartConfigContext);
   const { query, config, collection, transform } = useContext(ChartRendererContext);
-  const { configuring } = props;
+  const { configuring, beforeQuery, afterQuery } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
@@ -52,10 +54,14 @@ export const ChartRenderer: React.FC<{
         }),
     {
       manual: true,
+      onBefore: () => {
+        beforeQuery?.();
+      },
       onSuccess: (data) => {
         setData(data);
       },
       onFinally(params, data, e) {
+        afterQuery?.();
         if (!configuring) {
           return;
         }
@@ -87,11 +93,14 @@ export const ChartRenderer: React.FC<{
   }, [changedQuery, run]);
 
   const chartType = config?.chartType || '-';
-  const [library, type] = chartType.split('-');
-  const chart = useChart(library, type);
+  const [libName, type] = chartType.split('-');
+  const { library, chart } = useChart(libName, type);
   const Component = chart?.component;
-  const meta = useFieldTransformer(transform);
+  const locale = api.auth.getLocale();
+  const meta = useFieldTransformer(transform, locale);
   const chartTansformer = chart?.transformer;
+  const info = { data: chartTansformer ? chartTansformer(data) : data, meta, general, advanced };
+  const componentProps = library?.useProps(info);
   const C = () =>
     Component ? (
       <ErrorBoundary
@@ -100,7 +109,7 @@ export const ChartRenderer: React.FC<{
         }}
         FallbackComponent={ErrorFallback}
       >
-        <Component {...{ data: chartTansformer ? chartTansformer(data) : data, meta, ...general, ...advanced }} />
+        <Component {...componentProps} />
       </ErrorBoundary>
     ) : (
       <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />
@@ -130,7 +139,7 @@ ChartRenderer.Designer = function Designer() {
       <SchemaSettings.Item
         key="duplicate"
         onClick={() =>
-          insertAdjacent('afterEnd', createRendererSchema(collection, schema?.['x-component-props']), {
+          insertAdjacent('afterEnd', createRendererSchema(schema?.['x-decorator-props']), {
             wrap: gridRowColWrap,
           })
         }
