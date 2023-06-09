@@ -12,7 +12,7 @@ export const CardItem: React.FC = (props) => {
 
   return templateKey && !template ? null : (
     <BlockItem className={'noco-card-item'}>
-      <Card style={{ marginBottom: 24 }} bordered={false} {...restProps}>
+      <Card style={{ marginBottom: 'var(--nb-spacing)' }} bordered={false} {...restProps}>
         {props.children}
       </Card>
     </BlockItem>
