@@ -123,6 +123,10 @@ export const useSchemaTemplateManager = () => {
       const items = templates?.filter?.((template) => template.collectionName === collectionName);
       return items || [];
     },
+    getTemplatesByComponentName(componentName: string): Array<any> {
+      const items = templates?.filter?.((template) => template.componentName === componentName);
+      return items || [];
+    },
   };
 };
 

@@ -5,8 +5,7 @@ import { useRouteComponent } from './hooks';
 import { RouteSwitchProps } from './types';
 
 export function RouteSwitch(props: RouteSwitchProps) {
-  const { routes: remoteRoutes = [] } = props;
-
+  const { routes: remoteRoutes = [], base } = props;
   /**
    * 将 path 中的可选参数转换为多个路径
    *
@@ -43,8 +42,14 @@ export function RouteSwitch(props: RouteSwitchProps) {
     return res;
   }, []);
 
+  const getPathWithBase = useCallback((path: string, base?: string) => {
+    if (!base || path === undefined || path.startsWith('/')) return path;
+    if (path === '') return base;
+    return `${base.endsWith('/') ? base : base + '/'}${path.startsWith('/') ? path.slice(1) : path}`;
+  }, []);
+
   const getRoutes = useCallback(
-    (routes: RouteSwitchProps['routes']) => {
+    (routes: RouteSwitchProps['routes'], base?: string) => {
       const res = routes.map((item) => {
         if (item.type === 'route' && item.routes) {
           // layout
@@ -54,12 +59,12 @@ export function RouteSwitch(props: RouteSwitchProps) {
                 <ComponentRenderer component={item.component} />
               </RouteContext.Provider>
             ),
-            children: getRoutes(item.routes).flat(Infinity),
+            children: getRoutes(item.routes, getPathWithBase(item.path, base)).flat(Infinity),
           };
-        } else if (item.type === 'route' && item.path) {
+        } else if (item.type === 'route') {
           // common route
-          return generatePaths(item.path).map((path) => ({
-            path: path,
+          return generatePaths(getPathWithBase(item.path, base)).map((path) => ({
+            path: getPathWithBase(path, base),
             caseSensitive: item.sensitive,
             element: (
               <RouteContext.Provider value={item}>
@@ -70,17 +75,17 @@ export function RouteSwitch(props: RouteSwitchProps) {
         } else if (item.type === 'redirect') {
           // redirect route
           return {
-            path: item.from,
-            element: <Navigate replace={!item.push} to={item.to} />,
+            path: getPathWithBase(item.from, base),
+            element: <Navigate replace={!item.push} to={getPathWithBase(item.to, base)} />,
           };
         }
       });
       return res.flat(Infinity);
     },
-    [generatePaths],
+    [generatePaths, getPathWithBase],
   );
 
-  const routers = useRoutes(getRoutes(remoteRoutes));
+  const routers = useRoutes(getRoutes(remoteRoutes, base));
   return routers;
 }
 

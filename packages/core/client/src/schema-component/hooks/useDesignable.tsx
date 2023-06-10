@@ -144,7 +144,7 @@ export class Designable {
       if (!current['x-uid']) {
         return;
       }
-      await api.request({
+      const res = await api.request({
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
         data: {
@@ -165,7 +165,7 @@ export class Designable {
           method: 'post',
         });
       }
-      onSuccess?.();
+      onSuccess?.(res?.data?.data);
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('patch', async ({ schema }) => {
@@ -321,7 +321,7 @@ export class Designable {
         removed = parent;
       }
     }
-    this.emit('remove', { removed });
+    return this.emit('remove', { removed });
   }
 
   removeWithoutEmit(schema?: Schema, options: RemoveOptions = {}) {
@@ -501,7 +501,7 @@ export class Designable {
     const s = this.current.addProperty(wrapped.name || uid(), wrapped);
     s.parent = this.current;
     const [schema1, schema2] = splitWrapSchema(s, schema);
-    this.emit('insertAdjacent', {
+    return this.emit('insertAdjacent', {
       position: 'beforeEnd',
       schema: schema2,
       wrap: schema1,

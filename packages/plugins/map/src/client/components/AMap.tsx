@@ -5,7 +5,7 @@ import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
 import { useCollection } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
-import { Alert, Button, Modal } from 'antd';
+import { Alert, Button, Modal, Spin } from 'antd';
 import React, { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMapConfiguration } from '../hooks';
@@ -102,7 +102,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
   const navigate = useNavigate();
-  const id = useRef(`nocobase-map-${type}-${Date.now().toString(32)}`);
+  const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
 
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
     strokeWeight: 5,
@@ -316,7 +316,7 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
-        requestIdleCallback(() => {
+        return requestIdleCallback(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -327,10 +327,14 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
         });
       })
       .catch((err) => {
-        if (err.includes('多个不一致的 key')) {
-          setErrMessage(t('The AccessKey is incorrect, please check it'));
-        } else {
-          setErrMessage(err);
+        if (typeof err === 'string') {
+          if (err.includes('多个不一致的 key')) {
+            setErrMessage(t('The AccessKey is incorrect, please check it'));
+          } else {
+            setErrMessage(err);
+          }
+        } else if (err?.type === 'error') {
+          setErrMessage('Something went wrong, please refresh the page and try again');
         }
       });
 
@@ -379,6 +383,19 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
       id={id.current}
       style={props?.style}
     >
+      {!aMap.current && (
+        <div
+          className={css`
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          `}
+        >
+          <Spin />
+        </div>
+      )}
       {!disabled ? (
         <>
           <Search toCenter={toCenter} aMap={aMap.current} />

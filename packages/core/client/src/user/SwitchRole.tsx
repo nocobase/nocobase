@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import { Menu, Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { useAPIClient } from '../api-client';
 import { useCompile } from '../schema-component';
@@ -31,7 +30,6 @@ export const SwitchRole = () => {
   const api = useAPIClient();
   const roles = useCurrentRoles();
   const { t } = useTranslation();
-  const navigate = useNavigate();
   if (roles.length <= 1) {
     return null;
   }
@@ -57,7 +55,7 @@ export const SwitchRole = () => {
           onChange={async (roleName) => {
             api.auth.setRole(roleName);
             await api.resource('users').setDefaultRole({ values: { roleName } });
-            navigate('/');
+            location.reload();
             window.location.reload();
           }}
         />

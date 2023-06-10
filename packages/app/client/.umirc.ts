@@ -7,10 +7,10 @@ process.env.MFSU_AD = 'none';
 process.env.DID_YOU_KNOW = 'none';
 
 export default defineConfig({
-  title: 'Loading...',
+  title: 'NoCoBase',
   favicons: ['/favicon/favicon.ico'],
   metas: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    { name: 'viewport', content: 'width=device-width, initial-scale=1, user-scalable=0, shrink-to-fit=no' },
   ],
   links: [
     { rel: 'apple-touch-icon', size: '180x180', ref: '/favicon/apple-touch-icon.png' },

@@ -1,0 +1,14 @@
+[
+  {
+    "title": "介绍",
+    "path": "index"
+  },
+  {
+    "title": "安装",
+    "path": "installation"
+  },
+  {
+    "title": "用法",
+    "path": "usage"
+  }
+]

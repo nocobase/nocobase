@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import { Menu } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContext, SchemaComponent, useActionContext } from '../';
+import { ActionContextProvider, SchemaComponent, useActionContext } from '../';
 import { useAPIClient } from '../api-client';
 import { DropdownVisibleContext } from './CurrentUser';
 
@@ -119,7 +119,7 @@ export const ChangePassword = () => {
   const { t } = useTranslation();
   const ctx = useContext(DropdownVisibleContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Menu.Item
         key="password"
         eventKey={'ChangePassword'}
@@ -131,6 +131,6 @@ export const ChangePassword = () => {
         {t('Change password')}
       </Menu.Item>
       <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

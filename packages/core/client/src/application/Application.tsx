@@ -53,9 +53,7 @@ const App = React.memo((props: any) => {
   const C = compose(...props.providers)(() => {
     const routes = useRoutes();
     return (
-      <div>
-        <RouteSwitch routes={routes} />
-      </div>
+      <RouteSwitch routes={routes} />
     );
   });
   return <C />;

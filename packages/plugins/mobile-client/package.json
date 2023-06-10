@@ -1,0 +1,27 @@
+{
+  "name": "@nocobase/plugin-mobile-client",
+  "version": "0.9.4-alpha.2",
+  "main": "lib/server/index.js",
+  "displayName": "Mobile-client",
+  "displayName.zh-CN": "移动端",
+  "description": "Provide mobile client access",
+  "description.zh-CN": "提供移动端访问",
+  "devDependencies": {
+    "@emotion/css": "^11.7.1",
+    "@formily/react": "2.2.24",
+    "@formily/shared": "2.2.24",
+    "@formily/antd": "2.2.24",
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "classnames": "^2.3.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-router-dom": "^6.11.2",
+    "antd": "^4.24.8"
+  },
+  "dependencies": {
+    "antd-mobile": "^5.29.1"
+  }
+}

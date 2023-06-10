@@ -56,7 +56,7 @@ export const GeneralSchemaItems: React.FC<{
           />
         )}
         <SchemaSettings.SwitchItem
-          checked={field.decoratorProps.showTitle ?? true}
+          checked={fieldSchema['x-decorator-props']?.['showTitle'] ?? true}
           title={t('Display title')}
           onChange={(checked) => {
             fieldSchema['x-decorator-props'] = fieldSchema['x-decorator-props'] || {};
