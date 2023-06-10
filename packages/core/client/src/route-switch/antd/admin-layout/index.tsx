@@ -1,5 +1,4 @@
 import { css } from '@emotion/css';
-import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
 import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -127,19 +126,8 @@ const MenuEditor = (props) => {
 
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
-  const [sideMenuWidth, setSideMenuWidth] = useState(0);
-
-  useMutationObserver(
-    (value) => {
-      const width = (value[0].target as HTMLDivElement).offsetWidth;
-      setSideMenuWidth(width);
-    },
-    sideMenuRef,
-    {
-      childList: true,
-      attributes: true,
-    },
-  );
+  const location = useLocation();
+  const sideMenuWidth = useMemo(() => (location.pathname.startsWith('/admin/settings') ? 0 : 200), [location.pathname]);
 
   const result = useSystemSettings();
   const { service } = useCollectionManager();
@@ -291,18 +279,18 @@ export const InternalAdminLayout = (props: any) => {
 };
 
 export const AdminProvider = (props) => {
-  return <CurrentAppInfoProvider>
-    <CurrentUserProvider>
-      <RemoteSchemaTemplateManagerProvider>
-        <RemoteCollectionManagerProvider>
-          <ACLRolesCheckProvider>
-            {props.children}
-          </ACLRolesCheckProvider>
-        </RemoteCollectionManagerProvider>
-      </RemoteSchemaTemplateManagerProvider>
-    </CurrentUserProvider>
-  </CurrentAppInfoProvider>
-}
+  return (
+    <CurrentAppInfoProvider>
+      <CurrentUserProvider>
+        <RemoteSchemaTemplateManagerProvider>
+          <RemoteCollectionManagerProvider>
+            <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
+          </RemoteCollectionManagerProvider>
+        </RemoteSchemaTemplateManagerProvider>
+      </CurrentUserProvider>
+    </CurrentAppInfoProvider>
+  );
+};
 
 export const AdminLayout = (props) => {
   return (
