@@ -3213,6 +3213,13 @@
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
 
+"@googlemaps/js-api-loader@^1.16.1":
+  version "1.16.1"
+  resolved "https://registry.yarnpkg.com/@googlemaps/js-api-loader/-/js-api-loader-1.16.1.tgz#db74c851f8e26a50f578a07c195a87e1fb60ae90"
+  integrity sha512-x6M48e2nkIrp1KGNwXEVMRTCzruBw/w1HItlhVXL6Lp5pKuTcJEfOCE4tjPk3n6kLcMuJYXE8aluYMmakn7tTw==
+  dependencies:
+    fast-deep-equal "^3.1.3"
+
 "@hapi/hoek@^11.0.2":
   version "11.0.2"
   resolved "https://registry.yarnpkg.com/@hapi/hoek/-/hoek-11.0.2.tgz#cb3ea547daac7de5c9cf1d960c3f35c34f065427"
@@ -5021,6 +5028,11 @@
   dependencies:
     "@types/minimatch" "*"
     "@types/node" "*"
+
+"@types/google.maps@^3.53.4":
+  version "3.53.4"
+  resolved "https://registry.yarnpkg.com/@types/google.maps/-/google.maps-3.53.4.tgz#741442764ebaef1a6705f3ab2c047ffeba333020"
+  integrity sha512-IiDAYTONQEKCBssPtoM0XqWF8YIIk2leba4NOf9qVQ/d8l5gLuS3QT87TrX6/u8rMonQAXC9KEDmM4q7sT6MWg==
 
 "@types/graceful-fs@^4.1.2":
   version "4.1.6"

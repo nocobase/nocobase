@@ -10,10 +10,23 @@
   "types": "./lib/index.d.ts",
   "devDependencies": {
     "@nocobase/server": "0.9.4-alpha.2",
-    "@nocobase/test": "0.9.4-alpha.2"
+    "@nocobase/test": "0.9.4-alpha.2",
+    "@types/google.maps": "^3.53.4",
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0"
   },
   "dependencies": {
     "@amap/amap-jsapi-loader": "^1.0.1",
-    "@amap/amap-jsapi-types": "^0.0.10"
+    "@amap/amap-jsapi-types": "^0.0.10",
+    "@googlemaps/js-api-loader": "^1.16.1",
+    "@emotion/css": "^11.7.1",
+    "@formily/react": "2.2.24",
+    "@formily/shared": "2.2.24",
+    "@formily/antd": "2.2.24",
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2",
+    "react": "17.x",
+    "react-dom": "17.x",
+    "antd": "^4.24.8"
   }
 }

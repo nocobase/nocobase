@@ -1,13 +1,29 @@
 import { connect, mapReadPretty } from '@formily/react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import AMapComponent, { AMapComponentProps } from './AMap';
 import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
 import Designer from './Designer';
+import GoogleMapComponent from './GoogleMap';
+import { useMapTranslation } from '../locale';
 
 type MapProps = AMapComponentProps;
 
+const MapComponents = {
+  amap: AMapComponent,
+  google: GoogleMapComponent,
+};
+
 const InternalMap = connect((props: MapProps) => {
+  const { mapType } = props;
+  const { t } = useMapTranslation();
+  const Component = useMemo(() => {
+    return MapComponents[mapType];
+  }, [mapType]);
+
+  if (!Component) {
+    return <div>{t(`The ${mapType} cannot found`)}</div>;
+  }
   return (
     <div
       className={css`
@@ -18,7 +34,7 @@ const InternalMap = connect((props: MapProps) => {
         }
       `}
     >
-      {props.mapType ? <AMapComponent {...props} /> : null}
+      <Component {...props} />
     </div>
   );
 }, mapReadPretty(ReadPretty));

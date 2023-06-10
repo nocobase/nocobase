@@ -6,7 +6,10 @@ import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 
-const AMapConfiguration = ({ type }) => {
+interface BaseConfigurationProps {
+  type: 'amap' | 'google';
+}
+const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children }) => {
   const { t } = useMapTranslation();
   const [isDisabled, disableAction] = useBoolean(false);
   const apiClient = useAPIClient();
@@ -38,20 +41,15 @@ const AMapConfiguration = ({ type }) => {
       });
   };
   return (
-    <Form form={form} layout="vertical" onFinish={onSubmit}>
-      <Form.Item required name="accessKey" label={t('Access key')}>
-        <Input disabled={isDisabled} />
-      </Form.Item>
-      <Form.Item required name="securityJsCode" label={t('securityJsCode or serviceHost')}>
-        <Input disabled={isDisabled} />
-      </Form.Item>
+    <Form disabled={isDisabled} form={form} layout="vertical" onFinish={onSubmit}>
+      {children}
       {isDisabled ? (
-        <Button onClick={disableAction.toggle} type="ghost">
+        <Button disabled={false} onClick={disableAction.toggle} type="ghost">
           {t('Edit')}
         </Button>
       ) : (
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button disabled={false} type="primary" htmlType="submit">
             {t('Save')}
           </Button>
         </Form.Item>
@@ -60,9 +58,34 @@ const AMapConfiguration = ({ type }) => {
   );
 };
 
+const AMapConfiguration = () => {
+  const { t } = useMapTranslation();
+  return (
+    <BaseConfiguration type="amap">
+      <Form.Item required name="accessKey" label={t('Access key')}>
+        <Input />
+      </Form.Item>
+      <Form.Item required name="securityJsCode" label={t('securityJsCode or serviceHost')}>
+        <Input />
+      </Form.Item>
+    </BaseConfiguration>
+  );
+};
+
+const GoogleMapConfiguration = () => {
+  const { t } = useMapTranslation();
+  return (
+    <BaseConfiguration type="google">
+      <Form.Item required name="accessKey" label={t('Api key')}>
+        <Input />
+      </Form.Item>
+    </BaseConfiguration>
+  );
+};
+
 const components = {
   amap: AMapConfiguration,
-  google: () => <div>Coming soon</div>,
+  google: GoogleMapConfiguration,
 };
 
 const tabList = MapTypes.map((item) => {
