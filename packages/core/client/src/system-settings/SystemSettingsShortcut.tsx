@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSystemSettings } from '.';
 import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext } from '../schema-component';
 
 const langs = Object.keys(locale).map((lang) => {
   return {
@@ -300,7 +300,7 @@ export const SystemSettingsShortcut2 = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         eventKey={'ACLAction'}
         onClick={() => {
@@ -313,6 +313,6 @@ export const SystemSettingsShortcut2 = () => {
         scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
         schema={schema}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

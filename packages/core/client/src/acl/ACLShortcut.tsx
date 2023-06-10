@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { PluginManager } from '../plugin-manager';
-import { ActionContext, SchemaComponent } from '../schema-component';
+import { ActionContextProvider, SchemaComponent } from '../schema-component';
 import * as components from './Configuration';
 
 const schema: ISchema = {
@@ -61,7 +61,7 @@ export const ACLShortcut2 = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         icon={<LockOutlined />}
         title={t('Roles & Permissions')}
@@ -70,6 +70,6 @@ export const ACLShortcut2 = () => {
         }}
       />
       <SchemaComponent components={components} schema={schema} />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

@@ -56,7 +56,7 @@ const designerCss = css`
 
 const InternalGridCard = (props) => {
   const { columnCount: columnCountProp, pagination } = useProps(props);
-  const { service, _columnCount = defaultColumnCount } = useGridCardBlockContext();
+  const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
   const meta = service?.data?.meta;

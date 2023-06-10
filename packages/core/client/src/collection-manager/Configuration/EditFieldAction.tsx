@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction, useUpdateAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -145,7 +145,7 @@ export const EditFieldAction = (props) => {
   const [data, setData] = useState<any>({});
   return (
     <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
@@ -187,7 +187,7 @@ export const EditFieldAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

@@ -12,7 +12,7 @@ describe('Variable', () => {
 
     await userEvent.click(screen.getByText('x'));
     await userEvent.click(screen.getByText('v1'));
-    await sleep();
+    await sleep(100);
     expect(screen.getByText('v1', { selector: '.ant-tag' })).toMatchInlineSnapshot(`
       <span
         class="ant-tag ant-tag-blue"
@@ -32,11 +32,11 @@ describe('Variable', () => {
     expect(variableSelector).toBeInTheDocument();
 
     await userEvent.type(input, '1+');
-    await sleep();
+    await sleep(100);
 
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
-    await sleep();
+    await sleep(100);
     expect(input).toMatchInlineSnapshot(`
       <div
         class="ant-input css-1p5yrh5"
@@ -67,7 +67,7 @@ describe('Variable', () => {
     await userEvent.type(input, '{{ "a": "');
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
-    await sleep();
+    await sleep(100);
 
     await userEvent.type(input, '" }');
     expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');

@@ -7,7 +7,7 @@ import classnames from 'classnames';
 import { useTranslation } from 'react-i18next';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   ResourceActionProvider,
   SchemaComponent,
   useDocumentTitle,
@@ -202,7 +202,7 @@ export function WorkflowCanvas() {
           >
             <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
-          <ActionContext.Provider value={{ visible, setVisible }}>
+          <ActionContextProvider value={{ visible, setVisible }}>
             <SchemaComponent
               schema={executionSchema}
               components={{
@@ -210,7 +210,7 @@ export function WorkflowCanvas() {
                 ExecutionLink,
               }}
             />
-          </ActionContext.Provider>
+          </ActionContextProvider>
         </aside>
       </div>
       <CanvasContent entry={entry} />

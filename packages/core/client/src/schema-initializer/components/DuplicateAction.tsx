@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { RecordProvider, ActionContext, useActionContext, useRecord, useCollection } from '../../';
+import { RecordProvider, ActionContextProvider, useActionContext, useRecord, useCollection } from '../../';
 import { useTranslation } from 'react-i18next';
 import { css, cx } from '@emotion/css';
 import { useAPIClient, useBlockRequestContext, useDesignable } from '../../';
@@ -111,9 +111,9 @@ export const DuplicateAction = observer((props: any) => {
               {loading ? t('Duplicating') : children || t('Duplicate')}
             </Button>
           )}
-          <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
+          <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
             <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-          </ActionContext.Provider>
+          </ActionContextProvider>
         </div>
       </DuplicatefieldsContext.Provider>
     </div>

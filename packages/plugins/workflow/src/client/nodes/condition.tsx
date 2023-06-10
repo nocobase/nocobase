@@ -413,7 +413,7 @@ export default {
       value: { rejectOnFalse: false },
     },
   ],
-  render: function Renderer(data) {
+  component: function Component({ data }) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const {
