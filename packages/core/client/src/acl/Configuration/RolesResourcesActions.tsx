@@ -1,4 +1,4 @@
-import { FormItem, FormLayout } from '@formily/antd';
+import { FormItem, FormLayout } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { connect, useField, useForm } from '@formily/react';
 import { Checkbox, Table, Tag } from 'antd';

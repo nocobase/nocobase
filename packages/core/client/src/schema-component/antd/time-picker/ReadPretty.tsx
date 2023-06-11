@@ -1,4 +1,4 @@
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { toArr } from '@formily/shared';
 import { TimeRangePickerProps } from 'antd/es/time-picker';
 import cls from 'classnames';

@@ -1,4 +1,4 @@
-import { ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd-v5';
 import type { ISchema } from '@formily/react';
 import { useField, useFieldSchema } from '@formily/react';
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';

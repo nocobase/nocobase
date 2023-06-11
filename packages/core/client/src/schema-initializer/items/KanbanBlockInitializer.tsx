@@ -1,14 +1,14 @@
-import React, { useContext } from 'react';
-import { FormDialog, FormLayout } from '@formily/antd';
 import { FormOutlined } from '@ant-design/icons';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAPIClient } from '../../api-client';
 import { useCollectionManager } from '../../collection-manager';
+import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 import { createKanbanBlockSchema } from '../utils';
 import { DataBlockInitializer } from './DataBlockInitializer';
-import { SchemaComponent, SchemaComponentOptions } from '../../schema-component';
 
 export const KanbanBlockInitializer = (props) => {
   const { insert } = props;

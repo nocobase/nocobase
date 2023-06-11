@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';

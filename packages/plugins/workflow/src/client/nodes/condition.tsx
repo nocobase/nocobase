@@ -161,7 +161,7 @@ function Calculation({ calculator, operands = [], onChange }) {
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))

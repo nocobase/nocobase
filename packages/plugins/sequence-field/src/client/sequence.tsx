@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd';
+import { ArrayTable, FormButtonGroup, FormDrawer, FormLayout, Submit } from '@formily/antd-v5';
 import { onFieldValueChange } from '@formily/core';
 import { ISchema, SchemaOptionsContext, useForm, useFormEffects } from '@formily/react';
 import {
@@ -10,6 +10,7 @@ import {
   interfacesProperties,
   useCompile,
 } from '@nocobase/client';
+import { error } from '@nocobase/utils/client';
 import { Button, Select } from 'antd';
 import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,7 +29,7 @@ function RuleTypeSelect(props) {
   });
 
   return (
-    <Select dropdownMatchSelectWidth={false} {...props}>
+    <Select popupMatchSelectWidth={false} {...props}>
       {Object.keys(RuleTypes).map((key) => (
         <Select.Option key={key} value={key}>
           {compile(RuleTypes[key].title)}
@@ -98,15 +99,15 @@ const RuleTypes = {
   integer: {
     title: `{{t("Autoincrement", { ns: "${NAMESPACE}" })}}`,
     optionRenders: {
-      digits({ value }) {
+      digits: function Digits({ value }) {
         const { t } = useTranslation();
         return <span>{t('{{value}} Digits', { ns: NAMESPACE, value })}</span>;
       },
-      start({ value }) {
+      start: function Start({ value }) {
         const { t } = useTranslation();
         return <span>{t('Starts from {{value}}', { ns: NAMESPACE, value })}</span>;
       },
-      cycle({ value }) {
+      cycle: function Cycle({ value }) {
         return (
           <SchemaComponent
             schema={{
@@ -252,6 +253,9 @@ export function RuleConfigForm() {
           })
           .then((values) => {
             form.setValuesIn(`patterns.${index}`, { type, options: { ...values } });
+          })
+          .catch((err) => {
+            error(err);
           });
       }}
     >

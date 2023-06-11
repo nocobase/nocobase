@@ -1,7 +1,7 @@
 /**
  * title: TreeSelect
  */
-import { FormItem } from '@formily/antd';
+import { FormItem } from '@formily/antd-v5';
 import { SchemaComponent, SchemaComponentProvider, TreeSelect } from '@nocobase/client';
 import React from 'react';
 

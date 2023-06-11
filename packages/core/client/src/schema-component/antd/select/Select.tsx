@@ -49,7 +49,7 @@ const ObjectSelect = (props: Props) => {
       options={options}
       fieldNames={fieldNames}
       showSearch
-      dropdownMatchSelectWidth={false}
+      popupMatchSelectWidth={false}
       filterOption={(input, option) => (option?.[fieldNames.label || 'label'] ?? '').includes(input)}
       filterSort={(optionA, optionB) =>
         (optionA?.[fieldNames.label || 'label'] ?? '')
@@ -100,7 +100,7 @@ const InternalSelect = connect(
         showSearch
         filterOption={filterOption}
         allowClear
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         notFoundContent={loading ? <Spin /> : <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />}
         value={toValue(value)}
         {...others}

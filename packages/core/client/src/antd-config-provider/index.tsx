@@ -44,7 +44,7 @@ export function AntdConfigProvider(props) {
   }
   return (
     <AppLangContext.Provider value={data?.data}>
-      <ConfigProvider dropdownMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
+      <ConfigProvider popupMatchSelectWidth={false} {...others} locale={data?.data?.antd || {}}>
         {props.children}
       </ConfigProvider>
     </AppLangContext.Provider>

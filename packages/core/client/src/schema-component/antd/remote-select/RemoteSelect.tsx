@@ -244,7 +244,7 @@ const InternalRemoteSelect = connect(
     return (
       <Select
         open={open}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
         filterSort={null}

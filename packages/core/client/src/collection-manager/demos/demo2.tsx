@@ -1,15 +1,15 @@
-import React from 'react';
-import { observer, ISchema, useForm } from '@formily/react';
+import { ISchema, observer, useForm } from '@formily/react';
 import {
+  Action,
+  CollectionField,
+  CollectionProvider,
+  Form,
   SchemaComponent,
   SchemaComponentProvider,
-  Form,
-  Action,
-  CollectionProvider,
-  CollectionField,
 } from '@nocobase/client';
-import 'antd/dist/antd.css';
-import { FormItem, Input } from '@formily/antd';
+import React from 'react';
+// import 'antd/dist/antd.css';
+import { FormItem, Input } from '@formily/antd-v5';
 
 export default observer(() => {
   const collection = {

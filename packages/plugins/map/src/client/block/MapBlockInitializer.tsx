@@ -1,7 +1,7 @@
 import { TableOutlined } from '@ant-design/icons';
-import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext } from '@formily/react';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { DataBlockInitializer, SchemaComponent, SchemaComponentOptions, useCollectionManager } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { useMapTranslation } from '../locale';
 import { createMapBlockSchema } from './utils';

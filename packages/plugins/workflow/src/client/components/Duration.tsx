@@ -30,7 +30,7 @@ export default function ({ value = 60000, onChange }) {
     >
       <InputNumber min={1} value={quantity} onChange={(v) => onChange(Math.round(v * option.value))} />
       <Select
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
         value={option.value}
         onChange={(unit) => onChange(Math.round(quantity * unit))}
       >

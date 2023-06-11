@@ -1,4 +1,4 @@
-import { formatMomentValue, momentable } from '@formily/antd/esm/__builtins__';
+import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
@@ -16,10 +16,10 @@ const mapTimeFormat = function () {
     return {
       ...props,
       format,
-      value: momentable(props.value, format),
+      value: dayjsable(props.value, format),
       onChange: (value: moment.Dayjs | moment.Dayjs[]) => {
         if (onChange) {
-          onChange(formatMomentValue(value, format) || null);
+          onChange(formatDayjsValue(value, format) || null);
         }
       },
     };

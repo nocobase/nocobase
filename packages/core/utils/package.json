@@ -14,7 +14,8 @@
   },
   "peerDependencies": {
     "dayjs": "1.x",
-    "rc-input-number": "7.x"
+    "rc-input-number": "7.x",
+    "@rc-component/mini-decimal": "^1.0.1"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

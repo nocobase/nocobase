@@ -186,7 +186,7 @@ export const AssignedField = (props: any) => {
     } else {
       return (
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           defaultValue={fieldType}
           value={fieldType}
           style={{ minWidth: 150 }}

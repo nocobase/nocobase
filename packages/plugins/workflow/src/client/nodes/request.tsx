@@ -1,4 +1,4 @@
-import { ArrayItems } from '@formily/antd';
+import { ArrayItems } from '@formily/antd-v5';
 
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';

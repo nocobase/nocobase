@@ -8,7 +8,7 @@
   "description.zh-CN": "提供移动端访问",
   "devDependencies": {
     "@emotion/css": "^11.7.1",
-    "@formily/antd": "2.2.26",
+    "@formily/antd-v5": "^1.1.0-beta.3",
     "@formily/react": "2.2.26",
     "@formily/shared": "2.2.26",
     "@nocobase/server": "0.10.0-alpha.5",
@@ -20,8 +20,10 @@
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.11.2"
+    "antd": "^5.6.1"
   },
   "dependencies": {
     "antd-mobile": "^5.29.1"
   }
 }
+

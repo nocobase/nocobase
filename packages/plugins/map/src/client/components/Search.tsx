@@ -85,7 +85,7 @@ const Search = (props: SearchProps) => {
         onSearch={onSearch}
         onSelect={onSelect}
         options={options}
-        dropdownMatchSelectWidth={false}
+        popupMatchSelectWidth={false}
       ></Select>
     </div>
   );

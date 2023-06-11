@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { FormLayout, FormItem } from '@formily/antd';
+import { FormItem, FormLayout } from '@formily/antd-v5';
 import { SchemaInitializerItemOptions, Variable, useCollectionManager } from '@nocobase/client';
 import { Evaluator, evaluators, getOptions } from '@nocobase/evaluators/client';
 import { parse } from '@nocobase/utils/client';
@@ -8,10 +8,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFlowContext } from '../FlowContext';
 import { RadioWithTooltip } from '../components/RadioWithTooltip';
+import { ValueBlock } from '../components/ValueBlock';
 import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
 import { BaseTypeSets, useWorkflowVariableOptions } from '../variable';
-import { ValueBlock } from '../components/ValueBlock';
 
 function useDynamicExpressionCollectionFieldMatcher(field): boolean {
   const { getCollectionFields } = useCollectionManager();

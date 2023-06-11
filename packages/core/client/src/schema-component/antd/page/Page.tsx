@@ -1,7 +1,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
 import { Button, Spin, Tabs } from 'antd';
 import classNames from 'classnames';

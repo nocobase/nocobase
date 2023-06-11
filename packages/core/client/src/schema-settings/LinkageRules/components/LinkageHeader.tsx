@@ -1,5 +1,5 @@
 import { CopyOutlined } from '@ant-design/icons';
-import { ArrayBase, ArrayBaseMixins } from '@formily/antd';
+import { ArrayBase, ArrayBaseMixins } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';

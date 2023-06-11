@@ -1,13 +1,13 @@
 import { css } from '@emotion/css';
-import { FormDialog, FormLayout } from '@formily/antd';
+import { FormDialog, FormLayout } from '@formily/antd-v5';
 import { SchemaOptionsContext, useField, useFieldSchema } from '@formily/react';
 import {
   APIClientProvider,
   GeneralSchemaDesigner,
-  i18n,
   SchemaComponent,
   SchemaComponentOptions,
   SchemaSettings,
+  i18n,
   useAPIClient,
   useCompile,
   useDesignable,

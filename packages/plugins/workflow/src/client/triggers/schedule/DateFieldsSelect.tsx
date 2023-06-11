@@ -13,7 +13,7 @@ export const DateFieldsSelect: React.FC<any> = observer(
     const fields = getCollectionFields(values?.collection);
 
     return (
-      <Select dropdownMatchSelectWidth={false} placeholder={t('Select field')} {...props}>
+      <Select popupMatchSelectWidth={false} placeholder={t('Select field')} {...props}>
         {fields
           .filter((field) => !field.hidden && (field.uiSchema ? field.type === 'date' : false))
           .map((field) => (

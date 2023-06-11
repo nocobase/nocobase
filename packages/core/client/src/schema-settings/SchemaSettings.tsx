@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd';
+import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } from '@formily/antd-v5';
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
@@ -682,7 +682,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
-          dropdownMatchSelectWidth={false}
+          popupMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
           onChange={(...arg) => (setOpen(false), onChange(...arg))}

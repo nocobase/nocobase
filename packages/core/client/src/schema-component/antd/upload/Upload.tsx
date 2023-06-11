@@ -1,5 +1,5 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { usePrefixCls } from '@formily/antd/esm/__builtins__';
+import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
 import cls from 'classnames';
