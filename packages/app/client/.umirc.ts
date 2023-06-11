@@ -33,7 +33,7 @@ export default defineConfig({
   proxy: {
     ...umiConfig.proxy,
   },
-  fastRefresh: true,
+  fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   mfsu: false,
   esbuildMinifyIIFE: true,
   // srcTranspiler: 'esbuild', // 不行，各种报错
