@@ -16,6 +16,41 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should modify inherited collection parents', async () => {
+    const A = db.collection({
+      name: 'a',
+      timestamps: false,
+      fields: [{ name: 'a_name', type: 'string' }],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      timestamps: false,
+      inherits: ['a'],
+      fields: [{ name: 'b_name', type: 'string' }],
+    });
+
+    await db.sync({
+      force: false,
+      alter: {
+        drop: false,
+      },
+    });
+
+    // inert 10 data into B
+    await B.repository.create({
+      values: Array.from({ length: 10 }).map((_, i) => ({
+        b_name: `b-${i}`,
+      })),
+    });
+
+    const C = db.collection({
+      name: 'c',
+      timestamps: false,
+      fields: [{ name: 'c_name', type: 'string' }],
+    });
+  });
+
   it('should reset id sequence of connected nodes', async () => {
     const createCollection = async (name: string, options: {} = {}) => {
       if (db.hasCollection(name)) {
@@ -49,10 +84,10 @@ pgOnly()('collection inherits', () => {
 
       const sequenceNameResult = await db.sequelize.query(
         `SELECT column_default
-           FROM information_schema.columns
-           WHERE table_name = '${collection.model.tableName}'
-             and table_schema = '${collection.collectionSchema()}'
-             and "column_name" = 'id';`,
+         FROM information_schema.columns
+         WHERE table_name = '${collection.model.tableName}'
+           and table_schema = '${collection.collectionSchema()}'
+           and "column_name" = 'id';`,
       );
 
       if (!sequenceNameResult[0].length) {
@@ -165,39 +200,6 @@ pgOnly()('collection inherits', () => {
     expect(Array.from(db.inheritanceMap.getParents('x'))).toEqual(['c']);
   });
 
-  it('should modify inherited collection parents', async () => {
-    const A = db.collection({
-      name: 'a',
-      timestamps: false,
-      fields: [{ name: 'a_name', type: 'string' }],
-    });
-
-    const B = db.collection({
-      name: 'b',
-      timestamps: false,
-      inherits: ['a'],
-      fields: [{ name: 'b_name', type: 'string' }],
-    });
-
-    await db.sync({
-      force: false,
-      alter: {
-        drop: false,
-      },
-    });
-
-    // inert 10 data into B
-    await B.repository.create({
-      values: Array.from({ length: 10 }).map((_, i) => ({
-        b_name: `b-${i}`,
-      })),
-    });
-
-    const C = db.collection({
-      name: 'c',
-      timestamps: false,
-      fields: [{ name: 'c_name', type: 'string' }],
-    });
   it('should append __collection with eager load', async () => {
     const Root = db.collection({
       name: 'root',
