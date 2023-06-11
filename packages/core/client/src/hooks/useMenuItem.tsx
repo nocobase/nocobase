@@ -1,7 +1,12 @@
 import { MenuProps } from 'antd';
 import React, { ReactNode, createContext, useCallback, useContext, useRef } from 'react';
 
-type Item = MenuProps['items'][0];
+type Item = MenuProps['items'][0] & {
+  /** 在清空数组时，如果该字段为 true 则保留该选项 */
+  notdelete?: boolean;
+  /** 用于给列表排序 */
+  order?: number;
+};
 
 export const GetMenuItemContext = createContext<{ collectMenuItem?(item: Item): void; onChange?: () => void }>(null);
 export const GetMenuItemsContext = createContext<{ pushMenuItem?(item: Item): void }>(null);
@@ -51,11 +56,14 @@ export const useMenuItem = () => {
 
     const pushMenuItem = (item: Item) => {
       items.push(item);
+      items.sort((a, b) => (a.order || 0) - (b.order || 0));
     };
 
     shouldRerender.current = true;
     renderItems.current = () => {
+      const notDeleteItems = items.filter((item) => item.notdelete);
       items.length = 0;
+      items.push(...notDeleteItems);
       return (
         <GetMenuItemsContext.Provider
           value={{

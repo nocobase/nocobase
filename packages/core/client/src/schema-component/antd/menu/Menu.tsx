@@ -1,18 +1,22 @@
 import { css } from '@emotion/css';
 import {
+  FieldContext,
   observer,
   RecursionField,
   Schema,
+  SchemaContext,
   SchemaExpressionScopeContext,
   useField,
   useFieldSchema,
 } from '@formily/react';
-import { Menu as AntdMenu } from 'antd';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { error } from '@nocobase/utils/client';
+import { Menu as AntdMenu, MenuProps } from 'antd';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { createDesignable, DndContext, SortableItem, useDesignable, useDesigner } from '../..';
 import { Icon, useAPIClient, useSchemaInitializer } from '../../../';
+import { useCollectMenuItems, useMenuItem } from '../../../hooks/useMenuItem';
 import { useProps } from '../../hooks/useProps';
 import { MenuDesigner } from './Menu.Designer';
 import { findKeysByUid, findMenuItem } from './util';
@@ -158,6 +162,12 @@ const sideMenuClass = css`
   }
 `;
 
+const menuItemClass = css`
+  :active {
+    background: inherit;
+  }
+`;
+
 type ComposedMenu = React.FC<any> & {
   Item?: React.FC<any>;
   URL?: React.FC<any>;
@@ -180,54 +190,70 @@ const HeaderMenu = ({
   render,
   children,
 }) => {
+  const { Component, getMenuItems } = useMenuItem();
+  const items = useMemo(() => {
+    const designerBtn = {
+      key: 'x-designer-button',
+      disabled: true,
+      style: { padding: '0 8px', order: 9999 },
+      label: render({ style: { background: 'none' } }),
+      notdelete: true,
+    };
+    const result = getMenuItems(() => {
+      return children;
+    });
+    if (designable) {
+      result.push(designerBtn);
+    }
+
+    return result;
+  }, [children, designable]);
+
   return (
-    <AntdMenu
-      {...others}
-      className={headerMenuClass}
-      onSelect={(info: any) => {
-        const s = schema.properties[info.key];
-        if (mode === 'mix') {
-          setSideMenuSchema(s);
-          if (s['x-component'] !== 'Menu.SubMenu') {
-            onSelect && onSelect(info);
-          } else {
-            const menuItemSchema = findMenuItem(s);
-            if (!menuItemSchema) {
-              return;
-            }
-            // TODO
-            setLoading(true);
-            const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
-            setDefaultSelectedKeys(keys);
-            setTimeout(() => {
-              setLoading(false);
-            }, 100);
-            onSelect &&
-              onSelect({
-                key: menuItemSchema.name,
-                item: {
-                  props: {
-                    schema: menuItemSchema,
+    <>
+      <Component />
+      <AntdMenu
+        {...others}
+        className={headerMenuClass}
+        onSelect={(info: any) => {
+          const s = schema.properties[info.key];
+          if (mode === 'mix') {
+            setSideMenuSchema(s);
+            if (s['x-component'] !== 'Menu.SubMenu') {
+              onSelect && onSelect(info);
+            } else {
+              const menuItemSchema = findMenuItem(s);
+              if (!menuItemSchema) {
+                return;
+              }
+              // TODO
+              setLoading(true);
+              const keys = findKeysByUid(schema, menuItemSchema['x-uid']);
+              setDefaultSelectedKeys(keys);
+              setTimeout(() => {
+                setLoading(false);
+              }, 100);
+              onSelect &&
+                onSelect({
+                  key: menuItemSchema.name,
+                  item: {
+                    props: {
+                      schema: menuItemSchema,
+                    },
                   },
-                },
-              });
+                });
+            }
+          } else {
+            onSelect && onSelect(info);
           }
-        } else {
-          onSelect && onSelect(info);
-        }
-      }}
-      mode={mode === 'mix' ? 'horizontal' : mode}
-      defaultOpenKeys={defaultOpenKeys}
-      defaultSelectedKeys={defaultSelectedKeys}
-      selectedKeys={selectedKeys}
-    >
-      {designable && (
-        <AntdMenu.Item disabled key="x-designer-button" style={{ padding: '0 8px', order: 9999 }}>
-          {render({ style: { background: 'none' } })}
-        </AntdMenu.Item>
-      )}
-      {children}
-    </AntdMenu>
+        }}
+        mode={mode === 'mix' ? 'horizontal' : mode}
+        defaultOpenKeys={defaultOpenKeys}
+        defaultSelectedKeys={defaultSelectedKeys}
+        selectedKeys={selectedKeys}
+        items={items}
+      />
+    </>
   );
 };
 
@@ -244,40 +270,59 @@ const SideMenu = ({
   api,
   refresh,
 }) => {
-  return loading
-    ? null
-    : mode === 'mix' &&
-        sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
-        sideMenuRef?.current?.firstChild &&
-        createPortal(
-          <MenuModeContext.Provider value={'inline'}>
-            <AntdMenu
-              mode={'inline'}
-              defaultOpenKeys={defaultOpenKeys}
-              defaultSelectedKeys={defaultSelectedKeys}
-              onSelect={(info) => {
-                onSelect && onSelect(info);
-              }}
-              className={sideMenuClass}
-            >
-              <RecursionField schema={sideMenuSchema} onlyRenderProperties />
-              {render({
-                style: { margin: 8 },
-                insert: (s) => {
-                  const dn = createDesignable({
-                    t,
-                    api,
-                    refresh,
-                    current: sideMenuSchema,
-                  });
-                  dn.loadAPIClientEvents();
-                  dn.insertAdjacent('beforeEnd', s);
-                },
-              })}
-            </AntdMenu>
-          </MenuModeContext.Provider>,
-          sideMenuRef.current.firstChild,
-        );
+  const { Component, getMenuItems } = useMenuItem();
+
+  const items = useMemo(() => {
+    const result = getMenuItems(() => {
+      return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
+    });
+    result.push({
+      key: 'x-designer-button',
+      disabled: true,
+      label: render({
+        insert: (s) => {
+          const dn = createDesignable({
+            t,
+            api,
+            refresh,
+            current: sideMenuSchema,
+          });
+          dn.loadAPIClientEvents();
+          dn.insertAdjacent('beforeEnd', s);
+        },
+      }),
+      order: 1,
+      notdelete: true,
+    });
+
+    return result;
+  }, [render, sideMenuSchema]);
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    mode === 'mix' &&
+    sideMenuSchema?.['x-component'] === 'Menu.SubMenu' &&
+    sideMenuRef?.current?.firstChild &&
+    createPortal(
+      <MenuModeContext.Provider value={'inline'}>
+        <Component />
+        <AntdMenu
+          mode={'inline'}
+          defaultOpenKeys={defaultOpenKeys}
+          defaultSelectedKeys={defaultSelectedKeys}
+          onSelect={(info) => {
+            onSelect && onSelect(info);
+          }}
+          className={sideMenuClass}
+          items={items as MenuProps['items']}
+        />
+      </MenuModeContext.Provider>,
+      sideMenuRef.current.firstChild,
+    )
+  );
 };
 
 const MenuModeContext = createContext(null);
@@ -307,6 +352,7 @@ export const Menu: ComposedMenu = observer(
       sideMenuRefScopeKey,
       defaultSelectedKeys: dSelectedKeys,
       defaultOpenKeys: dOpenKeys,
+      children,
       ...others
     } = useProps(props);
     const { t } = useTranslation();
@@ -390,7 +436,7 @@ export const Menu: ComposedMenu = observer(
               designable={designable}
               render={render}
             >
-              {props.children}
+              {children}
             </HeaderMenu>
             <SideMenu
               loading={loading}
@@ -415,116 +461,149 @@ export const Menu: ComposedMenu = observer(
 
 Menu.Item = observer(
   (props) => {
-    const { icon, ...others } = props;
+    const { pushMenuItem } = useCollectMenuItems();
+    const { icon, children, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const Designer = useContext(MenuItemDesignerContext);
-    return (
-      <AntdMenu.Item
-        {...others}
-        className={css`
-          :active {
-            background: inherit;
-          }
-        `}
-        key={schema.name}
-        eventKey={schema.name}
-        schema={schema}
-      >
-        <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
-          <Icon type={icon} />
-          <span
-            className={css`
-              overflow: hidden;
-              text-overflow: ellipsis;
-              display: inline-block;
-              width: 100%;
-              vertical-align: middle;
-            `}
-          >
-            {field.title}
-          </span>
-          {Designer && <Designer />}
-        </SortableItem>
-      </AntdMenu.Item>
-    );
+    const item = useMemo(() => {
+      return {
+        ...others,
+        className: menuItemClass,
+        key: schema.name,
+        eventKey: schema.name,
+        schema,
+        label: (
+          <SchemaContext.Provider value={schema}>
+            <FieldContext.Provider value={field}>
+              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+                <Icon type={icon} />
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'inline-block',
+                    width: '100%',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  {field.title}
+                </span>
+                {Designer && <Designer />}
+              </SortableItem>
+            </FieldContext.Provider>
+          </SchemaContext.Provider>
+        ),
+      };
+    }, [field.title, icon, schema]);
+
+    if (!pushMenuItem) {
+      error('Menu.Item must be wrapped by GetMenuItemsContext.Provider');
+      return null;
+    }
+
+    pushMenuItem(item);
+    return null;
   },
   { displayName: 'Menu.Item' },
 );
 
 Menu.URL = observer(
   (props) => {
-    const { icon, ...others } = props;
+    const { pushMenuItem } = useCollectMenuItems();
+    const { icon, children, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const Designer = useContext(MenuItemDesignerContext);
-    return (
-      <AntdMenu.Item
-        {...others}
-        className={css`
-          :active {
-            background: inherit;
-          }
-        `}
-        key={schema.name}
-        eventKey={schema.name}
-        schema={schema}
-        onClick={() => {
+
+    if (!pushMenuItem) {
+      error('Menu.URL must be wrapped by GetMenuItemsContext.Provider');
+      return null;
+    }
+
+    const item = useMemo(() => {
+      return {
+        ...others,
+        className: menuItemClass,
+        key: schema.name,
+        eventKey: schema.name,
+        schema,
+        onClick: () => {
           window.open(props.href, '_blank');
-        }}
-      >
-        <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
-          <Icon type={icon} />
-          <span
-            className={css`
-              overflow: hidden;
-              text-overflow: ellipsis;
-              display: inline-block;
-              width: 100%;
-              vertical-align: middle;
-            `}
-          >
-            {field.title}
-          </span>
-          {Designer && <Designer />}
-        </SortableItem>
-      </AntdMenu.Item>
-    );
+        },
+        label: (
+          <SchemaContext.Provider value={schema}>
+            <FieldContext.Provider value={field}>
+              <SortableItem className={designerCss} removeParentsIfNoChildren={false}>
+                <Icon type={icon} />
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: 'inline-block',
+                    width: '100%',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  {field.title}
+                </span>
+                {Designer && <Designer />}
+              </SortableItem>
+            </FieldContext.Provider>
+          </SchemaContext.Provider>
+        ),
+      };
+    }, [field.title, icon, props.href, schema]);
+
+    pushMenuItem(item);
+    return null;
   },
   { displayName: 'MenuURL' },
 );
 
 Menu.SubMenu = observer(
   (props) => {
-    const { icon, ...others } = props;
+    const { Component, getMenuItems } = useMenuItem();
+    const { pushMenuItem } = useCollectMenuItems();
+    const { icon, children, ...others } = props;
     const schema = useFieldSchema();
     const field = useField();
     const mode = useContext(MenuModeContext);
     const Designer = useContext(MenuItemDesignerContext);
+    const submenu = useMemo(() => {
+      return {
+        ...others,
+        className: menuItemClass,
+        key: schema.name,
+        eventKey: schema.name,
+        label: (
+          <SchemaContext.Provider value={schema}>
+            <FieldContext.Provider value={field}>
+              <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
+                <Icon type={icon} />
+                {field.title}
+                {Designer && <Designer />}
+              </SortableItem>
+            </FieldContext.Provider>
+          </SchemaContext.Provider>
+        ),
+        children: getMenuItems(() => {
+          return <RecursionField schema={schema} onlyRenderProperties />;
+        }),
+      };
+    }, [field.title, icon, schema]);
+
+    if (!pushMenuItem) {
+      error('Menu.SubMenu must be wrapped by GetMenuItemsContext.Provider');
+      return null;
+    }
+
     if (mode === 'mix') {
       return <Menu.Item {...props} />;
     }
-    return (
-      <AntdMenu.SubMenu
-        {...others}
-        className={css`
-          :active {
-            background: inherit;
-          }
-        `}
-        key={schema.name}
-        eventKey={schema.name}
-        title={
-          <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
-            <Icon type={icon} />
-            {field.title}
-            {Designer && <Designer />}
-          </SortableItem>
-        }
-      >
-        <RecursionField schema={schema} onlyRenderProperties />
-      </AntdMenu.SubMenu>
-    );
+
+    pushMenuItem(submenu);
+    return <Component />;
   },
   { displayName: 'Menu.SubMenu' },
 );
