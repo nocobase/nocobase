@@ -8,7 +8,7 @@ export const dateTemplate = async (ctx: Context, next) => {
   await next();
 
   if (isTemplate && actionName === 'get' && fields.length > 0) {
-    ctx.body = traverseJSON(ctx.body?.toJSON(), {
+    ctx.body = traverseJSON(JSON.parse(JSON.stringify(ctx.body)), {
       collection: ctx.db.getCollection(resourceName),
       include: fields,
     });
