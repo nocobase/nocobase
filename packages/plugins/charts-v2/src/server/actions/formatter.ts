@@ -19,7 +19,7 @@ export const dateFormatFn = (sequelize: any, dialect: string, field: string, for
         .replace(/ss/g, '%S');
       return sequelize.fn('date_format', sequelize.col(field), format);
     case 'postgres':
-      format = format.replace(/hh/g, 'HH').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
+      format = format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
       return sequelize.fn('to_char', sequelize.col(field), format);
     default:
       return field;

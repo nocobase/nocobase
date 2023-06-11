@@ -2,6 +2,7 @@ import { Context, Next } from '@nocobase/actions';
 import { formatter } from './formatter';
 import { FilterParser } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
+import { Cache } from '@nocobase/cache';
 
 type QueryParams = Partial<{
   uid: string;
@@ -34,7 +35,7 @@ type QueryParams = Partial<{
   refresh: boolean;
 }>;
 
-const parseBuilder = (ctx: Context, builder: QueryParams) => {
+export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const { sequelize } = ctx.db;
   const { collection, measures, dimensions, orders, filter, limit } = builder;
   const repository = ctx.db.getRepository(collection);
@@ -43,7 +44,7 @@ const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const group = [];
   const order = [];
 
-  measures.forEach((item: { field: string; aggregation: string; alias: string }) => {
+  measures?.forEach((item: { field: string; aggregation: string; alias: string }) => {
     const attribute = [];
     const col = sequelize.col(item.field);
     if (item.aggregation) {
@@ -57,7 +58,7 @@ const parseBuilder = (ctx: Context, builder: QueryParams) => {
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
   });
 
-  dimensions.forEach((item: { field: string; format: string; alias: string }) => {
+  dimensions?.forEach((item: { field: string; format: string; alias: string }) => {
     const type = fields.get(item.field).type;
     const attribute = [];
     if (item.format) {
@@ -102,6 +103,31 @@ const queryData = async (ctx: Context, builder: QueryParams) => {
   // return data;
 };
 
+export const cacheWrap = async (
+  cache: Cache,
+  options: {
+    func: () => Promise<any>;
+    key: string;
+    ttl?: number;
+    useCache?: boolean;
+    refresh?: boolean;
+  },
+) => {
+  const { func, key, ttl, useCache, refresh } = options;
+  if (useCache && !refresh) {
+    const data = await cache.get(key);
+    if (data) {
+      return data;
+    }
+  }
+  const data = await func();
+  console.log(data);
+  if (useCache) {
+    await cache.set(key, data, ttl);
+  }
+  return data;
+};
+
 export const query = async (ctx: Context, next: Next) => {
   const {
     uid,
@@ -122,23 +148,17 @@ export const query = async (ctx: Context, next: Next) => {
   }
 
   const plugin = ctx.app.getPlugin('charts-v2') as ChartsV2Plugin;
+  const cache = plugin.cache;
   const useCache = cacheConfig?.enabled && uid;
-  if (useCache && !refresh) {
-    const cache = plugin.cache;
-    const data = await cache.get(uid);
-    if (data) {
-      ctx.body = data;
-      return next();
-    }
-  }
 
   try {
-    const data = await queryData(ctx, { collection, measures, dimensions, orders, filter, limit, sql });
-    if (useCache) {
-      const cache = plugin.cache;
-      await cache.set(uid, data, cacheConfig.ttl || 30);
-    }
-    ctx.body = data;
+    ctx.body = await cacheWrap(cache, {
+      func: async () => await queryData(ctx, { collection, measures, dimensions, orders, filter, limit, sql }),
+      key: uid,
+      ttl: cacheConfig?.ttl || 30,
+      useCache: useCache ? true : false,
+      refresh,
+    });
   } catch (err) {
     ctx.app.logger.error('charts query', err);
     ctx.throw(500, err);
