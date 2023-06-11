@@ -13,8 +13,6 @@ import { useCompile, useDesignable } from '../../hooks';
 import { removeNullCondition } from '../filter';
 import { FixedBlockDesignerItem } from '../page';
 import { FilterDynamicComponent } from './FilterDynamicComponent';
-import cloneDeep from 'lodash/cloneDeep';
-import isEmpty from 'lodash/isEmpty';
 
 export const TableBlockDesigner = () => {
   const { name, title, sortable } = useCollection();
@@ -27,9 +25,7 @@ export const TableBlockDesigner = () => {
   const { t } = useTranslation();
   const { dn } = useDesignable();
   const compile = useCompile();
-  const defaultFilter = removeNullCondition(fieldSchema?.['x-decorator-props']?.params?.filter || {});
-  // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
-  const crypticFilter = fieldSchema?.['x-decorator-props']?.params?.crypticFilter;
+  const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
@@ -71,16 +67,12 @@ export const TableBlockDesigner = () => {
     ({ filter }) => {
       filter = removeNullCondition(filter);
       const params = field.decoratorProps.params || {};
-      let tempFilter = !isEmpty(crypticFilter) ? crypticFilter : filter;
-      if (!isEmpty(filter)) {
-        tempFilter = !isEmpty(crypticFilter) ? mergeFilter([filter, tempFilter]) : cloneDeep(filter);
-      }
       params.filter = filter;
       field.decoratorProps.params = params;
       fieldSchema['x-decorator-props']['params'] = params;
       const filters = service.params?.[1]?.filters || {};
       service.run(
-        { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), tempFilter]), page: 1 },
+        { ...service.params?.[0], filter: mergeFilter([...Object.values(filters), filter]), page: 1 },
         { filters },
       );
       dn.emit('patch', {
@@ -90,7 +82,7 @@ export const TableBlockDesigner = () => {
         },
       });
     },
-    [field, crypticFilter],
+    [field],
   );
 
   return (

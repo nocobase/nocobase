@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Registry, parse, str2moment } from '@nocobase/utils/client';
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -51,7 +51,7 @@ export interface Instruction {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): JSX.Element;
+  component?(props): JSX.Element;
   endding?: boolean;
   useVariables?(node, options?): VariableOptions;
   useScopeVariables?(node, options?): VariableOptions;
@@ -137,13 +137,13 @@ export function useUpstreamScopes(node) {
 }
 
 export function Node({ data }) {
-  const instruction = instructions.get(data.type);
+  const { component: Component = NodeDefaultView, endding } = instructions.get(data.type);
 
   return (
     <NodeContext.Provider value={data}>
       <div className={cx(nodeBlockClass)}>
-        {instruction.render ? instruction.render(data) : <NodeDefaultView data={data} />}
-        {!instruction.endding ? (
+        <Component data={data} />
+        {!endding ? (
           <AddButton upstream={data} />
         ) : (
           <div
@@ -371,7 +371,7 @@ export function NodeDefaultView(props) {
         </div>
         <RemoveButton />
         <JobButton />
-        <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+        <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
           <SchemaComponent
             scope={instruction.scope}
             components={instruction.components}
@@ -486,7 +486,7 @@ export function NodeDefaultView(props) {
               },
             }}
           />
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </div>
       {children}
     </div>

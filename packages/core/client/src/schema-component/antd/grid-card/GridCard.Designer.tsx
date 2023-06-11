@@ -74,7 +74,6 @@ export const GridCardDesigner = () => {
   return (
     <GeneralSchemaDesigner template={template} title={title || name}>
       <SchemaComponentOptions components={{ Slider }}>
-        <SchemaSettings.BlockTitleItem />
         <SchemaSettings.ModalItem
           title={t('Set the count of columns displayed in a row')}
           initialValues={columnCount}
@@ -155,7 +154,7 @@ export const GridCardDesigner = () => {
                           field: {
                             type: 'string',
                             enum: sortFields,
-                            required:true,
+                            required: true,
                             'x-decorator': 'FormItem',
                             'x-component': 'Select',
                             'x-component-props': {

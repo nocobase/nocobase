@@ -1,5 +1,6 @@
 import { ACL } from '@nocobase/acl';
 import { registerActions } from '@nocobase/actions';
+import { actions as authActions, AuthManager } from '@nocobase/auth';
 import { Cache, createCache, ICacheConfig } from '@nocobase/cache';
 import Database, { Collection, CollectionOptions, IDatabaseOptions } from '@nocobase/database';
 import { AppLoggerOptions, createAppLogger, Logger } from '@nocobase/logger';
@@ -164,6 +165,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected _appManager: AppManager;
 
+  protected _authManager: AuthManager;
+
   protected _version: ApplicationVersion;
 
   protected plugins = new Map<string, Plugin>();
@@ -213,6 +216,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get appManager() {
     return this._appManager;
+  }
+
+  get authManager() {
+    return this._authManager;
   }
 
   get logger() {
@@ -277,8 +284,18 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this._appManager = new AppManager(this);
     }
 
+    this._authManager = new AuthManager({
+      authKey: 'X-Authenticator',
+      default: 'basic',
+    });
+    this.resource({
+      name: 'auth',
+      actions: authActions,
+    });
+    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+
     if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['parseToken'] });
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
     }
 
     registerMiddlewares(this, options);

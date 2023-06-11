@@ -9,7 +9,7 @@ import { useHistory } from 'react-router-dom';
 import { useSystemSettings } from '.';
 import { i18n, PluginManager, useAPIClient, useRequest } from '..';
 import locale from '../locale';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext } from '../schema-component';
 
 const langs = Object.keys(locale).map((lang) => {
   return {
@@ -121,20 +121,20 @@ const schema: ISchema = {
             });
           },
         },
-        allowSignUp: {
-          type: 'boolean',
-          default: true,
-          'x-content': '{{t("Allow sign up")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
-        smsAuthEnabled: {
-          type: 'boolean',
-          default: false,
-          'x-content': '{{t("Enable SMS authentication")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
+        // allowSignUp: {
+        //   type: 'boolean',
+        //   default: true,
+        //   'x-content': '{{t("Allow sign up")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
+        // smsAuthEnabled: {
+        //   type: 'boolean',
+        //   default: false,
+        //   'x-content': '{{t("Enable SMS authentication")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
         footer1: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
@@ -227,20 +227,20 @@ const schema2: ISchema = {
             });
           },
         },
-        allowSignUp: {
-          type: 'boolean',
-          default: true,
-          'x-content': '{{t("Allow sign up")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
-        smsAuthEnabled: {
-          type: 'boolean',
-          default: false,
-          'x-content': '{{t("Enable SMS authentication")}}',
-          'x-component': 'Checkbox',
-          'x-decorator': 'FormItem',
-        },
+        // allowSignUp: {
+        //   type: 'boolean',
+        //   default: true,
+        //   'x-content': '{{t("Allow sign up")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
+        // smsAuthEnabled: {
+        //   type: 'boolean',
+        //   default: false,
+        //   'x-content': '{{t("Enable SMS authentication")}}',
+        //   'x-component': 'Checkbox',
+        //   'x-decorator': 'FormItem',
+        // },
         footer1: {
           type: 'void',
           'x-component': 'ActionBar',
@@ -300,7 +300,7 @@ export const SystemSettingsShortcut2 = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <PluginManager.Toolbar.Item
         eventKey={'ACLAction'}
         onClick={() => {
@@ -313,6 +313,6 @@ export const SystemSettingsShortcut2 = () => {
         scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
         schema={schema}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

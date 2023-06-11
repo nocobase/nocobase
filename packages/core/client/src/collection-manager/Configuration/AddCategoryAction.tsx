@@ -4,7 +4,7 @@ import { cloneDeep } from 'lodash';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client';
-import { ActionContext, SchemaComponent, useActionContext } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { CollectionCategroriesContext } from '../context';
 import * as components from './components';
@@ -40,7 +40,7 @@ export const AddCategoryAction = (props) => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <div onClick={() => setVisible(true)} title={t('Add category')}>
         {children || <PlusOutlined />}
       </div>
@@ -55,6 +55,6 @@ export const AddCategoryAction = (props) => {
           ...scope,
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
