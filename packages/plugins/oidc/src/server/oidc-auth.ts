@@ -57,9 +57,7 @@ export class OIDCAuth extends BaseAuth {
       return null;
     }
     const client = await this.createOIDCClient();
-    const tokens = await client.callback(this.getRedirectUri(), {
-      code: values.code,
-    });
+    const tokens = await client.callback(this.getRedirectUri(), values);
     const userInfo: { [key: string]: any } = await client.userinfo(tokens.access_token);
     const mappedUserInfo = this.mapField(userInfo);
     const { nickname, name, sub, email, phone } = mappedUserInfo;
