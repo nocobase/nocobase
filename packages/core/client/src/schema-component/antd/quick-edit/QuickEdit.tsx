@@ -77,7 +77,7 @@ export const QuickEdit = observer((props) => {
           overlayInnerStyle={{ color: 'red' }}
           color="#fff"
         >
-          {!field.readPretty && (
+          {!field.readPretty && !field.readonly && (
             <EditOutlined
               style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
             />

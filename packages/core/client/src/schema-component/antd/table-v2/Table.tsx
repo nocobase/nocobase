@@ -222,7 +222,7 @@ export const Table: any = observer((props: any) => {
   const [allIncludesChildren, setAllIncludesChildren] = useState([]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<any[]>(field?.data?.selectedRowKeys || []);
   const [selectedRow, setSelectedRow] = useState([]);
-  const dataSource = field?.value?.slice?.()?.filter?.(Boolean);
+  const dataSource = field?.value?.slice?.()?.filter?.(Boolean) || [];
   const isRowSelect = rowSelection.type !== 'none';
 
   let onRow = null,
@@ -453,7 +453,7 @@ export const Table: any = observer((props: any) => {
     ({ children }) => {
       return dragSort
         ? React.createElement(SortableContext, {
-            items: field.value?.map(getRowKey),
+            items: field.value?.map?.(getRowKey) || [],
             children: children,
           })
         : React.createElement(React.Fragment, {
@@ -462,6 +462,7 @@ export const Table: any = observer((props: any) => {
     },
     [field, dragSort],
   );
+  console.log(field.value);
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 

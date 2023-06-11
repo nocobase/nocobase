@@ -89,7 +89,6 @@ export const useTableColumnInitializerFields = () => {
   const { getInterface, getCollection } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
-
   const form = useForm();
   const isReadPretty = isSubTable ? form.readPretty : true;
   return currentFields
@@ -103,7 +102,7 @@ export const useTableColumnInitializerFields = () => {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
-        'x-read-pretty': isReadPretty,
+        'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
         'x-component-props': {},
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection

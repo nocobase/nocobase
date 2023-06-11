@@ -2,7 +2,7 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
 
@@ -39,6 +39,14 @@ export const TableColumnDesigner = (props) => {
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode, field: tableField } = useAssociationFieldContext();
+  console.log(fieldSchema);
+  let readOnlyMode = 'editable';
+  if (fieldSchema['x-disabled'] === true) {
+    readOnlyMode = 'readonly';
+  }
+  if (fieldSchema['x-read-pretty'] === true) {
+    readOnlyMode = 'read-pretty';
+  }
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -206,6 +214,73 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
+      {isSubTableColumn &&
+        !field?.readPretty &&
+        collectionField?.interface !== 'o2m' &&
+        !isPatternDisabled(fieldSchema) && (
+          <SchemaSettings.SelectItem
+            key="pattern"
+            title={t('Pattern')}
+            options={[
+              { label: t('Editable'), value: 'editable' },
+              { label: t('Readonly'), value: 'readonly' },
+              { label: t('Easy-reading'), value: 'read-pretty' },
+            ]}
+            value={readOnlyMode}
+            onChange={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              const path = field.path?.splice(field.path?.length - 1, 1);
+              switch (v) {
+                case 'readonly': {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = true;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = true;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readonly = true;
+                      f.disabled = true;
+                    });
+                  });
+                  break;
+                }
+                case 'read-pretty': {
+                  fieldSchema['x-read-pretty'] = true;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = true;
+                  schema['x-disabled'] = false;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readPretty = true;
+                    });
+                  });
+                  break;
+                }
+                default: {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = false;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readPretty = false;
+                      f.disabled + false;
+                    });
+                  });
+                  break;
+                }
+              }
+
+              dn.emit('patch', {
+                schema,
+              });
+
+              dn.refresh();
+            }}
+          />
+        )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren
