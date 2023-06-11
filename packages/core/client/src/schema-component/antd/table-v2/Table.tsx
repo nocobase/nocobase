@@ -9,6 +9,8 @@ import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
+import { action } from '@formily/reactive';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,
@@ -91,9 +93,14 @@ const useTableColumns = (props) => {
           <DeleteOutlined
             style={{ cursor: 'pointer' }}
             onClick={() => {
-              const data = field.value;
-              data.splice(index, 1);
-              field.value = data;
+              action(() => {
+                spliceArrayState(field as any, {
+                  startIndex: index,
+                  deleteCount: 1,
+                });
+                field.value.splice(index, 1);
+                return field.onInput(field.value);
+              });
             }}
           />
         );
