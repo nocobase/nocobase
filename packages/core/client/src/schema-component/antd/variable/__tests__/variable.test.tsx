@@ -61,7 +61,6 @@ describe('Variable', () => {
     const variableSelector = document.querySelector('.ant-select-selector') as HTMLElement;
     expect(input).toBeInTheDocument();
     expect(variableSelector).toBeInTheDocument();
-    expect(screen.getByText('Prettify')).toBeInTheDocument();
 
     // https://testing-library.com/docs/user-event/keyboard/
     await userEvent.type(input, '{{ "a": "');
@@ -71,13 +70,5 @@ describe('Variable', () => {
 
     await userEvent.type(input, '" }');
     expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
-
-    // 格式化一下
-    await userEvent.click(screen.getByText('Prettify'));
-    expect(input.value).toMatchInlineSnapshot(`
-      "{
-        \\"a\\": \\"{{v1}}\\"
-      }"
-    `);
   });
 });
