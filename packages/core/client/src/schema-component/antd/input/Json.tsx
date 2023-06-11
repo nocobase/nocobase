@@ -3,6 +3,7 @@ import { useField } from '@formily/react';
 import { Input } from 'antd';
 import { TextAreaProps } from 'antd/es/input';
 import React, { useState, useEffect, Ref } from 'react';
+import { cx, css } from '@emotion/css';
 
 export type JSONTextAreaProps = TextAreaProps & { value?: string; space?: number };
 
@@ -22,6 +23,13 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
     return (
       <Input.TextArea
         {...props}
+        className={cx(
+          css`
+            font-size: 90%;
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+          `,
+          props.className,
+        )}
         ref={ref}
         value={text}
         onChange={(ev) => {
