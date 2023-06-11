@@ -249,26 +249,23 @@ export const Page = (props) => {
                           </Button>
                         )
                       }
-                    >
-                      {fieldSchema.mapProperties((schema) => {
-                        return (
-                          <Tabs.TabPane
-                            tab={
-                              <SortableItem
-                                id={schema.name as string}
-                                schema={schema}
-                                className={classNames('nb-action-link', designerCss, props.className)}
-                              >
-                                {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
-                                <span>{schema.title || t('Unnamed')}</span>
-                                <PageTabDesigner schema={schema} />
-                              </SortableItem>
-                            }
-                            key={schema.name}
-                          />
-                        );
+                      items={fieldSchema.mapProperties((schema) => {
+                        return {
+                          label: (
+                            <SortableItem
+                              id={schema.name as string}
+                              schema={schema}
+                              className={classNames('nb-action-link', designerCss, props.className)}
+                            >
+                              {schema['x-icon'] && <Icon style={{ marginRight: 8 }} type={schema['x-icon']} />}
+                              <span>{schema.title || t('Unnamed')}</span>
+                              <PageTabDesigner schema={schema} />
+                            </SortableItem>
+                          ),
+                          key: schema.name as string,
+                        };
                       })}
-                    </Tabs>
+                    />
                   </DndContext>
                 )
               }

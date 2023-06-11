@@ -238,27 +238,24 @@ export const ConfigurationTabs = () => {
         type="editable-card"
         destroyInactiveTabPane={true}
         tabBarStyle={{ marginBottom: '0px' }}
-      >
-        {tabsItems.map((item) => {
-          return (
-            <Tabs.TabPane
-              tab={
-                item.id !== 'all' ? (
-                  <div data-no-dnd="true">
-                    <TabTitle item={item} />
-                  </div>
-                ) : (
-                  compile(item.name)
-                )
-              }
-              key={item.id}
-              closable={item.closable}
-              closeIcon={
-                <Dropdown menu={menu(item)}>
-                  <MenuOutlined />
-                </Dropdown>
-              }
-            >
+        items={tabsItems.map((item) => {
+          return {
+            label:
+              item.id !== 'all' ? (
+                <div data-no-dnd="true">
+                  <TabTitle item={item} />
+                </div>
+              ) : (
+                compile(item.name)
+              ),
+            key: item.id,
+            closable: item.closable,
+            closeIcon: (
+              <Dropdown menu={menu(item)}>
+                <MenuOutlined />
+              </Dropdown>
+            ),
+            children: (
               <Card bordered={false}>
                 <SchemaComponentOptions
                   components={{ CollectionFields }}
@@ -268,10 +265,10 @@ export const ConfigurationTabs = () => {
                   <RecursionField name={key} schema={item.schema} onlyRenderProperties />
                 </SchemaComponentOptions>
               </Card>
-            </Tabs.TabPane>
-          );
+            ),
+          };
         })}
-      </Tabs>
+      />
     </DndProvider>
   );
 };

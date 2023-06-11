@@ -1,6 +1,6 @@
 import { useAPIClient, useCompile } from '@nocobase/client';
 import { useBoolean } from 'ahooks';
-import { Button, Card, Form, Input, message, Tabs } from 'antd';
+import { Button, Card, Form, Input, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { MapTypes } from '../constants';
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
@@ -76,15 +76,16 @@ const Configuration = () => {
   const compile = useCompile();
   return (
     <Card bordered>
-      <Tabs type="card">
-        {tabList.map((tab) => {
-          return (
-            <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
-              <tab.component type={tab.value} />
-            </Tabs.TabPane>
-          );
+      <Tabs
+        type="card"
+        items={tabList.map((tab) => {
+          return {
+            key: tab.value,
+            label: tab.label,
+            children: <tab.component type={tab.value} />,
+          };
         })}
-      </Tabs>
+      />
     </Card>
   );
 };

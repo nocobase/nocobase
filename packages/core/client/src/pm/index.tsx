@@ -138,11 +138,21 @@ const PluginList = (props) => {
             onChange={(activeKey) => {
               navigate(`/admin/pm/list/${activeKey}`);
             }}
-          >
-            <Tabs.TabPane tab={t('Local')} key={'local'} />
-            <Tabs.TabPane tab={t('Built-in')} key={'built-in'} />
-            <Tabs.TabPane tab={t('Marketplace')} key={'marketplace'} />
-          </Tabs>
+            items={[
+              {
+                key: 'local',
+                label: t('Local'),
+              },
+              {
+                key: 'built-in',
+                label: t('Built-in'),
+              },
+              {
+                key: 'marketplace',
+                label: t('Marketplace'),
+              },
+            ]}
+          />
         }
       />
       <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
@@ -309,11 +319,16 @@ const SettingsCenter = (props) => {
                   onChange={(activeKey) => {
                     navigate(`/admin/settings/${pluginName}/${activeKey}`);
                   }}
-                >
-                  {plugin.tabs?.map((tab) => {
-                    return tab.isAllow && <Tabs.TabPane tab={compile(tab?.title)} key={tab.key} />;
+                  items={plugin.tabs?.map((tab) => {
+                    if (!tab.isAllow) {
+                      return null;
+                    }
+                    return {
+                      label: compile(tab?.title),
+                      key: tab.key,
+                    };
                   })}
-                </Tabs>
+                />
               }
             />
           )}
