@@ -217,7 +217,7 @@ export const CreateAction = observer(
               onClick?.(collection.name);
             }}
             style={{
-              display: !designable && field?.data?.hidden && 'none',
+              display: !designable && field?.data?.hidden ? 'none' : 'flex',
               opacity: designable && field?.data?.hidden && 0.1,
             }}
           >

@@ -169,6 +169,8 @@ FormItem.Designer = function Designer() {
   const isPickerMode = fieldSchema['x-component-props']?.mode === 'Picker';
   const showFieldMode = isAssociationField && fieldModeOptions && !isTableField;
   const showModeSelect = showFieldMode && isPickerMode;
+  const formContext = useFormBlockContext();
+  const isAddNewForm = !formContext.action;
   return (
     <GeneralSchemaDesigner>
       <GeneralSchemaItems />
@@ -335,6 +337,7 @@ FormItem.Designer = function Designer() {
         />
       )}
       {form &&
+        isAddNewForm &&
         !form?.readPretty &&
         isShowDefaultValue(collectionField, getInterface) &&
         !isPatternDisabled(fieldSchema) && (
