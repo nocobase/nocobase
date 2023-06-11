@@ -25,11 +25,21 @@ export const QuickEdit = observer((props) => {
       onChange: async (e) => {
         const data = e?.target?.value;
         if (
-          ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment', 'json'].includes(
-            collectionField.interface,
-          )
+          ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment'].includes(collectionField.interface)
         ) {
           field.value = e;
+        } else if (collectionField.interface === 'json') {
+          try {
+            const v = e.target ? (e.target.value.trim() !== '' ? JSON.parse(e.target.value) : null) : e;
+            field.value = v;
+            field.setFeedback({});
+          } catch (err) {
+            field.setFeedback({
+              type: 'error',
+              code: 'JSONSyntaxError',
+              messages: [err.message],
+            });
+          }
         } else {
           field.value = data;
         }
