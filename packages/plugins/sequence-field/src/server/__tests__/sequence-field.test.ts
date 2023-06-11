@@ -1,10 +1,10 @@
-import moment from 'moment';
+import moment from 'dayjs';
 
-import { Application } from '@nocobase/server';
 import { Database } from '@nocobase/database';
-import { mockServer, mockDatabase } from '@nocobase/test';
+import { Application } from '@nocobase/server';
+import { mockServer } from '@nocobase/test';
 
-import Plugin, { SequenceField, SequenceFieldOptions } from '..';
+import Plugin, { SequenceField } from '..';
 
 describe('sequence field', () => {
   let app: Application;

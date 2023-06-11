@@ -1,6 +1,6 @@
 import { observer } from '@formily/react';
 import { Modal, Radio, Space, Typography } from 'antd';
-import moment from 'moment';
+import moment from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';

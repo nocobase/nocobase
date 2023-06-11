@@ -18,7 +18,7 @@
     "@nocobase/sdk": "0.10.0-alpha.5",
     "@nocobase/utils": "0.10.0-alpha.5",
     "ahooks": "^3.7.2",
-    "antd": "^4.24.8",
+    "antd": "^5.6.1",
     "axios": "^0.26.1",
     "classnames": "^2.3.1",
     "cron-parser": "^4.6.0",
@@ -56,6 +56,7 @@
     "@testing-library/react": "^12.1.2",
     "@types/markdown-it": "12.2.3",
     "@types/markdown-it-highlightjs": "3.3.1",
+    "@types/react-big-calendar": "^1.6.4",
     "axios-mock-adapter": "^1.20.0",
     "dumi": "^2.2.0",
     "dumi-theme-nocobase": "^0.2.9"

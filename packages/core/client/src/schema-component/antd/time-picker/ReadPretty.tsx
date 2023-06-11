@@ -2,7 +2,7 @@ import { usePrefixCls } from '@formily/antd/esm/__builtins__';
 import { toArr } from '@formily/shared';
 import { TimeRangePickerProps } from 'antd/es/time-picker';
 import cls from 'classnames';
-import moment from 'moment';
+import moment from 'dayjs';
 import React from 'react';
 
 export const ReadPretty: React.FC<TimeRangePickerProps> = (props: any) => {

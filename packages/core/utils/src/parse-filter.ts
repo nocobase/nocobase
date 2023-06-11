@@ -1,5 +1,5 @@
+import moment from 'dayjs';
 import set from 'lodash/set';
-import moment from 'moment';
 import { getValuesByPath } from './getValuesByPath';
 
 const re = /^\s*\{\{([\s\S]*)\}\}\s*$/;
@@ -212,7 +212,7 @@ function toMoment(value) {
   if (!value) {
     return moment();
   }
-  if (moment.isMoment(value)) {
+  if (moment.isDayjs(value)) {
     return value;
   }
   return moment(value);

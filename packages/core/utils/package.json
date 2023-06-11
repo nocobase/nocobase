@@ -13,7 +13,7 @@
     "object-path": "^0.11.8"
   },
   "peerDependencies": {
-    "moment": "2.x",
+    "dayjs": "1.x",
     "rc-input-number": "7.x"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"

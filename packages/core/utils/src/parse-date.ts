@@ -1,7 +1,7 @@
-import moment from 'moment';
+import moment from 'dayjs';
 
 function parseUTC(value) {
-  if (moment.isDate(value) || moment.isMoment(value)) {
+  if (value instanceof Date || moment.isDayjs(value)) {
     return {
       unit: 'utc',
       start: value.toISOString(),
@@ -121,7 +121,7 @@ type ParseDateResult = {
   timezone?: string;
 };
 
-function toISOString(m: moment.Moment) {
+function toISOString(m: moment.Dayjs) {
   return m.toISOString();
 }
 
@@ -129,7 +129,7 @@ function dateRange(r: ParseDateResult) {
   if (!r.timezone) {
     r.timezone = '+00:00';
   }
-  let m: moment.Moment;
+  let m: moment.Dayjs;
   if (r.unit === 'utc') {
     return moment(r?.start).toISOString();
   } else {

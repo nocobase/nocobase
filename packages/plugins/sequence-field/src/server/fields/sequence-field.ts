@@ -1,6 +1,6 @@
 import parser from 'cron-parser';
+import moment from 'dayjs';
 import { escapeRegExp } from 'lodash';
-import moment from 'moment';
 import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 
 import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';

@@ -1,5 +1,6 @@
+import { CollectionGroup } from '@nocobase/database';
 import archiver from 'archiver';
-import dayjs from 'dayjs';
+import moment from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import lodash from 'lodash';
@@ -9,7 +10,6 @@ import stream from 'stream';
 import util from 'util';
 import { AppMigrator } from './app-migrator';
 import { CollectionGroupManager } from './collection-group-manager';
-import { CollectionGroup } from '@nocobase/database';
 import { FieldValueWriter } from './field-value-writer';
 import { DUMPED_EXTENSION, humanFileSize, sqlAdapter } from './utils';
 
@@ -172,7 +172,7 @@ export class Dumper extends AppMigrator {
     }
   }
 
-  async dumpMeta(additionalMeta: Object = {}) {
+  async dumpMeta(additionalMeta: object = {}) {
     const metaPath = path.resolve(this.workDir, 'meta');
 
     await fsPromises.writeFile(
@@ -257,7 +257,7 @@ export class Dumper extends AppMigrator {
   async packDumpedDir() {
     const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
     mkdirp.sync(dirname);
-    const filePath = path.resolve(dirname, `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
+    const filePath = path.resolve(dirname, `dump-${moment().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
 
     const output = fs.createWriteStream(filePath);
 

@@ -4,7 +4,7 @@ import { useForm } from '@formily/react';
 import { error } from '@nocobase/utils/client';
 import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import classNames from 'classnames';
-import moment from 'moment';
+import moment from 'dayjs';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';

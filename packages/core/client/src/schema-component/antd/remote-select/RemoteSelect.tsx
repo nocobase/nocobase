@@ -1,16 +1,16 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
 import { Divider, SelectProps, Tag } from 'antd';
+import moment from 'dayjs';
 import flat from 'flat';
 import { uniqBy } from 'lodash';
-import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
-import { defaultFieldNames, Select } from '../select';
+import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
 import { extractFilterfield, extractValuesByPattern, generatePattern, parseVariables } from './utils';
 const EMPTY = 'N/A';

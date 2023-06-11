@@ -47,28 +47,28 @@ DatePicker.RangePicker = function RangePicker(props) {
   const { t } = useTranslation();
   const { utc = true } = useDatePickerContext();
   const rangesValue = getDateRanges();
-  const ranges = {
-    [t('Today')]: rangesValue.today,
-    [t('Last week')]: rangesValue.lastWeek,
-    [t('This week')]: rangesValue.thisWeek,
-    [t('Next week')]: rangesValue.nextWeek,
-    [t('Last month')]: rangesValue.lastMonth,
-    [t('This month')]: rangesValue.thisMonth,
-    [t('Next month')]: rangesValue.nextMonth,
-    [t('Last quarter')]: rangesValue.lastQuarter,
-    [t('This quarter')]: rangesValue.thisQuarter,
-    [t('Next quarter')]: rangesValue.nextQuarter,
-    [t('Last year')]: rangesValue.lastYear,
-    [t('This year')]: rangesValue.thisYear,
-    [t('Next year')]: rangesValue.nextYear,
-    [t('Last 7 days')]: rangesValue.last7Days,
-    [t('Next 7 days')]: rangesValue.next7Days,
-    [t('Last 30 days')]: rangesValue.last30Days,
-    [t('Next 30 days')]: rangesValue.next30Days,
-    [t('Last 90 days')]: rangesValue.last90Days,
-    [t('Next 90 days')]: rangesValue.next90Days,
-  };
-  props = { utc, ranges, ...props };
+  const presets = [
+    { label: t('Today'), value: rangesValue.today },
+    { label: t('Last week'), value: rangesValue.lastWeek },
+    { label: t('This week'), value: rangesValue.thisWeek },
+    { label: t('Next week'), value: rangesValue.nextWeek },
+    { label: t('Last month'), value: rangesValue.lastMonth },
+    { label: t('This month'), value: rangesValue.thisMonth },
+    { label: t('Next month'), value: rangesValue.nextMonth },
+    { label: t('Last quarter'), value: rangesValue.lastQuarter },
+    { label: t('This quarter'), value: rangesValue.thisQuarter },
+    { label: t('Next quarter'), value: rangesValue.nextQuarter },
+    { label: t('Last year'), value: rangesValue.lastYear },
+    { label: t('This year'), value: rangesValue.thisYear },
+    { label: t('Next year'), value: rangesValue.nextYear },
+    { label: t('Last 7 days'), value: rangesValue.last7Days },
+    { label: t('Next 7 days'), value: rangesValue.next7Days },
+    { label: t('Last 30 days'), value: rangesValue.last30Days },
+    { label: t('Next 30 days'), value: rangesValue.next30Days },
+    { label: t('Last 90 days'), value: rangesValue.last90Days },
+    { label: t('Next 90 days'), value: rangesValue.next90Days },
+  ];
+  props = { utc, presets, ...props };
   return <_RangePicker {...props} />;
 };
 

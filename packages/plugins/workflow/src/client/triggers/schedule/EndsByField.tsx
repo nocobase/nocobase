@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { DatePicker, Select } from 'antd';
-import moment from 'moment';
-import React, { useState } from 'react';
+import moment from 'dayjs';
+import React from 'react';
 import { useWorkflowTranslation } from '../../locale';
 
 import { OnField } from './OnField';

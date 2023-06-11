@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'dayjs';
 import { getDateRanges } from '../util';
 
 describe('getDateRanges', () => {

@@ -2,7 +2,7 @@ import { formatMomentValue, momentable } from '@formily/antd/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
-import moment from 'moment';
+import moment from 'dayjs';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
@@ -17,7 +17,7 @@ const mapTimeFormat = function () {
       ...props,
       format,
       value: momentable(props.value, format),
-      onChange: (value: moment.Moment | moment.Moment[]) => {
+      onChange: (value: moment.Dayjs | moment.Dayjs[]) => {
         if (onChange) {
           onChange(formatMomentValue(value, format) || null);
         }

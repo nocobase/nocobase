@@ -1,7 +1,6 @@
-
+import moment from 'dayjs';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
-import moment from 'moment';
 import { useMemo } from 'react';
 import { useCurrentUserContext } from '../../../user';
 import jsonLogic from '../../common/utils/logic';

@@ -1,4 +1,15 @@
-import moment from 'moment';
+import moment from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+import localeData from 'dayjs/plugin/localeData';
+import quarterOfYear from 'dayjs/plugin/quarterOfYear';
+import utc from 'dayjs/plugin/utc';
+import weekday from 'dayjs/plugin/weekday';
+
+moment.extend(weekday);
+moment.extend(localeData);
+moment.extend(utc);
+moment.extend(quarterOfYear);
+moment.extend(isoWeek);
 
 export interface Str2momentOptions {
   gmt?: boolean;
@@ -29,21 +40,21 @@ export const getDefaultFormat = (props: any) => {
   return props['showTime'] ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
 };
 
-export const toGmt = (value: moment.Moment) => {
-  if (!value || !moment.isMoment(value)) {
+export const toGmt = (value: moment.Dayjs) => {
+  if (!value || !moment.isDayjs(value)) {
     return value;
   }
   return `${value.format('YYYY-MM-DD')}T${value.format('HH:mm:ss.SSS')}Z`;
 };
 
-export const toLocal = (value: moment.Moment) => {
+export const toLocal = (value: moment.Dayjs) => {
   if (!value) {
     return value;
   }
   if (Array.isArray(value)) {
     return value.map((val) => val.startOf('second').toISOString());
   }
-  if (moment.isMoment(value)) {
+  if (moment.isDayjs(value)) {
     return value.startOf('second').toISOString();
   }
 };
@@ -59,7 +70,7 @@ const toMoment = (val: any, options?: Str2momentOptions) => {
     return moment(val);
   }
 
-  if (moment.isMoment(val)) {
+  if (moment.isDayjs(val)) {
     return val.utcOffset(offset);
   }
   if (gmt || picker) {
@@ -94,14 +105,14 @@ const toStringByPicker = (value, picker) => {
   return value.format('YYYY-MM-DD') + 'T00:00:00.000Z';
 };
 
-const toGmtByPicker = (value: moment.Moment | moment.Moment[], picker?: any) => {
+const toGmtByPicker = (value: moment.Dayjs | moment.Dayjs[], picker?: any) => {
   if (!value) {
     return value;
   }
   if (Array.isArray(value)) {
     return value.map((val) => toStringByPicker(val, picker));
   }
-  if (moment.isMoment(value)) {
+  if (moment.isDayjs(value)) {
     return toStringByPicker(value, picker);
   }
 };
@@ -112,7 +123,7 @@ export interface Moment2strOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
 
-export const moment2str = (value?: moment.Moment, options: Moment2strOptions = {}) => {
+export const moment2str = (value?: moment.Dayjs, options: Moment2strOptions = {}) => {
   const { showTime, gmt, picker } = options;
   if (!value) {
     return value;

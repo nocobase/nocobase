@@ -3,8 +3,8 @@ import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formil
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
 import { Select } from 'antd';
+import moment from 'dayjs';
 import _ from 'lodash';
-import moment from 'moment';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';

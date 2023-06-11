@@ -1,5 +1,5 @@
 import { ConfigProvider, Spin } from 'antd';
-import moment from 'moment';
+import moment from 'dayjs';
 import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../api-client';

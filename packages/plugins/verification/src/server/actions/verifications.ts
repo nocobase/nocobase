@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 
-import moment from 'moment';
+import moment from 'dayjs';
 import Plugin, { namespace } from '..';
 import { CODE_STATUS_UNUSED } from '../constants';
 

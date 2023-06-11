@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'dayjs';
 import { Database, mockDatabase } from '../..';
 import { DateValueParser } from '../../value-parsers';
 

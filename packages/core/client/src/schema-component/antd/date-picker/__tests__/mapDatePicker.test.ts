@@ -1,4 +1,4 @@
-import moment from 'moment';
+import moment from 'dayjs';
 import { mapDatePicker } from '../util';
 
 describe('mapDatePicker', () => {

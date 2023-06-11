@@ -3,10 +3,10 @@ import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
 import { parseExpression } from 'cron-parser';
 import { eq } from 'date-arithmetic';
+import moment from 'dayjs';
 import get from 'lodash/get';
-import moment from 'moment';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar as BigCalendar, dayjsLocalizer } from 'react-big-calendar';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -20,7 +20,15 @@ import { formatDate } from './utils';
 
 const Weeks = ['month', 'week', 'day'] as const;
 
-const localizer = momentLocalizer(moment);
+// Note that the dayjsLocalizer extends Day.js with the following plugins:
+// - IsBetween
+// - IsSameOrAfter
+// - IsSameOrBefore
+// - LocaleData
+// - LocalizedFormat
+// - MinMax
+// - UTC
+const localizer = dayjsLocalizer(moment);
 export const DeleteEventContext = React.createContext({
   close: () => {},
 });
@@ -88,7 +96,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
         startDate.startOf('week');
         endDate.endOf('week');
       }
-      const push = (eventStart: moment.Moment = start.clone()) => {
+      const push = (eventStart: moment.Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;

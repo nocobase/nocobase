@@ -3,7 +3,7 @@
  */
 import { FormItem } from '@formily/antd';
 import { DatePicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
-import moment from 'moment';
+import moment from 'dayjs';
 import React from 'react';
 
 const schema = {
