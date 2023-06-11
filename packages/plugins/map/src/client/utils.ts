@@ -9,8 +9,7 @@ export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = (
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // resolve({ lat: latitude, lng: longitude });
-          defaultLatLng();
+          resolve({ lat: latitude, lng: longitude });
         },
         () => {
           defaultLatLng();
