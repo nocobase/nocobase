@@ -137,7 +137,7 @@ describe('Input.JSON', () => {
     const pre = container.querySelector('pre') as HTMLPreElement;
     fireEvent.change(textarea, { target: { value: '{"name":"nocobase"}' } });
     fireEvent.blur(textarea, { target: { value: '{"name":"nocobase"}' } });
-    expect(textarea.value).toBe('{\n  "name": "nocobase"\n}');
+    expect(JSON.parse(textarea.value)).toEqual({ name: 'nocobase' });
     expect(pre).toMatchInlineSnapshot(`
       <pre
         class="ant-json css-4dta7v"

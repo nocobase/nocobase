@@ -1,8 +1,6 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
 ---
 
 # CollectionSelect
