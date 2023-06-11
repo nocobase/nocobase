@@ -24,7 +24,7 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && Object.keys(record)?.length > 0) {
+  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
     return <Spin />;
   }
   return (
