@@ -134,6 +134,8 @@ type ComposedMenu = React.FC<any> & {
 
 const MenuModeContext = createContext(null);
 
+MenuModeContext.displayName = 'MenuModeContext';
+
 const useSideMenuRef = () => {
   const schema = useFieldSchema();
   const scope = useContext(SchemaExpressionScopeContext);
@@ -145,6 +147,7 @@ const useSideMenuRef = () => {
 };
 
 const MenuItemDesignerContext = createContext(null);
+MenuItemDesignerContext.displayName = 'MenuItemDesignerContext';
 
 export const Menu: ComposedMenu = observer(
   (props) => {
@@ -194,7 +197,7 @@ export const Menu: ComposedMenu = observer(
     });
     useEffect(() => {
       if (!selectedUid) {
-        setSelectedKeys([]);
+        setSelectedKeys(undefined);
         return;
       }
 
@@ -220,13 +223,6 @@ export const Menu: ComposedMenu = observer(
         setDefaultOpenKeys(defaultSelectedKeys);
       }
     }, [defaultSelectedKeys]);
-    useEffect(() => {
-      const sideMenuElement = sideMenuRef?.current as HTMLElement;
-      if (!sideMenuElement) {
-        return;
-      }
-      sideMenuElement.style.display = sideMenuSchema?.['x-component'] === 'Menu.SubMenu' ? 'block' : 'none';
-    }, [sideMenuSchema?.name, sideMenuRef]);
     const { designable } = useDesignable();
     return (
       <DndContext>
@@ -383,12 +379,12 @@ Menu.Item = observer(
           >
             {field.title}
           </span>
-          <Designer />
+          {Designer && <Designer />}
         </SortableItem>
       </AntdMenu.Item>
     );
   },
-  { displayName: 'MenuItem' },
+  { displayName: 'Menu.Item' },
 );
 
 Menu.URL = observer(
@@ -425,7 +421,7 @@ Menu.URL = observer(
           >
             {field.title}
           </span>
-          <Designer />
+          {Designer && <Designer />}
         </SortableItem>
       </AntdMenu.Item>
     );
@@ -457,7 +453,7 @@ Menu.SubMenu = observer(
           <SortableItem className={subMenuDesignerCss} removeParentsIfNoChildren={false}>
             <Icon type={icon} />
             {field.title}
-            <Designer />
+            {Designer && <Designer />}
           </SortableItem>
         }
       >
@@ -465,7 +461,7 @@ Menu.SubMenu = observer(
       </AntdMenu.SubMenu>
     );
   },
-  { displayName: 'MenuSubMenu' },
+  { displayName: 'Menu.SubMenu' },
 );
 
 Menu.Designer = MenuDesigner;

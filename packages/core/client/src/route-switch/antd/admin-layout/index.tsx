@@ -226,7 +226,6 @@ export const InternalAdminLayout = (props: any) => {
               height: calc(100vh - 46px);
             }
           `}
-          style={{ display: 'none' }}
           theme={'light'}
           ref={sideMenuRef}
         ></Layout.Sider>
