@@ -42,6 +42,7 @@ import {
   getDiffEdge,
   getDiffNode,
   getInheritCollections,
+  getPopupContainer,
   useGCMTranslation,
 } from './utils';
 
@@ -231,10 +232,6 @@ function getEdges(edges) {
     }
   });
 }
-
-const getPopupContainer = () => {
-  return document.getElementById('graph_container');
-};
 
 const CollapsedContext = createContext<any>({});
 const formatNodeData = () => {
@@ -1021,14 +1018,7 @@ export const GraphDrawPage = React.memo(() => {
             <div className={cx(collectionListClass)}>
               <SchemaComponent
                 components={{
-                  Select: (props) => (
-                    <Select
-                      {...props}
-                      getPopupContainer={() => {
-                        return document.getElementById('graph_container');
-                      }}
-                    />
-                  ),
+                  Select: (props) => <Select {...props} getPopupContainer={getPopupContainer} />,
                   AddCollectionAction,
                 }}
                 schema={{
