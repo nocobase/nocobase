@@ -20,6 +20,7 @@ type TraverseOptions = {
   exclude?: string[];
   include?: string[];
   through?: string;
+  excludePk?: boolean;
 };
 
 const traverseHasMany = (arr: any[], { collection, exclude = [], include = [] }: TraverseOptions) => {
@@ -41,7 +42,10 @@ const traverseBelongsToMany = (arr: any[], { collection, exclude = [], through }
     } else {
       delete item[through];
     }
-    return item;
+    return traverseJSON(item, {
+      collection,
+      excludePk: false,
+    });
   });
 };
 
@@ -59,7 +63,10 @@ const parseInclude = (keys: string[]) => {
 };
 
 const traverseJSON = (data, options: TraverseOptions) => {
-  const { collection, exclude = [], include = [] } = options;
+  if (!data) {
+    return data;
+  }
+  const { collection, exclude = [], include = [], excludePk = true } = options;
   const map = parseInclude(include);
   const result = {};
   for (const key of Object.keys(data || {})) {
@@ -78,7 +85,10 @@ const traverseJSON = (data, options: TraverseOptions) => {
       result[key] = data[key];
       continue;
     }
-    if (field.options.primaryKey) {
+    if (field.options.primaryKey && excludePk) {
+      continue;
+    }
+    if (field.options.isForeignKey) {
       continue;
     }
     if (['sort', 'password', 'sequence'].includes(field.type)) {
@@ -97,7 +107,12 @@ const traverseJSON = (data, options: TraverseOptions) => {
         include: subInclude,
       });
     } else if (field.type === 'belongsTo') {
-      result[key] = data[key];
+      result[key] = traverseJSON(data[key], {
+        collection: collection.db.getCollection(field.target),
+        // exclude: [field.foreignKey],
+        include: subInclude,
+        excludePk: false,
+      });
     } else if (field.type === 'belongsToMany') {
       result[key] = traverseBelongsToMany(data[key], {
         collection: collection.db.getCollection(field.target),
