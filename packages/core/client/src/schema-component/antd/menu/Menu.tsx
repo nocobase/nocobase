@@ -194,6 +194,7 @@ export const Menu: ComposedMenu = observer(
     });
     useEffect(() => {
       if (!selectedUid) {
+        setSelectedKeys([]);
         return;
       }
 

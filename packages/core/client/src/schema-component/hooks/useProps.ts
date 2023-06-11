@@ -9,7 +9,11 @@ interface Options {
 
 const useDef = () => ({});
 export const useProps = (originalProps: any = {}) => {
-  const { useProps: useDynamicProps = useDef, ...others } = originalProps;
+  const { useProps: useDynamicHook = useDef, ...others } = originalProps;
+  let useDynamicProps = useDynamicHook;
+  if (typeof useDynamicHook !== 'function') {
+    useDynamicProps = useDef;
+  }
   const dynamicProps = useDynamicProps();
   return { ...dynamicProps, ...others };
 };
