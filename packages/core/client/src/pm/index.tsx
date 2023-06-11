@@ -164,7 +164,7 @@ const settings = {
       roles: {
         isBookmark: true,
         title: '{{t("Roles & Permissions")}}',
-        component: ACLPane,
+        component: () => <ACLPane />,
       },
     },
   },
