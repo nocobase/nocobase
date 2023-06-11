@@ -462,7 +462,6 @@ export const Table: any = observer((props: any) => {
     },
     [field, dragSort],
   );
-  console.log(field.value);
   const fieldSchema = useFieldSchema();
   const fixedBlock = fieldSchema?.parent?.['x-decorator-props']?.fixedBlock;
 

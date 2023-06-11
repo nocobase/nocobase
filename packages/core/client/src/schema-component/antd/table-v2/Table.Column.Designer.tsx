@@ -39,7 +39,6 @@ export const TableColumnDesigner = (props) => {
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode, field: tableField } = useAssociationFieldContext();
-  console.log(fieldSchema);
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
