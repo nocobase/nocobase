@@ -16,7 +16,7 @@ const MODE_BITMAP = {
 };
 
 const MODE_BITMAP_EVENTS = new Map();
-MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreateWithAssociations');
+MODE_BITMAP_EVENTS.set(MODE_BITMAP.CREATE, 'afterCreate');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.UPDATE, 'afterUpdateWithAssociations');
 MODE_BITMAP_EVENTS.set(MODE_BITMAP.DESTROY, 'afterDestroy');
 

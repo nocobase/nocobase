@@ -136,6 +136,28 @@ describe('workflow > triggers > collection', () => {
       const executions = await workflow.getExecutions();
       expect(executions.length).toBe(0);
     });
+
+    it.skip('association field in changed config', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['tags'],
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      await PostRepo.update({ filterByTk: post.id, values: { tags: [{}] } });
+
+      await sleep(500);
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(executions[0].context.data.tags.length).toBe(1);
+    });
   });
 
   describe('config.appends', () => {
@@ -293,6 +315,78 @@ describe('workflow > triggers > collection', () => {
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
       const [job] = await execution.getJobs();
       expect(job.result.data.tags.length).toBe(1);
+    });
+  });
+
+  describe('access associations in transaction', () => {
+    it('create target entities before, and use id to add current record', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        useTransaction: true,
+      });
+
+      await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'tags',
+          multiple: true,
+        },
+      });
+
+      const tags = await TagRepo.create({ values: [{}] });
+
+      const post = await PostRepo.create({
+        values: {
+          title: 't1',
+          tags: tags.map((item) => item.id),
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.length).toBe(1);
+    });
+
+    it('create target entities with current record', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+        useTransaction: true,
+      });
+
+      await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'tags',
+          multiple: true,
+        },
+      });
+
+      const post = await PostRepo.create({
+        values: {
+          title: 't1',
+          tags: [{}],
+        },
+      });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+      const [job] = await execution.getJobs();
+      expect(job.result.length).toBe(1);
     });
   });
 });
