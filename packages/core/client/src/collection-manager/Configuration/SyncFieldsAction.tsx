@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
@@ -167,7 +167,7 @@ export const SyncFieldsActionCom = (props) => {
   return (
     record.template === 'view' && (
       <RecordProvider record={record}>
-        <ActionContext.Provider value={{ visible, setVisible }}>
+        <ActionContextProvider value={{ visible, setVisible }}>
           {children || (
             <Button
               icon={<PlusOutlined />}
@@ -195,7 +195,7 @@ export const SyncFieldsActionCom = (props) => {
               ...scope,
             }}
           />
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </RecordProvider>
     )
   );

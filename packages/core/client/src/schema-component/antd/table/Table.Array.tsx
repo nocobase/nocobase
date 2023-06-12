@@ -151,28 +151,29 @@ const useDefAction = () => {
   };
 };
 
-export const TableArray: React.FC<any> = observer((props) => {
-  const field = useField<ArrayField>();
-  const columns = useTableColumns();
-  const {
-    dragSort = false,
-    showIndex = true,
-    useSelectedRowKeys = useDef,
-    useDataSource = useDefDataSource,
-    useAction = useDefAction,
-    onChange,
-    ...others
-  } = props;
-  const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
-  useDataSource({
-    onSuccess(data) {
-      field.value = data?.data || [];
-    },
-  });
-  const { move } = useAction();
-  const restProps = {
-    rowSelection: props.rowSelection
-      ? {
+export const TableArray: React.FC<any> = observer(
+  (props) => {
+    const field = useField<ArrayField>();
+    const columns = useTableColumns();
+    const {
+      dragSort = false,
+      showIndex = true,
+      useSelectedRowKeys = useDef,
+      useDataSource = useDefDataSource,
+      useAction = useDefAction,
+      onChange,
+      ...others
+    } = props;
+    const [selectedRowKeys, setSelectedRowKeys] = useSelectedRowKeys();
+    useDataSource({
+      onSuccess(data) {
+        field.value = data?.data || [];
+      },
+    });
+    const { move } = useAction();
+    const restProps = {
+      rowSelection: props.rowSelection
+        ? {
           type: 'checkbox',
           selectedRowKeys,
           onChange(selectedRowKeys: any[]) {
@@ -189,39 +190,39 @@ export const TableArray: React.FC<any> = observer((props) => {
                 className={classNames(
                   checked ? 'checked' : null,
                   css`
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-evenly;
-                    padding-right: 8px;
-                    .nb-table-index {
-                      opacity: 0;
-                    }
-                    &:not(.checked) {
-                      .nb-table-index {
-                        opacity: 1;
-                      }
-                    }
-                    &:hover {
+                      position: relative;
+                      display: flex;
+                      align-items: center;
+                      justify-content: space-evenly;
+                      padding-right: 8px;
                       .nb-table-index {
                         opacity: 0;
                       }
-                      .nb-origin-node {
-                        display: block;
+                      &:not(.checked) {
+                        .nb-table-index {
+                          opacity: 1;
+                        }
                       }
-                    }
-                  `,
+                      &:hover {
+                        .nb-table-index {
+                          opacity: 0;
+                        }
+                        .nb-origin-node {
+                          display: block;
+                        }
+                      }
+                    `,
                 )}
               >
                 <div
                   className={classNames(
                     checked ? 'checked' : null,
                     css`
-                      position: relative;
-                      display: flex;
-                      align-items: center;
-                      justify-content: space-evenly;
-                    `,
+                        position: relative;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-evenly;
+                      `,
                   )}
                 >
                   {dragSort && <SortHandle />}
@@ -232,13 +233,13 @@ export const TableArray: React.FC<any> = observer((props) => {
                     'nb-origin-node',
                     checked ? 'checked' : null,
                     css`
-                      position: absolute;
-                      right: 50%;
-                      transform: translateX(50%);
-                      &:not(.checked) {
-                        display: none;
-                      }
-                    `,
+                        position: absolute;
+                        right: 50%;
+                        transform: translateX(50%);
+                        &:not(.checked) {
+                          display: none;
+                        }
+                      `,
                   )}
                 >
                   {originNode}
@@ -248,43 +249,45 @@ export const TableArray: React.FC<any> = observer((props) => {
           },
           ...props.rowSelection,
         }
-      : undefined,
-  };
+        : undefined,
+    };
 
-  const defaultRowKey = (record: any) => {
-    return field.value?.indexOf?.(record);
-  };
+    const defaultRowKey = (record: any) => {
+      return field.value?.indexOf?.(record);
+    };
 
-  return (
-    <div
-      className={css`
-        .ant-table {
-          overflow-x: auto;
-          overflow-y: hidden;
-        }
-      `}
-    >
-      <ReactDragListView
-        handleSelector={'.drag-handle'}
-        onDragEnd={async (fromIndex, toIndex) => {
-          const from = field.value[fromIndex];
-          const to = field.value[toIndex];
-          field.move(fromIndex, toIndex);
-          await move(from, to);
-        }}
-        lineClassName={css`
-          border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
+    return (
+      <div
+        className={css`
+          .ant-table {
+            overflow-x: auto;
+            overflow-y: hidden;
+          }
         `}
       >
-        <Table
-          rowKey={defaultRowKey}
-          {...others}
-          {...restProps}
-          components={components}
-          columns={columns}
-          dataSource={field?.value?.slice?.()}
-        />
-      </ReactDragListView>
-    </div>
-  );
-});
+        <ReactDragListView
+          handleSelector={'.drag-handle'}
+          onDragEnd={async (fromIndex, toIndex) => {
+            const from = field.value[fromIndex];
+            const to = field.value[toIndex];
+            field.move(fromIndex, toIndex);
+            await move(from, to);
+          }}
+          lineClassName={css`
+            border-bottom: 2px solid rgba(241, 139, 98, 0.6) !important;
+          `}
+        >
+          <Table
+            rowKey={defaultRowKey}
+            {...others}
+            {...restProps}
+            components={components}
+            columns={columns}
+            dataSource={field?.value?.slice?.()}
+          />
+        </ReactDragListView>
+      </div>
+    );
+  },
+  { displayName: 'TableArray' },
+);

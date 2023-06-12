@@ -1,10 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
-import { InputProps, TextAreaProps } from 'antd/lib/input';
+import { InputProps, TextAreaProps } from 'antd/es/input';
 import React from 'react';
+import { JSONTextAreaProps, Json } from './Json';
 import { ReadPretty } from './ReadPretty';
-import { Json, JSONTextAreaProps } from './Json';
 
 type ComposedInput = React.FC<InputProps> & {
   TextArea: React.FC<TextAreaProps>;

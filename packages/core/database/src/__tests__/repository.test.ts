@@ -1,6 +1,29 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
+import { Repository } from '@nocobase/database';
+
+describe('repository', () => {
+  test('value to filter', async () => {
+    const value = {
+      tags: [
+        {
+          categories: [{ name: 'c1' }, { name: 'c2' }],
+        },
+        {
+          categories: [{ name: 'c3' }, { name: 'c4' }],
+        },
+      ],
+    };
+
+    const filter = Repository.valuesToFilter(value, ['tags.categories.name']);
+    expect(filter.$and).toEqual([
+      {
+        'tags.categories.name': ['c1', 'c2', 'c3', 'c4'],
+      },
+    ]);
+  });
+});
 
 describe('find by targetKey', function () {
   let db: Database;
@@ -563,6 +586,7 @@ describe('repository.relatedQuery', () => {
     const post2 = await userPostRepository.create({
       values: { name: 'post2' },
     });
+
     expect(post2).toMatchObject({
       name: 'post2',
       userId: user.get('id'),

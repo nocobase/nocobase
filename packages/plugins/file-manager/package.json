@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-file-manager",
   "version": "0.9.4-alpha.2",
-  "description": "",
+  "displayName": "file manager",
+  "displayName.zh-CN": "文件管理",
+  "description": "file management plugin.",
+  "description.zh-CN": "文件管理。",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

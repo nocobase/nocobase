@@ -107,7 +107,7 @@ export class Designable {
   }
 
   loadAPIClientEvents() {
-    const { refresh, api, t = translate } = this.options;
+    const { api, t = translate } = this.options;
     if (!api) {
       return;
     }
@@ -140,11 +140,11 @@ export class Designable {
       if (removed?.['x-component'] === 'Grid.Col') {
         schemas = schemas.concat(updateColumnSize(removed.parent));
       }
-      refresh();
+      this.refresh();
       if (!current['x-uid']) {
         return;
       }
-      await api.request({
+      const res = await api.request({
         url: `/uiSchemas:insertAdjacent/${current['x-uid']}?position=${position}`,
         method: 'post',
         data: {
@@ -165,11 +165,11 @@ export class Designable {
           method: 'post',
         });
       }
-      onSuccess?.();
+      onSuccess?.(res?.data?.data);
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('patch', async ({ schema }) => {
-      refresh();
+      this.refresh();
       if (!schema?.['x-uid']) {
         return;
       }
@@ -183,7 +183,7 @@ export class Designable {
       message.success(t('Saved successfully'), 0.2);
     });
     this.on('batchPatch', async ({ schemas }) => {
-      refresh();
+      this.refresh();
       await api.request({
         url: `/uiSchemas:batchPatch`,
         method: 'post',
@@ -196,7 +196,7 @@ export class Designable {
       if (removed?.['x-component'] === 'Grid.Col') {
         schemas = updateColumnSize(removed.parent);
       }
-      refresh();
+      this.refresh();
       if (!removed?.['x-uid']) {
         return;
       }
@@ -321,7 +321,7 @@ export class Designable {
         removed = parent;
       }
     }
-    this.emit('remove', { removed });
+    return this.emit('remove', { removed });
   }
 
   removeWithoutEmit(schema?: Schema, options: RemoveOptions = {}) {
@@ -501,7 +501,7 @@ export class Designable {
     const s = this.current.addProperty(wrapped.name || uid(), wrapped);
     s.parent = this.current;
     const [schema1, schema2] = splitWrapSchema(s, schema);
-    this.emit('insertAdjacent', {
+    return this.emit('insertAdjacent', {
       position: 'beforeEnd',
       schema: schema2,
       wrap: schema1,

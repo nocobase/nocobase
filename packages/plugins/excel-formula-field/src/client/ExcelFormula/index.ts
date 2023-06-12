@@ -5,11 +5,13 @@ import { evaluate } from '../../utils/evaluate';
 
 export const ExcelFormula: any = () => null;
 
-ExcelFormula.Result = observer((props) =>
-  React.createElement(Formula.Result, {
-    ...props,
-    evaluate,
-  }),
+ExcelFormula.Result = observer(
+  (props) =>
+    React.createElement(Formula.Result, {
+      ...props,
+      evaluate,
+    }),
+  { displayName: 'ExcelFormula.Result' },
 );
 
 ExcelFormula.Expression = connect((props) => {

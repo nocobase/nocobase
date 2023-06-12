@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-ui-routes-storage",
+  "displayName": "ui routes storage",
+  "displayName.zh-CN": "路由管理",
+  "description": "manage the routes of nocobase",
+  "description.zh-CN": "管理页面路由。",
   "version": "0.9.4-alpha.2",
-  "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",

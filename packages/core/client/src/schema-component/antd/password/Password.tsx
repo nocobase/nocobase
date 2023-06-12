@@ -1,7 +1,6 @@
-import { connect, mapReadPretty, mapProps } from '@formily/react';
-import { isValid } from '@formily/shared';
+import { connect, mapReadPretty } from '@formily/react';
 import { Input } from 'antd';
-import { PasswordProps } from 'antd/lib/input';
+import { PasswordProps } from 'antd/es/input';
 import React from 'react';
 import { PasswordStrength } from './PasswordStrength';
 

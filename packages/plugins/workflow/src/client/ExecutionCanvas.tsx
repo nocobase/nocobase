@@ -4,7 +4,7 @@ import { css } from '@emotion/css';
 import { Link } from 'react-router-dom';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   useCompile,
   useDocumentTitle,
@@ -47,7 +47,7 @@ function JobModal() {
   const instruction = instructions.get(node.type);
 
   return (
-    <ActionContext.Provider value={{ visible: Boolean(job), setVisible: setViewJob }}>
+    <ActionContextProvider value={{ visible: Boolean(job), setVisible: setViewJob }}>
       <SchemaComponent
         schema={{
           type: 'void',
@@ -103,7 +103,7 @@ function JobModal() {
           },
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 }
 
@@ -141,7 +141,7 @@ export function ExecutionCanvas() {
         nodes,
         execution,
         viewJob,
-        setViewJob
+        setViewJob,
       }}
     >
       <div className="workflow-toolbar">

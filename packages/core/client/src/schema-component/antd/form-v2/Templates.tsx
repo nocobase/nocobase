@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock } from '../../../block-provider';
 import { useCollectionManager } from '../../../collection-manager';
+import { useDuplicatefieldsContext } from '../../../schema-initializer/components';
 
 export interface ITemplate {
   config?: {
@@ -32,9 +33,12 @@ export interface ITemplate {
 const useDataTemplates = () => {
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
-  const { items = [], display = true } = findDataTemplates(fieldSchema);
+  const data = useDuplicatefieldsContext();
   const { getCollectionJoinField } = useCollectionManager();
-
+  if (data) {
+    return data;
+  }
+  const { items = [], display = true } = findDataTemplates(fieldSchema);
   // 过滤掉已经被删除的字段
   items.forEach((item) => {
     try {
@@ -77,6 +81,7 @@ export const Templates = ({ style = {}, form }) => {
 
   useEffect(() => {
     if (enabled && defaultTemplate) {
+      form.__template = true;
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
           if (form && data) {
@@ -102,6 +107,7 @@ export const Templates = ({ style = {}, form }) => {
           if (form && data) {
             // 切换之前先把之前的数据清空
             form.reset();
+            form.__template = true;
 
             forEach(data, (value, key) => {
               if (value) {
@@ -147,7 +153,7 @@ function findDataTemplates(fieldSchema): ITemplate {
   return {} as ITemplate;
 }
 
-async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
+export async function fetchTemplateData(api, template: { collection: string; dataId: number; fields: string[] }, t) {
   if (template.fields.length === 0) {
     return;
   }

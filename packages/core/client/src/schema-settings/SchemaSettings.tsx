@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } fr
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { error } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
@@ -24,7 +25,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
-  ActionContext,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
@@ -147,7 +148,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Template = function Template(props) {
-  const { componentName, collectionName, resourceName } = props;
+  const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
@@ -155,7 +156,7 @@ SchemaSettings.Template = function Template(props) {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
-  if (!collectionName) {
+  if (!collectionName && !needRender) {
     return null;
   }
   if (template) {
@@ -181,7 +182,7 @@ SchemaSettings.Template = function Template(props) {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -193,7 +194,7 @@ SchemaSettings.Template = function Template(props) {
                     name: {
                       title: t('Template name'),
                       required: true,
-                      default: `${compile(title)}_${t(componentName)}`,
+                      default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -510,7 +511,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
                 ['x-uid']: uid,
                 'x-filter-targets': targets,
               },
-            });
+            }).catch(error);
             dn.refresh();
           }}
           onMouseEnter={onHover}
@@ -663,7 +664,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
@@ -680,7 +681,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
           ...schema,
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 
@@ -771,6 +772,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     </>
   );
 });
+SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
 SchemaSettings.ModalItem = function ModalItem(props) {
   const {

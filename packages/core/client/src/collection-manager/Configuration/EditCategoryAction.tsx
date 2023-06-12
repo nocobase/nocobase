@@ -3,7 +3,7 @@ import { cloneDeep } from 'lodash';
 import React, { useContext, useEffect, useState } from 'react';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import { CollectionCategroriesContext } from '../context';
 import { useResourceActionContext } from '../ResourceActionProvider';
@@ -61,7 +61,7 @@ export const EditCategoryAction = (props) => {
   const compile = useCompile();
   return (
     <RecordProvider record={item}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <>{children || <span onClick={() => setVisible(true)}>{compile('{{ t("Edit category") }}')}</span>}</>
         <SchemaComponent
           schema={collectionCategoryEditSchema}
@@ -75,7 +75,7 @@ export const EditCategoryAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

@@ -32,6 +32,7 @@ import { RelationRepository } from './relation-repository/relation-repository';
 import { updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
+import { flatten } from 'flat';
 
 const debug = require('debug')('noco-database');
 
@@ -210,6 +211,11 @@ export interface AggregateOptions {
   distinct?: boolean;
 }
 
+interface FirstOrCreateOptions extends Transactionable {
+  filterKeys: string[];
+  values?: Values;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
   implements IRepository
 {
@@ -221,6 +227,50 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+  }
+
+  public static valuesToFilter(values: Values, filterKeys: Array<string>) {
+    const filterAnd = [];
+    const flattedValues = flatten(values);
+
+    const keyWithOutArrayIndex = (key) => {
+      const chunks = key.split('.');
+      return chunks
+        .filter((chunk) => {
+          return !Boolean(chunk.match(/\d+/));
+        })
+        .join('.');
+    };
+
+    for (const filterKey of filterKeys) {
+      let filterValue;
+
+      for (const flattedKey of Object.keys(flattedValues)) {
+        const flattedKeyWithoutIndex = keyWithOutArrayIndex(flattedKey);
+
+        if (flattedKeyWithoutIndex === filterKey) {
+          if (filterValue) {
+            if (Array.isArray(filterValue)) {
+              filterValue.push(flattedValues[flattedKey]);
+            } else {
+              filterValue = [filterValue, flattedValues[flattedKey]];
+            }
+          } else {
+            filterValue = flattedValues[flattedKey];
+          }
+        }
+      }
+
+      if (filterValue) {
+        filterAnd.push({
+          [filterKey]: filterValue,
+        });
+      }
+    }
+
+    return {
+      $and: filterAnd,
+    };
   }
 
   /**
@@ -367,6 +417,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         rootAttributes: opts.attributes,
         includeOption: opts.include,
         rootOrder: opts.order,
+        db: this.database,
       });
 
       await eagerLoadingTree.load(
@@ -425,6 +476,39 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
+  }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   */
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values, transaction });
+  }
+
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return await this.update({
+        filterByTk: instance.get(this.collection.model.primaryKeyAttribute),
+        values,
+        transaction,
+      });
+    }
+
+    return this.create({ values, transaction });
   }
 
   /**

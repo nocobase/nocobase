@@ -4,7 +4,7 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { ActionContext, useCompile } from '../schema-component';
+import { ActionContextProvider, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
@@ -16,7 +16,7 @@ export const PluginManagerLink = () => {
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/pm/list');
+          history.push('/admin/pm/list/');
         }}
       />
     </Tooltip>
@@ -43,7 +43,7 @@ export const SettingsCenterDropdown = () => {
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown
         placement="bottom"
         menu={{
@@ -68,6 +68,6 @@ export const SettingsCenterDropdown = () => {
           // title={t('All plugin settings')}
         />
       </Dropdown>
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
