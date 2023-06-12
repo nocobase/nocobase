@@ -112,7 +112,7 @@ const InternalPage: React.FC = (props) => {
               return 'MHeader' === s['x-component'];
             }}
           ></RecursionField>
-          <TabsContextProvider activeKey={query.get('tab')} onChange={onTabsChange}>
+          <TabsContextProvider deep={false} activeKey={query.get('tab')} onChange={onTabsChange}>
             <RecursionField
               schema={fieldSchema}
               filterProperties={(s) => {
