@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { onFormValuesChange } from '@formily/core';
-import { useFieldSchema, useFormEffects } from '@formily/react';
-import cloneDeep from 'lodash/cloneDeep';
-
-import evaluators, { Evaluator } from '@nocobase/evaluators/client';
+import { toJS } from '@formily/reactive';
+import { useFieldSchema, useFormEffects, useForm } from '@formily/react';
+import {
+  Checkbox,
+  DatePicker,
+  InputNumber,
+  Input as InputString,
+  useCollection,
+  useCollectionManager,
+  useFormBlockContext,
+} from '@nocobase/client';
+import { Evaluator, evaluators } from '@nocobase/evaluators/client';
 import { Registry, toFixedByStep } from '@nocobase/utils/client';
-import { Checkbox, DatePicker, Input as InputString, InputNumber, useCollection } from '@nocobase/client';
 
 import { toDbType } from '../../../utils';
 
@@ -19,16 +26,36 @@ const TypedComponents = {
   string: InputString,
 };
 
-export const Result = (props) => {
-  const { value, ...others } = props;
-  const { getField } = useCollection();
+function useTargetCollectionField() {
   const fieldSchema = useFieldSchema();
-  const options = getField(fieldSchema.name as string);
-  const { dataType, expression, engine = 'math.js' } = options || {};
+  const providedCollection = useCollection();
+  const { getCollection, getCollectionField } = useCollectionManager();
+  const paths = (fieldSchema.name as string).split('.');
+  let collection = providedCollection;
+  for (let i = 0; i < paths.length - 1; i++) {
+    const field = collection.getField(paths[i]);
+    collection = getCollection(field.target);
+  }
+  return getCollectionField(`${collection.name}.${paths[paths.length - 1]}`);
+}
+
+export function Result(props) {
+  const { value, ...others } = props;
+  const fieldSchema = useFieldSchema();
+  const { dataType, expression, engine = 'math.js' } = useTargetCollectionField() ?? {};
+  const [editingValue, setEditingValue] = useState(value);
   const { evaluate } = (evaluators as Registry<Evaluator>).get(engine);
+  const formBlockContext = useFormBlockContext();
   useFormEffects(() => {
     onFormValuesChange((form) => {
-      const scope = cloneDeep(form.values);
+      if (
+        (fieldSchema.name as string).indexOf('.') >= 0 ||
+        !formBlockContext?.form ||
+        formBlockContext.form?.readPretty
+      ) {
+        return;
+      }
+      const scope = toJS(form.values);
       let v;
       try {
         v = evaluate(expression, scope);
@@ -36,15 +63,16 @@ export const Result = (props) => {
       } catch (error) {
         v = null;
       }
-      if ((v == null && value == null) || JSON.stringify(v) === JSON.stringify(value)) {
+      if ((v == null && editingValue == null) || JSON.stringify(v) === JSON.stringify(editingValue)) {
         return;
       }
-      // console.log(options.name, v, value, props.defaultValue);
-      form.setValuesIn(options.name, v);
+      setEditingValue(v);
     });
   });
   const Component = TypedComponents[dataType] ?? InputString;
-  return <Component {...others} value={dataType === 'double' ? toFixedByStep(value, props.step) : value} />;
-};
+  return (
+    <Component {...others} value={dataType === 'double' ? toFixedByStep(editingValue, props.step) : editingValue} />
+  );
+}
 
 export default Result;

@@ -1,16 +1,31 @@
 import { ISchema } from '@formily/react';
 import {
-  AntdSchemaComponentProvider,
-  APIClient,
   APIClientProvider,
+  Action,
   BlockSchemaComponentProvider,
+  CollectionField,
   CollectionManagerProvider,
-  RecordProvider,
+  FormBlockProvider,
+  FormItem,
+  FormV2,
+  Input,
+  Password,
   SchemaComponent,
   SchemaComponentProvider,
 } from '@nocobase/client';
 import React from 'react';
+import { mockAPIClient } from '../../../../test';
 import collections from './collections';
+
+const { apiClient, mockRequest } = mockAPIClient();
+
+mockRequest.onGet('/users:get').reply(200, {
+  data: {
+    id: 1,
+    nickname: '张三',
+    password: '123456',
+  },
+});
 
 const schema: ISchema = {
   type: 'object',
@@ -22,7 +37,6 @@ const schema: ISchema = {
         collection: 'users',
         resource: 'users',
         action: 'get',
-        useParams: '{{ useParamsFromRecord }}',
       },
       properties: {
         form: {
@@ -76,28 +90,18 @@ const schema: ISchema = {
   },
 };
 
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:3000/api',
-});
-
-const record = {
-  id: 1,
-};
-
 export default () => {
   return (
     <APIClientProvider apiClient={apiClient}>
-      <SchemaComponentProvider>
-        <CollectionManagerProvider collections={collections.data}>
-          <AntdSchemaComponentProvider>
-            <BlockSchemaComponentProvider>
-              <RecordProvider record={record}>
-                <SchemaComponent schema={schema} />
-              </RecordProvider>
-            </BlockSchemaComponentProvider>
-          </AntdSchemaComponentProvider>
-        </CollectionManagerProvider>
-      </SchemaComponentProvider>
+      <CollectionManagerProvider collections={collections}>
+        <SchemaComponentProvider
+          components={{ FormBlockProvider, FormItem, CollectionField, Input, Action, FormV2, Password }}
+        >
+          <BlockSchemaComponentProvider>
+            <SchemaComponent schema={schema} />
+          </BlockSchemaComponentProvider>
+        </SchemaComponentProvider>
+      </CollectionManagerProvider>
     </APIClientProvider>
   );
 };

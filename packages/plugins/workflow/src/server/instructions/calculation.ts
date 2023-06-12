@@ -1,11 +1,9 @@
-import parse from 'json-templates';
-
-import evaluators, { Evaluator } from '@nocobase/evaluators';
-
+import { Evaluator, evaluators } from '@nocobase/evaluators';
+import { parse } from '@nocobase/utils';
+import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
-import { Instruction } from '.';
 
 interface CalculationConfig {
   dynamic?: boolean | string;
@@ -17,7 +15,7 @@ export default {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { dynamic = false } = <CalculationConfig>node.config || {};
     let { engine = 'math.js', expression = '' } = node.config;
-    let scope = processor.getScope();
+    let scope = processor.getScope(node);
     if (dynamic) {
       const parsed = parse(dynamic)(scope) ?? {};
       engine = parsed.engine;

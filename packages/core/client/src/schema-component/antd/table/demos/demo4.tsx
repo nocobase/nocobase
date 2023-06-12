@@ -22,7 +22,6 @@ const useDataSource = (options) => {
   const ctx = useContext(DataSourceContext);
   return useRequest(
     () => {
-      console.log('ctx.dataSource', ctx.dataSource);
       return Promise.resolve({
         data: ctx.dataSource,
       });
@@ -38,7 +37,6 @@ const useCreateAction = () => {
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
-      console.log(ctx.dataSource);
       const dataSource = ctx.dataSource || [];
       dataSource.push({
         id: uid(),
@@ -67,7 +65,6 @@ const useBulkDestroyAction = () => {
 
 const useUpdateAction = () => {
   const record = useRecord();
-  // const form = useForm();
   const ctx = useContext(DataSourceContext);
   return {
     async run() {
@@ -184,40 +181,42 @@ const schema: ISchema = {
   },
 };
 
-const DataSourceProvider = observer((props) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const [dataSource, setDataSource] = useState([]);
-  const service = useRequest(
-    () => {
-      return Promise.resolve({
-        data: [
-          { id: 1, name: 'Name1' },
-          { id: 2, name: 'Name2' },
-          { id: 3, name: 'Name3' },
-        ],
-      });
-    },
-    {
-      onSuccess(data) {
-        setDataSource(data.data);
+const DataSourceProvider = observer(
+  (props) => {
+    const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+    const [dataSource, setDataSource] = useState([]);
+    const service = useRequest(
+      () => {
+        return Promise.resolve({
+          data: [
+            { id: 1, name: 'Name1' },
+            { id: 2, name: 'Name2' },
+            { id: 3, name: 'Name3' },
+          ],
+        });
       },
-    },
-  );
-  console.log('dataSource1', dataSource);
-  return (
-    <DataSourceContext.Provider
-      value={{
-        service,
-        dataSource,
-        setDataSource,
-        selectedRowKeys,
-        setSelectedRowKeys,
-      }}
-    >
-      {props.children}
-    </DataSourceContext.Provider>
-  );
-});
+      {
+        onSuccess(data) {
+          setDataSource(data.data);
+        },
+      },
+    );
+    return (
+      <DataSourceContext.Provider
+        value={{
+          service,
+          dataSource,
+          setDataSource,
+          selectedRowKeys,
+          setSelectedRowKeys,
+        }}
+      >
+        {props.children}
+      </DataSourceContext.Provider>
+    );
+  },
+  { displayName: 'DataSourceProvider' },
+);
 
 export default () => {
   return (

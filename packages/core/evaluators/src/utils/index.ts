@@ -23,7 +23,7 @@ function replaceNumberIndex(path: string, scope: Scope): string {
 
   for (let i = 0; i < segments.length; i++) {
     const p = segments[i];
-    if (p.match(/^\d+$/)) {
+    if (p[0] && '0123456789'.indexOf(p[0]) > -1) {
       paths.push(Array.isArray(get(scope, segments.slice(0, i))) ? `[${p}]` : `["${p}"]`);
     } else {
       if (i) {
@@ -53,6 +53,10 @@ export function evaluate(this: Evaluator, expression: string, scope: Scope = {})
       result = typeof result === 'string' ? `'${result.replace(/'/g, "\\'")}'` : result;
     } else {
       result = replaceNumberIndex(v, context);
+    }
+
+    if (result instanceof Date) {
+      result = `'${result.toISOString()}'`;
     }
 
     return ` ${result} `;

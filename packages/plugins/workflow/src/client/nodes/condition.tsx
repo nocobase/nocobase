@@ -1,21 +1,19 @@
-import React from 'react';
-import { css, cx } from '@emotion/css';
-import { Button, Select } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { Trans, useTranslation } from 'react-i18next';
-
-import { Registry } from '@nocobase/utils/client';
+import { css, cx } from '@emotion/css';
 import { Variable, useCompile } from '@nocobase/client';
 import { evaluators } from '@nocobase/evaluators/client';
-
+import { Registry } from '@nocobase/utils/client';
+import { Button, Select } from 'antd';
+import React from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { NodeDefaultView } from '.';
 import { Branch } from '../Branch';
 import { useFlowContext } from '../FlowContext';
-import { branchBlockClass, nodeSubtreeClass } from '../style';
-import { lang, NAMESPACE } from '../locale';
-import { useWorkflowVariableOptions } from '../variable';
 import { RadioWithTooltip, RadioWithTooltipOption } from '../components/RadioWithTooltip';
 import { renderEngineReference } from '../components/renderEngineReference';
+import { NAMESPACE, lang } from '../locale';
+import { branchBlockClass, nodeSubtreeClass } from '../style';
+import { useWorkflowVariableOptions } from '../variable';
 
 interface Calculator {
   name: string;
@@ -141,7 +139,7 @@ function getGroupCalculators(group) {
   return Array.from(calculators.getEntities()).filter(([key, value]) => value.group === group);
 }
 
-export function Calculation({ calculator, operands = [], onChange }) {
+function Calculation({ calculator, operands = [], onChange }) {
   const compile = useCompile();
   const options = useWorkflowVariableOptions();
   return (
@@ -163,6 +161,7 @@ export function Calculation({ calculator, operands = [], onChange }) {
         value={calculator}
         onChange={(v) => onChange({ operands, calculator: v })}
         placeholder={lang('Calculator')}
+        dropdownMatchSelectWidth={false}
       >
         {calculatorGroups
           .filter((group) => Boolean(getGroupCalculators(group.value).length))
@@ -318,6 +317,7 @@ export default {
   title: `{{t("Condition", { ns: "${NAMESPACE}" })}}`,
   type: 'condition',
   group: 'control',
+  description: `{{t('Based on boolean result of the calculation to determine whether to "continue" or "exit" the process, or continue on different branches of "yes" and "no".', { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     rejectOnFalse: {
       type: 'boolean',
@@ -413,7 +413,7 @@ export default {
       value: { rejectOnFalse: false },
     },
   ],
-  render(data) {
+  component: function Component({ data }) {
     const { t } = useTranslation();
     const { nodes } = useFlowContext();
     const {

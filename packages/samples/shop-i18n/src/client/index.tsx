@@ -59,7 +59,7 @@ export const ShopShortcut = () => {
   );
 };
 
-export default React.memo((props) => {
+const ShopI18n = React.memo((props) => {
   const ctx = useContext(PluginManagerContext);
   const { routes, components, ...others } = useContext(RouteSwitchContext);
 
@@ -93,3 +93,5 @@ export default React.memo((props) => {
     </SettingsCenterProvider>
   );
 });
+
+export default ShopI18n;

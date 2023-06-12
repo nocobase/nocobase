@@ -35,6 +35,28 @@ export class OptionsParser {
     this.context = context;
   }
 
+  static appendInheritInspectAttribute(include, collection): any {
+    // if include already has __tableName, __schemaName, skip
+    if (include.find((item) => item?.[1] === '__tableName')) {
+      return;
+    }
+
+    include.push([
+      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${collection.name}".tableoid)`),
+      '__tableName',
+    ]);
+
+    include.push([
+      Sequelize.literal(`
+        (SELECT n.nspname
+        FROM pg_class c
+               JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.oid = "${collection.name}".tableoid)
+      `),
+      '__schemaName',
+    ]);
+  }
+
   isAssociation(key: string) {
     return this.model.associations[key] !== undefined;
   }
@@ -109,23 +131,6 @@ export class OptionsParser {
     return filterParams;
   }
 
-  protected inheritFromSubQuery(include): any {
-    include.push([
-      Sequelize.literal(`(select relname from pg_class where pg_class.oid = "${this.collection.name}".tableoid)`),
-      '__tableName',
-    ]);
-
-    include.push([
-      Sequelize.literal(`
-        (SELECT n.nspname
-        FROM pg_class c
-               JOIN pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.oid = "${this.collection.name}".tableoid)
-      `),
-      '__schemaName',
-    ]);
-  }
-
   protected parseFields(filterParams: any) {
     const appends = this.options?.appends || [];
     const except = [];
@@ -142,13 +147,14 @@ export class OptionsParser {
     }; // out put all fields by default
 
     if (this.collection.isParent()) {
-      this.inheritFromSubQuery(attributes.include);
+      OptionsParser.appendInheritInspectAttribute(attributes.include, this.collection);
     }
 
     if (this.options?.fields) {
       attributes = [];
+
       if (this.collection.isParent()) {
-        this.inheritFromSubQuery(attributes);
+        OptionsParser.appendInheritInspectAttribute(attributes, this.collection);
       }
 
       // 将fields拆分为 attributes 和 appends
@@ -249,6 +255,11 @@ export class OptionsParser {
       }
 
       if (appendFields.length == 2) {
+        const association = associations[appendFields[0]];
+        if (!association) {
+          throw new Error(`association ${appendFields[0]} in ${model.name} not found`);
+        }
+
         const associationModel = associations[appendFields[0]].target;
         if (associationModel.rawAttributes[appendFields[1]]) {
           lastLevel = true;
@@ -263,6 +274,11 @@ export class OptionsParser {
       let existIncludeIndex = queryParams['include'].findIndex(
         (include) => include['association'] == appendAssociation,
       );
+
+      // if include from filter, remove fromFilter attribute
+      if (existIncludeIndex != -1) {
+        delete queryParams['include'][existIncludeIndex]['fromFilter'];
+      }
 
       // if association not exist, create it
       if (existIncludeIndex == -1) {
@@ -307,6 +323,13 @@ export class OptionsParser {
           attributes,
         };
       } else {
+        const existInclude = queryParams['include'][existIncludeIndex];
+        if (existInclude.attributes && Array.isArray(existInclude.attributes) && existInclude.attributes.length == 0) {
+          existInclude.attributes = {
+            include: [],
+          };
+        }
+
         setInclude(
           model.associations[queryParams['include'][existIncludeIndex].association].target,
           queryParams['include'][existIncludeIndex],

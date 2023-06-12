@@ -3,6 +3,7 @@ import { ArrayCollapse, ArrayItems, FormDialog, FormItem, FormLayout, Input } fr
 import { Field, GeneralField, createForm } from '@formily/core';
 import { ISchema, Schema, SchemaOptionsContext, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
+import { error } from '@nocobase/utils/client';
 import {
   Alert,
   Button,
@@ -24,13 +25,14 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
-  ActionContext,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
   FormProvider,
   RemoteSchemaComponent,
   SchemaComponent,
+  SchemaComponentContext,
   SchemaComponentOptions,
   createDesignable,
   findFormBlock,
@@ -47,6 +49,7 @@ import { getTargetKey } from '../schema-component/antd/association-filter/utilts
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplate';
 import { FormDataTemplates } from './DataTemplates';
+import { EnableChildCollections } from './EnableChildCollections';
 import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 
@@ -116,8 +119,8 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [visible, setVisible] = useState(false);
   const DropdownMenu = (
     <Dropdown
-      visible={visible}
-      onVisibleChange={(visible) => {
+      open={visible}
+      onOpenChange={(visible) => {
         setVisible(visible);
       }}
       overlay={<Menu>{props.children}</Menu>}
@@ -145,7 +148,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
 };
 
 SchemaSettings.Template = function Template(props) {
-  const { componentName, collectionName, resourceName } = props;
+  const { componentName, collectionName, resourceName, needRender } = props;
   const { t } = useTranslation();
   const { getCollection } = useCollectionManager();
   const { dn, setVisible, template, fieldSchema } = useSchemaSettings();
@@ -153,7 +156,7 @@ SchemaSettings.Template = function Template(props) {
   const api = useAPIClient();
   const { dn: tdn } = useBlockTemplateContext();
   const { saveAsTemplate, copyTemplateSchema } = useSchemaTemplateManager();
-  if (!collectionName) {
+  if (!collectionName && !needRender) {
     return null;
   }
   if (template) {
@@ -179,7 +182,7 @@ SchemaSettings.Template = function Template(props) {
     <SchemaSettings.Item
       onClick={async () => {
         setVisible(false);
-        const { title } = getCollection(collectionName);
+        const { title } = collectionName ? getCollection(collectionName) : { title: '' };
         const values = await FormDialog(t('Save as template'), () => {
           return (
             <FormLayout layout={'vertical'}>
@@ -191,7 +194,7 @@ SchemaSettings.Template = function Template(props) {
                     name: {
                       title: t('Template name'),
                       required: true,
-                      default: `${compile(title)}_${t(componentName)}`,
+                      default: title ? `${compile(title)}_${t(componentName)}` : t(componentName),
                       'x-decorator': 'FormItem',
                       'x-component': 'Input',
                     },
@@ -508,7 +511,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
                 ['x-uid']: uid,
                 'x-filter-targets': targets,
               },
-            });
+            }).catch(error);
             dn.refresh();
           }}
           onMouseEnter={onHover}
@@ -661,7 +664,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
@@ -678,7 +681,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
           ...schema,
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 
@@ -769,6 +772,7 @@ SchemaSettings.ActionModalItem = React.memo((props: any) => {
     </>
   );
 });
+SchemaSettings.ActionModalItem.displayName = 'SchemaSettings.ActionModalItem';
 
 SchemaSettings.ModalItem = function ModalItem(props) {
   const {
@@ -814,6 +818,10 @@ SchemaSettings.ModalItem = function ModalItem(props) {
           })
           .then((values) => {
             onSubmit(values);
+            return values;
+          })
+          .catch((err) => {
+            console.error(err);
           });
       }}
     >
@@ -896,6 +904,7 @@ SchemaSettings.DefaultSortingRules = function DefaultSortingRules(props) {
                       field: {
                         type: 'string',
                         enum: sortFields,
+                        required: true,
                         'x-decorator': 'FormItem',
                         'x-component': 'Select',
                         'x-component-props': {
@@ -1005,8 +1014,15 @@ SchemaSettings.LinkageRules = function LinkageRules(props) {
   );
 };
 
-export const useDataTemplates = () => {
+export const useDataTemplates = (schema?: Schema) => {
   const fieldSchema = useFieldSchema();
+
+  if (schema) {
+    return {
+      templateData: _.cloneDeep(schema['x-data-templates']),
+    };
+  }
+
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   return {
     templateData: _.cloneDeep(formSchema?.['x-data-templates']),
@@ -1014,6 +1030,7 @@ export const useDataTemplates = () => {
 };
 
 SchemaSettings.DataTemplates = function DataTemplates(props) {
+  const designerCtx = useContext(SchemaComponentContext);
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1021,47 +1038,55 @@ SchemaSettings.DataTemplates = function DataTemplates(props) {
   const formSchema = findFormBlock(fieldSchema) || fieldSchema;
   const { templateData } = useDataTemplates();
 
-  return (
-    <SchemaSettings.ModalItem
-      title={t('Form data templates')}
-      components={{ ArrayCollapse, FormLayout }}
-      width={770}
-      schema={
-        {
-          type: 'object',
-          title: t('Form data templates'),
-          properties: {
-            fieldReaction: {
-              'x-component': FormDataTemplates,
-              'x-component-props': {
-                useProps: () => {
-                  return {
-                    defaultValues: templateData,
-                    collectionName,
-                  };
-                },
-              },
+  const schema = useMemo(
+    () => ({
+      type: 'object',
+      title: t('Form data templates'),
+      properties: {
+        fieldReaction: {
+          'x-component': FormDataTemplates,
+          'x-component-props': {
+            designerCtx,
+            formSchema,
+            useProps: () => {
+              return {
+                defaultValues: templateData,
+                collectionName,
+              };
             },
           },
-        } as ISchema
-      }
-      onSubmit={(v) => {
-        const data = v.fieldReaction || {};
-        const schema = {
-          ['x-uid']: formSchema['x-uid'],
-          ['x-data-templates']: data,
-        };
-        formSchema['x-data-templates'] = data;
-        dn.emit('patch', {
-          schema,
-        });
-        dn.refresh();
-      }}
-    />
+        },
+      },
+    }),
+    [templateData],
+  );
+  const onSubmit = useCallback((v) => {
+    const data = { ...(formSchema['x-data-templates'] || {}), ...v.fieldReaction };
+
+    // 当 Tree 组件开启 checkStrictly 属性时，会导致 checkedKeys 的值是一个对象，而不是数组，所以这里需要转换一下以支持旧版本
+    data.items.forEach((item) => {
+      item.fields = Array.isArray(item.fields) ? item.fields : item.fields.checked;
+    });
+
+    const schema = {
+      ['x-uid']: formSchema['x-uid'],
+      ['x-data-templates']: data,
+    };
+    formSchema['x-data-templates'] = data;
+    dn.emit('patch', {
+      schema,
+    });
+    dn.refresh();
+  }, []);
+  const title = useMemo(() => t('Form data templates'), []);
+  const components = useMemo(() => ({ ArrayCollapse, FormLayout }), []);
+
+  return (
+    <SchemaSettings.ModalItem title={title} components={components} width={770} schema={schema} onSubmit={onSubmit} />
   );
 };
 
-SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
+SchemaSettings.EnableChildCollections = function EnableChildCollectionsItem(props) {
   const { collectionName } = props;
   const fieldSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -1099,7 +1124,6 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
         } as ISchema
       }
       onSubmit={(v) => {
-        console.log(v);
         const enableChildren = [];
         for (const item of v.enableChildren.childrenCollections) {
           enableChildren.push(_.pickBy(item, _.identity));
@@ -1111,13 +1135,13 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
         fieldSchema['x-enable-children'] = enableChildren;
         fieldSchema['x-allow-add-to-current'] = v.allowAddToCurrent;
         fieldSchema['x-component-props'] = {
-          openMode: 'drawer',
+          ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
         };
         schema['x-enable-children'] = enableChildren;
         schema['x-allow-add-to-current'] = v.allowAddToCurrent;
         schema['x-component-props'] = {
-          openMode: 'drawer',
+          ...fieldSchema['x-component-props'],
           component: 'CreateRecordAction',
         };
         dn.emit('patch', {
@@ -1132,7 +1156,7 @@ SchemaSettings.EnableChildCollections = function EnableChildCollections(props) {
 // 是否显示默认值配置项
 export const isShowDefaultValue = (collectionField: CollectionFieldOptions, getInterface) => {
   return (
-    !['o2o', 'oho', 'obo', 'o2m', 'attachment'].includes(collectionField?.interface) &&
+    !['o2o', 'oho', 'obo', 'o2m', 'attachment', 'expression'].includes(collectionField?.interface) &&
     !isSystemField(collectionField, getInterface)
   );
 };

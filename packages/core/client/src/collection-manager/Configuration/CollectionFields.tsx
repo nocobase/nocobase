@@ -74,7 +74,7 @@ const CurrentFields = (props) => {
   const { resource, targetKey } = props.collectionResource || {};
   const { [targetKey]: filterByTk, titleField } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
-  const { updateCollection, refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -161,10 +161,9 @@ const CurrentFields = (props) => {
         type: 'checkbox',
         onChange: (selectedRowKeys) => {
           setState((state) => {
-            const result = [...(state.selectedRowKeys || []), ...selectedRowKeys];
             return {
               ...state,
-              selectedRowKeys: result,
+              selectedRowKeys,
             };
           });
         },
@@ -181,7 +180,7 @@ const InheritFields = (props) => {
   const { [targetKey]: filterByTk, titleField, name } = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState(null);
   const { t } = useTranslation();
-  const { updateCollection, refreshCM } = useCollectionManager();
+  const { refreshCM } = useCollectionManager();
 
   const columns: TableColumnProps<any>[] = [
     {
@@ -266,7 +265,7 @@ const InheritFields = (props) => {
   );
 };
 
-export const CollectionFields = (props) => {
+export const CollectionFields = () => {
   const compile = useCompile();
   const field = useField<Field>();
   const { name } = useRecord();
@@ -312,7 +311,6 @@ export const CollectionFields = (props) => {
   ];
 
   const fields = getCurrentCollectionFields(name);
-
   const groups = {
     pf: [],
     association: [],
@@ -357,7 +355,6 @@ export const CollectionFields = (props) => {
       fields: groups.system,
     },
   ];
-
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -408,7 +405,6 @@ export const CollectionFields = (props) => {
   );
   const addProps = { type: 'primary' };
   const syncProps = { type: 'primary' };
-
   return (
     <ResourceActionProvider {...resourceActionProps}>
       <FormContext.Provider value={form}>

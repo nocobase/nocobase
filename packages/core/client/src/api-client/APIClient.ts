@@ -1,5 +1,5 @@
 import { APIClient as APIClientSDK } from '@nocobase/sdk';
-import { Result } from 'ahooks/lib/useRequest/src/types';
+import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
 
@@ -16,6 +16,7 @@ const handleErrorMessage = (error) => {
 };
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
+  silence = false;
 
   service(uid: string) {
     return this.services[uid];
@@ -38,6 +39,9 @@ export class APIClient extends APIClientSDK {
     this.axios.interceptors.response.use(
       (response) => response,
       (error) => {
+        if (this.silence) {
+          throw error;
+        }
         const redirectTo = error?.response?.data?.redirectTo;
         if (redirectTo) {
           return (window.location.href = redirectTo);
@@ -54,5 +58,10 @@ export class APIClient extends APIClientSDK {
         throw error;
       },
     );
+  }
+
+  silent() {
+    this.silence = true;
+    return this;
   }
 }

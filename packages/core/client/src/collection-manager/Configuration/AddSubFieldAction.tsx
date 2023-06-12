@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { useOptions } from '../hooks/useOptions';
 import { IField } from '../interfaces/types';
@@ -112,7 +112,7 @@ export const AddSubFieldAction = () => {
     };
   });
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown
         overlay={
           <Menu
@@ -140,6 +140,6 @@ export const AddSubFieldAction = () => {
           scope={{ createOnly: true, useCreateSubField }}
         />
       </RecordProvider>
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

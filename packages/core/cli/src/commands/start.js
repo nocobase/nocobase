@@ -1,6 +1,6 @@
 const { Command } = require('commander');
 const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
-const { existsSync } = require('fs');
+const { existsSync, unlink } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
 
@@ -9,7 +9,7 @@ const chalk = require('chalk');
  * @param {Command} cli
  */
 module.exports = (cli) => {
-  const { APP_PACKAGE_ROOT } = process.env;
+  const { APP_PACKAGE_ROOT, NODE_ARGS } = process.env;
   cli
     .command('start')
     .option('-p, --port [port]')
@@ -41,22 +41,29 @@ module.exports = (cli) => {
         return;
       }
       await postCheck(opts);
-      if (opts.quickstart) {
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
-      }
-      if (opts.dbSync) {
-        await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
+      const restartMark = resolve(process.cwd(), 'storage', 'restart');
+      if (!existsSync(restartMark)) {
+        if (opts.quickstart) {
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'install', '--ignore-installed']);
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'upgrade']);
+        }
+        if (opts.dbSync) {
+          await run('node', [`./packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, 'db:sync']);
+        }
       }
       if (opts.daemon) {
         run('pm2', ['start', `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`, '--', ...process.argv.slice(2)]);
       } else {
-        run('pm2-runtime', [
-          'start',
-          `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
-          '--',
-          ...process.argv.slice(2),
-        ]);
+        run(
+          'pm2-runtime',
+          [
+            'start',
+            `packages/${APP_PACKAGE_ROOT}/server/lib/index.js`,
+            NODE_ARGS ? `--node-args="${NODE_ARGS}"` : undefined,
+            '--',
+            ...process.argv.slice(2),
+          ].filter(Boolean),
+        );
       }
     });
 };

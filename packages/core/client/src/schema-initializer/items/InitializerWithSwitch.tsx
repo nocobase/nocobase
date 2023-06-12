@@ -3,6 +3,8 @@ import React from 'react';
 
 import { SchemaInitializer } from '..';
 import { useCurrentSchema } from '../utils';
+import { useBlockRequestContext } from '../../block-provider';
+import { useCollection } from '../../collection-manager';
 
 export const InitializerWithSwitch = (props) => {
   const { type, schema, item, insert, remove: passInRemove } = props;

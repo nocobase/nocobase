@@ -41,6 +41,9 @@
     "react/display-name": "off",
     "react/prop-types": "off",
     "no-explicit-any": "off",
-    "@typescript-eslint/no-explicit-any": "off"
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/no-var-requires": "off",
+    "promise/always-return": "off"
   }
 }

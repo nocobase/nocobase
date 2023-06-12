@@ -10,7 +10,7 @@ import {
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { FormProvider, SchemaComponentOptions } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { FileSelector } from '../preview';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
@@ -47,7 +47,7 @@ const useTableSelectorProps = () => {
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
       selectedRowKeys: rcSelectRows
-        .filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
+        ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
         .map((item) => item[rowKey]),
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
@@ -187,6 +187,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
               const value = multiple ? [] : null;
               onChange(value);
               setSelectedRows(value);
+              setOptions([]);
             } else if (Array.isArray(changed)) {
               if (!changed.length) {
                 onChange([]);
@@ -219,6 +220,17 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   );
 };
 
+export const RecordPickerProvider = (props) => {
+  const { multiple, onChange, selectedRows, setSelectedRows, options, collectionField, ...other } = props;
+  return (
+    <RecordPickerContext.Provider
+      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField, ...other }}
+    >
+      {props.children}
+    </RecordPickerContext.Provider>
+  );
+};
+
 const Drawer: React.FunctionComponent<{
   multiple: any;
   onChange: any;
@@ -246,13 +258,18 @@ const Drawer: React.FunctionComponent<{
     const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
     return filter;
   };
-
+  const recordPickerProps = {
+    multiple,
+    onChange,
+    selectedRows,
+    setSelectedRows,
+    options,
+    collectionField,
+  };
   return (
-    <RecordPickerContext.Provider
-      value={{ multiple, onChange, selectedRows, setSelectedRows, options, collectionField }}
-    >
+    <RecordPickerProvider {...recordPickerProps}>
       <CollectionProvider allowNull name={collectionField?.target}>
-        <ActionContext.Provider value={{ openMode: 'drawer', visible, setVisible }}>
+        <ActionContextProvider openMode="drawer" visible={visible} setVisible={setVisible}>
           <FormProvider>
             <TableSelectorParamsProvider params={{ filter: getFilter() }}>
               <SchemaComponentOptions scope={{ useTableSelectorProps, usePickActionProps }}>
@@ -266,9 +283,9 @@ const Drawer: React.FunctionComponent<{
               </SchemaComponentOptions>
             </TableSelectorParamsProvider>
           </FormProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </CollectionProvider>
-    </RecordPickerContext.Provider>
+    </RecordPickerProvider>
   );
 };
 

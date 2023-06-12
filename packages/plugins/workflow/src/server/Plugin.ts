@@ -16,7 +16,7 @@ import JobModel from './models/Job';
 import WorkflowModel from './models/Workflow';
 import Processor from './Processor';
 import initTriggers, { Trigger } from './triggers';
-import initFunctions from './functions';
+import initFunctions, { CustomFunction } from './functions';
 import { createLogger, Logger, LoggerOptions, getLoggerLevel, getLoggerFilePath } from '@nocobase/logger';
 
 type Pending = [ExecutionModel, JobModel?];
@@ -25,7 +25,7 @@ type ID = number | string;
 export default class WorkflowPlugin extends Plugin {
   instructions: Registry<Instruction> = new Registry();
   triggers: Registry<Trigger> = new Registry();
-  functions: Registry<Function> = new Registry();
+  functions: Registry<CustomFunction> = new Registry();
   private executing: ExecutionModel | null = null;
   private pending: Pending[] = [];
   private events: [WorkflowModel, any, { context?: any }][] = [];
@@ -193,7 +193,7 @@ export default class WorkflowPlugin extends Plugin {
     }
   }
 
-  public trigger(workflow: WorkflowModel, context: Object, options: { context?: any } = {}): void {
+  public trigger(workflow: WorkflowModel, context: { [key: string]: any }, options: { context?: any } = {}): void {
     // `null` means not to trigger
     if (context == null) {
       return;
@@ -253,26 +253,14 @@ export default class WorkflowPlugin extends Plugin {
         const executed = await workflow.countExecutions({ transaction });
 
         // NOTE: not to trigger afterUpdate hook here
-        await workflow.update({ executed }, { transaction, hooks: false });
+        await workflow.increment('executed', { transaction });
 
-        const allExecuted = await (<typeof ExecutionModel>execution.constructor).count({
+        await (<typeof WorkflowModel>workflow.constructor).increment('allExecuted', {
           where: {
             key: workflow.key,
           },
           transaction,
         });
-        await (<typeof WorkflowModel>workflow.constructor).update(
-          {
-            allExecuted,
-          },
-          {
-            where: {
-              key: workflow.key,
-            },
-            individualHooks: true,
-            transaction,
-          },
-        );
 
         execution.workflow = workflow;
 

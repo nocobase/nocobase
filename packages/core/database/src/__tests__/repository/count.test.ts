@@ -117,7 +117,7 @@ describe('count', () => {
       appends: ['tags'],
     });
 
-    expect(posts[0][0]['tags']).toBeDefined();
+    expect(posts[0][0].get('tags')).toBeDefined();
   });
 
   test('without filter params', async () => {

@@ -130,6 +130,24 @@ describe('workflow > instructions > calculation', () => {
       const [job] = await execution.getJobs();
       expect(job.result).toBe(2);
     });
+
+    it('$system.now()', async () => {
+      const n1 = await workflow.createNode({
+        type: 'calculation',
+        config: {
+          engine: 'math.js',
+          expression: '{{$system.now}}',
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z/);
+    });
   });
 
   describe('formula.js', () => {

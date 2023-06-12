@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useResourceActionContext, useResourceContext } from '../ResourceActionProvider';
 import { useCancelAction } from '../action-hooks';
 import { useCollectionManager } from '../hooks';
@@ -25,7 +25,6 @@ const getSchema = (schema: IField, record: any, compile, getContainer): ISchema 
     properties['defaultValue'] = cloneDeep(schema.default.uiSchema);
     properties['defaultValue']['title'] = compile('{{ t("Default value") }}');
     properties['defaultValue']['x-decorator'] = 'FormItem';
-    properties['defaultValue']['x-disabled'] = true;
   }
   return {
     type: 'object',
@@ -149,7 +148,7 @@ export const OverridingFieldAction = (props) => {
   const disabled = getIsOverriding(currentFields, record);
   return (
     <RecordProvider record={{ ...record, collectionName: record.__parent.name }}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <a
           //@ts-ignore
           disabled={disabled}
@@ -199,7 +198,7 @@ export const OverridingFieldAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };

@@ -3,11 +3,14 @@ import { css, cx } from '@emotion/css';
 import { useForm } from '@formily/react';
 import { Input as AntInput, Cascader, DatePicker, InputNumber, Select, Tag } from 'antd';
 import moment from 'moment';
-import React from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { error } from '@nocobase/utils/client';
 import classNames from 'classnames';
+import { useMemo } from 'react';
 import { useCompile } from '../..';
+import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
@@ -36,7 +39,7 @@ const ConstantTypes = {
   string: {
     label: `{{t("String")}}`,
     value: 'string',
-    component({ onChange, value }) {
+    component: function StringComponent({ onChange, value }) {
       return <AntInput value={value} onChange={(ev) => onChange(ev.target.value)} />;
     },
     default: '',
@@ -44,7 +47,7 @@ const ConstantTypes = {
   number: {
     label: '{{t("Number")}}',
     value: 'number',
-    component({ onChange, value }) {
+    component: function NumberComponent({ onChange, value }) {
       return <InputNumber value={value} onChange={onChange} />;
     },
     default: 0,
@@ -52,7 +55,7 @@ const ConstantTypes = {
   boolean: {
     label: `{{t("Boolean")}}`,
     value: 'boolean',
-    component: function Com({ onChange, value }) {
+    component: function BooleanComponent({ onChange, value }) {
       const { t } = useTranslation();
       return (
         <Select
@@ -71,7 +74,7 @@ const ConstantTypes = {
   date: {
     label: '{{t("Date")}}',
     value: 'date',
-    component({ onChange, value }) {
+    component: function DateComponent({ onChange, value }) {
       return (
         <DatePicker
           value={moment(value)}
@@ -89,7 +92,7 @@ const ConstantTypes = {
   null: {
     label: `{{t("Null")}}`,
     value: 'null',
-    component: function Com() {
+    component: function NullComponent() {
       const { t } = useTranslation();
       return <AntInput readOnly placeholder={t('Null')} className="null-value" />;
     },
@@ -97,11 +100,14 @@ const ConstantTypes = {
   },
 };
 
-function getTypedConstantOption(type) {
+function getTypedConstantOption(type: string, types?: true | string[]) {
+  const allTypes = Object.values(ConstantTypes);
   return {
     value: '',
     label: '{{t("Constant")}}',
-    children: Object.values(ConstantTypes),
+    children: types
+      ? allTypes.filter((item) => (Array.isArray(types) && types.includes(item.value)) || types === true)
+      : allTypes,
     component: ConstantTypes[type]?.component,
   };
 }
@@ -117,49 +123,94 @@ export function Input(props) {
   const form = useForm();
 
   const { value = '', scope, onChange, children, button, useTypedConstant, style, className } = props;
-  const parsed = parseValue(value);
+  const parsed = useMemo(() => parseValue(value), [value]);
   const isConstant = typeof parsed === 'string';
   const type = isConstant ? parsed : '';
   const variable = isConstant ? null : parsed;
+
+  // 当 scope 是一个函数时，可能是一个 hook，所以不能使用 useMemo
   const variableOptions = typeof scope === 'function' ? scope() : scope ?? [];
 
-  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } = children
-    ? {
-        value: '',
-        label: '{{t("Constant")}}',
-      }
-    : useTypedConstant
-    ? getTypedConstantOption(type)
-    : {
-        value: '',
-        label: '{{t("Null")}}',
-        component: ConstantTypes.null.component,
-      };
-  const options: VariableOptions[] = compile([constantOption, ...variableOptions]);
+  const [variableText, setVariableText] = React.useState('');
 
-  function onSwitch(next) {
-    if (next[0] === '') {
-      if (next[1]) {
-        if (next[1] !== type) {
-          onChange(ConstantTypes[next[1]]?.default ?? null);
-        }
-      } else {
-        if (variable) {
-          onChange(null);
-        }
-      }
-      return;
+  const loadData = (selectedOptions: Option[]) => {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (option.loadChildren) {
+      // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
+      option.loadChildren(option);
     }
-    onChange(`{{${next.join('.')}}}`);
-  }
+  };
 
-  const variableText = variable
-    ?.reduce((opts, key, i) => {
-      const option = (i ? (opts[i - 1] as VariableOptions)?.children : options)?.find((item) => item.value === key);
-      return option ? opts.concat(option) : opts;
-    }, [] as VariableOptions[])
-    .map((item) => item.label)
-    .join(' / ');
+  const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
+    useMemo(() => {
+      return children
+        ? {
+            value: '',
+            label: '{{t("Constant")}}',
+          }
+        : useTypedConstant
+        ? getTypedConstantOption(type, useTypedConstant)
+        : {
+            value: '',
+            label: '{{t("Null")}}',
+            component: ConstantTypes.null.component,
+          };
+    }, [type, useTypedConstant]);
+
+  const options: VariableOptions[] = useMemo(
+    () => compile([constantOption, ...variableOptions]),
+    [constantOption, variableOptions],
+  );
+
+  const onSwitch = useCallback(
+    (next) => {
+      if (next[0] === '') {
+        if (next[1]) {
+          if (next[1] !== type) {
+            onChange(ConstantTypes[next[1]]?.default ?? null);
+          }
+        } else {
+          if (variable) {
+            onChange(null);
+          }
+        }
+        return;
+      }
+      onChange(`{{${next.join('.')}}}`);
+    },
+    [type, variable],
+  );
+
+  useEffect(() => {
+    const run = async () => {
+      if (!variable) {
+        return;
+      }
+      let prevOption: Option = null;
+      const labels = [];
+
+      for (let i = 0; i < variable.length; i++) {
+        const key = variable[i];
+        try {
+          if (i === 0) {
+            prevOption = options.find((item) => item.value === key);
+          } else {
+            if (prevOption.children?.length === 0 && prevOption.loadChildren) {
+              await prevOption.loadChildren(prevOption);
+            }
+            prevOption = prevOption.children.find((item) => item.value === key);
+          }
+          labels.push(prevOption.label);
+          setVariableText(labels.join(' / '));
+        } catch (err) {
+          error(err);
+        }
+      }
+    };
+
+    // 如果没有这个延迟，会导致选择父节点时不展开子节点
+    setTimeout(run);
+  }, [variable]);
 
   const disabled = props.disabled || form.disabled;
 
@@ -254,6 +305,7 @@ export function Input(props) {
           options={options}
           value={variable ?? ['', ...(children || !constantOption.children?.length ? [] : [type])]}
           onChange={onSwitch}
+          loadData={loadData as any}
           changeOnSelect
         >
           {button ?? <XButton type={variable ? 'primary' : 'default'} />}

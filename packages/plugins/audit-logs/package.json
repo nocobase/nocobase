@@ -1,15 +1,19 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "0.9.2-alpha.3",
+  "version": "0.9.4-alpha.2",
+  "displayName": "audit-logs",
+  "displayName.zh-CN": "审计日志",
+  "description": "audit logs plugin",
+  "description.zh-CN": "审计日志。",
   "main": "./lib/server/index.js",
   "types": "./lib/server/index.d.ts",
   "license": "AGPL-3.0",
   "dependencies": {
-    "@nocobase/client": "0.9.2-alpha.3",
-    "@nocobase/server": "0.9.2-alpha.3"
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/server": "0.9.4-alpha.2"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.2-alpha.3"
+    "@nocobase/test": "0.9.4-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

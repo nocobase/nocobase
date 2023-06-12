@@ -29,53 +29,56 @@ export const useSettingsFormContext = () => {
   return useContext(SettingsFormContext);
 };
 
-export const SettingsForm: any = observer((props: any) => {
-  const dn = useDesignable();
-  const field = useField<Field>();
-  const fieldSchema = useFieldSchema();
-  const [dropdownVisible, setDropdownVisible] = useState(false);
-  const settingsFormSchema = useMemo(() => new Schema(props.schema), []);
-  const form = useMemo(
-    () =>
-      createForm({
-        initialValues: fieldSchema.toJSON(),
-        effects(form) {
-          onFormValuesChange((form) => {
-            dn.patch(form.values);
-            console.log('form.values', form.values);
-          });
-        },
-      }),
-    [],
-  );
-  const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
-  return (
-    <SettingsFormContext.Provider value={{ dn, field, fieldSchema, dropdownVisible, setDropdownVisible }}>
-      <SchemaComponentOptions components={{ SettingsForm }}>
-        <FieldContext.Provider value={null}>
-          <FormContext.Provider value={form}>
-            <FieldContext.Provider value={f}>
-              <Dropdown
-                visible={dropdownVisible}
-                onVisibleChange={(visible) => setDropdownVisible(visible)}
-                overlayStyle={{ width: 200 }}
-                overlay={
-                  <Menu>
-                    {settingsFormSchema.mapProperties((s, key) => {
-                      return <RecursionField name={key} schema={s} />;
-                    })}
-                  </Menu>
-                }
-              >
-                <a>配置</a>
-              </Dropdown>
-            </FieldContext.Provider>
-          </FormContext.Provider>
-        </FieldContext.Provider>
-      </SchemaComponentOptions>
-    </SettingsFormContext.Provider>
-  );
-});
+export const SettingsForm: any = observer(
+  (props: any) => {
+    const dn = useDesignable();
+    const field = useField<Field>();
+    const fieldSchema = useFieldSchema();
+    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const settingsFormSchema = useMemo(() => new Schema(props.schema), []);
+    const form = useMemo(
+      () =>
+        createForm({
+          initialValues: fieldSchema.toJSON(),
+          effects(form) {
+            onFormValuesChange((form) => {
+              dn.patch(form.values);
+              console.log('form.values', form.values);
+            });
+          },
+        }),
+      [],
+    );
+    const f = useAttach(form.createVoidField({ ...field.props, basePath: '' }));
+    return (
+      <SettingsFormContext.Provider value={{ dn, field, fieldSchema, dropdownVisible, setDropdownVisible }}>
+        <SchemaComponentOptions components={{ SettingsForm }}>
+          <FieldContext.Provider value={null}>
+            <FormContext.Provider value={form}>
+              <FieldContext.Provider value={f}>
+                <Dropdown
+                  open={dropdownVisible}
+                  onOpenChange={(visible) => setDropdownVisible(visible)}
+                  overlayStyle={{ width: 200 }}
+                  overlay={
+                    <Menu>
+                      {settingsFormSchema.mapProperties((s, key) => {
+                        return <RecursionField name={key} schema={s} />;
+                      })}
+                    </Menu>
+                  }
+                >
+                  <a>配置</a>
+                </Dropdown>
+              </FieldContext.Provider>
+            </FormContext.Provider>
+          </FieldContext.Provider>
+        </SchemaComponentOptions>
+      </SettingsFormContext.Provider>
+    );
+  },
+  { displayName: 'SettingsForm' },
+);
 
 SettingsForm.Divider = () => {
   return <Menu.Divider />;
@@ -110,47 +113,53 @@ SettingsForm.Remove = (props) => {
   );
 };
 
-SettingsForm.Switch = observer(() => {
-  const field = useField<Field>();
-  return (
-    <Menu.Item
-      onClick={() => {
-        field.value = !field.value;
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        {field.title} <Switch checked={!!field.value} />
-      </div>
-    </Menu.Item>
-  );
-});
+SettingsForm.Switch = observer(
+  () => {
+    const field = useField<Field>();
+    return (
+      <Menu.Item
+        onClick={() => {
+          field.value = !field.value;
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {field.title} <Switch checked={!!field.value} />
+        </div>
+      </Menu.Item>
+    );
+  },
+  { displayName: 'SettingsForm' },
+);
 
-SettingsForm.Select = observer((props) => {
-  const field = useField<Field>();
-  const [open, setOpen] = useState(false);
-  return (
-    <Menu.Item onClick={() => !open && setOpen(true)}>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        {field.title}
-        <Select
-          open={open}
-          onDropdownVisibleChange={(open) => setOpen(open)}
-          onSelect={() => {
-            setOpen(false);
-          }}
-          onChange={(value) => {
-            field.value = value;
-          }}
-          value={field.value}
-          options={field.dataSource}
-          style={{ width: '60%' }}
-          size={'small'}
-          bordered={false}
-        />
-      </div>
-    </Menu.Item>
-  );
-});
+SettingsForm.Select = observer(
+  (props) => {
+    const field = useField<Field>();
+    const [open, setOpen] = useState(false);
+    return (
+      <Menu.Item onClick={() => !open && setOpen(true)}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          {field.title}
+          <Select
+            open={open}
+            onDropdownVisibleChange={(open) => setOpen(open)}
+            onSelect={() => {
+              setOpen(false);
+            }}
+            onChange={(value) => {
+              field.value = value;
+            }}
+            value={field.value}
+            options={field.dataSource}
+            style={{ width: '60%' }}
+            size={'small'}
+            bordered={false}
+          />
+        </div>
+      </Menu.Item>
+    );
+  },
+  { displayName: 'SettingsForm' },
+);
 
 SettingsForm.Modal = () => {
   const form = useForm();

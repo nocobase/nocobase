@@ -1,6 +1,7 @@
 import { useField, useFieldSchema } from '@formily/react';
+import { uniqBy } from 'lodash';
 import React, { createContext, useEffect, useRef } from 'react';
-import { useBlockRequestContext } from '../block-provider';
+import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { SharedFilter, mergeFilter } from '../block-provider/SharedFilterProvider';
 import { CollectionFieldOptions, useCollection } from '../collection-manager';
 import { removeNullCondition } from '../schema-component';
@@ -133,8 +134,8 @@ export const useFilterBlock = () => {
       existingBlock.defaultFilter = block.defaultFilter;
       return;
     }
-
-    setDataBlocks((prev) => [...prev, block]);
+    // 由于 setDataBlocks 是异步操作，所以上面的 existingBlock 在判断时有可能用的是旧的 dataBlocks,所以下面还需要根据 uid 进行去重操作
+    setDataBlocks((prev) => uniqBy([...prev, block], 'uid'));
   };
   const getDataBlocks = () => dataBlocks;
   const removeDataBlock = (uid: string) => {

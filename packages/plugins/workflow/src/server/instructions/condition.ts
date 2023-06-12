@@ -1,10 +1,9 @@
+import { evaluators } from '@nocobase/evaluators';
 import { Registry } from '@nocobase/utils';
-import evaluators from '@nocobase/evaluators';
-
+import { Instruction } from '.';
 import { Processor } from '..';
 import { JOB_STATUS } from '../constants';
 import FlowNodeModel from '../models/FlowNode';
-import { Instruction } from '.';
 
 export const calculators = new Registry<Function>();
 
@@ -123,7 +122,7 @@ export default {
     try {
       result = evaluator
         ? evaluator(expression, processor.getScope())
-        : logicCalculate(processor.getParsedValue(calculation));
+        : logicCalculate(processor.getParsedValue(calculation, node));
     } catch (e) {
       return {
         result: e.toString(),

@@ -6,7 +6,7 @@ import { ExcelFormula } from './ExcelFormula';
 
 registerField(excelFormula.group, 'excelFormula', excelFormula);
 
-export default React.memo((props) => {
+const excelFormulaField = React.memo((props) => {
   const ctx = useContext(CollectionManagerContext);
   const { t } = useTranslation();
 
@@ -32,3 +32,7 @@ export default React.memo((props) => {
     </SchemaComponentOptions>
   );
 });
+
+excelFormulaField.displayName = 'excelFormulaField';
+
+export default excelFormulaField;

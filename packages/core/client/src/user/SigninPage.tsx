@@ -53,7 +53,7 @@ export function useRedirect(next = '/admin') {
   const history = useHistory();
   const redirect = location?.['query']?.redirect;
   return useCallback(() => {
-    history.push(redirect || '/admin');
+    history.replace(redirect || '/admin');
   }, [redirect]);
 }
 

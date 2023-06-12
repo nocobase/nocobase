@@ -1,313 +1,105 @@
-import { css } from '@emotion/css';
-import {
-  Layout,
-  Menu,
-  message,
-  Modal,
-  PageHeader,
-  Popconfirm,
-  Result,
-  Space,
-  Spin,
-  Table,
-  TableProps,
-  Tabs,
-  TabsProps,
-  Tag,
-  Typography,
-} from 'antd';
+import { css, cx } from '@emotion/css';
+import { Layout, Menu, PageHeader, Result, Spin, Tabs } from 'antd';
 import { sortBy } from 'lodash';
-import React, { createContext, useContext, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Redirect, useHistory, useRouteMatch } from 'react-router-dom';
 import { ACLPane } from '../acl';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { useAPIClient, useRequest } from '../api-client';
+import { useRequest } from '../api-client';
 import { CollectionManagerPane } from '../collection-manager';
 import { useDocumentTitle } from '../document-title';
 import { Icon } from '../icon';
 import { RouteSwitchContext } from '../route-switch';
-import { useCompile, useTableSize } from '../schema-component';
-import { useParseMarkdown } from '../schema-component/antd/markdown/util';
+import { useCompile } from '../schema-component';
 import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
-const { Link } = Typography;
+import { BuiltInPluginCard, PluginCard } from './Card';
+
+export interface TData {
+  data: IPluginData[];
+  meta: IMetaData;
+}
+
+export interface IPluginData {
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  name: string;
+  displayName: string;
+  version: string;
+  enabled: boolean;
+  installed: boolean;
+  builtIn: boolean;
+  options: Record<string, unknown>;
+  description?: string;
+}
+
+export interface IMetaData {
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPage: number;
+  allowedActions: AllowedActions;
+}
+
+export interface AllowedActions {
+  view: number[];
+  update: number[];
+  destroy: number[];
+}
+
+// TODO: refactor card/built-int card
+
 export const SettingsCenterContext = createContext<any>({});
 
-interface PluginTableProps {
-  filter: any;
-  builtIn?: boolean;
-}
-
-interface PluginDocumentProps {
-  path: string;
-  name: string;
-}
-const PluginDocument: React.FC<PluginDocumentProps> = (props) => {
-  const { data, loading, error } = useRequest(
-    {
-      url: '/plugins:getTabInfo',
-      params: {
-        filterByTk: props.name,
-        path: props.path,
-      },
-    },
-    {
-      refreshDeps: [props.name, props.path],
-    },
-  );
-  const { html, loading: parseLoading } = useParseMarkdown(data?.data?.content);
-
-  return (
-    <div
-      className={css`
-        background: #ffffff;
-        padding: var(--nb-spacing);
-        height: 60vh;
-        overflow-y: auto;
-      `}
-    >
-      {loading || parseLoading ? (
-        <Spin />
-      ) : (
-        <div className="nb-markdown" dangerouslySetInnerHTML={{ __html: error ? '' : html }}></div>
-      )}
-    </div>
-  );
-};
-
-const PluginTable: React.FC<PluginTableProps> = (props) => {
-  const { builtIn } = props;
-  const history = useHistory<any>();
-  const api = useAPIClient();
-  const [plugin, setPlugin] = useState<any>(null);
-  const { t, i18n } = useTranslation();
-  const settingItems = useContext(SettingsCenterContext);
-  const { data, loading } = useRequest({
+const LocalPlugins = () => {
+  // TODO: useRequest types for data ts type
+  const { data, loading }: { data: TData; loading: boolean } = useRequest<TData>({
     url: 'applicationPlugins:list',
     params: {
-      filter: props.filter,
+      filter: {
+        'builtIn.$isFalsy': true,
+      },
       sort: 'name',
       paginate: false,
     },
   });
-
-  const { data: tabsData, run } = useRequest(
-    {
-      url: '/plugins:getTabs',
-    },
-    {
-      manual: true,
-    },
-  );
-
-  const columns = useMemo<TableProps<any>['columns']>(() => {
-    return [
-      {
-        title: t('Plugin name'),
-        dataIndex: 'displayName',
-        width: 300,
-        render: (displayName, record) => displayName || record.name,
-      },
-      {
-        title: t('Description'),
-        dataIndex: 'description',
-        ellipsis: true,
-      },
-      {
-        title: t('Version'),
-        dataIndex: 'version',
-        width: 300,
-      },
-      // {
-      //   title: t('Author'),
-      //   dataIndex: 'author',
-      //   width: 200,
-      // },
-      {
-        title: t('Actions'),
-        width: 300,
-        render(data) {
-          return (
-            <Space>
-              <Link
-                onClick={() => {
-                  setPlugin(data);
-                  run({
-                    params: {
-                      filterByTk: data.name,
-                    },
-                  });
-                }}
-              >
-                {t('View')}
-              </Link>
-              {data.enabled && settingItems[data.name] ? (
-                <Link
-                  onClick={() => {
-                    history.push(`/admin/settings/${data.name}`);
-                  }}
-                >
-                  {t('Setting')}
-                </Link>
-              ) : null}
-              {!builtIn ? (
-                <>
-                  <Link
-                    onClick={async () => {
-                      const checked = !data.enabled;
-                      Modal.warn({
-                        title: checked ? t('Plugin starting') : t('Plugin stopping'),
-                        content: t('The application is reloading, please do not close the page.'),
-                        okButtonProps: {
-                          style: {
-                            display: 'none',
-                          },
-                        },
-                      });
-                      await api.request({
-                        url: `pm:${checked ? 'enable' : 'disable'}/${data.name}`,
-                      });
-                      window.location.reload();
-                      // message.success(checked ? t('插件激活成功') : t('插件禁用成功'));
-                    }}
-                  >
-                    {t(data.enabled ? 'Disable' : 'Enable')}
-                  </Link>
-                  <Popconfirm
-                    title={t('Are you sure to delete this plugin?')}
-                    onConfirm={async () => {
-                      await api.request({
-                        url: `pm:remove/${data.name}`,
-                      });
-                      message.success(t('插件删除成功'));
-                      window.location.reload();
-                    }}
-                    onCancel={() => {}}
-                    okText={t('Yes')}
-                    cancelText={t('No')}
-                  >
-                    <Link>{t('Delete')}</Link>
-                  </Popconfirm>
-                </>
-              ) : null}
-            </Space>
-          );
-        },
-      },
-    ];
-  }, [t, builtIn]);
-
-  const items = useMemo<TabsProps['items']>(() => {
-    return tabsData?.data?.tabs.map((item) => {
-      return {
-        label: item.title,
-        key: item.path,
-        children: React.createElement(PluginDocument, {
-          name: tabsData?.data.filterByTk,
-          path: item.path,
-        }),
-      };
-    });
-  }, [tabsData?.data]);
-
-  const { height, tableSizeRefCallback } = useTableSize();
+  if (loading) {
+    return <Spin />;
+  }
 
   return (
-    <div
-      className={css`
-        width: 100%;
-        height: 100%;
-        background: #fff;
-        padding: var(--nb-spacing);
-      `}
-    >
-      <Modal
-        footer={false}
-        className={css`
-          .ant-modal-header {
-            background: #f0f2f5;
-            padding-bottom: 8px;
-          }
-
-          .ant-modal-body {
-            padding-top: 0;
-          }
-
-          .ant-modal-body {
-            background: #f0f2f5;
-            .plugin-desc {
-              padding-bottom: 8px;
-            }
-          }
-        `}
-        width="70%"
-        title={
-          <Typography.Title level={2} style={{ margin: 0 }}>
-            {plugin?.displayName || plugin?.name}
-            <Tag
-              className={css`
-                vertical-align: middle;
-                margin-top: -3px;
-                margin-left: 8px;
-              `}
-            >
-              v{plugin?.version}
-            </Tag>
-          </Typography.Title>
-        }
-        open={!!plugin}
-        onCancel={() => setPlugin(null)}
-      >
-        {plugin?.description && <div className={'plugin-desc'}>{plugin?.description}</div>}
-        <Tabs items={items}></Tabs>
-      </Modal>
-      <Table
-        ref={tableSizeRefCallback}
-        pagination={false}
-        className={css`
-          .ant-spin-nested-loading {
-            height: 100%;
-            .ant-spin-container {
-              height: 100%;
-              display: flex;
-              flex-direction: column;
-              .ant-table {
-                flex: 1;
-              }
-            }
-          }
-          height: 100%;
-        `}
-        scroll={{
-          y: height,
-        }}
-        dataSource={data?.data || []}
-        loading={loading}
-        columns={columns}
-      />
-    </div>
-  );
-};
-
-const LocalPlugins = () => {
-  return (
-    <PluginTable
-      filter={{
-        'builtIn.$isFalsy': true,
-      }}
-    ></PluginTable>
+    <>
+      {data?.data?.map((item) => {
+        const { id } = item;
+        return <PluginCard data={item} key={id} />;
+      })}
+    </>
   );
 };
 
 const BuiltinPlugins = () => {
-  return (
-    <PluginTable
-      builtIn
-      filter={{
+  const { data, loading } = useRequest({
+    url: 'applicationPlugins:list',
+    params: {
+      filter: {
         'builtIn.$isTruly': true,
-      }}
-    ></PluginTable>
+      },
+      sort: 'name',
+      paginate: false,
+    },
+  });
+  if (loading) {
+    return <Spin />;
+  }
+  return (
+    <>
+      {data?.data?.map((item) => {
+        const { id } = item;
+        return <BuiltInPluginCard data={item} key={id} />;
+      })}
+    </>
   );
 };
 
@@ -324,15 +116,15 @@ const PluginList = (props) => {
   const { t } = useTranslation();
   const { snippets = [] } = useACLRoleContext();
 
+  useEffect(() => {
+    const { tabName } = match.params;
+    if (!tabName) {
+      history.replace(`/admin/pm/list/local/`);
+    }
+  }, []);
+
   return snippets.includes('pm') ? (
-    <div
-      className={css`
-        flex: 1;
-        flex-direction: column;
-        overflow: hidden;
-        display: flex;
-      `}
-    >
+    <div>
       <PageHeader
         ghost={false}
         title={t('Plugin manager')}
@@ -340,7 +132,7 @@ const PluginList = (props) => {
           <Tabs
             activeKey={tabName}
             onChange={(activeKey) => {
-              history.push(`/admin/pm/list/${activeKey}`);
+              history.push(`/admin/pm/list/${activeKey}/`);
             }}
           >
             <Tabs.TabPane tab={t('Local')} key={'local'} />
@@ -349,7 +141,7 @@ const PluginList = (props) => {
           </Tabs>
         }
       />
-      <div style={{ margin: 'var(--nb-spacing)', flex: 1, display: 'flex', flexFlow: 'row wrap' }}>
+      <div className={'m24'} style={{ margin: 24, display: 'flex', flexFlow: 'row wrap' }}>
         {React.createElement(
           {
             local: LocalPlugins,
@@ -372,7 +164,7 @@ const settings = {
       roles: {
         isBookmark: true,
         title: '{{t("Roles & Permissions")}}',
-        component: ACLPane,
+        component: () => <ACLPane />,
       },
     },
   },
@@ -470,8 +262,21 @@ const SettingsCenter = (props) => {
       };
     });
   return (
-    <div>
-      <Layout>
+    <div
+      className={cx(
+        'nb-setting-center',
+        css`
+          &.nb-setting-center {
+            flex: 1;
+          }
+        `,
+      )}
+    >
+      <Layout
+        className={css`
+          height: 100%;
+        `}
+      >
         <div
           style={
             {
@@ -510,7 +315,12 @@ const SettingsCenter = (props) => {
             items={menuItems as any}
           />
         </Layout.Sider>
-        <Layout.Content>
+        <Layout.Content
+          className={css`
+            display: flex;
+            flex-direction: column;
+          `}
+        >
           {aclPluginTabCheck && (
             <PageHeader
               ghost={false}
@@ -529,7 +339,7 @@ const SettingsCenter = (props) => {
               }
             />
           )}
-          <div style={{ margin: 'var(--nb-spacing)' }}>
+          <div className={'m24'} style={{ margin: 24, flex: 1 }}>
             {aclPluginTabCheck ? (
               component && React.createElement(component)
             ) : (
@@ -555,7 +365,7 @@ export const PMProvider = (props) => {
   routes[1].routes.unshift(
     {
       type: 'route',
-      path: '/admin/pm/list/:tabName?',
+      path: '/admin/pm/list/:tabName?/:mdfile?',
       component: PluginList,
     },
     {

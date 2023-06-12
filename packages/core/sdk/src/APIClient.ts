@@ -25,22 +25,23 @@ export interface IResource {
 export class Auth {
   protected api: APIClient;
 
-  protected NOCOBASE_LOCALE_KEY = 'NOCOBASE_LOCALE';
-
-  protected NOCOBASE_ROLE_KEY = 'NOCOBASE_ROLE';
+  protected KEYS = {
+    locale: 'NOCOBASE_LOCALE',
+    role: 'NOCOBASE_ROLE',
+    token: 'NOCOBASE_TOKEN',
+    authenticator: 'NOCOBASE_AUTH',
+  };
 
   protected options = {
-    token: null,
     locale: null,
     role: null,
+    authenticator: null,
+    token: null,
   };
 
   constructor(api: APIClient) {
     this.api = api;
     this.initKeys();
-    this.locale = this.getLocale();
-    this.role = this.getRole();
-    this.token = this.getToken();
     this.api.axios.interceptors.request.use(this.middleware.bind(this));
   }
 
@@ -53,32 +54,87 @@ export class Auth {
       return;
     }
     const appName = match[1];
-    this.NOCOBASE_LOCALE_KEY = `${appName.toUpperCase()}_NOCOBASE_LOCALE`;
-    this.NOCOBASE_ROLE_KEY = `${appName.toUpperCase()}_NOCOBASE_ROLE`;
+    this.KEYS['role'] = `${appName.toUpperCase()}_` + this.KEYS['role'];
+    this.KEYS['locale'] = `${appName.toUpperCase()}_` + this.KEYS['locale'];
   }
 
   get locale() {
     return this.getLocale();
   }
 
+  set locale(value: string) {
+    this.setLocale(value);
+  }
+
   get role() {
     return this.getRole();
+  }
+
+  set role(value: string) {
+    this.setRole(value);
   }
 
   get token() {
     return this.getToken();
   }
 
-  set locale(value) {
-    this.setLocale(value);
-  }
-
-  set role(value) {
-    this.setRole(value);
-  }
-
-  set token(value) {
+  set token(value: string) {
     this.setToken(value);
+  }
+
+  get authenticator() {
+    return this.getAuthenticator();
+  }
+
+  set authenticator(value: string) {
+    this.setAuthenticator(value);
+  }
+
+  getOption(key: string) {
+    if (!this.KEYS[key]) {
+      return;
+    }
+    return this.api.storage.getItem(this.KEYS[key]);
+  }
+
+  setOption(key: string, value?: string) {
+    if (!this.KEYS[key]) {
+      return;
+    }
+    this.options[key] = value;
+    return this.api.storage.setItem(this.KEYS[key], value || '');
+  }
+
+  getLocale() {
+    return this.getOption('locale');
+  }
+
+  setLocale(locale: string) {
+    this.setOption('locale', locale);
+  }
+
+  getRole() {
+    return this.getOption('role');
+  }
+
+  setRole(role: string) {
+    this.setOption('role', role);
+  }
+
+  getToken() {
+    return this.getOption('token');
+  }
+
+  setToken(token: string) {
+    this.setOption('token', token);
+  }
+
+  getAuthenticator() {
+    return this.getOption('authenticator');
+  }
+
+  setAuthenticator(authenticator: string) {
+    this.setOption('authenticator', authenticator);
   }
 
   middleware(config: AxiosRequestConfig) {
@@ -88,63 +144,50 @@ export class Auth {
     if (this.role) {
       config.headers['X-Role'] = this.role;
     }
+    if (this.authenticator && !config.headers['X-Authenticator']) {
+      config.headers['X-Authenticator'] = this.authenticator;
+    }
     if (this.token) {
       config.headers['Authorization'] = `Bearer ${this.token}`;
     }
     return config;
   }
 
-  getLocale() {
-    return this.api.storage.getItem(this.NOCOBASE_LOCALE_KEY);
-  }
-
-  setLocale(locale: string) {
-    this.options.locale = locale;
-    this.api.storage.setItem(this.NOCOBASE_LOCALE_KEY, locale || '');
-  }
-
-  getToken() {
-    return this.api.storage.getItem('NOCOBASE_TOKEN');
-  }
-
-  setToken(token: string) {
-    this.options.token = token;
-    this.api.storage.setItem('NOCOBASE_TOKEN', token || '');
-    if (!token) {
-      this.setRole(null);
-      // this.setLocale(null);
-    }
-  }
-
-  getRole() {
-    return this.api.storage.getItem(this.NOCOBASE_ROLE_KEY);
-  }
-
-  setRole(role: string) {
-    this.options.role = role;
-    this.api.storage.setItem(this.NOCOBASE_ROLE_KEY, role || '');
-  }
-
-  async signIn(values, authenticator = 'password'): Promise<AxiosResponse<any>> {
+  async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
     const response = await this.api.request({
       method: 'post',
-      url: 'users:signin',
+      url: 'auth:signIn',
       data: values,
-      params: {
-        authenticator,
+      headers: {
+        'X-Authenticator': authenticator,
       },
     });
     const data = response?.data?.data;
     this.setToken(data?.token);
+    this.setAuthenticator(authenticator);
     return response;
   }
 
-  async signOut() {
-    await this.api.request({
+  async signUp(values: any, authenticator?: string): Promise<AxiosResponse<any>> {
+    return await this.api.request({
       method: 'post',
-      url: 'users:signout',
+      url: 'auth:signUp',
+      data: values,
+      headers: {
+        'X-Authenticator': authenticator,
+      },
+    });
+  }
+
+  async signOut() {
+    const response = await this.api.request({
+      method: 'post',
+      url: 'auth:signOut',
     });
     this.setToken(null);
+    this.setRole(null);
+    this.setAuthenticator(null);
+    return response;
   }
 }
 

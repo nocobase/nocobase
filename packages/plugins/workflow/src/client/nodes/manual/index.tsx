@@ -1,13 +1,12 @@
-import { BlockInitializers, SchemaInitializerItemOptions } from '@nocobase/client';
+import { BlockInitializers, SchemaInitializerItemOptions, useCollectionManager } from '@nocobase/client';
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { CollectionFieldInitializers } from '../../components/CollectionFieldInitializers';
-import { filterTypedFields } from '../../variable';
+import { filterTypedFields, useCollectionFieldOptions } from '../../variable';
 import { NAMESPACE } from '../../locale';
 import { SchemaConfig, SchemaConfigButton } from './SchemaConfig';
 import { ModeConfig } from './ModeConfig';
 import { AssigneesSelect } from './AssigneesSelect';
-import { JOB_STATUS } from '../../constants';
 
 const MULTIPLE_ASSIGNED_MODE = {
   SINGLE: Symbol('single'),
@@ -33,6 +32,7 @@ export default {
   title: `{{t("Manual", { ns: "${NAMESPACE}" })}}`,
   type: 'manual',
   group: 'manual',
+  description: `{{t("Could be used for manually submitting data, and determine whether to continue or exit. Workflow will generate a todo item for assigned user when it reaches a manual node, and continue processing after user submits the form.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     assignees: {
       type: 'array',
@@ -86,7 +86,7 @@ export default {
     ModeConfig,
     AssigneesSelect,
   },
-  getOptions(config, types) {
+  useVariables({ config }, { types }) {
     const formKeys = Object.keys(config.forms ?? {});
     if (!formKeys.length) {
       return null;
@@ -96,20 +96,19 @@ export default {
       .map((formKey) => {
         const form = config.forms[formKey];
 
-        const fields = (form.collection?.fields ?? []).map((field) => ({
-          key: field.name,
-          value: field.name,
-          label: field.uiSchema.title,
-          title: field.uiSchema.title,
-        }));
-        const filteredFields = filterTypedFields(fields, types);
-        return filteredFields.length
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const options = useCollectionFieldOptions({
+          fields: form.collection?.fields,
+          collection: form.collection,
+          types,
+        });
+        return options.length
           ? {
               key: formKey,
               value: formKey,
               label: form.title || formKey,
               title: form.title || formKey,
-              children: filteredFields,
+              children: options,
             }
           : null;
       })
@@ -118,6 +117,7 @@ export default {
     return options.length ? options : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
+    const { getCollection } = useCollectionManager();
     const formKeys = Object.keys(node.config.forms ?? {});
     if (!formKeys.length || node.config.mode) {
       return null;
@@ -126,8 +126,9 @@ export default {
     const forms = formKeys
       .map((formKey) => {
         const form = node.config.forms[formKey];
+        const { fields = [] } = getCollection(form.collection);
 
-        return form.collection?.fields?.length
+        return fields.length
           ? ({
               type: 'item',
               title: form.title ?? formKey,

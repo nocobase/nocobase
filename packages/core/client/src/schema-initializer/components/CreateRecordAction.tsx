@@ -3,12 +3,11 @@ import { css } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, Menu } from 'antd';
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../../';
 import { useACLRolesCheck, useRecordPkValue } from '../../acl/ACLProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../collection-manager';
 import { useRecord } from '../../record-provider';
-import { ActionContext, useActionContext, useCompile } from '../../schema-component';
+import { ActionContextProvider, useActionContext, useCompile } from '../../schema-component';
 import { linkageAction } from '../../schema-component/antd/action/utils';
 
 export const actionDesignerCss = css`
@@ -81,70 +80,107 @@ const actionAclCheck = (actionPath) => {
   return true;
 };
 
-export const CreateRecordAction = observer((props) => {
-  const [visible, setVisible] = useState(false);
-  const collection = useCollection();
-  const fieldSchema = useFieldSchema();
-  const enableChildren = fieldSchema['x-enable-children'] || [];
-  const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
-  const field: any = useField();
-  const { t } = useTranslation();
-  const componentType = field.componentProps.type || 'primary';
-  const { getChildrenCollections } = useCollectionManager();
-  const totalChildCollections = getChildrenCollections(collection.name);
-  const inheritsCollections = enableChildren
-    .map((k) => {
-      if (!k) {
-        return;
-      }
-      const childCollection = totalChildCollections.find((j) => j.name === k.collection);
-      if (!childCollection) {
-        return;
-      }
-      return {
-        ...childCollection,
-        title: k.title || childCollection.title,
-      };
-    })
-    .filter((v) => {
-      return v && actionAclCheck(`${v.name}:create`);
-    });
-  const [currentCollection, setCurrentCollection] = useState(collection.name);
-  const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
-  const values = useRecord();
-  const ctx = useActionContext();
-  const compile = useCompile();
-  const { designable } = useDesignable();
-  const menu = (
-    <Menu>
-      {inheritsCollections.map((option) => {
-        return (
-          <Menu.Item
-            key={option.name}
-            onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(option.name);
-            }}
-          >
-            {compile(option.title)}
-          </Menu.Item>
-        );
-      })}
-    </Menu>
-  );
-  useEffect(() => {
-    field.linkageProperty = {};
-    linkageRules
-      .filter((k) => !k.disabled)
-      .map((v) => {
-        return v.actions?.map((h) => {
-          linkageAction(h.operator, field, v.condition, values);
+export const CreateRecordAction = observer(
+  (props: any) => {
+    const [visible, setVisible] = useState(false);
+    const collection = useCollection();
+    const fieldSchema = useFieldSchema();
+    const field: any = useField();
+    const [currentCollection, setCurrentCollection] = useState(collection.name);
+    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const values = useRecord();
+    const ctx = useActionContext();
+    useEffect(() => {
+      field.linkageProperty = {};
+      linkageRules
+        .filter((k) => !k.disabled)
+        .map((v) => {
+          return v.actions?.map((h) => {
+            linkageAction(h.operator, field, v.condition, values);
+          });
         });
+    }, [linkageRules, values]);
+    return (
+      <div className={actionDesignerCss}>
+        <ActionContextProvider value={{ ...ctx, visible, setVisible }}>
+          <CreateAction
+            {...props}
+            onClick={(name) => {
+              setVisible(true);
+              setCurrentCollection(name);
+            }}
+          />
+          <CollectionProvider name={currentCollection}>
+            <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
+          </CollectionProvider>
+        </ActionContextProvider>
+      </div>
+    );
+  },
+  { displayName: 'CreateRecordAction' },
+);
+
+export const CreateAction = observer(
+  (props: any) => {
+    const { onClick } = props;
+    const collection = useCollection();
+    const fieldSchema = useFieldSchema();
+    const enableChildren = fieldSchema['x-enable-children'] || [];
+    const allowAddToCurrent = fieldSchema?.['x-allow-add-to-current'];
+    const field: any = useField();
+    const componentType = field.componentProps.type || 'primary';
+    const { getChildrenCollections } = useCollectionManager();
+    const totalChildCollections = getChildrenCollections(collection.name);
+    const inheritsCollections = enableChildren
+      .map((k) => {
+        if (!k) {
+          return;
+        }
+        const childCollection = totalChildCollections.find((j) => j.name === k.collection);
+        if (!childCollection) {
+          return;
+        }
+        return {
+          ...childCollection,
+          title: k.title || childCollection.title,
+        };
+      })
+      .filter((v) => {
+        return v && actionAclCheck(`${v.name}:create`);
       });
-  }, [linkageRules, values]);
-  return (
-    <div className={actionDesignerCss}>
-      <ActionContext.Provider value={{ ...ctx, visible, setVisible }}>
+    const linkageRules = fieldSchema?.['x-linkage-rules'] || [];
+    const values = useRecord();
+    const compile = useCompile();
+    const { designable } = useDesignable();
+    const icon = props.icon || <PlusOutlined />;
+    const menu = (
+      <Menu>
+        {inheritsCollections.map((option) => {
+          return (
+            <Menu.Item
+              key={option.name}
+              onClick={(info) => {
+                onClick?.(option.name);
+              }}
+            >
+              {compile(option.title)}
+            </Menu.Item>
+          );
+        })}
+      </Menu>
+    );
+    useEffect(() => {
+      field.linkageProperty = {};
+      linkageRules
+        .filter((k) => !k.disabled)
+        .map((v) => {
+          return v.actions?.map((h) => {
+            linkageAction(h.operator, field, v.condition, values);
+          });
+        });
+    }, [linkageRules, values]);
+    return (
+      <div className={actionDesignerCss}>
         {inheritsCollections?.length > 0 ? (
           allowAddToCurrent === undefined || allowAddToCurrent ? (
             <Dropdown.Button
@@ -156,17 +192,16 @@ export const CreateRecordAction = observer((props) => {
               ]}
               overlay={menu}
               onClick={(info) => {
-                setVisible(true);
-                setCurrentCollection(collection.name);
+                onClick?.(collection.name);
               }}
             >
-              <PlusOutlined />
+              {icon}
               {props.children}
             </Dropdown.Button>
           ) : (
             <Dropdown overlay={menu}>
               {
-                <Button icon={<PlusOutlined />} type={'primary'}>
+                <Button icon={icon} type={componentType}>
                   {props.children} <DownOutlined />
                 </Button>
               }
@@ -177,10 +212,9 @@ export const CreateRecordAction = observer((props) => {
             type={componentType}
             disabled={field.disabled}
             danger={componentType === 'danger'}
-            icon={<PlusOutlined />}
+            icon={icon}
             onClick={(info) => {
-              setVisible(true);
-              setCurrentCollection(collection.name);
+              onClick?.(collection.name);
             }}
             style={{
               display: !designable && field?.data?.hidden && 'none',
@@ -190,10 +224,8 @@ export const CreateRecordAction = observer((props) => {
             {props.children}
           </Button>
         )}
-        <CollectionProvider name={currentCollection}>
-          <RecursionField schema={fieldSchema} basePath={field.address} onlyRenderProperties />
-        </CollectionProvider>
-      </ActionContext.Provider>
-    </div>
-  );
-});
+      </div>
+    );
+  },
+  { displayName: 'CreateAction' },
+);

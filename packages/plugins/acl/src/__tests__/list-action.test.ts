@@ -1,6 +1,6 @@
 import { Database } from '@nocobase/database';
-import { prepareApp } from './prepare';
 import { MockServer } from '@nocobase/test';
+import { prepareApp } from './prepare';
 
 describe('list action with acl', () => {
   let app: MockServer;
@@ -302,15 +302,7 @@ describe('list association action with acl', () => {
     });
 
     const userPlugin = app.getPlugin('users');
-    const userAgent = app
-      .agent()
-      .set('X-With-ACL-Meta', true)
-      .auth(
-        userPlugin.jwtService.sign({
-          userId: user.get('id'),
-        }),
-        { type: 'bearer' },
-      );
+    const userAgent = app.agent().login(user).set('X-With-ACL-Meta', true);
 
     await userAgent.resource('posts').create({
       values: {
@@ -349,16 +341,7 @@ describe('list association action with acl', () => {
     });
 
     const userPlugin = app.getPlugin('users');
-    const agent = app
-      .agent()
-      .set('X-With-ACL-Meta', true)
-      .auth(
-        userPlugin.jwtService.sign({
-          userId: user.get('id'),
-        }),
-        { type: 'bearer' },
-      );
-
+    const agent = app.agent().login(user).set('X-With-ACL-Meta', true);
     app.acl.allow('table_a', ['*']);
     app.acl.allow('collections', ['*']);
 
@@ -372,7 +355,7 @@ describe('list association action with acl', () => {
         sortable: false,
         name: 'table_a',
         template: 'tree',
-        tree: 'adjacencyList',
+        tree: 'adjacency-list',
         fields: [
           {
             interface: 'integer',
@@ -391,10 +374,11 @@ describe('list association action with acl', () => {
             interface: 'm2o',
             type: 'belongsTo',
             name: 'parent',
+            treeParent: true,
             foreignKey: 'parentId',
             uiSchema: {
               title: '{{t("Parent")}}',
-              'x-component': 'RecordPicker',
+              'x-component': 'AssociationField',
               'x-component-props': { multiple: false, fieldNames: { label: 'id', value: 'id' } },
             },
             target: 'table_a',
@@ -409,6 +393,7 @@ describe('list association action with acl', () => {
               'x-component': 'RecordPicker',
               'x-component-props': { multiple: true, fieldNames: { label: 'id', value: 'id' } },
             },
+            treeChildren: true,
             target: 'table_a',
           },
           {

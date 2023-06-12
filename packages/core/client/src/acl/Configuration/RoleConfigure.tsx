@@ -17,18 +17,17 @@ const SnippetCheckboxGroup = connect((props) => {
       }}
       value={props.value}
       onChange={(values) => {
+        const snippets = ['ui.*', 'pm', 'pm.*', 'app'];
+        const disallowSnippets = snippets.map((key) => `!${key}`);
         const value = uniq([...(props.value || []), ...values])
-          .filter((key) => key && !['!ui.*', '!pm', '!pm.*'].includes(key))
+          .filter((key) => key && !disallowSnippets.includes(key))
           .map((key) => {
-            if (!['ui.*', 'pm', 'pm.*'].includes(key)) {
-              return key;
-            }
-            if (values?.includes(key)) {
+            if (!snippets.includes(key) || values?.includes(key)) {
               return key;
             }
             return `!${key}`;
           });
-        for (const key of ['ui.*', 'pm', 'pm.*']) {
+        for (const key of snippets) {
           if (!value.includes(key) && !value.includes(`!${key}`)) {
             value.push(`!${key}`);
           }
@@ -44,6 +43,9 @@ const SnippetCheckboxGroup = connect((props) => {
       </div>
       <div style={{ marginTop: 8 }}>
         <Checkbox value="pm.*">{t('Allows to configure plugins')}</Checkbox>
+      </div>
+      <div style={{ marginTop: 8 }}>
+        <Checkbox value="app">{t('Allows to clear cache, reboot application')}</Checkbox>
       </div>
     </Checkbox.Group>
   );

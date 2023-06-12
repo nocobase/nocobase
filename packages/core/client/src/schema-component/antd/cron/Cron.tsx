@@ -1,11 +1,11 @@
 import { css } from '@emotion/css';
 import { connect, mapReadPretty } from '@formily/react';
+import { error } from '@nocobase/utils/client';
 import cronstrue from 'cronstrue';
 import React, { useMemo } from 'react';
-import { Cron as ReactCron, CronProps } from 'react-js-cron';
-import { useAPIClient } from '../../../api-client';
+import { CronProps, Cron as ReactCron } from 'react-js-cron';
 import 'react-js-cron/dist/styles.css';
-import { useTranslation } from 'react-i18next';
+import { useAPIClient } from '../../../api-client';
 
 const Input = (props: Omit<CronProps, 'setValue'> & { onChange: (value: string) => void }) => {
   const { onChange, ...rest } = props;
@@ -46,7 +46,7 @@ const ReadPretty = (props) => {
         use24HourTimeFormat: true,
       });
     } catch {
-      console.error(`The '${props.value}' is not a valid cron expression`);
+      error(`The '${props.value}' is not a valid cron expression`);
       return props.value;
     }
   }, [props.value]);

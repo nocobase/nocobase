@@ -1,12 +1,15 @@
+import path from 'path';
+import fs from 'fs/promises';
+
 import Application from '@nocobase/server';
 import serve from 'koa-static';
 import mkdirp from 'mkdirp';
 import multer from 'multer';
-import path from 'path';
 import { Transactionable } from 'sequelize/types';
 import { URL } from 'url';
 import { STORAGE_TYPE_LOCAL } from '../constants';
 import { getFilename } from '../utils';
+import { AttachmentModel } from '.';
 
 // use koa-mount match logic
 function match(basePath: string, pathname: string): boolean {
@@ -49,7 +52,7 @@ function createLocalServerUpdateHook(app, storages) {
 }
 
 function getDocumentRoot(storage): string {
-  const { documentRoot = 'uploads' } = storage.options || {};
+  const { documentRoot = process.env.LOCAL_STORAGE_DEST || 'storage/uploads' } = storage.options || {};
   // TODO(feature): 后面考虑以字符串模板的方式使用，可注入 req/action 相关变量，以便于区分文件夹
   return path.resolve(path.isAbsolute(documentRoot) ? documentRoot : path.join(process.cwd(), documentRoot));
 }
@@ -126,7 +129,7 @@ export default {
   },
   defaults() {
     const { LOCAL_STORAGE_DEST, LOCAL_STORAGE_BASE_URL, APP_PORT } = process.env;
-    const documentRoot = LOCAL_STORAGE_DEST || 'uploads';
+    const documentRoot = LOCAL_STORAGE_DEST || 'storage/uploads';
     return {
       title: '本地存储',
       type: STORAGE_TYPE_LOCAL,
@@ -136,5 +139,30 @@ export default {
         documentRoot,
       },
     };
+  },
+  async delete(storage, records: AttachmentModel[]): Promise<[number, AttachmentModel[]]> {
+    const documentRoot = getDocumentRoot(storage);
+    let count = 0;
+    const undeleted = [];
+    await records.reduce(
+      (promise, record) =>
+        promise.then(async () => {
+          try {
+            await fs.unlink(path.join(documentRoot, record.path, record.filename));
+            count += 1;
+          } catch (ex) {
+            if (ex.code === 'ENOENT') {
+              console.warn(ex.message);
+              count += 1;
+            } else {
+              console.error(ex);
+              undeleted.push(record);
+            }
+          }
+        }),
+      Promise.resolve(),
+    );
+
+    return [count, undeleted];
   },
 };

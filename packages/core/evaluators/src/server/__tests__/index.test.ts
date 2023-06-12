@@ -27,6 +27,15 @@ describe('evaluate', () => {
     expect(result).toBe(1);
   });
 
+  it('function result Date', () => {
+    const result = formulaEval('{{a}}', {
+      a() {
+        return new Date();
+      },
+    });
+    expect(result).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z/);
+  });
+
   it('number path to array item 0 (math.js)', () => {
     expect(() => mathEval('{{a.0}}', { a: [1, 2, 3] })).toThrow();
   });
@@ -43,6 +52,11 @@ describe('evaluate', () => {
 
   it('number path to object member 0 (math.js)', () => {
     const result = mathEval('{{a.1}}', { a: { 1: 1 } });
+    expect(result).toBe(1);
+  });
+
+  it('number lead string path to object member (formula.js)', () => {
+    const result = formulaEval('{{a.1a}}', { a: { '1a': 1 } });
     expect(result).toBe(1);
   });
 });

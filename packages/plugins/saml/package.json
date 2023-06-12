@@ -1,13 +1,17 @@
 {
   "name": "@nocobase/plugin-saml",
-  "version": "0.9.2-alpha.3",
-  "description": "",
+  "displayName": "SAML",
+  "displayName.zh-CN": "SAML",
+  "description": "Provides SAML authentication and authorization functionality for applications or authentication systems.",
+  "description.zh-CN": "为应用程序或身份验证系统提供SAML认证和授权功能。",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.9.2-alpha.3",
-    "@nocobase/test": "0.9.2-alpha.3"
+    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2",
+    "@nocobase/auth": "0.9.4-alpha.2"
   },
   "dependencies": {
     "@node-saml/node-saml": "^4.0.2"
