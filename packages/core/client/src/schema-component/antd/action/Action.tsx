@@ -140,7 +140,7 @@ export const Action: ComposedAction = observer(
             }
           }}
           component={tarComponent || Button}
-          className={classnames(className, actionDesignerCss)}
+          className={classnames(actionDesignerCss, className)}
         >
           {title || compile(fieldSchema.title)}
           <Designer {...designerProps} />

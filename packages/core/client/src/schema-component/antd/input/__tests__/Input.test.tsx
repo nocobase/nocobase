@@ -136,7 +136,8 @@ describe('Input.JSON', () => {
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
     const pre = container.querySelector('pre') as HTMLPreElement;
     fireEvent.change(textarea, { target: { value: '{"name":"nocobase"}' } });
-    expect(textarea.value).toBe('{"name":"nocobase"}');
+    fireEvent.blur(textarea, { target: { value: '{"name":"nocobase"}' } });
+    expect(textarea.value).toBe('{\n  "name": "nocobase"\n}');
     expect(pre).toMatchInlineSnapshot(`
       <pre
         class="ant-json css-4dta7v"
@@ -153,6 +154,7 @@ describe('Input.JSON', () => {
 
     const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: '{"name":nocobase}' } });
+    fireEvent.blur(textarea, { target: { value: '{"name":nocobase}' } });
     expect(screen.getByText(`Unexpected token o in JSON at position 9`).innerHTML).toBe(
       `Unexpected token o in JSON at position 9`,
     );

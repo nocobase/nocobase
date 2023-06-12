@@ -7,7 +7,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
-import { ActionContext, SchemaComponent, useCompile } from '../../schema-component';
+import { ActionContextProvider, SchemaComponent, useCompile } from '../../schema-component';
 import { useCollectionManager } from '../hooks';
 import { IField } from '../interfaces/types';
 import * as components from './components';
@@ -75,7 +75,7 @@ export const ViewFieldAction = (props) => {
 
   return (
     <RecordProvider record={record}>
-      <ActionContext.Provider value={{ visible, setVisible }}>
+      <ActionContextProvider value={{ visible, setVisible }}>
         <a
           onClick={async () => {
             const { data } = await api.resource('collections.fields', record.collectionName).get({
@@ -116,7 +116,7 @@ export const ViewFieldAction = (props) => {
             ...scope,
           }}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </RecordProvider>
   );
 };
