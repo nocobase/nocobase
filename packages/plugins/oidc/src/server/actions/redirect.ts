@@ -14,7 +14,9 @@ export const redirect = async (ctx: Context, next) => {
     </head>
     <body>
       <script>
-        window.opener.postMessage(${JSON.stringify(params)}, '*');
+        const channel = new BroadcastChannel('nocobase-oidc-response');
+        channel.postMessage(${JSON.stringify(params)})
+        window.close();
       </script>
     </body>
     </html>
