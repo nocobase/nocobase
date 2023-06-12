@@ -16,6 +16,7 @@ import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { useHistory, useParams } from 'react-router-dom';
 import { tabItemSchema } from './schema';
+import { PageSchema } from '../../common';
 
 export const InternalTabBar: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
@@ -33,22 +34,7 @@ export const InternalTabBar: React.FC = (props) => {
       'x-component-props': values,
       'x-designer': 'MTabBar.Item.Designer',
       properties: {
-        [uid()]: {
-          type: 'void',
-          'x-component': 'MPage',
-          'x-designer': 'MPage.Designer',
-          'x-component-props': {},
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'MBlockInitializers',
-              'x-component-props': {
-                showDivider: false,
-              },
-            },
-          },
-        },
+        [uid()]: PageSchema,
       },
     });
   }, []);
