@@ -35,11 +35,14 @@ export const Json = React.forwardRef<typeof Input.TextArea, JSONTextAreaProps>(
         onChange={(ev) => {
           setText(ev.target.value);
           try {
+            const v = ev.target.value.trim() !== '' ? JSON.parse(ev.target.value) : null;
             if (ev.target.value.trim() !== '') {
               JSON.parse(ev.target.value);
             }
             field.setFeedback({});
+            onChange?.(v);
           } catch (err) {
+            onChange?.(ev);
             field.setFeedback({
               type: 'error',
               code: 'JSONSyntaxError',
