@@ -1,7 +1,10 @@
 {
   "name": "@nocobase/plugin-graph-collection-manager",
-  "version": "0.9.2-alpha.4",
-  "description": "",
+  "displayName": "graph collection manager",
+  "displayName.zh-CN": "数据库可视化管理",
+  "description": "database collection manage",
+  "description.zh-CN": "数据库管理。",
+  "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -11,7 +14,7 @@
     "dagre": "^0.8.5"
   },
   "devDependencies": {
-    "@nocobase/client": "0.9.2-alpha.4",
-    "@nocobase/test": "0.9.2-alpha.4"
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/test": "0.9.4-alpha.2"
   }
 }

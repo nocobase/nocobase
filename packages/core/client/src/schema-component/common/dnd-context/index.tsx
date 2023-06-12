@@ -19,6 +19,7 @@ const useDragEnd = (props?: any) => {
     const breakRemoveOn = over?.data?.current?.breakRemoveOn;
     const wrapSchema = over?.data?.current?.wrapSchema;
     const onSuccess = over?.data?.current?.onSuccess;
+    const removeParentsIfNoChildren = over?.data?.current?.removeParentsIfNoChildren ?? true;
 
     if (!activeSchema || !overSchema) {
       props?.onDragEnd?.(event);
@@ -49,7 +50,7 @@ const useDragEnd = (props?: any) => {
       dn.insertAdjacent(insertAdjacent, activeSchema, {
         wrap: wrapSchema,
         breakRemoveOn,
-        removeParentsIfNoChildren: true,
+        removeParentsIfNoChildren,
         onSuccess,
       });
       props?.onDragEnd?.(event);
@@ -58,32 +59,35 @@ const useDragEnd = (props?: any) => {
   };
 };
 
-export const DndContext = observer((props: Props) => {
-  const { t } = useTranslation();
-  const [visible, setVisible] = useState(true);
-  return (
-    <DndKitContext
-      collisionDetection={rectIntersection}
-      {...props}
-      onDragStart={(event) => {
-        const { active } = event;
-        const activeSchema = active?.data?.current?.schema;
-        setVisible(!!activeSchema);
-        if (props?.onDragStart) {
-          props?.onDragStart?.(event);
-        }
-      }}
-      onDragEnd={useDragEnd(props)}
-    >
-      <DragOverlay
-        dropAnimation={{
-          duration: 10,
-          easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+export const DndContext = observer(
+  (props: Props) => {
+    const { t } = useTranslation();
+    const [visible, setVisible] = useState(true);
+    return (
+      <DndKitContext
+        collisionDetection={rectIntersection}
+        {...props}
+        onDragStart={(event) => {
+          const { active } = event;
+          const activeSchema = active?.data?.current?.schema;
+          setVisible(!!activeSchema);
+          if (props?.onDragStart) {
+            props?.onDragStart?.(event);
+          }
         }}
+        onDragEnd={useDragEnd(props)}
       >
-        {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
-      </DragOverlay>
-      {props.children}
-    </DndKitContext>
-  );
-});
+        <DragOverlay
+          dropAnimation={{
+            duration: 10,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}
+        >
+          {visible && <span style={{ whiteSpace: 'nowrap' }}>{t('Dragging')}</span>}
+        </DragOverlay>
+        {props.children}
+      </DndKitContext>
+    );
+  },
+  { displayName: 'DndContext' },
+);

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -17,7 +17,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import { nodeCardClass, nodeMetaClass, nodeTitleClass } from '../style';
+import { nodeCardClass, nodeJobButtonClass, nodeMetaClass, nodeTitleClass } from '../style';
 import { useFlowContext } from '../FlowContext';
 import collection from './collection';
 import schedule from './schedule/';
@@ -53,12 +53,11 @@ export interface Trigger {
   title: string;
   type: string;
   // group: string;
-  getOptions?(config: any, types: any[]): VariableOptions;
+  useVariables?(config: any, options?): VariableOptions;
   fieldset: { [key: string]: ISchema };
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
 }
@@ -86,7 +85,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: 'workflow-node-job-button',
+          className: nodeJobButtonClass,
           type: 'primary',
         },
         properties: {
@@ -143,7 +142,9 @@ export const TriggerConfig = () => {
   const [editingTitle, setEditingTitle] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState(false);
   useEffect(() => {
-    setEditingTitle(workflow.title ?? typeTitle);
+    if (workflow) {
+      setEditingTitle(workflow.title ?? typeTitle);
+    }
   }, [workflow]);
 
   if (!workflow || !workflow.type) {
@@ -176,7 +177,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList ?? []) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
@@ -198,7 +199,7 @@ export const TriggerConfig = () => {
         />
       </div>
       <TriggerExecution />
-      <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+      <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
             type: 'void',
@@ -292,7 +293,7 @@ export const TriggerConfig = () => {
           scope={scope}
           components={components}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </div>
   );
 };

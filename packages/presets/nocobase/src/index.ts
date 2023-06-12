@@ -24,6 +24,8 @@ export class PresetNocoBase extends Plugin {
     'iframe-block',
     'formula-field',
     'charts',
+    'auth',
+    'sms-auth',
   ];
 
   localPlugins = [
@@ -35,6 +37,7 @@ export class PresetNocoBase extends Plugin {
     'map',
     'snapshot-field',
     'graph-collection-manager',
+    'mobile-client',
   ];
 
   splitNames(name: string) {
@@ -102,6 +105,7 @@ export class PresetNocoBase extends Plugin {
       );
       await this.app.reload({ method: 'upgrade' });
       await this.app.db.sync();
+      await this.app.db.getRepository<any>('collections').load();
     });
 
     this.app.on('beforeInstall', async () => {

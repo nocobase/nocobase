@@ -168,11 +168,11 @@ const App: React.FC = () => {
       <Button type="primary" onClick={showDrawer}>
         Open
       </Button>
-      <Drawer 
-        title="Basic Drawer" 
-        placement="right" 
-        onClose={onClose} 
-        visible={visible} 
+      <Drawer
+        title="Basic Drawer"
+        placement="right"
+        onClose={onClose}
+        visible={visible}
         footer={
           <Button onClick={onClose}>关闭</Button>
         }
@@ -262,8 +262,8 @@ export default function App() {
     });
   };
   return (
-    <SchemaComponentProvider 
-      form={form} 
+    <SchemaComponentProvider
+      form={form}
       components={{ Drawer, Button }}
     >
       <SchemaComponent schema={schema} scope={{ showDrawer, onClose }} />
@@ -374,7 +374,7 @@ const Action: any = observer((props: any) => {
       <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />
     </VisibleContext.Provider>
   );
-});
+}, { displayName: 'Action' });
 
 Action.Drawer = observer((props: any) => {
   const [visible, setVisible] = useContext(VisibleContext);
@@ -411,13 +411,13 @@ Action.Drawer = observer((props: any) => {
       )}
     </>
   );
-});
+}, { displayName: 'Action.Drawer' });
 
 Action.Drawer.Footer = observer((props: any) => {
   const field = useField();
   const schema = useFieldSchema();
   return <RecursionField basePath={field.address} schema={schema} onlyRenderProperties />;
-});
+}, { displayName: 'Action.Drawer.Footer' });
 
 const schema: ISchema = {
   type: 'object',
@@ -500,7 +500,7 @@ const Hello = observer(({ name }) => {
       >更新</Button>
     </div>
   )
-});
+}, { displayName: 'Hello' });
 
 const RouteSchemaComponent = (props) => {
   const route = useRoute();
@@ -678,7 +678,7 @@ const useDragEnd = () => {
 
 const Page = observer((props) => {
   return <DndContext onDragEnd={useDragEnd()}>{props.children}</DndContext>;
-});
+}, { displayName: 'Page' });
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
@@ -727,7 +727,7 @@ const Block = observer((props) => {
       </div>
     </Droppable>
   );
-});
+}, { displayName: 'Block' });
 
 export default function App() {
   return (

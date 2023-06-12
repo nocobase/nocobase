@@ -29,7 +29,7 @@ export const ImportModal = (props: any) => {
       title={t('Import Data')}
       width="50%"
       bodyStyle={{ height: 'calc(80vh - 200px)' }}
-      visible={importModalVisible}
+      open={importModalVisible}
       footer={null}
       closable={importStatus === ImportStatus.IMPORTED}
       onCancel={doneHandler}

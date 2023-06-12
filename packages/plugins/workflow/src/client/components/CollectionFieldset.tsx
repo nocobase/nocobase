@@ -33,118 +33,123 @@ function AssociationInput(props) {
 }
 
 // NOTE: observer for watching useProps
-export default observer(({ value, disabled, onChange }: any) => {
-  const { t } = useTranslation();
-  const compile = useCompile();
-  const form = useForm();
-  const { getCollection, getCollectionFields } = useCollectionManager();
-  const { values: config } = useForm();
-  const collectionName = config?.collection;
-  const fields = getCollectionFields(collectionName).filter(
-    (field) =>
-      !field.hidden &&
-      (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false) &&
-      // TODO: should use some field option but not type to control this
-      !['formula'].includes(field.type),
-  );
+const CollectionFieldSet = observer(
+  ({ value, disabled, onChange }: any) => {
+    const { t } = useTranslation();
+    const compile = useCompile();
+    const form = useForm();
+    const { getCollection, getCollectionFields } = useCollectionManager();
+    const { values: config } = useForm();
+    const collectionName = config?.collection;
+    const fields = getCollectionFields(collectionName).filter(
+      (field) =>
+        !field.hidden &&
+        (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false) &&
+        // TODO: should use some field option but not type to control this
+        !['formula'].includes(field.type),
+    );
 
-  const unassignedFields = fields.filter((field) => !(field.name in value));
-  const scope = useWorkflowVariableOptions();
-  const mergedDisabled = disabled || form.disabled;
+    const unassignedFields = fields.filter((field) => !value || !(field.name in value));
+    const scope = useWorkflowVariableOptions();
+    const mergedDisabled = disabled || form.disabled;
 
-  return (
-    <fieldset
-      className={css`
-        margin-top: 0.5em;
+    return (
+      <fieldset
+        className={css`
+          margin-top: 0.5em;
 
-        > .ant-formily-item {
-          flex-direction: column;
+          > .ant-formily-item {
+            flex-direction: column;
 
-          > .ant-formily-item-label {
-            line-height: 32px;
+            > .ant-formily-item-label {
+              line-height: 32px;
+            }
           }
-        }
-      `}
-    >
-      {fields.length ? (
-        <CollectionProvider collection={getCollection(collectionName)}>
-          {fields
-            .filter((field) => field.name in value)
-            .map((field) => {
-              // constant for associations to use Input, others to use CollectionField
-              // dynamic values only support belongsTo/hasOne association, other association type should disable
-              const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
-                ? AssociationInput
-                : CollectionField;
-              // TODO: try to use <ObjectField> to replace this map
-              return (
-                <Form.Item
-                  key={field.name}
-                  label={compile(field.uiSchema?.title ?? field.name)}
-                  labelAlign="left"
-                  className={css`
-                    .ant-form-item-control-input-content {
-                      display: flex;
-                    }
-                  `}
-                >
-                  <Variable.Input
-                    scope={scope}
-                    value={value[field.name]}
-                    onChange={(next) => {
-                      onChange({ ...value, [field.name]: next });
-                    }}
+        `}
+      >
+        {fields.length ? (
+          <CollectionProvider collection={getCollection(collectionName)}>
+            {fields
+              .filter((field) => value && field.name in value)
+              .map((field) => {
+                // constant for associations to use Input, others to use CollectionField
+                // dynamic values only support belongsTo/hasOne association, other association type should disable
+                const ConstantCompoent = ['belongsTo', 'hasOne', 'hasMany', 'belongsToMany'].includes(field.type)
+                  ? AssociationInput
+                  : CollectionField;
+                // TODO: try to use <ObjectField> to replace this map
+                return (
+                  <Form.Item
+                    key={field.name}
+                    label={compile(field.uiSchema?.title ?? field.name)}
+                    labelAlign="left"
+                    className={css`
+                      .ant-form-item-control-input-content {
+                        display: flex;
+                      }
+                    `}
                   >
-                    <SchemaComponent
-                      schema={{
-                        type: 'void',
-                        properties: {
-                          [field.name]: {
-                            'x-component': ConstantCompoent,
-                            ['x-validator']() {
-                              return '';
+                    <Variable.Input
+                      scope={scope}
+                      value={value[field.name]}
+                      onChange={(next) => {
+                        onChange({ ...value, [field.name]: next });
+                      }}
+                    >
+                      <SchemaComponent
+                        schema={{
+                          type: 'void',
+                          properties: {
+                            [field.name]: {
+                              'x-component': ConstantCompoent,
+                              ['x-validator']() {
+                                return '';
+                              },
                             },
                           },
-                        },
-                      }}
-                    />
-                  </Variable.Input>
-                  {!mergedDisabled ? (
-                    <Button
-                      type="link"
-                      icon={<CloseCircleOutlined />}
-                      onClick={() => {
-                        const { [field.name]: _, ...rest } = value;
-                        onChange(rest);
-                      }}
-                    />
-                  ) : null}
-                </Form.Item>
-              );
-            })}
-          {unassignedFields.length ? (
-            <Dropdown
-              overlay={
-                <Menu
-                  items={unassignedFields.map((field) => ({
-                    key: field.name,
-                    label: compile(field.uiSchema?.title ?? field.name),
-                  }))}
-                  onClick={({ key }) => onChange({ ...value, [key]: null })}
-                  className={css`
-                    max-height: 300px;
-                    overflow-y: auto;
-                  `}
-                />
-              }
-            >
-              <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
-            </Dropdown>
-          ) : null}
-        </CollectionProvider>
-      ) : (
-        <p>{lang('Please select collection first')}</p>
-      )}
-    </fieldset>
-  );
-});
+                        }}
+                      />
+                    </Variable.Input>
+                    {!mergedDisabled ? (
+                      <Button
+                        type="link"
+                        icon={<CloseCircleOutlined />}
+                        onClick={() => {
+                          const { [field.name]: _, ...rest } = value;
+                          onChange(rest);
+                        }}
+                      />
+                    ) : null}
+                  </Form.Item>
+                );
+              })}
+            {unassignedFields.length ? (
+              <Dropdown
+                overlay={
+                  <Menu
+                    items={unassignedFields.map((field) => ({
+                      key: field.name,
+                      label: compile(field.uiSchema?.title ?? field.name),
+                    }))}
+                    onClick={({ key }) => onChange({ ...value, [key]: null })}
+                    className={css`
+                      max-height: 300px;
+                      overflow-y: auto;
+                    `}
+                  />
+                }
+              >
+                <Button icon={<PlusOutlined />}>{t('Add field')}</Button>
+              </Dropdown>
+            ) : null}
+          </CollectionProvider>
+        ) : (
+          <p>{lang('Please select collection first')}</p>
+        )}
+      </fieldset>
+    );
+  },
+  { displayName: 'CollectionFieldSet' },
+);
+
+export default CollectionFieldSet;

@@ -1,79 +1,6 @@
 import { ISchema } from '@formily/react';
-import { cloneDeep } from 'lodash';
-import {
-  constraintsProps,
-  recordPickerSelector,
-  recordPickerViewer,
-  relationshipType,
-  reverseFieldProperties,
-} from './properties';
+import { constraintsProps, relationshipType, reverseFieldProperties } from './properties';
 import { IField } from './types';
-
-const internalSchameInitialize = (schema: ISchema, { field, block, readPretty, action }) => {
-  if (block === 'Form') {
-    if (schema['x-component'] === 'FormField') {
-      const association = `${field.collectionName}.${field.name}`;
-      schema.type = 'void';
-      schema.properties = {
-        block: {
-          type: 'void',
-          'x-decorator': 'FormFieldProvider',
-          'x-decorator-props': {
-            collection: field.target,
-            association: association,
-            resource: association,
-            action: action,
-            fieldName: field.name,
-            readPretty,
-          },
-          'x-component': 'CardItem',
-          'x-component-props': {
-            bordered: true,
-          },
-          properties: {
-            [field.name]: {
-              type: 'object',
-              'x-component': 'FormV2',
-              'x-component-props': {
-                useProps: '{{ useFormFieldProps }}',
-              },
-              properties: {
-                __form_grid: {
-                  type: 'void',
-                  'x-component': 'Grid',
-                  'x-initializer': 'FormItemInitializers',
-                  properties: {},
-                },
-              },
-            },
-          },
-        },
-      };
-    } else if (schema['x-component'] === 'AssociationSelect') {
-      Object.assign(schema, {
-        type: 'string',
-        'x-designer': 'AssociationSelect.Designer',
-      });
-    } else {
-      schema.type = 'string';
-      schema['properties'] = {
-        viewer: cloneDeep(recordPickerViewer),
-        selector: cloneDeep(recordPickerSelector),
-      };
-    }
-    return schema;
-  }
-  schema.type = 'string';
-  if (readPretty) {
-    schema['properties'] = {
-      viewer: cloneDeep(recordPickerViewer),
-    };
-  } else {
-    schema['properties'] = {
-      selector: cloneDeep(recordPickerSelector),
-    };
-  }
-};
 
 export const o2o: IField = {
   name: 'o2o',
@@ -88,7 +15,7 @@ export const o2o: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -105,7 +32,7 @@ export const o2o: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -119,7 +46,6 @@ export const o2o: IField = {
   },
   availableTypes: ['hasOne'],
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -268,7 +194,7 @@ export const oho: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -285,7 +211,7 @@ export const oho: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -298,7 +224,7 @@ export const oho: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
+    // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
@@ -439,7 +365,7 @@ export const obo: IField = {
     // name,
     uiSchema: {
       // title,
-      'x-component': 'RecordPicker',
+      'x-component': 'AssociationField',
       'x-component-props': {
         // mode: 'tags',
         multiple: false,
@@ -455,7 +381,7 @@ export const obo: IField = {
       // name,
       uiSchema: {
         // title,
-        'x-component': 'RecordPicker',
+        'x-component': 'AssociationField',
         'x-component-props': {
           // mode: 'tags',
           multiple: false,
@@ -468,11 +394,10 @@ export const obo: IField = {
     },
   },
   schemaInitialize(schema: ISchema, { field, block, readPretty, action, targetCollection }) {
-    internalSchameInitialize(schema, { field, block, readPretty, action });
+    // schema['type'] = 'object';
     if (['Table', 'Kanban'].includes(block)) {
       schema['x-component-props'] = schema['x-component-props'] || {};
       schema['x-component-props']['ellipsis'] = true;
-
       // 预览文件时需要的参数
       schema['x-component-props']['size'] = 'small';
     }
@@ -480,14 +405,6 @@ export const obo: IField = {
     if (targetCollection?.titleField && schema['x-component-props']) {
       schema['x-component-props'].fieldNames = schema['x-component-props'].fieldNames || { value: 'id' };
       schema['x-component-props'].fieldNames.label = targetCollection.titleField;
-    }
-
-    if (targetCollection?.template === 'file') {
-      const fieldNames = schema['x-component-props']['fieldNames'] || { label: 'preview', value: 'id' };
-      fieldNames.label = 'preview';
-      schema['x-component-props']['fieldNames'] = fieldNames;
-      schema['x-component-props'].quickUpload = true;
-      schema['x-component-props'].selectFile = true;
     }
   },
   properties: {

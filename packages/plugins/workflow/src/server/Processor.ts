@@ -5,6 +5,7 @@ import { parse } from '@nocobase/utils';
 import { Transaction, Transactionable } from 'sequelize';
 import Plugin from '.';
 import { EXECUTION_STATUS, JOB_STATUS } from './constants';
+import { Runner } from './instructions';
 import ExecutionModel from './models/Execution';
 import FlowNodeModel from './models/FlowNode';
 import JobModel from './models/Job';
@@ -110,7 +111,6 @@ export default class Processor {
     } else {
       await this.exit(null);
     }
-    await this.commit();
   }
 
   public async resume(job: JobModel) {
@@ -121,7 +121,6 @@ export default class Processor {
     await this.prepare();
     const node = this.nodesMap.get(job.nodeId);
     await this.recall(node, job);
-    await this.commit();
   }
 
   private async commit() {
@@ -131,7 +130,7 @@ export default class Processor {
     }
   }
 
-  private async exec(instruction: Function, node: FlowNodeModel, prevJob) {
+  private async exec(instruction: Runner, node: FlowNodeModel, prevJob) {
     let job;
     try {
       // call instruction to get result and status
@@ -174,7 +173,7 @@ export default class Processor {
 
     if (savedJob.status === JOB_STATUS.RESOLVED && node.downstream) {
       // run next node
-      this.logger.debug(`run next node (${node.id})`);
+      this.logger.debug(`run next node (${node.downstreamId})`);
       return this.run(node.downstream, savedJob);
     }
 
@@ -194,7 +193,7 @@ export default class Processor {
 
   // parent node should take over the control
   public async end(node, job) {
-    this.logger.debug(`branch ended at node (${node.id})})`);
+    this.logger.debug(`branch ended at node (${node.id})`);
     const parentNode = this.findBranchParentNode(node);
     // no parent, means on main flow
     if (parentNode) {
@@ -224,6 +223,7 @@ export default class Processor {
       : EXECUTION_STATUS.RESOLVED;
     this.logger.info(`execution (${this.execution.id}) all nodes finished, finishing execution...`);
     await this.execution.update({ status }, { transaction: this.transaction });
+    await this.commit();
     return null;
   }
 
@@ -289,10 +289,31 @@ export default class Processor {
     return null;
   }
 
+  findBranchEndNode(node: FlowNodeModel): FlowNodeModel | null {
+    for (let n = node; n; n = n.downstream) {
+      if (!n.downstream) {
+        return n;
+      }
+    }
+    return null;
+  }
+
   findBranchParentJob(job: JobModel, node: FlowNodeModel): JobModel | null {
     for (let j: JobModel | undefined = job; j; j = this.jobsMap.get(j.upstreamId)) {
       if (j.nodeId === node.id) {
         return j;
+      }
+    }
+    return null;
+  }
+
+  findBranchLastJob(node: FlowNodeModel): JobModel | null {
+    for (let n = this.findBranchEndNode(node); n && n !== node.upstream; n = n.upstream) {
+      const jobs = Array.from(this.jobsMap.values())
+        .filter((item) => item.nodeId === n.id)
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+      if (jobs.length) {
+        return jobs[jobs.length - 1];
       }
     }
     return null;
@@ -308,10 +329,21 @@ export default class Processor {
       systemFns[name] = fn.bind(scope);
     }
 
+    const $scopes = {};
+    if (node) {
+      for (let n = this.findBranchParentNode(node); n; n = this.findBranchParentNode(n)) {
+        const instruction = this.options.plugin.instructions.get(n.type);
+        if (typeof instruction.getScope === 'function') {
+          $scopes[n.id] = instruction.getScope(n, this.jobsMapByNodeId[n.id], this);
+        }
+      }
+    }
+
     return {
       $context: this.execution.context,
       $jobsMapByNodeId: this.jobsMapByNodeId,
       $system: systemFns,
+      $scopes,
     };
   }
 

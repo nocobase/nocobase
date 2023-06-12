@@ -1,2 +1,3 @@
 export * from './Select';
-export * from './shared';
+export * from './utils';
+

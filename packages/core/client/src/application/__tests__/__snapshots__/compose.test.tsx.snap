@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`compose case 1 1`] = `
+exports[`compose > case 1 1`] = `
 <div>
   <div>
     <h1>
@@ -10,7 +10,7 @@ exports[`compose case 1 1`] = `
 </div>
 `;
 
-exports[`compose case 2 1`] = `
+exports[`compose > case 2 1`] = `
 <div>
   <div>
     <h1>
@@ -25,7 +25,7 @@ exports[`compose case 2 1`] = `
 </div>
 `;
 
-exports[`compose case 3 1`] = `
+exports[`compose > case 3 1`] = `
 <div>
   <div>
     <h1>
@@ -35,7 +35,7 @@ exports[`compose case 3 1`] = `
 </div>
 `;
 
-exports[`compose case 4 1`] = `
+exports[`compose > case 4 1`] = `
 <div>
   <div>
     <h1>
@@ -55,7 +55,7 @@ exports[`compose case 4 1`] = `
 </div>
 `;
 
-exports[`compose case 5 1`] = `
+exports[`compose > case 5 1`] = `
 <div>
   <div>
     <h1>

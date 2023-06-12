@@ -35,7 +35,7 @@ export const expression: ICollectionTemplate = {
           title: '{{t("Collection")}}',
           'x-component': 'CollectionSelect',
           'x-component-props': {
-            multiple: true,
+            // multiple: true,
           },
         },
       },

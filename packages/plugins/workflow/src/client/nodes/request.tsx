@@ -1,5 +1,4 @@
 import { ArrayItems } from '@formily/antd';
-import { cx, css } from '@emotion/css';
 
 import { NAMESPACE } from '../locale';
 import { useWorkflowVariableOptions } from '../variable';
@@ -8,6 +7,7 @@ export default {
   title: `{{t("HTTP request", { ns: "${NAMESPACE}" })}}`,
   type: 'request',
   group: 'extended',
+  description: `{{t("Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.", { ns: "${NAMESPACE}" })}}`,
   fieldset: {
     method: {
       type: 'string',
@@ -145,13 +145,7 @@ export default {
           minRows: 10,
         },
         placeholder: `{{t("Input request data", { ns: "${NAMESPACE}" })}}`,
-        className: cx(
-          'full-width',
-          css`
-            font-size: 90%;
-            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
-          `,
-        ),
+        className: 'full-width',
       },
       description: `{{t("Only support standard JSON data", { ns: "${NAMESPACE}" })}}`,
     },

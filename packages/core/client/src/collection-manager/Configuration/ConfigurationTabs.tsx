@@ -50,17 +50,20 @@ function Droppable(props) {
   );
 }
 
-const TabTitle = observer(({ item }: { item: any }) => {
-  return (
-    <Droppable id={item.id.toString()} data={item}>
-      <div>
-        <Draggable id={item.id.toString()} data={item}>
-          <TabBar item={item} />
-        </Draggable>
-      </div>
-    </Droppable>
-  );
-});
+const TabTitle = observer(
+  ({ item }: { item: any }) => {
+    return (
+      <Droppable id={item.id.toString()} data={item}>
+        <div>
+          <Draggable id={item.id.toString()} data={item}>
+            <TabBar item={item} />
+          </Draggable>
+        </div>
+      </Droppable>
+    );
+  },
+  { displayName: 'TabTitle' },
+);
 
 const TabBar = ({ item }) => {
   const compile = useCompile();
@@ -71,49 +74,58 @@ const TabBar = ({ item }) => {
     </span>
   );
 };
-const DndProvider = observer((props) => {
-  const [activeTab, setActiveId] = useState(null);
-  const { refresh } = useContext(CollectionCategroriesContext);
-  const { refresh: refreshCM } = useResourceActionContext();
-  const api = useAPIClient();
-  const onDragEnd = async (props: DragEndEvent) => {
-    const { active, over } = props;
-    setTimeout(() => {
-      setActiveId(null);
-    });
-    if (over && over.id !== active.id) {
-      await api.resource('collectionCategories').move({
-        sourceId: active.id,
-        targetId: over.id,
+const DndProvider = observer(
+  (props) => {
+    const [activeTab, setActiveId] = useState(null);
+    const { refresh } = useContext(CollectionCategroriesContext);
+    const { refresh: refreshCM } = useResourceActionContext();
+    const api = useAPIClient();
+    const onDragEnd = async (props: DragEndEvent) => {
+      const { active, over } = props;
+      setTimeout(() => {
+        setActiveId(null);
       });
-      await refresh();
-      await refreshCM();
+      if (over && over.id !== active.id) {
+        await api.resource('collectionCategories').move({
+          sourceId: active.id,
+          targetId: over.id,
+        });
+        await refresh();
+        await refreshCM();
+      }
+    };
+
+    function onDragStart(event) {
+      setActiveId(event.active?.data.current);
     }
-  };
 
-  function onDragStart(event) {
-    setActiveId(event.active?.data.current);
-  }
-
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 10,
-    },
-  });
-  const sensors = useSensors(mouseSensor);
-  return (
-    <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
-      {props.children}
-      <DragOverlay>
-        {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
-      </DragOverlay>
-    </DndContext>
-  );
-});
+    const mouseSensor = useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    });
+    const sensors = useSensors(mouseSensor);
+    return (
+      <DndContext sensors={sensors} onDragEnd={onDragEnd} onDragStart={onDragStart}>
+        {props.children}
+        <DragOverlay>
+          {activeTab ? <span style={{ whiteSpace: 'nowrap' }}>{<TabBar item={activeTab} />}</span> : null}
+        </DragOverlay>
+      </DndContext>
+    );
+  },
+  { displayName: 'DndProvider' },
+);
 export const ConfigurationTabs = () => {
   const { data, refresh } = useContext(CollectionCategroriesContext);
   const { refresh: refreshCM, run, defaultRequest, setState } = useResourceActionContext();
   const [key, setKey] = useState('all');
+  const [activeKey, setActiveKey] = useState('all');
+  const compile = useCompile();
+  const api = useAPIClient();
+
+  if (!data) return null;
+
   const tabsItems = data
     .sort((a, b) => b.sort - a.sort)
     .concat()
@@ -131,9 +143,7 @@ export const ConfigurationTabs = () => {
       closable: false,
       schema: collectionTableSchema,
     });
-  const compile = useCompile();
-  const [activeKey, setActiveKey] = useState('all');
-  const api = useAPIClient();
+
   const onChange = (key: string) => {
     setActiveKey(key);
     setKey(uid());

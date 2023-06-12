@@ -1,9 +1,7 @@
 import { ISchema, useForm } from '@formily/react';
-import { uid } from '@formily/shared';
 import {
-  AntdSchemaComponentProvider,
-  APIClient,
   APIClientProvider,
+  AntdSchemaComponentProvider,
   BlockSchemaComponentProvider,
   CollectionManagerProvider,
   SchemaComponent,
@@ -11,10 +9,58 @@ import {
   useFormBlockContext,
   useTableBlockContext,
 } from '@nocobase/client';
-import MockAdapter from 'axios-mock-adapter';
+import { notification } from 'antd';
 import { range } from 'lodash';
 import React from 'react';
+import { mockAPIClient } from '../../../../test';
 import collections from './collections';
+
+const { apiClient, mockRequest } = mockAPIClient();
+const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
+
+mockRequest.onGet('/users:list').reply(async (config) => {
+  const { page = 1, pageSize = 10 } = config.params;
+  await sleep(200);
+  return [
+    200,
+    {
+      data: range(0, pageSize).map((index) => {
+        return {
+          id: index + (page - 1) * pageSize + 1,
+          nickname: `name${index + (page - 1) * pageSize + 1}`,
+        };
+      }),
+      meta: { count: 100, page, pageSize },
+    },
+  ];
+});
+
+mockRequest.onGet('/users:get').reply(async (config) => {
+  const { filterByTk } = config.params;
+  await sleep(200);
+  return [
+    200,
+    {
+      data: {
+        id: filterByTk,
+        nickname: `name${filterByTk}`,
+      },
+    },
+  ];
+});
+
+mockRequest.onPost('/users:create').reply(async (config) => {
+  await sleep(200);
+  notification.success({
+    message: config.data,
+  });
+  return [
+    200,
+    {
+      data: JSON.parse(config.data),
+    },
+  ];
+});
 
 function useAction() {
   const ctx = useTableBlockContext();
@@ -32,9 +78,9 @@ function useCreateAction() {
   return {
     async run() {
       console.log('form.values', form.values);
-      // await ctx.resource.create({
-      //   values: form.values,
-      // });
+      await ctx.resource.create({
+        values: form.values,
+      });
     },
   };
 }
@@ -159,49 +205,6 @@ const schema: ISchema = {
     },
   },
 };
-
-const sleep = (value: number) => new Promise((resolve) => setTimeout(resolve, value));
-
-const apiClient = new APIClient({
-  baseURL: 'http://localhost:3000/api',
-});
-
-const mock = (api: APIClient) => {
-  const mock = new MockAdapter(api.axios);
-
-  mock.onGet('/users:list').reply(async (config) => {
-    const { page = 1, pageSize = 10 } = config.params;
-    await sleep(200);
-    return [
-      200,
-      {
-        data: range(0, pageSize).map((index) => {
-          return {
-            id: index + (page - 1) * pageSize + 1,
-            nickname: uid(),
-          };
-        }),
-        meta: { count: 100, page, pageSize },
-      },
-    ];
-  });
-
-  mock.onGet('/users:get').reply(async (config) => {
-    const { filterByTk } = config.params;
-    await sleep(200);
-    return [
-      200,
-      {
-        data: {
-          id: filterByTk,
-          nickname: uid(),
-        },
-      },
-    ];
-  });
-};
-
-mock(apiClient);
 
 export default () => {
   return (

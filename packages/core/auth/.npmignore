@@ -1,0 +1,4 @@
+node_modules
+*.log
+__tests__
+src

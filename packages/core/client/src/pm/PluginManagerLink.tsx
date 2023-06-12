@@ -4,7 +4,7 @@ import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useHistory } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { ActionContext, useCompile } from '../schema-component';
+import { ActionContextProvider, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
@@ -16,7 +16,7 @@ export const PluginManagerLink = () => {
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/pm/list');
+          history.push('/admin/pm/list/');
         }}
       />
     </Tooltip>
@@ -43,40 +43,31 @@ export const SettingsCenterDropdown = () => {
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <Dropdown
         placement="bottom"
-        overlay={
-          <Menu>
-            {bookmarkTabs.map((tab) => {
-              return (
-                <Menu.Item
-                  onClick={() => {
-                    history.push('/admin/settings/' + tab.path);
-                  }}
-                  key={tab.path}
-                >
-                  {compile(tab.title)}
-                </Menu.Item>
-              );
-            })}
-            <Menu.Divider></Menu.Divider>
-            <Menu.Item
-              onClick={() => {
-                history.push('/admin/settings');
-              }}
-              key="/admin/settings"
-            >
-              {t('All plugin settings')}
-            </Menu.Item>
-          </Menu>
-        }
+        menu={{
+          items: [
+            ...bookmarkTabs.map((tab) => ({
+              key: `/admin/settings/${tab.path}`,
+              label: compile(tab.title),
+            })),
+            { type: 'divider' },
+            {
+              key: '/admin/settings',
+              label: t('All plugin settings'),
+            },
+          ],
+          onClick({ key }) {
+            history.push(key);
+          },
+        }}
       >
         <Button
           icon={<SettingOutlined />}
           // title={t('All plugin settings')}
         />
       </Dropdown>
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };

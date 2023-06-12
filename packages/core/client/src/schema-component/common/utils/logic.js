@@ -35,6 +35,9 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     }
     return a;
   }
+  function areArraysEqual(arr1, arr2) {
+    return JSON.stringify(arr1) === JSON.stringify(arr2);
+  }
 
   var jsonLogic = {};
   var operations = {
@@ -42,9 +45,18 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return a === b;
     },
     $match: function (a, b) {
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some(
+          (subArray) => subArray?.length === b.length && subArray?.every((element, index) => element === b[index]),
+        );
+      }
       return JSON.stringify(a) === JSON.stringify(b);
     },
     $eq: function (a, b) {
+      if (Array.isArray(a) && Array.isArray(b)) return areArraysEqual(a, b);
+      if (Array.isArray(a)) {
+        return a.includes(b);
+      }
       return a === b;
     },
     $ne: function (a, b) {
@@ -54,12 +66,14 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return a !== b;
     },
     $gt: function (a, b) {
+      if (Array.isArray(a)) return a.some((k) => k > b);
       return a > b;
     },
     $gte: function (a, b) {
       return a >= b;
     },
     $lt: function (a, b, c) {
+      if (Array.isArray(a)) return a.some((k) => k < b);
       return c === undefined ? a < b : a < b && b < c;
     },
     $lte: function (a, b, c) {
@@ -72,6 +86,7 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return jsonLogic.truthy(a);
     },
     $empty: function (a) {
+      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
       return !jsonLogic.truthy(a);
     },
     $notExists: function (a) {
@@ -86,6 +101,9 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $in: function (a, b) {
       if (!b || typeof b.indexOf === 'undefined') return false;
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return b.some((elementB) => a.includes(elementB));
+      }
       return b.indexOf(a) !== -1;
     },
     $notIn: function (a, b) {
@@ -94,21 +112,29 @@ http://ricostacruz.com/cheatsheets/umdjs.html
     },
     $includes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
+      if (Array.isArray(a)) return a.some((element) => element?.includes(b));
       return a.indexOf(b) !== -1;
     },
     $notIncludes: function (a, b) {
       if (!a || typeof a.indexOf === 'undefined') return false;
+      if (Array.isArray(a)) return !a.some((element) => element.includes(b));
       return !(a.indexOf(b) !== -1);
     },
     $anyOf: function (a, b) {
       if (a.length === 0) {
         return false;
       }
-      return b.every((item) => a.includes(item));
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some((subArray) => subArray.some((element) => b.includes(element)));
+      }
+      return a.some((element) => b.includes(element));
     },
     $noneOf: function (a, b) {
       if (a.length === 0) {
         return true;
+      }
+      if (Array.isArray(a) && Array.isArray(b) && a.some((element) => Array.isArray(element))) {
+        return a.some((subArray) => subArray.every((element) => !b.some((bElement) => element.includes(bElement))));
       }
       return b.some((item) => !a.includes(item));
     },
@@ -125,9 +151,11 @@ http://ricostacruz.com/cheatsheets/umdjs.html
       return false;
     },
     $isTruly: function (a) {
+      if (Array.isArray(a)) return a.some((k) => k === true || k === 1);
       return a === true || a === 1;
     },
     $isFalsy: function (a) {
+      if (Array.isArray(a)) return a.some((k) => !jsonLogic.truthy(k));
       return !jsonLogic.truthy(a);
     },
     cat: function () {

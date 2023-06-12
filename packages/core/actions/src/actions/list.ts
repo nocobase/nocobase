@@ -43,11 +43,19 @@ async function listWithPagination(ctx: Context) {
 
   const repository = getRepositoryFromParams(ctx);
 
-  const [rows, count] = await repository.findAndCount({
+  const options = {
     context: ctx,
     ...findArgs(ctx),
     ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(pageSize))),
+  };
+
+  Object.keys(options).forEach((key) => {
+    if (options[key] === undefined) {
+      delete options[key];
+    }
   });
+
+  const [rows, count] = await repository.findAndCount(options);
 
   ctx.body = {
     count,

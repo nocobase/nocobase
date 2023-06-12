@@ -1,6 +1,7 @@
 import { Repository } from '@nocobase/database';
-import { CollectionModel } from '../models/collection';
 import { CollectionsGraph } from '@nocobase/utils';
+import { CollectionModel } from '../models/collection';
+import lodash from 'lodash';
 
 interface LoadOptions {
   filter?: any;
@@ -10,13 +11,15 @@ interface LoadOptions {
 export class CollectionRepository extends Repository {
   async load(options: LoadOptions = {}) {
     const { filter, skipExist } = options;
-    const instances = (await this.find({ filter })) as CollectionModel[];
+    const instances = (await this.find({ filter, appends: ['fields'] })) as CollectionModel[];
 
     const graphlib = CollectionsGraph.graphlib();
 
     const graph = new graphlib.Graph();
 
-    const nameMap = {};
+    const nameMap: {
+      [key: string]: CollectionModel;
+    } = {};
 
     const viewCollections = [];
 
@@ -33,7 +36,7 @@ export class CollectionRepository extends Repository {
       nameMap[collectionName] = instance;
 
       // @ts-ignore
-      const fields = await instance.getFields();
+      const fields = instance.get('fields') || [];
       for (const field of fields) {
         if (field['type'] === 'belongsToMany') {
           const throughName = field.options.through;
@@ -60,14 +63,39 @@ export class CollectionRepository extends Repository {
 
     const sortedNames = graphlib.alg.topsort(graph);
 
+    const lazyCollectionFields: {
+      [key: string]: Array<string>;
+    } = {};
     for (const instanceName of sortedNames) {
       if (!nameMap[instanceName]) continue;
-      await nameMap[instanceName].load({ skipExist, skipField: viewCollections.includes(instanceName) });
+
+      const skipField = (() => {
+        if (viewCollections.includes(instanceName)) {
+          return true;
+        }
+
+        const fields = nameMap[instanceName].get('fields');
+
+        return fields
+          .filter((field) => field['type'] === 'belongsTo' && viewCollections.includes(field.options?.['target']))
+          .map((field) => field.get('name'));
+      })();
+
+      if (lodash.isArray(skipField) && skipField.length) {
+        lazyCollectionFields[instanceName] = skipField;
+      }
+
+      await nameMap[instanceName].load({ skipField });
     }
 
     // load view fields
     for (const viewCollectionName of viewCollections) {
       await nameMap[viewCollectionName].loadFields({});
+    }
+
+    // load lazy collection field
+    for (const [collectionName, skipField] of Object.entries(lazyCollectionFields)) {
+      await nameMap[collectionName].loadFields({ includeFields: skipField });
     }
   }
 

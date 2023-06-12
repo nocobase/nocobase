@@ -1,5 +1,6 @@
 import { Database, mockDatabase } from '@nocobase/database';
 import { ViewFieldInference } from '../../view/view-inference';
+import { uid } from '@nocobase/utils';
 
 describe('view inference', function () {
   let db: Database;
