@@ -25,7 +25,7 @@ export const VariableInput = (props: Props) => {
         label: `{{t("Date variables")}}`,
         value: '$date',
         key: '$date',
-        disabled: schema['x-component'] !== 'DatePicker',
+        disabled: schema?.['x-component'] !== 'DatePicker',
         children: [
           {
             key: 'now',

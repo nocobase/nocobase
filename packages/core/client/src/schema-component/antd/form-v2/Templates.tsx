@@ -72,6 +72,32 @@ const useDataTemplates = () => {
     enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
+function mergeObjects(obj1, obj2) {
+  const merged = {};
+
+  for (let key in obj1) {
+    if (obj1.hasOwnProperty(key)) {
+      merged[key] = obj1[key];
+    }
+  }
+
+  for (let key in obj2) {
+    if (obj2.hasOwnProperty(key)) {
+      if (merged.hasOwnProperty(key)) {
+        if (Array.isArray(merged[key]) && Array.isArray(obj2[key])) {
+          merged[key] = [{ ...merged[key][0], ...obj2[key][0] }];
+        } else {
+          merged[key] = [{ ...merged[key], ...obj2[key] }];
+        }
+      } else {
+        merged[key] = obj2[key];
+      }
+    }
+  }
+
+  return merged;
+}
+
 
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
@@ -108,12 +134,7 @@ export const Templates = ({ style = {}, form }) => {
             // 切换之前先把之前的数据清空
             form.reset();
             form.__template = true;
-
-            forEach(data, (value, key) => {
-              if (value) {
-                form.values[key] = value;
-              }
-            });
+            form.setValues(mergeObjects(form.values, data));
           }
           return data;
         })
