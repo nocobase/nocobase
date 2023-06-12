@@ -121,7 +121,6 @@ export const cacheWrap = async (
     }
   }
   const data = await func();
-  console.log(data);
   if (useCache) {
     await cache.set(key, data, ttl);
   }

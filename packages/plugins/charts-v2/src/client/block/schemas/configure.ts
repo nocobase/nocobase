@@ -402,7 +402,7 @@ export const transformSchema: ISchema = {
           'x-component-props': {
             placeholder: '{{t("Field")}}',
             style: {
-              'min-width': '200px',
+              minWidth: '200px',
             },
           },
           'x-reactions': '{{ useChartFields }}',

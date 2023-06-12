@@ -81,7 +81,7 @@ export const ChartConfigure: React.FC<{
   const form = useMemo(
     () =>
       createForm({
-        initialValues: { ...schema?.['x-decorator-props'], collection, data: '' },
+        values: { ...schema?.['x-decorator-props'], collection, data: '' },
       }),
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -342,7 +342,7 @@ ChartConfigure.Transform = function Transform() {
   return (
     <SchemaComponent
       schema={transformSchema}
-      components={{ Select, FormItem, ArrayItems, Space, AutoComplete }}
+      components={{ Select, FormItem, ArrayItems, Space }}
       scope={{ useChartFields: getChartFields, useFieldTypeOptions, useTransformers, t }}
     />
   );

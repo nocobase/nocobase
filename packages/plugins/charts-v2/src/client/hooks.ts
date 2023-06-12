@@ -196,7 +196,7 @@ export const useFieldTransformer = (transform: ChartRendererProps['transform'], 
     .reduce((meta, item) => {
       const formatter = transformers[item.type][item.format];
       meta[item.field] = {
-        formatter: (val: any) => formatter(val, locale),
+        formatter: (val: any) => formatter?.(val, locale),
       };
       return meta;
     }, {});

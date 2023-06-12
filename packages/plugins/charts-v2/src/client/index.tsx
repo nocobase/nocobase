@@ -47,3 +47,4 @@ const Chart: React.FC = (props) => {
 };
 
 export default Chart;
+export { ChartLibraryProvider };
