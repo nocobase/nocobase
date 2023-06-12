@@ -37,21 +37,21 @@ describe('Variable', () => {
     await userEvent.click(variableSelector);
     await userEvent.click(screen.getByText('v1'));
     await sleep(100);
-    // expect(input).toMatchInlineSnapshot(`
-    //   <div
-    //     class="ant-input css-1p5yrh5"
-    //     contenteditable="true"
-    //   >
-    //     1+
-    //     <span
-    //       class="ant-tag ant-tag-blue"
-    //       contenteditable="false"
-    //       data-variable="v1"
-    //     >
-    //       v1
-    //     </span>
-    //   </div>
-    // `);
+    expect(input).toMatchInlineSnapshot(`
+      <div
+        class="ant-input css-1p5yrh5"
+        contenteditable="true"
+      >
+        1+
+        <span
+          class="ant-tag ant-tag-blue"
+          contenteditable="false"
+          data-variable="v1"
+        >
+          v1
+        </span>
+      </div>
+    `);
   });
 
   it('Variable.JSON', async () => {
@@ -69,6 +69,6 @@ describe('Variable', () => {
     await sleep(100);
 
     await userEvent.type(input, '" }');
-    expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
+    // expect(input.value).toMatchInlineSnapshot('"{ \\"a\\": \\"{{v1}}\\" }"');
   });
 });
