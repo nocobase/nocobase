@@ -15,7 +15,8 @@ export class OIDCAuth extends BaseAuth {
     const ctx = this.ctx;
     const { http } = this.getOptions();
     const protocol = http ? 'http' : 'https';
-    return `${protocol}://${ctx.host}/api/oidc:redirect`;
+    return `http://127.0.0.1:13000/api/oidc:redirect`;
+    // return `${protocol}://${ctx.host}/api/oidc:redirect`;
   }
 
   getOptions() {
@@ -37,11 +38,12 @@ export class OIDCAuth extends BaseAuth {
   }
 
   async createOIDCClient() {
-    const { issuer, clientId, clientSecret } = this.getOptions();
+    const { issuer, clientId, clientSecret, idTokenSignedResponseAlg } = this.getOptions();
     const oidc = await Issuer.discover(issuer);
     return new oidc.Client({
       client_id: clientId,
       client_secret: clientSecret,
+      id_token_signed_response_alg: idTokenSignedResponseAlg || 'RS256',
     });
   }
 

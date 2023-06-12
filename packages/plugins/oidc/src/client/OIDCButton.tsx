@@ -45,6 +45,7 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
    * 从弹出窗口，发消息回来进行登录
    */
   const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
+    console.log(event.data);
     const { state } = event.data;
     const search = new URLSearchParams(state);
     const authenticator = search.get('name');
@@ -54,7 +55,7 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
     } catch (err) {
       console.error(err);
     } finally {
-      windowHandler.close();
+      windowHandler?.close();
       setWindowHandler(undefined);
     }
   });
@@ -65,9 +66,10 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
   useEffect(() => {
     if (!windowHandler) return;
 
-    window.addEventListener('message', handleOIDCLogin);
+    const channel = new BroadcastChannel('nocobase-oidc-response');
+    channel.onmessage = handleOIDCLogin;
     return () => {
-      window.removeEventListener('message', handleOIDCLogin);
+      channel.close();
     };
   }, [windowHandler, handleOIDCLogin]);
 
