@@ -78,7 +78,6 @@ export const Templates = ({ style = {}, form }) => {
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
-  form.__initValues = JSON.parse(JSON.stringify(form?.initialValues));
   useEffect(() => {
     if (enabled && defaultTemplate) {
       form.__template = true;
@@ -122,7 +121,6 @@ export const Templates = ({ style = {}, form }) => {
         });
     } else {
       form?.reset();
-      form.setValues(form.__initValues, 'overwrite');
     }
   }, []);
 
