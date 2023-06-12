@@ -45,7 +45,6 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
    * 从弹出窗口，发消息回来进行登录
    */
   const handleOIDCLogin = useMemoizedFn(async (event: MessageEvent) => {
-    console.log(event.data);
     const { state } = event.data;
     const search = new URLSearchParams(state);
     const authenticator = search.get('name');
@@ -54,9 +53,6 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
       redirect();
     } catch (err) {
       console.error(err);
-    } finally {
-      windowHandler?.close();
-      setWindowHandler(undefined);
     }
   });
 

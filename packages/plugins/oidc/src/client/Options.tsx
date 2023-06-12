@@ -59,9 +59,20 @@ const schema = {
           ],
         },
         http: {
-          title: '{{t("http")}}',
+          title: '{{t("HTTP")}}',
           'x-component': 'Checkbox',
           'x-decorator': 'FormItem',
+        },
+        port: {
+          title: '{{t("Port")}}',
+          'x-component': 'InputNumber',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            style: {
+              width: '15%',
+              'min-width': '100px',
+            },
+          },
         },
         fieldMap: {
           title: '{{t("Field Map")}}',

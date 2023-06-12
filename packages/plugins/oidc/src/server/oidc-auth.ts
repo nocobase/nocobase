@@ -13,10 +13,10 @@ export class OIDCAuth extends BaseAuth {
 
   getRedirectUri() {
     const ctx = this.ctx;
-    const { http } = this.getOptions();
+    const { http, port } = this.getOptions();
     const protocol = http ? 'http' : 'https';
-    return `http://127.0.0.1:13000/api/oidc:redirect`;
-    // return `${protocol}://${ctx.host}/api/oidc:redirect`;
+    const host = port ? `${ctx.hostname}${port ? `:${port}` : ''}` : ctx.host;
+    return `${protocol}://${host}/api/oidc:redirect`;
   }
 
   getOptions() {
