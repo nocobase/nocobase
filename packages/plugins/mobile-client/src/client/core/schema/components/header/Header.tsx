@@ -5,6 +5,7 @@ import React, { useEffect } from 'react';
 import { useHistory } from 'react-router-dom';
 import { HeaderDesigner } from './Header.Designer';
 import { useField } from '@formily/react';
+import { generateNTemplate } from '../../../../locale';
 
 export interface HeaderProps extends NavBarProps {
   title?: string;
@@ -12,7 +13,7 @@ export interface HeaderProps extends NavBarProps {
 }
 const InternalHeader = (props: HeaderProps) => {
   const field = useField();
-  const { title = '{{ t("Untitled") }}', showBack = false } = { ...props, ...field?.componentProps };
+  const { title = generateNTemplate('Untitled'), showBack = false } = { ...props, ...field?.componentProps };
   const Designer = useDesigner();
   const compile = useCompile();
   const compiledTitle = compile(title);

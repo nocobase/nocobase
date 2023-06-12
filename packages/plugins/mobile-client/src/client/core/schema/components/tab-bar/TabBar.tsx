@@ -2,7 +2,15 @@ import { TabBar } from 'antd-mobile';
 import { TabBarItem } from './TabBar.Item';
 import React, { useCallback, useContext } from 'react';
 import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { DndContext, Icon, SchemaComponent, SchemaInitializer, SortableItem, useDesignable } from '@nocobase/client';
+import {
+  DndContext,
+  Icon,
+  SchemaComponent,
+  SchemaInitializer,
+  SortableItem,
+  useCompile,
+  useDesignable,
+} from '@nocobase/client';
 import { useTranslation } from '../../../../locale';
 import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
@@ -16,6 +24,7 @@ export const InternalTabBar: React.FC = (props) => {
   const { insertBeforeEnd } = useDesignable();
   const history = useHistory();
   const params = useParams<{ name: string }>();
+  const compile = useCompile();
 
   const onAddTab = useCallback((values: any) => {
     return insertBeforeEnd({
@@ -80,7 +89,7 @@ export const InternalTabBar: React.FC = (props) => {
                 key={`tab_${schema['x-uid']}`}
                 title={
                   <>
-                    {cp.title}
+                    {compile(cp.title)}
                     <SchemaComponent schema={schema} name={name} />
                   </>
                 }

@@ -1,6 +1,6 @@
 import { SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from '../../../../locale';
+import { generateNTemplate, useTranslation } from '../../../../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useHistory } from 'react-router-dom';
@@ -60,7 +60,7 @@ export const ContainerDesigner = () => {
                   'x-designer': 'MTabBar.Item.Designer',
                   'x-component-props': {
                     icon: 'HomeOutlined',
-                    title: t('Untitled'),
+                    title: generateNTemplate('Untitled'),
                   },
                   properties: {
                     page: pageSchema.toJSON(),
