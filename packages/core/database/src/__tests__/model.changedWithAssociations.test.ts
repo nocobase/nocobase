@@ -13,7 +13,7 @@ describe('changedWithAssociations', () => {
     await db.close();
   });
 
-  it('should get change afterCreate', async () => {
+  it('should get changed keys at afterCreate', async () => {
     db.collection({
       name: 'users',
       fields: [
