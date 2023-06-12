@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`route-switch case 1 1`] = `
+exports[`route-switch > case 1 1`] = `
 <div>
   <h1>
     Home

@@ -30,7 +30,7 @@ export const tree: ICollectionTemplate = {
         onDelete: 'CASCADE',
         uiSchema: {
           title: '{{t("Parent")}}',
-          'x-component': 'RecordPicker',
+          'x-component': 'AssociationField',
           'x-component-props': {
             // mode: 'tags',
             multiple: false,
@@ -50,7 +50,7 @@ export const tree: ICollectionTemplate = {
         onDelete: 'CASCADE',
         uiSchema: {
           title: '{{t("Children")}}',
-          'x-component': 'RecordPicker',
+          'x-component': 'AssociationField',
           'x-component-props': {
             // mode: 'tags',
             multiple: true,

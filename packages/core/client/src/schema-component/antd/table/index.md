@@ -26,4 +26,6 @@ group:
 
 <code src="./demos/demo3.tsx" />
 
+## With Actions
+
 <code src="./demos/demo4.tsx" />

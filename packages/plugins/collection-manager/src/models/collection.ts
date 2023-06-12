@@ -1,11 +1,11 @@
 import Database, { Collection, MagicAttributeModel } from '@nocobase/database';
+import lodash from 'lodash';
 import { SyncOptions, Transactionable } from 'sequelize';
 import { FieldModel } from './field';
-import lodash from 'lodash';
 
 interface LoadOptions extends Transactionable {
   // TODO
-  skipField?: boolean;
+  skipField?: boolean | Array<string>;
   skipExist?: boolean;
 }
 
@@ -41,6 +41,10 @@ export class CollectionModel extends MagicAttributeModel {
       await this.loadFields({ transaction });
     }
 
+    if (lodash.isArray(skipField)) {
+      await this.loadFields({ transaction, skipField });
+    }
+
     await this.db.emitAsync('collection:loaded', {
       collection,
       transaction,
@@ -49,9 +53,28 @@ export class CollectionModel extends MagicAttributeModel {
     return collection;
   }
 
-  async loadFields(options: Transactionable = {}) {
+  async loadFields(
+    options: Transactionable & {
+      skipField?: Array<string>;
+      includeFields?: Array<string>;
+    } = {},
+  ) {
+    let fields = this.get('fields') || [];
+
+    if (!fields.length) {
+      fields = await this.getFields(options);
+    }
+
+    if (options.skipField) {
+      fields = fields.filter((field) => !options.skipField.includes(field.name));
+    }
+
+    if (options.includeFields) {
+      fields = fields.filter((field) => options.includeFields.includes(field.name));
+    }
+
     // @ts-ignore
-    const instances: FieldModel[] = await this.getFields(options);
+    const instances: FieldModel[] = fields;
 
     for (const instance of instances) {
       await instance.load(options);

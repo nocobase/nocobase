@@ -1,6 +1,6 @@
 import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
-import { Modal, message } from 'antd';
 import { parse } from '@nocobase/utils/client';
+import { Modal, message } from 'antd';
 import { cloneDeep } from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
@@ -158,6 +158,7 @@ export const useCreateActionProps = () => {
         await form.submit();
       }
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      // const values = omitBy(formValues, (value) => isEqual(JSON.stringify(value), '[{}]'));
       if (addChild) {
         const treeParentField = getTreeParentField();
         values[treeParentField?.name ?? 'parent'] = currentRecord;
@@ -166,7 +167,7 @@ export const useCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.create({
+        const data = await resource.create({
           values: {
             ...values,
             ...overwriteValues,
@@ -174,6 +175,7 @@ export const useCreateActionProps = () => {
           },
         });
         actionField.data.loading = false;
+        actionField.data.data = data;
         __parent?.service?.refresh?.();
         setVisible?.(false);
         if (!onSuccess?.successMessage) {
@@ -197,6 +199,63 @@ export const useCreateActionProps = () => {
           message.success(compile(onSuccess?.successMessage));
         }
       } catch (error) {
+        actionField.data.loading = false;
+      }
+    },
+  };
+};
+
+export const useAssociationCreateActionProps = () => {
+  const form = useForm();
+  const { field, resource } = useBlockRequestContext();
+  const { setVisible, fieldSchema } = useActionContext();
+  const actionSchema = useFieldSchema();
+  const actionField = useField();
+  const { fields, getField, getTreeParentField } = useCollection();
+  const compile = useCompile();
+  const filterByTk = useFilterByTk();
+  const currentRecord = useRecord();
+  const currentUserContext = useCurrentUserContext();
+  const currentUser = currentUserContext?.data?.data;
+  return {
+    async onClick() {
+      const fieldNames = fields.map((field) => field.name);
+      const {
+        assignedValues: originalAssignedValues = {},
+        onSuccess,
+        overwriteValues,
+        skipValidator,
+      } = actionSchema?.['x-action-settings'] ?? {};
+      const addChild = fieldSchema?.['x-component-props']?.addChild;
+      const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
+      if (!skipValidator) {
+        await form.submit();
+      }
+      const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);
+      if (addChild) {
+        const treeParentField = getTreeParentField();
+        values[treeParentField?.name ?? 'parent'] = currentRecord;
+        values[treeParentField?.foreignKey ?? 'parentId'] = currentRecord.id;
+      }
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        const data = await resource.create({
+          values: {
+            ...values,
+            ...overwriteValues,
+            ...assignedValues,
+          },
+        });
+        actionField.data.loading = false;
+        actionField.data.data = data;
+        setVisible?.(false);
+        if (!onSuccess?.successMessage) {
+          return;
+        }
+        message.success(compile(onSuccess?.successMessage));
+      } catch (error) {
+        actionField.data.data = null;
         actionField.data.loading = false;
       }
     },
@@ -740,6 +799,19 @@ export const useDestroyActionProps = () => {
   };
 };
 
+export const useRemoveActionProps = (associationName) => {
+  const filterByTk = useFilterByTk();
+  const api = useAPIClient();
+  const resource = api.resource(associationName, filterByTk);
+  return {
+    async onClick(value) {
+      await resource.remove({
+        values: [value.id],
+      });
+    },
+  };
+};
+
 export const useDetailPrintActionProps = () => {
   const { formBlockRef } = useFormBlockContext();
 
@@ -969,7 +1041,6 @@ export const useAssociationFilterBlockProps = () => {
       const param = block.service.params?.[0] || {};
       // 保留原有的 filter
       const storedFilter = block.service.params?.[1]?.filters || {};
-
       if (value.length) {
         storedFilter[key] = {
           [filterKey]: value,
@@ -1001,4 +1072,55 @@ export const useAssociationFilterBlockProps = () => {
     valueKey,
     labelKey,
   };
+};
+
+function getAssociationPath(str) {
+  const lastIndex = str.lastIndexOf('.');
+  if (lastIndex !== -1) {
+    return str.substring(0, lastIndex);
+  }
+  return str;
+}
+
+export const useAssociationNames = () => {
+  const { getCollectionJoinField } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const updateAssociationValues = new Set([]);
+  const appends = new Set([]);
+  const getAssociationAppends = (schema, str) => {
+    schema.reduceProperties((pre, s) => {
+      const prefix = pre || str;
+      const collectionfield = s['x-collection-field'] && getCollectionJoinField(s['x-collection-field']);
+      const isAssociationSubfield = s.name.includes('.');
+      const isAssociationField =
+        collectionfield && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany'].includes(collectionfield.type);
+      if (collectionfield && (isAssociationField || isAssociationSubfield) && s['x-component'] !== 'TableField') {
+        const fieldPath = !isAssociationField && isAssociationSubfield ? getAssociationPath(s.name) : s.name;
+        const path = prefix === '' || !prefix ? fieldPath : prefix + '.' + fieldPath;
+        appends.add(path);
+        if (['Nester', 'SubTable'].includes(s['x-component-props']?.mode)) {
+          updateAssociationValues.add(path);
+          const bufPrefix = prefix && prefix !== '' ? prefix + '.' + s.name : s.name;
+          getAssociationAppends(s, bufPrefix);
+        }
+      } else if (
+        ![
+          'ActionBar',
+          'Action',
+          'Action.Link',
+          'Action.Modal',
+          'Selector',
+          'Viewer',
+          'AddNewer',
+          'AssociationField.Selector',
+          'AssociationField.AddNewer',
+          'TableField',
+        ].includes(s['x-component'])
+      ) {
+        getAssociationAppends(s, str);
+      }
+    }, str);
+  };
+  getAssociationAppends(fieldSchema, '');
+  return { appends: [...appends], updateAssociationValues: [...updateAssociationValues] };
 };

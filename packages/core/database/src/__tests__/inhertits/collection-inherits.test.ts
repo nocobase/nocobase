@@ -16,6 +16,171 @@ pgOnly()('collection inherits', () => {
     await db.close();
   });
 
+  it('should append __collection with eager load', async () => {
+    const Root = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'bs',
+          type: 'hasMany',
+          target: 'b',
+          foreignKey: 'root_id',
+        },
+      ],
+    });
+
+    const Child = db.collection({
+      name: 'child',
+      inherits: ['root'],
+    });
+
+    const B = db.collection({
+      name: 'b',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync();
+
+    await Child.repository.create({
+      values: {
+        name: 'child1',
+        bs: [
+          {
+            name: 'b1',
+          },
+        ],
+      },
+    });
+
+    const data = await Root.repository.findOne({
+      fields: ['bs.name'],
+    });
+
+    expect(data.get('__collection')).toEqual('child');
+    expect(data.get('bs')[0].get('name')).toEqual('b1');
+  });
+
+  it('should not remove parent field reference map after child rewrite field', async () => {
+    const through = db.collection({
+      name: 'through',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const rootCollection = db.collection({
+      name: 'root',
+      fields: [
+        { name: 'name', type: 'string' },
+        {
+          name: 'targets',
+          type: 'belongsToMany',
+          target: 'root-target',
+          through: 'through',
+          foreignKey: 'rootId',
+          otherKey: 'targetId',
+        },
+      ],
+    });
+
+    const rootTarget = db.collection({
+      name: 'root-target',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    await db.sync({ force: true });
+
+    expect(db.referenceMap.getReferences('root-target')).toHaveLength(1);
+
+    const child = db.collection({
+      name: 'child',
+      inherits: ['root'],
+    });
+
+    const childTarget = db.collection({
+      name: 'child-target',
+      inherits: ['root-target'],
+    });
+
+    await child.setField('targets', {
+      name: 'targets',
+      type: 'belongsToMany',
+      target: 'child-target',
+      through: 'through',
+      foreignKey: 'rootId',
+      otherKey: 'targetId',
+    });
+
+    await db.sync();
+
+    expect(db.referenceMap.getReferences('root-target')).toHaveLength(1);
+  });
+
+  it('should append collection name in eager load', async () => {
+    const rootCollection = db.collection({
+      name: 'assoc',
+      fields: [
+        { name: 'name', type: 'string' },
+        { type: 'belongsToMany', name: 'other-assocs' },
+      ],
+    });
+
+    const childCollection = db.collection({
+      name: 'child',
+      inherits: ['assoc'],
+    });
+
+    const otherAssoc = db.collection({
+      name: 'other-assocs',
+      fields: [{ name: 'name', type: 'string' }],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+        },
+        {
+          name: 'assocs',
+          type: 'hasMany',
+          target: 'assoc',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    const child = await childCollection.repository.create({
+      values: {
+        name: 'child1',
+      },
+    });
+
+    await User.repository.create({
+      values: {
+        name: 'user1',
+        assocs: [
+          {
+            id: child.get('id'),
+          },
+        ],
+      },
+    });
+
+    const users = await User.repository.find({
+      appends: ['assocs.other-assocs'],
+    });
+
+    const user = users[0];
+
+    const assoc = user.get('assocs')[0];
+    expect(assoc.get('__tableName')).toEqual(childCollection.model.tableName);
+    expect(assoc.get('__schemaName')).toEqual(childCollection.collectionSchema());
+
+    expect(user.get('assocs')[0].get('__collection')).toBe('child');
+  });
+
   it('should list data filtered by child type', async () => {
     const rootCollection = db.collection({
       name: 'root',

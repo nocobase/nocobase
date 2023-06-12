@@ -47,7 +47,7 @@ const SideMenu: FC<INavbarProps> = ({ theme, mobileMenuCollapsed, location, dark
       }
       return (
         <Menu.Item disabled={!!item.disabled} eventKey={item.path}>
-          <NavLink to={item.path}>{item.title}</NavLink>
+          {item.link ? <a target={'_blank'} href={item.link}>{item.title}</a> : <NavLink to={item.path}>{item.title}</NavLink>}
         </Menu.Item>
       );
     });

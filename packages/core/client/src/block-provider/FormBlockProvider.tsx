@@ -1,7 +1,6 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
-import { Spin } from 'antd';
-import isEmpty from 'lodash/isEmpty';
+import { isEmpty } from 'lodash';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -12,7 +11,7 @@ import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 export const FormBlockContext = createContext<any>({});
 
 const InternalFormBlockProvider = (props) => {
-  const { action, readPretty } = props;
+  const { action, readPretty, params } = props;
   const field = useField();
   const form = useMemo(
     () =>
@@ -21,21 +20,22 @@ const InternalFormBlockProvider = (props) => {
       }),
     [],
   );
-  const { resource, service } = useBlockRequestContext();
+  const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  if (service.loading) {
-    return <Spin />;
-  }
+  // if (service.loading) {
+  //   return <Spin />;
+  // }
   return (
     <FormBlockContext.Provider
       value={{
+        params,
         action,
         form,
         field,
         service,
         resource,
-        updateAssociationValues: [],
+        updateAssociationValues,
         formBlockRef,
       }}
     >
@@ -107,8 +107,10 @@ export const useFormBlockProps = () => {
   });
 
   useEffect(() => {
-    ctx.form?.setInitialValues(ctx.service?.data?.data);
-  }, []);
+    if (!ctx?.service?.loading) {
+      ctx.form?.setInitialValues(ctx.service?.data?.data);
+    }
+  }, [ctx?.service?.loading]);
   return {
     form: ctx.form,
   };

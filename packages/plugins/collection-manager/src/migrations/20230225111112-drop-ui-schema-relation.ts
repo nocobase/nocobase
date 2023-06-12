@@ -4,6 +4,12 @@ import { FieldModel } from '../models';
 
 export default class extends Migration {
   async up() {
+    const result = await this.app.version.satisfies('<0.9.2-alpha.2');
+
+    if (!result) {
+      return;
+    }
+
     const transaction = await this.db.sequelize.transaction();
 
     const migrateFieldsSchema = async (collection: Collection) => {

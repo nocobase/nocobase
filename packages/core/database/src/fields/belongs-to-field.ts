@@ -6,11 +6,11 @@ import { BaseRelationFieldOptions, RelationField } from './relation-field';
 import { HasManyField } from './has-many-field';
 
 export class BelongsToField extends RelationField {
+  static type = 'belongsTo';
+
   get dataType() {
     return 'BelongsTo';
   }
-
-  static type = 'belongsTo';
 
   get target() {
     const { target, name } = this.options;
@@ -79,7 +79,9 @@ export class BelongsToField extends RelationField {
 
     this.collection.addIndex([this.options.foreignKey]);
 
-    this.database.referenceMap.addReference(this.reference(association));
+    const reference = this.reference(association);
+
+    this.database.referenceMap.addReference(reference);
 
     return true;
   }
@@ -104,7 +106,7 @@ export class BelongsToField extends RelationField {
     }
 
     const association = collection.model.associations[this.name];
-    if (association) {
+    if (association && !this.options.inherit) {
       const reference = this.reference(association);
       this.database.referenceMap.removeReference(reference);
     }

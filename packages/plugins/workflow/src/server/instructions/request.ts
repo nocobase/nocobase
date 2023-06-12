@@ -51,7 +51,7 @@ export default class implements Instruction {
       nodeId: node.id,
     });
 
-    const config = processor.getParsedValue(node.config) as RequestConfig;
+    const config = processor.getParsedValue(node.config, node) as RequestConfig;
 
     request(config)
       .then((response) => {
@@ -73,7 +73,7 @@ export default class implements Instruction {
 
     this.plugin.app.logger.info(`[Workflow] request (#${node.id}) sent to "${config.url}", waiting for response...`);
 
-    return job;
+    return null;
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

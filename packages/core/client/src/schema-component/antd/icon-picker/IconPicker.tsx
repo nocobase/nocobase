@@ -17,8 +17,8 @@ function IconField(props: any) {
       <Input.Group compact>
         <Popover
           placement={'bottom'}
-          visible={visible}
-          onVisibleChange={(val) => {
+          open={visible}
+          onOpenChange={(val) => {
             if (disabled) {
               return;
             }

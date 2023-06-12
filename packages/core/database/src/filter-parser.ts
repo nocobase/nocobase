@@ -56,7 +56,7 @@ export default class FilterParser {
     return filter;
   }
 
-  toSequelizeParams() {
+  toSequelizeParams(): any {
     debug('filter %o', this.filter);
 
     if (!this.filter) {
@@ -164,17 +164,15 @@ export default class FilterParser {
 
         debug('associationKeys %o', associationKeys);
 
-        // set sequelize include option
-        const includeAttr = {
-          association: firstKey,
-          attributes: [], // out put empty fields by default
-        };
+        const existInclude = _.get(include, firstKey);
 
-        if (associations[firstKey].associationType === 'BelongsToMany') {
-          includeAttr['through'] = { attributes: [] };
+        if (!existInclude) {
+          // set sequelize include option
+          _.set(include, firstKey, {
+            association: firstKey,
+            attributes: [], // out put empty fields by default
+          });
         }
-
-        _.set(include, firstKey, includeAttr);
 
         // association target model
         let target = associations[firstKey].target;
@@ -198,16 +196,14 @@ export default class FilterParser {
               assoc.push(associationKey);
             });
 
-            const includeAttr = {
-              association: attr,
-              attributes: [],
-            };
-
-            if (target.associations[attr].associationType === 'BelongsToMany') {
-              includeAttr['through'] = { attributes: [] };
+            const existInclude = _.get(include, assoc);
+            if (!existInclude) {
+              _.set(include, assoc, {
+                association: attr,
+                attributes: [],
+              });
             }
 
-            _.set(include, assoc, includeAttr);
             target = target.associations[attr].target;
           } else {
             throw new Error(`${attr} neither ${firstKey}'s association nor ${firstKey}'s attribute`);
@@ -242,7 +238,21 @@ export default class FilterParser {
       });
     };
     debug('where %o, include %o', where, include);
-    return { where, include: toInclude(include) };
+    const results = { where, include: toInclude(include) };
+
+    //traverse filter include, set fromFiler to true
+    const traverseInclude = (include) => {
+      for (const item of include) {
+        if (item.include) {
+          traverseInclude(item.include);
+        }
+        item.fromFilter = true;
+      }
+    };
+
+    traverseInclude(results.include);
+
+    return results;
   }
 
   private getFieldNameFromQueryPath(queryPath: string) {

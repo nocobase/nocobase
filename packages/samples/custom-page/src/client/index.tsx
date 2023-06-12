@@ -5,7 +5,7 @@ const HelloWorld = () => {
   return <div>Hello ui router</div>;
 };
 
-export default React.memo((props) => {
+const CustomPage = React.memo((props) => {
   const ctx = useContext(RouteSwitchContext);
   ctx.routes.push({
     type: 'route',
@@ -14,3 +14,6 @@ export default React.memo((props) => {
   });
   return <RouteSwitchContext.Provider value={ctx}>{props.children}</RouteSwitchContext.Provider>;
 });
+CustomPage.displayName = 'CustomPage';
+
+export default CustomPage;

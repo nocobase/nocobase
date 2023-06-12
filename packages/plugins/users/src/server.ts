@@ -93,7 +93,7 @@ export default class UsersPlugin extends Plugin<UserPluginConfig> {
       this.app.resourcer.registerActionHandler(`users:${key}`, action);
     }
 
-    this.app.resourcer.use(parseToken, { tag: 'parseToken' });
+    // this.app.resourcer.use(parseToken, { tag: 'parseToken' });
 
     this.app.acl.addFixedParams('users', 'destroy', () => {
       return {

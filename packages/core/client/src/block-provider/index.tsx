@@ -11,4 +11,5 @@ export * from './TableSelectorProvider';
 export * from './FormFieldProvider';
 export * from './GanttBlockProvider';
 export * from './SharedFilterProvider';
+export * from './hooks';
 export * from './KanbanV2BlockProvider';

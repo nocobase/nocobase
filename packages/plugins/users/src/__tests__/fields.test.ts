@@ -48,6 +48,7 @@ describe('createdBy/updatedBy', () => {
       const p2 = await Post.repository.findOne({
         appends: ['createdBy', 'updatedBy'],
       });
+
       const data = p2.toJSON();
       expect(data.createdBy.id).toBe(currentUser.get('id'));
       expect(data.updatedBy.id).toBe(currentUser.get('id'));

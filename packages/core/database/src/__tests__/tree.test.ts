@@ -16,6 +16,57 @@ describe('tree test', function () {
     await db.close();
   });
 
+  it('should works with appends option', async () => {
+    const collection = db.collection({
+      name: 'categories',
+      tree: 'adjacency-list',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'belongsTo',
+          name: 'parent',
+          treeParent: true,
+        },
+        {
+          type: 'hasMany',
+          name: 'children',
+          treeChildren: true,
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await collection.repository.create({
+      values: [
+        {
+          name: 'c1',
+          children: [
+            {
+              name: 'c11',
+            },
+            {
+              name: 'c12',
+            },
+          ],
+        },
+        {
+          name: 'c2',
+        },
+      ],
+    });
+
+    const tree = await collection.repository.find({
+      tree: true,
+      filter: {
+        parentId: null,
+      },
+      fields: ['name'],
+    });
+
+    expect(tree.length).toBe(2);
+  });
+
   it('should not return children property when child nodes are empty', async () => {
     const collection = db.collection({
       name: 'categories',
@@ -60,6 +111,7 @@ describe('tree test', function () {
       filter: {
         parentId: null,
       },
+      tree: true,
     });
 
     const c2 = tree.find((item) => item.name === 'c2');

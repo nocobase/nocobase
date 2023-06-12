@@ -1,4 +1,4 @@
-import lodash, { omit } from 'lodash';
+import lodash from 'lodash';
 import {
   Association,
   BulkCreateOptions,
@@ -31,7 +31,8 @@ import { HasOneRepository } from './relation-repository/hasone-repository';
 import { RelationRepository } from './relation-repository/relation-repository';
 import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
-import { handleAppendsQuery } from './utils';
+import { EagerLoadingTree } from './eager-loading/eager-loading-tree';
+import { flatten } from 'flat';
 
 const debug = require('debug')('noco-database');
 
@@ -201,10 +202,6 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     }
   }
 
-  protected builder() {
-    return this.builderMap;
-  }
-
   of(id: string | number): R {
     if (!this.association) {
       return;
@@ -212,6 +209,22 @@ class RelationRepositoryBuilder<R extends RelationRepository> {
     const klass = this.builder()[this.association.associationType];
     return new klass(this.collection, this.associationName, id);
   }
+
+  protected builder() {
+    return this.builderMap;
+  }
+}
+
+export interface AggregateOptions {
+  method: 'avg' | 'count' | 'min' | 'max' | 'sum';
+  field?: string;
+  filter?: Filter;
+  distinct?: boolean;
+}
+
+interface FirstOrCreateOptions extends Transactionable {
+  filterKeys: string[];
+  values?: Values;
 }
 
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes>
@@ -225,6 +238,50 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     this.database = collection.context.database;
     this.collection = collection;
     this.model = collection.model;
+  }
+
+  public static valuesToFilter(values: Values, filterKeys: Array<string>) {
+    const filterAnd = [];
+    const flattedValues = flatten(values);
+
+    const keyWithOutArrayIndex = (key) => {
+      const chunks = key.split('.');
+      return chunks
+        .filter((chunk) => {
+          return !Boolean(chunk.match(/\d+/));
+        })
+        .join('.');
+    };
+
+    for (const filterKey of filterKeys) {
+      let filterValue;
+
+      for (const flattedKey of Object.keys(flattedValues)) {
+        const flattedKeyWithoutIndex = keyWithOutArrayIndex(flattedKey);
+
+        if (flattedKeyWithoutIndex === filterKey) {
+          if (filterValue) {
+            if (Array.isArray(filterValue)) {
+              filterValue.push(flattedValues[flattedKey]);
+            } else {
+              filterValue = [filterValue, flattedValues[flattedKey]];
+            }
+          } else {
+            filterValue = flattedValues[flattedKey];
+          }
+        }
+      }
+
+      if (filterValue) {
+        filterAnd.push({
+          [filterKey]: filterValue,
+        });
+      }
+    }
+
+    return {
+      $and: filterAnd,
+    };
   }
 
   /**
@@ -271,6 +328,59 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return count;
   }
 
+  async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {
+    const { method, field } = options;
+
+    const queryOptions = this.buildQueryOptions({
+      ...options,
+      fields: [],
+    });
+
+    options.optionsTransformer?.(queryOptions);
+    const hasAssociationFilter = () => {
+      if (queryOptions.include && queryOptions.include.length > 0) {
+        const filterInclude = queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        });
+        return filterInclude.length > 0;
+      }
+      return false;
+    };
+
+    if (hasAssociationFilter()) {
+      const primaryKeyField = this.model.primaryKeyAttribute;
+      const queryInterface = this.database.sequelize.getQueryInterface();
+
+      const findOptions = {
+        ...queryOptions,
+        raw: true,
+        includeIgnoreAttributes: false,
+        attributes: [
+          [
+            Sequelize.literal(
+              `DISTINCT ${queryInterface.quoteIdentifiers(`${this.collection.name}.${primaryKeyField}`)}`,
+            ),
+            primaryKeyField,
+          ],
+        ],
+      };
+
+      const ids = await this.model.findAll(findOptions);
+
+      return await this.model.aggregate(field, method, {
+        ...lodash.omit(queryOptions, ['where', 'include']),
+        where: {
+          [primaryKeyField]: ids.map((node) => node[primaryKeyField]),
+        },
+      });
+    }
+
+    return await this.model.aggregate(field, method, queryOptions);
+  }
+
   /**
    * find
    * @param options
@@ -312,38 +422,21 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
         return [];
       }
 
-      // find template model
-      const templateModel = await model.findOne({
-        ...opts,
-        includeIgnoreAttributes: false,
-        attributes: [primaryKeyField],
-        group: `${model.name}.${primaryKeyField}`,
-        transaction,
-        limit: 1,
-        offset: 0,
-      } as any);
-
-      const where = {
-        [primaryKeyField]: {
-          [Op.in]: ids.map((id) => id['pk']),
-        },
-      };
-
-      rows = await handleAppendsQuery({
-        queryPromises: opts.include.map((include) => {
-          const options = {
-            ...omit(opts, ['limit', 'offset', 'filter']),
-            include: include,
-            where,
-            transaction,
-          };
-
-          return model.findAll(options).then((rows) => {
-            return { rows, include };
-          });
-        }),
-        templateModel: templateModel,
+      // find all rows
+      const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+        model,
+        rootAttributes: opts.attributes,
+        includeOption: opts.include,
+        rootOrder: opts.order,
+        db: this.database,
       });
+
+      await eagerLoadingTree.load(
+        ids.map((i) => i.pk),
+        transaction,
+      );
+
+      rows = eagerLoadingTree.root.instances;
     } else {
       rows = await model.findAll({
         ...opts,
@@ -394,6 +487,39 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const rows = await this.find({ ...options, limit: 1, transaction });
     return rows.length == 1 ? rows[0] : null;
+  }
+
+  /**
+   * Get the first record matching the attributes or create it.
+   */
+  async firstOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return instance;
+    }
+
+    return this.create({ values, transaction });
+  }
+
+  async updateOrCreate(options: FirstOrCreateOptions) {
+    const { filterKeys, values, transaction } = options;
+    const filter = Repository.valuesToFilter(values, filterKeys);
+
+    const instance = await this.findOne({ filter, transaction });
+
+    if (instance) {
+      return await this.update({
+        filterByTk: instance.get(this.collection.model.primaryKeyAttribute),
+        values,
+        transaction,
+      });
+    }
+
+    return this.create({ values, transaction });
   }
 
   /**

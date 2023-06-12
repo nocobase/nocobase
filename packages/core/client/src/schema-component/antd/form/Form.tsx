@@ -1,7 +1,7 @@
 import { FormLayout } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FieldContext, FormContext, observer, RecursionField, useField, useFieldSchema } from '@formily/react';
-import { Options, Result } from 'ahooks/lib/useRequest/src/types';
+import { Options, Result } from 'ahooks/es/useRequest/src/types';
 import { ConfigProvider, Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { useAttach, useComponent } from '../..';
@@ -65,7 +65,7 @@ const FormDecorator: React.FC<FormProps> = (props) => {
   );
 };
 
-const useRequestProps = (props: any) => {
+const getRequestParams = (props: any) => {
   const { request, initialValue } = props;
   if (request) {
     return request;
@@ -77,40 +77,43 @@ const useRequestProps = (props: any) => {
   };
 };
 
-const useDef = (opts: any = {}, props: FormProps = {}) => {
-  return useRequest(useRequestProps(props), opts);
+const useDefaultValues = (opts: any = {}, props: FormProps = {}) => {
+  return useRequest(getRequestParams(props), opts);
 };
 
 const FormBlockContext = createContext<any>(null);
 
-export const Form: React.FC<FormProps> & { Designer?: any } = observer((props) => {
-  const { request, effects, initialValue, useValues = useDef, ...others } = props;
-  const fieldSchema = useFieldSchema();
-  const field = useField();
-  const form = useMemo(() => createForm({ effects }), []);
-  const result = useValues(
-    {
-      uid: fieldSchema['x-uid'],
-      async onSuccess(data) {
-        await form.reset();
-        form.setValues(data?.data);
+export const Form: React.FC<FormProps> & { Designer?: any } = observer(
+  (props) => {
+    const { request, effects, initialValue, useValues = useDefaultValues, ...others } = props;
+    const fieldSchema = useFieldSchema();
+    const field = useField();
+    const form = useMemo(() => createForm({ effects }), []);
+    const result = useValues(
+      {
+        uid: fieldSchema['x-uid'],
+        async onSuccess(data) {
+          await form.reset();
+          form.setValues(data?.data);
+        },
       },
-    },
-    props,
-  );
-  const parent = useContext(FormBlockContext);
-  return (
-    <FormBlockContext.Provider value={{ parent, form, result, field, fieldSchema }}>
-      <Spin spinning={result?.loading || false}>
-        {fieldSchema['x-decorator'] === 'Form' ? (
-          <FormDecorator form={form} {...others} />
-        ) : (
-          <FormComponent form={form} {...others} />
-        )}
-      </Spin>
-    </FormBlockContext.Provider>
-  );
-});
+      props,
+    );
+    const parent = useContext(FormBlockContext);
+    return (
+      <FormBlockContext.Provider value={{ parent, form, result, field, fieldSchema }}>
+        <Spin spinning={result?.loading || false}>
+          {fieldSchema['x-decorator'] === 'Form' ? (
+            <FormDecorator form={form} {...others} />
+          ) : (
+            <FormComponent form={form} {...others} />
+          )}
+        </Spin>
+      </FormBlockContext.Provider>
+    );
+  },
+  { displayName: 'Form' },
+);
 
 Form.Designer = () => {
   const { name, title } = useCollection();

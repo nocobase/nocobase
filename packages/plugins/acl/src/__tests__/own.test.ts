@@ -2,7 +2,6 @@ import { ACL } from '@nocobase/acl';
 import { Database } from '@nocobase/database';
 import PluginUser from '@nocobase/plugin-users';
 import { MockServer } from '@nocobase/test';
-
 import { prepareApp } from './prepare';
 
 describe('own test', () => {
@@ -69,9 +68,7 @@ describe('own test', () => {
 
     pluginUser = app.getPlugin('users');
 
-    adminToken = pluginUser.jwtService.sign({ userId: admin.get('id') });
-
-    adminAgent = app.agent().auth(adminToken, { type: 'bearer' });
+    adminAgent = app.agent().login(admin);
 
     user = await db.getRepository('users').create({
       values: {
@@ -80,9 +77,7 @@ describe('own test', () => {
       },
     });
 
-    userToken = pluginUser.jwtService.sign({ userId: user.get('id') });
-
-    userAgent = app.agent().auth(userToken, { type: 'bearer' });
+    userAgent = app.agent().login(user);
   });
 
   it('should list without createBy', async () => {

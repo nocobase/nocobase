@@ -49,11 +49,13 @@
     }
   },
   "include": [
-    "packages/**/*"
+    "packages/**/*",
+    "scripts/setupVitest.ts"
   ],
   "exclude": [
     "packages/**/node_modules",
     "packages/**/dist",
-    "packages/**/lib"
+    "packages/**/lib",
+    "packages/**/es"
   ]
 }

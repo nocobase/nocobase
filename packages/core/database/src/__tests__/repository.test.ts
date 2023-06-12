@@ -1,6 +1,29 @@
 import { Collection } from '../collection';
 import { Database } from '../database';
 import { mockDatabase } from './';
+import { Repository } from '@nocobase/database';
+
+describe('repository', () => {
+  test('value to filter', async () => {
+    const value = {
+      tags: [
+        {
+          categories: [{ name: 'c1' }, { name: 'c2' }],
+        },
+        {
+          categories: [{ name: 'c3' }, { name: 'c4' }],
+        },
+      ],
+    };
+
+    const filter = Repository.valuesToFilter(value, ['tags.categories.name']);
+    expect(filter.$and).toEqual([
+      {
+        'tags.categories.name': ['c1', 'c2', 'c3', 'c4'],
+      },
+    ]);
+  });
+});
 
 describe('max', () => {
   let db: Database;
@@ -169,6 +192,7 @@ describe('repository.find', () => {
   let User: Collection;
   let Post: Collection;
   let Comment: Collection;
+  let Tag: Collection;
 
   beforeEach(async () => {
     db = mockDatabase();
@@ -185,8 +209,18 @@ describe('repository.find', () => {
         { type: 'string', name: 'name' },
         { type: 'belongsTo', name: 'user' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsToMany', name: 'tags' },
       ],
     });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'belongsToMany', name: 'posts' },
+      ],
+    });
+
     Comment = db.collection({
       name: 'comments',
       fields: [
@@ -195,6 +229,10 @@ describe('repository.find', () => {
       ],
     });
     await db.sync();
+
+    const tags = await Tag.repository.create({
+      values: [{ name: 't1' }, { name: 't2' }],
+    });
     await User.repository.createMany({
       records: [
         {
@@ -203,18 +241,22 @@ describe('repository.find', () => {
             {
               name: 'post11',
               comments: [{ name: 'comment111' }, { name: 'comment112' }, { name: 'comment113' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post12',
               comments: [{ name: 'comment121' }, { name: 'comment122' }, { name: 'comment123' }],
+              tags: [{ id: tags[1].get('id') }, { id: tags[0].get('id') }],
             },
             {
               name: 'post13',
               comments: [{ name: 'comment131' }, { name: 'comment132' }, { name: 'comment133' }],
+              tags: [{ id: tags[0].get('id') }],
             },
             {
               name: 'post14',
               comments: [{ name: 'comment141' }, { name: 'comment142' }, { name: 'comment143' }],
+              tags: [{ id: tags[1].get('id') }],
             },
           ],
         },
@@ -224,6 +266,7 @@ describe('repository.find', () => {
             {
               name: 'post21',
               comments: [{ name: 'comment211' }, { name: 'comment212' }, { name: 'comment213' }],
+              tags: [{ id: tags[0].get('id') }, { id: tags[1].get('id') }],
             },
             {
               name: 'post22',
@@ -257,6 +300,16 @@ describe('repository.find', () => {
 
   afterEach(async () => {
     await db.close();
+  });
+
+  it('should appends with belongs to association', async () => {
+    const posts = await Post.repository.find({
+      appends: ['user'],
+    });
+
+    posts.forEach((post) => {
+      expect(post.get('user')).toBeDefined();
+    });
   });
 
   test('find pk with filter', async () => {
@@ -648,6 +701,7 @@ describe('repository.relatedQuery', () => {
     const post2 = await userPostRepository.create({
       values: { name: 'post2' },
     });
+
     expect(post2).toMatchObject({
       name: 'post2',
       userId: user.get('id'),
