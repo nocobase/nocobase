@@ -53,9 +53,6 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
       redirect();
     } catch (err) {
       console.error(err);
-    } finally {
-      windowHandler.close();
-      setWindowHandler(undefined);
     }
   });
 
@@ -65,9 +62,10 @@ export const OIDCButton = (props: { authenticator: Authenticator }) => {
   useEffect(() => {
     if (!windowHandler) return;
 
-    window.addEventListener('message', handleOIDCLogin);
+    const channel = new BroadcastChannel('nocobase-oidc-response');
+    channel.onmessage = handleOIDCLogin;
     return () => {
-      window.removeEventListener('message', handleOIDCLogin);
+      channel.close();
     };
   }, [windowHandler, handleOIDCLogin]);
 
