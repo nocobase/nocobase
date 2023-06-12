@@ -493,8 +493,9 @@ describe('repository find', () => {
         fields: ['posts.comments.content'],
       });
 
-      console.log(JSON.stringify(user, null, 2));
-      const post = user['posts'][0];
+      const userData = user.toJSON();
+
+      const post = userData['posts'][0];
       expect(Object.keys(post)).toEqual(['comments']);
     });
 
