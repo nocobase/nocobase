@@ -13,8 +13,7 @@ export const InternalTabBar: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
   const { t } = useTranslation();
-  const options = useContext(SchemaOptionsContext);
-  const { insertBeforeEnd, dn } = useDesignable();
+  const { insertBeforeEnd } = useDesignable();
   const history = useHistory();
   const params = useParams<{ name: string }>();
 
@@ -44,6 +43,7 @@ export const InternalTabBar: React.FC = (props) => {
       },
     });
   }, []);
+
   return (
     <SortableItem
       className={cx(
@@ -88,7 +88,7 @@ export const InternalTabBar: React.FC = (props) => {
               ></TabBar.Item>
             );
           })}
-          {designable && Object.keys(fieldSchema.properties).length < 5 ? (
+          {designable && (!fieldSchema.properties || Object.keys(fieldSchema.properties).length < 5) ? (
             <TabBar.Item
               className={css`
                 .adm-tab-bar-item-icon {
