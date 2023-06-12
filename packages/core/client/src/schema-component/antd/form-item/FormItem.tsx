@@ -421,6 +421,7 @@ FormItem.Designer = function Designer() {
               };
               if (field.value !== v.default) {
                 field.value = parseVariables(v.default, variablesCtx);
+                field.initialValue = parseVariables(v.default, variablesCtx);
               }
               fieldSchema.default = v.default;
               schema.default = v.default;

@@ -683,6 +683,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
   const { remove } = useDesignable();
   const schema = find(fieldSchema, key, action);
   const ctx = useContext(BlockRequestContext);
+  const form = useForm();
 
   return {
     schema,
@@ -693,6 +694,7 @@ export const useCurrentSchema = (action: string, key: string, find = findSchema,
         ctx.field.data.activeFields = ctx.field.data.activeFields || new Set();
         ctx.field.data.activeFields.delete(schema.name);
       }
+      form.clearFormGraph(schema.name);
       schema && rm(schema, remove);
     },
   };
@@ -1064,9 +1066,6 @@ export const createGridCardBlockSchema = (options) => {
       ...others,
     },
     'x-component': 'BlockItem',
-    'x-component-props': {
-      useProps: '{{ useGridCardBlockItemProps }}',
-    },
     'x-designer': 'GridCard.Designer',
     properties: {
       actionBar: {
@@ -1084,7 +1083,7 @@ export const createGridCardBlockSchema = (options) => {
         type: 'array',
         'x-component': 'GridCard',
         'x-component-props': {
-          useProps: '{{ useGridCardBlockProps }}',
+          props: '{{ useGridCardBlockProps }}',
         },
         properties: {
           item: {
@@ -1326,6 +1325,8 @@ export const createTableBlockSchema = (options) => {
     TableBlockDesigner,
     blockType,
     pageSize = 20,
+    // 当前filter 不需要在 "设置数据范围" 表单里初始化，只需要在查询的时候合并到查询条件 filter中
+    crypticFilter = {},
     ...others
   } = options;
   const schema: ISchema = {
@@ -1338,6 +1339,7 @@ export const createTableBlockSchema = (options) => {
       action: 'list',
       params: {
         pageSize,
+        filter: crypticFilter,
       },
       rowKey,
       showIndex: true,
