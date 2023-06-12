@@ -488,6 +488,16 @@ describe('repository find', () => {
       expect(user['posts']).toBeDefined();
     });
 
+    test('find with nested fields', async () => {
+      const user = await User.repository.findOne({
+        fields: ['posts.comments.content'],
+      });
+
+      console.log(JSON.stringify(user, null, 2));
+      const post = user['posts'][0];
+      expect(Object.keys(post)).toEqual(['comments']);
+    });
+
     describe('find with appends', () => {
       test('toJSON', async () => {
         const user = await User.repository.findOne({
