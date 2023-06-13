@@ -36,5 +36,6 @@
     "unflatten"
   ],
   "eslint.format.enable": false,
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "prettier.endOfLine": "lf"
 }
