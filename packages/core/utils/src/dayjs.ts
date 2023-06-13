@@ -15,4 +15,4 @@ dayjs.extend(isoWeek);
 dayjs.extend(IsBetween);
 dayjs.extend(IsSameOrAfter);
 
-export default dayjs;
+export { dayjs };

@@ -1,4 +1,3 @@
-
 export * from './collections-graph';
 export * from './common';
 export * from './date';
@@ -12,6 +11,6 @@ export * from './number';
 export * from './parse-filter';
 export * from './registry';
 // export * from './toposort';
-export { default as dayjs } from './dayjs';
+export * from './dayjs';
 export * from './uid';
 
