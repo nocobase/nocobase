@@ -50,7 +50,8 @@ describe('changedWithAssociations', () => {
     const r = db.getRepository('users');
     const m = await r.create({ values: { name: 'u1', tags: [{ id: t1.get('id') }] } });
 
-    expect(createChanged).toContain(['name', 'tags']);
+    expect(createChanged).toContain('name');
+    expect(createChanged).toContain('tags');
   });
 
   test('changedWithAssociations', async () => {

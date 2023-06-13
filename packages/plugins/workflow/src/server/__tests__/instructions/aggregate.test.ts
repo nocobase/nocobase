@@ -239,6 +239,7 @@ describe('workflow > instructions > aggregate', () => {
           },
         },
       });
+
       const n2 = await workflow.createNode({
         upstreamId: n1.id,
         type: 'aggregate',
@@ -256,7 +257,9 @@ describe('workflow > instructions > aggregate', () => {
           },
         },
       });
+
       await n1.setDownstream(n2);
+
       const n3 = await workflow.createNode({
         upstreamId: n2.id,
         type: 'aggregate',
