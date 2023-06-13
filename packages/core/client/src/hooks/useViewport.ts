@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const useViewportMeta = () => {
-  const contentRef = useRef<string>('width=1920px, initial-scale=1');
+  const contentRef = useRef<string>('initial-scale=0.1');
   const metaRef = useRef<HTMLMetaElement>();
 
   useEffect(() => {
