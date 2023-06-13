@@ -55,6 +55,7 @@ export class MutexManager {
       for (const mutexProvider of this.mutexProviders.values()) {
         await mutexProvider.close();
       }
+      this.mutexes.clear();
     });
   }
 

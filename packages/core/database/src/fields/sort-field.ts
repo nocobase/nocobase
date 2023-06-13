@@ -39,6 +39,7 @@ export class SortField extends Field {
       const max = await model.max<number, any>(name, { ...options, where });
       const newValue = (max || 0) + 1;
       instance.set(name, newValue);
+      await instance.save({ ...options });
     });
   };
 
