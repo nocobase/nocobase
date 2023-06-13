@@ -6,7 +6,6 @@ es/
 .DS_Store
 yarn-error.log
 lerna-debug.log
-/.vscode
 /.idea
 *.sqlite
 coverage

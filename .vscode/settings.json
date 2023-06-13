@@ -1,0 +1,40 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true,
+    "source.fixAll.eslint": true
+  },
+  "files.insertFinalNewline": false,
+  "files.trimFinalNewlines": true,
+  "cSpell.words": [
+    "ahooks",
+    "alicdn",
+    "alifd",
+    "antd",
+    "anticon",
+    "autop",
+    "Cascader",
+    "commitlint",
+    "cssinjs",
+    "datetime",
+    "deepmerge",
+    "dumi",
+    "dumirc",
+    "formily",
+    "geekblue",
+    "highlightjs",
+    "Iconfont",
+    "iudi",
+    "kanban",
+    "lightbox",
+    "Mergeable",
+    "Middlewares",
+    "momentable",
+    "nocobase",
+    "signin",
+    "signout",
+    "tuichu",
+    "unflatten"
+  ],
+  "eslint.format.enable": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+}
