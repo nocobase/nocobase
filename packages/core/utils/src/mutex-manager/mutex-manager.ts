@@ -43,10 +43,11 @@ export class MutexManager {
     this.deamonApp = app;
     this.deamonApp.on('beforeStart', () => {
       this.tryRegisterDefaultMutexProvider();
-      this.deamonApp.db.on('afterClose', () => {
-        this.mutexProviders.forEach((mutexProvider) => {
-          mutexProvider.close();
-        });
+      this.deamonApp.db.on('afterClose', async () => {
+        this.deamonApp = null;
+        for (const mutexProvider of this.mutexProviders.values()) {
+          await mutexProvider.close();
+        }
       });
     });
   }
@@ -87,19 +88,22 @@ export class MutexManager {
       throw new Error('Mutex name is required');
     }
 
-    const mutexProvider = this.getMutexProvider(config?.type);
-    if (mutexProvider) {
-      await mutexProvider.acquire(name);
-    }
-
     const mutex = this.getMutex(name);
-    let fnResult = await mutex.runExclusive(fn);
 
-    if (mutexProvider) {
-      await mutexProvider.release(name);
-    }
+    return mutex.runExclusive(async () => {
+      const mutexProvider = this.getMutexProvider(config?.type);
+      if (mutexProvider) {
+        await mutexProvider.acquire(name);
+      }
 
-    return fnResult;
+      let fnResult = await fn();
+
+      if (mutexProvider) {
+        await mutexProvider.release(name);
+      }
+
+      return fnResult;
+    });
   }
 
   public async runExclusiveWithSingleMutex(name: string, fn: () => Promise<any>, config?: MutexConfig): Promise<any> {

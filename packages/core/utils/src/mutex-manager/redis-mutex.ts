@@ -65,6 +65,8 @@ export class RedisMutex implements BaseMutexInterface {
     process.on('SIGINT', async () => {
       await this.close();
     });
+
+    console.log('RedisMutex initialized');
   }
 
   async close() {
@@ -78,6 +80,8 @@ export class RedisMutex implements BaseMutexInterface {
     this.client = null;
     this.redlock = null;
     this.autoExtendTimer = null;
+
+    console.log('RedisMutex closed');
   }
 
   async acquire(name: string): Promise<any> {

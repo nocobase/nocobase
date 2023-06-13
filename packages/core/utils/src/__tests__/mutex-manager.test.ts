@@ -61,7 +61,7 @@ describe('test mutex-manager with redis-mutex off', () => {
     expect(items[3].get('name') != items[4].get('name')).toBeTruthy();
   });
 
-  test('with sort filed', async () => {
+  test('with sort field', async () => {
     db.collection({
       name: 'tests',
       fields: [
