@@ -1,4 +1,4 @@
-import moment from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 import { mapRangePicker } from '../util';
 
 describe('mapRangePicker', () => {
@@ -10,7 +10,7 @@ describe('mapRangePicker', () => {
       onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
-    const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
+    const value = [dayjs.utc('2023-01-01T00:00:00.000Z'), dayjs.utc('2023-01-02T00:00:00.000Z')];
     onChange(value);
     expect(props.onChange).toHaveBeenCalledWith(['2023-01-01T00:00:00.000Z', '2023-01-02T23:59:59.999Z']);
   });
@@ -23,7 +23,7 @@ describe('mapRangePicker', () => {
       onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
-    const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
+    const value = [dayjs.utc('2023-01-01T00:00:00.000Z'), dayjs.utc('2023-01-02T00:00:00.000Z')];
     onChange(value);
     expect(props.onChange).toHaveBeenCalledWith(['2023-01-01T00:00:00.000Z', '2023-01-02T00:00:00.000Z']);
   });
@@ -36,7 +36,7 @@ describe('mapRangePicker', () => {
       onChange: vi.fn(),
     };
     const { onChange } = mapRangePicker()(props);
-    const value = [moment.utc('2023-01-01T00:00:00.000Z'), moment.utc('2023-01-02T00:00:00.000Z')];
+    const value = [dayjs.utc('2023-01-01T00:00:00.000Z'), dayjs.utc('2023-01-02T00:00:00.000Z')];
     onChange(value);
     expect(props.onChange).toHaveBeenCalledWith(['2023-01-01', '2023-01-02']);
   });

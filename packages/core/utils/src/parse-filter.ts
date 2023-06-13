@@ -1,4 +1,4 @@
-import moment from 'dayjs';
+import dayjs from 'dayjs';
 import set from 'lodash/set';
 import { getValuesByPath } from './getValuesByPath';
 
@@ -210,12 +210,12 @@ export function getDayRange(options: GetDayRangeOptions) {
 
 function toMoment(value) {
   if (!value) {
-    return moment();
+    return dayjs();
   }
-  if (moment.isDayjs(value)) {
+  if (dayjs.isDayjs(value)) {
     return value;
   }
-  return moment(value);
+  return dayjs(value);
 }
 
 export type Utc2unitOptions = {

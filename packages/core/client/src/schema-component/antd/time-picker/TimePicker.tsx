@@ -1,8 +1,8 @@
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { TimePicker as AntdTimePicker } from 'antd';
 import { TimePickerProps as AntdTimePickerProps, TimeRangePickerProps } from 'antd/es/time-picker';
-import moment from 'dayjs';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedTimePicker = React.FC<AntdTimePickerProps> & {
@@ -17,7 +17,7 @@ const mapTimeFormat = function () {
       ...props,
       format,
       value: dayjsable(props.value, format),
-      onChange: (value: moment.Dayjs | moment.Dayjs[]) => {
+      onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
         if (onChange) {
           onChange(formatDayjsValue(value, format) || null);
         }

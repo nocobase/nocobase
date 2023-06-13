@@ -2,8 +2,8 @@ import { css, cx } from '@emotion/css';
 import { ArrayCollapse, ArrayItems, FormLayout, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, Schema, observer, useField, useFieldSchema } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Select } from 'antd';
-import moment from 'dayjs';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -892,7 +892,7 @@ FormItem.FilterFormDesigner = FilterFormDesigner;
 export function getFieldDefaultValue(fieldSchema: ISchema, collectionField: CollectionFieldOptions) {
   const result = fieldSchema?.default ?? collectionField?.defaultValue;
   if (collectionField?.uiSchema?.['x-component'] === 'DatePicker' && result) {
-    return moment(result);
+    return dayjs(result);
   }
   return result;
 }

@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Spin, Tag } from 'antd';
-import moment from 'dayjs';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import {
@@ -534,7 +534,7 @@ function Drawer() {
               margin-right: 0.5em;
             `,
           },
-          'x-content': moment(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
+          'x-content': dayjs(updatedAt).format('YYYY-MM-DD HH:mm:ss'),
         },
         status: {
           type: 'void',

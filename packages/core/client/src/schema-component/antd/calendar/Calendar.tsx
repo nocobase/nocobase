@@ -1,9 +1,9 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, observer, useFieldSchema } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { parseExpression } from 'cron-parser';
 import { eq } from 'date-arithmetic';
-import moment from 'dayjs';
 import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Calendar as BigCalendar, dayjsLocalizer } from 'react-big-calendar';
@@ -28,7 +28,7 @@ const Weeks = ['month', 'week', 'day'] as const;
 // - LocalizedFormat
 // - MinMax
 // - UTC
-const localizer = dayjsLocalizer(moment);
+const localizer = dayjsLocalizer(dayjs);
 export const DeleteEventContext = React.createContext({
   close: () => {},
 });
@@ -85,18 +85,18 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
 
     dataSource.forEach((item) => {
       const { cron, exclude = [] } = item;
-      const start = moment(get(item, fieldNames.start) || moment());
-      const end = moment(get(item, fieldNames.end) || start);
+      const start = dayjs(get(item, fieldNames.start) || dayjs());
+      const end = dayjs(get(item, fieldNames.end) || start);
       const intervalTime = end.diff(start, 'millisecond', true);
 
-      const dateM = moment(date);
+      const dateM = dayjs(date);
       const startDate = dateM.clone().startOf('month');
       const endDate = startDate.clone().endOf('month');
       if (view === 'month') {
         startDate.startOf('week');
         endDate.endOf('week');
       }
-      const push = (eventStart: moment.Dayjs = start.clone()) => {
+      const push = (eventStart: dayjs.Dayjs = start.clone()) => {
         // 必须在这个月的开始时间和结束时间，且在日程的开始时间之后
         if (eventStart.isBefore(start) || !eventStart.isBetween(startDate, endDate)) {
           return;
@@ -155,7 +155,7 @@ const useEvents = (dataSource: any, fieldNames: any, date: Date, view: (typeof W
           });
           while (interval.hasNext()) {
             const { value } = interval.next();
-            if (push(moment(value.toDate()))) break;
+            if (push(dayjs(value.toDate()))) break;
           }
         } catch (err) {
           console.error(err);
@@ -245,7 +245,7 @@ export const Calendar: any = observer(
             if (!record) {
               return;
             }
-            record.__event = { ...event, start: formatDate(moment(event.start)), end: formatDate(moment(event.end)) };
+            record.__event = { ...event, start: formatDate(dayjs(event.start)), end: formatDate(dayjs(event.end)) };
 
             setRecord(record);
             setVisible(true);

@@ -1,4 +1,4 @@
-import moment from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import { useMemo } from 'react';
@@ -17,7 +17,7 @@ export const useVariablesCtx = (): VariablesCtx => {
     return {
       $user: data?.data || {},
       $date: {
-        now: () => moment().toISOString(),
+        now: () => dayjs().toISOString(),
       },
     };
   }, [data]);

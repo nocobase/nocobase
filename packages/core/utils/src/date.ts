@@ -1,15 +1,4 @@
-import moment from 'dayjs';
-import isoWeek from 'dayjs/plugin/isoWeek';
-import localeData from 'dayjs/plugin/localeData';
-import quarterOfYear from 'dayjs/plugin/quarterOfYear';
-import utc from 'dayjs/plugin/utc';
-import weekday from 'dayjs/plugin/weekday';
-
-moment.extend(weekday);
-moment.extend(localeData);
-moment.extend(utc);
-moment.extend(quarterOfYear);
-moment.extend(isoWeek);
+import moment from './dayjs';
 
 export interface Str2momentOptions {
   gmt?: boolean;

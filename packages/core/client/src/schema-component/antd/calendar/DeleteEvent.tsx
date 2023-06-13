@@ -1,6 +1,6 @@
 import { observer } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Modal, Radio, Space, Typography } from 'antd';
-import moment from 'dayjs';
 import React, { useContext, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ export const DeleteEvent = observer(
     const { visible, setVisible } = useActionContext();
     const { exclude = [], cron, ...record } = useRecord();
     const { close } = useContext(DeleteEventContext);
-    const startDate = formatDate(moment(record.__parent.__event.start));
+    const startDate = formatDate(dayjs(record.__parent.__event.start));
     const filterByTk = useFilterByTk();
     const { resource, service, __parent } = useBlockRequestContext();
     const [value, onChange] = useState(startDate);

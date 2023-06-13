@@ -1,12 +1,11 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { isArr } from '@formily/shared';
-import { getDefaultFormat, str2moment } from '@nocobase/utils/client';
+import { dayjs, getDefaultFormat, str2moment } from '@nocobase/utils/client';
 import type {
   DatePickerProps as AntdDatePickerProps,
   RangePickerProps as AntdRangePickerProps,
 } from 'antd/es/date-picker';
 import cls from 'classnames';
-import moment from 'dayjs';
 import React from 'react';
 
 type Composed = {
@@ -26,7 +25,7 @@ ReadPretty.DatePicker = function DatePicker(props: any) {
   const getLabels = () => {
     const format = getDefaultFormat(props) as string;
     const m = str2moment(props.value, props);
-    const labels = moment.isDayjs(m) ? m.format(format) : '';
+    const labels = dayjs.isDayjs(m) ? m.format(format) : '';
     return isArr(labels) ? labels.join('~') : labels;
   };
   return <div className={cls(prefixCls, props.className)}>{getLabels()}</div>;

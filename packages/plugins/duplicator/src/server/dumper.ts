@@ -1,6 +1,6 @@
 import { CollectionGroup } from '@nocobase/database';
 import archiver from 'archiver';
-import moment from 'dayjs';
+import dayjs from 'dayjs';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import lodash from 'lodash';
@@ -257,7 +257,7 @@ export class Dumper extends AppMigrator {
   async packDumpedDir() {
     const dirname = path.resolve(process.cwd(), 'storage', 'duplicator');
     mkdirp.sync(dirname);
-    const filePath = path.resolve(dirname, `dump-${moment().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
+    const filePath = path.resolve(dirname, `dump-${dayjs().format('YYYYMMDDTHHmmss')}.${DUMPED_EXTENSION}`);
 
     const output = fs.createWriteStream(filePath);
 

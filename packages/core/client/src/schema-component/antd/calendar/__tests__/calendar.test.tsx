@@ -1,4 +1,4 @@
-import moment from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 import React from 'react';
 import { render, screen } from 'testUtils';
 import App1 from '../demos/demo1';
@@ -8,7 +8,7 @@ describe('Calendar', () => {
   it('basic', () => {
     render(<App1 />);
 
-    const currentDate = moment().format('YYYY-M');
+    const currentDate = dayjs().format('YYYY-M');
 
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText(currentDate)).toBeInTheDocument();
@@ -18,7 +18,7 @@ describe('Calendar', () => {
   it('use CalendarBlockProvider', () => {
     render(<App2 />);
 
-    const currentDate = moment().format('YYYY-M');
+    const currentDate = dayjs().format('YYYY-M');
 
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText(currentDate)).toBeInTheDocument();

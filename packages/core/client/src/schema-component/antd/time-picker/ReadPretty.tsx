@@ -1,8 +1,8 @@
 import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { toArr } from '@formily/shared';
+import { dayjs } from '@nocobase/utils/client';
 import { TimeRangePickerProps } from 'antd/es/time-picker';
 import cls from 'classnames';
-import moment from 'dayjs';
 import React from 'react';
 
 export const ReadPretty: React.FC<TimeRangePickerProps> = (props: any) => {
@@ -10,7 +10,7 @@ export const ReadPretty: React.FC<TimeRangePickerProps> = (props: any) => {
   const prefixCls = usePrefixCls('description-text', props);
   const values = toArr(value);
   const getLabels = () => {
-    const labels = values.map((v) => moment(v, 'HH:mm:ss').format(format));
+    const labels = values.map((v) => dayjs(v, 'HH:mm:ss').format(format));
     return labels.join('~');
   };
   return (

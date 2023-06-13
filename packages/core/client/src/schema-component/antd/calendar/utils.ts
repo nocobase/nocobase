@@ -1,4 +1,4 @@
-import moment from 'dayjs';
+import { dayjs } from '@nocobase/utils/client';
 import { get } from 'lodash';
 import solarLunar from 'solarlunar-es';
 import { i18n } from '../../../i18n';
@@ -14,12 +14,12 @@ export const toEvents = (data: any[], fieldNames: any) => {
   });
 };
 
-export const getLunarDay = (date: moment.Dayjs) => {
-  const md = moment(date);
+export const getLunarDay = (date: dayjs.Dayjs) => {
+  const md = dayjs(date);
   const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
   return typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
 };
 
-export const formatDate = (date: moment.Dayjs) => {
+export const formatDate = (date: dayjs.Dayjs) => {
   return date.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
 };

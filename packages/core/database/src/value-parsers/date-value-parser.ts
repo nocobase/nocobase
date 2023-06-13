@@ -1,5 +1,5 @@
 import { moment2str } from '@nocobase/utils';
-import moment, { isDayjs } from 'dayjs';
+import dayjs, { isDayjs } from 'dayjs';
 import { getJsDateFromExcel } from 'excel-date-to-js';
 import { BaseValueParser } from './base-value-parser';
 
@@ -7,9 +7,9 @@ import isoWeek from 'dayjs/plugin/isoWeek';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import utc from 'dayjs/plugin/utc';
 
-moment.extend(utc);
-moment.extend(quarterOfYear);
-moment.extend(isoWeek);
+dayjs.extend(utc);
+dayjs.extend(quarterOfYear);
+dayjs.extend(isoWeek);
 
 function isNumeric(str: any) {
   if (typeof str === 'number') return true;
@@ -31,7 +31,7 @@ export class DateValueParser extends BaseValueParser {
       }
     } else if (typeof value === 'string') {
       const props = this.getProps();
-      const m = moment(value);
+      const m = dayjs(value);
       if (m.isValid()) {
         this.value = moment2str(m, props);
       } else {

@@ -1,7 +1,7 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
+import { dayjs } from '@nocobase/utils/client';
 import { Divider, SelectProps, Tag } from 'antd';
-import moment from 'dayjs';
 import flat from 'flat';
 import { uniqBy } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -97,7 +97,7 @@ const InternalRemoteSelect = connect(
               }
 
               if (targetField?.type === 'date') {
-                label = moment(label).format('YYYY-MM-DD');
+                label = dayjs(label).format('YYYY-MM-DD');
               }
 
               if (mapOptions) {

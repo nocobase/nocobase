@@ -4,7 +4,7 @@ import { promisify } from 'util';
 import actions, { Context, Next } from '@nocobase/actions';
 import { Op } from '@nocobase/database';
 
-import moment from 'dayjs';
+import dayjs from 'dayjs';
 import Plugin, { namespace } from '..';
 import { CODE_STATUS_UNUSED } from '../constants';
 
@@ -44,7 +44,7 @@ export async function create(context: Context, next: Next) {
     },
   });
   if (record) {
-    const seconds = moment(record.get('expiresAt')).diff(moment(), 'seconds');
+    const seconds = dayjs(record.get('expiresAt')).diff(dayjs(), 'seconds');
     // return context.throw(429, { code: 'RateLimit', message: context.t('Please don\'t retry in {{time}}', { time: moment().locale('zh').to(record.get('expiresAt')) }) });
     return context.throw(429, {
       code: 'RateLimit',

@@ -1,11 +1,10 @@
-import { getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
-import moment from 'dayjs';
+import { dayjs, getDefaultFormat, str2moment, toGmt, toLocal } from '@nocobase/utils/client';
 
 const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
-  if (!moment.isDayjs(value)) return value;
+  if (!dayjs.isDayjs(value)) return value;
   if (timezone === 'local') {
     const offset = new Date().getTimezoneOffset();
-    return moment(toStringByPicker(value, picker, 'gmt')).add(offset, 'minutes').toISOString();
+    return dayjs(toStringByPicker(value, picker, 'gmt')).add(offset, 'minutes').toISOString();
   }
 
   if (picker === 'year') {
@@ -23,15 +22,15 @@ const toStringByPicker = (value, picker, timezone: 'gmt' | 'local') => {
   return value.format('YYYY-MM-DDTHH:mm:ss.SSS') + 'Z';
 };
 
-const toGmtByPicker = (value: moment.Dayjs, picker?: any) => {
-  if (!value || !moment.isDayjs(value)) {
+const toGmtByPicker = (value: dayjs.Dayjs, picker?: any) => {
+  if (!value || !dayjs.isDayjs(value)) {
     return value;
   }
   return toStringByPicker(value, picker, 'gmt');
 };
 
-const toLocalByPicker = (value: moment.Dayjs, picker?: any) => {
-  if (!value || !moment.isDayjs(value)) {
+const toLocalByPicker = (value: dayjs.Dayjs, picker?: any) => {
+  if (!value || !dayjs.isDayjs(value)) {
     return value;
   }
   return toStringByPicker(value, picker, 'local');
@@ -44,7 +43,7 @@ export interface Moment2strOptions {
   picker?: 'year' | 'month' | 'week' | 'quarter';
 }
 
-export const moment2str = (value?: moment.Dayjs, options: Moment2strOptions = {}) => {
+export const moment2str = (value?: dayjs.Dayjs, options: Moment2strOptions = {}) => {
   const { showTime, gmt, picker, utc = true } = options;
   if (!value) {
     return value;
@@ -71,7 +70,7 @@ export const mapDatePicker = function () {
       ...props,
       format: format,
       value: str2moment(props.value, props),
-      onChange: (value: moment.Dayjs) => {
+      onChange: (value: dayjs.Dayjs) => {
         if (onChange) {
           onChange(moment2str(value, props));
         }
@@ -89,7 +88,7 @@ export const mapRangePicker = function () {
       ...props,
       format: format,
       value: str2moment(props.value, props),
-      onChange: (value: moment.Dayjs[]) => {
+      onChange: (value: dayjs.Dayjs[]) => {
         if (onChange) {
           onChange(
             value
@@ -102,7 +101,7 @@ export const mapRangePicker = function () {
   };
 };
 
-function getRangeStart(value: moment.Dayjs, options: Moment2strOptions) {
+function getRangeStart(value: dayjs.Dayjs, options: Moment2strOptions) {
   const { showTime } = options;
   if (showTime) {
     return value;
@@ -110,7 +109,7 @@ function getRangeStart(value: moment.Dayjs, options: Moment2strOptions) {
   return value.startOf('day');
 }
 
-function getRangeEnd(value: moment.Dayjs, options: Moment2strOptions) {
+function getRangeEnd(value: dayjs.Dayjs, options: Moment2strOptions) {
   const { showTime } = options;
   if (showTime) {
     return value;
@@ -119,13 +118,13 @@ function getRangeEnd(value: moment.Dayjs, options: Moment2strOptions) {
 }
 
 const getStart = (offset: any, unit: any) => {
-  return moment()
+  return dayjs()
     .add(offset, unit === 'isoWeek' ? 'week' : unit)
     .startOf(unit);
 };
 
 const getEnd = (offset: any, unit: any) => {
-  return moment()
+  return dayjs()
     .add(offset, unit === 'isoWeek' ? 'week' : unit)
     .endOf(unit);
 };

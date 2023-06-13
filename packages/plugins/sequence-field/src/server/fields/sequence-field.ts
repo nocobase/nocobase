@@ -1,5 +1,5 @@
 import parser from 'cron-parser';
-import moment from 'dayjs';
+import dayjs from 'dayjs';
 import { escapeRegExp } from 'lodash';
 import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from 'sequelize';
 
@@ -261,7 +261,7 @@ sequencePatterns.register('integer', {
 
 sequencePatterns.register('date', {
   generate(this: SequenceField, instance, options) {
-    return moment(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
+    return dayjs(instance.get(options?.field ?? 'createdAt')).format(options?.format ?? 'YYYYMMDD');
   },
   batchGenerate(instances, values, options) {
     const { field, inputable } = options;

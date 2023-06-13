@@ -1,7 +1,7 @@
-import moment from 'dayjs';
+import dayjs from 'dayjs';
 
 function parseUTC(value) {
-  if (value instanceof Date || moment.isDayjs(value)) {
+  if (value instanceof Date || dayjs.isDayjs(value)) {
     return {
       unit: 'utc',
       start: value.toISOString(),
@@ -28,7 +28,7 @@ function parseQuarter(value) {
   if (/^\d\d\d\d\Q\d$/.test(value)) {
     return {
       unit: 'quarter',
-      start: moment(value, 'YYYY[Q]Q').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(value, 'YYYY[Q]Q').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
 }
@@ -37,13 +37,13 @@ function parseWeek(value) {
   if (/^\d\d\d\d[W]\d\d$/.test(value)) {
     return {
       unit: 'isoWeek',
-      start: moment(value, 'GGGG[W]W').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(value, 'GGGG[W]W').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
   if (/^\d\d\d\d[w]\d\d$/.test(value)) {
     return {
       unit: 'week',
-      start: moment(value, 'gggg[w]w').format('YYYY-MM-DD HH:mm:ss'),
+      start: dayjs(value, 'gggg[w]w').format('YYYY-MM-DD HH:mm:ss'),
     };
   }
 }
@@ -121,7 +121,7 @@ type ParseDateResult = {
   timezone?: string;
 };
 
-function toISOString(m: moment.Dayjs) {
+function toISOString(m: dayjs.Dayjs) {
   return m.toISOString();
 }
 
@@ -129,11 +129,11 @@ function dateRange(r: ParseDateResult) {
   if (!r.timezone) {
     r.timezone = '+00:00';
   }
-  let m: moment.Dayjs;
+  let m: dayjs.Dayjs;
   if (r.unit === 'utc') {
-    return moment(r?.start).toISOString();
+    return dayjs(r?.start).toISOString();
   } else {
-    m = moment(`${r?.start}${r?.timezone}`);
+    m = dayjs(`${r?.start}${r?.timezone}`);
   }
   m = m.utcOffset(r.timezone);
   return [m.startOf(r.unit), m.clone().add(1, r.unit).startOf(r.unit)].map(toISOString);
