@@ -1,9 +1,7 @@
-import { Mutex } from 'async-mutex';
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-
-const sortFieldMutex = new Mutex();
+import { MutexManager } from '../../../server/src/mutex-manager';
 
 export class SortField extends Field {
   get dataType() {
@@ -27,7 +25,17 @@ export class SortField extends Field {
       }
     }
 
-    await sortFieldMutex.runExclusive(async () => {
+    const mutexName = MutexManager.nameHelper({
+      db_dialect: this.database.options.dialect,
+      db_host: this.database.options.host,
+      db_port: this.database.options.port,
+      db_storage: this.database.options.storage,
+      db_name: this.database.options.database,
+      other: 'sort',
+      action: 'setSortValue',
+    });
+
+    await MutexManager.getInstance().runExclusive(mutexName, async () => {
       const max = await model.max<number, any>(name, { ...options, where });
       const newValue = (max || 0) + 1;
       instance.set(name, newValue);

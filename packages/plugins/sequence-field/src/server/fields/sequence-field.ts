@@ -5,6 +5,7 @@ import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from
 
 import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
+import { MutexManager } from '@nocobase/server';
 
 export interface Pattern {
   validate?(options): string | null;
@@ -65,49 +66,60 @@ sequencePatterns.register('integer', {
   //   return null;
   // },
   async generate(this: SequenceField, instance: Model, options, { transaction }) {
-    const recordTime = <Date>instance.get('createdAt') ?? new Date();
-    const { digits = 1, start = 0, base = 10, cycle, key } = options;
-    const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
-    const lastSeq =
-      (await SeqRepo.findOne({
-        filter: {
+    const mutexName = MutexManager.nameHelper({
+      db_dialect: this.database.options.dialect,
+      db_host: this.database.options.host,
+      db_port: this.database.options.port,
+      db_storage: this.database.options.storage,
+      db_name: this.database.options.database,
+      other: 'sequence',
+      action: 'generate',
+    });
+    return await MutexManager.getInstance().runExclusive(mutexName, async () => {
+      const recordTime = <Date>instance.get('createdAt') ?? new Date();
+      const { digits = 1, start = 0, base = 10, cycle, key } = options;
+      const { repository: SeqRepo, model: SeqModel } = this.database.getCollection('sequences');
+      const lastSeq =
+        (await SeqRepo.findOne({
+          filter: {
+            collection: this.collection.name,
+            field: this.name,
+            key,
+          },
+          transaction,
+        })) ||
+        SeqModel.build({
           collection: this.collection.name,
           field: this.name,
           key,
-        },
-        transaction,
-      })) ||
-      SeqModel.build({
-        collection: this.collection.name,
-        field: this.name,
-        key,
-      });
+        });
 
-    let next = start;
-    if (lastSeq.get('current') != null) {
-      next = Math.max(lastSeq.get('current') + 1, start);
-      const max = Math.pow(base, digits) - 1;
-      if (next > max) {
-        next = start;
-      }
-
-      // cycle as cron string
-      if (cycle) {
-        const interval = parser.parseExpression(cycle, { currentDate: <Date>lastSeq.get('lastGeneratedAt') });
-        const nextTime = interval.next();
-        if (recordTime.getTime() >= nextTime.getTime()) {
+      let next = start;
+      if (lastSeq.get('current') != null) {
+        next = Math.max(lastSeq.get('current') + 1, start);
+        const max = Math.pow(base, digits) - 1;
+        if (next > max) {
           next = start;
         }
+
+        // cycle as cron string
+        if (cycle) {
+          const interval = parser.parseExpression(cycle, { currentDate: <Date>lastSeq.get('lastGeneratedAt') });
+          const nextTime = interval.next();
+          if (recordTime.getTime() >= nextTime.getTime()) {
+            next = start;
+          }
+        }
       }
-    }
 
-    lastSeq.set({
-      current: next,
-      lastGeneratedAt: recordTime,
+      lastSeq.set({
+        current: next,
+        lastGeneratedAt: recordTime,
+      });
+      await lastSeq.save({ transaction });
+
+      return next.toString(base).padStart(digits, '0');
     });
-    await lastSeq.save({ transaction });
-
-    return next.toString(base).padStart(digits, '0');
   },
 
   getLength({ digits = 1 } = {}) {
