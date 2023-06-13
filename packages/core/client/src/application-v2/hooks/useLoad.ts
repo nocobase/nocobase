@@ -10,6 +10,7 @@ export const useLoad = () => {
       await app.load();
       setLoading(false);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   return loading;
 };

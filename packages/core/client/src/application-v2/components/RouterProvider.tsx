@@ -73,21 +73,22 @@ export function RouterProvider({
   // we don't need the <script> tag
   return (
     <>
-      <DataRouterContext.Provider value={dataRouterContext}>
-        <DataRouterStateContext.Provider value={state}>
-          <Router
-            basename={basename}
-            location={state.location}
-            navigationType={state.historyAction}
-            navigator={navigator}
-          >
-            <Providers>
-              {state.initialized ? <DataRoutes routes={router.routes} state={state} /> : fallbackElement}
-            </Providers>
-          </Router>
-        </DataRouterStateContext.Provider>
-      </DataRouterContext.Provider>
-
+      <RouterContextCleaner>
+        <DataRouterContext.Provider value={dataRouterContext}>
+          <DataRouterStateContext.Provider value={state}>
+            <Router
+              basename={basename}
+              location={state.location}
+              navigationType={state.historyAction}
+              navigator={navigator}
+            >
+              <Providers>
+                {state.initialized ? <DataRoutes routes={router.routes} state={state} /> : fallbackElement}
+              </Providers>
+            </Router>
+          </DataRouterStateContext.Provider>
+        </DataRouterContext.Provider>
+      </RouterContextCleaner>
       {null}
     </>
   );
@@ -103,7 +104,7 @@ export function DataRoutes({
   return useRoutesImpl(routes, undefined, state);
 }
 
-export const RouteCleaner = (props) => {
+export const RouterContextCleaner = (props) => {
   return (
     <RouteContext.Provider
       value={{
