@@ -189,7 +189,7 @@ export const TableColumnDesigner = (props) => {
         />
       )}
 
-      {isSubTableColumn && !field.readPretty && !uiSchema['x-read-pretty'] && (
+      {isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
         <SchemaSettings.SwitchItem
           key="required"
           title={t('Required')}

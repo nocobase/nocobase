@@ -16,6 +16,9 @@ export const QuickEdit = observer((props) => {
   const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+  if (!collectionField) {
+    return null;
+  }
   const schema: any = {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
@@ -57,7 +60,7 @@ export const QuickEdit = observer((props) => {
     </div>
   );
   const ReadPrettyField = () => {
-    switch (collectionField.interface) {
+    switch (collectionField?.interface) {
       case 'richText':
         return <InputReadPretty.Html {...props} value={field.value} ellipsis />;
       case 'circle':
@@ -74,7 +77,7 @@ export const QuickEdit = observer((props) => {
       case 'attachment':
         return <UploadReadPretty.File {...props} value={field.value} size="small" />;
       case 'json':
-        return <InputReadPretty.JSON {...props} value={field.value} space={1} />;
+        return <InputReadPretty.JSON {...props} value={field.value ?? undefined} space={1} />;
       default:
         return <InputReadPretty.TextArea {...props} autop={false} value={field.value} ellipsis />;
     }
