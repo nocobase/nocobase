@@ -39,10 +39,12 @@ export const AssociationFieldProvider = observer(
           if (field.value?.[collectionField.targetKey]) {
             delete field.value[collectionField.targetKey];
           }
+          field.value = { ...field.initialValue, ...field.value };
         } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
           if (Array.isArray(field.value)) {
-            field.value.forEach((v) => {
+            field.value = field.value.map((v) => {
               delete v[collectionField.targetKey];
+              return { ...field.initialValue?.[0], ...v };
             });
           }
         }
@@ -65,7 +67,7 @@ export const AssociationFieldProvider = observer(
         }
       }
       setLoading(false);
-    }, [currentMode, collectionField, field.value]);
+    }, [currentMode, collectionField, JSON.stringify(field.value)]);
 
     if (loading) {
       return null;
