@@ -14,7 +14,7 @@ export const toEvents = (data: any[], fieldNames: any) => {
   });
 };
 
-export const getLunarDay = (date: dayjs.Dayjs) => {
+export const getLunarDay = (date: dayjs.Dayjs | string) => {
   const md = dayjs(date);
   const result = solarLunar.solar2lunar(md.year(), md.month() + 1, md.date());
   return typeof result !== 'number' ? result.lunarFestival || result.term || result.dayCn : result;
