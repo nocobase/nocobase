@@ -38,7 +38,7 @@
   "config": {
     "ghooks": {
       "commit-msg": "commitlint --edit",
-      "pre-commit": "npx lint-staged"
+      "pre-commit": "npx lint-staged || echo You can use '--no-verify' to skip eslint and prettier check. && exit 1"
     }
   },
   "lint-staged": {
