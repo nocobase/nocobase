@@ -20,7 +20,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
-import { MutexManager } from './mutex-manager';
+import { MutexManager } from '@nocobase/utils';
 
 const packageJson = require('../package.json');
 
