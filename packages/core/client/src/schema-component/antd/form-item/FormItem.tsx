@@ -103,6 +103,7 @@ FormItem.Designer = function Designer() {
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
+  const ctx = useBlockRequestContext();
   const field = useField<Field>();
   const fieldSchema = useFieldSchema();
   const { t } = useTranslation();
@@ -110,7 +111,6 @@ FormItem.Designer = function Designer() {
   const compile = useCompile();
   const variablesCtx = useVariablesCtx();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
-
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -442,7 +442,13 @@ FormItem.Designer = function Designer() {
                   enum: dataSource,
                   'x-component': 'Filter',
                   'x-component-props': {
-                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                    dynamicComponent: (props) =>
+                      FilterDynamicComponent({
+                        ...props,
+                        form,
+                        collectionField,
+                        rootCollection: ctx.props.collection || ctx.props.resource,
+                      }),
                   },
                 },
               },
@@ -452,7 +458,6 @@ FormItem.Designer = function Designer() {
             filter = removeNullCondition(filter);
             _.set(field.componentProps, 'service.params.filter', filter);
             fieldSchema['x-component-props'] = field.componentProps;
-            field.componentProps = field.componentProps;
             dn.emit('patch', {
               schema: {
                 ['x-uid']: fieldSchema['x-uid'],
@@ -817,6 +822,11 @@ FormItem.Designer = function Designer() {
 
 export function isFileCollection(collection: Collection) {
   return collection?.template === 'file';
+}
+
+function extractFirstPart(path) {
+  const firstDotIndex = path.indexOf('.');
+  return firstDotIndex !== -1 ? path.slice(0, firstDotIndex) : path;
 }
 
 FormItem.FilterFormDesigner = FilterFormDesigner;
