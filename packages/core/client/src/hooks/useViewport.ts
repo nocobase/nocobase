@@ -5,13 +5,9 @@ const getViewportMeta = () => {
     return;
   }
 
-  if (document.querySelector('meta[name="viewport"]')) {
-    return;
-  }
-
-  const meta = document.createElement('meta');
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]') || document.createElement('meta');
   meta.name = 'viewport';
-  meta.content = 'width=device-width, initial-scale=1, user-scalable=0, shrink-to-fit=no';
+  meta.content = 'width=device-width, initial-scale=1, user-scalable=0';
   return meta;
 };
 
@@ -24,7 +20,7 @@ export function useViewport() {
     document.head.insertBefore(metaRef.current, document.head.firstChild);
     return () => {
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      metaRef.current.remove();
+      metaRef.current.content = 'width=1920px, initial-scale=1';
     };
   }, []);
 }
