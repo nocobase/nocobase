@@ -41,11 +41,14 @@ export class MutexManager {
       return;
     }
     this.deamonApp = app;
-    this.deamonApp.on('beforeStart', this.onBeforeStart);
+    this.deamonApp.on('beforeStart', this.onBeforeStart.bind(this));
   }
 
   private onBeforeStart() {
     this.tryRegisterDefaultMutexProvider();
+    if (!this.deamonApp?.db) {
+      return;
+    }
     this.deamonApp.db.on('afterClose', async () => {
       this.deamonApp.off('beforeStart', this.onBeforeStart);
       this.deamonApp = null;
