@@ -3,4 +3,3 @@ export interface BaseMutexInterface {
   release(name: string): Promise<any>;
   close(): Promise<any>;
 }
-

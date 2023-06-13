@@ -1,7 +1,7 @@
 import { isNumber } from 'lodash';
 import { DataTypes } from 'sequelize';
 import { BaseColumnFieldOptions, Field } from './field';
-import { MutexManager } from '../../../server/src/mutex-manager';
+import { MutexManager } from '@nocobase/server/mutex-manager';
 
 export class SortField extends Field {
   get dataType() {

@@ -40,6 +40,9 @@
       ],
       "@nocobase/*": [
         "packages/core/*/src"
+      ],
+      "@nocobase/server/*": [
+        "packages/core/server/src/*"
       ]
     }
   },
