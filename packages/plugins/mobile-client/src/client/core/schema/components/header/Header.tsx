@@ -1,10 +1,11 @@
 import { css, cx } from '@emotion/css';
 import { SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { HeaderDesigner } from './Header.Designer';
-import { useField, useFieldSchema } from '@formily/react';
+import { useField } from '@formily/react';
+import { generateNTemplate } from '../../../../locale';
 
 export interface HeaderProps extends NavBarProps {
   title?: string;
@@ -12,10 +13,17 @@ export interface HeaderProps extends NavBarProps {
 }
 const InternalHeader = (props: HeaderProps) => {
   const field = useField();
-  const { title = '{{ t("Untitled") }}', showBack = false } = { ...props, ...field?.componentProps };
+  const { title = generateNTemplate('Untitled'), showBack = false } = { ...props, ...field?.componentProps };
   const Designer = useDesigner();
   const compile = useCompile();
+  const compiledTitle = compile(title);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // sync title
+    document.title = `${compiledTitle} - NocoBase`;
+  }, [compiledTitle]);
+
   return (
     <SortableItem
       className={cx(
@@ -27,7 +35,7 @@ const InternalHeader = (props: HeaderProps) => {
       )}
     >
       <NavBar backArrow={showBack} onBack={() => navigate(-1)}>
-        {compile(title)}
+        {compiledTitle}
       </NavBar>
       <Designer />
     </SortableItem>

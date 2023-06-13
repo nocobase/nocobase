@@ -52,8 +52,8 @@ export function useRedirect(next = '/admin') {
   const navigate = useNavigate();
   const redirect = location?.['query']?.redirect;
   return useCallback(() => {
-    navigate(redirect || '/admin');
-  }, [navigate, redirect]);
+    navigate(redirect || '/admin', { replace: true });
+  }, [redirect, navigate]);
 }
 
 export const useSignIn = (authenticator) => {

@@ -1,22 +1,31 @@
 import { TabBar } from 'antd-mobile';
 import { TabBarItem } from './TabBar.Item';
-import React, { useCallback, useContext } from 'react';
-import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { DndContext, Icon, SchemaComponent, SchemaInitializer, SortableItem, useDesignable } from '@nocobase/client';
+import React, { useCallback } from 'react';
+import { useFieldSchema } from '@formily/react';
+import {
+  DndContext,
+  Icon,
+  SchemaComponent,
+  SchemaInitializer,
+  SortableItem,
+  useCompile,
+  useDesignable,
+} from '@nocobase/client';
 import { useTranslation } from '../../../../locale';
 import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
 import { useNavigate, useParams } from 'react-router-dom';
 import { tabItemSchema } from './schema';
+import { PageSchema } from '../../common';
 
 export const InternalTabBar: React.FC = (props) => {
   const fieldSchema = useFieldSchema();
   const { designable } = useDesignable();
   const { t } = useTranslation();
-  const options = useContext(SchemaOptionsContext);
-  const { insertBeforeEnd, dn } = useDesignable();
+  const { insertBeforeEnd } = useDesignable();
   const navigate = useNavigate();
   const params = useParams<{ name: string }>();
+  const compile = useCompile();
 
   const onAddTab = useCallback((values: any) => {
     return insertBeforeEnd({
@@ -25,25 +34,11 @@ export const InternalTabBar: React.FC = (props) => {
       'x-component-props': values,
       'x-designer': 'MTabBar.Item.Designer',
       properties: {
-        [uid()]: {
-          type: 'void',
-          'x-component': 'MPage',
-          'x-designer': 'MPage.Designer',
-          'x-component-props': {},
-          properties: {
-            grid: {
-              type: 'void',
-              'x-component': 'Grid',
-              'x-initializer': 'MBlockInitializers',
-              'x-component-props': {
-                showDivider: false,
-              },
-            },
-          },
-        },
+        [uid()]: PageSchema,
       },
     });
   }, []);
+
   return (
     <SortableItem
       className={cx(
@@ -80,7 +75,7 @@ export const InternalTabBar: React.FC = (props) => {
                 key={`tab_${schema['x-uid']}`}
                 title={
                   <>
-                    {cp.title}
+                    {compile(cp.title)}
                     <SchemaComponent schema={schema} name={name} />
                   </>
                 }
@@ -88,7 +83,7 @@ export const InternalTabBar: React.FC = (props) => {
               ></TabBar.Item>
             );
           })}
-          {designable && Object.keys(fieldSchema.properties).length < 5 ? (
+          {designable && (!fieldSchema.properties || Object.keys(fieldSchema.properties).length < 5) ? (
             <TabBar.Item
               className={css`
                 .adm-tab-bar-item-icon {

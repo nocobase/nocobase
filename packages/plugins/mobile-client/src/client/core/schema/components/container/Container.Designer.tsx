@@ -1,12 +1,13 @@
 import { SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from '../../../../locale';
+import { generateNTemplate, useTranslation } from '../../../../locale';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useNavigate } from 'react-router-dom';
 import { findSchema } from '../../helpers';
 import { Button } from 'antd';
 import { MenuOutlined } from '@ant-design/icons';
+import { PageSchema } from '../../common';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();
@@ -60,7 +61,7 @@ export const ContainerDesigner = () => {
                   'x-designer': 'MTabBar.Item.Designer',
                   'x-component-props': {
                     icon: 'HomeOutlined',
-                    title: t('Untitled'),
+                    title: generateNTemplate('Untitled'),
                   },
                   properties: {
                     page: pageSchema.toJSON(),
@@ -69,10 +70,12 @@ export const ContainerDesigner = () => {
               },
             });
           } else {
-            const pageSchema = findSchema(tabBarSchema.properties[Object.keys(tabBarSchema.properties)[0]], 'MPage');
-            if (!pageSchema) return;
+            const tabBarSchemaFirstKey = Object.keys(tabBarSchema.properties || {})?.[0];
+            const pageSchema = tabBarSchemaFirstKey
+              ? findSchema(tabBarSchema.properties[tabBarSchemaFirstKey], 'MPage')
+              : null;
             await dn.remove(tabBarSchema);
-            await dn.insertBeforeEnd(pageSchema, {
+            await dn.insertBeforeEnd(pageSchema || PageSchema, {
               onSuccess() {
                 navigate('../');
               },

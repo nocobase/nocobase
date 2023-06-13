@@ -41,6 +41,7 @@ import {
   useCollectionManager,
   useCompile,
   useDesignable,
+  useFilterBlock,
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -467,9 +468,14 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
+  const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
+
+  if (!inProvider) {
+    return null;
+  }
 
   const Content = dataBlocks.map((block) => {
     const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;

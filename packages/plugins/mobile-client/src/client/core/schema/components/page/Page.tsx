@@ -3,7 +3,7 @@ import { RecursionField, useFieldSchema } from '@formily/react';
 import { ActionBarProvider, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
 import React, { useCallback, useMemo } from 'react';
-import { useLocation, useNavigate, createSearchParams } from 'react-router-dom';
+import { createSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { countGridCol } from '../../helpers';
 import { PageDesigner } from './Page.Designer';
 
@@ -32,11 +32,11 @@ const InternalPage: React.FC = (props) => {
   let hasGlobalActions = false;
   if (!tabsSchema) {
     hasGlobalActions = countGridCol(fieldSchema.properties['grid'], 2) === 1;
-  } else if (query.has('tab') && tabsSchema.properties[query.get('tab')]) {
+  } else if (query.has('tab') && tabsSchema.properties?.[query.get('tab')]) {
     hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid'], 2) === 1;
-  } else {
+  } else if (tabsSchema.properties) {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
-    setTimeout(() => {
+    if (schema) {
       navigate(
         {
           pathname: location.pathname,
@@ -44,7 +44,7 @@ const InternalPage: React.FC = (props) => {
         },
         { replace: true },
       );
-    });
+    }
   }
 
   const onTabsChange = useCallback<TabsProps['onChange']>(
@@ -114,7 +114,7 @@ const InternalPage: React.FC = (props) => {
               return 'MHeader' === s['x-component'];
             }}
           ></RecursionField>
-          <TabsContextProvider activeKey={query.get('tab')} onChange={onTabsChange}>
+          <TabsContextProvider deep={false} activeKey={query.get('tab')} onChange={onTabsChange}>
             <RecursionField
               schema={fieldSchema}
               filterProperties={(s) => {
