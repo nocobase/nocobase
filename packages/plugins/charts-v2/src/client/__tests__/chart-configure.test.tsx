@@ -1,7 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { ChartConfigure } from '../block';
 import React from 'react';
-import { Grid } from '@nocobase/client';
 import { vi } from 'vitest';
 import * as client from '@nocobase/client';
 
