@@ -5,4 +5,5 @@ export default {
   Edit: '编辑',
   Copied: '已复制',
   'Field Map': '字段映射',
+  'id_token signed response algorithm': 'id_token签名算法',
 };

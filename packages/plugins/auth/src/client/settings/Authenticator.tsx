@@ -1,5 +1,5 @@
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   useAPIClient,
   useActionContext,
@@ -38,7 +38,7 @@ const AddNew = () => {
   }));
 
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <AuthTypeContext.Provider value={{ type }}>
         <Dropdown menu={{ items }}>
           <Button icon={<PlusOutlined />} type={'primary'}>
@@ -47,7 +47,7 @@ const AddNew = () => {
         </Dropdown>
         <SchemaComponent scope={{ useCloseAction, types, setType }} schema={createFormSchema} />
       </AuthTypeContext.Provider>
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 
