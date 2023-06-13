@@ -41,14 +41,17 @@ export class MutexManager {
       return;
     }
     this.deamonApp = app;
-    this.deamonApp.on('beforeStart', () => {
-      this.tryRegisterDefaultMutexProvider();
-      this.deamonApp.db.on('afterClose', async () => {
-        this.deamonApp = null;
-        for (const mutexProvider of this.mutexProviders.values()) {
-          await mutexProvider.close();
-        }
-      });
+    this.deamonApp.on('beforeStart', this.onBeforeStart);
+  }
+
+  private onBeforeStart() {
+    this.tryRegisterDefaultMutexProvider();
+    this.deamonApp.db.on('afterClose', async () => {
+      this.deamonApp.off('beforeStart', this.onBeforeStart);
+      this.deamonApp = null;
+      for (const mutexProvider of this.mutexProviders.values()) {
+        await mutexProvider.close();
+      }
     });
   }
 
