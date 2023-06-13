@@ -3,6 +3,7 @@ import {
   SchemaSettings,
   gridRowColWrap,
   useAPIClient,
+  useCompile,
   useDesignable,
   useRequest,
 } from '@nocobase/client';
@@ -10,10 +11,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
-import { useFieldSchema, useField } from '@formily/react';
+import { useFieldSchema, useField, Schema } from '@formily/react';
 import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useFields, useQueryWithAlias, useFieldTransformer } from '../hooks';
+import { useFields, useQueryWithAlias, useFieldTransformer, useCompiledFields } from '../hooks';
 import { createRendererSchema } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
@@ -33,7 +34,7 @@ export const ChartRenderer: React.FC<{
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
-  const fields = useFields(collection);
+  const fields = useCompiledFields(collection);
   const queryWithAlias = useQueryWithAlias(fields, query);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
@@ -99,7 +100,7 @@ export const ChartRenderer: React.FC<{
   const locale = api.auth.getLocale();
   const meta = useFieldTransformer(transform, locale);
   const chartTansformer = chart?.transformer;
-  const info = { data: chartTansformer ? chartTansformer(data) : data, meta, general, advanced };
+  const info = Schema.compile({ data: chartTansformer ? chartTansformer(data) : data, meta, general, advanced }, { t });
   const componentProps = library?.useProps(info);
   const C = () =>
     Component ? (

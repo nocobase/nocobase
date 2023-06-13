@@ -21,7 +21,6 @@ export type FieldOption = {
 };
 
 export const useFields = (collection?: string) => {
-  const { t } = useTranslation();
   const { current } = useContext(ChartConfigContext);
   if (!collection) {
     collection = current?.collection || '';
@@ -37,6 +36,12 @@ export const useFields = (collection?: string) => {
       value: field.name,
       ...field,
     }));
+  return fields;
+};
+
+export const useCompiledFields = (collection?: string) => {
+  const fields = useFields(collection);
+  const { t } = useTranslation();
   return Schema.compile(fields, { t }) as FieldOption[];
 };
 
@@ -65,19 +70,23 @@ export const getAllFields = (fields: FieldOption[], field: any) => {
   return allFields;
 };
 
-export const useChartFields = (fields: FieldOption[]) => (field: any) => {
-  const allFields = getAllFields(fields, field);
-  /**
-   * chartFields is used for configuring chart fields
-   * since the default alias is field display name, we need to set the option values to field display name
-   * see also: 'useQueryWithAlias'
-   */
-  const chartFields = allFields.map((field) => ({
-    ...field,
-    value: field.label,
-  }));
-  field.dataSource = chartFields;
-};
+export const useChartFields =
+  (fields: FieldOption[], scope = {}) =>
+  (field: any) => {
+    const allFields = getAllFields(fields, field);
+    /**
+     * chartFields is used for configuring chart fields
+     * since the default alias is field display name, we need to set the option values to field display name
+     * see also: 'useQueryWithAlias'
+     */
+    const chartFields = allFields.map((field) => ({
+      ...field,
+      label: Schema.compile(field.label, scope),
+      value: field.label,
+    }));
+    console.log(chartFields);
+    field.dataSource = chartFields;
+  };
 
 export const useFormatters = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');

@@ -29,6 +29,7 @@ import {
   useCollectionOptions,
   useTransformers,
   useFieldTypes,
+  useCompiledFields,
 } from '../hooks';
 import { cloneDeep } from 'lodash';
 import { createRendererSchema } from '../utils';
@@ -248,7 +249,7 @@ ChartConfigure.Renderer = function Renderer(props) {
 
 ChartConfigure.Query = function Query() {
   const { t } = useChartsTranslation();
-  const fields = useFields();
+  const fields = useCompiledFields();
   const useFormatterOptions = useFormatters(fields);
   const filterOptions = useFilterFieldOptions(fields);
   const collectionOptions = useCollectionOptions();
@@ -309,7 +310,7 @@ ChartConfigure.Config = function Config() {
   const chartTypes = useChartTypes();
   const fields = useFields();
   const libraries = useContext(ChartLibraryContext);
-  const getChartFields = useChartFields(fields);
+  const getChartFields = useChartFields(fields, { t });
   return (
     <FormConsumer>
       {(form) => {

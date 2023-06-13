@@ -1,9 +1,9 @@
 import { vi } from 'vitest';
 import {
   useChartFields,
+  useCompiledFields,
   useFieldTransformer,
   useFieldTypes,
-  useFields,
   useFormatters,
   useQueryWithAlias,
   useTransformers,
@@ -12,13 +12,14 @@ import { renderHook } from '@testing-library/react-hooks';
 import * as client from '@nocobase/client';
 import formatters from '../block/formatters';
 import transformers from '../block/transformers';
+import { useChartsTranslation } from '../locale';
 
 describe('hooks', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  test('useFields', () => {
+  test('useCompiledFields', () => {
     vi.spyOn(client, 'useCollectionManager').mockReturnValue({
       getCollectionFields: () => [
         {
@@ -36,7 +37,7 @@ describe('hooks', () => {
         },
       ],
     } as any);
-    const fields = renderHook(() => useFields()).result.current;
+    const fields = renderHook(() => useCompiledFields()).result.current;
     expect(fields.length).toBe(1);
     expect(fields[0].key).toBe('name');
     expect(fields[0].label).toBe('Name');
@@ -44,19 +45,25 @@ describe('hooks', () => {
   });
 
   test('useChartFields', () => {
+    const { t } = renderHook(() => useChartsTranslation()).result.current;
     const { result } = renderHook(() =>
-      useChartFields([
-        {
-          key: 'name',
-          label: 'Name',
-          value: 'name',
-        },
-        {
-          key: 'email',
-          label: 'Email',
-          value: 'email',
-        },
-      ]),
+      useChartFields(
+        [
+          {
+            key: 'name',
+            name: 'name',
+            label: '{{t("Name")}}',
+            value: 'name',
+          },
+          {
+            key: 'email',
+            name: 'email',
+            label: '{{t("Email")}}',
+            value: 'email',
+          },
+        ],
+        { t },
+      ),
     );
     const func = result.current;
     const field = {
@@ -73,16 +80,16 @@ describe('hooks', () => {
       dataSource: [],
     };
     func(field);
-    expect(field.dataSource).toEqual([
+    expect(field.dataSource).toMatchObject([
       {
         key: 'name',
         label: 'Name',
-        value: 'Name',
+        value: '{{t("Name")}}',
       },
       {
         key: 'email',
         label: 'Email',
-        value: 'Email',
+        value: '{{t("Email")}}',
       },
       {
         key: 'Email Alias',
