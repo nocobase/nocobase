@@ -130,7 +130,6 @@ export const Templates = ({ style = {}, form }) => {
         });
     } else {
       form?.reset();
-      form.setValues(filterReferences(form.initialValues), 'overwrite');
     }
   }, []);
 
