@@ -32,7 +32,7 @@ export const useFields = (collection?: string) => {
       return !['belongsTo', 'hasMany', 'belongsToMany', 'hasOne'].includes(field.type) && field.interface;
     })
     .map((field) => ({
-      key: field.key,
+      key: field.name,
       label: field.uiSchema?.title || field.name,
       value: field.name,
       ...field,
@@ -70,7 +70,7 @@ export const useChartFields = (fields: FieldOption[]) => (field: any) => {
   /**
    * chartFields is used for configuring chart fields
    * since the default alias is field display name, we need to set the option values to field display name
-   * see also: 'appendAliasToQuery' function in 'renderer/ChartRenderer.tsx'
+   * see also: 'useQueryWithAlias'
    */
   const chartFields = allFields.map((field) => ({
     ...field,
@@ -125,6 +125,12 @@ export const useCollectionOptions = () => {
   return Schema.compile(options, { t });
 };
 
+/**
+ * useFieldTypes
+ * Get field types for using transformers
+ * Only supported types will be displayed
+ * Some interfaces and types will be mapped to supported types
+ */
 export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');
   const allFields = getAllFields(fields, field);
@@ -195,8 +201,11 @@ export const useFieldTransformer = (transform: ChartRendererProps['transform'], 
     .filter((item) => item.field && item.type && item.format)
     .reduce((meta, item) => {
       const formatter = transformers[item.type][item.format];
+      if (!formatter) {
+        return meta;
+      }
       meta[item.field] = {
-        formatter: (val: any) => formatter?.(val, locale),
+        formatter: (val: any) => formatter(val, locale),
       };
       return meta;
     }, {});

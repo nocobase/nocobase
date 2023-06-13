@@ -89,11 +89,11 @@ export const ChartConfigure: React.FC<{
   );
   const [loading, setLoading] = React.useState(false);
   const RunButton: React.FC = () => (
-    // apply cloneDeep to trigger form change and ChartRenderer will rerender
     <Button
       type="link"
       loading={loading}
       icon={<RightSquareOutlined />}
+      // apply cloneDeep to trigger form change and ChartRenderer will rerender
       onClick={() => (form.values.query = cloneDeep(form.values.query))}
     >
       {t('Run query')}

@@ -30,7 +30,7 @@ export type ChartRendererProps = {
   config?: {
     chartType: string;
     general: any;
-    advanced: string;
+    advanced: any;
   };
   transform?: {
     field: string;

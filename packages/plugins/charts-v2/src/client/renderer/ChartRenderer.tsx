@@ -7,7 +7,7 @@ import {
   useRequest,
 } from '@nocobase/client';
 import React, { useContext, useEffect, useState } from 'react';
-import { Empty, Result, Typography, message } from 'antd';
+import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField } from '@formily/react';
@@ -37,7 +37,7 @@ export const ChartRenderer: React.FC<{
   const queryWithAlias = useQueryWithAlias(fields, query);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
-  const { loading, run } = useRequest(
+  const { run } = useRequest(
     () =>
       api
         .request({
