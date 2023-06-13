@@ -34,7 +34,11 @@ const InternalContainer: React.FC = (props) => {
   const params = useParams<{ name: string }>();
   const match = useRouteMatch();
   const tabBarSchema = fieldSchema?.properties?.['tabBar'];
-  const redirectToUid = tabBarSchema?.properties[Object.keys(tabBarSchema.properties)[0]]['x-uid'];
+  const tabBarCurrentFirstKey = tabBarSchema?.properties ? Object.keys(tabBarSchema.properties)[0] : null;
+  let redirectToUid = null;
+  if (tabBarCurrentFirstKey) {
+    redirectToUid = tabBarSchema?.properties[tabBarCurrentFirstKey]?.['x-uid'];
+  }
 
   const tabRoutes = useMemo<RouteProps[]>(() => {
     if (!redirectToUid) {

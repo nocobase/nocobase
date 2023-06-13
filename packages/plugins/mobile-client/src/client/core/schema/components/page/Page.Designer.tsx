@@ -1,6 +1,6 @@
 import { GeneralSchemaDesigner, SchemaSettings, useDesignable } from '@nocobase/client';
 import React from 'react';
-import { useTranslation } from '../../../../locale';
+import { generateNTemplate, useTranslation } from '../../../../locale';
 import { useField, useFieldSchema } from '@formily/react';
 import { findGridSchema } from '../../helpers';
 import { uid } from '@formily/shared';
@@ -78,7 +78,7 @@ export const PageDesigner = (props) => {
                   properties: {
                     tab1: {
                       type: 'void',
-                      title: '{{t("Untitled")}}',
+                      title: generateNTemplate('Untitled'),
                       'x-component': 'Tabs.TabPane',
                       'x-designer': 'Tabs.Designer',
                       'x-component-props': {},
