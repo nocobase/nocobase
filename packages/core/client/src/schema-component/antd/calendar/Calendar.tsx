@@ -6,7 +6,7 @@ import { parseExpression } from 'cron-parser';
 import { eq } from 'date-arithmetic';
 import get from 'lodash/get';
 import React, { useCallback, useMemo, useState } from 'react';
-import { Calendar as BigCalendar, dayjsLocalizer } from 'react-big-calendar';
+import { Calendar as BigCalendar, View, dayjsLocalizer } from 'react-big-calendar';
 import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
@@ -18,16 +18,8 @@ import './style.less';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 
-const Weeks = ['month', 'week', 'day'] as const;
+const Weeks = ['month', 'week', 'day'] as View[];
 
-// Note that the dayjsLocalizer extends Day.js with the following plugins:
-// - IsBetween
-// - IsSameOrAfter
-// - IsSameOrBefore
-// - LocaleData
-// - LocalizedFormat
-// - MinMax
-// - UTC
 const localizer = dayjsLocalizer(dayjs);
 export const DeleteEventContext = React.createContext({
   close: () => {},
@@ -202,7 +194,7 @@ export const Calendar: any = observer(
   (props: any) => {
     const { dataSource, fieldNames, showLunar, fixedBlock } = useProps(props);
     const [date, setDate] = useState<Date>(new Date());
-    const [view, setView] = useState<(typeof Weeks)[number]>('month');
+    const [view, setView] = useState<View>('month');
     const events = useEvents(dataSource, fieldNames, date, view);
     const [visible, setVisible] = useState(false);
     const [record, setRecord] = useState<any>({});
@@ -237,7 +229,7 @@ export const Calendar: any = observer(
           onSelectSlot={(slotInfo) => {
             console.log('onSelectSlot', slotInfo);
           }}
-          onDoubleClickEvent={(event) => {
+          onDoubleClickEvent={() => {
             console.log('onDoubleClickEvent');
           }}
           onSelectEvent={(event) => {

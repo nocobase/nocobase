@@ -1,5 +1,5 @@
 import { CopyOutlined } from '@ant-design/icons';
-import { ArrayBase, ArrayBaseMixins } from '@formily/antd-v5';
+import { ArrayBase } from '@formily/antd-v5';
 import { ArrayField } from '@formily/core';
 import { ISchema, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { toArr, uid } from '@formily/shared';
@@ -47,10 +47,10 @@ const DataTemplateTitle = observer<{ index: number; item: any }>((props) => {
 export interface IArrayCollapseProps extends CollapseProps {
   defaultOpenPanelCount?: number;
 }
-type ComposedArrayCollapse = React.FC<React.PropsWithChildren<IArrayCollapseProps>> &
-  ArrayBaseMixins & {
-    CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
-  };
+type ComposedArrayCollapse =
+  | React.FC<React.PropsWithChildren<IArrayCollapseProps>> & {
+      CollapsePanel?: React.FC<React.PropsWithChildren<CollapsePanelProps>>;
+    };
 
 const isAdditionComponent = (schema: ISchema) => {
   return schema['x-component']?.indexOf?.('Addition') > -1;
