@@ -20,6 +20,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { AppSupervisor } from './app-supervisor';
 
 const packageJson = require('../package.json');
 
@@ -148,82 +149,84 @@ export class ApplicationVersion {
 }
 
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  protected _db: Database;
-  protected _logger: Logger;
-
-  protected _resourcer: Resourcer;
-
-  protected _cache: Cache;
-
-  protected _cli: Command;
-
-  protected _i18n: i18n;
-
-  protected _pm: PluginManager;
-
-  protected _acl: ACL;
-
-  protected _appManager: AppManager;
-
-  protected _authManager: AuthManager;
-
-  protected _version: ApplicationVersion;
-
+  public listenServer: Server;
+  declare middleware: any;
+  stopped = false;
+  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   protected plugins = new Map<string, Plugin>();
 
-  public listenServer: Server;
-
-  declare middleware: any;
-
-  stopped = false;
+  protected _appSupervisor = AppSupervisor.getInstance();
 
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
+    this._appSupervisor.addApp(this);
   }
+
+  protected _db: Database;
 
   get db() {
     return this._db;
   }
 
-  get cache() {
-    return this._cache;
+  protected _logger: Logger;
+
+  get logger() {
+    return this._logger;
   }
+
+  protected _resourcer: Resourcer;
 
   get resourcer() {
     return this._resourcer;
   }
 
+  protected _cache: Cache;
+
+  get cache() {
+    return this._cache;
+  }
+
+  protected _cli: Command;
+
   get cli() {
     return this._cli;
   }
 
-  get acl() {
-    return this._acl;
-  }
+  protected _i18n: i18n;
 
   get i18n() {
     return this._i18n;
   }
 
+  protected _pm: PluginManager;
+
   get pm() {
     return this._pm;
   }
 
-  get version() {
-    return this._version;
+  protected _acl: ACL;
+
+  get acl() {
+    return this._acl;
   }
+
+  protected _appManager: AppManager;
 
   get appManager() {
     return this._appManager;
   }
 
+  protected _authManager: AuthManager;
+
   get authManager() {
     return this._authManager;
   }
 
-  get logger() {
-    return this._logger;
+  protected _version: ApplicationVersion;
+
+  get version() {
+    return this._version;
   }
 
   get log() {
@@ -232,94 +235,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get name() {
     return this.options.name || 'main';
-  }
-
-  protected init() {
-    const options = this.options;
-
-    const logger = createAppLogger(options.logger);
-    this._logger = logger.instance;
-
-    // @ts-ignore
-    this._events = [];
-    // @ts-ignore
-    this._eventsCount = [];
-
-    this.removeAllListeners();
-
-    this.middleware = new Toposort<any>();
-    this.plugins = new Map<string, Plugin>();
-    this._acl = createACL();
-
-    this.use(logger.middleware, { tag: 'logger' });
-
-    if (this._db) {
-      // MaxListenersExceededWarning
-      this._db.removeAllListeners();
-    }
-
-    this._db = this.createDatabase(options);
-
-    this._resourcer = createResourcer(options);
-    this._cli = new Command('nocobase').usage('[command] [options]');
-    this._i18n = createI18n(options);
-    this._cache = createCache(options.cache);
-    this.context.db = this._db;
-    this.context.logger = this._logger;
-    this.context.resourcer = this._resourcer;
-    this.context.cache = this._cache;
-
-    if (this._pm) {
-      this._pm = this._pm.clone();
-    } else {
-      this._pm = new PluginManager({
-        app: this,
-        plugins: options.plugins,
-      });
-    }
-
-    if (this._appManager) {
-      this._appManager.bindMainApplication(this);
-    } else {
-      this._appManager = new AppManager(this);
-    }
-
-    this._authManager = new AuthManager({
-      authKey: 'X-Authenticator',
-      default: 'basic',
-    });
-    this.resource({
-      name: 'auth',
-      actions: authActions,
-    });
-    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
-
-    if (this.options.acl !== false) {
-      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
-    }
-
-    registerMiddlewares(this, options);
-
-    if (options.registerActions !== false) {
-      registerActions(this);
-    }
-
-    registerCli(this);
-
-    this._version = new ApplicationVersion(this);
-  }
-
-  private createDatabase(options: ApplicationOptions) {
-    const db = new Database({
-      ...(options.database instanceof Database ? options.database.options : options.database),
-      migrator: {
-        context: { app: this },
-      },
-    });
-
-    db.setLogger(this._logger);
-
-    return db;
   }
 
   getVersion() {
@@ -574,12 +489,99 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('afterUpgrade', this, options);
   }
 
-  declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
-
   toJSON() {
     return {
       appName: this.name,
     };
+  }
+
+  protected init() {
+    const options = this.options;
+
+    const logger = createAppLogger(options.logger);
+    this._logger = logger.instance;
+
+    // @ts-ignore
+    this._events = [];
+    // @ts-ignore
+    this._eventsCount = [];
+
+    this.removeAllListeners();
+
+    this.middleware = new Toposort<any>();
+    this.plugins = new Map<string, Plugin>();
+    this._acl = createACL();
+
+    this.use(logger.middleware, { tag: 'logger' });
+
+    if (this._db) {
+      // MaxListenersExceededWarning
+      this._db.removeAllListeners();
+    }
+
+    this._db = this.createDatabase(options);
+
+    this._resourcer = createResourcer(options);
+    this._cli = new Command('nocobase').usage('[command] [options]');
+    this._i18n = createI18n(options);
+    this._cache = createCache(options.cache);
+    this.context.db = this._db;
+    this.context.logger = this._logger;
+    this.context.resourcer = this._resourcer;
+    this.context.cache = this._cache;
+
+    if (this._pm) {
+      this._pm = this._pm.clone();
+    } else {
+      this._pm = new PluginManager({
+        app: this,
+        plugins: options.plugins,
+      });
+    }
+
+    if (this._appManager) {
+      this._appManager.bindMainApplication(this);
+    } else {
+      this._appManager = new AppManager(this);
+    }
+
+    this._authManager = new AuthManager({
+      authKey: 'X-Authenticator',
+      default: 'basic',
+    });
+
+    this.resource({
+      name: 'auth',
+      actions: authActions,
+    });
+    this._resourcer.use(this._authManager.middleware(), { tag: 'auth' });
+
+    if (this.options.acl !== false) {
+      this._resourcer.use(this._acl.middleware(), { tag: 'acl', after: ['auth'] });
+    }
+
+    registerMiddlewares(this, options);
+
+    if (options.registerActions !== false) {
+      registerActions(this);
+    }
+
+    registerCli(this);
+
+    this._version = new ApplicationVersion(this);
+  }
+
+  private createDatabase(options: ApplicationOptions) {
+    const db = new Database({
+      ...(options.database instanceof Database ? options.database.options : options.database),
+      migrator: {
+        context: { app: this },
+      },
+    });
+
+    db.setLogger(this._logger);
+
+    return db;
   }
 }
 
