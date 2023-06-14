@@ -438,7 +438,6 @@ FormItem.Designer = function Designer() {
               properties: {
                 filter: {
                   default: defaultFilter,
-                  // title: '数据范围',
                   enum: dataSource,
                   'x-component': 'Filter',
                   'x-component-props': {

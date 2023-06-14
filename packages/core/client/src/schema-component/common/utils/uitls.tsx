@@ -1,5 +1,4 @@
-import { cornersOfRectangle } from '@dnd-kit/core/dist/utilities/algorithms/helpers';
-import { useForm } from '@formily/react';
+
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import moment from 'moment';
@@ -34,7 +33,7 @@ export const isVariable = (str: unknown) => {
   return matches ? true : false;
 };
 
-export const parseVariables = (str: string, ctx: VariablesCtx | any) => {
+export const parseVariables = (str: string, ctx: VariablesCtx) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
