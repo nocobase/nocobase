@@ -38,9 +38,9 @@ const InternalListBlockProvider = (props) => {
                 .ant-description-input {
                   line-height: 34px;
                 }
-                .ant-formily-item-layout-vertical {
-                  margin-bottom: 0px;
-                }
+                // .ant-formily-item-layout-vertical {
+                //   margin-bottom: 0px;
+                // }
               `,
             )}
           >

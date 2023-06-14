@@ -11,7 +11,7 @@ const itemCss = css`
   height: 100%;
   flex-direction: column;
   justify-content: space-between;
-  // gap: 8px;
+  gap: 8px;
 `;
 
 export const GridCardItem = (props) => {
@@ -22,9 +22,6 @@ export const GridCardItem = (props) => {
         &,
         & .ant-card-body {
           height: 100%;
-          .nb-action-bar {
-            margin-top: -10px;
-          }
         }
       `}
     >
