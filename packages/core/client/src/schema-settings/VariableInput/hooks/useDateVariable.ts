@@ -1,18 +1,14 @@
-import { useCompile } from '../../../schema-component';
+import { useMemo } from 'react';
 
 export const useDateVariable = ({ operator, schema }) => {
-  const compile = useCompile();
   const operatorValue = operator?.value || '';
-
-  if (!operator || !schema) return null;
-
-  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema['x-component']);
+  const disabled = !['DatePicker', 'DatePicker.RangePicker'].includes(schema?.['x-component']);
   const dateOptions = [
     {
       key: 'now',
       value: 'now',
       label: `{{t("Now")}}`,
-      disabled: schema['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
+      disabled: schema?.['x-component'] !== 'DatePicker' || operatorValue === '$dateBetween',
     },
     {
       key: 'yesterday',
@@ -142,11 +138,17 @@ export const useDateVariable = ({ operator, schema }) => {
     },
   ];
 
-  return compile({
-    label: `{{t("Date variables")}}`,
-    value: '$date',
-    key: '$date',
-    disabled: dateOptions.every((option) => option.disabled),
-    children: dateOptions,
-  });
+  const result = useMemo(() => {
+    return {
+      label: `{{t("Date variables")}}`,
+      value: '$date',
+      key: '$date',
+      disabled: dateOptions.every((option) => option.disabled),
+      children: dateOptions,
+    };
+  }, [schema?.['x-component']]);
+
+  if (!operator || !schema) return null;
+
+  return result;
 };
