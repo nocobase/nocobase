@@ -1,9 +1,12 @@
 import { TabsProps } from 'antd';
 import React from 'react';
 
-const TabsContext = React.createContext<TabsProps>({});
+interface TabsContextProps extends TabsProps {
+  deep?: boolean;
+}
+const TabsContext = React.createContext<TabsContextProps>({});
 
-export const TabsContextProvider: React.FC<TabsProps> = ({ children, ...props }) => {
+export const TabsContextProvider: React.FC<TabsContextProps> = ({ children, ...props }) => {
   return <TabsContext.Provider value={props}>{children}</TabsContext.Provider>;
 };
 

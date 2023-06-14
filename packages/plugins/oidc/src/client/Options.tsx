@@ -39,10 +39,40 @@ const schema = {
             tooltip: '{{t("Default: openid profile email")}}',
           },
         },
+        idTokenSignedResponseAlg: {
+          title: '{{t("id_token signed response algorithm")}}',
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: 'HS256', value: 'HS256' },
+            { label: 'HS384', value: 'HS384' },
+            { label: 'HS512', value: 'HS512' },
+            { label: 'RS256', value: 'RS256' },
+            { label: 'RS384', value: 'RS384' },
+            { label: 'RS512', value: 'RS512' },
+            { label: 'ES256', value: 'ES256' },
+            { label: 'ES384', value: 'ES384' },
+            { label: 'ES512', value: 'ES512' },
+            { label: 'PS256', value: 'PS256' },
+            { label: 'PS384', value: 'PS384' },
+            { label: 'PS512', value: 'PS512' },
+          ],
+        },
         http: {
-          title: '{{t("http")}}',
+          title: '{{t("HTTP")}}',
           'x-component': 'Checkbox',
           'x-decorator': 'FormItem',
+        },
+        port: {
+          title: '{{t("Port")}}',
+          'x-component': 'InputNumber',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            style: {
+              width: '15%',
+              'min-width': '100px',
+            },
+          },
         },
         fieldMap: {
           title: '{{t("Field Map")}}',
