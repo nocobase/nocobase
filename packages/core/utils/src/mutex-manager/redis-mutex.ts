@@ -124,7 +124,7 @@ export class RedisMutex implements BaseMutexInterface {
         if (Date.now() - lock.start_time < 10 * 60 * 1000) {
           await lock.instance.extend(defaultTimeout / 1000);
         } else {
-          // tested ok to delete map entry wich for...of loop
+          // tested ok to delete map entry with for...of loop
           await this.release(name);
         }
       }

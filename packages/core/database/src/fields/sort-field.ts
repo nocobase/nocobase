@@ -43,7 +43,7 @@ export class SortField extends Field {
         instance.set(name, newValue);
       },
       {
-        gapAfterRun: 200,
+        gapAfterRun: 10,
       },
     );
   };
