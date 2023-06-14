@@ -51,90 +51,82 @@ SchemaInitializer.Button = observer(
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
-    const insertSchema = useCallback(
-      (schema) => {
-        if (insert) {
-          insert(wrap(schema));
-        } else {
-          insertAdjacent(insertPosition, wrap(schema), { onSuccess });
-        }
-      },
-      [insert, insertPosition, onSuccess, wrap],
-    );
+    const insertSchema = (schema) => {
+      if (insert) {
+        insert(wrap(schema));
+      } else {
+        insertAdjacent(insertPosition, wrap(schema), { onSuccess });
+      }
+    };
 
-    const renderItems = useCallback(
-      (items: any) => {
-        return items
-          .filter((v: any) => {
-            return v && (v?.visible ? v.visible() : true);
-          })
-          ?.map((item: any, indexA: number) => {
-            if (item.type === 'divider') {
-              return { type: 'divider', key: item.key || `item-${indexA}` };
+    const renderItems = (items: any) => {
+      return items
+        .filter((v: any) => {
+          return v && (v?.visible ? v.visible() : true);
+        })
+        ?.map((item: any, indexA: number) => {
+          if (item.type === 'divider') {
+            return { type: 'divider', key: item.key || `item-${indexA}` };
+          }
+          if (item.type === 'item' && item.component) {
+            const Component = findComponent(item.component);
+            if (!Component) {
+              error(`SchemaInitializer: component "${item.component}" not found`);
+              return null;
             }
-            if (item.type === 'item' && item.component) {
-              const Component = findComponent(item.component);
-              if (!Component) {
-                error(`SchemaInitializer: component "${item.component}" not found`);
-                return null;
-              }
-              item.key = `${item.key || item.title}-${indexA}`;
-              return getMenuItem(() => {
-                return (
-                  <SchemaInitializerItemContext.Provider
-                    key={item.key}
-                    value={{
-                      index: indexA,
-                      item,
-                      info: item,
-                      insert: insertSchema,
+            item.key = `${item.key || item.title}-${indexA}`;
+            return getMenuItem(() => {
+              return (
+                <SchemaInitializerItemContext.Provider
+                  key={item.key}
+                  value={{
+                    index: indexA,
+                    item,
+                    info: item,
+                    insert: insertSchema,
+                  }}
+                >
+                  <Component
+                    {...item}
+                    item={{
+                      ...item,
+                      title: compile(item.title),
                     }}
-                  >
-                    <Component
-                      {...item}
-                      item={{
-                        ...item,
-                        title: compile(item.title),
-                      }}
-                      insert={insertSchema}
-                    />
-                  </SchemaInitializerItemContext.Provider>
-                );
-              });
-            }
-            if (item.type === 'itemGroup') {
-              const label = compile(item.title);
-              return (
-                !!item.children?.length && {
-                  type: 'group',
-                  key: item.key || `item-group-${indexA}`,
-                  label,
-                  title: label,
-                  children: renderItems(item.children),
-                }
+                    insert={insertSchema}
+                  />
+                </SchemaInitializerItemContext.Provider>
               );
-            }
-            if (item.type === 'subMenu') {
-              const label = compile(item.title);
-              return (
-                !!item.children?.length && {
-                  key: item.key || `item-group-${indexA}`,
-                  label,
-                  title: label,
-                  popupClassName: menuItemGroupCss,
-                  children: renderItems(item.children),
-                }
-              );
-            }
-          });
-      },
-      [insertSchema],
-    );
+            });
+          }
+          if (item.type === 'itemGroup') {
+            const label = compile(item.title);
+            return (
+              !!item.children?.length && {
+                type: 'group',
+                key: item.key || `item-group-${indexA}`,
+                label,
+                title: label,
+                children: renderItems(item.children),
+              }
+            );
+          }
+          if (item.type === 'subMenu') {
+            const label = compile(item.title);
+            return (
+              !!item.children?.length && {
+                key: item.key || `item-group-${indexA}`,
+                label,
+                title: label,
+                popupClassName: menuItemGroupCss,
+                children: renderItems(item.children),
+              }
+            );
+          }
+        });
+    };
 
-    const menuItems = useMemo<MenuProps['items']>(() => {
-      clean();
-      return renderItems(items);
-    }, [items]);
+    clean();
+    const menuItems = renderItems(items);
 
     const buttonDom = (
       <Button
