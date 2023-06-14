@@ -6,7 +6,7 @@ import { useForm } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   CollectionContext,
   CollectionProvider,
   gridRowColWrap,
@@ -206,7 +206,7 @@ function AddCustomFormField(props) {
         component={component}
         title="{{t('Configure fields')}}"
       />
-      <ActionContext.Provider value={{ visible: Boolean(interfaceOptions) }}>
+      <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
         {interfaceOptions ? (
           <SchemaComponent
             schema={{
@@ -291,7 +291,7 @@ function AddCustomFormField(props) {
             }}
           />
         ) : null}
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </AddCustomFormFieldButtonContext.Provider>
   );
 }

@@ -11,7 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { RecordProvider } from '../../../';
 import { i18n } from '../../../i18n';
 import { useProps } from '../../hooks/useProps';
-import { ActionContext } from '../action';
+import { ActionContextProvider } from '../action';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
 import './style.less';
@@ -180,11 +180,11 @@ const CalendarRecordViewer = (props) => {
   return (
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
-        <ActionContext.Provider value={{ visible, setVisible }}>
+        <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </DeleteEventContext.Provider>
     )
   );

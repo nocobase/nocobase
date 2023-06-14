@@ -1,7 +1,8 @@
 import { Checkbox, message, Table } from 'antd';
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
+import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
 
@@ -28,19 +29,8 @@ const getChildrenKeys = (data = [], arr = []) => {
 
 const SettingMenuContext = createContext(null);
 
-function useGetContext() {
-  const [context, setContext] = useState(null);
-  import('../../pm').then(({ SettingsCenterContext }) => {
-    setContext(SettingsCenterContext);
-  });
-
-  return context;
-}
-
 export const SettingCenterProvider = (props) => {
-  const context = useGetContext();
-  const configureItems = context && useContext(context);
-
+  const configureItems = useContext(SettingsCenterContext);
   return <SettingMenuContext.Provider value={configureItems}>{props.children}</SettingMenuContext.Provider>;
 };
 

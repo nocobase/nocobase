@@ -2,12 +2,13 @@ import { observer, RecursionField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import React, { Fragment, useRef, useState } from 'react';
 import { WithoutTableFieldResource } from '../../../block-provider';
+// TODO: 不要使用 '../../../block-provider' 这个路径引用 BlockAssociationContext，在 Vitest 中会报错，待修复
 import { BlockAssociationContext } from '../../../block-provider/BlockProvider';
 import { CollectionProvider, useCollection, useCollectionManager } from '../../../collection-manager';
 import { RecordProvider, useRecord } from '../../../record-provider';
 import { FormProvider } from '../../core';
 import { useCompile } from '../../hooks';
-import { ActionContext, useActionContext } from '../action';
+import { ActionContextProvider, useActionContext } from '../action';
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { Preview } from '../preview';
 import { isShowFilePicker } from './InputRecordPicker';
@@ -112,11 +113,11 @@ export const ReadPrettyRecordPicker: React.FC = observer(
             <EllipsisWithTooltip ellipsis={ellipsis} ref={ellipsisWithTooltipRef}>
               {renderRecords()}
             </EllipsisWithTooltip>
-            <ActionContext.Provider
+            <ActionContextProvider
               value={{ visible, setVisible, openMode: 'drawer', snapshot: collectionField.interface === 'snapshot' }}
             >
               {renderRecordProvider()}
-            </ActionContext.Provider>
+            </ActionContextProvider>
           </CollectionProvider>
         </BlockAssociationContext.Provider>
       </div>

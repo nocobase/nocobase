@@ -154,17 +154,16 @@ export const useCollectionState = (currentCollectionName: string) => {
 
   const onCheck = useCallback((checkedKeys, { node, checked }) => {
     if (checked) {
-      let parentKey = node.key.split('.').slice(0, -1).join('.');
+      // let parentKey = node.key.split('.').slice(0, -1).join('.');
 
       try {
         // 当子节点被选中时，也选中所有祖先节点，提高用户辨识度
-        while (parentKey) {
-          if (parentKey) {
-            checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
-          }
-
-          parentKey = parentKey.split('.').slice(0, -1).join('.');
-        }
+        // while (parentKey) {
+        //   if (parentKey) {
+        //     checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
+        //   }
+        //   parentKey = parentKey.split('.').slice(0, -1).join('.');
+        // }
       } catch (err) {
         error(err);
       }

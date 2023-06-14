@@ -139,7 +139,7 @@ export const Page = (props) => {
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState(() => {
     // @ts-ignore
-    return location?.query?.tab || Object.keys(fieldSchema.properties).shift();
+    return location?.query?.tab || Object.keys(fieldSchema.properties || {}).shift();
   });
 
   const [height, setHeight] = useState(0);
@@ -245,7 +245,7 @@ export const Page = (props) => {
                           <Tabs.TabPane
                             tab={
                               <SortableItem
-                                id={schema.name}
+                                id={schema.name as string}
                                 schema={schema}
                                 className={classNames('nb-action-link', designerCss, props.className)}
                               >

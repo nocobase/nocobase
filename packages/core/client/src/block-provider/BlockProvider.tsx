@@ -20,9 +20,7 @@ import { CollectionProvider, useCollection, useCollectionManager } from '../coll
 import { FilterBlockRecord } from '../filter-provider/FilterProvider';
 import { useRecordIndex } from '../record-provider';
 import { SharedFilterProvider } from './SharedFilterProvider';
-import _ from 'lodash';
 import { useAssociationNames } from './hooks';
-
 
 export const BlockResourceContext = createContext(null);
 export const BlockAssociationContext = createContext(null);

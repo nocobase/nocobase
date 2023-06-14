@@ -8,7 +8,7 @@ import { useCurrentAppInfo } from '../../../../../appInfo';
 import { useBlockRequestContext, useGanttBlockContext, useTableBlockContext } from '../../../../../block-provider';
 import { RecordProvider } from '../../../../../record-provider';
 import { useDesignable } from '../../../../../schema-component';
-import { ActionContext } from '../../../action';
+import { ActionContextProvider } from '../../../action';
 import { convertToBarTasks } from '../../helpers/bar-helper';
 import { ganttDateRange, seedDates } from '../../helpers/date-helper';
 import { removeHiddenTasks, sortTasks } from '../../helpers/other-helper';
@@ -44,11 +44,11 @@ const GanttRecordViewer = (props) => {
   return (
     eventSchema && (
       <DeleteEventContext.Provider value={{ close }}>
-        <ActionContext.Provider value={{ visible, setVisible }}>
+        <ActionContextProvider value={{ visible, setVisible }}>
           <RecordProvider record={record}>
             <RecursionField schema={eventSchema} name={eventSchema.name} />
           </RecordProvider>
-        </ActionContext.Provider>
+        </ActionContextProvider>
       </DeleteEventContext.Provider>
     )
   );
