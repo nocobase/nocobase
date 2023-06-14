@@ -82,12 +82,14 @@ export const useFormVariable = ({
   }, [operator, schema, blockForm]);
 
   return useMemo(() => {
-    return compile({
-      label: `{{t("Current form")}}`,
-      value: '$form',
-      key: '$form',
-      disabled: children.every((option) => option.disabled),
-      children: children,
-    });
+    return children.length > 0
+      ? compile({
+          label: `{{t("Current form")}}`,
+          value: '$form',
+          key: '$form',
+          disabled: children.every((option) => option.disabled),
+          children: children,
+        })
+      : null;
   }, [children]);
 };

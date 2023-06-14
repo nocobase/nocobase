@@ -54,17 +54,18 @@ export const useIterationVariable = ({
   operator,
   schema,
   level,
+  rootCollection,
 }: {
   blockForm?: any;
   collectionField: any;
   operator?: any;
   schema: any;
   level?: number;
+  rootCollection?: string;
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const fields = getFilterOptions(collectionField?.collectionName);
-
   const children = useMemo(() => {
     const allowFields = fields.filter((field) => {
       return (
@@ -82,12 +83,14 @@ export const useIterationVariable = ({
   }, [operator, schema, blockForm]);
 
   return useMemo(() => {
-    return compile({
-      label: `{{t("Current iteration")}}`,
-      value: '$iteration',
-      key: '$iteration',
-      disabled: children.every((option) => option.disabled),
-      children: children,
-    });
+    return rootCollection !== collectionField?.collectionName && children.length > 0
+      ? compile({
+          label: `{{t("Current iteration")}}`,
+          value: '$iteration',
+          key: '$iteration',
+          disabled: children.every((option) => option.disabled),
+          children: children,
+        })
+      : null;
   }, [children]);
 };
