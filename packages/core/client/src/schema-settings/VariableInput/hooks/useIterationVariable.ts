@@ -63,7 +63,7 @@ export const useIterationVariable = ({
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-  const fields = getFilterOptions(collectionField.collectionName);
+  const fields = getFilterOptions(collectionField?.collectionName);
 
   const children = useMemo(() => {
     const allowFields = fields.filter((field) => {

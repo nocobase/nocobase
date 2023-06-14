@@ -1,7 +1,8 @@
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
 import { SelectProps, Tag } from 'antd';
 import { uniqBy } from 'lodash';
+import flat from 'flat';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
@@ -9,6 +10,7 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
+import { parseVariables, getInnermostKeyAndValue } from '../../common/utils/uitls';
 
 const EMPTY = 'N/A';
 
@@ -36,6 +38,7 @@ const InternalRemoteSelect = connect(
       targetField: _targetField,
       ...others
     } = props;
+    const form = useForm();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
@@ -110,7 +113,21 @@ const InternalRemoteSelect = connect(
       },
       [targetField?.uiSchema, fieldNames],
     );
-
+    const parseFilter = (rules) => {
+      if (!rules) {
+        return undefined;
+      }
+      const type = Object.keys(rules)[0] || '$and';
+      const conditions = rules[type];
+      const results = conditions.map((c) => {
+        const jsonlogic = getInnermostKeyAndValue(c);
+        const variablesCtx = { $form: form.values };
+        const parseValue = parseVariables(jsonlogic.value, variablesCtx);
+        const filterObj = JSON.parse(JSON.stringify(c).replace(jsonlogic.value, parseValue));
+        return filterObj;
+      });
+      return { [type]: results };
+    };
     const { data, run, loading } = useRequest(
       {
         action: 'list',
@@ -118,9 +135,8 @@ const InternalRemoteSelect = connect(
         params: {
           pageSize: 200,
           ...service?.params,
-          // fields: [fieldNames.label, fieldNames.value, ...(service?.params?.fields || [])],
           // search needs
-          filter: mergeFilter([field.componentProps?.service?.params?.filter || service?.params?.filter]),
+          filter: mergeFilter([parseFilter(field.componentProps?.service?.params?.filter) || service?.params?.filter]),
         },
       },
       {
@@ -164,13 +180,10 @@ const InternalRemoteSelect = connect(
       if (!data?.data?.length) {
         return value != null ? (Array.isArray(value) ? value : [value]) : [];
       }
-      const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
-      return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
+      return uniqBy(data?.data || [], fieldNames.value);
     }, [data?.data, value]);
+
     const onDropdownVisibleChange = () => {
-      if (firstRun.current) {
-        return;
-      }
       run();
       firstRun.current = true;
     };

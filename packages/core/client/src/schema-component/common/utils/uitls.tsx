@@ -1,3 +1,5 @@
+import { cornersOfRectangle } from '@dnd-kit/core/dist/utilities/algorithms/helpers';
+import { useForm } from '@formily/react';
 import flat from 'flat';
 import _, { every, findIndex, isArray, some } from 'lodash';
 import moment from 'moment';
@@ -13,7 +15,6 @@ type VariablesCtx = {
 
 export const useVariablesCtx = (): VariablesCtx => {
   const { data } = useCurrentUserContext() || {};
-
   return useMemo(() => {
     return {
       $user: data?.data || {},
@@ -33,7 +34,7 @@ export const isVariable = (str: unknown) => {
   return matches ? true : false;
 };
 
-export const parseVariables = (str: string, ctx: VariablesCtx) => {
+export const parseVariables = (str: string, ctx: VariablesCtx | any) => {
   const regex = /{{(.*?)}}/;
   const matches = str?.match?.(regex);
   if (matches) {
@@ -44,7 +45,7 @@ export const parseVariables = (str: string, ctx: VariablesCtx) => {
   }
 };
 
-function getInnermostKeyAndValue(obj) {
+export function getInnermostKeyAndValue(obj) {
   if (typeof obj !== 'object' || obj === null) {
     return null;
   }
