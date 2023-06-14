@@ -770,5 +770,7 @@ export default {
   "Duplicate mode":"复制方式",
   "Quick duplicate":"快速复制",
   "Duplicate and continue":"复制并继续",
-  "Please configure the duplicate fields":"请配置要复制的字段"
+  "Please configure the duplicate fields":"请配置要复制的字段",
+  "Current form":"当前表单",
+  "Current iteration":"当前迭代"
 }

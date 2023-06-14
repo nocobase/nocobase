@@ -693,5 +693,7 @@ export default {
   "Duplicate mode":"Duplicate mode",
   "Quick duplicate":"Quick duplicate",
   "Duplicate and continue":"Duplicate and continue",
-  "Please configure the duplicate fields":"Please configure the duplicate fields"
+  "Please configure the duplicate fields":"Please configure the duplicate fields",
+  "Current form": "Current form",
+  "Current iteration":"Current iteration"
 };

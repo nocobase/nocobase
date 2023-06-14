@@ -10,8 +10,9 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { parseVariables, getInnermostKeyAndValue } from '../../common/utils/uitls';
-
+import { useBlockRequestContext } from '../../../';
+import { getInnermostKeyAndValue } from '../../common/utils/uitls';
+import { parseVariables, extractFilterfield, generatePattern, extractValuesByPattern } from './utils';
 const EMPTY = 'N/A';
 
 export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
@@ -42,6 +43,7 @@ const InternalRemoteSelect = connect(
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
     const field = useField();
+    const ctx = useBlockRequestContext();
     const { getField } = useCollection();
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
@@ -119,15 +121,41 @@ const InternalRemoteSelect = connect(
       }
       const type = Object.keys(rules)[0] || '$and';
       const conditions = rules[type];
-      const results = conditions.map((c) => {
+      const results = [];
+      conditions?.forEach((c) => {
         const jsonlogic = getInnermostKeyAndValue(c);
-        const variablesCtx = { $form: form.values };
-        const parseValue = parseVariables(jsonlogic.value, variablesCtx);
-        const filterObj = JSON.parse(JSON.stringify(c).replace(jsonlogic.value, parseValue));
-        return filterObj;
+        const regex = /{{(.*?)}}/;
+        const matches = jsonlogic.value?.match?.(regex);
+        if (!matches || (!matches[1].includes('$form') && !matches[1].includes('$iteration'))) {
+          results.push(c);
+          return;
+        }
+        const associationfield = extractFilterfield(matches[1]);
+        const filterCollectionField = getCollectionJoinField(`${ctx.props.collection}.${associationfield}`);
+        if (['o2m', 'm2m'].includes(filterCollectionField?.interface)) {
+          // 对多子表单
+          const pattern = generatePattern(matches?.[1], associationfield);
+          const parseValue: any = extractValuesByPattern(flat(form.values), pattern);
+          const filters = parseValue.map((v) => {
+            return JSON.parse(JSON.stringify(c).replace(jsonlogic.value, v));
+          });
+          results.push({ $or: filters });
+        } else {
+          const variablesCtx = { $form: form.values, $iteration: form.values };
+          let str = matches?.[1];
+          if (str.includes('$iteration')) {
+            const path = field.path.segments.concat([]);
+            path.pop();
+            str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
+          }
+          const parseValue = parseVariables(str, variablesCtx);
+          const filterObj = JSON.parse(JSON.stringify(c).replace(jsonlogic.value, parseValue));
+          results.push(filterObj);
+        }
       });
       return { [type]: results };
     };
+
     const { data, run, loading } = useRequest(
       {
         action: 'list',
