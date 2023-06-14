@@ -14,6 +14,23 @@ import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
+const groupClass = css`
+  width: auto;
+  display: flex !important;
+  .ant-input-disabled {
+    .ant-tag {
+      color: #bfbfbf;
+      border-color: #d9d9d9;
+    }
+  }
+  .ant-input.null-value {
+    width: 4em;
+    min-width: 4em;
+  }
+`;
+const userSelectNone = css`
+  user-select: 'none';
+`;
 
 function parseValue(value: any): string | string[] {
   if (value == null) {
@@ -133,14 +150,6 @@ export function Input(props) {
 
   const [variableText, setVariableText] = React.useState('');
 
-  const loadData = (selectedOptions: Option[]) => {
-    const option = selectedOptions[selectedOptions.length - 1];
-    if (option.loadChildren) {
-      // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
-      option.loadChildren(option);
-    }
-  };
-
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
     useMemo(() => {
       return children
@@ -161,6 +170,13 @@ export function Input(props) {
     () => compile([constantOption, ...variableOptions]),
     [constantOption, variableOptions],
   );
+
+  const loadData = async (selectedOptions: Option[]) => {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (option.loadChildren) {
+      await option.loadChildren(option);
+    }
+  };
 
   const onSwitch = useCallback(
     (next) => {
@@ -215,27 +231,7 @@ export function Input(props) {
   const disabled = props.disabled || form.disabled;
 
   return (
-    <AntInput.Group
-      compact
-      style={style}
-      className={classNames(
-        className,
-        css`
-          width: auto;
-          display: flex !important;
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
-            }
-          }
-          .ant-input.null-value {
-            width: 4em;
-            min-width: 4em;
-          }
-        `,
-      )}
-    >
+    <AntInput.Group compact style={style} className={classNames(className, groupClass)}>
       {variable ? (
         <div
           className={css`
@@ -282,12 +278,7 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
-              className={cx(
-                'ant-select-clear',
-                css`
-                  user-select: 'none';
-                `,
-              )}
+              className={cx('ant-select-clear', userSelectNone)}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
