@@ -193,7 +193,12 @@ export const TableTransfer = connect((props) => {
       {
         title: t('Collection category'),
         dataIndex: 'category',
-        render: (categories) => categories.map((category) => <Tag color={category.color}>{category.name}</Tag>),
+        render: (categories) =>
+          categories.map((category) => (
+            <Tag key={category.name} color={category.color}>
+              {category.name}
+            </Tag>
+          )),
       },
     ],
     [],
@@ -263,7 +268,7 @@ export const TableTransfer = connect((props) => {
             // dataSource={collections.filter((collection) => removed.includes(collection.name))}
             dataSource={removedDataSource.dataSource}
             scroll={{ y: 'calc(100vh - 260px)' }}
-            onRow={({ name, disabled }) => ({
+            onRow={({ name, disabled }: any) => ({
               onClick: () => {
                 if (disabled) return;
                 const adding = findAddable(name);

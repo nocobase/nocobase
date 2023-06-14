@@ -1,3 +1,12 @@
+// 解决 build 报 dayjs 相关类型错误的问题
+import 'dayjs/plugin/isBetween';
+import 'dayjs/plugin/isSameOrAfter';
+import 'dayjs/plugin/isoWeek';
+import 'dayjs/plugin/localeData';
+import 'dayjs/plugin/quarterOfYear';
+import 'dayjs/plugin/utc';
+import 'dayjs/plugin/weekday';
+
 import './global.less';
 
 export * from './acl';

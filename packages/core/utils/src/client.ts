@@ -11,6 +11,6 @@ export * from './number';
 export * from './parse-filter';
 export * from './registry';
 // export * from './toposort';
-export * from './dayjs';
+export { dayjs } from './dayjs';
 export * from './uid';
 
