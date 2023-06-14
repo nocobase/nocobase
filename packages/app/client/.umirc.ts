@@ -10,7 +10,7 @@ export default defineConfig({
   title: 'NoCoBase',
   favicons: ['/favicon/favicon.ico'],
   metas: [
-    { name: 'viewport', content: 'width=device-width, initial-scale=1, user-scalable=0, shrink-to-fit=no' },
+    { name: 'viewport', content: 'initial-scale=0.1' },
   ],
   links: [
     { rel: 'apple-touch-icon', size: '180x180', ref: '/favicon/apple-touch-icon.png' },

@@ -148,7 +148,7 @@ export const Page = (props) => {
   const [loading, setLoading] = useState(false);
   const [activeKey, setActiveKey] = useState(() => {
     // @ts-ignore
-    return location?.query?.tab || Object.keys(fieldSchema.properties).shift();
+    return location?.query?.tab || Object.keys(fieldSchema.properties || {}).shift();
   });
 
   const [height, setHeight] = useState(0);

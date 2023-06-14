@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
-import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute } from '@nocobase/client';
+import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
 import { useInterfaceContext } from './InterfaceProvider';
 import { DrawerProps, ModalProps } from 'antd';
@@ -73,6 +73,9 @@ const MApplication: React.FC = (props) => {
   const Provider = useMemo(() => {
     return interfaceContext ? React.Fragment : AdminProvider;
   }, [interfaceContext]);
+
+  useViewport();
+
   return (
     <Provider>
       <MobileCore>

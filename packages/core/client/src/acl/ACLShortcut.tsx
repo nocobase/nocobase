@@ -1,30 +1,9 @@
-import { LockOutlined } from '@ant-design/icons';
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Card } from 'antd';
-import React, { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
-import { PluginManager } from '../plugin-manager';
-import { ActionContextProvider, SchemaComponent } from '../schema-component';
+import React from 'react';
+import { SchemaComponent } from '../schema-component';
 import * as components from './Configuration';
-
-const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      'x-component': 'Action.Drawer',
-      type: 'void',
-      title: '{{t("Roles & Permissions")}}',
-      properties: {
-        hello1: {
-          type: 'void',
-          'x-component': 'RoleTable',
-        },
-      },
-    },
-  },
-};
 
 const schema2: ISchema = {
   type: 'object',
@@ -40,36 +19,5 @@ export const ACLPane = () => {
     <Card bordered={false}>
       <SchemaComponent components={components} schema={schema2} />
     </Card>
-  );
-};
-
-export const ACLShortcut = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  return (
-    <PluginManager.Toolbar.Item
-      icon={<LockOutlined />}
-      title={t('Roles & Permissions')}
-      onClick={() => {
-        navigate('/admin/settings/acl/roles');
-      }}
-    />
-  );
-};
-
-export const ACLShortcut2 = () => {
-  const [visible, setVisible] = useState(false);
-  const { t } = useTranslation();
-  return (
-    <ActionContextProvider value={{ visible, setVisible }}>
-      <PluginManager.Toolbar.Item
-        icon={<LockOutlined />}
-        title={t('Roles & Permissions')}
-        onClick={() => {
-          setVisible(true);
-        }}
-      />
-      <SchemaComponent components={components} schema={schema} />
-    </ActionContextProvider>
   );
 };
