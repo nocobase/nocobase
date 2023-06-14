@@ -782,7 +782,7 @@ export const useDestroyActionProps = () => {
       });
 
       const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
-      if (count % pageSize === 1) {
+      if (count % pageSize === 1 && page !== 1) {
         service.run({
           ...service?.params?.[0],
           page: page - 1,
