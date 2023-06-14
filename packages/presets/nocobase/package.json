@@ -9,6 +9,7 @@
     "@nocobase/plugin-audit-logs": "0.9.4-alpha.2",
     "@nocobase/plugin-auth": "0.9.4-alpha.2",
     "@nocobase/plugin-charts": "0.9.4-alpha.2",
+    "@nocobase/plugin-charts-v2": "0.9.4-alpha.2",
     "@nocobase/plugin-china-region": "0.9.4-alpha.2",
     "@nocobase/plugin-client": "0.9.4-alpha.2",
     "@nocobase/plugin-collection-manager": "0.9.4-alpha.2",
