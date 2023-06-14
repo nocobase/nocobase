@@ -67,7 +67,7 @@ export const AssociationFieldProvider = observer(
         }
       }
       setLoading(false);
-    }, [currentMode, collectionField, JSON.stringify(field.value)]);
+    }, [currentMode, collectionField]);
 
     if (loading) {
       return null;
