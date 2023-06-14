@@ -119,6 +119,7 @@ export const useFilterBlock = () => {
   // 有可能存在页面没有提供 FilterBlockProvider 的情况，比如内部使用的数据表管理页面
   if (!ctx) {
     return {
+      inProvider: false,
       recordDataBlocks: () => {},
       getDataBlocks: () => [] as DataBlock[],
       removeDataBlock: () => {},
@@ -142,5 +143,13 @@ export const useFilterBlock = () => {
     setDataBlocks((prev) => prev.filter((item) => item.uid !== uid));
   };
 
-  return { recordDataBlocks, getDataBlocks, removeDataBlock };
+  return {
+    recordDataBlocks,
+    getDataBlocks,
+    removeDataBlock,
+    /**
+     * running in FilterBlockProvider
+     */
+    inProvider: true,
+  };
 };

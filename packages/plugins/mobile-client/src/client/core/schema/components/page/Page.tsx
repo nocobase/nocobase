@@ -32,16 +32,18 @@ const InternalPage: React.FC = (props) => {
   let hasGlobalActions = false;
   if (!tabsSchema) {
     hasGlobalActions = countGridCol(fieldSchema.properties['grid'], 2) === 1;
-  } else if (query.has('tab') && tabsSchema.properties[query.get('tab')]) {
+  } else if (query.has('tab') && tabsSchema.properties?.[query.get('tab')]) {
     hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid'], 2) === 1;
-  } else {
+  } else if (tabsSchema.properties) {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
-    history.replace({
-      pathname: location.pathname,
-      search: new URLSearchParams({
-        tab: schema.name.toString(),
-      }).toString(),
-    });
+    if (schema) {
+      history.replace({
+        pathname: location.pathname,
+        search: new URLSearchParams({
+          tab: schema.name.toString(),
+        }).toString(),
+      });
+    }
   }
 
   const onTabsChange = useCallback<TabsProps['onChange']>(
@@ -110,7 +112,7 @@ const InternalPage: React.FC = (props) => {
               return 'MHeader' === s['x-component'];
             }}
           ></RecursionField>
-          <TabsContextProvider activeKey={query.get('tab')} onChange={onTabsChange}>
+          <TabsContextProvider deep={false} activeKey={query.get('tab')} onChange={onTabsChange}>
             <RecursionField
               schema={fieldSchema}
               filterProperties={(s) => {
