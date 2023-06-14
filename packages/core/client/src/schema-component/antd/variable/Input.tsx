@@ -152,18 +152,20 @@ export function Input(props) {
 
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
     useMemo(() => {
-      return children
-        ? {
-            value: '',
-            label: '{{t("Constant")}}',
-          }
-        : useTypedConstant
-        ? getTypedConstantOption(type, useTypedConstant)
-        : {
-            value: '',
-            label: '{{t("Null")}}',
-            component: ConstantTypes.null.component,
-          };
+      if (children) {
+        return {
+          value: '',
+          label: '{{t("Constant")}}',
+        };
+      }
+      if (useTypedConstant) {
+        return getTypedConstantOption(type, useTypedConstant);
+      }
+      return {
+        value: '',
+        label: '{{t("Null")}}',
+        component: ConstantTypes.null.component,
+      };
     }, [type, useTypedConstant]);
 
   const options: VariableOptions[] = useMemo(
