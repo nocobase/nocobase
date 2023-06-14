@@ -123,10 +123,12 @@ export const useEditProfile = ({ setVisible: setVisibleOfDropdown }) => {
         <>
           {t('Edit profile')}
           <ActionContextProvider value={{ visible, setVisible }}>
-            <SchemaComponent
-              scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
-              schema={schema}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <SchemaComponent
+                scope={{ useCurrentUserValues, useCloseAction, useSaveCurrentUserValues }}
+                schema={schema}
+              />
+            </div>
           </ActionContextProvider>
         </>
       ),

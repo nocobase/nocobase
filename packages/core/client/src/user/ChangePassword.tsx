@@ -129,7 +129,9 @@ export const useChangePassword = ({ setVisible: setVisibleOfDropdown }) => {
         <>
           {t('Change password')}
           <ActionContextProvider value={{ visible, setVisible }}>
-            <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
+            <div onClick={(e) => e.stopPropagation()}>
+              <SchemaComponent scope={{ useCloseAction, useSaveCurrentUserValues }} schema={schema} />
+            </div>
           </ActionContextProvider>
         </>
       ),
