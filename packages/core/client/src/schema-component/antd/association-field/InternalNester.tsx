@@ -26,7 +26,7 @@ export const InternalNester = () => {
                 margin-bottom: 10px;
               }
               .ant-card-body {
-                padding: 15px 20px;
+                padding: 15px 20px 5px;
               }
               .ant-divider-horizontal {
                 margin: 10px 0;
