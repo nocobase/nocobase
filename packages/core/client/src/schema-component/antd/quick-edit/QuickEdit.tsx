@@ -28,7 +28,9 @@ export const QuickEdit = observer((props) => {
       onChange: async (e) => {
         const data = e?.target?.value;
         if (
-          ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment'].includes(collectionField.interface)
+          ['circle', 'point', 'richText', 'polygon', 'lineString', 'attachment', 'm2o', 'obo', 'm2m'].includes(
+            collectionField.interface,
+          )
         ) {
           field.value = e;
         } else if (collectionField.interface === 'json') {
