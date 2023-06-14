@@ -14,16 +14,32 @@ export const AssociationFieldProvider = observer(
 
     const collectionField = useMemo(
       () => getCollectionJoinField(fieldSchema['x-collection-field']),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
       () => getCollection(collectionField?.target)?.template === 'file',
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );
     const currentMode = useMemo(
       () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-component-props']?.mode],
     );
+
+    const targetKeyValue = useMemo(() => {
+      if (!field.value) return '';
+      if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+        return field.value[collectionField.targetKey] ?? '';
+      }
+      if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+        if (Array.isArray(field.value)) {
+          return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
+        }
+      }
+      return '';
+    }, [collectionField, field.value]);
 
     const [loading, setLoading] = useState(true);
 
@@ -67,7 +83,8 @@ export const AssociationFieldProvider = observer(
         }
       }
       setLoading(false);
-    }, [currentMode, collectionField]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentMode, collectionField, targetKeyValue]);
 
     if (loading) {
       return null;

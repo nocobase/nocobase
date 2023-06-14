@@ -46,7 +46,7 @@ const ToManyNester = observer(
             allowed = !value?.[options.targetKey];
           }
           return (
-            <React.Fragment key={value?.id}>
+            <React.Fragment key={index}>
               <div style={{ textAlign: 'right' }}>
                 {field.editable && allowMultiple && (
                   <Tooltip key={'add'} title={t('Add new')}>
