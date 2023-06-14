@@ -37,7 +37,7 @@ const traverseBelongsToMany = (arr: any[], { collection, exclude = [], through }
   const throughCollection = collection.db.getCollection(through);
   return arr.map((item) => {
     const data = traverseJSON(item[through], { collection: throughCollection, exclude });
-    if (Object.keys(data).length) {
+    if (data && Object.keys(data).length) {
       item[through] = data;
     } else {
       delete item[through];

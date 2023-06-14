@@ -13,7 +13,7 @@ export function lang(key: string) {
 }
 
 export function generateNTemplate(key: string) {
-  return `{{t('${key}', { ns: '${NAMESPACE}' })}}`;
+  return `{{t('${key}', { ns: '${NAMESPACE}', nsMode: 'fallback' })}}`;
 }
 
 export function useTranslation() {

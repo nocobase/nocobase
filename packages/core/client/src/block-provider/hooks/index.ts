@@ -957,6 +957,9 @@ const isOptionalField = (field) => {
 
 export const useAssociationFilterBlockProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
+  if (!collectionField) {
+    return {};
+  }
   const fieldSchema = useFieldSchema();
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();

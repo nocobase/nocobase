@@ -2,12 +2,12 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
-import { useTabsContext } from './context';
+import { TabsContextProvider, useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
 
 export const Tabs: any = observer(
@@ -15,6 +15,14 @@ export const Tabs: any = observer(
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
     const contextProps = useTabsContext();
+
+    const PaneProvider = useMemo(() => {
+      if (contextProps.deep === false) {
+        return TabsContextProvider;
+      }
+      return React.Fragment;
+    }, [contextProps.deep]);
+
     return (
       <DndContext>
         <AntdTabs
@@ -27,7 +35,9 @@ export const Tabs: any = observer(
           {fieldSchema.mapProperties((schema, key) => {
             return (
               <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
-                <RecursionField name={key} schema={schema} onlyRenderProperties />
+                <PaneProvider>
+                  <RecursionField name={key} schema={schema} onlyRenderProperties />
+                </PaneProvider>
               </AntdTabs.TabPane>
             );
           })}

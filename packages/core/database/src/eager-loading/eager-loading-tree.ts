@@ -343,7 +343,8 @@ export class EagerLoadingTree {
         });
       }
 
-      const nodeRawAttributes = node.rawAttributes;
+      // if no attributes are specified, return empty fields
+      const nodeRawAttributes = node.rawAttributes || [];
 
       if (!lodash.isArray(nodeRawAttributes)) {
         return;
