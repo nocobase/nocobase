@@ -15,5 +15,5 @@ export const useProps = (originalProps: any = {}) => {
     useDynamicProps = useDef;
   }
   const dynamicProps = useDynamicProps();
-  return { ...dynamicProps, ...others };
+  return { ...others, ...dynamicProps };
 };

@@ -297,6 +297,9 @@ export class APIClient {
             if (typeof filter === 'string') {
               config['params']['filter'] = filter;
             } else {
+              if (filter['*']) {
+                delete filter['*'];
+              }
               config['params']['filter'] = JSON.stringify(filter);
             }
           }

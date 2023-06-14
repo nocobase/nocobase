@@ -1,18 +1,18 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
-import React, { createContext, useContext, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
   CurrentUserProvider,
+  findByUid,
+  findMenuItem,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
-  findByUid,
-  findMenuItem,
   useACLRoleContext,
   useDocumentTitle,
   useRequest,
@@ -107,6 +107,21 @@ const MenuEditor = (props) => {
       },
     },
   );
+
+  useEffect(() => {
+    const properties = data?.data?.properties;
+    if (properties && sideMenuRef.current) {
+      const pageType = Object.values(properties).find(
+        (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',
+      );
+      if (pageType) {
+        sideMenuRef.current.style.display = 'none';
+      } else {
+        sideMenuRef.current.style.display = 'block';
+      }
+    }
+  }, [data?.data, params.name, sideMenuRef]);
+
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);
     if (s?.['x-component-props']) {
