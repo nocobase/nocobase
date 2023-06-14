@@ -75,6 +75,9 @@ export const QuickEdit = observer((props) => {
       case 'markdown':
         return field.value ? <MarkdownReadPretty {...props} value={field.value} ellipsis /> : null;
       case 'attachment':
+      case 'm2m':
+      case 'm2o':
+      case 'obo':
         return <UploadReadPretty.File {...props} value={field.value} size="small" />;
       case 'json':
         return <InputReadPretty.JSON {...props} value={field.value ?? undefined} space={1} />;
