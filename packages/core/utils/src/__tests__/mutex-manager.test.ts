@@ -55,10 +55,12 @@ describe('test mutex-manager with redis-mutex off', () => {
       ]);
     });
     console.log(JSON.stringify(items.map((i) => i.get('name'))));
-    expect(items[0].get('name') != items[1].get('name')).toBeTruthy();
-    expect(items[1].get('name') != items[2].get('name')).toBeTruthy();
-    expect(items[2].get('name') != items[3].get('name')).toBeTruthy();
-    expect(items[3].get('name') != items[4].get('name')).toBeTruthy();
+
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        expect(items[i].get('name') != items[j].get('name')).toBeTruthy();
+      }
+    }
   });
 
   test('with sort field', async () => {
@@ -89,10 +91,12 @@ describe('test mutex-manager with redis-mutex off', () => {
       ]);
     });
     console.log(JSON.stringify(items.map((i) => i.get('name'))));
-    // expect(items[0].get('name') != items[1].get('name')).toBeTruthy();
-    // expect(items[1].get('name') != items[2].get('name')).toBeTruthy();
-    // expect(items[2].get('name') != items[3].get('name')).toBeTruthy();
-    // expect(items[3].get('name') != items[4].get('name')).toBeTruthy();
+
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        expect(items[i].get('name') != items[j].get('name')).toBeTruthy();
+      }
+    }
 
     let count = await TestModel.count();
     console.log('count', count);

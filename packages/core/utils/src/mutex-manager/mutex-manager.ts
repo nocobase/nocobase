@@ -5,6 +5,8 @@ import { BaseMutexInterface } from './base-mutex';
 
 export interface MutexConfig {
   type?: string;
+  sleepBeforeRun?: number;
+  sleepAfterRun?: number;
   options?: any;
 }
 
@@ -103,7 +105,15 @@ export class MutexManager {
         await mutexProvider.acquire(name);
       }
 
+      if (config?.sleepBeforeRun) {
+        await new Promise((resolve) => setTimeout(resolve, config.sleepBeforeRun));
+      }
+
       let fnResult = await fn();
+
+      if (config?.sleepAfterRun) {
+        await new Promise((resolve) => setTimeout(resolve, config.sleepAfterRun));
+      }
 
       if (mutexProvider) {
         await mutexProvider.release(name);
