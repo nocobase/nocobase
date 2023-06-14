@@ -45,7 +45,7 @@ const InternalGridCardBlockProvider = (props) => {
                 }
               }
               .ant-formily-item-feedback-layout-loose {
-                margin-bottom: 10px;
+                margin-bottom: 12px;
               }
             `}
           >
