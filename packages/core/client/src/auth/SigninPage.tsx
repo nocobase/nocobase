@@ -11,7 +11,7 @@ import React, {
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { useHistory, useLocation } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
+import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import { useForm } from '@formily/react';
 
@@ -72,6 +72,7 @@ export const useSignIn = (authenticator) => {
 export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
+  useViewport();
   const signInPages = useContext(SigninPageContext);
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);
