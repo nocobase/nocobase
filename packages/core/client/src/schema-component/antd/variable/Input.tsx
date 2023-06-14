@@ -168,10 +168,23 @@ export function Input(props) {
       };
     }, [type, useTypedConstant]);
 
-  const options: VariableOptions[] = useMemo(
-    () => compile([constantOption, ...variableOptions]),
-    [constantOption, variableOptions],
-  );
+  const [options, setOptions] = React.useState<VariableOptions[]>(() => {
+    return compile([constantOption, ...variableOptions]);
+  });
+
+  useEffect(() => {
+    const newOptions: Option[] = [constantOption, ...variableOptions];
+    const compiled = compile(newOptions);
+
+    // 由于 compile 用了缓存功能以优化性能，但是会导致这里返回的还是老的对象，导致 loadChildren 不是最新的，所以这里需要手动更新
+    compiled.forEach((item: Option, index) => {
+      if (item.loadChildren) {
+        item.loadChildren = newOptions[index].loadChildren;
+      }
+    });
+
+    setOptions(compiled);
+  }, [variableOptions]);
 
   const loadData = async (selectedOptions: Option[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
@@ -201,7 +214,7 @@ export function Input(props) {
 
   useEffect(() => {
     const run = async () => {
-      if (!variable) {
+      if (!variable || options.length <= 1) {
         return;
       }
       let prevOption: Option = null;
@@ -213,22 +226,23 @@ export function Input(props) {
           if (i === 0) {
             prevOption = options.find((item) => item.value === key);
           } else {
-            if (prevOption.children?.length === 0 && prevOption.loadChildren) {
+            if (prevOption.loadChildren) {
               await prevOption.loadChildren(prevOption);
             }
             prevOption = prevOption.children.find((item) => item.value === key);
           }
           labels.push(prevOption.label);
-          setVariableText(labels.join(' / '));
         } catch (err) {
           error(err);
         }
       }
+      setOptions([...options]);
+      setVariableText(labels.join(' / '));
     };
 
     // 如果没有这个延迟，会导致选择父节点时不展开子节点
     setTimeout(run);
-  }, [variable]);
+  }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
 

@@ -1,4 +1,3 @@
-import { observable } from '@formily/reactive';
 import { error } from '@nocobase/utils/client';
 import { useMemo, useRef } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
@@ -80,7 +79,7 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
   };
 
   const result = useMemo(() => {
-    return compile({
+    return {
       label: `{{t("Current user")}}`,
       value: '$user',
       key: '$user',
@@ -91,9 +90,8 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
       },
       depth: 0,
       loadChildren,
-    } as Option);
-  }, []);
+    } as Option;
+  }, [schema?.['x-component']]);
 
-  // 必须使用 observable 包一下，使其变成响应式对象，不然 children 加载后不会更新 UI
-  return observable(result);
+  return result;
 };
