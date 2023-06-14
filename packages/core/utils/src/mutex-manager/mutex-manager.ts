@@ -5,9 +5,13 @@ import { BaseMutexInterface } from './base-mutex';
 
 export interface MutexConfig {
   type?: string;
-  sleepBeforeRun?: number;
-  sleepAfterRun?: number;
+  gapAfterRun?: number;
   options?: any;
+}
+
+interface MutexPack {
+  instance: Mutex;
+  readyTime?: number;
 }
 
 export interface MutexNameHelperConfig {
@@ -23,7 +27,7 @@ export interface MutexNameHelperConfig {
 
 export class MutexManager {
   private mutexProviders: Map<string, BaseMutexInterface> = new Map<string, BaseMutexInterface>();
-  private mutexes: Map<string, Mutex> = new Map<string, Mutex>();
+  private mutexes: Map<string, MutexPack> = new Map<string, MutexPack>();
   private deamonApp: any;
 
   private static defaultMutexProviderType = 'redis';
@@ -85,9 +89,9 @@ export class MutexManager {
     return provider;
   }
 
-  private getMutex(name: string): Mutex {
+  private getMutex(name: string): MutexPack {
     if (!this.mutexes.has(name)) {
-      this.mutexes.set(name, new Mutex());
+      this.mutexes.set(name, { instance: new Mutex() });
     }
     return this.mutexes.get(name)!;
   }
@@ -99,23 +103,25 @@ export class MutexManager {
 
     const mutex = this.getMutex(name);
 
-    return mutex.runExclusive(async () => {
+    return mutex.instance.runExclusive(async () => {
+      await this.waitBeforeRun(mutex);
+
       const mutexProvider = this.getMutexProvider(config?.type);
       if (mutexProvider) {
         await mutexProvider.acquire(name);
       }
 
-      if (config?.sleepBeforeRun) {
-        await new Promise((resolve) => setTimeout(resolve, config.sleepBeforeRun));
-      }
-
       let fnResult = await fn();
 
-      if (config?.sleepAfterRun) {
-        await new Promise((resolve) => setTimeout(resolve, config.sleepAfterRun));
-      }
+      if (config?.gapAfterRun) {
+        mutex.readyTime = Date.now() + config.gapAfterRun;
 
-      if (mutexProvider) {
+        if (mutexProvider) {
+          setTimeout(async () => {
+            await mutexProvider.release(name);
+          }, config.gapAfterRun);
+        }
+      } else if (mutexProvider) {
         await mutexProvider.release(name);
       }
 
@@ -123,24 +129,13 @@ export class MutexManager {
     });
   }
 
-  public async runExclusiveWithSingleMutex(name: string, fn: () => Promise<any>, config?: MutexConfig): Promise<any> {
-    if (!name) {
-      throw new Error('Mutex name is required');
+  private async waitBeforeRun(mutex: MutexPack) {
+    if (mutex.readyTime) {
+      const waitTime = mutex.readyTime - Date.now();
+      if (waitTime > 0) {
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
     }
-
-    let fnResult = null;
-
-    const mutexProvider = this.getMutexProvider(config?.type);
-    if (mutexProvider) {
-      await mutexProvider.acquire(name);
-      fnResult = await fn();
-      await mutexProvider.release(name);
-    } else {
-      const mutex = this.getMutex(name);
-      fnResult = await mutex.runExclusive(fn);
-    }
-
-    return fnResult;
   }
 
   /**
