@@ -1,5 +1,6 @@
 import { error } from '@nocobase/utils/client';
 import { useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
 
@@ -46,6 +47,7 @@ const getChildren = (options: FieldOption[], { schema, depth, maxDepth, loadChil
 };
 
 export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDepth?: number }) => {
+  const { t } = useTranslation();
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const schemaRef = useRef(schema);
@@ -80,7 +82,7 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
 
   const result = useMemo(() => {
     return {
-      label: `{{t("Current user")}}`,
+      label: t('Current user'),
       value: '$user',
       key: '$user',
       children: [],
