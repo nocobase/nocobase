@@ -1,15 +1,15 @@
-import { ISchema, useField, useFieldSchema, connect, mapProps } from '@formily/react';
+import { ISchema, connect, mapProps, useField, useFieldSchema } from '@formily/react';
 import { isValid, uid } from '@formily/shared';
-import { Menu, Tree as AntdTree } from 'antd';
+import { Tree as AntdTree, Menu } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager, useCollectionFieldsOptions } from '../../../collection-manager';
+import { useCollection, useCollectionFieldsOptions, useCollectionManager } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
-import { useLinkageAction } from './hooks';
 import { useCollectionState } from '../../../schema-settings/DataTemplates/hooks/useCollectionState';
+import { useLinkageAction } from './hooks';
 import { requestSettingsSchema } from './utils';
 
 const Tree = connect(
@@ -70,7 +70,7 @@ export const ActionDesigner = (props) => {
   const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
   const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
-  const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
+  const { collectionList, getEnableFieldTree, getOnLoadData, getOnCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
   const options = useCollectionFieldsOptions(name, 1, ['id']);
   useEffect(() => {
@@ -236,11 +236,11 @@ export const ActionDesigner = (props) => {
             />
           )}
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
-        {isDuplicateAction && [
+        {isDuplicateAction && (
           <SchemaSettings.ModalItem
             title={t('Duplicate mode')}
             components={{ Tree }}
-            scope={{ getEnableFieldTree, collectionName: name }}
+            scope={{ getEnableFieldTree, collectionName: name, getOnLoadData, getOnCheck }}
             schema={
               {
                 type: 'object',
@@ -283,8 +283,8 @@ export const ActionDesigner = (props) => {
                       checkable: true,
                       checkStrictly: true,
                       selectable: false,
-                      loadData: onLoadData,
-                      onCheck,
+                      loadData: '{{ getOnLoadData($self) }}',
+                      onCheck: '{{ getOnCheck($self) }}',
                       rootStyle: {
                         padding: '8px 0',
                         border: '1px solid #d9d9d9',
@@ -328,8 +328,8 @@ export const ActionDesigner = (props) => {
               });
               dn.refresh();
             }}
-          />,
-        ]}
+          />
+        )}
         <OpenModeSchemaItems openMode={isPopupAction} openSize={isPopupAction}></OpenModeSchemaItems>
         {isUpdateModePopupAction && (
           <SchemaSettings.SelectItem
