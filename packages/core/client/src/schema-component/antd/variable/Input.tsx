@@ -168,28 +168,20 @@ export function Input(props) {
       };
     }, [type, useTypedConstant]);
 
-  const [options, setOptions] = React.useState<VariableOptions[]>(() => {
+  const [options, setOptions] = React.useState<Option[]>(() => {
     return compile([constantOption, ...variableOptions]);
   });
 
   useEffect(() => {
     const newOptions: Option[] = [constantOption, ...variableOptions];
-    const compiled = compile(newOptions);
-
-    // 由于 compile 用了缓存功能以优化性能，但是会导致这里返回的还是老的对象，导致 loadChildren 不是最新的，所以这里需要手动更新
-    compiled.forEach((item: Option, index) => {
-      if (item.loadChildren) {
-        item.loadChildren = newOptions[index].loadChildren;
-      }
-    });
-
-    setOptions(compiled);
+    setOptions(deepCompileLabel(newOptions, compile));
   }, [variableOptions]);
 
   const loadData = async (selectedOptions: Option[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (option.loadChildren) {
       await option.loadChildren(option);
+      setOptions((prev) => [...prev]);
     }
   };
 
@@ -320,4 +312,15 @@ export function Input(props) {
       ) : null}
     </AntInput.Group>
   );
+}
+
+function deepCompileLabel(list: Option[], compile) {
+  return list.map((item) => {
+    const children = item.children ? deepCompileLabel(item.children, compile) : null;
+    return {
+      ...item,
+      label: compile(item.label),
+      children,
+    };
+  });
 }
