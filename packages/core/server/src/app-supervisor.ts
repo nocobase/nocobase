@@ -28,6 +28,11 @@ export class AppSupervisor {
   getStatus(appName: string) {}
 
   addApp(app: Application) {
+    // if there is already an app with the same name, throw error
+    if (this.apps[app.name]) {
+      throw new Error(`app ${app.name} already exists`);
+    }
+
     this.apps[app.name] = app;
   }
 
