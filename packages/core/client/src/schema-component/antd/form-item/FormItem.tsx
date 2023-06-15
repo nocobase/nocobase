@@ -351,7 +351,7 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  [fieldSchema.name]: isInvariable(interfaceConfig)
+                  default: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
