@@ -72,6 +72,11 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
             loadChildren,
           }) || [];
 
+        if (children.length === 0) {
+          option.disabled = true;
+          resolve(void 0);
+          return;
+        }
         option.children = compile(children);
         resolve(void 0);
 
