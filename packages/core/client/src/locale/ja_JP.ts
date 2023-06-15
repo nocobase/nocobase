@@ -601,6 +601,7 @@ export default {
   'Form data templates': 'フォームデータテンプレート',
   "Data template": "データテンプレート",
   "Duplicate":"レプリケーション",
+  "Duplicating":"コピー中",
   "Duplicate mode":"コピーモード",
   "Quick duplicate":"今すぐコピー",
   "Duplicate and continue":"コピーして続行",
