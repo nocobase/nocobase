@@ -688,4 +688,6 @@ export default {
     "Sortable": "Clasificable",
     "Enable link": "Activar enlace",
     "Data template": "Plantilla de datos",
+    "Not found":"No encontrado",
+    "Add":"Añadir"
  };

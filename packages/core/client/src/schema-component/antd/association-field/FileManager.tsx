@@ -112,6 +112,7 @@ const InternalFileManager = (props) => {
     association: {
       target: collectionField?.target,
     },
+    options,
     onChange: props?.onChange,
     selectedRows,
     setSelectedRows,

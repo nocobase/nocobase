@@ -10,3 +10,5 @@ const jsBridge = (window as any).jsBridge as {
 export const invoke: InvokeFunction = (params, cb) => {
   jsBridge.invoke(params, cb);
 };
+
+export const isJSBridge = !!jsBridge;
