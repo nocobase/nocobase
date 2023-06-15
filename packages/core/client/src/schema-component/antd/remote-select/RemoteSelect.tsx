@@ -212,13 +212,14 @@ const InternalRemoteSelect = connect(
         options={mapOptionsToTags(options)}
         rawOptions={options}
         dropdownRender={(menu) => {
+          const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);
           return (
             <>
               {isQuickAdd ? (
                 <>
                   {!(data?.data.length === 0 && searchData?.current) && menu}
-                  {data?.data.length > 0 && <Divider style={{ margin: 0 }} />}
-                  <CustomRenderCom />
+                  {data?.data.length > 0 && searchData?.current && <Divider style={{ margin: 0 }} />}
+                  {!isFullMatch && <CustomRenderCom />}
                 </>
               ) : (
                 menu
