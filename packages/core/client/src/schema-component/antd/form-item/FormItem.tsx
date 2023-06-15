@@ -112,6 +112,10 @@ FormItem.Designer = function Designer() {
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const targetField = getCollectionJoinField(
+    `${collectionField?.target}.${fieldSchema['x-component-props'].fieldNames?.label}`,
+  );
+
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
@@ -347,12 +351,13 @@ FormItem.Designer = function Designer() {
                 type: 'object',
                 title: t('Set default value'),
                 properties: {
-                  default: isInvariable(interfaceConfig)
+                  [fieldSchema.name]: isInvariable(interfaceConfig)
                     ? {
                         ...(fieldSchemaWithoutRequired || {}),
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
+                          targetField,
                           component:
                             collectionField?.target && collectionField?.interface !== 'chinaRegion'
                               ? 'AssociationSelect'
@@ -377,6 +382,7 @@ FormItem.Designer = function Designer() {
                         'x-component': 'VariableInput',
                         'x-component-props': {
                           ...(fieldSchema?.['x-component-props'] || {}),
+                          targetField,
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
