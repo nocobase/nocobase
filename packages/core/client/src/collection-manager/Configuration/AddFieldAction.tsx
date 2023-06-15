@@ -4,7 +4,7 @@ import { useField, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Button, Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRequest } from '../../api-client';
 import { RecordProvider, useRecord } from '../../record-provider';
@@ -174,7 +174,7 @@ export const AddFieldAction = (props) => {
   const [schema, setSchema] = useState({});
   const compile = useCompile();
   const { t } = useTranslation();
-  const getFieldOptions = () => {
+  const getFieldOptions = useCallback(() => {
     const { availableFieldInterfaces } = getTemplate(record.template) || {};
     const { exclude, include } = availableFieldInterfaces || {};
     const optionArr = [];
@@ -216,7 +216,7 @@ export const AddFieldAction = (props) => {
       }
     });
     return optionArr;
-  };
+  }, [getTemplate, record]);
   const items = useMemo<MenuProps['items']>(() => {
     return getFieldOptions().map((option) => {
       if (option.children.length === 0) {
@@ -228,7 +228,7 @@ export const AddFieldAction = (props) => {
         label: compile(option.label),
         title: compile(option.label),
         key: option.label,
-        items: option.children
+        children: option.children
           .filter((child) => !['o2o', 'subTable', 'linkTo'].includes(child.name))
           .map((child) => {
             return {
@@ -240,7 +240,8 @@ export const AddFieldAction = (props) => {
           }),
       };
     });
-  }, []);
+  }, [getFieldOptions]);
+
   const menu = useMemo<MenuProps>(() => {
     return {
       style: {
@@ -259,7 +260,7 @@ export const AddFieldAction = (props) => {
       },
       items,
     };
-  }, [items, record]);
+  }, [getInterface, items, record]);
 
   return (
     record.template !== 'view' && (
