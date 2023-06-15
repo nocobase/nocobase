@@ -1,6 +1,5 @@
 import React, { useContext, createContext, useEffect, useState } from 'react';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
-import { toJS } from '@formily/reactive';
 import { Spin, Tag } from 'antd';
 import { css } from '@emotion/css';
 import moment from 'moment';
@@ -15,7 +14,6 @@ import {
   useCollectionManager,
   useCurrentUserContext,
   useRecord,
-  useRequest,
   useTableBlockContext,
   FormBlockContext,
   useFormBlockContext,
@@ -29,7 +27,7 @@ import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from '../../utils';
 import { manualFormTypes } from './SchemaConfig';
 import { FormBlockProvider } from './FormBlockProvider';
-import { DetailsBlockProvider } from '../../components/DetailsBlockProvider';
+import { DetailsBlockProvider } from './DetailsBlockProvider';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,

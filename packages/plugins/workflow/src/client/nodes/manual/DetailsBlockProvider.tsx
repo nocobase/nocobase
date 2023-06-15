@@ -9,7 +9,7 @@ import {
   useAPIClient,
   useAssociationNames,
 } from '@nocobase/client';
-import { useFlowContext } from '../FlowContext';
+import { useFlowContext } from '../../FlowContext';
 import { parse } from '@nocobase/utils/client';
 
 function useFlowContextData(dataSource) {

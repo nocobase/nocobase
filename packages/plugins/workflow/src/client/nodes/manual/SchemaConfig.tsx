@@ -28,7 +28,7 @@ import customForm from './forms/custom';
 import createForm from './forms/create';
 import updateForm from './forms/update';
 import { FormBlockProvider } from './FormBlockProvider';
-import { DetailsBlockProvider } from '../../components/DetailsBlockProvider';
+import { DetailsBlockProvider } from './DetailsBlockProvider';
 
 type ValueOf<T> = T[keyof T];
 

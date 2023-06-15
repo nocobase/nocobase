@@ -1,5 +1,4 @@
 import React from 'react';
-import { uid } from '@formily/shared';
 
 import {
   CollectionProvider,
@@ -34,7 +33,7 @@ function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...pr
       },
       'x-designer': 'SimpleDesigner',
       properties: {
-        [uid()]: {
+        grid: {
           type: 'void',
           'x-component': 'FormV2',
           'x-component-props': {
