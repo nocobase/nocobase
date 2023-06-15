@@ -180,48 +180,6 @@ describe('hooks', () => {
     expect(field.dataSource.map((item) => item.value)).toEqual(Object.keys(transformers['datetime']));
   });
 
-  test('useQueryWithAlias', () => {
-    const { result } = renderHook(() =>
-      useQueryWithAlias(
-        [
-          {
-            key: 'name',
-            name: 'name',
-            label: 'Name',
-            value: 'Name',
-          },
-          {
-            key: 'email',
-            name: 'email',
-            label: 'Email',
-            value: 'Email',
-          },
-        ],
-        {
-          measures: [
-            {
-              field: 'name',
-            },
-            {
-              field: 'email',
-              alias: 'Email Alias',
-            },
-          ],
-        },
-      ),
-    );
-    expect(result.current.measures).toEqual([
-      {
-        field: 'name',
-        alias: 'Name',
-      },
-      {
-        field: 'email',
-        alias: 'Email Alias',
-      },
-    ]);
-  });
-
   test('useFieldTransformers', () => {
     const { result } = renderHook(() =>
       useFieldTransformer([

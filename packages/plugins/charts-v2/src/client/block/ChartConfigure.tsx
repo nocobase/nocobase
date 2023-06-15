@@ -1,6 +1,6 @@
 import { useChartsTranslation } from '../locale';
 import React, { createContext, useContext, useMemo, useRef } from 'react';
-import { Row, Col, Card, Modal, Button, Space, Tabs, Typography } from 'antd';
+import { Row, Col, Card, Modal, Button, Space, Tabs, Typography, Empty } from 'antd';
 import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
 import {
   SchemaComponent,
@@ -31,7 +31,7 @@ import {
   useFieldTypes,
   useCompiledFields,
 } from '../hooks';
-import { cloneDeep, isEqual, update } from 'lodash';
+import { cloneDeep, isEqual } from 'lodash';
 import { createRendererSchema, getChart, getSelectedFields } from '../utils';
 const { Paragraph, Text } = Typography;
 
@@ -110,7 +110,6 @@ export const ChartConfigure: React.FC<{
   const queryReact = (form: FormType, reaction?: () => void) => {
     const currentMeasures = form.values.query?.measures.filter((item) => item.field) || [];
     const currentDimensions = form.values.query?.dimensions.filter((item) => item.field) || [];
-    console.log(measures, currentMeasures);
     if (isEqual(currentMeasures, measures) && isEqual(currentDimensions, dimensions)) {
       return;
     }
@@ -118,15 +117,18 @@ export const ChartConfigure: React.FC<{
     setMeasures(cloneDeep(currentMeasures));
     setDimensions(cloneDeep(currentDimensions));
   };
+  const chartTypes = useChartTypes();
   const form = useMemo(
-    () =>
-      createForm({
-        values: { ...schema?.['x-decorator-props'], collection, data: '' },
+    () => {
+      const chartType = chartTypes[0]?.children?.[0]?.value;
+      return createForm({
+        values: { config: { chartType }, ...schema?.['x-decorator-props'], collection, data: '' },
         effects: (form) => {
           onFieldChange('config.chartType', () => initChartConfig(true));
           onFormInit(() => queryReact(form));
         },
-      }),
+      });
+    },
     // visible, collection added here to re-initialize form when visible, collection change
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [schema, visible, collection],
@@ -191,56 +193,14 @@ export const ChartConfigure: React.FC<{
       }}
     >
       <Form layout="vertical" form={form}>
-        <Row
-          gutter={8}
-          style={{
-            height: 'calc(100vh - 300px)',
-            overflow: 'scroll',
-          }}
-        >
-          <Col span={15}>
-            <Row>
-              <Col
-                className={css`
-                  width: 100%;
-                `}
-              >
-                <Card
-                  className={css`
-                    margin-bottom: 10px;
-                  `}
-                >
-                  <ChartConfigure.Renderer runQuery={runQuery} />
-                </Card>
-              </Col>
-            </Row>
-            <Row>
-              <Col
-                className={css`
-                  width: 100%;
-                `}
-              >
-                <Card>
-                  <Tabs
-                    items={[
-                      {
-                        label: t('Chart'),
-                        key: 'chart',
-                        children: <ChartConfigure.Config />,
-                      },
-                      {
-                        label: t('Transform'),
-                        key: 'transform',
-                        children: <ChartConfigure.Transform />,
-                      },
-                    ]}
-                  />
-                </Card>
-              </Col>
-            </Row>
-          </Col>
-          <Col span={9}>
-            <Card>
+        <Row gutter={8}>
+          <Col span={7}>
+            <Card
+              style={{
+                height: 'calc(100vh - 300px)',
+                overflow: 'scroll',
+              }}
+            >
               <Tabs
                 tabBarExtraContent={<RunButton />}
                 items={[
@@ -268,6 +228,34 @@ export const ChartConfigure: React.FC<{
                   },
                 ]}
               />
+            </Card>
+          </Col>
+          <Col span={6}>
+            <Card
+              style={{
+                height: 'calc(100vh - 300px)',
+                overflow: 'scroll',
+              }}
+            >
+              <Tabs
+                items={[
+                  {
+                    label: t('Chart'),
+                    key: 'chart',
+                    children: <ChartConfigure.Config />,
+                  },
+                  {
+                    label: t('Transform'),
+                    key: 'transform',
+                    children: <ChartConfigure.Transform />,
+                  },
+                ]}
+              />
+            </Card>
+          </Col>
+          <Col span={11}>
+            <Card>
+              <ChartConfigure.Renderer runQuery={runQuery} />
             </Card>
           </Col>
         </Row>

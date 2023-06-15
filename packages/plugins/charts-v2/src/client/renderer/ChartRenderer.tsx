@@ -105,10 +105,14 @@ export const ChartRenderer: React.FC<{
         <Component {...componentProps} />
       </ErrorBoundary>
     ) : (
-      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Chart not configured.')} />
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure chart')} />
     );
 
-  return <C />;
+  return data && data.length ? (
+    <C />
+  ) : (
+    <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('Please configure and run query')} />
+  );
 };
 
 ChartRenderer.Designer = function Designer() {

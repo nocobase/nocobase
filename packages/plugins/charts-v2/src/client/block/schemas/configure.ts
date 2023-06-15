@@ -235,6 +235,9 @@ export const querySchema: ISchema = {
                         'x-component': 'Select',
                         'x-component-props': {
                           placeholder: '{{t("Format")}}',
+                          style: {
+                            maxWidth: '120px',
+                          },
                         },
                         'x-reactions': '{{ useFormatterOptions }}',
                         'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
@@ -402,7 +405,7 @@ export const transformSchema: ISchema = {
           'x-component-props': {
             placeholder: '{{t("Field")}}',
             style: {
-              minWidth: '200px',
+              maxWidth: '100px',
             },
           },
           'x-reactions': '{{ useChartFields }}',

@@ -50,4 +50,6 @@ export default {
   Percent: '百分比',
   Exponential: '科学记数法',
   Abbreviation: '缩写',
+  'Please configure and run query': '请配置并执行数据查询',
+  'Please configure chart': '请配置图表',
 };

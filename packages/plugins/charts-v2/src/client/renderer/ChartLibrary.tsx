@@ -47,11 +47,14 @@ export type ChartLibraries = {
  */
 export const ChartLibraryContext = createContext<ChartLibraries>({});
 
-export const useChartTypes = (): (ChartProps & {
-  key: string;
+export const useChartTypes = (): {
   label: string;
-  value: string;
-})[] => {
+  children: (ChartProps & {
+    key: string;
+    label: string;
+    value: string;
+  })[];
+}[] => {
   const library = useContext(ChartLibraryContext);
   return Object.entries(library)
     .filter(([_, l]) => l.enabled)

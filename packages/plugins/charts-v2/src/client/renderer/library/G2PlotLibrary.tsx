@@ -11,12 +11,6 @@ const basicSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
-      'x-decorator-props': {
-        style: {
-          display: 'inline-block',
-          width: 'calc(50% - 8px)',
-        },
-      },
     },
     yField: {
       title: lang('yField'),
@@ -24,13 +18,6 @@ const basicSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
-      'x-decorator-props': {
-        style: {
-          display: 'inline-block',
-          width: 'calc(50% - 8px)',
-          marginLeft: '16px',
-        },
-      },
     },
     seriesField: {
       title: lang('seriesField'),
@@ -38,12 +25,6 @@ const basicSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
-      'x-decorator-props': {
-        style: {
-          display: 'inline-block',
-          width: 'calc(50% - 8px)',
-        },
-      },
     },
   },
 };
@@ -111,12 +92,6 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: 'calc(50% - 8px)',
-            },
-          },
         },
         colorField: {
           title: lang('colorField'),
@@ -124,13 +99,6 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: 'calc(50% - 8px)',
-              marginLeft: '16px',
-            },
-          },
         },
       },
     },
@@ -163,12 +131,6 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: 'calc(50% - 8px)',
-            },
-          },
         },
         seriesField: {
           title: lang('seriesField'),
@@ -176,24 +138,12 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
-          'x-decorator-props': {
-            style: {
-              display: 'inline-block',
-              width: 'calc(50% - 8px)',
-              marginLeft: '16px',
-            },
-          },
         },
         yField: {
           title: lang('yField'),
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': 'ArrayItems',
-          'x-decorator-props': {
-            style: {
-              width: 'calc(50% - 8px)',
-            },
-          },
           items: {
             type: 'void',
             'x-component': 'Space',
