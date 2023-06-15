@@ -112,6 +112,10 @@ FormItem.Designer = function Designer() {
   const variablesCtx = useVariablesCtx();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
+  const targetField = getCollectionJoinField(
+    `${collectionField?.target}.${fieldSchema['x-component-props'].fieldNames?.label}`,
+  );
+
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
   const validateSchema = interfaceConfig?.['validateSchema']?.(fieldSchema);
@@ -353,6 +357,7 @@ FormItem.Designer = function Designer() {
                         'x-decorator': 'FormItem',
                         'x-component-props': {
                           ...fieldSchema['x-component-props'],
+                          targetField,
                           component:
                             collectionField?.target && collectionField?.interface !== 'chinaRegion'
                               ? 'AssociationSelect'
@@ -377,6 +382,7 @@ FormItem.Designer = function Designer() {
                         'x-component': 'VariableInput',
                         'x-component-props': {
                           ...(fieldSchema?.['x-component-props'] || {}),
+                          targetField,
                           collectionName: collectionField?.collectionName,
                           schema: collectionField?.uiSchema,
                           className: defaultInputStyle,
@@ -615,7 +621,7 @@ FormItem.Designer = function Designer() {
           </div>
         </SchemaSettings.Item>
       )}
-      {!field.readPretty && isAssociationField && ['Select', 'Picker'].includes(fieldMode) && (
+      {!field.readPretty && isAssociationField && ['Picker'].includes(fieldMode) && (
         <SchemaSettings.SwitchItem
           key="allowAddNew"
           title={t('Allow add new data')}
@@ -653,6 +659,56 @@ FormItem.Designer = function Designer() {
               schema,
             });
             refresh();
+          }}
+        />
+      )}
+      {!field.readPretty && isAssociationField && ['Select'].includes(fieldMode) && (
+        <SchemaSettings.SelectItem
+          key="add-mode"
+          title={t('Add new mode')}
+          options={[
+            { label: t('None'), value: 'none' },
+            { label: t('Quick add'), value: 'quickAdd' },
+            { label: t('Modal add'), value: 'modalAdd' },
+          ]}
+          value={field.componentProps?.addMode || 'none'}
+          onChange={(mode) => {
+            if (mode === 'modalAdd') {
+              const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
+                if (schema['x-component'] === 'Action') {
+                  return schema;
+                }
+                return buf;
+              }, null);
+
+              if (!hasAddNew) {
+                const addNewActionschema = {
+                  'x-action': 'create',
+                  title: "{{t('Add new')}}",
+                  'x-designer': 'Action.Designer',
+                  'x-component': 'Action',
+                  'x-decorator': 'ACLActionProvider',
+                  'x-component-props': {
+                    openMode: 'drawer',
+                    type: 'default',
+                    component: 'CreateRecordAction',
+                  },
+                };
+                insertAdjacent('afterBegin', addNewActionschema);
+              }
+            }
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+            fieldSchema['x-component-props']['addMode'] = mode;
+            schema['x-component-props'] = fieldSchema['x-component-props'];
+            field.componentProps = field.componentProps || {};
+            field.componentProps.addMode = mode;
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
           }}
         />
       )}

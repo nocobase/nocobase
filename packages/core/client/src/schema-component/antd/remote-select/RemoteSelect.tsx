@@ -1,10 +1,10 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema, useForm } from '@formily/react';
-import { SelectProps, Tag } from 'antd';
+import { SelectProps, Tag, Empty, Divider } from 'antd';
 import { uniqBy } from 'lodash';
 import flat from 'flat';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -24,6 +24,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
+  CustomDropdownRender?: (v: any) => any;
 };
 
 const InternalRemoteSelect = connect(
@@ -37,14 +38,18 @@ const InternalRemoteSelect = connect(
       manual = true,
       mapOptions,
       targetField: _targetField,
+      CustomDropdownRender,
       ...others
     } = props;
+    const [open, setOpen] = useState(false);
     const form = useForm();
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
+    const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
     const field = useField();
     const ctx = useBlockRequestContext();
     const { getField } = useCollection();
+    const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
@@ -172,7 +177,6 @@ const InternalRemoteSelect = connect(
         debounceWait: wait,
       },
     );
-
     const runDep = useMemo(
       () =>
         JSON.stringify({
@@ -181,6 +185,20 @@ const InternalRemoteSelect = connect(
         }),
       [service, fieldNames],
     );
+    const CustomRenderCom = useCallback(() => {
+      if (searchData.current && CustomDropdownRender) {
+        return (
+          <CustomDropdownRender
+            search={searchData.current}
+            callBack={() => {
+              searchData.current = null;
+              setOpen(false);
+            }}
+          />
+        );
+      }
+      return null;
+    }, [searchData.current]);
 
     useEffect(() => {
       // Lazy load
@@ -202,6 +220,7 @@ const InternalRemoteSelect = connect(
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
+      searchData.current = search;
     };
 
     const options = useMemo(() => {
@@ -210,13 +229,15 @@ const InternalRemoteSelect = connect(
       }
       return uniqBy(data?.data || [], fieldNames.value);
     }, [data?.data, value]);
-
-    const onDropdownVisibleChange = () => {
+    const onDropdownVisibleChange = (visible) => {
+      setOpen(visible);
+      searchData.current = null;
       run();
       firstRun.current = true;
     };
     return (
       <Select
+        open={open}
         dropdownMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
@@ -230,6 +251,22 @@ const InternalRemoteSelect = connect(
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
         rawOptions={options}
+        dropdownRender={(menu) => {
+          const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);
+          return (
+            <>
+              {isQuickAdd ? (
+                <>
+                  {!(data?.data.length === 0 && searchData?.current) && menu}
+                  {data?.data.length > 0 && searchData?.current && !isFullMatch && <Divider style={{ margin: 0 }} />}
+                  {!isFullMatch && <CustomRenderCom />}
+                </>
+              ) : (
+                menu
+              )}
+            </>
+          );
+        }}
       />
     );
   },
