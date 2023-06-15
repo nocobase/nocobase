@@ -504,4 +504,6 @@ export default {
   'Display data template selector': "Отображать селектор шаблона данных",
   'Form data templates': "Шаблоны данных формы",
   "Data template": "Шаблон данных",
+  "Not found":"Не найдено",
+  "Add":"Добавить"
 }
