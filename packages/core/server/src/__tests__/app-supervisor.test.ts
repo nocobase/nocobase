@@ -2,7 +2,7 @@ import { AppSupervisor } from '../app-supervisor';
 import Application from '../application';
 
 describe('App Supervisor', () => {
-  it('should add app', () => {
+  it('should add app into supervisor', () => {
     const appSupervisor = AppSupervisor.getInstance();
 
     const app = new Application({

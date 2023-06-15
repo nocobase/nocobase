@@ -21,6 +21,8 @@ import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
 import { AppSupervisor } from './app-supervisor';
+import { Gateway } from './gateway';
+import { ApplicationFsm } from './fsm';
 
 const packageJson = require('../package.json');
 
@@ -155,12 +157,20 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
   protected plugins = new Map<string, Plugin>();
 
-  protected _appSupervisor = AppSupervisor.getInstance();
+  protected _appSupervisor: AppSupervisor = AppSupervisor.getInstance();
+
+  protected _gateway: Gateway = Gateway.getInstance();
 
   constructor(public options: ApplicationOptions) {
     super();
     this.init();
     this._appSupervisor.addApp(this);
+  }
+
+  protected _fsm = new ApplicationFsm(this);
+
+  get fsm() {
+    return this._fsm;
   }
 
   protected _db: Database;

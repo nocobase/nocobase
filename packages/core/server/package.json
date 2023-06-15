@@ -25,7 +25,8 @@
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "semver": "^7.3.7",
-    "xpipe": "^1.0.5"
+    "xpipe": "^1.0.5",
+    "xstate": "^4.37.2"
   },
   "devDependencies": {
     "@types/semver": "^7.3.9"

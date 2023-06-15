@@ -50,6 +50,11 @@ describe('application', () => {
     return app.db.close();
   });
 
+  it('should get application fsm', async () => {
+    const fsm = app.fsm;
+    expect(fsm.currentState()).toEqual('idle');
+  });
+
   it('resourcer.define', async () => {
     app.resourcer.define({
       name: 'test',
