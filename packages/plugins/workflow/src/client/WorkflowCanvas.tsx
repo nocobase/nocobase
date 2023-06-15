@@ -1,11 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Dropdown, Button, Tag, Switch, message, Breadcrumb, Modal } from 'antd';
-import { DownOutlined, RightOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { DownOutlined, EllipsisOutlined, RightOutlined } from '@ant-design/icons';
 import { cx } from '@emotion/css';
-import classnames from 'classnames';
-import { useTranslation } from 'react-i18next';
-
 import {
   ActionContextProvider,
   ResourceActionProvider,
@@ -14,14 +8,18 @@ import {
   useResourceActionContext,
   useResourceContext,
 } from '@nocobase/client';
-
-import { FlowContext, useFlowContext } from './FlowContext';
-import { workflowVersionDropdownClass } from './style';
-import { executionSchema } from './schemas/executions';
-import { ExecutionLink } from './ExecutionLink';
-import { lang } from './locale';
-import { linkNodes } from './utils';
+import { Breadcrumb, Button, Dropdown, message, Modal, Switch } from 'antd';
+import classnames from 'classnames';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 import { CanvasContent } from './CanvasContent';
+import { ExecutionLink } from './ExecutionLink';
+import { FlowContext, useFlowContext } from './FlowContext';
+import { lang } from './locale';
+import { executionSchema } from './schemas/executions';
+import { workflowVersionDropdownClass } from './style';
+import { linkNodes } from './utils';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -66,7 +64,7 @@ export function WorkflowCanvas() {
 
   function onSwitchVersion({ key }) {
     if (key != workflow.id) {
-      navigate(key);
+      navigate(`/admin/settings/workflow/workflows/${key}`);
     }
   }
 
@@ -91,7 +89,7 @@ export function WorkflowCanvas() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`${revision.id}`);
+    navigate(`/admin/settings/workflow/workflows/${revision.id}`);
   }
 
   async function onDelete() {
@@ -107,7 +105,11 @@ export function WorkflowCanvas() {
         });
         message.success(t('Operation succeeded'));
 
-        navigate(workflow.current ? '..' : `${revisions.find((item) => item.current)?.id}`);
+        navigate(
+          workflow.current
+            ? '/admin/settings/workflow/workflows'
+            : `/admin/settings/workflow/workflows/${revisions.find((item) => item.current)?.id}`,
+        );
       },
     });
   }
