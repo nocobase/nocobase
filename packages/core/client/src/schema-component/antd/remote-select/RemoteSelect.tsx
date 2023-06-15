@@ -10,7 +10,7 @@ import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
 import { Select, defaultFieldNames } from '../select';
 import { ReadPretty } from './ReadPretty';
-import { useBlockRequestContext } from '../../../';
+import { useBlockRequestContext } from '../../../block-provider/BlockProvider';
 import { getInnermostKeyAndValue } from '../../common/utils/uitls';
 import { parseVariables, extractFilterfield, generatePattern, extractValuesByPattern } from './utils';
 const EMPTY = 'N/A';
