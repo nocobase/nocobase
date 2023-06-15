@@ -20,7 +20,6 @@ type Props = UploadProps & {
   selectFile: boolean;
   onRemove?: (file) => void;
   onSelect?: () => void;
-  isDisplayInTable?: boolean;
 };
 
 export const Preview = connect((props) => {
@@ -46,7 +45,6 @@ export const FileSelector = (props: Props) => {
     onRemove?.(file);
     return true;
   };
-
   const handleSelect = (e) => {
     e.preventDefault();
     e.stopPropagation();
