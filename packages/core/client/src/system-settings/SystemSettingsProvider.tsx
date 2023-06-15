@@ -12,7 +12,10 @@ export const useSystemSettings = () => {
 export const SystemSettingsProvider: React.FC = (props) => {
   const result = useRequest(
     {
-      url: 'systemSettings:get/1?appends=logo',
+      url: 'systemSettings:get/1',
+      params: {
+        appends: ['logo', 'loginBgImg'],
+      },
     },
     {
       onSuccess(data) {

@@ -13,6 +13,9 @@ export const PoweredBy = () => {
       className={css`
         text-align: center;
         color: rgba(0, 0, 0, 0.45);
+        background: #fff;
+        padding: 10px 20px;
+        border-radius: 10px;
         a {
           color: rgba(0, 0, 0, 0.45);
           &:hover {

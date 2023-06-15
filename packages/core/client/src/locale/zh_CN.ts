@@ -38,6 +38,7 @@ export default {
   "Unconnected": "未连接",
   "System settings": "系统设置",
   "System title": "系统名称",
+  "Login Page Background Image": "登陆页背景图",
   "Setting": "设置",
   "Enable": "启用",
   "Disable": "禁用",
