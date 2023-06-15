@@ -609,6 +609,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          dropdownMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
           onChange={(...arg) => (setOpen(false), onChange(...arg))}
