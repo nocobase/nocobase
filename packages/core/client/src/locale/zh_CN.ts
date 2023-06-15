@@ -767,6 +767,7 @@ export default {
   'Reboot': '重启',
   'Clear cache': '清除缓存',
   "Duplicate":"复制",
+  "Duplicating":"复制中",
   "Duplicate mode":"复制方式",
   "Quick duplicate":"快速复制",
   "Duplicate and continue":"复制并继续",
