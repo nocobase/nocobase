@@ -347,10 +347,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       });
     }
 
-    return this.cli.parseAsync(argv, options);
+    await this.cli.parseAsync(argv, options);
   }
 
   async start(options: StartOptions = {}) {
+    console.log('start app');
+    this.fsm.interpret.send('START');
+
     if (this.db.closed()) {
       await this.db.reconnect();
     }
@@ -362,34 +365,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     await this.emitAsync('beforeStart', this, options);
 
-    if (options?.listen?.port) {
-      const pmServer = await this.pm.listen();
-
-      const listen = () =>
-        new Promise((resolve, reject) => {
-          const Server = this.listen(options?.listen, () => {
-            resolve(Server);
-          });
-
-          Server.on('error', (err) => {
-            reject(err);
-          });
-
-          Server.on('close', () => {
-            pmServer.close();
-          });
-        });
-
-      try {
-        //@ts-ignore
-        this.listenServer = await listen();
-      } catch (e) {
-        console.error(e);
-        process.exit(1);
-      }
-    }
-
     await this.emitAsync('afterStart', this, options);
+    this.fsm.interpret.send('STARTED');
     this.stopped = false;
   }
 

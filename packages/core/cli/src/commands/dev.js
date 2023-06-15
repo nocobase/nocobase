@@ -2,6 +2,7 @@ const chalk = require('chalk');
 const { Command } = require('commander');
 const { runAppCommand, runInstall, run, postCheck, nodeCheck, promptForTs } = require('../util');
 const { getPortPromise } = require('portfinder');
+const { CliHttpServer } = require('../cli-http-server');
 
 /**
  *
@@ -54,12 +55,12 @@ module.exports = (cli) => {
         });
       }
 
-      await runAppCommand('install', ['--silent']);
-      // if (opts.dbSync) {
-      //   await runAppCommand('db:sync');
-      // }
       if (server || !client) {
-        console.log('starting server', serverPort);
+        const cliHttpServer = CliHttpServer.getInstance();
+        cliHttpServer.listen(serverPort);
+
+        await runAppCommand('install', ['--silent']);
+
         const argv = [
           '-P',
           './tsconfig.server.json',
@@ -74,6 +75,7 @@ module.exports = (cli) => {
         if (opts.dbSync) {
           argv.push('--db-sync');
         }
+
         const runDevServer = () => {
           run('ts-node-dev', argv, {
             env: {
@@ -91,6 +93,7 @@ module.exports = (cli) => {
 
         runDevServer();
       }
+
       if (client || !server) {
         console.log('starting client', 1 * clientPort);
         run('umi', ['dev'], {

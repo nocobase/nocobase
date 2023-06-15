@@ -11,13 +11,11 @@ export class Gateway {
 
   private server: http.Server | null = null;
 
-  private port: number = process.env.PORT ? parseInt(process.env.PORT) : null;
+  private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
 
-  private host: string;
+  private host: string = '0.0.0.0';
 
-  private constructor() {
-    this.start();
-  }
+  private constructor() {}
 
   public static getInstance(): Gateway {
     if (!Gateway.instance) {
@@ -36,8 +34,10 @@ export class Gateway {
     const app = typeof handleApp === 'string' ? AppSupervisor.getInstance().getApp(handleApp) : handleApp;
 
     if (!app) {
+      console.log('app not found');
     }
 
+    console.log(app.fsm.currentState());
     app.callback()(req, res);
   }
 
@@ -47,9 +47,9 @@ export class Gateway {
       return;
     }
 
-    this.server = http.createServer(this.requestHandler);
+    this.server = http.createServer(this.requestHandler.bind(this));
     this.server.listen(this.port, () => {
-      console.log(`Server running at http://${this.host}:${this.port}/`);
+      console.log(`Gateway Server running at http://${this.host}:${this.port}/`);
     });
   }
 }

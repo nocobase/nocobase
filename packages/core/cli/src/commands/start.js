@@ -3,6 +3,7 @@ const { isDev, run, postCheck, runInstall, promptForTs } = require('../util');
 const { existsSync, unlink } = require('fs');
 const { resolve } = require('path');
 const chalk = require('chalk');
+const { CliHttpServer } = require('../cli-http-server');
 
 /**
  *
@@ -21,6 +22,9 @@ module.exports = (cli) => {
       if (opts.port) {
         process.env.APP_PORT = opts.port;
       }
+
+      CliHttpServer.getInstance().listen(process.env.APP_PORT);
+
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         promptForTs();
         run('ts-node', [
