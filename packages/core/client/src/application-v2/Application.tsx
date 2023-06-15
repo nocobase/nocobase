@@ -7,29 +7,34 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { APIClient, APIClientProvider } from '../api-client';
 import { Plugin } from './Plugin';
+import { PluginManager } from './PluginManager';
 import { Router } from './Router';
 import { AppComponent, defaultAppComponents } from './components';
 import { ApplicationOptions } from './types';
 
 export class Application {
   providers: any[];
-  options: ApplicationOptions;
   router: Router;
   plugins: Map<string, Plugin>;
   scopes: Record<string, any>;
   i18n: i18n;
   apiClient: APIClient;
   components: any;
+  pm: PluginManager;
 
-  constructor(options: ApplicationOptions) {
+  constructor(protected _options: ApplicationOptions) {
     this.providers = [];
-    this.options = options;
     this.plugins = new Map<string, Plugin>();
-    this.scopes = merge(this.scopes, options.scopes || {});
-    this.components = merge(defaultAppComponents, options.components || {});
-    this.apiClient = new APIClient(options.apiClient);
-    this.router = new Router(options.router, { app: this });
+    this.scopes = merge(this.scopes, _options.scopes || {});
+    this.components = merge(defaultAppComponents, _options.components || {});
+    this.apiClient = new APIClient(_options.apiClient);
+    this.router = new Router(_options.router, { app: this });
+    this.pm = new PluginManager(this);
     this.useDefaultProviders();
+  }
+
+  get options() {
+    return this._options;
   }
 
   useDefaultProviders() {
@@ -68,19 +73,7 @@ export class Application {
   }
 
   async load() {
-    const { plugins = [], importPlugins } = this.options;
-    for (const name of plugins) {
-      try {
-        const Plugin = await importPlugins?.(name);
-        if (Plugin) {
-          const instance = new Plugin(this);
-          await instance.load();
-          this.plugins.set(name, instance);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
+    return this.pm.load();
   }
 
   getRootComponent() {

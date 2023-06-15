@@ -7,7 +7,7 @@ process.env.MFSU_AD = 'none';
 process.env.DID_YOU_KNOW = 'none';
 
 export default defineConfig({
-  title: 'NoCoBase',
+  title: 'Loading...',
   favicons: ['/favicon/favicon.ico'],
   metas: [
     { name: 'viewport', content: 'initial-scale=0.1' },

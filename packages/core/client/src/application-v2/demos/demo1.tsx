@@ -7,6 +7,7 @@ const Root = () => {
   return (
     <div>
       <Link to={'/'}>Home</Link>
+      <Link to={'/hello'}>Hello</Link>
       <Link to={'/team'}>Team</Link>
       <Link to={'/about'}>About</Link>
       <Outlet />
@@ -30,32 +31,37 @@ const About = () => {
   );
 };
 
-class TestPlugin extends Plugin {
+class Test1Plugin extends Plugin {
+  async load() {
+    this.router.add('root.team', {
+      path: 'team',
+      component: 'Team',
+    });
+  }
+}
+
+class Test2Plugin extends Plugin {
+  async load() {
+    this.router.add('root.about', {
+      path: 'about',
+      component: 'About',
+    });
+  }
+}
+
+class NocobasePresetPlugin extends Plugin {
+  async beforeLoad() {
+    await this.pm.add('test1');
+    await this.pm.add(Test2Plugin, { name: 'test2' });
+  }
+
   async load() {
     this.router.add('root', {
       path: '/',
       component: 'Root',
     });
-    this.router.add('root.team', {
-      path: 'team',
-      component: 'Team',
-    });
-    this.router.add('root.about', {
-      path: 'about',
-      component: 'About',
-    });
-    console.log(this.router.getRoutes());
   }
 }
-
-const mockPlugins = {
-  plugins: ['test'],
-  importPlugins: async (name) => {
-    return {
-      test: TestPlugin,
-    }[name];
-  },
-};
 
 const app = new Application({
   apiClient: {
@@ -64,13 +70,18 @@ const app = new Application({
   router: {
     type: 'hash',
   },
+  plugins: [[NocobasePresetPlugin, { name: 'nocobase' }]],
+  importPlugins: async (name) => {
+    return {
+      test1: Test1Plugin,
+    }[name];
+  },
   components: { Root, Team, About },
-  ...mockPlugins,
 });
 
 app.use((props) => {
   const location = useLocation();
-  if (location.pathname === '/team') {
+  if (location.pathname === '/hello') {
     return <div>Hello</div>;
   }
   return props.children;
