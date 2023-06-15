@@ -1,44 +1,71 @@
 import React from 'react';
+import { uid } from '@formily/shared';
 
-import { SchemaInitializer, useCollectionManager } from '@nocobase/client';
+import {
+  CollectionProvider,
+  SchemaInitializer,
+  SchemaInitializerItemOptions,
+  useCollectionManager,
+  useRecordCollectionDataSourceItems,
+  useSchemaTemplateManager,
+} from '@nocobase/client';
+import { traverseSchema } from '../nodes/manual/utils';
 
-export function CollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
+function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...props }) {
+  const { getTemplateSchemaByMode } = useSchemaTemplateManager();
   const { getCollection } = useCollectionManager();
+  const items = useRecordCollectionDataSourceItems('FormItem') as SchemaInitializerItemOptions[];
   const resovledCollection = getCollection(collection);
-  return (
-    <SchemaInitializer.Item
-      {...props}
-      onClick={() => {
-        insert({
+
+  async function onConfirm({ item }) {
+    const template = item.template ? await getTemplateSchemaByMode(item) : null;
+    const result = {
+      type: 'void',
+      name: resovledCollection.name,
+      title: resovledCollection.title,
+      'x-decorator': 'DetailsBlockProvider',
+      'x-decorator-props': {
+        collection,
+        dataSource,
+      },
+      'x-component': 'CardItem',
+      'x-component-props': {
+        title: props.title,
+      },
+      'x-designer': 'SimpleDesigner',
+      properties: {
+        [uid()]: {
           type: 'void',
-          name: resovledCollection.name,
-          title: resovledCollection.title,
-          'x-decorator': 'CollectionProvider',
-          'x-decorator-props': {
-            collection,
-          },
-          'x-component': 'CardItem',
+          'x-component': 'FormV2',
           'x-component-props': {
-            // title: props.title
-          },
-          'x-designer': 'SimpleDesigner',
-          'x-designer-props': {
-            type: 'record',
+            useProps: '{{useDetailsBlockProps}}',
           },
           properties: {
-            grid: {
+            grid: template || {
               type: 'void',
-              'x-decorator': 'Form',
-              'x-decorator-props': {
-                useValues: '{{ useFlowRecordFromBlock }}',
-              },
               'x-component': 'Grid',
-              'x-initializer': 'CollectionFieldInitializers',
-              'x-context-datasource': dataSource,
+              'x-initializer': 'ReadPrettyFormItemInitializers',
+              properties: {},
             },
           },
-        });
-      }}
-    />
+        },
+      },
+    };
+    traverseSchema(result, (node) => {
+      if (node['x-uid']) {
+        delete node['x-uid'];
+      }
+    });
+    insert(result);
+  }
+
+  return <SchemaInitializer.Item {...props} onClick={onConfirm} items={items} />;
+}
+
+export function CollectionBlockInitializer(props) {
+  return (
+    <CollectionProvider collection={props.collection}>
+      <InnerCollectionBlockInitializer {...props} />
+    </CollectionProvider>
   );
 }

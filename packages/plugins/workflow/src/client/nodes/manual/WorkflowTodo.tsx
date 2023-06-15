@@ -1,5 +1,6 @@
 import React, { useContext, createContext, useEffect, useState } from 'react';
 import { observer, useForm, useField, useFieldSchema } from '@formily/react';
+import { toJS } from '@formily/reactive';
 import { Spin, Tag } from 'antd';
 import { css } from '@emotion/css';
 import moment from 'moment';
@@ -28,6 +29,7 @@ import { instructions, useAvailableUpstreams } from '..';
 import { linkNodes } from '../../utils';
 import { manualFormTypes } from './SchemaConfig';
 import { FormBlockProvider } from './FormBlockProvider';
+import { DetailsBlockProvider } from '../../components/DetailsBlockProvider';
 
 const nodeCollection = {
   title: `{{t("Task", { ns: "${NAMESPACE}" })}}`,
@@ -421,23 +423,6 @@ function useSubmit() {
   };
 }
 
-// parse datasource block from execution context
-function useFlowRecordFromBlock(opts) {
-  const { ['x-context-datasource']: dataSource } = useFieldSchema();
-  const { execution } = useFlowContext();
-  const result = parse(dataSource)({
-    $context: execution?.context,
-    $jobsMapByNodeId: (execution?.jobs ?? []).reduce(
-      (map, job) => Object.assign(map, { [job.nodeId]: job.result }),
-      {},
-    ),
-  });
-
-  return useRequest(() => {
-    return Promise.resolve({ data: result });
-  }, opts);
-}
-
 function FlowContextProvider(props) {
   const api = useAPIClient();
   const { id } = useRecord();
@@ -479,6 +464,7 @@ function FlowContextProvider(props) {
       <SchemaComponent
         components={{
           FormBlockProvider,
+          DetailsBlockProvider,
           ActionBarProvider,
           ManualActionStatusProvider,
           ...Array.from(manualFormTypes.getValues()).reduce(
@@ -490,6 +476,7 @@ function FlowContextProvider(props) {
         scope={{
           useSubmit,
           useFormBlockProps,
+          useDetailsBlockProps,
           ...Array.from(manualFormTypes.getValues()).reduce(
             (result, item) => Object.assign(result, item.block.scope),
             {},
@@ -526,6 +513,11 @@ function useFormBlockProps() {
     form?.setPattern(pattern);
   }, [pattern, form]);
 
+  return { form };
+}
+
+function useDetailsBlockProps() {
+  const { form } = useFormBlockContext();
   return { form };
 }
 
@@ -584,9 +576,6 @@ function Drawer() {
               properties: footerSchema,
             },
           },
-        }}
-        scope={{
-          useFlowRecordFromBlock,
         }}
       />
     </SchemaComponentContext.Provider>
