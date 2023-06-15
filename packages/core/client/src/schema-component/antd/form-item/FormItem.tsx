@@ -657,11 +657,11 @@ FormItem.Designer = function Designer() {
           key="add-mode"
           title={t('Add new mode')}
           options={[
+            { label: t('None'), value: 'none' },
             { label: t('Quick add'), value: 'quickAdd' },
             { label: t('Modal add'), value: 'modalAdd' },
-            { label: t('None'), value: 'none' },
           ]}
-          value={field.componentProps?.addMode}
+          value={field.componentProps?.addMode || 'none'}
           onChange={(mode) => {
             if (mode === 'modalAdd') {
               const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {

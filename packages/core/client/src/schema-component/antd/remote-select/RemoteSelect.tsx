@@ -216,8 +216,8 @@ const InternalRemoteSelect = connect(
             <>
               {isQuickAdd ? (
                 <>
-                  {data?.data.length > 0 && menu}
-                  <Divider style={{ margin: 0 }} />
+                  {!(data?.data.length === 0 && searchData?.current) && menu}
+                  {data?.data.length > 0 && <Divider style={{ margin: 0 }} />}
                   <CustomRenderCom />
                 </>
               ) : (
