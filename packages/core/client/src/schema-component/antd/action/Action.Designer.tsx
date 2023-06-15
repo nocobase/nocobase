@@ -207,7 +207,7 @@ export const ActionDesigner = (props) => {
                           dependencies: ['.saveMode'],
                           fulfill: {
                             state: {
-                              required: '{{ $deps[0]!=="create"}}',
+                              hidden: '{{ $deps[0]==="create"}}',
                             },
                           },
                         },

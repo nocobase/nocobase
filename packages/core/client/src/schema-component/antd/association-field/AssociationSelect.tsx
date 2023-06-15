@@ -55,7 +55,10 @@ const InternalAssociationSelect = observer((props: AssociationSelectProps) => {
   };
   const QuickAddContent = (props) => {
     return (
-      <div onClick={() => handleCreateAction(props)} style={{ cursor: 'pointer', paddingLeft: 10, color: 'black' }}>
+      <div
+        onClick={() => handleCreateAction(props)}
+        style={{ cursor: 'pointer', padding: '5px 12px', color: '#0d0c0c' }}
+      >
         <PlusOutlined />
         <span style={{ paddingLeft: 5 }}>{t('Add') + ` “${props.search}” `}</span>
       </div>

@@ -1,6 +1,6 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { SelectProps, Tag, Empty } from 'antd';
+import { SelectProps, Tag, Empty, Divider } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -41,6 +41,7 @@ const InternalRemoteSelect = connect(
     const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
+    const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
     const field = useField();
     const { getField } = useCollection();
     const searchData = useRef(null);
@@ -141,7 +142,7 @@ const InternalRemoteSelect = connect(
       [service, fieldNames],
     );
     const CustomRenderCom = useCallback(() => {
-      if (data?.data.length < 1 && searchData.current && CustomDropdownRender) {
+      if (searchData.current && CustomDropdownRender) {
         return (
           <CustomDropdownRender
             search={searchData.current}
@@ -151,10 +152,9 @@ const InternalRemoteSelect = connect(
             }}
           />
         );
-      } else {
-        return <Empty />;
       }
-    }, [data?.data, searchData.current]);
+      return null;
+    }, [searchData.current]);
 
     useEffect(() => {
       // Lazy load
@@ -211,7 +211,21 @@ const InternalRemoteSelect = connect(
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
         rawOptions={options}
-        dropdownRender={searchData.current && data?.data.length < 1 && CustomRenderCom}
+        dropdownRender={(menu) => {
+          return (
+            <>
+              {isQuickAdd ? (
+                <>
+                  {data?.data.length > 0 && menu}
+                  <Divider style={{ margin: 0 }} />
+                  <CustomRenderCom />
+                </>
+              ) : (
+                menu
+              )}
+            </>
+          );
+        }}
       />
     );
   },

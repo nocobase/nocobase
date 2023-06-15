@@ -659,17 +659,18 @@ FormItem.Designer = function Designer() {
           options={[
             { label: t('Quick add'), value: 'quickAdd' },
             { label: t('Modal add'), value: 'modalAdd' },
+            { label: t('None'), value: 'none' },
           ]}
           value={field.componentProps?.addMode}
           onChange={(mode) => {
-            if(mode==='modalAdd'){
+            if (mode === 'modalAdd') {
               const hasAddNew = fieldSchema.reduceProperties((buf, schema) => {
                 if (schema['x-component'] === 'Action') {
                   return schema;
                 }
                 return buf;
               }, null);
-  
+
               if (!hasAddNew) {
                 const addNewActionschema = {
                   'x-action': 'create',
