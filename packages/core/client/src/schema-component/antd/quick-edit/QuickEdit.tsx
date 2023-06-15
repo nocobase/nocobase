@@ -8,6 +8,7 @@ import CollectionField from '../../../collection-manager/CollectionField';
 import { useCollectionManager } from '../../../collection-manager';
 import { FormProvider } from '../../core';
 import { ReadPretty as InputReadPretty } from '../input';
+import { ReadPretty as UploadReadPretty } from '../upload/ReadPretty';
 import { FileManageReadPretty } from '../association-field/FileManager';
 import { MarkdownReadPretty } from '../markdown/Markdown';
 
@@ -79,6 +80,7 @@ export const QuickEdit = observer((props) => {
       case 'markdown':
         return field.value ? <MarkdownReadPretty {...props} value={field.value} ellipsis /> : null;
       case 'attachment':
+        return <UploadReadPretty.File {...props} value={field.value} size="small" />;
       case 'm2m':
       case 'm2o':
       case 'obo':
