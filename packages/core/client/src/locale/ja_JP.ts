@@ -605,5 +605,14 @@ export default {
   "Duplicate mode":"コピーモード",
   "Quick duplicate":"今すぐコピー",
   "Duplicate and continue":"コピーして続行",
-  "Please configure the duplicate fields":"コピーするフィールドを設定してください"
+  "Please configure the duplicate fields":"コピーするフィールドを設定してください",
+  "Add":"追加",
+  "Add new mode":"追加モード",
+  "Quick add":"すばやい",
+  "Modal add":"ポップアップ窓の追加",
+  "Save mode":"保存方法",
+  "First or create":"存在しない場合に追加",
+  "Update or create":"存在しなければ新規、存在すれば更新",
+  "Find by the following fields":"次のフィールドで検索",
+  "Create":"新規のみ"
 }

@@ -694,5 +694,14 @@ export default {
   "Duplicate mode":"Duplicate mode",
   "Quick duplicate":"Quick duplicate",
   "Duplicate and continue":"Duplicate and continue",
-  "Please configure the duplicate fields":"Please configure the duplicate fields"
+  "Please configure the duplicate fields":"Please configure the duplicate fields",
+  "Add":"Create",
+  "Add new mode":"Add new mode",
+  "Quick add":"Quick add",
+  "Modal add":"Modal add",
+  "Save mode":"Save mode",
+  "First or create":"First or create",
+  "Update or create":"Update or create",
+  "Find by the following fields":"Find by the following fields",
+  "Create":"Create"
 };

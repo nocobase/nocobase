@@ -5,7 +5,7 @@ import { cloneDeep } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDesignable } from '../..';
-import { useCollection, useCollectionManager } from '../../../collection-manager';
+import { useCollection, useCollectionManager, useCollectionFieldsOptions } from '../../../collection-manager';
 import { OpenModeSchemaItems } from '../../../schema-items';
 import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
 import { useLinkageAction } from './hooks';
@@ -15,6 +15,7 @@ import { requestSettingsSchema } from './utils';
 const Tree = connect(
   AntdTree,
   mapProps((props, field: any) => {
+    console.log(props, field);
     return {
       ...props,
       onCheck: (checkedKeys) => {
@@ -57,18 +58,21 @@ export const ActionDesigner = (props) => {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const isAction = useLinkageAction();
-  const isPopupAction = ['create', 'update', 'view', 'customize:popup','duplicate'].includes(fieldSchema['x-action'] || '');
+  const isPopupAction = ['create', 'update', 'view', 'customize:popup', 'duplicate'].includes(
+    fieldSchema['x-action'] || '',
+  );
   const isUpdateModePopupAction = ['customize:bulkUpdate', 'customize:bulkEdit'].includes(fieldSchema['x-action']);
   const [initialSchema, setInitialSchema] = useState<ISchema>();
   const actionType = fieldSchema['x-action'] ?? '';
   const isLinkageAction = linkageAction || isAction;
   const isChildCollectionAction = getChildrenCollections(name).length > 0 && fieldSchema['x-action'] === 'create';
   const isLink = fieldSchema['x-component'] === 'Action.Link';
-  const isDelete = fieldSchema?.parent?.['x-component'] === 'CollectionField';
-  const isDraggable = fieldSchema?.parent?.['x-component'] !== 'CollectionField';
+  const isDelete = fieldSchema?.parent['x-component'] === 'CollectionField';
+  const isDraggable = fieldSchema?.parent['x-component'] !== 'CollectionField';
   const isDuplicateAction = fieldSchema['x-action'] === 'duplicate';
   const { collectionList, getEnableFieldTree, onLoadData, onCheck } = useCollectionState(name);
   const duplicateValues = cloneDeep(fieldSchema['x-component-props'].duplicateFields || []);
+  const options = useCollectionFieldsOptions(name, 1, ['id']);
   useEffect(() => {
     const schemaUid = uid();
     const schema: ISchema = {
@@ -157,6 +161,80 @@ export const ActionDesigner = (props) => {
             dn.refresh();
           }}
         />
+        {fieldSchema['x-action'] === 'submit' &&
+          fieldSchema.parent?.['x-initializer'] === 'CreateFormActionInitializers' && (
+            <SchemaSettings.ModalItem
+              title={t('Save mode')}
+              components={{ Tree }}
+              schema={
+                {
+                  type: 'object',
+                  title: t('Save mode'),
+                  properties: {
+                    saveMode: {
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Radio.Group',
+                      title: t('Save mode'),
+                      default: field.componentProps.saveMode || 'create',
+                      enum: [
+                        { value: 'create', label: '{{t("Create")}}' },
+                        { value: 'firstOrCreate', label: '{{t("First or create")}}' },
+                        { value: 'updateOrCreate', label: '{{t("Update or create")}}' },
+                      ],
+                    },
+                    filterKeys: {
+                      type: 'array',
+                      title: '{{ t("Find by the following fields") }}',
+                      required: true,
+                      default: field.componentProps.filterKeys,
+                      'x-decorator': 'FormItem',
+                      'x-component': 'Tree',
+                      'x-component-props': {
+                        treeData: options,
+                        checkable: true,
+                        defaultCheckedKeys: field.componentProps.filterKeys,
+                        rootStyle: {
+                          padding: '8px 0',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '2px',
+                          maxHeight: '30vh',
+                          overflow: 'auto',
+                          margin: '2px 0',
+                        },
+                      },
+                      'x-reactions': [
+                        {
+                          dependencies: ['.saveMode'],
+                          fulfill: {
+                            state: {
+                              hidden: '{{ $deps[0]==="create"}}',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  },
+                } as ISchema
+              }
+              onSubmit={({ saveMode, filterKeys }) => {
+                console.log(saveMode, filterKeys);
+                field.componentProps.saveMode = saveMode;
+                field.componentProps.filterKeys = filterKeys;
+                fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+                fieldSchema['x-component-props'].saveMode = saveMode;
+                fieldSchema['x-component-props'].filterKeys = filterKeys;
+                dn.emit('patch', {
+                  schema: {
+                    ['x-uid']: fieldSchema['x-uid'],
+                    'x-component-props': {
+                      ...fieldSchema['x-component-props'],
+                    },
+                  },
+                });
+                dn.refresh();
+              }}
+            />
+          )}
         {isLinkageAction && <SchemaSettings.LinkageRules collectionName={name} />}
         {isDuplicateAction && [
           <SchemaSettings.ModalItem

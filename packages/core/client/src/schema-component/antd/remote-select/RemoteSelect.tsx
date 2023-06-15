@@ -1,9 +1,9 @@
 import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty, useField, useFieldSchema } from '@formily/react';
-import { SelectProps, Tag } from 'antd';
+import { SelectProps, Tag, Empty, Divider } from 'antd';
 import { uniqBy } from 'lodash';
 import moment from 'moment';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceActionOptions, useRequest } from '../../../api-client';
 import { mergeFilter } from '../../../block-provider/SharedFilterProvider';
 import { useCollection, useCollectionManager } from '../../../collection-manager';
@@ -21,6 +21,7 @@ export type RemoteSelectProps<P = any> = SelectProps<P, any> & {
   mapOptions?: (data: any) => RemoteSelectProps['fieldNames'];
   targetField?: any;
   service: ResourceActionOptions<P>;
+  CustomDropdownRender?: (v: any) => any;
 };
 
 const InternalRemoteSelect = connect(
@@ -34,12 +35,16 @@ const InternalRemoteSelect = connect(
       manual = true,
       mapOptions,
       targetField: _targetField,
+      CustomDropdownRender,
       ...others
     } = props;
+    const [open, setOpen] = useState(false);
     const firstRun = useRef(false);
     const fieldSchema = useFieldSchema();
+    const isQuickAdd = fieldSchema['x-component-props']?.addMode === 'quickAdd';
     const field = useField();
     const { getField } = useCollection();
+    const searchData = useRef(null);
     const { getCollectionJoinField, getInterface } = useCollectionManager();
     const collectionField = getField(fieldSchema.name);
     const targetField =
@@ -128,7 +133,6 @@ const InternalRemoteSelect = connect(
         debounceWait: wait,
       },
     );
-
     const runDep = useMemo(
       () =>
         JSON.stringify({
@@ -137,6 +141,20 @@ const InternalRemoteSelect = connect(
         }),
       [service, fieldNames],
     );
+    const CustomRenderCom = useCallback(() => {
+      if (searchData.current && CustomDropdownRender) {
+        return (
+          <CustomDropdownRender
+            search={searchData.current}
+            callBack={() => {
+              searchData.current = null;
+              setOpen(false);
+            }}
+          />
+        );
+      }
+      return null;
+    }, [searchData.current]);
 
     useEffect(() => {
       // Lazy load
@@ -158,6 +176,7 @@ const InternalRemoteSelect = connect(
           field.componentProps?.service?.params?.filter || service?.params?.filter,
         ]),
       });
+      searchData.current = search;
     };
 
     const options = useMemo(() => {
@@ -167,8 +186,10 @@ const InternalRemoteSelect = connect(
       const valueOptions = (value != null && (Array.isArray(value) ? value : [value])) || [];
       return uniqBy(data?.data?.concat(valueOptions) || [], fieldNames.value);
     }, [data?.data, value]);
-    const onDropdownVisibleChange = () => {
-      if (firstRun.current) {
+    const onDropdownVisibleChange = (visible) => {
+      setOpen(visible);
+      searchData.current = null;
+      if (firstRun.current && data?.data.length > 0) {
         return;
       }
       run();
@@ -176,6 +197,7 @@ const InternalRemoteSelect = connect(
     };
     return (
       <Select
+        open={open}
         dropdownMatchSelectWidth={false}
         autoClearSearchValue
         filterOption={false}
@@ -189,6 +211,22 @@ const InternalRemoteSelect = connect(
         loading={data! ? loading : true}
         options={mapOptionsToTags(options)}
         rawOptions={options}
+        dropdownRender={(menu) => {
+          const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);
+          return (
+            <>
+              {isQuickAdd ? (
+                <>
+                  {!(data?.data.length === 0 && searchData?.current) && menu}
+                  {data?.data.length > 0 && searchData?.current && !isFullMatch && <Divider style={{ margin: 0 }} />}
+                  {!isFullMatch && <CustomRenderCom />}
+                </>
+              ) : (
+                menu
+              )}
+            </>
+          );
+        }}
       />
     );
   },
