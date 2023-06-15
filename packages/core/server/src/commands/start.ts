@@ -1,4 +1,6 @@
 import Application from '../application';
+import process from 'process';
+import net from 'net';
 
 export default (app: Application) => {
   app
@@ -21,8 +23,26 @@ export default (app: Application) => {
         },
       });
 
-      if (!opts.silent) {
-        console.log(`🚀 NocoBase server running at: http://${host === '0.0.0.0' ? 'localhost' : host}:${port}/`);
+      if (process.env.MAIN_PROCESS_SOCKET_PATH) {
+        // process.on('SIGUSR2', () => {
+        //   console.log("Received 'SIGUSR1' signal, start to restart gateway server");
+        //
+        //   Gateway.getInstance().start();
+        // });
+
+        const client = net.connect(process.env.MAIN_PROCESS_SOCKET_PATH, () => {
+          console.log(process.env.MAIN_PROCESS_SOCKET_PATH);
+
+          client.write('hello world\r\n');
+          client.end();
+        });
+
+        await timeout(10000);
+        console.log('stop gateway server');
       }
     });
 };
+
+function timeout(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

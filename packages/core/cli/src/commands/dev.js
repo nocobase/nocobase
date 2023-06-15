@@ -77,11 +77,29 @@ module.exports = (cli) => {
         }
 
         const runDevServer = () => {
-          run('ts-node-dev', argv, {
+          console.log('start server worker process');
+          const workerProcess = run('ts-node-dev', argv, {
             env: {
               APP_PORT: serverPort,
+              AS_WORKER_PROCESS: 'true',
+              MAIN_PROCESS_SOCKET_PATH: cliHttpServer.socketPath,
             },
-          }).catch((err) => {
+          });
+
+          const workerPid = workerProcess.pid;
+
+          cliHttpServer.ipcServer.on('data', (data) => {
+            console.log(data);
+          });
+
+          // process.removeAllListeners('SIGUSR2');
+          // process.on('SIGUSR2', () => {
+          //   console.log(`received SIGUSR2, restarting server worker process ${workerPid}`);
+          //   cliHttpServer.server.close();
+          //   process.kill(workerPid, 'SIGUSR2');
+          // });
+
+          workerProcess.catch((err) => {
             if (err.exitCode == 100) {
               console.log('Restarting server...');
               runDevServer();
@@ -89,6 +107,8 @@ module.exports = (cli) => {
               console.error(err);
             }
           });
+
+          console.log({ wokerPid: workerPid });
         };
 
         runDevServer();
