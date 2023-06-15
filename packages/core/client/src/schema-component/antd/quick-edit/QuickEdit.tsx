@@ -34,7 +34,6 @@ export const QuickEdit = observer((props) => {
   return (
     <FormItem labelStyle={{ display: 'none' }}>
       <Popover
-        zIndex={1001}
         content={<div style={{ width: '100%', height: '100%', minWidth: 300 }}>{props.children}</div>}
         trigger="click"
       >
