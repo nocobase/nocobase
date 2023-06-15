@@ -271,7 +271,9 @@ function AddCustomFormField(props) {
                                 type: options.uiSchema.type,
                                 'x-decorator': 'FormItem',
                                 'x-component': 'CollectionField',
-                                'x-interface-options': newField,
+                                'x-component-props': {
+                                  field: newField,
+                                },
                                 'x-collection-field': `${collection.name}.${options.name}`,
                                 'x-designer': 'FormItem.Designer',
                               });
@@ -342,7 +344,9 @@ export default {
           (item) => item['x-component'] === 'CollectionField',
           true,
         );
-        formBlock['x-decorator-props'].collection.fields = fields.map((field) => field['x-interface-options']);
+        formBlock['x-decorator-props'].collection.fields = fields.map(
+          (field) => field['x-component-props']?.field ?? field['x-interface-options'],
+        );
         forms[formKey] = {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
