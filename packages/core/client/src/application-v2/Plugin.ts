@@ -22,6 +22,8 @@ export class Plugin {
     return this.app.router;
   }
 
+  async afterAdd() {}
+
   async beforeLoad() {}
 
   async load() {}

@@ -48,6 +48,7 @@ export class PluginManager {
     }
     const plugin = await this.makePlugin(opts);
     this.pluginInstances.set(plugin.name, plugin);
+    await plugin.afterAdd();
     return plugin;
   }
 
@@ -68,6 +69,7 @@ export class PluginManager {
     for (const opts of this.pluginPrepares.values()) {
       const plugin = await this.makePlugin(opts);
       this.pluginInstances.set(plugin.name, plugin);
+      await plugin.afterAdd();
     }
 
     for (const plugin of this.pluginInstances.values()) {

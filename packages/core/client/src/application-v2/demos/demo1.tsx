@@ -50,7 +50,7 @@ class Test2Plugin extends Plugin {
 }
 
 class NocobasePresetPlugin extends Plugin {
-  async beforeLoad() {
+  async afterAdd() {
     await this.pm.add('test1');
     await this.pm.add(Test2Plugin, { name: 'test2' });
   }
