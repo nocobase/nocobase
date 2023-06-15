@@ -74,7 +74,9 @@ SchemaInitializer.Button = observer(
               error(`SchemaInitializer: component "${item.component}" not found`);
               return null;
             }
-            item.key = `${item.key || item.title}-${indexA}`;
+            if (!item.key) {
+              item.key = `${item.title}-${indexA}`;
+            }
             return getMenuItem(() => {
               return (
                 <SchemaInitializerItemContext.Provider
@@ -215,7 +217,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
         }
         const label = compile(item.title);
         return {
-          key: item.key || indexA,
+          key: item.key || `${info.key}-${item.title}-${indexA}`,
           label,
           title: label,
           onClick: (info) => {
