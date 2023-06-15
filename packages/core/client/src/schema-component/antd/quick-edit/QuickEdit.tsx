@@ -25,6 +25,7 @@ export const QuickEdit = observer((props) => {
     'x-component': 'CollectionField',
     default: field.value,
     'x-component-props': {
+      selectFile: false,
       ...field.componentProps,
       onChange: async (e) => {
         const data = e?.target?.value;
