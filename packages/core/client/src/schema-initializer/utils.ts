@@ -82,12 +82,20 @@ export const useTableColumnInitializerFields = () => {
     )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
+      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
         'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': isFileCollection
+          ? {
+              fieldNames: {
+                label: 'preview',
+                value: 'id',
+              },
+            }
+          : {},
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
