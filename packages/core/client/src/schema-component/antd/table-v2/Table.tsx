@@ -1,16 +1,15 @@
-import { MenuOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 import { SortableContext, useSortable } from '@dnd-kit/sortable';
 import { css } from '@emotion/css';
 import { ArrayField, Field } from '@formily/core';
+import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { RecursionField, Schema, observer, useField, useFieldSchema } from '@formily/react';
-import { reaction } from '@formily/reactive';
+import { action, reaction } from '@formily/reactive';
 import { useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { spliceArrayState } from '@formily/core/esm/shared/internals';
-import { action } from '@formily/reactive';
 import { DndContext, useDesignable, useTableSize } from '../..';
 import {
   RecordIndexProvider,

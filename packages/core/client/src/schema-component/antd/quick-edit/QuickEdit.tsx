@@ -1,4 +1,5 @@
 import { EditOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { FormItem } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
@@ -35,17 +36,25 @@ export const QuickEdit = observer((props) => {
     <FormItem labelStyle={{ display: 'none' }}>
       <Popover
         zIndex={1001}
-        content={<div style={{ width: '100%', height: '100%', minWidth: 300 }}>{props.children}</div>}
+        content={<div style={{ width: '100%', height: '100%', minWidth: 500 }}>{props.children}</div>}
         trigger="click"
+        placement={'bottomLeft'}
+        overlayClassName={css`
+          padding-top: 0;
+          .ant-popover-arrow {
+            display: none;
+          }
+        `}
       >
-        <span style={{ maxHeight: 30, display: 'block', cursor: 'pointer' }}>
-          <EditOutlined
-            style={{ marginRight: '8px', lineHeight: '35px', float: 'left', color: !field.valid ? 'red' : null }}
-          />
+        <span>
+          <span style={{ display: 'inline', float: 'left', cursor: 'pointer' }}>
+            <EditOutlined style={{ margin: '0 8px', color: !field.valid ? 'red' : null }} />
+          </span>
+          <FormContext.Provider value={form}>
+            <RecursionField schema={schema} name={fieldSchema.name} />
+          </FormContext.Provider>
+          <div style={{ clear: 'both' }}></div>
         </span>
-        <FormContext.Provider value={form}>
-          <RecursionField schema={schema} name={fieldSchema.name} />
-        </FormContext.Provider>
       </Popover>
     </FormItem>
   );

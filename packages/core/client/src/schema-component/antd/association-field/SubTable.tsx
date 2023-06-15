@@ -1,11 +1,11 @@
+import { css } from '@emotion/css';
+import { FormItem } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
-import { isArr } from '@formily/shared';
-import { action } from '@formily/reactive';
 import { observer } from '@formily/react';
+import { action } from '@formily/reactive';
+import { isArr } from '@formily/shared';
 import { Button } from 'antd';
-import { FormItem } from '@formily/antd';
-import { css } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Table } from '../table-v2/Table';
@@ -62,7 +62,7 @@ export const SubTable: any = observer(
           <Table
             className={css`
               .ant-select-selector {
-                min-height: 31px;
+                /* min-height: 31px; */
               }
               .ant-formily-item {
                 margin-bottom: 0px;
@@ -73,7 +73,11 @@ export const SubTable: any = observer(
               .ant-table table {
                 margin-bottom: 20px;
               }
+              td {
+                padding: 0 !important;
+              }
             `}
+            bordered
             size={'small'}
             field={field}
             showIndex

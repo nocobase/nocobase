@@ -26,6 +26,7 @@ const InternalAssociationSelect = observer(
           <RemoteSelect
             style={{ width: '100%' }}
             {...props}
+            size={'middle'}
             objectValue={objectValue}
             value={value}
             service={service}

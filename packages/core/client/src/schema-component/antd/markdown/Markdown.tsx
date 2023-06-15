@@ -24,7 +24,7 @@ export const Markdown: any = connect(
 );
 
 export const MarkdownReadPretty = (props) => {
-  const { html, loading } = useParseMarkdown(props.value);
+  const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
   const value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
   if (loading) {
