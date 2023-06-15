@@ -32,7 +32,7 @@ const getArraySchema = (fields = {}, extra = {}) => ({
   properties: {
     add: {
       type: 'void',
-      title: 'Add entry',
+      title: '{{t("Add field")}}',
       'x-component': 'ArrayItems.Addition',
     },
   },

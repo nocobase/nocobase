@@ -5,7 +5,6 @@ import {
   useFieldTransformer,
   useFieldTypes,
   useFormatters,
-  useQueryWithAlias,
   useTransformers,
 } from '../hooks';
 import { renderHook } from '@testing-library/react-hooks';

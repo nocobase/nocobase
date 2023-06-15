@@ -3,7 +3,6 @@ import {
   SchemaSettings,
   gridRowColWrap,
   useAPIClient,
-  useCompile,
   useDesignable,
   useRequest,
 } from '@nocobase/client';
@@ -12,34 +11,33 @@ import { Empty, Result, Typography } from 'antd';
 import { useChartsTranslation } from '../locale';
 import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField, Schema } from '@formily/react';
-import { useChart } from './ChartLibrary';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useFields, useQueryWithAlias, useFieldTransformer, useCompiledFields } from '../hooks';
-import { createRendererSchema } from '../utils';
-import { ChartRendererContext } from './ChartRendererProvider';
+import { useFieldTransformer, useCompiledFields } from '../hooks';
+import { createRendererSchema, getChart, getQueryWithAlias } from '../utils';
+import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
+import { ChartLibraryContext } from './ChartLibrary';
+import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{
   configuring?: boolean;
-  beforeQuery?: () => void;
-  afterQuery?: () => void;
+  runQuery?: any;
 }> & {
   Designer: React.FC;
 } = (props) => {
   const { t } = useChartsTranslation();
   const { setData: setQueryData, current } = useContext(ChartConfigContext);
   const { query, config, collection, transform } = useContext(ChartRendererContext);
-  const { configuring, beforeQuery, afterQuery } = props;
+  const { configuring, runQuery } = props;
   const general = config?.general || {};
   const advanced = config?.advanced || {};
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
   const fields = useCompiledFields(collection);
-  const queryWithAlias = useQueryWithAlias(fields, query);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
-  const { run } = useRequest(
-    () =>
+  const { runAsync } = useRequest(
+    (query) =>
       api
         .request({
           url: 'charts:query',
@@ -47,7 +45,7 @@ export const ChartRenderer: React.FC<{
           data: {
             uid: currentSchema?.['x-uid'],
             collection,
-            ...queryWithAlias,
+            ...getQueryWithAlias(fields, query),
           },
         })
         .then((res) => {
@@ -55,14 +53,10 @@ export const ChartRenderer: React.FC<{
         }),
     {
       manual: true,
-      onBefore: () => {
-        beforeQuery?.();
-      },
       onSuccess: (data) => {
         setData(data);
       },
       onFinally(params, data, e) {
-        afterQuery?.();
         if (!configuring) {
           return;
         }
@@ -76,26 +70,24 @@ export const ChartRenderer: React.FC<{
     },
   );
 
-  /*
-   * For a renderer of a configured chart,
-   * only trigger requests when query parameters are really changed
-   * For the renderer of the configuration pane,
-   * trigger requests when "run query" button is clicked
-   */
-  const changedQuery = configuring ? query : JSON.stringify(query);
   useEffect(() => {
-    if (
-      query?.measures?.length
-      // || (query?.sql?.fields && query?.sql?.clauses)
-    ) {
-      run();
+    setData([]);
+    const run = async (query: QueryProps) => {
+      if (
+        query?.measures?.length
+        // || (query?.sql?.fields && query?.sql?.clauses)
+      ) {
+        await runAsync(query);
+      }
+    };
+    if (runQuery) {
+      runQuery.current = run;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [changedQuery, run]);
+    run(query);
+  }, [query, runAsync, runQuery]);
 
-  const chartType = config?.chartType || '-';
-  const [libName, type] = chartType.split('-');
-  const { library, chart } = useChart(libName, type);
+  const libraries = useContext(ChartLibraryContext);
+  const { library, chart } = getChart(libraries, config?.chartType);
   const Component = chart?.component;
   const locale = api.auth.getLocale();
   const meta = useFieldTransformer(transform, locale);

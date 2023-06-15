@@ -1,6 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { formatter } from './formatter';
-import { FilterParser } from '@nocobase/database';
+import { FilterParser, Model } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
 import { Cache } from '@nocobase/cache';
 

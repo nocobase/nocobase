@@ -1,15 +1,16 @@
+import { lang } from '../../locale';
 import { Charts, usePropsFunc } from '../ChartLibrary';
 import { Statistic } from 'antd';
 
 export const AntdLibrary: Charts = {
   statistic: {
-    name: 'Statistic',
+    name: lang('Statistic'),
     component: Statistic,
     schema: {
       type: 'object',
       properties: {
         title: {
-          title: 'Title',
+          title: lang('Title'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Input',

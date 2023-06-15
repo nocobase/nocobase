@@ -1,12 +1,12 @@
 import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
 import { lang } from '../../locale';
-import { Charts, usePropsFunc } from '../ChartLibrary';
+import { ChartProps, Charts, usePropsFunc } from '../ChartLibrary';
 
 const basicSchema = {
   type: 'object',
   properties: {
     xField: {
-      title: 'xField',
+      title: lang('xField'),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -19,7 +19,7 @@ const basicSchema = {
       },
     },
     yField: {
-      title: 'yField',
+      title: lang('yField'),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -33,7 +33,7 @@ const basicSchema = {
       },
     },
     seriesField: {
-      title: 'seriesField',
+      title: lang('seriesField'),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -48,26 +48,56 @@ const basicSchema = {
   },
 };
 
+const commonInit: ChartProps['initConfig'] = (fields, { measures, dimensions }) => {
+  if (!measures?.length || !dimensions?.length) {
+    return {};
+  }
+  const xField = fields.find((f) => f.name === dimensions[0].field);
+  const yField = fields.find((f) => f.name === measures[0].field);
+  return {
+    general: {
+      xField: xField?.label,
+      yField: yField?.label,
+    },
+  };
+};
+
 export const G2PlotLibrary: Charts = {
   line: {
     name: lang('Line Chart'),
     component: Line,
     schema: basicSchema,
+    initConfig: commonInit,
   },
   area: {
     name: lang('Area Chart'),
     component: Area,
     schema: basicSchema,
+    initConfig: commonInit,
   },
   column: {
     name: lang('Column Chart'),
     component: Column,
     schema: basicSchema,
+    initConfig: commonInit,
   },
   bar: {
     name: lang('Bar Chart'),
     component: Bar,
     schema: basicSchema,
+    initConfig: (fields, { measures, dimensions }) => {
+      if (!measures?.length || !dimensions?.length) {
+        return {};
+      }
+      const xField = fields.find((f) => f.name === measures[0].field);
+      const yField = fields.find((f) => f.name === dimensions[0].field);
+      return {
+        general: {
+          xField: xField?.label,
+          yField: yField?.label,
+        },
+      };
+    },
   },
   pie: {
     name: lang('Pie Chart'),
@@ -76,7 +106,7 @@ export const G2PlotLibrary: Charts = {
       type: 'object',
       properties: {
         angleField: {
-          title: 'angleField',
+          title: lang('angleField'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -89,7 +119,7 @@ export const G2PlotLibrary: Charts = {
           },
         },
         colorField: {
-          title: 'colorField',
+          title: lang('colorField'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -104,6 +134,19 @@ export const G2PlotLibrary: Charts = {
         },
       },
     },
+    initConfig: (fields, { measures, dimensions }) => {
+      if (!measures?.length || !dimensions?.length) {
+        return {};
+      }
+      const angleField = fields.find((f) => f.name === measures[0].field);
+      const colorField = fields.find((f) => f.name === dimensions[0].field);
+      return {
+        general: {
+          angleField: angleField?.label,
+          colorField: colorField?.label,
+        },
+      };
+    },
   },
   dualAxes: {
     name: lang('Dual Axes Chart'),
@@ -115,7 +158,7 @@ export const G2PlotLibrary: Charts = {
       type: 'object',
       properties: {
         xField: {
-          title: 'xField',
+          title: lang('xField'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -128,7 +171,7 @@ export const G2PlotLibrary: Charts = {
           },
         },
         seriesField: {
-          title: 'seriesField',
+          title: lang('seriesField'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -142,7 +185,7 @@ export const G2PlotLibrary: Charts = {
           },
         },
         yField: {
-          title: 'yField',
+          title: lang('yField'),
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': 'ArrayItems',
@@ -188,6 +231,20 @@ export const G2PlotLibrary: Charts = {
         },
       },
     },
+    initConfig: (fields, { measures, dimensions }) => {
+      if (!measures?.length || measures.length < 2 || !dimensions?.length) {
+        return {};
+      }
+      const xField = fields.find((f) => f.name === dimensions[0].field);
+      const yField1 = fields.find((f) => f.name === measures[0].field);
+      const yField2 = fields.find((f) => f.name === measures[1].field);
+      return {
+        general: {
+          xField: xField?.label,
+          yField: [yField1?.label, yField2?.label],
+        },
+      };
+    },
   },
   gauge: {
     name: lang('Gauge Chart'),
@@ -197,6 +254,7 @@ export const G2PlotLibrary: Charts = {
     name: lang('Scatter Chart'),
     component: Scatter,
     schema: basicSchema,
+    initConfig: commonInit,
   },
 };
 

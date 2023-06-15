@@ -1,11 +1,21 @@
 import React, { createContext, useContext } from 'react';
 import { ISchema } from '@formily/react';
+import { QueryProps } from './ChartRendererProvider';
+import { FieldOption } from '../hooks';
 
-type ChartProps = {
+export type ChartProps = {
   name: string;
   component: React.FC<any>;
   schema?: ISchema;
   transformer?: (data: any) => any;
+  // The initConfig function is used to initialize the configuration of the chart component from the query configuration.
+  initConfig?: (
+    fields: FieldOption[],
+    query: QueryProps,
+  ) => {
+    general?: any;
+    advanced?: any;
+  };
 };
 
 export type usePropsFunc = (props: {
@@ -23,17 +33,19 @@ export type Charts = {
   [type: string]: ChartProps;
 };
 
-/**
- * @params {usePropsFunc} useProps - Accept the information that the chart component needs to render,
- * process it and return the props of the chart component.
- */
-export const ChartLibraryContext = createContext<{
+export type ChartLibraries = {
   [library: string]: {
     enabled: boolean;
     charts: Charts;
     useProps: usePropsFunc;
   };
-}>({});
+};
+
+/**
+ * @params {usePropsFunc} useProps - Accept the information that the chart component needs to render,
+ * process it and return the props of the chart component.
+ */
+export const ChartLibraryContext = createContext<ChartLibraries>({});
 
 export const useChartTypes = (): (ChartProps & {
   key: string;
@@ -58,14 +70,6 @@ export const useChartTypes = (): (ChartProps & {
         },
       ];
     }, []);
-};
-
-export const useChart = (library: string, type: string) => {
-  const ctx = useContext(ChartLibraryContext);
-  return {
-    library: ctx[library],
-    chart: ctx[library]?.charts[type],
-  };
 };
 
 export const useToggleChartLibrary = () => {

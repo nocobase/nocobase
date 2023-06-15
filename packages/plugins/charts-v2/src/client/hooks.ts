@@ -3,11 +3,11 @@ import { ChartConfigContext, SelectedField } from './block/ChartConfigure';
 import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
 import { useTranslation } from 'react-i18next';
-import { operators } from '@nocobase/client';
 import formatters from './block/formatters';
 import transformers from './block/transformers';
 import { lang } from './locale';
 import { ChartRendererProps, QueryProps } from './renderer';
+import { getSelectedFields } from './utils';
 
 export type FieldOption = {
   value: string;
@@ -45,46 +45,21 @@ export const useCompiledFields = (collection?: string) => {
   return Schema.compile(fields, { t }) as FieldOption[];
 };
 
-export const getAllFields = (fields: FieldOption[], field: any) => {
-  // When field alias is set, appends it to the field list
-  const appendAlias = (selectedFields: SelectedField[]) => {
-    return selectedFields
-      .filter((selectedField) => selectedField.alias)
-      .map((selectedField) => {
-        const fieldProps = fields.find((field) => field.name === selectedField.field);
-        return {
-          ...fieldProps,
-          key: selectedField.alias,
-          label: selectedField.alias,
-          value: selectedField.alias,
-        };
-      });
-  };
-  const query = field.query('query').get('value') || {};
-  const measures = query.measures || [];
-  const dimensions = query.dimensions || [];
-  const aliasFields = [...appendAlias(measures), ...appendAlias(dimensions)];
-  // unique
-  const map = new Map([...fields, ...aliasFields].map((item) => [item.value, item]));
-  const allFields = [...map.values()];
-  return allFields;
-};
-
 export const useChartFields =
   (fields: FieldOption[], scope = {}) =>
   (field: any) => {
-    const allFields = getAllFields(fields, field);
+    const query = field.query('query').get('value') || {};
+    const selectedFields = getSelectedFields(fields, query);
     /**
      * chartFields is used for configuring chart fields
      * since the default alias is field display name, we need to set the option values to field display name
      * see also: 'useQueryWithAlias'
      */
-    const chartFields = allFields.map((field) => ({
+    const chartFields = selectedFields.map((field) => ({
       ...field,
       label: Schema.compile(field.label, scope),
       value: field.label,
     }));
-    console.log(chartFields);
     field.dataSource = chartFields;
   };
 
@@ -142,8 +117,9 @@ export const useCollectionOptions = () => {
  */
 export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
   const selectedField = field.query('.field').get('value');
-  const allFields = getAllFields(fields, field);
-  const fieldProps = allFields.find((field) => field.label === selectedField);
+  const query = field.query('query').get('value') || {};
+  const selectedFields = getSelectedFields(fields, query);
+  const fieldProps = selectedFields.find((field) => field.label === selectedField);
   const supports = Object.keys(transformers);
   field.dataSource = supports.map((key) => ({
     label: lang(key),
@@ -182,27 +158,6 @@ export const useTransformers = (field: any) => {
     value: key,
   }));
   field.dataSource = options;
-};
-
-export const useQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
-  // If alias is not set, use field title (display name instead of field name) as alias
-  const appendAlias = (selectedFields: SelectedField[]) => {
-    return selectedFields
-      .filter((item) => item.field)
-      .map((item) => {
-        const field = fields.find((field) => field.name === item.field);
-        return {
-          ...item,
-          alias: item.alias || field?.label,
-        };
-      });
-  };
-  const { dimensions = [], measures = [] } = query || {};
-  return {
-    ...query,
-    dimensions: appendAlias(dimensions),
-    measures: appendAlias(measures),
-  };
 };
 
 export const useFieldTransformer = (transform: ChartRendererProps['transform'], locale = 'en-US') => {
