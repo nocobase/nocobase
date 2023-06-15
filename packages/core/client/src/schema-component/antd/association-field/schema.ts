@@ -50,7 +50,6 @@ export default {
     title: '{{ t("Select record") }}',
     'x-component-props': {
       className: 'nb-record-picker-selector',
-      style: { zIndex: 1100 },
     },
     properties: {
       grid: {
