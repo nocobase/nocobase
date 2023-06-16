@@ -81,7 +81,7 @@ const Configuration = () => {
         items={tabList.map((tab) => {
           return {
             key: tab.value,
-            label: tab.label,
+            label: compile(tab.label),
             children: <tab.component type={tab.value} />,
           };
         })}
