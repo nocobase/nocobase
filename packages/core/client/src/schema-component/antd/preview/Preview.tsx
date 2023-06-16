@@ -2,6 +2,7 @@ import { DeleteOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icon
 import { connect, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Progress, Space } from 'antd';
 import cls from 'classnames';
+import { css } from '@emotion/css';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -44,7 +45,6 @@ export const FileSelector = (props: Props) => {
     onRemove?.(file);
     return true;
   };
-
   const handleSelect = (e) => {
     e.preventDefault();
     e.stopPropagation();

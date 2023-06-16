@@ -833,7 +833,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {options.length > 0 && isAssociationField && (
+      {options.length > 0 && isAssociationField&&fieldMode!=='SubTable' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}
