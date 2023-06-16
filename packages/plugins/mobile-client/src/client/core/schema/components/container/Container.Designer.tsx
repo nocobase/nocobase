@@ -1,13 +1,13 @@
-import { SchemaSettings, useDesignable } from '@nocobase/client';
-import React from 'react';
-import { generateNTemplate, useTranslation } from '../../../../locale';
+import { MenuOutlined } from '@ant-design/icons';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { useNavigate } from 'react-router-dom';
-import { findSchema } from '../../helpers';
+import { SchemaSettings, useDesignable } from '@nocobase/client';
 import { Button } from 'antd';
-import { MenuOutlined } from '@ant-design/icons';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { generateNTemplate, useTranslation } from '../../../../locale';
 import { PageSchema } from '../../common';
+import { findSchema } from '../../helpers';
 
 export const ContainerDesigner = () => {
   const { t } = useTranslation();

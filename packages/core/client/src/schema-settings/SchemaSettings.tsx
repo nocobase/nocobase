@@ -132,10 +132,6 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
 
-  const menu = useMemo(() => {
-    return { items: getMenuItems(() => props.children) };
-  }, [props.children]);
-
   const DropdownMenu = (
     <>
       <Component />
@@ -144,7 +140,7 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
         onOpenChange={(visible) => {
           setVisible(visible);
         }}
-        menu={menu}
+        menu={{ items: getMenuItems(() => props.children) }}
         overlayClassName={overlayClassName}
       >
         {typeof title === 'string' ? <span>{title}</span> : title}
