@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { error } from '@nocobase/utils/client';
 import { Dropdown, Menu, MenuProps, Modal } from 'antd';
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
@@ -28,7 +28,6 @@ const useApplicationVersion = () => {
 export const SettingsMenu: React.FC<{
   redirectUrl?: string;
 }> = (props) => {
-  const { setVisible } = useContext(DropdownVisibleContext);
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
@@ -63,8 +62,8 @@ export const SettingsMenu: React.FC<{
     };
   }, []);
   const appVersion = useApplicationVersion();
-  const editProfile = useEditProfile({ setVisible });
-  const changePassword = useChangePassword({ setVisible });
+  const editProfile = useEditProfile();
+  const changePassword = useChangePassword();
   const switchRole = useSwitchRole();
   const languageSettings = useLanguageSettings();
   const themeSettings = useThemeSettings();

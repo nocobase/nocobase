@@ -1,9 +1,16 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContextProvider, SchemaComponent, useActionContext, useCurrentUserContext, useRequest } from '../';
+import {
+  ActionContextProvider,
+  DropdownVisibleContext,
+  SchemaComponent,
+  useActionContext,
+  useCurrentUserContext,
+  useRequest,
+} from '../';
 import { useAPIClient } from '../api-client';
 
 const useCloseAction = () => {
@@ -107,7 +114,8 @@ const schema: ISchema = {
   },
 };
 
-export const useEditProfile = ({ setVisible: setVisibleOfDropdown }) => {
+export const useEditProfile = () => {
+  const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
 
@@ -117,7 +125,7 @@ export const useEditProfile = ({ setVisible: setVisibleOfDropdown }) => {
       eventKey: 'EditProfile',
       onClick: () => {
         setVisible(true);
-        setVisibleOfDropdown(false);
+        ctx?.setVisible(false);
       },
       label: (
         <>

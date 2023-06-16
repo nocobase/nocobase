@@ -1,9 +1,9 @@
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { MenuProps } from 'antd';
-import React, { useMemo, useState } from 'react';
+import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionContextProvider, SchemaComponent, useActionContext } from '../';
+import { ActionContextProvider, DropdownVisibleContext, SchemaComponent, useActionContext } from '../';
 import { useAPIClient } from '../api-client';
 
 const useCloseAction = () => {
@@ -113,7 +113,8 @@ const schema: ISchema = {
   },
 };
 
-export const useChangePassword = ({ setVisible: setVisibleOfDropdown }) => {
+export const useChangePassword = () => {
+  const ctx = useContext(DropdownVisibleContext);
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
 
@@ -122,8 +123,8 @@ export const useChangePassword = ({ setVisible: setVisibleOfDropdown }) => {
       key: 'password',
       eventKey: 'ChangePassword',
       onClick: () => {
-        setVisibleOfDropdown(false);
         setVisible(true);
+        ctx?.setVisible(false);
       },
       label: (
         <>
