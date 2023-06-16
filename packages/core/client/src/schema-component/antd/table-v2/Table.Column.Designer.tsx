@@ -2,8 +2,9 @@ import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager } from '../../../collection-manager';
-import { GeneralSchemaDesigner, SchemaSettings } from '../../../schema-settings';
+import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
+import { useAssociationFieldContext } from '../association-field/hooks';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -26,7 +27,7 @@ const useLabelFields = (collectionName?: any) => {
 export const TableColumnDesigner = (props) => {
   const { uiSchema, fieldSchema, collectionField } = props;
   const { getInterface, getCollection } = useCollectionManager();
-  const field = useField();
+  const field: any = useField();
   const { t } = useTranslation();
   const columnSchema = useFieldSchema();
   const { dn } = useDesignable();
@@ -36,6 +37,15 @@ export const TableColumnDesigner = (props) => {
   const intefaceCfg = getInterface(collectionField?.interface);
   const targetCollection = getCollection(collectionField?.target);
   const isFileField = isFileCollection(targetCollection);
+  const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
+  const { currentMode, field: tableField } = useAssociationFieldContext();
+  let readOnlyMode = 'editable';
+  if (fieldSchema['x-disabled'] === true) {
+    readOnlyMode = 'readonly';
+  }
+  if (fieldSchema['x-read-pretty'] === true) {
+    readOnlyMode = 'read-pretty';
+  }
   return (
     <GeneralSchemaDesigner disableInitializer>
       <SchemaSettings.ModalItem
@@ -101,7 +111,7 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
-      {intefaceCfg && intefaceCfg.sortable === true && (
+      {intefaceCfg && intefaceCfg.sortable === true && !currentMode && (
         <SchemaSettings.SwitchItem
           title={t('Sortable')}
           checked={field.componentProps.sorter}
@@ -125,7 +135,8 @@ export const TableColumnDesigner = (props) => {
       {['linkTo', 'm2m', 'm2o', 'o2m', 'obo', 'oho', 'snapshot', 'createdBy', 'updatedBy'].includes(
         collectionField?.interface,
       ) &&
-        !isFileField && (
+        !isFileField &&
+        field.readPrety && (
           <SchemaSettings.SwitchItem
             title={t('Enable link')}
             checked={fieldSchema['x-component-props']?.enableLink !== false}
@@ -177,6 +188,98 @@ export const TableColumnDesigner = (props) => {
           }}
         />
       )}
+
+      {isSubTableColumn && !field.readPretty && !uiSchema?.['x-read-pretty'] && (
+        <SchemaSettings.SwitchItem
+          key="required"
+          title={t('Required')}
+          checked={fieldSchema.required as boolean}
+          onChange={(required) => {
+            const schema = {
+              ['x-uid']: fieldSchema['x-uid'],
+            };
+            fieldSchema['required'] = required;
+            schema['required'] = required;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            (tableField as any)?.value.map((_, index) => {
+              field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                f.required = required;
+              });
+            });
+            dn.emit('patch', {
+              schema,
+            });
+            dn.refresh();
+          }}
+        />
+      )}
+      {isSubTableColumn &&
+        !field?.readPretty &&
+        collectionField?.interface !== 'o2m' &&
+        !isPatternDisabled(fieldSchema) && (
+          <SchemaSettings.SelectItem
+            key="pattern"
+            title={t('Pattern')}
+            options={[
+              { label: t('Editable'), value: 'editable' },
+              { label: t('Readonly'), value: 'readonly' },
+              { label: t('Easy-reading'), value: 'read-pretty' },
+            ]}
+            value={readOnlyMode}
+            onChange={(v) => {
+              const schema: ISchema = {
+                ['x-uid']: fieldSchema['x-uid'],
+              };
+              const path = field.path?.splice(field.path?.length - 1, 1);
+              switch (v) {
+                case 'readonly': {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = true;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = true;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readonly = true;
+                      f.disabled = true;
+                    });
+                  });
+                  break;
+                }
+                case 'read-pretty': {
+                  fieldSchema['x-read-pretty'] = true;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = true;
+                  schema['x-disabled'] = false;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readPretty = true;
+                    });
+                  });
+                  break;
+                }
+                default: {
+                  fieldSchema['x-read-pretty'] = false;
+                  fieldSchema['x-disabled'] = false;
+                  schema['x-read-pretty'] = false;
+                  schema['x-disabled'] = false;
+                  (tableField as any)?.value.map((_, index) => {
+                    field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                      f.readPretty = false;
+                      f.disabled + false;
+                    });
+                  });
+                  break;
+                }
+              }
+
+              dn.emit('patch', {
+                schema,
+              });
+
+              dn.refresh();
+            }}
+          />
+        )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
         removeParentsIfNoChildren

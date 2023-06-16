@@ -235,9 +235,10 @@ const InternalRemoteSelect = connect(
       dataSource: 'options',
     },
     (props, field) => {
+      const fieldSchema = useFieldSchema();
       return {
         ...props,
-        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames },
+        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames,...fieldSchema['x-component-props']?.fieldNames },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
