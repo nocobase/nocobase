@@ -70,6 +70,9 @@ describe('hooks', () => {
         get: () => ({
           measures: [
             {
+              field: 'name',
+            },
+            {
               field: 'email',
               alias: 'Email Alias',
             },
@@ -84,11 +87,6 @@ describe('hooks', () => {
         key: 'name',
         label: 'Name',
         value: '{{t("Name")}}',
-      },
-      {
-        key: 'email',
-        label: 'Email',
-        value: '{{t("Email")}}',
       },
       {
         key: 'Email Alias',
@@ -148,17 +146,21 @@ describe('hooks', () => {
       dataSource: [],
       state: {},
     };
+    const query = (path: string, val: string) => ({
+      get: () => {
+        if (path === 'query') {
+          return { measures: [{ field: 'price' }, { field: 'id' }] };
+        }
+        return val;
+      },
+    });
     const field1 = {
-      query: () => ({
-        get: () => 'Price',
-      }),
+      query: (path: string) => query(path, 'Price'),
       setState: (state) => (state1 = state),
       ...field,
     };
     const field2 = {
-      query: () => ({
-        get: () => 'ID',
-      }),
+      query: (path: string) => query(path, 'ID'),
       setState: (state) => (state2 = state),
       ...field,
     };
