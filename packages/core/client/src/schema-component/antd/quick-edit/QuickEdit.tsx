@@ -1,20 +1,14 @@
-import { EditOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormItem } from '@formily/antd';
-import { createForm } from '@formily/core';
+import { Field, createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Popover } from 'antd';
 import React, { useMemo } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 
-export const QuickEdit = observer((props) => {
-  const field: any = useField();
-  const { getCollectionJoinField } = useCollectionManager();
+const Editable = observer((props) => {
+  const field = useField<Field>();
   const fieldSchema = useFieldSchema();
-  const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
-  if (!collectionField) {
-    return null;
-  }
   const schema: any = {
     name: fieldSchema.name,
     'x-collection-field': fieldSchema['x-collection-field'],
@@ -33,7 +27,7 @@ export const QuickEdit = observer((props) => {
     [field.value, fieldSchema['x-component-props']],
   );
   return (
-    <FormItem labelStyle={{ display: 'none' }}>
+    <FormItem {...props} labelStyle={{ display: 'none' }}>
       <Popover
         content={<div style={{ width: '100%', height: '100%', minWidth: 500 }}>{props.children}</div>}
         trigger="click"
@@ -45,16 +39,23 @@ export const QuickEdit = observer((props) => {
           }
         `}
       >
-        <span>
-          <span style={{ display: 'inline', float: 'left', cursor: 'pointer' }}>
-            <EditOutlined style={{ margin: '0 8px', color: !field.valid ? 'red' : null }} />
-          </span>
+        <div style={{ minHeight: 30, padding: '0 8px' }}>
           <FormContext.Provider value={form}>
             <RecursionField schema={schema} name={fieldSchema.name} />
           </FormContext.Provider>
-          <div style={{ clear: 'both' }}></div>
-        </span>
+        </div>
       </Popover>
     </FormItem>
   );
+});
+
+export const QuickEdit = observer((props) => {
+  const field = useField<Field>();
+  const { getCollectionJoinField } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
+  if (!collectionField) {
+    return null;
+  }
+  return field.editable ? <Editable {...props} /> : <FormItem {...props} style={{ padding: '0 8px' }} />;
 });
