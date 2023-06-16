@@ -6,7 +6,7 @@ import { Popover } from 'antd';
 import React, { useMemo, useRef } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 
-export const QuickEdit = observer((props) => {
+export const Editable = observer((props) => {
   const field: any = useField();
   const containerRef = useRef(null);
   const { getCollectionJoinField } = useCollectionManager();
