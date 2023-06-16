@@ -275,7 +275,6 @@ export const sequence: IField = {
       type: 'string',
       'x-component': 'Input',
       'x-component-props': {},
-      'x-read-pretty': true,
     },
   },
   hasDefaultValue: false,
