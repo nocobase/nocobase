@@ -1,17 +1,9 @@
 import { Application } from './Application';
-import { PluginOptions } from './types';
 
-export class Plugin {
-  constructor(protected _options: PluginOptions, protected app: Application) {
+export class Plugin<T = any> {
+  constructor(protected _options: T, protected app: Application) {
+    this._options = _options;
     this.app = app;
-  }
-
-  get options() {
-    return this._options;
-  }
-
-  get name() {
-    return this._options.name;
   }
 
   get pm() {

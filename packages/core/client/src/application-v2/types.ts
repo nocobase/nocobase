@@ -1,37 +1,32 @@
+import { ComponentType } from 'react';
+import { BrowserRouterProps, HashRouterProps, MemoryRouterProps, RouteObject } from 'react-router-dom';
 import { Plugin } from './Plugin';
 
-export interface HashRouterOptions {
-  type: 'hash';
-  basename?: string;
-  // TODO: 补充 hash 参数
-}
-
-export interface BrowserRouterOptions {
+export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type: 'browser';
-  basename?: string;
-  // TODO: 补充 browser 参数
 }
-
-export interface MemoryRouterOptions {
+export interface HashRouterOptions extends Omit<HashRouterProps, 'children'> {
+  type: 'hash';
+}
+export interface MemoryRouterOptions extends Omit<MemoryRouterProps, 'children'> {
   type: 'memory';
-  basename?: string;
-  // TODO: 补充 memory 参数
 }
-
 export type RouterOptions = HashRouterOptions | BrowserRouterOptions | MemoryRouterOptions;
 
-export interface PluginOptions {
-  name: string;
+export type ComponentTypeAndString = ComponentType | string;
+
+export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
+  Component?: ComponentTypeAndString;
 }
 
-export type PluginNameOrClass = string | [typeof Plugin, PluginOptions];
+export type ComponentAndProps<T = any> = [ComponentType, T];
+
+export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
 
 export interface ApplicationOptions {
   apiClient?: any;
-  // List of preset plugins
-  plugins?: PluginNameOrClass[];
-  components?: any;
+  plugins?: PluginType[];
+  components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;
   router?: RouterOptions;
-  importPlugins?: (name: string) => Promise<any>;
 }

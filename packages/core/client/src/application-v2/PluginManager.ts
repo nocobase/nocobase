@@ -1,82 +1,46 @@
 import { Application } from './Application';
 import { Plugin } from './Plugin';
-import { type PluginOptions } from './types';
-
-export interface PluginManagerOptions {
-  plugins: string[];
-}
-
-type PluginNameOrClass = string | typeof Plugin;
+import { PluginType } from './types';
 
 export class PluginManager {
-  protected pluginInstances: Map<string, Plugin>;
-  protected pluginPrepares: Map<string, any>;
-
-  constructor(protected app: Application) {
-    this.pluginInstances = new Map();
-    this.pluginPrepares = new Map();
-    this.addPresetPlugins();
+  protected pluginInstances: Plugin[] = [];
+  protected plugins: PluginType[] = [];
+  private loadStaticPlugin: Promise<void>;
+  constructor(protected _plugins: PluginType[], protected app: Application) {
+    this.app = app;
+    this.loadStaticPlugin = this.initStaticPlugins(_plugins);
   }
 
-  protected addPresetPlugins() {
-    const { plugins } = this.app.options;
-    for (const plugin of plugins) {
-      if (typeof plugin === 'string') {
-        this.prepare(plugin);
-      } else {
-        this.prepare(...plugin);
-      }
+  private async initStaticPlugins(_plugins: PluginType[]) {
+    for await (const plugin of _plugins) {
+      await this.add(plugin);
     }
   }
 
-  prepare(nameOrClass: PluginNameOrClass, options?: PluginOptions) {
-    let opts: any = {};
-    if (typeof nameOrClass === 'string') {
-      opts['name'] = nameOrClass;
-    } else {
-      opts = { ...options, Plugin: nameOrClass };
-    }
-    return this.pluginPrepares.set(opts.name, opts);
+  async add(plugin: PluginType) {
+    // add plugin class
+    this.plugins.push(plugin);
+    const instance = this.getInstance(plugin);
+
+    // add plugin instance
+    this.pluginInstances.push(instance);
+    await instance.afterAdd();
   }
 
-  async add(nameOrClass: PluginNameOrClass, options?: PluginOptions) {
-    let opts: any = {};
-    if (typeof nameOrClass === 'string') {
-      opts['name'] = nameOrClass;
-    } else {
-      opts = { ...options, Plugin: nameOrClass };
-    }
-    const plugin = await this.makePlugin(opts);
-    this.pluginInstances.set(plugin.name, plugin);
-    await plugin.afterAdd();
-    return plugin;
-  }
-
-  async makePlugin(opts) {
-    const { importPlugins } = this.app.options;
-    let P: typeof Plugin = opts.Plugin;
-    if (!P) {
-      P = await importPlugins(opts.name);
-    }
-    if (!P) {
-      throw new Error(`Plugin "${opts.name} " not found`);
-    }
-    console.log(opts, P);
-    return new P(opts, this.app);
+  private getInstance(plugin: PluginType) {
+    const PluginClass = Array.isArray(plugin) ? plugin[0] : plugin;
+    const opts = Array.isArray(plugin) ? plugin[1] : undefined;
+    return new PluginClass(opts, this.app);
   }
 
   async load() {
-    for (const opts of this.pluginPrepares.values()) {
-      const plugin = await this.makePlugin(opts);
-      this.pluginInstances.set(plugin.name, plugin);
-      await plugin.afterAdd();
-    }
+    await this.loadStaticPlugin;
 
-    for (const plugin of this.pluginInstances.values()) {
+    for (const plugin of this.pluginInstances) {
       await plugin.beforeLoad();
     }
 
-    for (const plugin of this.pluginInstances.values()) {
+    for (const plugin of this.pluginInstances) {
       await plugin.load();
     }
   }

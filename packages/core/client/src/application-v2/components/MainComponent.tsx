@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { Application } from '../Application';
-import { RouterProvider } from './RouterProvider';
+import { useApp } from '../hooks';
 
-export const MainComponent = React.memo((props: { app: Application; providers: any[] }) => {
-  const { app, providers } = props;
-  const router = useMemo(() => app.router.createRouter(), []);
-  return <RouterProvider router={router} providers={providers} />;
+export const MainComponent = React.memo(() => {
+  const app = useApp();
+  const Router = useMemo(() => app.router.createRouter(), [app]);
+  const Providers = useMemo(() => app.renderProviders(), [app]);
+  return <Router BaseLayout={Providers} />;
 });
+MainComponent.displayName = 'MainComponent';

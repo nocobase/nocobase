@@ -1,3 +1,3 @@
 export * from './Application';
-export * from './Plugin';
 export * from './compose';
+export * from './Plugin';

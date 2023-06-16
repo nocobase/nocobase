@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { Application } from '../Application';
 import { Plugin } from '../Plugin';
@@ -13,6 +13,10 @@ const Root = () => {
       <Outlet />
     </div>
   );
+};
+
+const Home = () => {
+  return <div>this is Home</div>;
 };
 
 const Team = () => {
@@ -35,7 +39,7 @@ class Test1Plugin extends Plugin {
   async load() {
     this.router.add('root.team', {
       path: 'team',
-      component: 'Team',
+      Component: 'Team',
     });
   }
 }
@@ -44,21 +48,30 @@ class Test2Plugin extends Plugin {
   async load() {
     this.router.add('root.about', {
       path: 'about',
-      component: 'About',
+      Component: 'About',
     });
   }
 }
 
 class NocobasePresetPlugin extends Plugin {
   async afterAdd() {
-    await this.pm.add('test1');
-    await this.pm.add(Test2Plugin, { name: 'test2' });
+    // mock load remote plugin
+    await this.addRemotePlugin();
+  }
+
+  async addRemotePlugin() {
+    await this.pm.add(Test1Plugin);
+    await this.pm.add(Test2Plugin);
   }
 
   async load() {
     this.router.add('root', {
       path: '/',
-      component: 'Root',
+      Component: 'Root',
+    });
+    this.router.add('root.home', {
+      path: '/',
+      Component: 'Home',
     });
   }
 }
@@ -70,21 +83,18 @@ const app = new Application({
   router: {
     type: 'hash',
   },
-  plugins: [[NocobasePresetPlugin, { name: 'nocobase' }]],
-  importPlugins: async (name) => {
-    return {
-      test1: Test1Plugin,
-    }[name];
-  },
-  components: { Root, Team, About },
+  plugins: [NocobasePresetPlugin],
+  components: { Root, Home, Team, About },
 });
 
-app.use((props) => {
+const HelloProvider: FC = (props) => {
   const location = useLocation();
   if (location.pathname === '/hello') {
-    return <div>Hello</div>;
+    return <div>HelloProvider</div>;
   }
-  return props.children;
-});
+  return <>{props.children}</>;
+};
+
+app.use(HelloProvider);
 
 export default app.getRootComponent();

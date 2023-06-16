@@ -1,24 +1,29 @@
-import React from 'react';
+import { useRequest } from 'ahooks';
+import React, { FC, useCallback } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorFallback } from '../../schema-component/antd/error-fallback';
+import { Application } from '../Application';
 import { ApplicationContext } from '../context';
-import { useApp, useLoad } from '../hooks';
+import { MainComponent } from './MainComponent';
 
-const Internal = React.memo(() => {
-  const app = useApp();
-  const loading = useLoad();
-  if (loading) {
-    return app.renderComponent('App.Spin');
-  }
-  return app.renderComponent('App.Main', {
-    app,
-    providers: app.providers,
-  });
-});
+interface AppComponentProps {
+  app: Application;
+}
 
-export const AppComponent = (props) => {
+export const AppComponent: FC<AppComponentProps> = (props) => {
   const { app } = props;
+  const { error, loading } = useRequest(() => app.load(), { refreshDeps: [] });
+  const handleErrors = useCallback((error: Error, info: { componentStack: string }) => {
+    console.log(error, info);
+  }, []);
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Load Plugin Error: {error.message}</div>;
+
   return (
-    <ApplicationContext.Provider value={app}>
-      <Internal />
-    </ApplicationContext.Provider>
+    <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleErrors}>
+      <ApplicationContext.Provider value={app}>
+        <MainComponent />
+      </ApplicationContext.Provider>
+    </ErrorBoundary>
   );
 };

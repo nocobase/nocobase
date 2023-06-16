@@ -1,18 +1,20 @@
-import React from 'react';
+import React, { ComponentType, FC } from 'react';
+import { BlankComponent } from './components/BlankComponent';
+import { ComponentAndProps } from './types';
 
-const Blank = ({ children }) => children || null;
-
-export const compose = (...components: any[]) => {
-  const Root = [...components, Blank].reduce((parent, child) => {
-    const [Parent, parentProps] = Array.isArray(parent) ? parent : [parent];
-    const [Child, childProps] = Array.isArray(child) ? child : [child];
-    return ({ children }) => (
-      <Parent {...parentProps}>
+export const compose = (...components: ComponentAndProps[]) => {
+  const Component = components.reduce<ComponentType>((Parent, child) => {
+    const [Child, childProps] = child;
+    const ComposeComponent = ({ children }) => (
+      <Parent>
         <Child {...childProps}>{children}</Child>
       </Parent>
     );
-  });
-  return (LastChild?: any) => (props?: any) => {
-    return <Root>{LastChild && <LastChild {...props} />}</Root>;
-  };
+    return ComposeComponent;
+  }, BlankComponent);
+
+  return (LastChild?: ComponentType) =>
+    ((props?: any) => {
+      return <Component>{LastChild && <LastChild {...props} />}</Component>;
+    }) as FC;
 };
