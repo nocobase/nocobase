@@ -55,4 +55,6 @@ export default {
   'Are you sure to cancel?': '确定要取消吗？',
   'You changes are not saved. If you click OK, your changes will be lost.':
     '您的更改尚未保存。如果您点击“确定”，您的更改将丢失。',
+  'Same properties set in the form above will be overwritten by this JSON config.':
+    '上面表单中设置的相同属性将被JSON 配置覆盖。',
 };
