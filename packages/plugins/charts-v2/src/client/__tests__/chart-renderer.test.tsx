@@ -10,7 +10,7 @@ describe('ChartRenderer', () => {
         charts={{
           chart: {
             name: 'Chart',
-            component: () => <div>Chart</div>,
+            component: () => <div role="chart">Chart</div>,
           },
         }}
         useProps={(info) => info}
@@ -29,6 +29,6 @@ describe('ChartRenderer', () => {
         </ChartRendererProvider>
       </ChartLibraryProvider>,
     );
-    expect(screen.getByText('Chart')).toBeInTheDocument();
+    expect(screen.getByText('Please configure and run query')).toBeInTheDocument();
   });
 });

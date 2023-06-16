@@ -16,7 +16,6 @@ import { useFieldTransformer, useCompiledFields } from '../hooks';
 import { createRendererSchema, getChart, getQueryWithAlias } from '../utils';
 import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
 import { ChartLibraryContext } from './ChartLibrary';
-import { cloneDeep } from 'lodash';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{

@@ -81,7 +81,7 @@ export const ChartConfigure: React.FC<{
 
   const libraries = useContext(ChartLibraryContext);
   const fields = useFields(collection);
-  const initChartConfig = (overwrite = false) => {
+  const initChart = (overwrite = false) => {
     if (!form.modified) {
       return;
     }
@@ -90,13 +90,13 @@ export const ChartConfigure: React.FC<{
       return;
     }
     const { chart } = getChart(libraries, chartType);
-    const initConfig = chart?.initConfig;
-    if (!initConfig) {
+    const init = chart?.init;
+    if (!init) {
       return;
     }
     const query = form.values.query;
     const selectedFields = getSelectedFields(fields, query);
-    const { general, advanced } = initConfig(selectedFields, query);
+    const { general, advanced } = init(selectedFields, query);
     if (general || overwrite) {
       form.values.config.general = general;
     }
@@ -124,7 +124,7 @@ export const ChartConfigure: React.FC<{
       return createForm({
         values: { config: { chartType }, ...schema?.['x-decorator-props'], collection, data: '' },
         effects: (form) => {
-          onFieldChange('config.chartType', () => initChartConfig(true));
+          onFieldChange('config.chartType', () => initChart(true));
           onFormInit(() => queryReact(form));
         },
       });
@@ -149,7 +149,7 @@ export const ChartConfigure: React.FC<{
           } catch (e) {
             console.log(e);
           }
-          queryReact(form, initChartConfig);
+          queryReact(form, initChart);
           setLoading(false);
         }}
       >

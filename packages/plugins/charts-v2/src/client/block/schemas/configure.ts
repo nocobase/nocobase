@@ -264,6 +264,11 @@ export const querySchema: ISchema = {
                     filter: {
                       type: 'object',
                       'x-decorator': 'FormItem',
+                      'x-decorator-props': {
+                        style: {
+                          overflow: 'scroll',
+                        },
+                      },
                       'x-component': 'Filter',
                       'x-component-props': {
                         options: '{{ filterOptions }}',

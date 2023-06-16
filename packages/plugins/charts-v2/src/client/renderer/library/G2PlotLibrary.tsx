@@ -1,6 +1,8 @@
 import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
 import { lang } from '../../locale';
-import { ChartProps, Charts, usePropsFunc } from '../ChartLibrary';
+import { ChartProps, Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
+import { FieldOption } from '../../hooks';
+import { QueryProps } from '../ChartRendererProvider';
 
 const basicSchema = {
   type: 'object',
@@ -29,53 +31,36 @@ const basicSchema = {
   },
 };
 
-const commonInit: ChartProps['initConfig'] = (fields, { measures, dimensions }) => {
-  if (!measures?.length || !dimensions?.length) {
-    return {};
-  }
-  const xField = fields.find((f) => f.name === dimensions[0].field);
-  const yField = fields.find((f) => f.name === measures[0].field);
-  return {
-    general: {
-      xField: xField?.label,
-      yField: yField?.label,
-    },
-  };
-};
-
 export const G2PlotLibrary: Charts = {
   line: {
     name: lang('Line Chart'),
     component: Line,
     schema: basicSchema,
-    initConfig: commonInit,
+    init: commonInit,
   },
   area: {
     name: lang('Area Chart'),
     component: Area,
     schema: basicSchema,
-    initConfig: commonInit,
+    init: commonInit,
   },
   column: {
     name: lang('Column Chart'),
     component: Column,
     schema: basicSchema,
-    initConfig: commonInit,
+    init: commonInit,
   },
   bar: {
     name: lang('Bar Chart'),
     component: Bar,
     schema: basicSchema,
-    initConfig: (fields, { measures, dimensions }) => {
-      if (!measures?.length || !dimensions?.length) {
-        return {};
-      }
-      const xField = fields.find((f) => f.name === measures[0].field);
-      const yField = fields.find((f) => f.name === dimensions[0].field);
+    init: (fields, { measures, dimensions }) => {
+      const { xField, yField, seriesField } = infer(fields, { measures, dimensions });
       return {
         general: {
-          xField: xField?.label,
-          yField: yField?.label,
+          xField: yField?.label,
+          yField: xField?.label,
+          seriesField: seriesField?.label,
         },
       };
     },
@@ -102,16 +87,12 @@ export const G2PlotLibrary: Charts = {
         },
       },
     },
-    initConfig: (fields, { measures, dimensions }) => {
-      if (!measures?.length || !dimensions?.length) {
-        return {};
-      }
-      const angleField = fields.find((f) => f.name === measures[0].field);
-      const colorField = fields.find((f) => f.name === dimensions[0].field);
+    init: (fields, { measures, dimensions }) => {
+      const { xField, yField } = infer(fields, { measures, dimensions });
       return {
         general: {
-          angleField: angleField?.label,
-          colorField: colorField?.label,
+          colorField: xField?.label,
+          angleField: yField?.label,
         },
       };
     },
@@ -127,13 +108,6 @@ export const G2PlotLibrary: Charts = {
       properties: {
         xField: {
           title: lang('xField'),
-          type: 'string',
-          'x-decorator': 'FormItem',
-          'x-component': 'Select',
-          'x-reactions': '{{ useChartFields }}',
-        },
-        seriesField: {
-          title: lang('seriesField'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Select',
@@ -181,30 +155,25 @@ export const G2PlotLibrary: Charts = {
         },
       },
     },
-    initConfig: (fields, { measures, dimensions }) => {
-      if (!measures?.length || measures.length < 2 || !dimensions?.length) {
-        return {};
-      }
-      const xField = fields.find((f) => f.name === dimensions[0].field);
-      const yField1 = fields.find((f) => f.name === measures[0].field);
-      const yField2 = fields.find((f) => f.name === measures[1].field);
+    init: (fields, { measures, dimensions }) => {
+      const { xField, yFields } = infer(fields, { measures, dimensions });
       return {
         general: {
           xField: xField?.label,
-          yField: [yField1?.label, yField2?.label],
+          yField: yFields?.map((f) => f.label) || [],
         },
       };
     },
   },
-  gauge: {
-    name: lang('Gauge Chart'),
-    component: Gauge,
-  },
+  // gauge: {
+  //   name: lang('Gauge Chart'),
+  //   component: Gauge,
+  // },
   scatter: {
     name: lang('Scatter Chart'),
     component: Scatter,
     schema: basicSchema,
-    initConfig: commonInit,
+    init: commonInit,
   },
 };
 
