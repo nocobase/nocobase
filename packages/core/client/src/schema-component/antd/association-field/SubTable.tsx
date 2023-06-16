@@ -1,5 +1,5 @@
+import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FormItem } from '@formily/antd';
 import { ArrayField } from '@formily/core';
 import { exchangeArrayState } from '@formily/core/esm/shared/internals';
 import { observer } from '@formily/react';
@@ -34,6 +34,9 @@ export const SubTable: any = observer(
     return (
       <div
         className={css`
+          .ant-table-footer {
+            padding: 0 !important;
+          }
           .ant-formily-item-error-help {
             display: none;
           }
@@ -58,48 +61,51 @@ export const SubTable: any = observer(
           }
         `}
       >
-        <FormItem labelStyle={{ display: 'none' }} wrapperStyle={{ marginBottom: -25 }}>
-          <Table
-            className={css`
-              .ant-select-selector {
-                /* min-height: 31px; */
-              }
-              .ant-formily-item {
-                margin-bottom: 0px;
-              }
-              .ant-formily-editable {
-                vertical-align: sub;
-              }
-              .ant-table table {
-                margin-bottom: 20px;
-              }
-              td {
-                padding: 0 !important;
-              }
-            `}
-            bordered
-            size={'small'}
-            field={field}
-            showIndex
-            dragSort={field.editable}
-            showDel={field.editable}
-            pagination={false}
-            rowSelection={{ type: 'none', hideSelectAll: true }}
-          />
-        </FormItem>
-        {field.editable && (
-          <Button
-            type={'dashed'}
-            block
-            onClick={() => {
-              field.value = field.value || [];
-              field.value.push({});
-              field.onInput(field.value);
-            }}
-          >
-            {t('Add new')}
-          </Button>
-        )}
+        <Table
+          className={css`
+            .ant-select-selector {
+              /* min-height: 31px; */
+            }
+            .ant-formily-item.ant-formily-item-feedback-layout-loose {
+              margin-bottom: 0px !important;
+            }
+            .ant-formily-editable {
+              vertical-align: sub;
+            }
+            .ant-table table {
+            }
+            td:not(.ant-table-selection-column) {
+              padding: 0 !important;
+            }
+          `}
+          bordered
+          size={'small'}
+          field={field}
+          showIndex
+          dragSort={field.editable}
+          showDel={field.editable}
+          pagination={false}
+          rowSelection={{ type: 'none', hideSelectAll: true }}
+          footer={() =>
+            field.editable && (
+              <Button
+                type={'text'}
+                block
+                className={css`
+                  display: block;
+                `}
+                onClick={() => {
+                  field.value = field.value || [];
+                  field.value.push({});
+                  field.onInput(field.value);
+                }}
+                icon={<PlusOutlined />}
+              >
+                {/* {t('Add new')} */}
+              </Button>
+            )
+          }
+        />
       </div>
     );
   },
