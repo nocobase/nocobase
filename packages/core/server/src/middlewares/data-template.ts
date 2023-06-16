@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { BelongsToField, BelongsToManyField, Collection, HasManyField, HasOneField } from '@nocobase/database';
+import { Collection, isBelongsToField, isBelongsToManyField, isHasManyField, isHasOneField } from '@nocobase/database';
 
 export const dateTemplate = async (ctx: Context, next) => {
   const { resourceName, actionName } = ctx.action;
@@ -126,19 +126,3 @@ const traverseJSON = (data, options: TraverseOptions) => {
   }
   return result;
 };
-
-function isHasOneField(field: any): field is HasOneField {
-  return field.type === 'hasOne';
-}
-
-function isBelongsToField(field: any): field is BelongsToField {
-  return field.type === 'belongsTo';
-}
-
-function isHasManyField(field: any): field is HasManyField {
-  return field.type === 'hasMany';
-}
-
-function isBelongsToManyField(field: any): field is BelongsToManyField {
-  return field.type === 'belongsToMany';
-}

@@ -14,6 +14,7 @@ import { Database } from '../database';
 import { InheritedCollection } from '../inherited-collection';
 import { ModelEventTypes } from '../types';
 import { snakeCase } from '../utils';
+import { BelongsToField, BelongsToManyField, HasManyField, HasOneField } from '@nocobase/database';
 
 export interface FieldContext {
   database: Database;
@@ -277,4 +278,20 @@ export abstract class Field {
   typeToString() {
     return this.dataType.toString();
   }
+}
+
+export function isHasOneField(field: any): field is HasOneField {
+  return field.type === 'hasOne';
+}
+
+export function isBelongsToField(field: any): field is BelongsToField {
+  return field.type === 'belongsTo';
+}
+
+export function isHasManyField(field: any): field is HasManyField {
+  return field.type === 'hasMany';
+}
+
+export function isBelongsToManyField(field: any): field is BelongsToManyField {
+  return field.type === 'belongsToMany';
 }

@@ -1,4 +1,4 @@
-import { Model } from '@nocobase/database';
+import { Model, RelationField } from '@nocobase/database';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { SnapshotField } from './fields/snapshot-field';
@@ -68,7 +68,7 @@ export class SnapshotFieldPlugin extends Plugin {
     if (!collection) {
       return;
     }
-    const field = collection.getField(targetField);
+    const field = collection.getField<RelationField>(targetField);
     if (field?.target) {
       model.set('targetCollection', field.target);
     }
