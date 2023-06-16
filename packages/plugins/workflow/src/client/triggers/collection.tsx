@@ -3,7 +3,6 @@ import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase
 import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { FieldsSelect } from '../components/FieldsSelect';
 
@@ -168,7 +167,5 @@ export default {
       dataSource: '{{$context.data}}',
     };
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };

@@ -4,6 +4,7 @@ import { FieldContext, FormContext, observer, RecursionField, useField, useField
 import { uid } from '@formily/shared';
 import { ConfigProvider, Spin } from 'antd';
 import React, { useEffect, useMemo } from 'react';
+import { css } from '@emotion/css';
 import { useActionContext } from '..';
 import { useAttach, useComponent } from '../..';
 import { useProps } from '../../hooks/useProps';
@@ -177,7 +178,13 @@ export const Form: React.FC<FormProps> & {
     const formDisabled = disabled || field.disabled;
     return (
       <ConfigProvider componentDisabled={formDisabled}>
-        <form>
+        <form
+          className={css`
+            .ant-formily-item-feedback-layout-loose {
+              margin-bottom: 12px;
+            }
+          `}
+        >
           <Spin spinning={field.loading || false}>
             {form ? (
               <WithForm form={form} {...others} disabled={formDisabled} />

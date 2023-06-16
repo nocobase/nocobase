@@ -31,6 +31,11 @@ const useDragEnd = (props?: any) => {
       return;
     }
 
+    if (activeSchema.parent === overSchema && insertAdjacent === 'beforeEnd') {
+      props?.onDragEnd?.(event);
+      return;
+    }
+
     const dn = createDesignable({
       t,
       api,

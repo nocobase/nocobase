@@ -31,6 +31,7 @@ const useChinaRegionDataSource = (options) => {
             }) || [],
         });
       },
+      manual: true,
     },
   );
 };
