@@ -281,17 +281,17 @@ export abstract class Field {
 }
 
 export function isHasOneField(field: any): field is HasOneField {
-  return field.type === 'hasOne';
+  return field?.type === 'hasOne';
 }
 
 export function isBelongsToField(field: any): field is BelongsToField {
-  return field.type === 'belongsTo';
+  return field?.type === 'belongsTo';
 }
 
 export function isHasManyField(field: any): field is HasManyField {
-  return field.type === 'hasMany';
+  return field?.type === 'hasMany';
 }
 
 export function isBelongsToManyField(field: any): field is BelongsToManyField {
-  return field.type === 'belongsToMany';
+  return field?.type === 'belongsToMany';
 }

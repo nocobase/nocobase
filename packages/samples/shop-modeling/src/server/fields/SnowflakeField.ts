@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 // 引入算法工具包
 import { Snowflake } from 'nodejs-snowflake';
 // 引入字段类型基类
-import { Field, BaseColumnFieldOptions } from '@nocobase/database';
+import { BaseColumnFieldOptions, Field } from '@nocobase/database';
 
 export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
   type: 'snowflake';
@@ -11,9 +11,7 @@ export interface SnowflakeFieldOptions extends BaseColumnFieldOptions {
 }
 
 export class SnowflakeField extends Field {
-  get dataType() {
-    return DataTypes.BIGINT;
-  }
+  generator: Snowflake;
 
   constructor(options: SnowflakeFieldOptions, context) {
     super(options, context);
@@ -23,6 +21,10 @@ export class SnowflakeField extends Field {
       instanceId: instance_id = process.env.INSTANCE_ID ? Number.parseInt(process.env.INSTANCE_ID) : 0,
     } = options;
     this.generator = new Snowflake({ custom_epoch, instance_id });
+  }
+
+  get dataType() {
+    return DataTypes.BIGINT;
   }
 
   setValue = (instance) => {

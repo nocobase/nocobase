@@ -57,7 +57,7 @@ export default class extends Migration {
               return;
             }
             const collection = db.getCollection(collectionName);
-            const memField = collection.getField(fieldName);
+            const memField = collection.getField(fieldName) as any;
             await memField.update(item, { transaction });
           }),
         Promise.resolve(),
