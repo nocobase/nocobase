@@ -1,5 +1,6 @@
 const http = require('http');
 const net = require('net');
+const fs = require('fs');
 
 class CliHttpServer {
   static instance;
@@ -36,8 +37,31 @@ class CliHttpServer {
   }
 
   listenDomainSocket() {
-    this.ipcServer = net.createServer();
-    this.ipcServer.listen(this.socketPath);
+    if (fs.existsSync(this.socketPath)) {
+      fs.unlinkSync(this.socketPath);
+    }
+
+    this.ipcServer = net.createServer((c) => {
+      console.log('client connected');
+
+      c.on('end', () => {
+        console.log('client disconnected');
+      });
+
+      c.on('data', (data) => {
+        const dataAsString = data.toString();
+        const dataObj = JSON.parse(dataAsString);
+        if (dataObj.status == 'worker-ready') {
+          this.server.close();
+
+          c.write('confirm');
+        }
+      });
+    });
+
+    this.ipcServer.listen(this.socketPath, () => {
+      console.log('cli socket server bound');
+    });
   }
 }
 

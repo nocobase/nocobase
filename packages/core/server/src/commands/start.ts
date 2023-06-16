@@ -1,6 +1,7 @@
 import Application from '../application';
 import process from 'process';
 import net from 'net';
+import { Gateway } from '../gateway';
 
 export default (app: Application) => {
   app
@@ -30,15 +31,29 @@ export default (app: Application) => {
         //   Gateway.getInstance().start();
         // });
 
-        const client = net.connect(process.env.MAIN_PROCESS_SOCKET_PATH, () => {
-          console.log(process.env.MAIN_PROCESS_SOCKET_PATH);
+        const client = net.createConnection(
+          {
+            path: process.env.MAIN_PROCESS_SOCKET_PATH,
+          },
+          () => {
+            client.write(
+              JSON.stringify({
+                status: 'worker-ready',
+              }),
+            );
+          },
+        );
 
-          client.write('hello world\r\n');
-          client.end();
+        client.on('data', (data) => {
+          const dataAsString = data.toString();
+          if (dataAsString == 'confirm') {
+            Gateway.getInstance().start();
+          }
         });
 
-        await timeout(10000);
-        console.log('stop gateway server');
+        client.on('end', () => {
+          console.log('disconnected from server');
+        });
       }
     });
 };
