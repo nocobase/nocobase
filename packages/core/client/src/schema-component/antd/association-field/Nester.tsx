@@ -64,6 +64,10 @@ const ToManyNester = observer(
                           setTimeout(() => {
                             field.value.splice(index + 1, 0, {});
                           });
+                          const fields = Object.fromEntries(
+                            Object.entries(field.form.fields).filter(([key, value]) => value),
+                          );
+                          field.form.fields = fields;
                           return field.onInput(field.value);
                         });
                       }}
