@@ -52,4 +52,7 @@ export default {
   Abbreviation: '缩写',
   'Please configure and run query': '请配置并执行数据查询',
   'Please configure chart': '请配置图表',
+  'Are you sure to cancel?': '确定要取消吗？',
+  'You changes are not saved. If you click OK, your changes will be lost.':
+    '您的更改尚未保存。如果您点击“确定”，您的更改将丢失。',
 };

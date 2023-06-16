@@ -1,8 +1,6 @@
 import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
 import { lang } from '../../locale';
-import { ChartProps, Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
-import { FieldOption } from '../../hooks';
-import { QueryProps } from '../ChartRendererProvider';
+import { Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
 
 const basicSchema = {
   type: 'object',
@@ -13,6 +11,7 @@ const basicSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
+      required: true,
     },
     yField: {
       title: lang('yField'),
@@ -20,6 +19,7 @@ const basicSchema = {
       'x-decorator': 'FormItem',
       'x-component': 'Select',
       'x-reactions': '{{ useChartFields }}',
+      required: true,
     },
     seriesField: {
       title: lang('seriesField'),
@@ -77,6 +77,7 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
+          required: true,
         },
         colorField: {
           title: lang('colorField'),
@@ -84,6 +85,7 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
+          required: true,
         },
       },
     },
@@ -112,6 +114,7 @@ export const G2PlotLibrary: Charts = {
           'x-decorator': 'FormItem',
           'x-component': 'Select',
           'x-reactions': '{{ useChartFields }}',
+          required: true,
         },
         yField: {
           title: lang('yField'),
@@ -137,6 +140,7 @@ export const G2PlotLibrary: Charts = {
                     'min-width': '200px',
                   },
                 },
+                required: true,
               },
               remove: {
                 type: 'void',

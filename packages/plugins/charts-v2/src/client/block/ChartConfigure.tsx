@@ -157,6 +157,9 @@ export const ChartConfigure: React.FC<{
       </Button>
     );
   };
+
+  const queryRef = useRef(null);
+  const configRef = useRef(null);
   return (
     <Modal
       title={t('Configure chart')}
@@ -178,6 +181,8 @@ export const ChartConfigure: React.FC<{
             schema,
           });
           setVisible(false);
+          queryRef.current.scrollTop = 0;
+          configRef.current.scrollTop = 0;
           return;
         }
         insert(createRendererSchema(rendererProps), {
@@ -185,8 +190,20 @@ export const ChartConfigure: React.FC<{
           wrap: gridRowColWrap,
         });
       }}
-      onCancel={() => setVisible(false)}
-      maskClosable={false}
+      onCancel={() => {
+        Modal.confirm({
+          title: t('Are you sure to cancel?'),
+          content: t('You changes are not saved. If you click OK, your changes will be lost.'),
+          okButtonProps: {
+            danger: true,
+          },
+          onOk: () => {
+            setVisible(false);
+            queryRef.current.scrollTop = 0;
+            configRef.current.scrollTop = 0;
+          },
+        });
+      }}
       width={'95%'}
       bodyStyle={{
         background: 'rgba(128, 128, 128, 0.08)',
@@ -200,6 +217,7 @@ export const ChartConfigure: React.FC<{
                 height: 'calc(100vh - 300px)',
                 overflow: 'scroll',
               }}
+              ref={queryRef}
             >
               <Tabs
                 tabBarExtraContent={<RunButton />}
@@ -236,6 +254,7 @@ export const ChartConfigure: React.FC<{
                 height: 'calc(100vh - 300px)',
                 overflow: 'scroll',
               }}
+              ref={configRef}
             >
               <Tabs
                 items={[
