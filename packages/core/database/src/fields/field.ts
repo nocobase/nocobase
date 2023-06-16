@@ -14,7 +14,7 @@ import { Database } from '../database';
 import { InheritedCollection } from '../inherited-collection';
 import { ModelEventTypes } from '../types';
 import { snakeCase } from '../utils';
-import { BelongsToField, BelongsToManyField, HasManyField, HasOneField } from '@nocobase/database';
+import { BelongsToField, BelongsToManyField, HasManyField, HasOneField } from './index';
 
 export interface FieldContext {
   database: Database;
