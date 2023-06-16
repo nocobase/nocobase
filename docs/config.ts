@@ -83,7 +83,7 @@ const sidebar = {
           link: 'https://github.com/nocobase/nocobase/blob/main/CHANGELOG.md',
         },
         // '/welcome/release/index',
-        '/welcome/release/v08-changelog',
+        // '/welcome/release/v08-changelog',
         '/welcome/release/v10-changelog',
       ],
     },
