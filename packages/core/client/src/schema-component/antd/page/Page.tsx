@@ -170,7 +170,8 @@ export const Page = (props) => {
             <AntdPageHeader
               className={css`
                 background-color: white;
-                &.has-footer {
+                padding-bottom: 0;
+                &.ant-page-header-has-footer {
                   padding-top: 12px;
                   .ant-page-header-heading-left {
                     /* margin: 0; */
