@@ -2,12 +2,12 @@ import { PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FormDialog, FormLayout } from '@formily/antd';
 import { Schema, SchemaOptionsContext, useFieldSchema } from '@formily/react';
-import { PageHeader as AntdPageHeader, Button, Spin, Tabs } from 'antd';
+import { Button, PageHeader as AntdPageHeader, Spin, Tabs } from 'antd';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useDocumentTitle } from '../../../document-title';
 import { FilterBlockProvider } from '../../../filter-provider/FilterProvider';
 import { Icon } from '../../../icon';
@@ -144,19 +144,18 @@ export const Page = (props) => {
   const hidePageTitle = fieldSchema['x-component-props']?.hidePageTitle;
   const { t } = useTranslation();
   const options = useContext(SchemaOptionsContext);
-  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [activeKey, setActiveKey] = useState(() => {
-    // @ts-ignore
-    return location?.query?.tab || Object.keys(fieldSchema.properties || {}).shift();
-  });
+  const activeKey = useMemo(
+    () => searchParams.get('tab') || Object.keys(fieldSchema.properties || {}).shift(),
+    [fieldSchema.properties, searchParams],
+  );
 
   const [height, setHeight] = useState(0);
 
   const handleErrors = (error) => {
     console.error(error);
   };
-
   return (
     <FilterBlockProvider>
       <div className={pageDesignerCss}>
@@ -191,8 +190,7 @@ export const Page = (props) => {
                       activeKey={activeKey}
                       onTabClick={(activeKey) => {
                         setLoading(true);
-                        setActiveKey(activeKey);
-                        window.history.pushState({}, '', window.location.pathname + `?tab=` + activeKey);
+                        setSearchParams([['tab', activeKey]]);
                         setTimeout(() => {
                           setLoading(false);
                         }, 50);
