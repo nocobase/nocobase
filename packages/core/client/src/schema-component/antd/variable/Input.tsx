@@ -218,7 +218,7 @@ export function Input(props) {
           if (i === 0) {
             prevOption = options.find((item) => item.value === key);
           } else {
-            if (prevOption.loadChildren) {
+            if (prevOption.loadChildren && !prevOption.children?.length) {
               await prevOption.loadChildren(prevOption);
             }
             prevOption = prevOption.children.find((item) => item.value === key);

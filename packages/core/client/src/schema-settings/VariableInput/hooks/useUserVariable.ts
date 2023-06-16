@@ -1,5 +1,5 @@
 import { error } from '@nocobase/utils/client';
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { FieldOption, Option } from '../type';
@@ -9,16 +9,20 @@ interface GetOptionsParams {
   depth: number;
   maxDepth?: number;
   loadChildren?: (option: Option) => Promise<void>;
+  compile: (value: string) => any;
 }
 
-const getChildren = (options: FieldOption[], { schema, depth, maxDepth, loadChildren }: GetOptionsParams): Option[] => {
+const getChildren = (
+  options: FieldOption[],
+  { schema, depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+): Option[] => {
   const result = options
     .map((option): Option => {
       if (!option.target) {
         return {
           key: option.name,
           value: option.name,
-          label: option.title,
+          label: compile(option.title),
           // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
           disabled: schema?.['x-component'] !== option.schema?.['x-component'],
           isLeaf: true,
@@ -33,7 +37,7 @@ const getChildren = (options: FieldOption[], { schema, depth, maxDepth, loadChil
       return {
         key: option.name,
         value: option.name,
-        label: option.title,
+        label: compile(option.title),
         children: [],
         isLeaf: false,
         field: option,
@@ -50,8 +54,6 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
   const { t } = useTranslation();
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-  const schemaRef = useRef(schema);
-  schemaRef.current = schema;
 
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
@@ -66,19 +68,20 @@ export const useUserVariable = ({ schema, maxDepth = 3 }: { schema: any; maxDept
       setTimeout(() => {
         const children =
           getChildren(getFilterOptions(collectionName), {
-            schema: schemaRef.current,
+            schema,
             depth: option.depth + 1,
             maxDepth,
             loadChildren,
+            compile,
           }) || [];
 
         if (children.length === 0) {
           option.disabled = true;
-          resolve(void 0);
+          resolve();
           return;
         }
-        option.children = compile(children);
-        resolve(void 0);
+        option.children = children;
+        resolve();
 
         // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
       }, 5);
