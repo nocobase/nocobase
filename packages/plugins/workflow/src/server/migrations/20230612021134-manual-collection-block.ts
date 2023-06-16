@@ -73,6 +73,15 @@ function migrateSchema(schema = {}): object {
     });
   });
 
+  const customForms = findSchema(root, (item) => {
+    return item['x-decorator'] === 'FormCollectionProvider';
+  });
+  customForms.forEach((item) => {
+    Object.assign(item, {
+      'x-decorator': 'CustomFormBlockProvider',
+    });
+  });
+
   const customFormFields = findSchema(root, (item) => {
     return item['x-interface-options'];
   });
