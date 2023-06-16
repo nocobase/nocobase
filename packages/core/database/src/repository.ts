@@ -761,30 +761,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
   }
 
   async max(options: MaxOptions): Promise<number | undefined> {
-    const transaction = await this.getTransaction(options);
-
-    const queryOptions = this.buildQueryOptions({
+    return this.aggregate({
+      method: 'max',
       ...options,
-      fields: [],
     });
-
-    const { field } = options;
-
-    const results = await this.model.findAll({
-      ...queryOptions,
-      attributes: [
-        [
-          Sequelize.literal(
-            `MAX(${this.database.sequelize.getQueryInterface().quoteIdentifiers(`${this.collection.name}.${field}`)})`,
-          ),
-          'max',
-        ],
-      ],
-      raw: true,
-      transaction,
-    });
-
-    return results[0]['max'];
   }
 
   /**
