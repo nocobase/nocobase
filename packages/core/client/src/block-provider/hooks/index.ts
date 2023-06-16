@@ -175,7 +175,7 @@ export const useCreateActionProps = () => {
             ...overwriteValues,
             ...assignedValues,
           },
-          filterKeys:filterKeys,
+          filterKeys: filterKeys,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
@@ -728,7 +728,7 @@ export const useUpdateActionProps = () => {
       } = actionSchema?.['x-action-settings'] ?? {};
       const assignedValues = parse(originalAssignedValues)({ currentTime: new Date(), currentRecord, currentUser });
       if (!skipValidator) {
-        await form.submit();
+        await form.validate();
       }
       const fieldNames = fields.map((field) => field.name);
       const values = getFormValues(filterByTk, field, form, fieldNames, getField, resource);

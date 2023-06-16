@@ -1,5 +1,5 @@
 import { Field } from '@formily/core';
-import { observer, useField, useFieldSchema, useForm } from '@formily/react';
+import { observer, useField, useForm } from '@formily/react';
 import React from 'react';
 import { SchemaComponentOptions } from '../../';
 import { useAssociationCreateActionProps as useCAP } from '../../../block-provider/hooks';
@@ -17,7 +17,6 @@ const EditableAssociationField = observer(
     const { multiple } = props;
     const field: Field = useField();
     const form = useForm();
-    const fieldSchema = useFieldSchema();
     const { options: collectionField, currentMode } = useAssociationFieldContext();
 
     const useCreateActionProps = () => {
