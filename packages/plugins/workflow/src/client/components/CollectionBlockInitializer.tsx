@@ -39,6 +39,7 @@ function InnerCollectionBlockInitializer({ insert, collection, dataSource, ...pr
           'x-component-props': {
             useProps: '{{useDetailsBlockProps}}',
           },
+          'x-read-pretty': true,
           properties: {
             grid: template || {
               type: 'void',
