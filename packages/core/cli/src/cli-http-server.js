@@ -54,7 +54,7 @@ class CliHttpServer {
         if (dataObj.status == 'worker-ready') {
           this.server.close();
 
-          c.write('confirm');
+          c.write('start');
         }
       });
     });

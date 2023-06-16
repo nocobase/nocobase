@@ -4,7 +4,7 @@ import Application from './application';
 import { AppSupervisor } from './app-supervisor';
 
 type AppSelectorReturn = Application | string | undefined | null;
-type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
+export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
 
 export class Gateway {
   private static instance: Gateway;
@@ -21,6 +21,7 @@ export class Gateway {
     if (!Gateway.instance) {
       Gateway.instance = new Gateway();
     }
+
     return Gateway.instance;
   }
 
@@ -28,6 +29,10 @@ export class Gateway {
    * use main app as default app to handle request
    */
   appSelector: AppSelector = () => 'main';
+
+  setAppSelector(selector: AppSelector) {
+    this.appSelector = selector;
+  }
 
   async requestHandler(req: IncomingMessage, res: OutgoingMessage) {
     const handleApp = await this.appSelector(req);

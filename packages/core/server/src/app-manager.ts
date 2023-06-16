@@ -1,9 +1,5 @@
-import http, { IncomingMessage, ServerResponse } from 'http';
 import Application from './application';
-
-type AppSelectorReturn = Application | string | undefined | null;
-
-type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
+import { AppSelector, Gateway } from './gateway';
 
 export class AppManager {
   public applications: Map<string, Application> = new Map<string, Application>();
@@ -37,8 +33,6 @@ export class AppManager {
     passEventToSubApps('beforeStop', 'stop');
   }
 
-  appSelector: AppSelector = async (req: IncomingMessage) => this.app;
-
   addSubApp(application): Application {
     this.applications.set(application.name, application);
     this.app.emit('afterSubAppAdded', application);
@@ -58,12 +52,7 @@ export class AppManager {
   }
 
   setAppSelector(selector: AppSelector) {
-    this.appSelector = selector;
-  }
-
-  listen(...args) {
-    const server = http.createServer(this.callback());
-    return server.listen(...args);
+    Gateway.getInstance().setAppSelector(selector);
   }
 
   async getApplication(appName: string, options = {}): Promise<null | Application> {
@@ -74,39 +63,5 @@ export class AppManager {
     });
 
     return this.applications.get(appName);
-  }
-
-  callback() {
-    return async (req: IncomingMessage, res: ServerResponse) => {
-      const appManager = this.app.appManager;
-
-      let handleApp;
-      if (this.runningMode === 'single') {
-        handleApp = this.singleAppName;
-      } else {
-        handleApp = (await appManager.appSelector(req)) || appManager.app;
-      }
-
-      if (typeof handleApp === 'string') {
-        handleApp = await appManager.getApplication(handleApp);
-        if (!handleApp) {
-          res.statusCode = 404;
-          return res.end(
-            JSON.stringify({
-              redirectTo: process.env.APP_NOT_FOUND_REDIRECT_TO,
-              errors: [
-                {
-                  message: 'Application Not Found',
-                },
-              ],
-            }),
-          );
-        }
-
-        if (handleApp.stopped) await handleApp.start();
-      }
-
-      handleApp.callback()(req, res);
-    };
   }
 }

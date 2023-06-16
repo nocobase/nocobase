@@ -370,10 +370,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.stopped = false;
   }
 
-  listen(...args): Server {
-    return this.appManager.listen(...args);
-  }
-
   async stop(options: any = {}) {
     if (this.stopped) {
       this.log.warn(`Application ${this.name} already stopped`);

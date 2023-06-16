@@ -25,12 +25,6 @@ export default (app: Application) => {
       });
 
       if (process.env.MAIN_PROCESS_SOCKET_PATH) {
-        // process.on('SIGUSR2', () => {
-        //   console.log("Received 'SIGUSR1' signal, start to restart gateway server");
-        //
-        //   Gateway.getInstance().start();
-        // });
-
         const client = net.createConnection(
           {
             path: process.env.MAIN_PROCESS_SOCKET_PATH,
@@ -46,18 +40,10 @@ export default (app: Application) => {
 
         client.on('data', (data) => {
           const dataAsString = data.toString();
-          if (dataAsString == 'confirm') {
+          if (dataAsString == 'start') {
             Gateway.getInstance().start();
           }
-        });
-
-        client.on('end', () => {
-          console.log('disconnected from server');
         });
       }
     });
 };
-
-function timeout(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
