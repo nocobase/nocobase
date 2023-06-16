@@ -272,10 +272,12 @@ interface SchemaInitializerActionModalProps {
 }
 SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerActionModalProps) {
   const { title, schema, buttonText, onCancel, onSubmit } = props;
-  const form = useForm();
-  const ctx = useActionContext();
 
   const useCancelAction = useCallback(() => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const form = useForm();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ctx = useActionContext();
     return {
       async run() {
         await onCancel?.();
@@ -283,9 +285,13 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         form.reset();
       },
     };
-  }, [ctx, form, onCancel]);
+  }, [onCancel]);
 
   const useSubmitAction = useCallback(() => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const form = useForm();
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const ctx = useActionContext();
     return {
       async run() {
         await form.validate();
@@ -294,7 +300,7 @@ SchemaInitializer.ActionModal = function ActionModal(props: SchemaInitializerAct
         form.reset();
       },
     };
-  }, [ctx, form, onSubmit]);
+  }, [onSubmit]);
   const defaultSchema = useMemo(() => {
     return {
       type: 'void',
