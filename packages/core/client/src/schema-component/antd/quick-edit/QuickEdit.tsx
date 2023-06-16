@@ -9,7 +9,6 @@ import { useCollectionManager } from '../../../collection-manager';
 export const Editable = observer((props) => {
   const field: any = useField();
   const containerRef = useRef(null);
-  const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const schema: any = {
     name: fieldSchema.name,
