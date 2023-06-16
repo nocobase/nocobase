@@ -152,7 +152,16 @@ const InternalFileManager = (props) => {
           }
         }}
       />
-      <ActionContextProvider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
+      <ActionContextProvider
+        value={{
+          openMode: 'drawer',
+          visible: visibleSelector,
+          setVisible: setVisibleSelector,
+          modalProps: {
+            getContainer: others?.getContainer,
+          },
+        }}
+      >
         <RecordPickerProvider {...pickerProps}>
           <CollectionProvider name={collectionField.target}>
             <FormProvider>

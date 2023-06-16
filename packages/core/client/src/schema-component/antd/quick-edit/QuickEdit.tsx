@@ -4,11 +4,12 @@ import { FormItem } from '@formily/antd';
 import { createForm } from '@formily/core';
 import { FormContext, RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Popover } from 'antd';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 
 export const QuickEdit = observer((props) => {
   const field: any = useField();
+  const containerRef = useRef(null);
   const { getCollectionJoinField } = useCollectionManager();
   const fieldSchema = useFieldSchema();
   const collectionField = getCollectionJoinField(fieldSchema['x-collection-field']);
@@ -32,10 +33,26 @@ export const QuickEdit = observer((props) => {
       }),
     [field.value, fieldSchema['x-component-props']],
   );
+  const getContainer = () => {
+    return containerRef.current;
+  };
+
+  const modifiedChildren = React.Children.map(props.children, (child) => {
+    if (React.isValidElement(child)) {
+      //@ts-ignore
+      return React.cloneElement(child, { getContainer });
+    }
+    return child;
+  });
+
   return (
     <FormItem labelStyle={{ display: 'none' }}>
       <Popover
-        content={<div style={{ width: '100%', height: '100%', minWidth: 500 }}>{props.children}</div>}
+        content={
+          <div style={{ width: '100%', height: '100%', minWidth: 500 }}>
+            <div ref={containerRef}>{modifiedChildren}</div>
+          </div>
+        }
         trigger="click"
         placement={'bottomLeft'}
         overlayClassName={css`
