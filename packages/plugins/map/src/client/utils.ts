@@ -1,5 +1,5 @@
 export const getCurrentPosition: () => Promise<{ lat: number; lng: number }> = () => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const defaultLatLng = () => {
       // google company lat and lng
       resolve({ lat: 37.4224764, lng: -122.0842499 });

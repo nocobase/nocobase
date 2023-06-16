@@ -4,7 +4,7 @@ import AMapComponent, { AMapComponentProps } from './AMap';
 import ReadPretty from './ReadPretty';
 import { css } from '@emotion/css';
 import Designer from './Designer';
-import GoogleMapComponent from './GoogleMap';
+import GoogleMapComponent from './google/GoogleMap';
 import { useMapTranslation } from '../locale';
 
 type MapProps = AMapComponentProps;
