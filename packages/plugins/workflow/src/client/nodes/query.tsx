@@ -3,7 +3,6 @@ import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase
 import { appends, collection, filter } from '../schemas/collection';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
@@ -54,7 +53,7 @@ export default {
     return result?.length ? result : null;
   },
   useInitializers(node): SchemaInitializerItemOptions | null {
-    if (!node.config.collection) {
+    if (!node.config.collection || node.config.multiple) {
       return null;
     }
 
@@ -66,7 +65,5 @@ export default {
       dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };
