@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import { useForm } from '@formily/react';
@@ -48,12 +48,11 @@ export type Authenticator = {
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation();
   const navigate = useNavigate();
-  const redirect = location?.['query']?.redirect;
+  const [searchParams] = useSearchParams();
   return useCallback(() => {
-    navigate(redirect || '/admin', { replace: true });
-  }, [redirect, navigate]);
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
 }
 
 export const useSignIn = (authenticator) => {
