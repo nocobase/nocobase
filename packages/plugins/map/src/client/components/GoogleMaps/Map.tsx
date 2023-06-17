@@ -4,7 +4,7 @@ import { useMapConfiguration } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { Loader } from '@googlemaps/js-api-loader';
 import { css } from '@emotion/css';
-import { useCollection } from '@nocobase/client';
+import { useAPIClient, useCollection } from '@nocobase/client';
 import { useHistory } from 'react-router';
 import { Alert, Button, Modal, Spin } from 'antd';
 import { SyncOutlined } from '@ant-design/icons';
@@ -78,17 +78,18 @@ export interface GoogleMapForwardedRefProps {
 
 export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, GoogleMapsComponentProps>(
   (props, ref) => {
-    const { accessKey } = useMapConfiguration(props.mapType) || {};
     const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
+    const { accessKey } = useMapConfiguration(props.mapType) || {};
     const { t } = useMapTranslation();
     const { getField } = useCollection();
     const fieldSchema = useFieldSchema();
     const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
     const map = useRef<google.maps.Map>();
     const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
-
     const [needUpdateFlag, forceUpdate] = useState([]);
     const [errMessage, setErrMessage] = useState('');
+    const api = useAPIClient();
+
     const type = useMemo<MapEditorType>(() => {
       if (props.type) return props.type;
       const collectionField = getField(fieldSchema?.name);
@@ -290,6 +291,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       const loader = new Loader({
         apiKey: accessKey,
         version: 'weekly',
+        language: api.auth.getLocale(),
       });
 
       Promise.all([loader.importLibrary('drawing'), loader.importLibrary('core'), loader.importLibrary('geometry')])

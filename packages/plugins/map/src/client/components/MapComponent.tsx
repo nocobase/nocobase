@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../locale';
-import { AMapForwardedRefProps, AMapComponentProps, AMapComponent } from './AMap';
+import { AMapComponent } from './AMap';
 import { GoogleMapsComponent } from './GoogleMaps';
 
 const MapComponents = {
