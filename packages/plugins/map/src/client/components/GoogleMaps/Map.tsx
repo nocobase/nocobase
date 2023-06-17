@@ -251,7 +251,6 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       if ('transformOptions' in mapping) {
         Object.assign(options, mapping.transformOptions(v));
       } else if ('propertyKey' in mapping) {
-        console.log(v[0], 'www');
         options[mapping.propertyKey] = Array.isArray(v[0])
           ? v.map((item) => {
               return new google.maps.LatLng(item[1], item[0]);
@@ -265,7 +264,6 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
 
     const setOverlay = useMemoizedFn((t = type, v = value, o?: OverlayOptions) => {
       if (!map.current) return;
-      console.log(t, v, o);
       const nextOverlay = getOverlay(t, v, {
         ...o,
         map: map.current,
@@ -322,10 +320,10 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
         map.current = null;
         drawingManagerRef.current?.unbindAll();
       };
-    }, [accessKey, type, zoom]);
+    }, [accessKey, api.auth, type, zoom]);
 
     useEffect(() => {
-      if (!window.google?.maps?.drawing || !type || disabled || drawingManagerRef.current) return;
+      if (!map.current || !type || disabled || drawingManagerRef.current) return;
       createDraw();
     }, [createDraw, disabled, needUpdateFlag, type]);
 
