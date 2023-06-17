@@ -12,14 +12,14 @@ interface SearchProps {
 export const Search = (props: SearchProps) => {
   const { toCenter, mapRef } = props;
   const { t } = useMapTranslation();
-  const placeSearchRef = useRef<google.maps.places.PlacesService>();
+  const placeSearchRef = useRef<google.maps.places.AutocompleteService>();
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
     google.maps
       .importLibrary('places')
       .then((places: google.maps.PlacesLibrary) => {
-        placeSearchRef.current = new places.PlacesService(mapRef.current);
+        placeSearchRef.current = new places.AutocompleteService();
       })
       .catch(() => {
         message.error('Please configure the Google API Key correctly');
@@ -31,19 +31,18 @@ export const Search = (props: SearchProps) => {
       if (!placeSearchRef.current) {
         return;
       }
-
-      placeSearchRef.current.findPlaceFromQuery(
+      placeSearchRef.current.getPlacePredictions(
         {
-          query: keyword || ' ',
-          fields: ['name', 'geometry', 'formatted_address'],
+          input: keyword || ' ',
         },
         (result, status) => {
           if (status === google.maps.places.PlacesServiceStatus.OK) {
             setOptions(
-              result.map((item) => {
+              result.map((item: any) => {
+                const structured = item.structured_formatting;
                 return {
                   ...item,
-                  label: `${item.name}-${item.formatted_address}`,
+                  label: `${structured.main_text}${structured.secondary_text ? ' ' + structured.secondary_text : ''}`,
                   value: item.place_id,
                 };
               }),
@@ -64,9 +63,18 @@ export const Search = (props: SearchProps) => {
     const place = options.find((o) => {
       return o.value === value;
     });
-    if (place?.geometry) {
-      toCenter(place.geometry);
-    }
+    const service = new google.maps.places.PlacesService(mapRef.current);
+    service.getDetails(
+      {
+        placeId: place.place_id,
+        fields: ['geometry'],
+      },
+      (result, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          toCenter(result.geometry.location);
+        }
+      },
+    );
   };
 
   return (
