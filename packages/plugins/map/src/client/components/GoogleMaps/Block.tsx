@@ -30,7 +30,11 @@ const labelClass = css`
 export const GoogleMapsBlock = (props) => {
   const { fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
   const { getField, getPrimaryKey } = useCollection();
-  const field = getField(fieldNames?.field);
+  const { marker: markerName, field: fieldName } = fieldNames || {
+    marker: 'id',
+    field: 'id',
+  };
+  const field = getField(fieldName);
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
   const [record, setRecord] = useState();
@@ -152,7 +156,7 @@ export const GoogleMapsBlock = (props) => {
             fontFamily: 'inherit',
             fontSize: '13px',
             color: '#333',
-            text: fieldNames?.marker ? compile(item[fieldNames.marker]) : undefined,
+            text: fieldNames?.marker ? compile(item[markerName]) : undefined,
           } as google.maps.MarkerLabel,
         });
         overlay.set(OVERLAY_KEY, item[getPrimaryKey()]);
@@ -208,7 +212,7 @@ export const GoogleMapsBlock = (props) => {
       });
       events.forEach((e) => e());
     };
-  }, [dataSource, isMapInitialization, fieldNames, field.type, isConnected]);
+  }, [dataSource, isMapInitialization, markerName, field.type, isConnected]);
 
   useEffect(() => {
     setTimeout(() => {
