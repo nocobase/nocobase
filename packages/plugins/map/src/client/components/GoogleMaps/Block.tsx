@@ -27,7 +27,6 @@ export const GoogleMapsBlock = (props) => {
   const field = getField(fieldNames?.field);
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<GoogleMapForwardedRefProps>();
-  // const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
   const [record, setRecord] = useState();
   const [selectingMode, setSelecting] = useState('');
   const { t } = useMapTranslation();
@@ -157,7 +156,8 @@ export const GoogleMapsBlock = (props) => {
     mapRef.current.setFitView(overlays);
 
     const events = overlays.map((o: google.maps.MVCObject) => {
-      const onClick = (overlay: google.maps.MVCObject, event) => {
+      const onClick = (event) => {
+        const overlay = o as google.maps.Polygon;
         const id = overlay.get(OVERLAY_KEY);
         if (!id) return;
 
@@ -168,18 +168,18 @@ export const GoogleMapsBlock = (props) => {
         // 筛选区块模式
         if (isConnected) {
           setPrevSelected((prev) => {
-            prev && clearSelected(prev);
+            prev && clearSelected(overlay);
             if (prev === o) {
-              clearSelected(o);
+              clearSelected(overlay);
 
               // 删除过滤参数
               doFilter(null);
               return null;
             } else {
-              selectMarker(o);
+              selectMarker(overlay);
               doFilter(data[getPrimaryKey()], (target) => target.field || getPrimaryKey(), '$eq');
             }
-            return o;
+            return overlay;
           });
 
           return;
@@ -189,7 +189,7 @@ export const GoogleMapsBlock = (props) => {
           setRecord(data);
         }
       };
-      o.addListener('click', onClick.bind(null, o));
+      o.addListener('click', onClick);
       return () => o.unbindAll();
     });
 
@@ -307,29 +307,22 @@ const MapBlockDrawer = (props) => {
   );
 };
 
-function clearSelected(marker: google.maps.MVCObject) {
-  // if (marker instanceof google.maps.Marker) {
-  //   marker
-  // }
-  // if ((marker as AMap.Marker).dom) {
-  //   (marker as AMap.Marker).dom.style.filter = 'none';
-  //   // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
-  // } else if ((marker as AMap.Polygon).setOptions) {
-  //   (marker as AMap.Polygon).setOptions({
-  //     strokeColor: '#4e9bff',
-  //     fillColor: '#4e9bff',
-  //   });
-  // }
+function clearSelected(target: google.maps.Polygon) {
+  if (target instanceof google.maps.Marker) {
+    return target.setIcon(getIcon(defaultImage));
+  }
+  target.setOptions({
+    strokeColor: '#4e9bff',
+    fillColor: '#4e9bff',
+  });
 }
 
-function selectMarker(marker: google.maps.MVCObject) {
-  // if ((marker as AMap.Marker).dom) {
-  //   (marker as AMap.Marker).dom.style.filter = 'brightness(1.2) contrast(1.2) hue-rotate(180deg)';
-  //   // AMap.Polygon | AMap.Polyline | AMap.Circle 都有 setOptions 方法
-  // } else if ((marker as AMap.Polygon).setOptions) {
-  //   (marker as AMap.Polygon).setOptions({
-  //     strokeColor: '#F18b62',
-  //     fillColor: '#F18b62',
-  //   });
-  // }
+function selectMarker(target: google.maps.Polygon) {
+  if (target instanceof google.maps.Marker) {
+    return target.setIcon(getIcon(selectedImage));
+  }
+  target.setOptions({
+    strokeColor: '#F18b62',
+    fillColor: '#F18b62',
+  });
 }
