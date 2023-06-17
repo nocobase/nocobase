@@ -8,11 +8,10 @@ import { useMemoizedFn } from 'ahooks';
 import { Alert, Button, Modal, Spin } from 'antd';
 import React, { useEffect, useCallback, useRef, useState, useMemo, useImperativeHandle } from 'react';
 import { useHistory } from 'react-router';
-import { useMapConfiguration } from '../hooks';
-import { useMapTranslation } from '../locale';
-import Search from './Search';
-
-export type MapEditorType = 'point' | 'polygon' | 'lineString' | 'circle';
+import { useMapConfiguration } from '../../hooks';
+import { useMapTranslation } from '../../locale';
+import { MapEditorType } from '../../types';
+import { Search } from './Search';
 
 export interface AMapComponentProps {
   value?: any;
@@ -82,7 +81,7 @@ export interface AMapForwardedRefProps {
   overlay: AMap.Polygon;
 }
 
-const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
+export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
   const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions } = props;
   const { t } = useMapTranslation();
@@ -458,5 +457,3 @@ const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps
     </div>
   );
 });
-
-export default AMapComponent;

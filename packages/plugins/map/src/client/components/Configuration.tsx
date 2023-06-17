@@ -95,7 +95,7 @@ const tabList = MapTypes.map((item) => {
   };
 });
 
-const Configuration = () => {
+export const Configuration = () => {
   const compile = useCompile();
   return (
     <Card bordered>
@@ -111,5 +111,3 @@ const Configuration = () => {
     </Card>
   );
 };
-
-export default Configuration;

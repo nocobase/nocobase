@@ -9,7 +9,7 @@ interface SearchProps {
   mapRef: React.RefObject<google.maps.Map>;
 }
 
-const Search = (props: SearchProps) => {
+export const Search = (props: SearchProps) => {
   const { toCenter, mapRef } = props;
   const { t } = useMapTranslation();
   const placeSearchRef = useRef<google.maps.places.PlacesService>();

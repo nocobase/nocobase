@@ -2,14 +2,14 @@ import { css } from '@emotion/css';
 import { useDebounceFn } from 'ahooks';
 import { message, Select } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useMapTranslation } from '../locale';
+import { useMapTranslation } from '../../locale';
 
 interface SearchProps {
   aMap: any;
   toCenter: (p: any) => void;
 }
 
-const Search = (props: SearchProps) => {
+export const Search = (props: SearchProps) => {
   const { aMap, toCenter } = props;
   const { t } = useMapTranslation();
   const placeSearch = useRef<any>();
@@ -89,5 +89,3 @@ const Search = (props: SearchProps) => {
     </div>
   );
 };
-
-export default Search;
