@@ -186,8 +186,18 @@ import React from 'react';
 `useLocation<type>()` 改为 `useLocation`。
 
 ```diff
-- const location= useLocation<type>();
-+ const location= useLocation();
+- const location = useLocation<type>();
++ const location = useLocation();
+```
+
+`const { query } = useLocation()` 改为 `useSearchParams()`。
+
+```diff
+- const location = useLocation();
+- const query = location.query;
+- const name = query.name;
++ const [searchParams, setSearchParams] = useSearchParams();
++ searchParams.get('name');
 ```
 
 #### path

@@ -115,6 +115,16 @@ import React from 'react';
 + const location= useLocation();
 ```
 
+`const { query } = useLocation()` is changed to `useSearchParams()`。
+
+```diff
+- const location = useLocation();
+- const query = location.query;
+- const name = query.name;
++ const [searchParams, setSearchParams] = useSearchParams();
++ searchParams.get('name');
+```
+
 ### path
 
 All of the following are valid route paths in v6:
