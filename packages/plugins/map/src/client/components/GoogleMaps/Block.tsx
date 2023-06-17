@@ -20,6 +20,13 @@ import { getIcon } from './utils';
 const OVERLAY_KEY = 'google-maps-overlay-id';
 const OVERLAY_SELECtED = 'google-maps-overlay-selected';
 
+const labelClass = css`
+  margin-top: 6px;
+  padding: 2px 4px;
+  background: #fff;
+  border: 1px solid #0000f5;
+`;
+
 export const GoogleMapsBlock = (props) => {
   const { fieldNames, dataSource = [], fixedBlock, zoom, setSelectedRecordKeys } = useProps(props);
   const { getField, getPrimaryKey } = useCollection();
@@ -141,8 +148,10 @@ export const GoogleMapsBlock = (props) => {
           fillColor: '#4e9bff',
           cursor: 'pointer',
           label: {
-            fontSize: '16px',
-            fontWeight: 'bold',
+            className: labelClass,
+            fontFamily: 'inherit',
+            fontSize: '13px',
+            color: '#333',
             text: fieldNames?.marker ? compile(item[fieldNames.marker]) : undefined,
           } as google.maps.MarkerLabel,
         });
