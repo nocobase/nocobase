@@ -45,7 +45,8 @@ export default class PluginFileManager extends Plugin {
 
     initActions(this);
 
-    // this.app.acl.allow('attachments', 'upload', 'loggedIn');
+    this.app.acl.allow('attachments', 'upload', 'loggedIn');
+    this.app.acl.allow('attachments', 'create', 'loggedIn');
 
     // this.app.resourcer.use(uploadMiddleware);
     // this.app.resourcer.use(createAction);
