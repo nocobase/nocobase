@@ -400,6 +400,7 @@ SchemaSettings.Item = function Item(props) {
   const { eventKey } = props;
   const key = useMemo(() => uid(), []);
   const item = {
+    ..._.omit(props, ['children']),
     key,
     eventKey: (eventKey as any) || key,
     onClick: (info) => {
@@ -511,6 +512,7 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   const collection = useCollection();
   const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
+  // eslint-disable-next-line prefer-const
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
 
