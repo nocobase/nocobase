@@ -20,14 +20,16 @@ export const useFieldModeOptions = () => {
     if (!['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m'].includes(collectionField.interface)) return;
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
-      return isReadPretty?[
-        { label: t('Title'), value: 'Select' },
-        { label: t('File manager'), value: 'FileManager' },
-      ]:[
-        { label: t('File manager'), value: 'FileManager' },
-        { label: t('Record picker'), value: 'Picker' },
-        { label: t('Select'), value: 'Select' },
-      ];
+      return isReadPretty
+        ? [
+            { label: t('Title'), value: 'Select' },
+            { label: t('File manager'), value: 'FileManager' },
+          ]
+        : [
+            { label: t('File manager'), value: 'FileManager' },
+            { label: t('Record picker'), value: 'Picker' },
+            { label: t('Select'), value: 'Select' },
+          ];
     }
 
     switch (collectionField.interface) {
@@ -35,18 +37,29 @@ export const useFieldModeOptions = () => {
         return isReadPretty
           ? [
               { label: t('Title'), value: 'Select' },
-              // { label: t('Subtable'), value: 'SubTable' },
+              { label: t('Subtable'), value: 'SubTable' },
               { label: t('Sub-details'), value: 'Nester' },
             ]
           : [
               { label: t('Record picker'), value: 'Picker' },
-              // { label: t('Subtable'), value: 'SubTable' },
+              { label: t('Subtable'), value: 'SubTable' },
               { label: t('Select'), value: 'Select' },
               { label: t('Subform'), value: 'Nester' },
             ];
-
-      case 'm2o':
       case 'm2m':
+        return isReadPretty
+          ? [
+              { label: t('Title'), value: 'Select' },
+              { label: t('Sub-details'), value: 'Nester' },
+              { label: t('Subtable'), value: 'SubTable' },
+            ]
+          : [
+              { label: t('Record picker'), value: 'Picker' },
+              { label: t('Subtable'), value: 'SubTable' },
+              { label: t('Select'), value: 'Select' },
+              { label: t('Subform'), value: 'Nester' },
+            ];
+      case 'm2o':
       case 'linkTo':
         return isReadPretty
           ? [

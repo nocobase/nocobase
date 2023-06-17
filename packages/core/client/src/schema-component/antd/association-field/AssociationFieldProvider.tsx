@@ -28,18 +28,20 @@ export const AssociationFieldProvider = observer(
       [fieldSchema['x-component-props']?.mode],
     );
 
-    const targetKeyValue = useMemo(() => {
-      if (!field.value) return '';
-      if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
-        return field.value[collectionField.targetKey] ?? '';
-      }
-      if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
-        if (Array.isArray(field.value)) {
-          return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
-        }
-      }
-      return '';
-    }, [collectionField, field.value]);
+    // const targetKeyValue = useMemo(() => {
+    //   if (!field.value) return '';
+    //   if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+    //     return field.value[collectionField.targetKey] ?? '';
+    //   }
+    //   if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+    //     if (Array.isArray(field.value)) {
+    //       return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
+    //     }
+    //   }
+    //   return '';
+    // }, [collectionField, field.value]);
+
+    const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
     const [loading, setLoading] = useState(true);
 
@@ -82,9 +84,12 @@ export const AssociationFieldProvider = observer(
           field.value = [{}];
         }
       }
+      if (currentMode === 'SubTable') {
+        field.value = [];
+      }
       setLoading(false);
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentMode, collectionField, targetKeyValue]);
+    }, [currentMode, collectionField, fieldValue]);
 
     if (loading) {
       return null;
