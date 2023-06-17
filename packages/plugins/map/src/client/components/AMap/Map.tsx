@@ -363,7 +363,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
+          <Button type="primary" onClick={() => history.push('/admin/settings/map/configuration')}>
             {t('Go to the configuration page')}
           </Button>
         }

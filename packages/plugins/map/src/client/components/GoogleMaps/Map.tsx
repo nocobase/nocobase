@@ -358,7 +358,7 @@ export const GoogleMapsComponent = React.forwardRef<GoogleMapForwardedRefProps, 
       return (
         <Alert
           action={
-            <Button type="primary" onClick={() => history.push('/admin/settings/map-configuration/configuration')}>
+            <Button type="primary" onClick={() => history.push('/admin/settings/map/configuration?tab=google')}>
               {t('Go to the configuration page')}
             </Button>
           }

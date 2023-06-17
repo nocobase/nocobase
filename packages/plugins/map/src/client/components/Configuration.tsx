@@ -3,6 +3,8 @@ import { useBoolean } from 'ahooks';
 import { Button, Card, Form, Input, message, Tabs } from 'antd';
 import React, { useEffect, useMemo } from 'react';
 import { MapTypes } from '../constants';
+import { useLocation } from 'react-router-dom';
+
 import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
 import { useMapTranslation } from '../locale';
 
@@ -34,6 +36,7 @@ const BaseConfiguration: React.FC<BaseConfigurationProps> = ({ type, children })
       })
       .then((res) => {
         sessionStorage.removeItem(getSSKey(type));
+        disableAction.toggle();
         message.success(t('Saved successfully'));
       })
       .catch((err) => {
@@ -97,9 +100,11 @@ const tabList = MapTypes.map((item) => {
 
 export const Configuration = () => {
   const compile = useCompile();
+  const location = useLocation();
+  const search = new URLSearchParams(location.search);
   return (
     <Card bordered>
-      <Tabs type="card">
+      <Tabs type="card" defaultActiveKey={search.get('tab')}>
         {tabList.map((tab) => {
           return (
             <Tabs.TabPane key={tab.value} tab={compile(tab.label)}>
