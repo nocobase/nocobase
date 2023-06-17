@@ -14,7 +14,6 @@ import { Button, Space } from 'antd';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../constants';
 import { useMapTranslation } from '../../locale';
-import { MapComponent } from '../MapComponent';
 import { GoogleMapForwardedRefProps, GoogleMapsComponent, OverlayOptions } from './Map';
 import { getIcon } from './utils';
 
