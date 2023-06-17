@@ -136,7 +136,7 @@ export const TableColumnDesigner = (props) => {
         collectionField?.interface,
       ) &&
         !isFileField &&
-        field.readPrety && (
+        readOnlyMode === 'read-pretty' && (
           <SchemaSettings.SwitchItem
             title={t('Enable link')}
             checked={fieldSchema['x-component-props']?.enableLink !== false}
