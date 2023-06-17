@@ -120,6 +120,25 @@ const pageWithFixedBlockCss = classNames([
   `,
 ]);
 
+const pageHeaderCss = css`
+  background-color: white;
+  &.ant-page-header-has-footer {
+    padding-top: 12px;
+    padding-bottom: 0;
+    .ant-page-header-heading-left {
+      /* margin: 0; */
+    }
+    .ant-page-header-footer {
+      margin-top: 0;
+    }
+  }
+`;
+
+const height0 = css`
+  font-size: 0;
+  height: 0;
+`;
+
 export const Page = (props) => {
   const { children, ...others } = props;
   const compile = useCompile();
@@ -157,6 +176,8 @@ export const Page = (props) => {
   const handleErrors = (error) => {
     console.error(error);
   };
+
+  const pageHeaderTitle = hidePageTitle ? undefined : fieldSchema.title || compile(title);
   return (
     <FilterBlockProvider>
       <div className={pageDesignerCss}>
@@ -168,21 +189,10 @@ export const Page = (props) => {
         >
           {!disablePageHeader && (
             <AntdPageHeader
-              className={css`
-                background-color: white;
-                padding-bottom: 0;
-                &.ant-page-header-has-footer {
-                  padding-top: 12px;
-                  .ant-page-header-heading-left {
-                    /* margin: 0; */
-                  }
-                  .ant-page-header-footer {
-                    margin-top: 0;
-                  }
-                }
-              `}
+              className={classNames(pageHeaderCss, pageHeaderTitle ? '' : height0)}
               ghost={false}
-              title={hidePageTitle ? undefined : fieldSchema.title || compile(title)}
+              // 如果标题为空的时候会导致 PageHeader 不渲染，所以这里设置一个空白字符，然后再设置高度为 0
+              title={pageHeaderTitle || ' '}
               {...others}
               footer={
                 enablePageTabs && (
