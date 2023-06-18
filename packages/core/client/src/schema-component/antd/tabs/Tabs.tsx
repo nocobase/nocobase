@@ -15,13 +15,7 @@ export const Tabs: any = observer(
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
     const contextProps = useTabsContext();
-
-    const PaneProvider = useMemo(() => {
-      if (contextProps.deep === false) {
-        return TabsContextProvider;
-      }
-      return React.Fragment;
-    }, [contextProps.deep]);
+    const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 
     return (
       <DndContext>
@@ -35,9 +29,9 @@ export const Tabs: any = observer(
           {fieldSchema.mapProperties((schema, key) => {
             return (
               <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
-                <PaneProvider>
+                <PaneRoot active={key === contextProps.activeKey}>
                   <RecursionField name={key} schema={schema} onlyRenderProperties />
-                </PaneProvider>
+                </PaneRoot>
               </AntdTabs.TabPane>
             );
           })}

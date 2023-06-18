@@ -58,70 +58,78 @@ const InternalPage: React.FC = (props) => {
     [history],
   );
 
-  const GlobalActionProvider = useMemo(() => {
-    if (hasGlobalActions) {
-      return ActionBarProvider;
-    }
-    return React.Fragment;
-  }, [hasGlobalActions]);
+  const GlobalActionProvider = useCallback(
+    (props) => {
+      if (hasGlobalActions) {
+        return (
+          <TabsContextProvider>
+            <ActionBarProvider
+              container={props.active && onlyInPage ? document.getElementById('nb-position-container') : null}
+              forceProps={{
+                layout: 'one-column',
+                className: globalActionCSS,
+              }}
+            >
+              {props.children}
+            </ActionBarProvider>
+          </TabsContextProvider>
+        );
+      }
+      return props.children;
+    },
+    [hasGlobalActions, onlyInPage],
+  );
 
   return (
-    <GlobalActionProvider
-      container={hasGlobalActions && onlyInPage ? document.getElementById('nb-position-container') : null}
-      forceProps={{
-        layout: 'one-column',
-        className: globalActionCSS,
-      }}
+    <SortableItem
+      eid="nb-mobile-scroll-wrapper"
+      className={cx(
+        'nb-mobile-page',
+        css`
+          background: #f0f2f5;
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          height: 100%;
+          overflow-x: hidden;
+          overflow-y: auto;
+          padding-bottom: var(--nb-spacing);
+        `,
+      )}
     >
-      <SortableItem
-        eid="nb-mobile-scroll-wrapper"
+      <Designer {...fieldSchema?.['x-designer-props']}></Designer>
+      <div
+        style={{
+          paddingBottom: tabsSchema ? null : 'var(--nb-spacing)',
+        }}
         className={cx(
-          'nb-mobile-page',
+          'nb-mobile-page-header',
           css`
-            background: #f0f2f5;
+            & > .ant-tabs > .ant-tabs-nav {
+              background: #fff;
+              padding: 0 var(--nb-spacing);
+            }
             display: flex;
             flex-direction: column;
-            width: 100%;
-            height: 100%;
-            overflow-x: hidden;
-            overflow-y: auto;
-            padding-bottom: var(--nb-spacing);
           `,
         )}
       >
-        <Designer {...fieldSchema?.['x-designer-props']}></Designer>
-        <div
-          style={{
-            paddingBottom: tabsSchema ? null : 'var(--nb-spacing)',
+        <RecursionField
+          schema={fieldSchema}
+          filterProperties={(s) => {
+            return 'MHeader' === s['x-component'];
           }}
-          className={cx(
-            'nb-mobile-page-header',
-            css`
-              & > .ant-tabs > .ant-tabs-nav {
-                background: #fff;
-                padding: 0 var(--nb-spacing);
-              }
-              display: flex;
-              flex-direction: column;
-            `,
-          )}
-        >
+        ></RecursionField>
+        <TabsContextProvider PaneRoot={GlobalActionProvider} activeKey={query.get('tab')} onChange={onTabsChange}>
           <RecursionField
             schema={fieldSchema}
             filterProperties={(s) => {
-              return 'MHeader' === s['x-component'];
+              return 'Tabs' === s['x-component'];
             }}
           ></RecursionField>
-          <TabsContextProvider deep={false} activeKey={query.get('tab')} onChange={onTabsChange}>
-            <RecursionField
-              schema={fieldSchema}
-              filterProperties={(s) => {
-                return 'Tabs' === s['x-component'];
-              }}
-            ></RecursionField>
-          </TabsContextProvider>
-        </div>
-
+        </TabsContextProvider>
+      </div>
+      <GlobalActionProvider>
         {!tabsSchema && (
           <RecursionField
             schema={fieldSchema}
@@ -130,8 +138,8 @@ const InternalPage: React.FC = (props) => {
             }}
           ></RecursionField>
         )}
-      </SortableItem>
-    </GlobalActionProvider>
+      </GlobalActionProvider>
+    </SortableItem>
   );
 };
 

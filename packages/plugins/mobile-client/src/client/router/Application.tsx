@@ -103,6 +103,7 @@ const MApplication: React.FC = (props) => {
                 {props.children}
               </RemoteSchemaComponent>
             )}
+            {/* Global action will insert here */}
             <div id="nb-position-container"></div>
           </div>
         </ActionContextProvider>

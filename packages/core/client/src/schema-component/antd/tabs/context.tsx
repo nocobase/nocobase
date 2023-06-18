@@ -2,7 +2,7 @@ import { TabsProps } from 'antd';
 import React from 'react';
 
 interface TabsContextProps extends TabsProps {
-  deep?: boolean;
+  PaneRoot?: React.FC<any>;
 }
 const TabsContext = React.createContext<TabsContextProps>({});
 
