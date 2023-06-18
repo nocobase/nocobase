@@ -811,7 +811,7 @@ export const useCollectionDataSourceItems = (componentName) => {
   const { getTemplatesByCollection } = useSchemaTemplateManager();
   const { searchValue, setSearchValue } = useContext(SchemaInitializerButtonContext);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const onChange = useCallback(_.debounce(setSearchValue, 200), [setSearchValue]);
+  const onChange = useCallback(_.debounce(setSearchValue, 300), [setSearchValue]);
 
   if (!setSearchValue) {
     error('useCollectionDataSourceItems: please use in SchemaInitializerButtonContext and provide setSearchValue');
