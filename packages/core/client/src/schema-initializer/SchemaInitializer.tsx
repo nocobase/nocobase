@@ -26,7 +26,12 @@ const overlayClassName = css`
 const defaultWrap = (s: ISchema) => s;
 
 export const SchemaInitializerItemContext = createContext(null);
-export const SchemaInitializerButtonContext = createContext<any>({});
+export const SchemaInitializerButtonContext = createContext<{
+  visible?: boolean;
+  setVisible?: (v: boolean) => void;
+  searchValue?: string;
+  setSearchValue?: (v: string) => void;
+}>({});
 
 export const SchemaInitializer = () => null;
 
@@ -52,6 +57,7 @@ SchemaInitializer.Button = observer(
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
     const [shouldRender, setShouldRender] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
 
     if (!designable && props.designable !== true) {
       return null;
@@ -167,7 +173,7 @@ SchemaInitializer.Button = observer(
     const menuItems = renderItems(items);
 
     return (
-      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
+      <SchemaInitializerButtonContext.Provider value={{ visible, setVisible, searchValue, setSearchValue }}>
         <CollectionComponent />
         <Dropdown
           className={classNames('nb-schema-initializer-button')}
@@ -175,11 +181,12 @@ SchemaInitializer.Button = observer(
           overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
           onOpenChange={() => {
+            // 如果不清空输入框的值，那么下次打开的时候会出现上次输入的值
+            setSearchValue('');
             setShouldRender(false);
             setVisible(false);
           }}
           mouseEnterDelay={0}
-          mouseLeaveDelay={0.05}
           menu={{
             style: {
               maxHeight: '60vh',
