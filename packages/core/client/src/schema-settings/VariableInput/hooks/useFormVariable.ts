@@ -66,6 +66,9 @@ export const useFormVariable = ({
   const fields = getFilterOptions(rootCollection);
 
   const children = useMemo(() => {
+    if (!schema) {
+      return [];
+    }
     const allowFields = fields.filter((field) => {
       return Object.keys(blockForm.fields).some((name) => name.includes(field.name));
     });
@@ -79,15 +82,13 @@ export const useFormVariable = ({
     );
   }, [operator, schema]);
 
-  return useMemo(() => {
-    return children.length > 0
-      ? compile({
-          label: `{{t("Current form")}}`,
-          value: '$form',
-          key: '$form',
-          disabled: children.every((option) => option.disabled),
-          children: children,
-        })
-      : null;
-  }, [children]);
+  return children.length > 0
+    ? compile({
+        label: `{{t("Current form")}}`,
+        value: '$form',
+        key: '$form',
+        disabled: children.every((option) => option.disabled),
+        children: children,
+      })
+    : null;
 };
