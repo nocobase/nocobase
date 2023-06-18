@@ -15,12 +15,18 @@ const Root = () => {
   );
 };
 
-const Team = () => {
+const Nested = () => {
   return (
     <div>
-      Team <Link to={'/about'}>About</Link>
+      <Link to={'/'}>Home</Link>
+      <Link to={'/about'}>About</Link>
+      <Outlet />
     </div>
   );
+};
+
+const Team = ({ router }) => {
+  return <div>Team: {router.render()}</div>;
 };
 
 const About = () => {
@@ -33,9 +39,18 @@ const About = () => {
 
 class Test1Plugin extends Plugin {
   async load() {
+    const nestedRouter = this.app.createRouter({ type: 'memory' });
+    nestedRouter.add('home', {
+      path: '/',
+      component: Nested,
+    });
+    nestedRouter.add('home.about', {
+      path: '/about',
+      component: About,
+    });
     this.router.add('root.team', {
       path: 'team',
-      component: 'Team',
+      component: () => <Team router={nestedRouter} />,
     });
   }
 }

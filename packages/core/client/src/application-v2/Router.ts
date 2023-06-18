@@ -1,15 +1,25 @@
 import set from 'lodash/set';
-import { createBrowserRouter, createHashRouter, createMemoryRouter } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, HashRouter, MemoryRouter } from 'react-router-dom';
 import { Application } from './Application';
+import { InternalRouter } from './components/InternalRouter';
 import { RouterOptions } from './types';
+
+const defaultRouterTypes = new Map();
+
+defaultRouterTypes.set('hash', HashRouter);
+defaultRouterTypes.set('browser', BrowserRouter);
+defaultRouterTypes.set('memory', MemoryRouter);
 
 export class Router {
   protected app: Application;
   protected routes: Map<string, any>;
+  protected routerTypes: Map<string, any>;
 
   constructor(protected options?: RouterOptions, protected context?: any) {
     this.routes = new Map<string, any>();
     this.app = context.app;
+    this.routerTypes = defaultRouterTypes;
   }
 
   getRoutes() {
@@ -36,22 +46,14 @@ export class Router {
     return toArr(routes);
   }
 
-  createRouter() {
-    const { type, ...opts } = this.options;
+  render(props?: any) {
     const routes = this.getRoutes();
-    if (routes.length === 0) {
-      return null;
-    }
-    switch (type) {
-      case 'hash':
-        return createHashRouter(routes, opts) as any;
-      case 'browser':
-        return createBrowserRouter(routes, opts) as any;
-      case 'memory':
-        return createMemoryRouter(routes, opts) as any;
-      default:
-        return createMemoryRouter(routes, opts) as any;
-    }
+    return React.createElement(InternalRouter, {
+      Router: this.routerTypes.get(this.options.type),
+      routes,
+      ...this.options,
+      ...props,
+    });
   }
 
   add(name: string, route: any) {

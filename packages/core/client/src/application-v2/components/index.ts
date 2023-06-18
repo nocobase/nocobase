@@ -3,7 +3,6 @@ import { MainComponent } from './MainComponent';
 
 export * from './AppComponent';
 export * from './MainComponent';
-export * from './RouterProvider';
 
 export const defaultAppComponents = {
   App: {

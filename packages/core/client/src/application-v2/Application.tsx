@@ -10,7 +10,7 @@ import { Plugin } from './Plugin';
 import { PluginManager } from './PluginManager';
 import { Router } from './Router';
 import { AppComponent, defaultAppComponents } from './components';
-import { ApplicationOptions } from './types';
+import { ApplicationOptions, RouterOptions } from './types';
 
 export class Application {
   providers: any[];
@@ -28,7 +28,7 @@ export class Application {
     this.scopes = merge(this.scopes, _options.scopes || {});
     this.components = merge(defaultAppComponents, _options.components || {});
     this.apiClient = new APIClient(_options.apiClient);
-    this.router = new Router(_options.router, { app: this });
+    this.router = this.createRouter(_options.router);
     this.pm = new PluginManager(this);
     this.useDefaultProviders();
   }
@@ -46,8 +46,8 @@ export class Application {
     return this.plugins.get(name);
   }
 
-  getComponent(name: string) {
-    return get(this.components, name);
+  getComponent(name: any) {
+    return get(this.components, name) || name;
   }
 
   renderComponent(name: string, props = {}) {
@@ -66,6 +66,10 @@ export class Application {
 
   registerScopes(scopes: Record<string, any>) {
     this.scopes = merge(this.scopes, scopes);
+  }
+
+  createRouter(options: RouterOptions) {
+    return new Router(options, { app: this });
   }
 
   use(component: any, props?: any) {
