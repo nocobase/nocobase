@@ -18,7 +18,6 @@ describe('workflow > instructions > update', () => {
     PostRepo = db.getCollection('posts').repository;
 
     workflow = await WorkflowModel.create({
-      title: 'test workflow',
       enabled: true,
       type: 'collection',
       config: {
@@ -54,51 +53,137 @@ describe('workflow > instructions > update', () => {
 
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
-      expect(job.result.published).toBe(true);
+      expect(job.result).toBe(1);
 
       const updatedPost = await PostRepo.findById(post.id);
       expect(updatedPost.published).toBe(true);
     });
+
+    it('params: from job of node', async () => {
+      const n1 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              title: 'test',
+            },
+          },
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: `{{$jobsMapByNodeId.${n1.id}.id}}`,
+            },
+            values: {
+              title: 'changed',
+            },
+          },
+        },
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
+      // NOTE: the result of post immediately created will not be changed by workflow
+      const { id } = await PostRepo.create({ values: { title: 'test' } });
+
+      await sleep(500);
+
+      // should get from db
+      const post = await PostRepo.findById(id);
+      expect(post.title).toBe('changed');
+    });
   });
 
-  it('params: from job of node', async () => {
-    const n1 = await workflow.createNode({
-      type: 'query',
-      config: {
-        collection: 'posts',
-        params: {
-          filter: {
-            title: 'test',
+  describe('update batch', () => {
+    it('individualHooks off should not trigger other workflow', async () => {
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}',
+            },
+            values: {
+              published: true,
+            },
+            individualHooks: false,
           },
         },
-      },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      expect(post.published).toBe(false);
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.published).toBe(true);
+
+      const w2Exes = await w2.getExecutions();
+      expect(w2Exes.length).toBe(0);
     });
 
-    const n2 = await workflow.createNode({
-      type: 'update',
-      config: {
-        collection: 'posts',
-        params: {
-          filter: {
-            id: `{{$jobsMapByNodeId.${n1.id}.id}}`,
-          },
-          values: {
-            title: 'changed',
+    it('individualHooks on should trigger other workflow', async () => {
+      const w2 = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 2,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}',
+            },
+            values: {
+              published: true,
+            },
+            individualHooks: true,
           },
         },
-      },
-      upstreamId: n1.id,
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      expect(post.published).toBe(false);
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.published).toBe(true);
+
+      const w2Exes = await w2.getExecutions();
+      expect(w2Exes.length).toBe(1);
     });
-
-    await n1.setDownstream(n2);
-
-    // NOTE: the result of post immediately created will not be changed by workflow
-    const { id } = await PostRepo.create({ values: { title: 'test' } });
-
-    await sleep(500);
-
-    // should get from db
-    const post = await PostRepo.findById(id);
-    expect(post.title).toBe('changed');
   });
 });
