@@ -4,7 +4,7 @@
 
 ### Docker 安装的升级
 
-无变化
+无变化，升级参考 [Docker 镜像升级指南](/welcome/getting-started/upgrading/docker-compose)
 
 ### 源码安装的升级
 
@@ -19,62 +19,34 @@ yarn rimraf -rf packages/*/*/{lib,esm,es,dist,node_modules}
 yarn rimraf -rf node_modules
 ```
 
+更多详情参考 [Git 源码升级指南](/welcome/getting-started/upgrading/git-clone)
+
 ### create-nocobase-app 安装的升级
 
-建议直接重新 `yarn create nocobase-app`，再更新 .env 配置
+建议 `yarn create` 重新下载新版本，再更新 .env 配置，更多详情参考 [大版本升级指南](/welcome/getting-started/upgrading/create-nocobase-app#大版本升级)
 
-## 功能特色
+## 即将遗弃和可能不兼容的变化
 
-Q2 季度主要的新特色包括：
+### 子表格字段组件
 
-- 关系字段组件改进
-  - 下拉菜单
-  - 数据选择器
-  - 子表单
-  - 子表格
-  - 文件管理器
-  - 子详情（阅读模式）
-  - 标题（阅读模式）
-- 快捷新增关系数据
-- 表单数据模板
-- 复制操作
-- 移动端插件
-- 列表区块
-- 网格卡片区块
-- 用户认证插件（支持不同的登录方式）
-- 筛选数据范围支持变量
-- 工作流
-  - 人工节点升级
-  - 聚合查询字段
-  - 循环节点
-- 文件管理器改进
-  - 文件表
-  - 附件字段配置
-  - 文件管理器组件
+不兼容新版，区块字段需要删除重配（只需要 UI 重配）
 
-### 即将遗弃和可能不兼容的变化
+### 附件上传接口的变更
 
-#### 子表格字段组件
+除了内置的 attachments 表以外，用户也可以自定义文件表，附件的上传接口由 `/api/attachments:upload` 变更为 `/api/<file-collection>:create`，upload 已废弃，依旧兼容 v0.10，但会在下个大版本里移除。
 
-不兼容新版，区块字段需要删除（只需要 UI 重配）
+### 登录、注册接口的变更
+
+nocobase 内核提供了更强大的 [auth 模块](https://github.com/nocobase/nocobase/tree/main/packages/plugins/auth)，用户登录、注册、校验、注销接口变更如下：
 
 ```bash
-这是一张图
+/api/users:signin -> /api/auth:signIn
+/api/users:signup -> /api/auth:signUp
+/api/users:signout -> /api/auth:signOut
+/api/users:check -> /api/auth:check
 ```
 
-#### 附件上传 API 变更
-
-```bash
-这是一段说明
-```
-
-#### 登录、注册接口的变更
-
-```bash
-这是一段说明
-```
-
-#### 其他补充
+注：以上 users 接口，已废弃，依旧兼容 v0.10，但会在下个大版本里移除。
 
 ## 第三方插件升级指南
 
@@ -186,18 +158,8 @@ import React from 'react';
 `useLocation<type>()` 改为 `useLocation`。
 
 ```diff
-- const location = useLocation<type>();
-+ const location = useLocation();
-```
-
-`const { query } = useLocation()` 改为 `useSearchParams()`。
-
-```diff
-- const location = useLocation();
-- const query = location.query;
-- const name = query.name;
-+ const [searchParams, setSearchParams] = useSearchParams();
-+ searchParams.get('name');
+- const location= useLocation<type>();
++ const location= useLocation();
 ```
 
 #### path
