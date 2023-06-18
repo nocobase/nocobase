@@ -15,12 +15,12 @@ interface MutexPack {
 }
 
 export interface MutexNameHelperConfig {
-  db_dialect?: string;
-  db_host?: string;
-  db_port?: number;
-  db_storage?: string;
-  db_name?: string;
-  table_name?: string;
+  dbDialect?: string;
+  dbHost?: string;
+  dbPort?: number;
+  dbStorage?: string;
+  dbName?: string;
+  tableName?: string;
   other?: string;
   action?: string;
 }
@@ -145,14 +145,14 @@ export class MutexManager {
    */
   public static nameHelper(config: MutexNameHelperConfig): string {
     const prefix = 'mutex_manager:';
-    if (config.db_storage) {
-      config.db_storage = _.last(_.split(config.db_storage, '/'));
-      config.db_storage = _.last(_.split(config.db_storage, '\\')); // for windows
+    if (config.dbStorage) {
+      config.dbStorage = _.last(_.split(config.dbStorage, '/'));
+      config.dbStorage = _.last(_.split(config.dbStorage, '\\')); // for windows
     }
 
-    let name = `${prefix}${config.db_dialect ?? ''}_${config.db_host ?? ''}_${config.db_port ?? ''}_${
-      config.db_storage ?? ''
-    }_${config.db_name ?? ''}_${config.table_name ?? ''}_${config.other ?? ''}_${config.action ?? ''}`;
+    let name = `${prefix}${config.dbDialect ?? ''}_${config.dbHost ?? ''}_${config.dbPort ?? ''}_${
+      config.dbStorage ?? ''
+    }_${config.dbName ?? ''}_${config.tableName ?? ''}_${config.other ?? ''}_${config.action ?? ''}`;
 
     name = name.replace(/_+/g, '_');
     name = name.replace(/_$/, '');

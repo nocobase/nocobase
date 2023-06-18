@@ -26,11 +26,11 @@ export class SortField extends Field {
     }
 
     const mutexName = MutexManager.nameHelper({
-      db_dialect: this.database.options.dialect,
-      db_host: this.database.options.host,
-      db_port: this.database.options.port,
-      db_storage: this.database.options.storage,
-      db_name: this.database.options.database,
+      dbDialect: this.database.options.dialect,
+      dbHost: this.database.options.host,
+      dbPort: this.database.options.port,
+      dbStorage: this.database.options.storage,
+      dbName: this.database.options.database,
       other: 'sort',
       action: 'setSortValue',
     });
