@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
-import { useCollectionManager, useCollection } from '../../../collection-manager';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
-import { useFormBlockContext, useBlockRequestContext } from '../../../';
-import { useField, useForm, useFieldSchema, Schema } from '@formily/react';
+import { Schema } from '@formily/react';
 
 interface GetOptionsParams {
   schema: any;
@@ -75,11 +73,11 @@ export const useFormVariable = ({
       getChildren(allowFields, {
         schema,
         operator,
-        maxDepth: level || 8,
+        maxDepth: level || 3,
         getFilterOptions,
       }) || []
     );
-  }, [operator, schema, blockForm]);
+  }, [operator, schema]);
 
   return useMemo(() => {
     return children.length > 0
