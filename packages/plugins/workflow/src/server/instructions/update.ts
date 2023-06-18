@@ -4,7 +4,7 @@ import { JOB_STATUS } from '../constants';
 
 export default {
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const { collection, multiple = false, params = {} } = node.config;
+    const { collection, params = {} } = node.config;
 
     const repo = (<typeof FlowNodeModel>node.constructor).database.getRepository(collection);
     const options = processor.getParsedValue(params, node);
@@ -17,7 +17,7 @@ export default {
     });
 
     return {
-      result: multiple ? result : result[0] || null,
+      result: result.length ?? result,
       status: JOB_STATUS.RESOLVED,
     };
   },

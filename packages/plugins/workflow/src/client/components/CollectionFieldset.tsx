@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { observer, useForm, useField } from '@formily/react';
 import { Input, Button, Dropdown, Menu, Form } from 'antd';
 import { PlusOutlined, CloseCircleOutlined } from '@ant-design/icons';
@@ -32,25 +32,28 @@ function AssociationInput(props) {
   return <Input {...props} value={value} onChange={onChange} />;
 }
 
+export function useCollectionUIFields(collection) {
+  const { getCollectionFields } = useCollectionManager();
+
+  return getCollectionFields(collection).filter(
+    (field) => !field.hidden && (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false),
+  );
+}
+
 // NOTE: observer for watching useProps
 const CollectionFieldSet = observer(
-  ({ value, disabled, onChange }: any) => {
+  ({ value, disabled, onChange, filter }: any) => {
     const { t } = useTranslation();
     const compile = useCompile();
     const form = useForm();
-    const { getCollection, getCollectionFields } = useCollectionManager();
-    const { values: config } = useForm();
+    const { getCollection } = useCollectionManager();
+    const scope = useWorkflowVariableOptions();
+    const { values: config } = form;
     const collectionName = config?.collection;
-    const fields = getCollectionFields(collectionName).filter(
-      (field) =>
-        !field.hidden &&
-        (field.uiSchema ? !field.uiSchema['x-read-pretty'] : false) &&
-        // TODO: should use some field option but not type to control this
-        !['formula'].includes(field.type),
-    );
+    const collectionFields = useCollectionUIFields(collectionName);
+    const fields = filter ? collectionFields.filter(filter.bind(config)) : collectionFields;
 
     const unassignedFields = fields.filter((field) => !value || !(field.name in value));
-    const scope = useWorkflowVariableOptions();
     const mergedDisabled = disabled || form.disabled;
 
     return (

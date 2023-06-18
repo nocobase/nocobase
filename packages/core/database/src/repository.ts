@@ -609,6 +609,45 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
 
     const queryOptions = this.buildQueryOptions(options);
 
+    // NOTE:
+    // 1. better to be moved to separated API like bulkUpdate/updateMany
+    // 2. strictly `false` comparing for compatibility of legacy api invoking
+    if (options.individualHooks === false) {
+      const { model: Model } = this.collection;
+      // @ts-ignore
+      const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+      // NOTE:
+      // 1. find ids first for reusing `queryOptions` logic
+      // 2. estimation memory usage will be N * M bytes (N = rows, M = model object memory)
+      // 3. would be more efficient up to 100000 ~ 1000000 rows
+      const rows = await Model.findAll({
+        ...queryOptions,
+        attributes: [primaryKeyField],
+        group: `${Model.name}.${primaryKeyField}`,
+        include: queryOptions.include.filter((include) => {
+          return (
+            Object.keys(include.where || {}).length > 0 ||
+            JSON.stringify(queryOptions?.filter)?.includes(include.association)
+          );
+        }),
+        transaction,
+      });
+      const [result] = await Model.update(values, {
+        where: {
+          [primaryKeyField]: rows.map((row) => row.get(primaryKeyField)),
+        },
+        fields: options.fields,
+        hooks: options.hooks,
+        validate: options.validate,
+        sideEffects: options.sideEffects,
+        limit: options.limit,
+        silent: options.silent,
+        transaction,
+      });
+      // TODO: not support association fields except belongsTo
+      return result;
+    }
+
     const instances = await this.find({
       ...queryOptions,
       transaction,
