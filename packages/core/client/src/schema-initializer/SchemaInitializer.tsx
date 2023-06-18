@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import { ISchema, observer, useForm } from '@formily/react';
 import { error, isString } from '@nocobase/utils/client';
-import { Button, Dropdown, Menu, MenuProps, Switch } from 'antd';
+import { Button, Dropdown, MenuProps, Switch } from 'antd';
 import classNames from 'classnames';
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
@@ -51,6 +51,42 @@ SchemaInitializer.Button = observer(
     const { insertAdjacent, findComponent, designable } = useDesignable();
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
+    const [shouldRender, setShouldRender] = useState(false);
+
+    if (!designable && props.designable !== true) {
+      return null;
+    }
+
+    const buttonDom = (
+      <div
+        style={{ display: 'inline-block' }}
+        onMouseEnter={() => {
+          setShouldRender(true);
+          setVisible(true);
+        }}
+      >
+        {component ? (
+          component
+        ) : (
+          <Button
+            type={'dashed'}
+            style={{
+              borderColor: '#f18b62',
+              color: '#f18b62',
+              ...style,
+            }}
+            {...others}
+            icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
+          >
+            {compile(props.children || props.title)}
+          </Button>
+        )}
+      </div>
+    );
+    if (!shouldRender || !items.length) {
+      return buttonDom;
+    }
+
     const insertSchema = (schema) => {
       if (insert) {
         insert(wrap(schema));
@@ -130,27 +166,6 @@ SchemaInitializer.Button = observer(
     clean();
     const menuItems = renderItems(items);
 
-    const buttonDom = (
-      <Button
-        type={'dashed'}
-        style={{
-          borderColor: '#f18b62',
-          color: '#f18b62',
-          ...style,
-        }}
-        {...others}
-        icon={typeof icon === 'string' ? <Icon type={icon as string} /> : icon}
-      >
-        {compile(props.children || props.title)}
-      </Button>
-    );
-    if (!items.length) {
-      return buttonDom;
-    }
-
-    if (!designable && props.designable !== true) {
-      return null;
-    }
     return (
       <SchemaInitializerButtonContext.Provider value={{ visible, setVisible }}>
         <CollectionComponent />
@@ -159,11 +174,18 @@ SchemaInitializer.Button = observer(
           openClassName={`nb-schema-initializer-button-open`}
           overlayClassName={classNames('nb-schema-initializer-button-overlay', overlayClassName)}
           open={visible}
-          onOpenChange={(visible) => {
-            setVisible(visible);
+          onOpenChange={() => {
+            setShouldRender(false);
+            setVisible(false);
           }}
-          dropdownRender={() => {
-            return <Menu style={{ maxHeight: '60vh', overflowY: 'auto' }} items={menuItems} />;
+          mouseEnterDelay={0}
+          mouseLeaveDelay={0.05}
+          menu={{
+            style: {
+              maxHeight: '60vh',
+              overflowY: 'auto',
+            },
+            items: menuItems,
           }}
           {...dropdown}
         >
