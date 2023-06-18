@@ -10,7 +10,7 @@ export const RouterSwitchProvider = (props) => {
   const location = useLocation();
   const history = useHistory();
   useEffect(() => {
-    if (isJSBridge) {
+    if (isJSBridge()) {
       if (location.pathname.includes('/admin')) {
         history.push('/mobile');
       }
