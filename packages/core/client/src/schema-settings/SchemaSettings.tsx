@@ -131,14 +131,29 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
   const { title, dn, ...others } = props;
   const [visible, setVisible] = useState(false);
   const { Component, getMenuItems } = useMenuItem();
+  const [shouldRender, setShouldRender] = useState(false);
 
-  const DropdownMenu = (
+  if (!shouldRender) {
+    return (
+      <div
+        onMouseEnter={() => {
+          setShouldRender(true);
+          setVisible(true);
+        }}
+      >
+        {typeof title === 'string' ? <span>{title}</span> : title}
+      </div>
+    );
+  }
+
+  const dropdownMenu = () => (
     <>
       <Component />
       <Dropdown
         open={visible}
-        onOpenChange={(visible) => {
-          setVisible(visible);
+        onOpenChange={() => {
+          setShouldRender(false);
+          setVisible(false);
         }}
         menu={{ items: getMenuItems(() => props.children) }}
         overlayClassName={overlayClassName}
@@ -147,14 +162,15 @@ export const SchemaSettings: React.FC<SchemaSettingsProps> & SchemaSettingsNeste
       </Dropdown>
     </>
   );
+
   if (dn) {
     return (
       <SchemaSettingsProvider visible={visible} setVisible={setVisible} dn={dn} {...others}>
-        {DropdownMenu}
+        {dropdownMenu()}
       </SchemaSettingsProvider>
     );
   }
-  return DropdownMenu;
+  return dropdownMenu();
 };
 
 SchemaSettings.Template = function Template(props) {
