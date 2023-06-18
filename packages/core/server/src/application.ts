@@ -20,6 +20,7 @@ import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
 import { InstallOptions, PluginManager } from './plugin-manager';
+import { MutexManager } from '@nocobase/mutex-manager';
 
 const packageJson = require('../package.json');
 
@@ -307,6 +308,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     registerCli(this);
 
     this._version = new ApplicationVersion(this);
+
+    MutexManager.getInstance().setupEventListeners(this);
   }
 
   private createDatabase(options: ApplicationOptions) {
