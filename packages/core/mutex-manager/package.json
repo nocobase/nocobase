@@ -1,0 +1,19 @@
+{
+  "name": "@nocobase/mutex-manager",
+  "version": "0.9.4-alpha.2",
+  "description": "nocobase mutex manager library",
+  "license": "Apache-2.0",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nocobase/nocobase.git",
+    "directory": "packages/core/mutex-manager"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21",
+    "ioredis": "^5.3.2",
+    "redlock": "^5.0.0-beta.2",
+    "async-mutex": "^0.3.2"
+  }
+}

@@ -15,6 +15,7 @@
     "@nocobase/plugin-collection-manager": "0.9.4-alpha.2",
     "@nocobase/server": "0.9.4-alpha.2",
     "@nocobase/utils": "0.9.4-alpha.2",
+    "@nocobase/mutex-manager": "0.9.4-alpha.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "react-js-cron": "^3.1.0"

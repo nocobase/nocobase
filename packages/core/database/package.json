@@ -8,6 +8,7 @@
   "dependencies": {
     "@nocobase/logger": "0.9.4-alpha.2",
     "@nocobase/utils": "0.9.4-alpha.2",
+    "@nocobase/mutex-manager": "0.9.4-alpha.2",
     "async-mutex": "^0.3.2",
     "cron-parser": "4.4.0",
     "deepmerge": "^4.2.2",

@@ -5,7 +5,7 @@ import { DataTypes, Transactionable, ValidationError, ValidationErrorItem } from
 
 import { BaseColumnFieldOptions, Field, FieldContext, Model } from '@nocobase/database';
 import { Registry } from '@nocobase/utils';
-import { MutexManager } from '@nocobase/utils';
+import { MutexManager } from '@nocobase/mutex-manager';
 
 export interface Pattern {
   validate?(options): string | null;

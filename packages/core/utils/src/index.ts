@@ -14,4 +14,3 @@ export * from './requireModule';
 export * from './toposort';
 export * from './uid';
 export * from './json-templates';
-export * from './mutex-manager';
