@@ -751,8 +751,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    await this.sequelize.close();
-    await this.emitAsync('afterClose');
+    return this.sequelize.close();
   }
 
   on(event: EventType, listener: any): this;

@@ -28,7 +28,6 @@ export interface MutexNameHelperConfig {
 export class MutexManager {
   private mutexProviders: Map<string, BaseMutexInterface> = new Map<string, BaseMutexInterface>();
   private mutexes: Map<string, MutexPack> = new Map<string, MutexPack>();
-  private deamonApp: any;
 
   private static defaultMutexProviderType = 'redis';
   private static instance: MutexManager;
@@ -40,29 +39,8 @@ export class MutexManager {
     return MutexManager.instance;
   }
 
-  private constructor() {}
-
-  public setupEventListeners(app: any) {
-    if (this.deamonApp) {
-      return;
-    }
-    this.deamonApp = app;
-    this.deamonApp.on('beforeStart', this.onBeforeStart.bind(this));
-  }
-
-  private onBeforeStart() {
+  private constructor() {
     this.tryRegisterDefaultMutexProvider();
-    if (!this.deamonApp?.db) {
-      return;
-    }
-    this.deamonApp.db.on('afterClose', async () => {
-      this.deamonApp.off('beforeStart', this.onBeforeStart);
-      this.deamonApp = null;
-      for (const mutexProvider of this.mutexProviders.values()) {
-        await mutexProvider.close();
-      }
-      this.mutexes.clear();
-    });
   }
 
   private tryRegisterDefaultMutexProvider() {
