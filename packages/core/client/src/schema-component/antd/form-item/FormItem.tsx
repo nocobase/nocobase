@@ -100,6 +100,7 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
+  let targetField;
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
@@ -112,9 +113,11 @@ FormItem.Designer = function Designer() {
   const variablesCtx = useVariablesCtx();
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const targetField = getCollectionJoinField(
-    `${collectionField?.target}.${fieldSchema['x-component-props'].fieldNames?.label}`,
-  );
+  if (collectionField?.target) {
+    targetField = getCollectionJoinField(
+      `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
+    );
+  }
 
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -834,7 +837,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {options.length > 0 && isAssociationField && (
+      {options.length > 0 && isAssociationField&&fieldMode!=='SubTable' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}

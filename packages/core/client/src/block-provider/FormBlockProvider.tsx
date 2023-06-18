@@ -1,6 +1,7 @@
 import { createForm } from '@formily/core';
 import { RecursionField, Schema, useField, useFieldSchema } from '@formily/react';
 import { isEmpty } from 'lodash';
+import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
 import { useCollection } from '../collection-manager';
 import { RecordProvider, useRecord } from '../record-provider';
@@ -23,9 +24,9 @@ const InternalFormBlockProvider = (props) => {
   const { resource, service, updateAssociationValues } = useBlockRequestContext();
   const formBlockRef = useRef();
   const record = useRecord();
-  // if (service.loading) {
-  //   return <Spin />;
-  // }
+  if (service.loading && Object.keys(form?.initialValues)?.length === 0 && action) {
+    return <Spin />;
+  }
   return (
     <FormBlockContext.Provider
       value={{

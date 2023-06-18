@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useValues } from '../../../schema-component/antd/filter/useValues';
 import { useDateVariable } from './useDateVariable';
 import { useUserVariable } from './useUserVariable';
@@ -11,7 +12,12 @@ export const useVariableOptions = ({ form, collectionField, rootCollection }) =>
   const formVariabele = useFormVariable({ blockForm: form, rootCollection, schema });
   const iterationVariabele = useIterationVariable({ blockForm: form, collectionField, schema, rootCollection });
 
+  const result = useMemo(
+    () => [userVariable, dateVariable, formVariabele, iterationVariabele].filter(Boolean),
+    [dateVariable, userVariable, formVariabele, iterationVariabele],
+  );
+
   if (!operator || !schema) return [];
 
-  return [userVariable, dateVariable, formVariabele, iterationVariabele].filter(Boolean);
+  return result;
 };

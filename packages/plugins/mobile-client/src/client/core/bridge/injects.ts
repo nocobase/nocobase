@@ -3,12 +3,12 @@ interface InvokeFunction {
   (params: { action: 'moveTaskToBack' }, cb?: () => void): void;
 }
 
-const jsBridge = (window as any).jsBridge as {
+const JsBridge = (window as any).JsBridge as {
   invoke: InvokeFunction;
 };
 
 export const invoke: InvokeFunction = (params, cb) => {
-  jsBridge.invoke(params, cb);
+  JsBridge.invoke(params, cb);
 };
 
-export const isJSBridge = !!jsBridge;
+export const isJSBridge = !!JsBridge;

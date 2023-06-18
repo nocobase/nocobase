@@ -84,6 +84,9 @@ export const AssociationFieldProvider = observer(
           field.value = [{}];
         }
       }
+      if (currentMode === 'SubTable') {
+        field.value = [];
+      }
       setLoading(false);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentMode, collectionField, fieldValue]);
