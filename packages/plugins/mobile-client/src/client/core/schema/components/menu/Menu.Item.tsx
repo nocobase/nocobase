@@ -14,6 +14,7 @@ import React from 'react';
 import { useHistory, useParams, useRouteMatch } from 'react-router-dom';
 import { useTranslation } from '../../../../locale';
 import { useSchemaPatch } from '../../hooks';
+import { menuItemSchema } from './schema';
 
 interface MMenuItemProps extends ListItemProps {
   name: string;
@@ -63,24 +64,7 @@ const MenuItemDesigner: React.FC = () => {
       <SchemaSettings.ModalItem
         title={t('Edit menu info')}
         initialValues={field.componentProps}
-        schema={{
-          properties: {
-            name: {
-              type: 'string',
-              title: t('Menu name'),
-              required: true,
-              'x-component': 'Input',
-              'x-decorator': 'FormItem',
-            },
-            icon: {
-              required: true,
-              'x-decorator': 'FormItem',
-              'x-component': 'IconPicker',
-              title: t('Icon'),
-              'x-component-props': {},
-            },
-          },
-        }}
+        schema={menuItemSchema}
         onSubmit={onUpdateComponentProps}
       />
       <SchemaSettings.Remove
