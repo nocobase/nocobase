@@ -14,6 +14,23 @@ import { Option } from '../../../schema-settings/VariableInput/type';
 import { XButton } from './XButton';
 
 const JT_VALUE_RE = /^\s*{{\s*([^{}]+)\s*}}\s*$/;
+const groupClass = css`
+  width: auto;
+  display: flex !important;
+  .ant-input-disabled {
+    .ant-tag {
+      color: #bfbfbf;
+      border-color: #d9d9d9;
+    }
+  }
+  .ant-input.null-value {
+    width: 4em;
+    min-width: 4em;
+  }
+`;
+const userSelectNone = css`
+  user-select: 'none';
+`;
 
 function parseValue(value: any): string | string[] {
   if (value == null) {
@@ -133,34 +150,40 @@ export function Input(props) {
 
   const [variableText, setVariableText] = React.useState('');
 
-  const loadData = (selectedOptions: Option[]) => {
-    const option = selectedOptions[selectedOptions.length - 1];
-    if (option.loadChildren) {
-      // 需要保证 selectedOptions 是一个响应式对象，这样才能触发重新渲染
-      option.loadChildren(option);
-    }
-  };
-
   const { component: ConstantComponent, ...constantOption }: VariableOptions & { component?: React.FC<any> } =
     useMemo(() => {
-      return children
-        ? {
-            value: '',
-            label: '{{t("Constant")}}',
-          }
-        : useTypedConstant
-        ? getTypedConstantOption(type, useTypedConstant)
-        : {
-            value: '',
-            label: '{{t("Null")}}',
-            component: ConstantTypes.null.component,
-          };
+      if (children) {
+        return {
+          value: '',
+          label: '{{t("Constant")}}',
+        };
+      }
+      if (useTypedConstant) {
+        return getTypedConstantOption(type, useTypedConstant);
+      }
+      return {
+        value: '',
+        label: '{{t("Null")}}',
+        component: ConstantTypes.null.component,
+      };
     }, [type, useTypedConstant]);
 
-  const options: VariableOptions[] = useMemo(
-    () => compile([constantOption, ...variableOptions]),
-    [constantOption, variableOptions],
-  );
+  const [options, setOptions] = React.useState<Option[]>(() => {
+    return compile([constantOption, ...variableOptions]);
+  });
+
+  useEffect(() => {
+    const newOptions: Option[] = [constantOption, ...variableOptions];
+    setOptions(deepCompileLabel(newOptions, compile));
+  }, [variableOptions]);
+
+  const loadData = async (selectedOptions: Option[]) => {
+    const option = selectedOptions[selectedOptions.length - 1];
+    if (option.loadChildren) {
+      await option.loadChildren(option);
+      setOptions((prev) => [...prev]);
+    }
+  };
 
   const onSwitch = useCallback(
     (next) => {
@@ -183,7 +206,7 @@ export function Input(props) {
 
   useEffect(() => {
     const run = async () => {
-      if (!variable) {
+      if (!variable || options.length <= 1) {
         return;
       }
       let prevOption: Option = null;
@@ -195,47 +218,28 @@ export function Input(props) {
           if (i === 0) {
             prevOption = options.find((item) => item.value === key);
           } else {
-            if (prevOption.children?.length === 0 && prevOption.loadChildren) {
+            if (prevOption.loadChildren && !prevOption.children?.length) {
               await prevOption.loadChildren(prevOption);
             }
             prevOption = prevOption.children.find((item) => item.value === key);
           }
           labels.push(prevOption.label);
-          setVariableText(labels.join(' / '));
         } catch (err) {
           error(err);
         }
       }
+      setOptions([...options]);
+      setVariableText(labels.join(' / '));
     };
 
     // 如果没有这个延迟，会导致选择父节点时不展开子节点
     setTimeout(run);
-  }, [variable]);
+  }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
 
   return (
-    <AntInput.Group
-      compact
-      style={style}
-      className={classNames(
-        className,
-        css`
-          width: auto;
-          display: flex !important;
-          .ant-input-disabled {
-            .ant-tag {
-              color: #bfbfbf;
-              border-color: #d9d9d9;
-            }
-          }
-          .ant-input.null-value {
-            width: 4em;
-            min-width: 4em;
-          }
-        `,
-      )}
-    >
+    <AntInput.Group compact style={style} className={classNames(className, groupClass)}>
       {variable ? (
         <div
           className={css`
@@ -282,12 +286,7 @@ export function Input(props) {
           </div>
           {!disabled ? (
             <span
-              className={cx(
-                'ant-select-clear',
-                css`
-                  user-select: 'none';
-                `,
-              )}
+              className={cx('ant-select-clear', userSelectNone)}
               // eslint-disable-next-line react/no-unknown-property
               unselectable="on"
               aria-hidden
@@ -313,4 +312,15 @@ export function Input(props) {
       ) : null}
     </AntInput.Group>
   );
+}
+
+function deepCompileLabel(list: Option[], compile) {
+  return list.map((item) => {
+    const children = item.children ? deepCompileLabel(item.children, compile) : null;
+    return {
+      ...item,
+      label: compile(item.label),
+      children,
+    };
+  });
 }

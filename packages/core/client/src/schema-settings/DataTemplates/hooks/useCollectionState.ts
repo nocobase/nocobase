@@ -1,18 +1,13 @@
 import { ArrayField } from '@formily/core';
-import { error } from '@nocobase/utils/client';
-import _ from 'lodash';
 import React, { useCallback, useState } from 'react';
 import { useCollectionManager } from '../../../collection-manager';
 import { useCompile } from '../../../schema-component';
 import { TreeNode } from '../TreeLabel';
 
 export const useCollectionState = (currentCollectionName: string) => {
-  const { getCollectionFields, getAllCollectionsInheritChain, getCollection, getCollectionFieldsOptions } =
-    useCollectionManager();
+  const { getCollectionFields, getAllCollectionsInheritChain, getCollection } = useCollectionManager();
   const [collectionList] = useState(getCollectionList);
   const compile = useCompile();
-
-  let dataFields: ArrayField = {} as any;
 
   function getCollectionList() {
     const collections = getAllCollectionsInheritChain(currentCollectionName);
@@ -120,12 +115,7 @@ export const useCollectionState = (currentCollectionName: string) => {
       .filter(Boolean);
   };
 
-  /**
-   * fields: 通过在 x-reactions 字段中传递 $self 得到的，相当于 useField 的返回值，目的是修改其中的状态页面会更新
-   */
-  const getEnableFieldTree = useCallback((collectionName: string, fields: ArrayField) => {
-    dataFields = fields;
-
+  const getEnableFieldTree = useCallback((collectionName: string) => {
     if (!collectionName) {
       return [];
     }
@@ -138,49 +128,38 @@ export const useCollectionState = (currentCollectionName: string) => {
     }
   }, []);
 
-  const onLoadData = useCallback((node) => {
-    return new Promise((resolve) => {
-      if (node.children.length) {
-        node.children.forEach((child) => {
-          loadChildren({ node: child, traverseAssociations, traverseFields, systemKeys, dataFields });
-        });
-        return resolve(void 0);
-      }
+  const getOnLoadData = useCallback((fields: ArrayField) => {
+    return (node) => {
+      return new Promise((resolve) => {
+        if (node.children.length) {
+          node.children.forEach((child) => {
+            loadChildren({ node: child, traverseAssociations, traverseFields, systemKeys, fields });
+          });
+          return resolve(void 0);
+        }
 
-      loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataFields });
-      resolve(void 0);
-    });
+        loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields });
+        resolve(void 0);
+      });
+    };
   }, []);
 
-  const onCheck = useCallback((checkedKeys, { node, checked }) => {
-    if (checked) {
-      // let parentKey = node.key.split('.').slice(0, -1).join('.');
-
-      try {
-        // 当子节点被选中时，也选中所有祖先节点，提高用户辨识度
-        // while (parentKey) {
-        //   if (parentKey) {
-        //     checkedKeys.checked = _.uniq([...checkedKeys.checked, parentKey]);
-        //   }
-        //   parentKey = parentKey.split('.').slice(0, -1).join('.');
-        // }
-      } catch (err) {
-        error(err);
-      }
-    }
-
-    dataFields.value = checkedKeys;
+  const getOnCheck = useCallback((fields: ArrayField) => {
+    return (checkedKeys) => {
+      fields.value = checkedKeys;
+    };
   }, []);
 
   return {
     collectionList,
     getEnableFieldTree,
-    onLoadData,
-    onCheck,
+    getOnLoadData,
+    getOnCheck,
   };
 };
 
 // 广度优先遍历查找一个 key 相等的节点并返回
+// 注意：返回的 node 是一个响应式对象，修改它的属性会触发页面更新
 function findNode(treeData, item) {
   const queue = [...treeData];
   while (queue.length) {
@@ -194,8 +173,8 @@ function findNode(treeData, item) {
   }
 }
 
-function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, dataFields }) {
-  const activeNode = findNode(dataFields.componentProps.treeData, node);
+function loadChildren({ node, traverseAssociations, traverseFields, systemKeys, fields }) {
+  const activeNode = findNode(fields.componentProps.treeData, node);
   let children = [];
 
   // 多对多和多对一只展示关系字段

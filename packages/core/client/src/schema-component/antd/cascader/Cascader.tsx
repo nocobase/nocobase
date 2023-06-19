@@ -2,9 +2,10 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { ArrayField } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { toArr } from '@formily/shared';
+import { action } from '@formily/reactive';
 import { Cascader as AntdCascader, Space } from 'antd';
 import { isBoolean, omit } from 'lodash';
-import React from 'react';
+import React, { useState } from 'react';
 import { useRequest } from '../../../api-client';
 import { defaultFieldNames } from './defaultFieldNames';
 import { ReadPretty } from './ReadPretty';
@@ -35,7 +36,7 @@ export const Cascader = connect(
     } = props;
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const loadData = useLoadData(props);
-    const { loading } = useDataSource({
+    const { loading, run } = useDataSource({
       onSuccess(data) {
         field.dataSource = data?.data || [];
       },
@@ -62,6 +63,11 @@ export const Cascader = connect(
         </Space>
       );
     };
+    const handelDropDownVisible = (value) => {
+      if (value && !field.dataSource) {
+        run();
+      }
+    };
     return (
       <AntdCascader
         loading={loading}
@@ -72,6 +78,7 @@ export const Cascader = connect(
         value={toValue()}
         fieldNames={fieldNames}
         displayRender={displayRender}
+        onDropdownVisibleChange={handelDropDownVisible}
         onChange={(value, selectedOptions) => {
           if (value && labelInValue) {
             onChange(selectedOptions.map((option) => omit(option, [fieldNames.children])));
