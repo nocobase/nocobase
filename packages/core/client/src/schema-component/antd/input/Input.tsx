@@ -7,6 +7,7 @@ import { JSONTextAreaProps, Json } from './Json';
 import { ReadPretty } from './ReadPretty';
 
 type ComposedInput = React.FC<InputProps> & {
+  ReadPretty: React.FC<InputProps>;
   TextArea: React.FC<TextAreaProps>;
   URL: React.FC<InputProps>;
   JSON: React.FC<JSONTextAreaProps>;
@@ -39,6 +40,7 @@ export const Input: ComposedInput = Object.assign(
     ),
     URL: connect(AntdInput, mapReadPretty(ReadPretty.URL)),
     JSON: connect(Json, mapReadPretty(ReadPretty.JSON)),
+    ReadPretty: ReadPretty.Input,
   },
 );
 
