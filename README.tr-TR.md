@@ -6,7 +6,7 @@
 
 NocoBase, geliştirmenin ilk aşamasındadır ve sık sık değişiklik yaparak geliştiriyoruz. Lütfen üretim ortamlarında dikkatli olun.
 
-v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
+NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
 
 ## Çalışma arkadaşımız olabilirsiniz
 

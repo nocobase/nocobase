@@ -6,7 +6,7 @@ English | [中文](./README.zh-CN.md) | [Türkçe](./README.tr-TR.md)
 
 NocoBase is in early stage of development and is subject to frequent changes, please use caution in production environments.
 
-v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
+NocoBase v0.10 has been released, see [v0.10: update instructions](http://docs.nocobase.com/welcome/release/v10-changelog) for details.
 
 ## We are hiring
 
