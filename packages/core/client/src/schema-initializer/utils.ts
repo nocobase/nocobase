@@ -102,8 +102,15 @@ export const useTableColumnInitializerFields = () => {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
+        'x-component-props': isFileCollection
+          ? {
+              fieldNames: {
+                label: 'preview',
+                value: 'id',
+              },
+            }
+          : {},
         'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
-        'x-component-props': {},
         'x-decorator': isSubTable
           ? quickEditField.includes(field.interface) || isFileCollection
             ? 'QuickEdit'
