@@ -20,7 +20,7 @@
 
 完成后复制**客户端ID**和**客户端密钥**。
 
-### 在Nocobase上新增认证器
+### 在NocoBase上新增认证器
 插件设置 - 认证 - 新增 - OIDC
 
 <img src="https://s2.loli.net/2023/06/19/sBMURatC372GyEd.png"/>
