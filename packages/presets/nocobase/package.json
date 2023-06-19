@@ -2,10 +2,20 @@
   "name": "@nocobase/preset-nocobase",
   "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
-  "main": "lib/server/index.js",
+  "main": "./lib/server/index.js",
   "exports": {
-    "./client": "./lib/client.js",
-    "./server": "./lib/server.js",
+    ".": {
+      "require": "./lib/server/index.js",
+      "import": "./lib/server/index.js"
+    },
+    "./client": {
+      "require": "./lib/client/index.js",
+      "import": "./lib/client/index.js"
+    },
+    "./server": {
+      "require": "./lib/server/index.js",
+      "import": "./lib/server/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
