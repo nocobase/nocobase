@@ -28,6 +28,8 @@ export const TableBlockDesigner = () => {
   const defaultFilter = fieldSchema?.['x-decorator-props']?.params?.filter || {};
   const defaultSort = fieldSchema?.['x-decorator-props']?.params?.sort || [];
   const defaultResource = fieldSchema?.['x-decorator-props']?.resource;
+  const isRecordAssociation = fieldSchema?.['x-decorator-props']?.association;
+
   const supportTemplate = !fieldSchema?.['x-decorator-props']?.disableTemplate;
   const sort = defaultSort?.map((item: string) => {
     return item?.startsWith('-')
@@ -92,7 +94,13 @@ export const TableBlockDesigner = () => {
         <SchemaSettings.SwitchItem
           title={t('Tree table')}
           defaultChecked={true}
-          checked={treeCollection ? field.decoratorProps.treeTable !== false : false}
+          checked={
+            treeCollection
+              ? isRecordAssociation
+                ? field.decoratorProps.treeTable
+                : field.decoratorProps.treeTable !== false
+              : false
+          }
           onChange={(flag) => {
             field.decoratorProps.treeTable = flag;
             fieldSchema['x-decorator-props'].treeTable = flag;
