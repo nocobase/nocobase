@@ -175,40 +175,44 @@ export const querySchema: ISchema = {
                     key: 'measures',
                   },
                   properties: {
-                    measures: getArraySchema({
-                      field: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          placeholder: '{{t("Field")}}',
+                    measures: getArraySchema(
+                      {
+                        field: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Field")}}',
+                          },
+                          enum: '{{ fields }}',
+                          required: true,
                         },
-                        enum: '{{ fields }}',
-                      },
-                      aggregation: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          placeholder: '{{t("Aggregation")}}',
+                        aggregation: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Aggregation")}}',
+                          },
+                          enum: [
+                            { label: lang('Sum'), value: 'sum' },
+                            { label: lang('Count'), value: 'count' },
+                            { label: lang('Avg'), value: 'avg' },
+                            { label: lang('Max'), value: 'max' },
+                            { label: lang('Min'), value: 'min' },
+                          ],
                         },
-                        enum: [
-                          { label: lang('Sum'), value: 'sum' },
-                          { label: lang('Count'), value: 'count' },
-                          { label: lang('Avg'), value: 'avg' },
-                          { label: lang('Max'), value: 'max' },
-                          { label: lang('Min'), value: 'min' },
-                        ],
-                      },
-                      alias: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                        'x-component-props': {
-                          placeholder: '{{t("Alias")}}',
+                        alias: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                          'x-component-props': {
+                            placeholder: '{{t("Alias")}}',
+                          },
                         },
                       },
-                    }),
+                      { required: true },
+                    ),
                   },
                 },
                 pane2: {
@@ -219,38 +223,42 @@ export const querySchema: ISchema = {
                     key: 'dimensions',
                   },
                   properties: {
-                    dimensions: getArraySchema({
-                      field: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          placeholder: '{{t("Field")}}',
+                    dimensions: getArraySchema(
+                      {
+                        field: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Field")}}',
+                          },
+                          enum: '{{ fields }}',
+                          required: true,
                         },
-                        enum: '{{ fields }}',
-                      },
-                      format: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Select',
-                        'x-component-props': {
-                          placeholder: '{{t("Format")}}',
-                          style: {
-                            maxWidth: '120px',
+                        format: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Select',
+                          'x-component-props': {
+                            placeholder: '{{t("Format")}}',
+                            style: {
+                              maxWidth: '120px',
+                            },
+                          },
+                          'x-reactions': '{{ useFormatterOptions }}',
+                          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+                        },
+                        alias: {
+                          type: 'string',
+                          'x-decorator': 'FormItem',
+                          'x-component': 'Input',
+                          'x-component-props': {
+                            placeholder: '{{t("Alias")}}',
                           },
                         },
-                        'x-reactions': '{{ useFormatterOptions }}',
-                        'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
                       },
-                      alias: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': 'Input',
-                        'x-component-props': {
-                          placeholder: '{{t("Alias")}}',
-                        },
-                      },
-                    }),
+                      { required: true },
+                    ),
                   },
                 },
                 pane3: {

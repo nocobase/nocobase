@@ -21,7 +21,7 @@ import { ISchema, FormConsumer } from '@formily/react';
 import { ChartLibraryContext, ChartRenderer, ChartRendererProvider, useChartTypes } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
-import { createForm, onFieldChange, onFormInit, Form as FormType } from '@formily/core';
+import { createForm, onFieldChange, onFormInit, Form as FormType, ObjectField } from '@formily/core';
 import {
   useFields,
   useChartFields,
@@ -143,6 +143,13 @@ export const ChartConfigure: React.FC<{
         loading={loading}
         icon={<RightSquareOutlined />}
         onClick={async () => {
+          const queryField = form.query('query').take() as ObjectField;
+          try {
+            await queryField?.validate();
+          } catch (e) {
+            return;
+          }
+
           setLoading(true);
           try {
             await runQuery?.current(form.values.query);

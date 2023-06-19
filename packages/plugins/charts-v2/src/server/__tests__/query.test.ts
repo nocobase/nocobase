@@ -61,7 +61,7 @@ describe('query', () => {
       ];
       const result = parseBuilder(ctx, { dimensions });
       expect(result.attributes).toEqual([['formatted-field', 'alias']]);
-      expect(result.group).toEqual(['alias']);
+      expect(result.group).toEqual(['alias', 'id']);
     });
 
     it('should parse filter', () => {

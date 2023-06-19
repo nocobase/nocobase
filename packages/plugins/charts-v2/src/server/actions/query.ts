@@ -94,7 +94,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   };
 };
 
-const queryData = async (ctx: Context, builder: QueryParams) => {
+export const queryData = async (ctx: Context, builder: QueryParams) => {
   const { collection, measures, dimensions, orders, filter, limit, sql } = builder;
   const repository = ctx.db.getRepository(collection);
   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
@@ -146,6 +146,7 @@ export const query = async (ctx: Context, next: Next) => {
   } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
+  console.log(roleName);
   if (!can && roleName !== 'root') {
     ctx.throw(403, 'No permissions');
   }

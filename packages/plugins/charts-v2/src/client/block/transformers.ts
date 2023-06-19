@@ -44,7 +44,7 @@ const transformers: {
       }[locale];
       return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(val);
     },
-    Exponential: (val: number) => val.toExponential(),
+    Exponential: (val: number | string) => (+val)?.toExponential(),
     Abbreviation: (val: number, locale = 'en-US') => new Intl.NumberFormat(locale, { notation: 'compact' }).format(val),
   },
 };
