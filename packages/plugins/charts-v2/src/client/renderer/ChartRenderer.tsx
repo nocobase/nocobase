@@ -86,13 +86,12 @@ export const ChartRenderer: React.FC<{
   }, [query, runAsync, runQuery]);
 
   const libraries = useContext(ChartLibraryContext);
-  const { library, chart } = getChart(libraries, config?.chartType);
+  const { chart } = getChart(libraries, config?.chartType);
   const Component = chart?.component;
   const locale = api.auth.getLocale();
   const meta = useFieldTransformer(transform, locale);
-  const chartTansformer = chart?.transformer;
-  const info = Schema.compile({ data: chartTansformer ? chartTansformer(data) : data, meta, general, advanced }, { t });
-  const componentProps = library?.useProps(info);
+  const info = Schema.compile({ data, meta, general, advanced }, { t });
+  const componentProps = chart?.useProps?.(info) || info;
   const C = () =>
     Component ? (
       <ErrorBoundary

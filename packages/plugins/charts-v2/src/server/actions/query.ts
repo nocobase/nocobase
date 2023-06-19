@@ -73,9 +73,11 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
   });
   // add primary key to prevent error: "must appear in the GROUP BY clause or be used in an aggregate function"
-  repository.collection.model.primaryKeyAttributes.forEach((key: string) => {
-    group.push(key);
-  });
+  if (group.length > 0) {
+    repository.collection.model.primaryKeyAttributes.forEach((key: string) => {
+      group.push(key);
+    });
+  }
 
   orders?.forEach((item: { field: string; order: string }) => {
     order.push([item.field, item.order || 'ASC']);

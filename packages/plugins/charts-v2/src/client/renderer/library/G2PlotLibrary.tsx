@@ -1,6 +1,7 @@
 import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
 import { lang } from '../../locale';
 import { Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
+const init = commonInit;
 
 const basicSchema = {
   type: 'object',
@@ -31,24 +32,36 @@ const basicSchema = {
   },
 };
 
+const useProps: usePropsFunc = ({ data, meta, general, advanced }) => {
+  return {
+    data,
+    meta,
+    ...general,
+    ...advanced,
+  };
+};
+
 export const G2PlotLibrary: Charts = {
   line: {
     name: lang('Line Chart'),
     component: Line,
     schema: basicSchema,
-    init: commonInit,
+    init,
+    useProps,
   },
   area: {
     name: lang('Area Chart'),
     component: Area,
     schema: basicSchema,
-    init: commonInit,
+    init,
+    useProps,
   },
   column: {
     name: lang('Column Chart'),
     component: Column,
     schema: basicSchema,
-    init: commonInit,
+    init,
+    useProps,
   },
   bar: {
     name: lang('Bar Chart'),
@@ -64,6 +77,7 @@ export const G2PlotLibrary: Charts = {
         },
       };
     },
+    useProps,
   },
   pie: {
     name: lang('Pie Chart'),
@@ -98,12 +112,18 @@ export const G2PlotLibrary: Charts = {
         },
       };
     },
+    useProps,
   },
   dualAxes: {
     name: lang('Dual Axes Chart'),
     component: DualAxes,
-    transformer: (data) => {
-      return [data, data];
+    useProps: ({ data, meta, general, advanced }) => {
+      return {
+        data: [data, data],
+        meta,
+        ...general,
+        ...advanced,
+      };
     },
     schema: {
       type: 'object',
@@ -177,15 +197,7 @@ export const G2PlotLibrary: Charts = {
     name: lang('Scatter Chart'),
     component: Scatter,
     schema: basicSchema,
-    init: commonInit,
+    init,
+    useProps,
   },
-};
-
-export const useG2PlotProps: usePropsFunc = ({ data, meta, general, advanced }) => {
-  return {
-    data,
-    meta,
-    ...general,
-    ...advanced,
-  };
 };

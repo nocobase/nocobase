@@ -223,42 +223,39 @@ export const querySchema: ISchema = {
                     key: 'dimensions',
                   },
                   properties: {
-                    dimensions: getArraySchema(
-                      {
-                        field: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            placeholder: '{{t("Field")}}',
-                          },
-                          enum: '{{ fields }}',
-                          required: true,
+                    dimensions: getArraySchema({
+                      field: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Select',
+                        'x-component-props': {
+                          placeholder: '{{t("Field")}}',
                         },
-                        format: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Select',
-                          'x-component-props': {
-                            placeholder: '{{t("Format")}}',
-                            style: {
-                              maxWidth: '120px',
-                            },
+                        enum: '{{ fields }}',
+                        required: true,
+                      },
+                      format: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Select',
+                        'x-component-props': {
+                          placeholder: '{{t("Format")}}',
+                          style: {
+                            maxWidth: '120px',
                           },
-                          'x-reactions': '{{ useFormatterOptions }}',
-                          'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
                         },
-                        alias: {
-                          type: 'string',
-                          'x-decorator': 'FormItem',
-                          'x-component': 'Input',
-                          'x-component-props': {
-                            placeholder: '{{t("Alias")}}',
-                          },
+                        'x-reactions': '{{ useFormatterOptions }}',
+                        'x-visible': '{{ $self.dataSource && $self.dataSource.length }}',
+                      },
+                      alias: {
+                        type: 'string',
+                        'x-decorator': 'FormItem',
+                        'x-component': 'Input',
+                        'x-component-props': {
+                          placeholder: '{{t("Alias")}}',
                         },
                       },
-                      { required: true },
-                    ),
+                    }),
                   },
                 },
                 pane3: {

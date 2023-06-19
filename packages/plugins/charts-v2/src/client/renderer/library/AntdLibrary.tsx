@@ -1,6 +1,6 @@
 import { lang } from '../../locale';
-import { Charts, usePropsFunc } from '../ChartLibrary';
-import { Statistic } from 'antd';
+import { Charts } from '../ChartLibrary';
+import { Statistic, Table } from 'antd';
 
 export const AntdLibrary: Charts = {
   statistic: {
@@ -17,20 +17,49 @@ export const AntdLibrary: Charts = {
         },
       },
     },
+    useProps: ({ data, meta, general, advanced }) => {
+      let formatter: (val: any) => any;
+      const fieldMeta = Object.values(meta)[0];
+      if (fieldMeta && fieldMeta.formatter) {
+        formatter = fieldMeta.formatter;
+      }
+      const value = Object.values(data[0] || {})[0];
+      return {
+        value,
+        formatter,
+        ...general,
+        ...advanced,
+      };
+    },
   },
-};
-
-export const useAntdProps: usePropsFunc = ({ data, meta, general, advanced }) => {
-  let formatter: (val: any) => any;
-  const fieldMeta = Object.values(meta)[0];
-  if (fieldMeta && fieldMeta.formatter) {
-    formatter = fieldMeta.formatter;
-  }
-  const value = Object.values(data[0] || {})[0];
-  return {
-    value,
-    formatter,
-    ...general,
-    ...advanced,
-  };
+  table: {
+    name: lang('Table'),
+    component: Table,
+    useProps: ({ data, meta, general, advanced }) => {
+      let formatter: (val: any) => any;
+      const columns = data[0]
+        ? Object.keys(data[0]).map((item) => ({
+            title: item,
+            dataIndex: item,
+            key: item,
+          }))
+        : [];
+      const dataSource = data.map((item: any) => {
+        Object.keys(item).map((key: string) => {
+          const fieldMeta = meta[key];
+          if (fieldMeta && fieldMeta.formatter) {
+            formatter = fieldMeta.formatter;
+            item[key] = formatter(item[key]);
+          }
+        });
+        return item;
+      });
+      return {
+        dataSource,
+        columns,
+        ...general,
+        ...advanced,
+      };
+    },
+  },
 };

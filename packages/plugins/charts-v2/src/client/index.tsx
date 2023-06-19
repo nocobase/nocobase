@@ -1,14 +1,7 @@
 import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { ChartV2BlockInitializer, ChartV2BlockDesigner, ChartInitializers, ChartV2Block } from './block';
-import {
-  ChartRenderer,
-  G2PlotLibrary,
-  ChartRendererProvider,
-  useG2PlotProps,
-  AntdLibrary,
-  useAntdProps,
-} from './renderer';
+import { ChartRenderer, ChartRendererProvider, InternalLibrary } from './renderer';
 import { ChartLibraryProvider } from './renderer/ChartLibrary';
 import { useChartsTranslation } from './locale';
 
@@ -36,10 +29,8 @@ const Chart: React.FC = (props) => {
       }}
     >
       <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
-        <ChartLibraryProvider name="G2Plot" charts={G2PlotLibrary} useProps={useG2PlotProps}>
-          <ChartLibraryProvider name="Antd" charts={AntdLibrary} useProps={useAntdProps}>
-            {props.children}
-          </ChartLibraryProvider>
+        <ChartLibraryProvider name={t('Built-in')} charts={InternalLibrary}>
+          {props.children}
         </ChartLibraryProvider>
       </SchemaInitializerProvider>
     </SchemaComponentOptions>

@@ -1,5 +1,4 @@
 export * from './ChartRenderer';
-export * from './library/G2PlotLibrary';
-export * from './library/AntdLibrary';
+export * from './library';
 export * from './ChartLibrary';
 export * from './ChartRendererProvider';

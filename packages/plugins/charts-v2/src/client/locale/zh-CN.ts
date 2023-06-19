@@ -57,4 +57,5 @@ export default {
     '您的更改尚未保存。如果您点击“确定”，您的更改将丢失。',
   'Same properties set in the form above will be overwritten by this JSON config.':
     '上面表单中设置的相同属性将被JSON配置覆盖。',
+  'Built-in': '内置图表',
 };
