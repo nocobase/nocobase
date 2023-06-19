@@ -5,7 +5,7 @@ import signale from 'signale';
 import slash from 'slash2';
 import schema from './schema';
 import { IBundleOptions } from './types';
-import { getExistFile } from './utils';
+import { getExistFiles } from './utils';
 
 function testDefault(obj) {
   return obj.default || obj;
@@ -51,7 +51,7 @@ export default function({ cwd, customPath }: { cwd: string; customPath?: string 
 
   const configFile =
     finalPath ||
-    getExistFile({
+    getExistFiles({
       cwd,
       files: CONFIG_FILES,
       returnRelative: false,
