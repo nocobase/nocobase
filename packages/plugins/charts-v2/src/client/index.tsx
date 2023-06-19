@@ -9,12 +9,12 @@ const Chart: React.FC = (props) => {
   const { t } = useChartsTranslation();
   const initializers = useContext(SchemaInitializerContext);
   const children = initializers.BlockInitializers.items[0].children;
-  const has = children.some((initializer) => initializer.title === 'ChartV2');
+  const has = children.some((initializer) => initializer.component === 'ChartV2BlockInitializer');
   if (!has) {
     children.push({
       key: 'chart-v2',
       type: 'item',
-      title: 'ChartV2',
+      title: t('ChartV2'),
       component: 'ChartV2BlockInitializer',
     });
   }
@@ -29,7 +29,7 @@ const Chart: React.FC = (props) => {
       }}
     >
       <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
-        <ChartLibraryProvider name="Built in" charts={InternalLibrary}>
+        <ChartLibraryProvider name="Built-in" charts={InternalLibrary}>
           {props.children}
         </ChartLibraryProvider>
       </SchemaInitializerProvider>

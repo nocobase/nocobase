@@ -35,6 +35,10 @@ export type ChartProps = {
     general?: any;
     advanced?: any;
   };
+  reference?: {
+    title: string;
+    link: string;
+  };
 };
 
 export type Charts = {

@@ -384,6 +384,20 @@ ChartConfigure.Config = function Config() {
   const fields = useFields();
   const charts = useCharts();
   const getChartFields = useChartFields(fields, { t });
+  const getReference = (chartType: string) => {
+    const reference = charts[chartType]?.reference;
+    if (!reference) return '';
+    const { title, link } = reference;
+    return (
+      <span>
+        {t('Config reference: ')}
+        <a href={link} target="_blank" rel="noreferrer">
+          {t(title)}
+        </a>
+      </span>
+    );
+  };
+
   return (
     <FormConsumer>
       {(form) => {
@@ -393,7 +407,7 @@ ChartConfigure.Config = function Config() {
         return (
           <SchemaComponent
             schema={getConfigSchema(schema)}
-            scope={{ t, chartTypes, useChartFields: getChartFields }}
+            scope={{ t, chartTypes, useChartFields: getChartFields, getReference }}
             components={{ Card, Select, Input, FormItem, ArrayItems, Space, AutoComplete }}
           />
         );

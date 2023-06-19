@@ -7,6 +7,7 @@ export default {
   Title: '名称',
   Enable: '启用',
   Chart: '图表',
+  ChartV2: '图表V2',
   Charts: '图表',
   Configure: '配置',
   Duplicate: '复制',
@@ -58,4 +59,6 @@ export default {
   'Same properties set in the form above will be overwritten by this JSON config.':
     '上面表单中设置的相同属性将被JSON配置覆盖。',
   'Built-in': '内置图表',
+  'Config reference: ': '配置参考: ',
+  Table: '表格',
 };

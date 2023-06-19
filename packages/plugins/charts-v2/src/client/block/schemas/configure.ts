@@ -38,7 +38,7 @@ const getArraySchema = (fields = {}, extra = {}) => ({
   },
 });
 
-export const getConfigSchema = (general: any) => ({
+export const getConfigSchema = (general: any): ISchema => ({
   type: 'void',
   properties: {
     config: {
@@ -73,8 +73,19 @@ export const getConfigSchema = (general: any) => ({
               'x-component': 'Input.JSON',
               'x-component-props': {
                 autoSize: {
-                  minRows: 5,
+                  minRows: 3,
                 },
+              },
+            },
+          },
+        },
+        reference: {
+          type: 'string',
+          'x-reactions': {
+            dependencies: ['.chartType'],
+            fulfill: {
+              schema: {
+                'x-content': '{{ getReference($deps[0]) }}',
               },
             },
           },

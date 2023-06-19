@@ -48,6 +48,10 @@ export const G2PlotLibrary: Charts = {
     schema: basicSchema,
     init,
     useProps,
+    reference: {
+      title: lang('Line Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/bar',
+    },
   },
   area: {
     name: lang('Area Chart'),
@@ -55,6 +59,10 @@ export const G2PlotLibrary: Charts = {
     schema: basicSchema,
     init,
     useProps,
+    reference: {
+      title: lang('Area Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/area',
+    },
   },
   column: {
     name: lang('Column Chart'),
@@ -62,6 +70,10 @@ export const G2PlotLibrary: Charts = {
     schema: basicSchema,
     init,
     useProps,
+    reference: {
+      title: lang('Column Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/column',
+    },
   },
   bar: {
     name: lang('Bar Chart'),
@@ -78,6 +90,10 @@ export const G2PlotLibrary: Charts = {
       };
     },
     useProps,
+    reference: {
+      title: lang('Bar Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/bar',
+    },
   },
   pie: {
     name: lang('Pie Chart'),
@@ -113,6 +129,10 @@ export const G2PlotLibrary: Charts = {
       };
     },
     useProps,
+    reference: {
+      title: lang('Pie Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/pie',
+    },
   },
   dualAxes: {
     name: lang('Dual Axes Chart'),
@@ -188,6 +208,10 @@ export const G2PlotLibrary: Charts = {
         },
       };
     },
+    reference: {
+      title: lang('Dual Axes Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/dual-axes',
+    },
   },
   // gauge: {
   //   name: lang('Gauge Chart'),
@@ -199,5 +223,9 @@ export const G2PlotLibrary: Charts = {
     schema: basicSchema,
     init,
     useProps,
+    reference: {
+      title: lang('Scatter Chart'),
+      link: 'https://g2plot.antv.antgroup.com/api/plots/scatter',
+    },
   },
 };

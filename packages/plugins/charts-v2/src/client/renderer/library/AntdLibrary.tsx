@@ -31,6 +31,10 @@ export const AntdLibrary: Charts = {
         ...advanced,
       };
     },
+    reference: {
+      title: lang('Statistic'),
+      link: 'https://ant.design/components/statistic/',
+    },
   },
   table: {
     name: lang('Table'),
@@ -60,6 +64,10 @@ export const AntdLibrary: Charts = {
         ...general,
         ...advanced,
       };
+    },
+    reference: {
+      title: lang('Table'),
+      link: 'https://ant.design/components/table/',
     },
   },
 };
