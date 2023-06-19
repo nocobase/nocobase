@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
+import { tableContainer } from '../style';
 import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
@@ -86,6 +87,7 @@ export const MenuConfigure = () => {
   };
   return (
     <Table
+      className={tableContainer}
       loading={loading}
       rowKey={'uid'}
       pagination={false}

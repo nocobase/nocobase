@@ -6,6 +6,7 @@ import { isEmpty } from 'lodash';
 import React, { createContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCompile, useRecord } from '../..';
+import { tableContainer } from '../style';
 import { useAvailableActions } from './RoleTable';
 import { ScopeSelect } from './ScopeSelect';
 
@@ -91,6 +92,7 @@ export const RolesResourcesActions = connect((props) => {
         <FormLayout layout={'vertical'}>
           <FormItem label={t('Action permission')}>
             <Table
+              className={tableContainer}
               size={'small'}
               pagination={false}
               columns={[
@@ -154,6 +156,7 @@ export const RolesResourcesActions = connect((props) => {
           </FormItem>
           <FormItem label={t('Field permission')}>
             <Table
+              className={tableContainer}
               pagination={false}
               dataSource={fieldPermissions}
               columns={[

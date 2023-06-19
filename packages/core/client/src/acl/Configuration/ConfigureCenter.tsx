@@ -5,6 +5,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
+import { tableContainer } from '../style';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -104,6 +105,7 @@ export const SettingsCenterConfigure = () => {
   return (
     items?.length && (
       <Table
+        className={tableContainer}
         loading={loading}
         rowKey={'key'}
         pagination={false}
