@@ -29,7 +29,7 @@ const Chart: React.FC = (props) => {
       }}
     >
       <SchemaInitializerProvider initializers={{ ...initializers, ChartInitializers }}>
-        <ChartLibraryProvider name={t('Built-in')} charts={InternalLibrary}>
+        <ChartLibraryProvider name="Built in" charts={InternalLibrary}>
           {props.children}
         </ChartLibraryProvider>
       </SchemaInitializerProvider>

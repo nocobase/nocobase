@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { ISchema } from '@formily/react';
 import { QueryProps } from './ChartRendererProvider';
 import { FieldOption } from '../hooks';
+import { lang } from '../locale';
 
 export type usePropsFunc = (props: {
   data: any;
@@ -71,7 +72,7 @@ export const useChartTypes = (): {
       return [
         ...charts,
         {
-          label: name,
+          label: lang(name),
           children,
         },
       ];

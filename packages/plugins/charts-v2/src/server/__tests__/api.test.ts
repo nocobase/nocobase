@@ -43,8 +43,9 @@ describe('api', () => {
     });
   });
 
-  test('query', async () => {
-    expect(
+  test('query', () => {
+    expect.assertions(1);
+    return expect(
       queryData({ db } as any, {
         collection: 'chart_test',
         measures: [
