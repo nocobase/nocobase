@@ -72,15 +72,24 @@ const useDataTemplates = () => {
     enabled: items.length > 0 && items.every((item) => item.dataId !== undefined),
   };
 };
+function filterReferences(obj) {
+  const filteredObj = {};
+  for (const key in obj) {
+    if (typeof obj[key] !== 'object') {
+      filteredObj[key] = obj[key];
+    }
+  }
 
+  return filteredObj;
+}
 export const Templates = ({ style = {}, form }) => {
   const { templates, display, enabled, defaultTemplate } = useDataTemplates();
   const [value, setValue] = React.useState(defaultTemplate?.key || 'none');
   const api = useAPIClient();
   const { t } = useTranslation();
-
   useEffect(() => {
     if (enabled && defaultTemplate) {
+      form.__template = true;
       fetchTemplateData(api, defaultTemplate, t)
         .then((data) => {
           if (form && data) {
@@ -106,6 +115,7 @@ export const Templates = ({ style = {}, form }) => {
           if (form && data) {
             // 切换之前先把之前的数据清空
             form.reset();
+            form.__template = true;
 
             forEach(data, (value, key) => {
               if (value) {

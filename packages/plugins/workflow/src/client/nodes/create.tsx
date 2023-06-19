@@ -4,7 +4,6 @@ import { appends, collection, values } from '../schemas/collection';
 import CollectionFieldset from '../components/CollectionFieldset';
 import { NAMESPACE } from '../locale';
 import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { CollectionFieldInitializers } from '../components/CollectionFieldInitializers';
 import { useCollectionFieldOptions } from '../variable';
 import { FieldsSelect } from '../components/FieldsSelect';
 
@@ -63,7 +62,5 @@ export default {
       dataSource: `{{$jobsMapByNodeId.${node.id}}}`,
     };
   },
-  initializers: {
-    CollectionFieldInitializers,
-  },
+  initializers: {},
 };

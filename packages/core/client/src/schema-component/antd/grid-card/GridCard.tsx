@@ -13,9 +13,9 @@ import { ArrayField } from '@formily/core';
 import { defaultColumnCount, pageSizeOptions } from './options';
 
 const rowGutter = {
-  md: 16,
-  sm: 8,
-  xs: 8,
+  md: 12,
+  sm: 5,
+  xs: 5,
 };
 
 const designerCss = css`
@@ -56,7 +56,7 @@ const designerCss = css`
 
 const InternalGridCard = (props) => {
   const { columnCount: columnCountProp, pagination } = useProps(props);
-  const { service, _columnCount = defaultColumnCount } = useGridCardBlockContext();
+  const { service, columnCount: _columnCount = defaultColumnCount } = useGridCardBlockContext();
   const columnCount = columnCountProp || _columnCount;
   const { run, params } = service;
   const meta = service?.data?.meta;

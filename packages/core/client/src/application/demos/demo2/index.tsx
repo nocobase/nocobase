@@ -1,17 +1,14 @@
 import {
-  ACLShortcut,
   AdminLayout,
   AntdConfigProvider,
   AntdSchemaComponentProvider,
   APIClientProvider,
   AuthLayout,
   CollectionManagerProvider,
-  CollectionManagerShortcut,
   compose,
   DesignableSwitch,
   DocumentTitleProvider,
   i18n,
-  PluginManagerProvider,
   RouteSchemaComponent,
   RouteSwitch,
   RouteSwitchProvider,
@@ -20,7 +17,6 @@ import {
   SigninPage,
   SignupPage,
   SystemSettingsProvider,
-  SystemSettingsShortcut,
   useRequest,
 } from '@nocobase/client';
 import { Spin } from 'antd';
@@ -36,10 +32,7 @@ const providers = [
   [I18nextProvider, { i18n }],
   [AntdConfigProvider, { remoteLocale: true }],
   SystemSettingsProvider,
-  [
-    PluginManagerProvider,
-    { components: { ACLShortcut, DesignableSwitch, CollectionManagerShortcut, SystemSettingsShortcut } },
-  ],
+  [{ components: { DesignableSwitch } }],
   [SchemaComponentProvider, { components: { Link, NavLink } }],
   CollectionManagerProvider,
   AntdSchemaComponentProvider,

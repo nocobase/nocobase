@@ -2,7 +2,7 @@ import { message } from 'antd';
 import React, { useContext, createContext, FunctionComponent, createElement } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useHistory, useLocation, useParams } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle } from '..';
+import { useAPIClient, useCurrentDocumentTitle, useViewport } from '..';
 import { useForm } from '@formily/react';
 
 export const SignupPageContext = createContext<{
@@ -58,6 +58,7 @@ function useQuery() {
 
 export const SignupPage = () => {
   const { t } = useTranslation();
+  useViewport();
   useCurrentDocumentTitle('Signup');
   const query = useQuery();
   const authType = query.get('authType');

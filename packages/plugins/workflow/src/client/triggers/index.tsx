@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { InfoOutlined } from '@ant-design/icons';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   SchemaComponent,
   SchemaInitializerItemOptions,
   useActionContext,
@@ -58,7 +58,6 @@ export interface Trigger {
   view?: ISchema;
   scope?: { [key: string]: any };
   components?: { [key: string]: any };
-  render?(props): React.ReactNode;
   useInitializers?(config): SchemaInitializerItemOptions | null;
   initializers?: any;
 }
@@ -86,7 +85,7 @@ function TriggerExecution() {
         'x-component-props': {
           title: <InfoOutlined />,
           shape: 'circle',
-          className: cx(nodeJobButtonClass, 'workflow-node-job-button'),
+          className: nodeJobButtonClass,
           type: 'primary',
         },
         properties: {
@@ -178,7 +177,7 @@ export const TriggerConfig = () => {
     }
     const whiteSet = new Set(['workflow-node-meta', 'workflow-node-config-button', 'ant-input-disabled']);
     for (let el = ev.target; el && el !== ev.currentTarget; el = el.parentNode) {
-      if ((Array.from(el.classList) as string[]).some((name: string) => whiteSet.has(name))) {
+      if ((Array.from(el.classList ?? []) as string[]).some((name: string) => whiteSet.has(name))) {
         setEditingConfig(true);
         ev.stopPropagation();
         return;
@@ -200,7 +199,7 @@ export const TriggerConfig = () => {
         />
       </div>
       <TriggerExecution />
-      <ActionContext.Provider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
+      <ActionContextProvider value={{ visible: editingConfig, setVisible: setEditingConfig }}>
         <SchemaComponent
           schema={{
             type: 'void',
@@ -294,7 +293,7 @@ export const TriggerConfig = () => {
           scope={scope}
           components={components}
         />
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </div>
   );
 };

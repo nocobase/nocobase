@@ -11,10 +11,11 @@ import {
   InitializerWithSwitch,
   SchemaInitializerProvider,
   gridRowColWrap,
-  ActionContext,
+  ActionContextProvider,
   GeneralSchemaDesigner,
   SchemaSettings,
   useCompile,
+  useFormBlockContext,
 } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 
@@ -27,6 +28,7 @@ import customForm from './forms/custom';
 import createForm from './forms/create';
 import updateForm from './forms/update';
 import { FormBlockProvider } from './FormBlockProvider';
+import { DetailsBlockProvider } from './DetailsBlockProvider';
 
 type ValueOf<T> = T[keyof T];
 
@@ -229,10 +231,6 @@ function useSubmit() {
   };
 }
 
-function useFlowRecordFromBlock() {
-  return {};
-}
-
 export function SchemaConfig({ value, onChange }) {
   const ctx = useContext(SchemaComponentContext);
   const trigger = useTrigger();
@@ -333,6 +331,7 @@ export function SchemaConfig({ value, onChange }) {
               {},
             ),
             FormBlockProvider,
+            DetailsBlockProvider,
             // NOTE: fake provider component
             ManualActionStatusProvider(props) {
               return props.children;
@@ -344,7 +343,7 @@ export function SchemaConfig({ value, onChange }) {
           }}
           scope={{
             useSubmit,
-            useFlowRecordFromBlock,
+            useDetailsBlockProps: useFormBlockContext,
           }}
         />
       </SchemaInitializerProvider>
@@ -360,7 +359,7 @@ export function SchemaConfigButton(props) {
       <div className="ant-btn ant-btn-primary" onClick={() => setVisible(true)}>
         {workflow.executed ? lang('View user interface') : lang('Configure user interface')}
       </div>
-      <ActionContext.Provider value={{ visible, setVisible }}>{props.children}</ActionContext.Provider>
+      <ActionContextProvider value={{ visible, setVisible }}>{props.children}</ActionContextProvider>
     </>
   );
 }

@@ -143,6 +143,8 @@ export const useCreateActionProps = () => {
   const currentRecord = useRecord();
   const currentUserContext = useCurrentUserContext();
   const currentUser = currentUserContext?.data?.data;
+  const action = actionField.componentProps.saveMode || 'create';
+  const filterKeys = actionField.componentProps.filterKeys || [];
   return {
     async onClick() {
       const fieldNames = fields.map((field) => field.name);
@@ -165,12 +167,13 @@ export const useCreateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const data = await resource.create({
+        const data = await resource[action]({
           values: {
             ...values,
             ...overwriteValues,
             ...assignedValues,
           },
+          filterKeys:filterKeys,
         });
         actionField.data.loading = false;
         actionField.data.data = data;
@@ -955,6 +958,9 @@ const isOptionalField = (field) => {
 
 export const useAssociationFilterBlockProps = () => {
   const collectionField = AssociationFilter.useAssociationField();
+  if (!collectionField) {
+    return {};
+  }
   const fieldSchema = useFieldSchema();
   const optionalFieldList = useOptionalFieldList();
   const { getDataBlocks } = useFilterBlock();

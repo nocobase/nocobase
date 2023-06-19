@@ -25,7 +25,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
   APIClientProvider,
-  ActionContext,
+  ActionContextProvider,
   CollectionFieldOptions,
   CollectionManagerContext,
   Designable,
@@ -41,6 +41,7 @@ import {
   useCollectionManager,
   useCompile,
   useDesignable,
+  useFilterBlock,
   useLinkageCollectionFilterOptions,
 } from '..';
 import { findFilterTargets, updateFilterTargets } from '../block-provider/hooks';
@@ -465,9 +466,14 @@ SchemaSettings.ConnectDataBlocks = function ConnectDataBlocks(props: {
   const { dn } = useDesignable();
   const { t } = useTranslation();
   const collection = useCollection();
+  const { inProvider } = useFilterBlock();
   const dataBlocks = useSupportedBlocks(type);
   let { targets = [], uid } = findFilterTargets(fieldSchema);
   const compile = useCompile();
+
+  if (!inProvider) {
+    return null;
+  }
 
   const Content = dataBlocks.map((block) => {
     const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
@@ -603,6 +609,7 @@ SchemaSettings.SelectItem = function SelectItem(props) {
       <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
         {title}
         <Select
+          dropdownMatchSelectWidth={false}
           bordered={false}
           defaultValue={value}
           onChange={(...arg) => (setOpen(false), onChange(...arg))}
@@ -664,7 +671,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
   const [visible, setVisible] = useState(false);
   const ctx = useContext(SchemaSettingsContext);
   return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
+    <ActionContextProvider value={{ visible, setVisible }}>
       <SchemaSettings.Item
         {...others}
         onClick={() => {
@@ -681,7 +688,7 @@ SchemaSettings.PopupItem = function PopupItem(props) {
           ...schema,
         }}
       />
-    </ActionContext.Provider>
+    </ActionContextProvider>
   );
 };
 

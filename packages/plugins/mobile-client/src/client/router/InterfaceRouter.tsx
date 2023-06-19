@@ -1,5 +1,5 @@
 import { RouteSwitch, useRoutes } from '@nocobase/client';
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { HashRouter } from 'react-router-dom';
 import { InterfaceProvider } from './InterfaceProvider';
 

@@ -140,7 +140,7 @@ export const Action: ComposedAction = observer(
             }
           }}
           component={tarComponent || Button}
-          className={classnames(className, actionDesignerCss)}
+          className={classnames(actionDesignerCss, className)}
         >
           {title || compile(fieldSchema.title)}
           <Designer {...designerProps} />
@@ -162,7 +162,7 @@ export const Action: ComposedAction = observer(
       >
         {popover && <RecursionField basePath={field.address} onlyRenderProperties schema={fieldSchema} />}
         {!popover && renderButton()}
-        {!popover && props.children}
+        {!popover && <div onClick={(e) => e.stopPropagation()}>{props.children}</div>}
       </ActionContextProvider>
     );
   },

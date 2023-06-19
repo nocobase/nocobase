@@ -1,19 +1,22 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 
 import { cloneDeep, set } from 'lodash';
-import { Field } from '@formily/core';
-import { useForm } from '@formily/react';
+import { Field, createForm } from '@formily/core';
+import { useForm, useField, useFieldSchema } from '@formily/react';
 import { ArrayTable } from '@formily/antd';
 
 import {
-  ActionContext,
+  ActionContextProvider,
   CollectionContext,
   CollectionProvider,
+  FormBlockContext,
   gridRowColWrap,
+  RecordProvider,
   SchemaComponent,
   SchemaInitializer,
   SchemaInitializerItemOptions,
   useCollectionManager,
+  useRecord,
 } from '@nocobase/client';
 import { merge, uid } from '@nocobase/utils/client';
 
@@ -22,22 +25,41 @@ import { lang, NAMESPACE } from '../../../locale';
 import { findSchema } from '../utils';
 import { ManualFormType } from '../SchemaConfig';
 
-const FormCollectionContext = React.createContext<any>(null);
-
-function FormCollectionProvider(props) {
+function CustomFormBlockProvider(props) {
   const [fields, setCollectionFields] = useState(props.collection?.fields ?? []);
+  const userJob = useRecord();
+  const field = useField();
+  const fieldSchema = useFieldSchema();
+  const [formKey] = Object.keys(fieldSchema.toJSON().properties ?? {});
+  const values = userJob?.result?.[formKey];
+
+  const form = useMemo(
+    () =>
+      createForm({
+        initialValues: values,
+      }),
+    [values],
+  );
 
   return (
-    <FormCollectionContext.Provider value={{ setCollectionFields }}>
-      <CollectionProvider
-        collection={{
-          ...props.collection,
-          fields,
-        }}
-      >
-        {props.children}
-      </CollectionProvider>
-    </FormCollectionContext.Provider>
+    <CollectionProvider
+      collection={{
+        ...props.collection,
+        fields,
+      }}
+    >
+      <RecordProvider record={values} parent={false}>
+        <FormBlockContext.Provider
+          value={{
+            form,
+            field,
+            setCollectionFields,
+          }}
+        >
+          {props.children}
+        </FormBlockContext.Provider>
+      </RecordProvider>
+    </CollectionProvider>
   );
 }
 
@@ -48,7 +70,7 @@ function CustomFormBlockInitializer({ insert, ...props }) {
       onClick={() => {
         insert({
           type: 'void',
-          'x-decorator': 'FormCollectionProvider',
+          'x-decorator': 'CustomFormBlockProvider',
           'x-decorator-props': {
             collection: {
               name: uid(),
@@ -180,7 +202,7 @@ function AddCustomFormField(props) {
   const collection = useContext(CollectionContext);
   const [interfaceOptions, setInterface] = useState<any>(null);
   const [insert, setCallback] = useState<any>();
-  const { setCollectionFields } = useContext(FormCollectionContext);
+  const { setCollectionFields } = useContext(FormBlockContext);
 
   return (
     <AddCustomFormFieldButtonContext.Provider
@@ -206,7 +228,7 @@ function AddCustomFormField(props) {
         component={component}
         title="{{t('Configure fields')}}"
       />
-      <ActionContext.Provider value={{ visible: Boolean(interfaceOptions) }}>
+      <ActionContextProvider value={{ visible: Boolean(interfaceOptions) }}>
         {interfaceOptions ? (
           <SchemaComponent
             schema={{
@@ -271,7 +293,9 @@ function AddCustomFormField(props) {
                                 type: options.uiSchema.type,
                                 'x-decorator': 'FormItem',
                                 'x-component': 'CollectionField',
-                                'x-interface-options': newField,
+                                'x-component-props': {
+                                  field: newField,
+                                },
                                 'x-collection-field': `${collection.name}.${options.name}`,
                                 'x-designer': 'FormItem.Designer',
                               });
@@ -291,7 +315,7 @@ function AddCustomFormField(props) {
             }}
           />
         ) : null}
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </AddCustomFormFieldButtonContext.Provider>
   );
 }
@@ -329,11 +353,11 @@ export default {
       AddCustomFormField,
     },
     components: {
-      FormCollectionProvider,
+      CustomFormBlockProvider,
     },
     parseFormOptions(root) {
       const forms = {};
-      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'FormCollectionProvider');
+      const formBlocks: any[] = findSchema(root, (item) => item['x-decorator'] === 'CustomFormBlockProvider');
       formBlocks.forEach((formBlock) => {
         const [formKey] = Object.keys(formBlock.properties);
         const formSchema = formBlock.properties[formKey];
@@ -342,7 +366,9 @@ export default {
           (item) => item['x-component'] === 'CollectionField',
           true,
         );
-        formBlock['x-decorator-props'].collection.fields = fields.map((field) => field['x-interface-options']);
+        formBlock['x-decorator-props'].collection.fields = fields.map(
+          (field) => field['x-component-props']?.field ?? field['x-interface-options'],
+        );
         forms[formKey] = {
           type: 'custom',
           title: formBlock['x-component-props']?.title || formKey,
@@ -358,7 +384,7 @@ export default {
   block: {
     scope: {},
     components: {
-      FormCollectionProvider: CollectionProvider,
+      CustomFormBlockProvider,
     },
   },
 } as ManualFormType;

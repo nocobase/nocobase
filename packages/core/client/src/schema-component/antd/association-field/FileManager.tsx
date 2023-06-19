@@ -14,7 +14,7 @@ import {
 } from '../../../block-provider/TableSelectorProvider';
 import { CollectionProvider, useCollection } from '../../../collection-manager';
 import { useCompile } from '../../hooks';
-import { ActionContext } from '../action';
+import { ActionContextProvider } from '../action';
 import { FileSelector, Preview } from '../preview';
 import { ReadPrettyInternalViewer } from './InternalViewer';
 import { useFieldNames, useInsertSchema } from './hooks';
@@ -112,6 +112,7 @@ const InternalFileManager = (props) => {
     association: {
       target: collectionField?.target,
     },
+    options,
     onChange: props?.onChange,
     selectedRows,
     setSelectedRows,
@@ -132,7 +133,7 @@ const InternalFileManager = (props) => {
     };
   };
   return (
-    <div>
+    <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
         value={options}
         multiple={multiple}
@@ -152,7 +153,17 @@ const InternalFileManager = (props) => {
           }
         }}
       />
-      <ActionContext.Provider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
+      <ActionContextProvider
+        value={{
+          openMode: 'drawer',
+          visible: visibleSelector,
+          setVisible: setVisibleSelector,
+          modalProps: {
+            getContainer: others?.getContainer,
+          },
+          formValueChanged: false,
+        }}
+      >
         <RecordPickerProvider {...pickerProps}>
           <CollectionProvider name={collectionField.target}>
             <FormProvider>
@@ -171,7 +182,7 @@ const InternalFileManager = (props) => {
             </FormProvider>
           </CollectionProvider>
         </RecordPickerProvider>
-      </ActionContext.Provider>
+      </ActionContextProvider>
     </div>
   );
 };

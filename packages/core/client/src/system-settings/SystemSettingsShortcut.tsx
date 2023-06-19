@@ -1,15 +1,13 @@
-import { SettingOutlined } from '@ant-design/icons';
 import { ISchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Card, message } from 'antd';
 import cloneDeep from 'lodash/cloneDeep';
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
 import { useSystemSettings } from '.';
-import { i18n, PluginManager, useAPIClient, useRequest } from '..';
+import { i18n, useAPIClient, useRequest } from '..';
 import locale from '../locale';
-import { ActionContext, SchemaComponent, useActionContext } from '../schema-component';
+import { SchemaComponent, useActionContext } from '../schema-component';
 
 const langs = Object.keys(locale).map((lang) => {
   return {
@@ -279,40 +277,5 @@ export const SystemSettingsPane = () => {
         schema={schema2}
       />
     </Card>
-  );
-};
-
-export const SystemSettingsShortcut = () => {
-  const { t } = useTranslation();
-  const history = useHistory();
-  return (
-    <PluginManager.Toolbar.Item
-      icon={<SettingOutlined />}
-      title={t('System settings')}
-      onClick={() => {
-        history.push('/admin/settings/system-settings/system-settings');
-      }}
-    />
-  );
-};
-
-export const SystemSettingsShortcut2 = () => {
-  const [visible, setVisible] = useState(false);
-  const { t } = useTranslation();
-  return (
-    <ActionContext.Provider value={{ visible, setVisible }}>
-      <PluginManager.Toolbar.Item
-        eventKey={'ACLAction'}
-        onClick={() => {
-          setVisible(true);
-        }}
-        icon={<SettingOutlined />}
-        title={t('System settings')}
-      />
-      <SchemaComponent
-        scope={{ useSaveSystemSettingsValues, useSystemSettingsValues, useCloseAction }}
-        schema={schema}
-      />
-    </ActionContext.Provider>
   );
 };

@@ -225,6 +225,7 @@ export default {
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Edit": "编辑",
   "Edit collection": "编辑数据表",
+  "Configure field": "配置字段",
   "Configure fields": "配置字段",
   "Configure columns": "配置字段",
   "Edit field": "编辑字段",
@@ -767,8 +768,18 @@ export default {
   'Reboot': '重启',
   'Clear cache': '清除缓存',
   "Duplicate":"复制",
+  "Duplicating":"复制中",
   "Duplicate mode":"复制方式",
   "Quick duplicate":"快速复制",
   "Duplicate and continue":"复制并继续",
-  "Please configure the duplicate fields":"请配置要复制的字段"
+  "Please configure the duplicate fields":"请配置要复制的字段",
+  "Add":"创建",
+  "Add new mode":"添加方式",
+  "Quick add":"快捷添加",
+  "Modal add":"弹窗添加",
+  'Save mode':"保存方式",
+  "First or create":"不存在时则新增,存在时不处理",
+  "Update or create":"不存在时新增,存在时更新",
+  "Find by the following fields":"通过以下字段查找",
+  "Create":"仅新增"
 }

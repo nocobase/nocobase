@@ -14,16 +14,34 @@ export const AssociationFieldProvider = observer(
 
     const collectionField = useMemo(
       () => getCollectionJoinField(fieldSchema['x-collection-field']),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field'], fieldSchema.name],
     );
     const isFileCollection = useMemo(
       () => getCollection(collectionField?.target)?.template === 'file',
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-collection-field']],
     );
     const currentMode = useMemo(
       () => fieldSchema['x-component-props']?.mode || (isFileCollection ? 'FileManager' : 'Select'),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       [fieldSchema['x-component-props']?.mode],
     );
+
+    // const targetKeyValue = useMemo(() => {
+    //   if (!field.value) return '';
+    //   if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+    //     return field.value[collectionField.targetKey] ?? '';
+    //   }
+    //   if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+    //     if (Array.isArray(field.value)) {
+    //       return field.value.map((v) => v[collectionField.targetKey] ?? '').join(',');
+    //     }
+    //   }
+    //   return '';
+    // }, [collectionField, field.value]);
+
+    const fieldValue = useMemo(() => JSON.stringify(field.value), [field.value]);
 
     const [loading, setLoading] = useState(true);
 
@@ -32,6 +50,22 @@ export const AssociationFieldProvider = observer(
       if (!collectionField) {
         setLoading(false);
         return;
+      }
+      // 如果是表单模板数据，使用子表单和子表格组件时，过滤掉关系 ID
+      if (field.value && field.form['__template'] && ['Nester', 'SubTable'].includes(currentMode)) {
+        if (['belongsTo', 'hasOne'].includes(collectionField.type)) {
+          if (field.value?.[collectionField.targetKey]) {
+            delete field.value[collectionField.targetKey];
+          }
+          field.value = { ...field.initialValue, ...field.value };
+        } else if (['belongsToMany', 'hasMany'].includes(collectionField.type)) {
+          if (Array.isArray(field.value)) {
+            field.value = field.value.map((v) => {
+              delete v[collectionField.targetKey];
+              return { ...field.initialValue?.[0], ...v };
+            });
+          }
+        }
       }
       if (field.value !== null && field.value !== undefined) {
         // Nester 子表单时，如果没数据初始化一个 [null] 的占位
@@ -50,8 +84,12 @@ export const AssociationFieldProvider = observer(
           field.value = [{}];
         }
       }
+      if (currentMode === 'SubTable') {
+        field.value = [];
+      }
       setLoading(false);
-    }, [currentMode, collectionField, field.value]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentMode, collectionField, fieldValue]);
 
     if (loading) {
       return null;
