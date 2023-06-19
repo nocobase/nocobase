@@ -2,7 +2,7 @@ import { Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import path from 'path';
 
-export class PresetNocoBase extends Plugin {
+export class NoCoBaseServerPresetPlugin extends Plugin {
   builtInPlugins = [
     'error-handler',
     'collection-manager',
@@ -125,4 +125,4 @@ export class PresetNocoBase extends Plugin {
   }
 }
 
-export default PresetNocoBase;
+export default NoCoBaseServerPresetPlugin;

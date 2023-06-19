@@ -3,7 +3,8 @@
   "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
   "devDependencies": {
-    "@nocobase/client": "0.9.4-alpha.2"
+    "@nocobase/client": "0.9.4-alpha.2",
+    "@nocobase/preset-nocobase": "0.9.4-alpha.2"
   },
   "repository": {
     "type": "git",

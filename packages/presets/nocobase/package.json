@@ -2,8 +2,12 @@
   "name": "@nocobase/preset-nocobase",
   "version": "0.9.4-alpha.2",
   "license": "AGPL-3.0",
-  "main": "./lib/index.js",
-  "types": "./lib/index.d.ts",
+  "main": "lib/server/index.js",
+  "exports": {
+    "./client": "./lib/client.js",
+    "./server": "./lib/server.js",
+    "./package.json": "./package.json"
+  },
   "dependencies": {
     "@nocobase/plugin-acl": "0.9.4-alpha.2",
     "@nocobase/plugin-audit-logs": "0.9.4-alpha.2",
