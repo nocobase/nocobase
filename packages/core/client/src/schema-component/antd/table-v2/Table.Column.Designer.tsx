@@ -282,7 +282,7 @@ export const TableColumnDesigner = (props) => {
         )}
       <SchemaSettings.Divider />
       <SchemaSettings.Remove
-        removeParentsIfNoChildren
+        removeParentsIfNoChildren={!isSubTableColumn}
         breakRemoveOn={{
           'x-component': 'Grid',
         }}

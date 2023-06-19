@@ -75,7 +75,7 @@ export const SubTable: any = observer(
             .ant-table table {
             }
             td:not(.ant-table-selection-column) {
-              padding: 0 !important;
+              padding: 5 !important;
             }
           `}
           bordered
