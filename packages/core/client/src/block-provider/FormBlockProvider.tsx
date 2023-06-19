@@ -82,8 +82,8 @@ export const FormBlockProvider = (props) => {
     (currentCollection.name === (collection?.name || collection) && !isEmptyRecord) || !currentCollection.name;
   return (
     (detailFlag || createFlag) && (
-      <BlockProvider {...props} block={'form'}>
-        <InternalFormBlockProvider {...props} />
+      <BlockProvider {...props} block={'form'} params={{ ...props?.params, targetCollection: __collection }}>
+        <InternalFormBlockProvider {...props} params={{ ...props?.params, targetCollection: __collection }} />
       </BlockProvider>
     )
   );
