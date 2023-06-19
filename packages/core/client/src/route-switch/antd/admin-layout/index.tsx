@@ -1,18 +1,18 @@
 import { css } from '@emotion/css';
 import { Layout, Spin } from 'antd';
-import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
   CurrentUserProvider,
-  findByUid,
-  findMenuItem,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
+  findByUid,
+  findMenuItem,
   useACLRoleContext,
   useDocumentTitle,
   useRequest,
@@ -62,9 +62,11 @@ const MenuEditor = (props) => {
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const route = useRoute();
+  const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
+    setCurrent(schema);
     navigate(`/admin/${schema['x-uid']}`);
   };
 
@@ -109,7 +111,7 @@ const MenuEditor = (props) => {
   );
 
   useEffect(() => {
-    const properties = data?.data?.properties;
+    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
     if (properties && sideMenuRef.current) {
       const pageType = Object.values(properties).find(
         (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',

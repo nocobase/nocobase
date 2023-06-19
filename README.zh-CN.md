@@ -4,6 +4,8 @@
 
 **注意:** 📌
 
+v0.10 已发布，详情查看 [v0.10 更新说明](http://docs-cn.nocobase.com/welcome/release/v10-changelog)。
+
 NocoBase 正处在早期开发阶段，可能变动频繁，请谨慎用于生产环境。
 
 ## 我们在招聘

@@ -1,36 +1,120 @@
-# v0.10：update instructions
+# v0.10: Update instructions
 
-v0.10 has made major upgrades to dependencies, including `react`, `react-dom`, `react-router`, `umi`, and `dumi`.
+## New features in the second quarter
 
-## 依赖升级
+- Association field component improvements, support for multiple component switching
+  - Select
+  - Record picker
+  - Sub-form/Sub-details
+  - Sub-table
+  - File manager
+  - Title(read only)
+- Quick creation of relational data, supports two quick creation modes
+  - Add in drop-down menu to quickly create a new record based on the title field
+  - Add in pop-up window to configure complex add forms
+- Copy operation, supports two copy modes
+  - Direct copy
+  - Copy to the form and continue filling
+- Form data templates
+- Filter data range support variables
+- List block
+- Grid card block
+- Mobile client plugin
+- User authentication plugin with different login support
+  - Email/Password
+  - SMS
+  - OIDC
+  - SAML
+- Workflow nodes
+  - Manual node upgrade, support for adding and editing from existing collections
+  - Loop node
+  - Aggregate node
+- File manager
+  - Provide file collection template
+  - Provide file manager component
 
-- Upgrade `react@^17`, `react-dom@^17` to `react@^18`, `react-dom@^18` version
+## Application upgrades
+
+### Upgrading of Docker installation
+
+No change, upgrade reference [Docker image upgrade guide](/welcome/getting-started/upgrading/docker-compose)
+
+### Upgrading of source code installation
+
+v0.10 has a major upgrade of dependencies, so to prevent errors when upgrading the source code, you need to delete the following directories before upgrading
+
+```bash
+### Remove .umi-related cache
+yarn rimraf -rf . /**/{.umi,.umi-production}
+# Delete compiled files
+yarn rimraf -rf packages/*/*/{lib,esm,es,dist,node_modules}
+# Remove dependencies
+yarn rimraf -rf node_modules
+```
+
+See [Git source upgrade guide](/welcome/getting-started/upgrading/git-clone) for more details
+
+### create-nocobase-app installed upgrades
+
+It is recommended that `yarn create` re-download the new version and update the .env configuration, for more details refer to [major version upgrade guide](/welcome/getting-started/upgrading/create-nocobase-app#major-upgrade)
+
+## Upcoming deprecated and potentially incompatible changes
+
+### Sub-table field component
+
+Not compatible with new version, block fields need to be removed and reassigned (UI reassignment only)
+
+### Attachment upload api changes
+
+In addition to the built-in attachments table, users can also custom file collection, the upload api for attachments has been changed from `/api/attachments:upload` to `/api/<file-collection>:create`, upload is deprecated, still compatible with v0.10 but will be Removed.
+
+### signin/signup apis changes
+
+The nocobase kernel provides a more powerful [auth module](https://github.com/nocobase/nocobase/tree/main/packages/plugins/auth) with the following changes to the user login, registration, verification, and logout apis:
+
+```bash
+/api/users:signin -> /api/auth:signIn
+/api/users:signup -> /api/auth:signUp
+/api/users:signout -> /api/auth:signOut
+/api/users:check -> /api/auth:check
+```
+
+Note: The above users interface, which is deprecated, is still compatible with v0.10, but will be removed in the next major release.
+
+### Adjustments to date field filtering
+
+If date related filtering was previously configured in the data range, it needs to be deleted and reconfigured.
+
+## Third-party plugin upgrade guide
+
+### Dependencies upgrade
+
+dependencies mainly including
+
+- `react` upgrade to v18
+- `react-dom` upgrade to v18
+- `react-router` upgrade to v6.11
+- `umi` upgrade to v4
+- `dumi` upgrade to v2
+
+The `package.json` dependencies should be changed to the latest version, e.g:
 
 ```diff
 {
   "devDependencies": {
-+   "react": "^18",
-+   "react-dom": "^18",
--   "react": "^17",
--   "react-dom": "^17",
++   "react": "^18".
++   "react-dom": "^18".
++   "react-router-dom": "^6.11.2".
+-   "react": "^17".
+-   "react-dom": "^17".
+-   "react-router-dom": "^5".
   }
 }
 ```
 
-- Upgrade `react-router@5` to `react-router@6`
+### Code changes
 
-```diff
-{
-  "devDependencies": {
-+   "react-router-dom": "^6.11.2",
--   "react-router-dom": "^5",
-  }
-}
-```
-
-## `react-router` change description
-
-because the upgrade of `react-router` requires some code changes.
+Because react-router has been upgraded, the related code also needs to be changed, the main changes include
 
 ### Layout Component
 
@@ -147,10 +231,3 @@ The following RegExp-style route paths are not valid in v6:
 ```
 
 For more changes and api changes, please refer to [react-router@6](https://reactrouter.com/en/main/upgrading/v5)。
-
-## Docs Demo
-
-```diff
-- <code src="./demo.tsx" />
-+ <code src="demo.tsx"></code>
-```

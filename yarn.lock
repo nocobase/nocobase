@@ -11727,6 +11727,21 @@ dumi-assets-types@2.0.0-alpha.0:
   resolved "https://registry.yarnpkg.com/dumi-assets-types/-/dumi-assets-types-2.0.0-alpha.0.tgz#46bf619ed1cb6d27bbe6a9cfe4be51e5e9589981"
   integrity sha512-a/Y5lf0G6gwsEQ9hop/n03CcjmHsGBk384Cz/AEX6mRYrfSpUx/lQvP9HLoXkCzScl9PL1sSmLPnMkgaXDCZLA==
 
+dumi-theme-nocobase@^0.2.11:
+  version "0.2.11"
+  resolved "https://registry.npmjs.org/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.11.tgz#690c64cd284c913d7f6428bc291c3a6cdf0f2d50"
+  integrity sha512-hpMJPgIYeUIXKlfxYI1LD3KL4vr6ZlFzeSXNVqAurnlLmP5zkyiGekA/Azgg5zSkeWdaYa+fbB6CPAVE9RCZ+Q==
+  dependencies:
+    "@ant-design/icons" "^5.1.3"
+    "@babel/runtime" "^7.22.3"
+    "@ctrl/tinycolor" "^3.6.0"
+    "@emotion/react" "^11.11.0"
+    antd "^5.5.1"
+    antd-token-previewer "^2.0.0-alpha.6"
+    classnames "^2.3.2"
+    dayjs "^1.11.7"
+    rc-drawer "^6.1.2"
+
 dumi-theme-nocobase@^0.2.9:
   version "0.2.9"
   resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.9.tgz#0037a5a750e293b73de5be83e7f2195dbb0ae347"

@@ -1,6 +1,6 @@
-import { defineConfig } from 'dumi';
-import { defineThemeConfig } from 'dumi-theme-nocobase'
 import { getUmiConfig } from '@nocobase/devtools/umiConfig';
+import { defineConfig } from 'dumi';
+import { defineThemeConfig } from 'dumi-theme-nocobase';
 import { nav, sidebar } from './docs/config';
 
 const umiConfig = getUmiConfig();
