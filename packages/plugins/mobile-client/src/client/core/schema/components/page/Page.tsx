@@ -106,11 +106,11 @@ const InternalPage: React.FC = (props) => {
           'nb-mobile-page-header',
           css`
             & > .ant-tabs > .ant-tabs-nav {
-              background: #fff;
-              padding: 0 var(--nb-spacing);
+              margin: 0 var(--nb-spacing);
             }
             display: flex;
             flex-direction: column;
+            background: #fff;
           `,
         )}
       >

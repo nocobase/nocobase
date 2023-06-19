@@ -2,30 +2,27 @@ import { css } from '@emotion/css';
 import { observer, RecursionField, useField, useFieldSchema } from '@formily/react';
 import { TabPaneProps, Tabs as AntdTabs, TabsProps } from 'antd';
 import classNames from 'classnames';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Icon } from '../../../icon';
 import { useSchemaInitializer } from '../../../schema-initializer';
 import { DndContext, SortableItem } from '../../common';
 import { useDesigner } from '../../hooks/useDesigner';
-import { TabsContextProvider, useTabsContext } from './context';
+import { useTabsContext } from './context';
 import { TabsDesigner } from './Tabs.Designer';
+import { useDesignable } from '../../hooks';
 
 export const Tabs: any = observer(
   (props: TabsProps) => {
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
+    const { designable } = useDesignable();
+    console.log('🚀 ~ file: Tabs.tsx:19 ~ designable:', designable);
     const contextProps = useTabsContext();
     const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 
     return (
       <DndContext>
-        <AntdTabs
-          {...contextProps}
-          style={props.style}
-          tabBarExtraContent={{
-            right: render(),
-          }}
-        >
+        <AntdTabs {...contextProps} style={props.style}>
           {fieldSchema.mapProperties((schema, key) => {
             return (
               <AntdTabs.TabPane tab={<RecursionField name={key} schema={schema} onlyRenderSelf />} key={key}>
@@ -35,6 +32,7 @@ export const Tabs: any = observer(
               </AntdTabs.TabPane>
             );
           })}
+          {designable && <AntdTabs.TabPane tab={render()} />}
         </AntdTabs>
       </DndContext>
     );
