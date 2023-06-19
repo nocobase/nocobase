@@ -1,13 +1,12 @@
+import { css } from '@emotion/css';
 import { ArrayField } from '@formily/core';
 import { observer, RecursionField, useField, useFieldSchema, useForm } from '@formily/react';
-import { css } from '@emotion/css';
 import { Spin, Tag } from 'antd';
 import React, { useContext, useMemo, useState } from 'react';
 import { SchemaComponentOptions } from '../..';
 import { RecordProvider } from '../../../';
 import { useCreateActionProps as useCAP } from '../../../block-provider/hooks';
 import { Board } from '../../../board';
-import '../../../board/style.less';
 import { useProps } from '../../hooks/useProps';
 import { KanbanCardContext, KanbanColumnContext } from './context';
 import './index.less';
