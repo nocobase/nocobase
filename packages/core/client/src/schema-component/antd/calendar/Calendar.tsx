@@ -15,7 +15,7 @@ import { useProps } from '../../hooks/useProps';
 import { ActionContextProvider } from '../action';
 import Header from './components/Header';
 import { CalendarToolbarContext } from './context';
-import './style.less';
+import useStyle from './style';
 import type { ToolbarProps } from './types';
 import { formatDate } from './utils';
 
@@ -199,6 +199,7 @@ export const Calendar: any = observer(
     const events = useEvents(dataSource, fieldNames, date, view);
     const [visible, setVisible] = useState(false);
     const [record, setRecord] = useState<any>({});
+    const [wrapSSR, hashId, containerClassName] = useStyle();
 
     const components = useMemo(() => {
       return {
@@ -212,8 +213,8 @@ export const Calendar: any = observer(
       };
     }, [showLunar]);
 
-    return (
-      <div style={{ height: fixedBlock ? '100%' : 700 }}>
+    return wrapSSR(
+      <div className={`${hashId} ${containerClassName}`} style={{ height: fixedBlock ? '100%' : 700 }}>
         <CalendarRecordViewer visible={visible} setVisible={setVisible} record={record} />
         <BigCalendar
           popup
@@ -257,7 +258,7 @@ export const Calendar: any = observer(
           components={components}
           localizer={localizer}
         />
-      </div>
+      </div>,
     );
   },
   { displayName: 'Calendar' },
