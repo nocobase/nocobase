@@ -1,3 +1,4 @@
+import { i18n as i18next } from 'i18next';
 import { ComponentType } from 'react';
 import { BrowserRouterProps, HashRouterProps, MemoryRouterProps, RouteObject } from 'react-router-dom';
 import { Plugin } from './Plugin';
@@ -25,6 +26,7 @@ export type PluginType<Opts = any> = typeof Plugin | [typeof Plugin, Opts];
 
 export interface ApplicationOptions {
   apiClient?: any;
+  i18n?: i18next;
   plugins?: PluginType[];
   components?: Record<string, ComponentType>;
   scopes?: Record<string, any>;

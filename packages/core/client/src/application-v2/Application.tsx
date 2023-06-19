@@ -1,19 +1,19 @@
-import { i18n } from 'i18next';
+import { i18n as i18next } from 'i18next';
 import { merge } from 'lodash';
 import get from 'lodash/get';
 import set from 'lodash/set';
 import React, { ComponentType } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
-import { Outlet } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
+import { i18n } from '../i18n';
 import { AppComponent } from './components';
+import { BlankComponent } from './components/BlankComponent';
 import { compose } from './compose';
 import { PluginManager } from './PluginManager';
 import { Router } from './Router';
 import { ApplicationOptions, ComponentAndProps, ComponentTypeAndString } from './types';
-import { normalizeContainer } from './utils';
-import { BlankComponent } from './components/BlankComponent';
+import { getCurrentTimezone, normalizeContainer } from './utils';
 
 let app: Application;
 
@@ -21,27 +21,31 @@ export class Application {
   providers: ComponentAndProps[];
   router: Router;
   scopes: Record<string, any>;
-  i18n: i18n;
+  i18n: i18next;
   apiClient: APIClient;
   components: Record<string, ComponentType>;
   pm: PluginManager;
 
-  constructor(protected _options: ApplicationOptions) {
+  constructor(protected options: ApplicationOptions) {
     // avoid duplicate instance
     if (app) return app;
     app = this;
 
     this.providers = [];
-    this.scopes = _options.scopes || {};
-    this.components = _options.components || {};
-    this.apiClient = new APIClient(_options.apiClient);
-    this.router = new Router(_options.router, this);
-    this.pm = new PluginManager(_options.plugins, this);
+    this.scopes = options.scopes || {};
+    this.components = options.components || {};
+    this.apiClient = new APIClient({
+      baseURL: process.env.API_BASE_URL,
+      headers: {
+        'X-Hostname': window?.location?.hostname,
+        'X-Timezone': getCurrentTimezone(),
+      },
+      ...options.apiClient,
+    });
+    this.i18n = options.i18n || i18n;
+    this.router = new Router(options.router, this);
+    this.pm = new PluginManager(options.plugins, this);
     this.useDefaultProviders();
-  }
-
-  get options() {
-    return this._options;
   }
 
   useDefaultProviders() {
@@ -66,7 +70,12 @@ export class Application {
   getComponent(Component: ComponentTypeAndString) {
     if (!Component) return null;
     if (typeof Component !== 'string') return Component;
-    return get(this.components, Component);
+    const res = get(this.components, Component);
+    if (!res) {
+      console.warn(`Component ${Component} not found`);
+      return BlankComponent;
+    }
+    return res;
   }
 
   renderComponent<T extends {}>(Component: ComponentTypeAndString, props?: T) {

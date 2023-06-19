@@ -13,3 +13,9 @@ export function normalizeContainer(container: Element | ShadowRoot | string): El
   }
   return container as any;
 }
+
+export const getCurrentTimezone = () => {
+  const timezoneOffset = new Date().getTimezoneOffset() / -60;
+  const timezone = String(timezoneOffset).padStart(2, '0') + ':00';
+  return (timezoneOffset > 0 ? '+' : '-') + timezone;
+};
