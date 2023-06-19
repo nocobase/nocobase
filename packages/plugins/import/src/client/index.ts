@@ -5,5 +5,15 @@ export * from './ImportActionInitializer';
 export * from './ImportDesigner';
 export * from './ImportInitializerProvider';
 export * from './ImportPluginProvider';
-export { ImportPluginProvider as default } from './ImportPluginProvider';
 export * from './useImportAction';
+
+import { Plugin } from '@nocobase/client';
+import { ImportPluginProvider } from './ImportPluginProvider';
+
+export class ImportPlugin extends Plugin {
+  async load() {
+    this.app.use(ImportPluginProvider);
+  }
+}
+
+export default ImportPlugin;

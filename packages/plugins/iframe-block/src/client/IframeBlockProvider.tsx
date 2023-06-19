@@ -4,7 +4,7 @@ import { Iframe } from './Iframe';
 import { IframeBlockInitializer } from './IframeBlockInitializer';
 import { IframeBlockInitializerProvider } from './IframeBlockInitializerProvider';
 
-export const IframeBlockPlugin = (props: any) => {
+export const IframeBlockProvider = (props: any) => {
   return (
     <SchemaComponentOptions components={{ Iframe, IframeBlockInitializer }}>
       <IframeBlockInitializerProvider>{props.children}</IframeBlockInitializerProvider>

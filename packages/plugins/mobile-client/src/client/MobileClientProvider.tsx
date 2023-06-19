@@ -5,7 +5,7 @@ import { AppConfiguration, InterfaceConfiguration } from './configuration';
 import { RouterSwitchProvider } from './router';
 import { MobileCore } from './core';
 
-export default React.memo((props) => {
+export const MobileClientProvider = React.memo((props) => {
   const { t } = useTranslation();
 
   return (

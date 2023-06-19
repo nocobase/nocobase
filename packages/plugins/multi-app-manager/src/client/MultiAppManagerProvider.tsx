@@ -55,9 +55,8 @@ const MultiAppManager = () => {
   );
 };
 
-export { tableActionColumnSchema } from './settings/schemas/applications';
 
-export default (props) => {
+export const MultiAppManagerProvider = (props) => {
   const { t } = usePluginUtils();
   return (
     <PinnedPluginListProvider

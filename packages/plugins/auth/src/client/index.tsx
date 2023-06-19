@@ -1,41 +1,10 @@
-import {
-  OptionsComponentProvider,
-  SettingsCenterProvider,
-  SigninPageProvider,
-  SignupPageProvider,
-} from '@nocobase/client';
-import React from 'react';
-import { Authenticator } from './settings/Authenticator';
-import SigninPage from './basic/SigninPage';
-import { presetAuthType } from '../preset';
-import SignupPage from './basic/SignupPage';
-import { useAuthTranslation } from './locale';
-import { Options } from './basic/Options';
+import { Plugin } from '@nocobase/client';
+import { AuthProvider } from './AuthProvider';
 
-export default (props) => {
-  const { t } = useAuthTranslation();
-  return (
-    <SettingsCenterProvider
-      settings={{
-        auth: {
-          title: t('Authentication'),
-          icon: 'LoginOutlined',
-          tabs: {
-            authenticators: {
-              title: t('Authenticators'),
-              component: () => <Authenticator />,
-            },
-          },
-        },
-      }}
-    >
-      <OptionsComponentProvider authType={presetAuthType} component={Options}>
-        <SigninPageProvider authType={presetAuthType} tabTitle={t('Sign in via email')} component={SigninPage}>
-          <SignupPageProvider authType={presetAuthType} component={SignupPage}>
-            {props.children}
-          </SignupPageProvider>
-        </SigninPageProvider>
-      </OptionsComponentProvider>
-    </SettingsCenterProvider>
-  );
-};
+export class AuthPlugin extends Plugin {
+  async load() {
+    this.app.use(AuthProvider);
+  }
+}
+
+export default AuthPlugin;
