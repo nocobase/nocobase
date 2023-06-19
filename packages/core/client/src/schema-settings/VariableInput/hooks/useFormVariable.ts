@@ -1,53 +1,52 @@
 import { useMemo } from 'react';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { Schema } from '@formily/react';
+import { options } from '../../../collection-manager/Configuration/interfaces';
+import { FieldOption, Option } from '../type';
 
 interface GetOptionsParams {
-  schema: any;
+  depth: number;
   operator?: string;
   maxDepth: number;
   count?: number;
-  getFilterOptions: (collectionName: string) => any[];
+  loadChildren?: (option: Option) => Promise<void>;
+  getFilterOptions?: (collectionName: string) => any[];
+  compile: (value: string) => any;
 }
 
-const getChildren = (options: any[], { schema, operator, maxDepth, count = 1, getFilterOptions }: GetOptionsParams) => {
-  if (count > maxDepth) {
-    return [];
-  }
+const getChildren = (
+  options: FieldOption[],
+  { depth, maxDepth, loadChildren, compile }: GetOptionsParams,
+): Option[] => {
+  const result = options
+    .map((option): Option => {
+      if (!option.target) {
+        return {
+          key: option.name,
+          value: option.name,
+          label: compile(option.title),
+          depth,
+        };
+      }
 
-  const result = options.map((option) => {
-    if (!option.target) {
+      if (depth >= maxDepth) {
+        return null;
+      }
+
       return {
         key: option.name,
         value: option.name,
-        label: option.title,
-        // TODO: 现在是通过组件的名称来过滤能够被选择的选项，这样的坏处是不够精确，后续可以优化
-        // disabled: schema?.['x-component'] !== option.schema?.['x-component'],
-        disabled: false,
+        label: compile(option.title),
+        children: [],
+        isLeaf: false,
+        field: option,
+        depth,
+        loadChildren,
       };
-    }
-
-    const children =
-      getChildren(getFilterOptions(option.target), {
-        schema,
-        operator,
-        maxDepth,
-        count: count + 1,
-        getFilterOptions,
-      }) || [];
-
-    return {
-      key: option.name,
-      value: option.name,
-      label: option.title,
-      children,
-      disabled: children.every((child) => child.disabled),
-    };
-  });
-
+    })
+    .filter(Boolean);
   return result;
 };
-
 export const useFormVariable = ({
   blockForm,
   rootCollection,
@@ -63,32 +62,56 @@ export const useFormVariable = ({
 }) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
-  const fields = getFilterOptions(rootCollection);
-
-  const children = useMemo(() => {
-    if (!schema) {
-      return [];
+  const loadChildren = (option: any): Promise<void> => {
+    if (!option.field?.target) {
+      return new Promise((resolve) => {
+        resolve(void 0);
+      });
     }
-    const allowFields = fields.filter((field) => {
-      return Object.keys(blockForm.fields).some((name) => name.includes(field.name));
-    });
-    return (
-      getChildren(allowFields, {
-        schema,
-        operator,
-        maxDepth: level || 3,
-        getFilterOptions,
-      }) || []
-    );
-  }, [operator, schema]);
 
-  return children.length > 0
-    ? compile({
-        label: `{{t("Current form")}}`,
-        value: '$form',
-        key: '$form',
-        disabled: children.every((option) => option.disabled),
-        children: children,
-      })
-    : null;
+    const collectionName = option.field.target;
+    const fields = getFilterOptions(collectionName);
+    const allowFields =
+      option.depth === 0
+        ? fields.filter((field) => {
+            return Object.keys(blockForm.fields).some((name) => name.includes(`.${field.name}`));
+          })
+        : fields;
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const children =
+          getChildren(allowFields, {
+            depth: option.depth + 1,
+            maxDepth: 4,
+            loadChildren,
+            compile,
+          }) || [];
+        if (children.length === 0) {
+          option.disabled = true;
+          resolve();
+          return;
+        }
+        option.children = children;
+        resolve();
+
+        // 延迟 5 毫秒，防止阻塞主线程，导致 UI 卡顿
+      }, 5);
+    });
+  };
+
+  const result = useMemo(() => {
+    return {
+      label: `{{t("Current form")}}`,
+      value: '$form',
+      key: '$form',
+      children: [],
+      isLeaf: false,
+      field: {
+        target: rootCollection,
+      },
+      depth: 0,
+      loadChildren,
+    };
+  }, [rootCollection]);
+  return result;
 };
