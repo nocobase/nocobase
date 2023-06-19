@@ -2,9 +2,9 @@ import type { CSSInterpolation, CSSObject } from '@ant-design/cssinjs';
 import { useStyleRegister } from '@ant-design/cssinjs';
 import { merge } from '@formily/shared';
 import type { ComponentTokenMap, GlobalToken } from 'antd/es/theme/interface';
-import { useConfig, useToken } from './hooks';
+import { useConfig, usePrefixCls, useToken } from './hooks';
 
-export type OverrideComponent = keyof ComponentTokenMap | (string & object);
+export type OverrideComponent = keyof ComponentTokenMap | string;
 
 export interface StyleInfo {
   hashId: string;
@@ -54,15 +54,16 @@ export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObjec
     },
   };
 };
-export type UseComponentStyleResult = [(node: React.ReactElement) => React.ReactElement, string];
+export type UseComponentStyleResult = [(node: React.ReactElement) => React.ReactElement, string, string];
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
   styleFn: (token: TokenWithCommonCls<GlobalToken>, info: StyleInfo) => CSSInterpolation,
 ) => {
-  return (prefixCls: string): UseComponentStyleResult => {
+  return (): UseComponentStyleResult => {
     const { theme, token, hashId } = useToken();
     const { getPrefixCls, iconPrefixCls } = useConfig();
+    const prefixCls = usePrefixCls(component);
     const rootPrefixCls = getPrefixCls();
     return [
       useStyleRegister(
@@ -91,6 +92,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
         },
       ),
       hashId,
+      prefixCls,
     ];
   };
 };
