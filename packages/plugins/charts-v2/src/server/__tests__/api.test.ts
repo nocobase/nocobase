@@ -43,6 +43,11 @@ describe('api', () => {
     });
   });
 
+  afterAll(async (done) => {
+    await db.close();
+    done();
+  });
+
   test('query', () => {
     expect.assertions(1);
     return expect(

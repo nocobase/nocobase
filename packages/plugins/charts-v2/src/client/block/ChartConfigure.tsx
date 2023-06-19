@@ -18,7 +18,7 @@ import {
 import { css } from '@emotion/css';
 import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 import { ISchema, FormConsumer } from '@formily/react';
-import { ChartLibraryContext, ChartRenderer, ChartRendererProvider, useChartTypes } from '../renderer';
+import { ChartLibraryContext, ChartRenderer, ChartRendererProvider, useChartTypes, useCharts } from '../renderer';
 import { Form, FormItem } from '@formily/antd';
 import { RightSquareOutlined } from '@ant-design/icons';
 import { createForm, onFieldChange, onFormInit, Form as FormType, ObjectField } from '@formily/core';
@@ -32,7 +32,7 @@ import {
   useCompiledFields,
 } from '../hooks';
 import { cloneDeep, isEqual } from 'lodash';
-import { createRendererSchema, getChart, getSelectedFields } from '../utils';
+import { createRendererSchema, getSelectedFields } from '../utils';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {
@@ -79,7 +79,7 @@ export const ChartConfigure: React.FC<{
   const { dn } = useDesignable();
   const { insert } = props;
 
-  const libraries = useContext(ChartLibraryContext);
+  const charts = useCharts();
   const fields = useFields(collection);
   const initChart = (overwrite = false) => {
     if (!form.modified) {
@@ -89,9 +89,13 @@ export const ChartConfigure: React.FC<{
     if (!chartType) {
       return;
     }
-    const { chart } = getChart(libraries, chartType);
+    const chart = charts[chartType];
     const init = chart?.init;
     if (!init) {
+      if (overwrite) {
+        form.values.config.general = {};
+        form.values.config.advanced = {};
+      }
       return;
     }
     const query = form.values.query;
@@ -101,7 +105,7 @@ export const ChartConfigure: React.FC<{
       form.values.config.general = general;
     }
     if (advanced || overwrite) {
-      form.values.config.advanced = advanced;
+      form.values.config.advanced = advanced || {};
     }
   };
 
@@ -378,13 +382,13 @@ ChartConfigure.Config = function Config() {
   const { t } = useChartsTranslation();
   const chartTypes = useChartTypes();
   const fields = useFields();
-  const libraries = useContext(ChartLibraryContext);
+  const charts = useCharts();
   const getChartFields = useChartFields(fields, { t });
   return (
     <FormConsumer>
       {(form) => {
         const chartType = form.values.config?.chartType;
-        const { chart } = getChart(libraries, chartType);
+        const chart = charts[chartType];
         const schema = chart?.schema || {};
         return (
           <SchemaComponent

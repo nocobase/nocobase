@@ -23,14 +23,6 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
   };
 };
 
-export const getChart = (libraries: ChartLibraries, chartType: string) => {
-  const [library, type] = (chartType || '-').split('-');
-  return {
-    library: libraries[library],
-    chart: libraries[library]?.charts[type],
-  };
-};
-
 export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   // When field alias is set, appends it to the field list
   const process = (selectedFields: SelectedField[]) => {

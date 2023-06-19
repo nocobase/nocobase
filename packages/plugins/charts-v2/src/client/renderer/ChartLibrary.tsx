@@ -4,6 +4,10 @@ import { QueryProps } from './ChartRendererProvider';
 import { FieldOption } from '../hooks';
 import { lang } from '../locale';
 
+/**
+ * @params {usePropsFunc} useProps - Accept the information that the chart component needs to render,
+ * process it and return the props of the chart component.
+ */
 export type usePropsFunc = (props: {
   data: any;
   meta: {
@@ -19,7 +23,6 @@ export type ChartProps = {
   name: string;
   component: React.FC<any>;
   schema?: ISchema;
-  // The useProps function is used to process the information and return the props of the chart component.
   useProps?: usePropsFunc;
   // The init function is used to initialize the configuration of the chart component from the query configuration.
   init?: (
@@ -45,11 +48,14 @@ export type ChartLibraries = {
   };
 };
 
-/**
- * @params {usePropsFunc} useProps - Accept the information that the chart component needs to render,
- * process it and return the props of the chart component.
- */
 export const ChartLibraryContext = createContext<ChartLibraries>({});
+
+export const useCharts = (): Charts => {
+  const library = useContext(ChartLibraryContext);
+  return Object.values(library)
+    .filter((l) => l.enabled)
+    .reduce((charts, l) => ({ ...charts, ...l.charts }), {});
+};
 
 export const useChartTypes = (): {
   label: string;
@@ -65,9 +71,9 @@ export const useChartTypes = (): {
     .reduce((charts, [name, l]) => {
       const children = Object.entries(l.charts).map(([type, chart]) => ({
         ...chart,
-        key: `${name}-${type}`,
+        key: type,
         label: chart.name,
-        value: `${name}-${type}`,
+        value: type,
       }));
       return [
         ...charts,

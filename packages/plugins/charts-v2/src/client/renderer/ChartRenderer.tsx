@@ -13,9 +13,9 @@ import { ChartConfigContext } from '../block';
 import { useFieldSchema, useField, Schema } from '@formily/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useFieldTransformer, useCompiledFields } from '../hooks';
-import { createRendererSchema, getChart, getQueryWithAlias } from '../utils';
+import { createRendererSchema, getQueryWithAlias } from '../utils';
 import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
-import { ChartLibraryContext } from './ChartLibrary';
+import { useCharts } from './ChartLibrary';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{
@@ -85,8 +85,8 @@ export const ChartRenderer: React.FC<{
     run(query);
   }, [query, runAsync, runQuery]);
 
-  const libraries = useContext(ChartLibraryContext);
-  const { chart } = getChart(libraries, config?.chartType);
+  const charts = useCharts();
+  const chart = charts[config?.chartType];
   const Component = chart?.component;
   const locale = api.auth.getLocale();
   const meta = useFieldTransformer(transform, locale);

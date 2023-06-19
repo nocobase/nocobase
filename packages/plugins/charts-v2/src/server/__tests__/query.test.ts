@@ -26,6 +26,9 @@ describe('query', () => {
         db: {
           sequelize,
           getRepository: () => app.db.getRepository('test'),
+          options: {
+            underscored: false,
+          },
         },
       };
     });
@@ -61,7 +64,16 @@ describe('query', () => {
       ];
       const result = parseBuilder(ctx, { dimensions });
       expect(result.attributes).toEqual([['formatted-field', 'alias']]);
-      expect(result.group).toEqual(['alias', 'id']);
+      expect(result.group).toEqual([]);
+
+      const measures = [
+        {
+          field: 'field',
+          aggregation: 'sum',
+        },
+      ];
+      const result2 = parseBuilder(ctx, { measures, dimensions });
+      expect(result2.group).toEqual(['alias']);
     });
 
     it('should parse filter', () => {

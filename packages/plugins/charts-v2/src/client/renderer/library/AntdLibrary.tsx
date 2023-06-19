@@ -37,7 +37,7 @@ export const AntdLibrary: Charts = {
     component: Table,
     useProps: ({ data, meta, general, advanced }) => {
       let formatter: (val: any) => any;
-      const columns = data[0]
+      const columns = data.length
         ? Object.keys(data[0]).map((item) => ({
             title: item,
             dataIndex: item,
