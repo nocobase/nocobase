@@ -225,6 +225,7 @@ export default {
   "Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.": "随机生成，可修改。支持英文、数字和下划线，必须以英文字母开头。",
   "Edit": "编辑",
   "Edit collection": "编辑数据表",
+  "Configure field": "配置字段",
   "Configure fields": "配置字段",
   "Configure columns": "配置字段",
   "Edit field": "编辑字段",
