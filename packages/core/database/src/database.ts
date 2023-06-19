@@ -365,10 +365,6 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
 
       if (options.underscored) {
-        if (lodash.get(options, 'sortable.scopeKey')) {
-          options.sortable.scopeKey = snakeCase(options.sortable.scopeKey);
-        }
-
         if (lodash.get(options, 'indexes')) {
           // change index fields to snake case
           options.indexes = options.indexes.map((index) => {
@@ -478,7 +474,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
       return;
     }
 
-    const field = collection.getField(associationName);
+    const field = collection.getField<RelationField>(associationName);
 
     if (!field) {
       return;
@@ -504,7 +500,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const collection = this.collections.get(collectionName);
 
     if (associationName) {
-      const target = collection.getField(associationName)?.target;
+      const target = collection.getField<RelationField>(associationName)?.target;
       return target ? this.collections.get(target) : null;
     }
 

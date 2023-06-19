@@ -506,8 +506,8 @@ export class PluginACL extends Plugin {
         let collection: Collection;
         if (resourceName.includes('.')) {
           const [collectionName, associationName] = resourceName.split('.');
-          const field = ctx.db.getCollection(collectionName)?.getField?.(associationName);
-          if (field.target) {
+          const field = ctx.db.getCollection(collectionName)?.getField?.(associationName) as RelationField | undefined;
+          if (field?.target) {
             collection = ctx.db.getCollection(field.target);
           }
         } else {

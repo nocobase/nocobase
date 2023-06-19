@@ -1,4 +1,4 @@
-import { Collection, Model } from '@nocobase/database';
+import { Collection, isBelongsToField, Model } from '@nocobase/database';
 import { Trigger } from '..';
 import WorkflowModel from '../models/Workflow';
 
@@ -26,7 +26,7 @@ function getHookId(workflow, type) {
 
 function getFieldRawName(collection: Collection, name: string) {
   const field = collection.getField(name);
-  if (field && field.type === 'belongsTo') {
+  if (isBelongsToField(field)) {
     return field.foreignKey;
   }
   return name;

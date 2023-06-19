@@ -1,4 +1,5 @@
 import _ from 'lodash';
+import lodash from 'lodash';
 
 import {
   DataType,
@@ -13,6 +14,7 @@ import { Database } from '../database';
 import { InheritedCollection } from '../inherited-collection';
 import { ModelEventTypes } from '../types';
 import { snakeCase } from '../utils';
+import { BelongsToField, BelongsToManyField, HasManyField, HasOneField } from './index';
 
 export interface FieldContext {
   database: Database;
@@ -31,13 +33,16 @@ export interface BaseColumnFieldOptions extends BaseFieldOptions, Omit<ModelAttr
   index?: boolean | ModelIndexesOptions;
 }
 
+type FieldEventListeners = {
+  [key: string]: any;
+};
+
 export abstract class Field {
   options: any;
   context: FieldContext;
   database: Database;
   collection: Collection;
-
-  [key: string]: any;
+  fieldEventListeners: FieldEventListeners;
 
   constructor(options?: any, context?: FieldContext) {
     this.context = context as any;
@@ -214,6 +219,17 @@ export abstract class Field {
     Object.assign(this.options, obj);
   }
 
+  setListeners(listeners: FieldEventListeners) {
+    this.fieldEventListeners = listeners;
+
+    for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
+      for (const listener of lodash.castArray(listeners)) {
+        // @ts-ignore
+        this.on(eventName, listener);
+      }
+    }
+  }
+
   bind() {
     const { model } = this.context.collection;
     model.rawAttributes[this.name] = this.toSequelize();
@@ -234,6 +250,16 @@ export abstract class Field {
     if (this.options.index || this.options.unique) {
       this.context.collection.removeIndex([this.name]);
     }
+
+    if (lodash.isPlainObject(this.fieldEventListeners)) {
+      // off event listeners
+      for (const [eventName, listeners] of Object.entries(this.fieldEventListeners)) {
+        for (const listener of lodash.castArray(listeners)) {
+          // @ts-ignore
+          this.off(eventName, listener);
+        }
+      }
+    }
   }
 
   toSequelize(): any {
@@ -252,4 +278,20 @@ export abstract class Field {
   typeToString() {
     return this.dataType.toString();
   }
+}
+
+export function isHasOneField(field: any): field is HasOneField {
+  return field?.type === 'hasOne';
+}
+
+export function isBelongsToField(field: any): field is BelongsToField {
+  return field?.type === 'belongsTo';
+}
+
+export function isHasManyField(field: any): field is HasManyField {
+  return field?.type === 'hasMany';
+}
+
+export function isBelongsToManyField(field: any): field is BelongsToManyField {
+  return field?.type === 'belongsToMany';
 }

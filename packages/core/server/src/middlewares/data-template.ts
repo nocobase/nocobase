@@ -1,5 +1,5 @@
 import { Context } from '@nocobase/actions';
-import { Collection } from '@nocobase/database';
+import { Collection, isBelongsToField, isBelongsToManyField, isHasManyField, isHasOneField } from '@nocobase/database';
 
 export const dateTemplate = async (ctx: Context, next) => {
   const { resourceName, actionName } = ctx.action;
@@ -94,26 +94,27 @@ const traverseJSON = (data, options: TraverseOptions) => {
     if (['sort', 'password', 'sequence'].includes(field.type)) {
       continue;
     }
-    if (field.type === 'hasOne') {
+
+    if (isHasOneField(field)) {
       result[key] = traverseJSON(data[key], {
         collection: collection.db.getCollection(field.target),
         exclude: [field.foreignKey],
         include: subInclude,
       });
-    } else if (field.type === 'hasMany') {
+    } else if (isHasManyField(field)) {
       result[key] = traverseHasMany(data[key], {
         collection: collection.db.getCollection(field.target),
         exclude: [field.foreignKey],
         include: subInclude,
       });
-    } else if (field.type === 'belongsTo') {
+    } else if (isBelongsToField(field)) {
       result[key] = traverseJSON(data[key], {
         collection: collection.db.getCollection(field.target),
         // exclude: [field.foreignKey],
         include: subInclude,
         excludePk: false,
       });
-    } else if (field.type === 'belongsToMany') {
+    } else if (isBelongsToManyField(field)) {
       result[key] = traverseBelongsToMany(data[key], {
         collection: collection.db.getCollection(field.target),
         exclude: [field.foreignKey, field.otherKey],
