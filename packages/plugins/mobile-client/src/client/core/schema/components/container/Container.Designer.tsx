@@ -32,6 +32,7 @@ export const ContainerDesigner = () => {
           style={{
             borderColor: 'rgb(241, 139, 98)',
             color: 'rgb(241, 139, 98)',
+            width: '100%',
           }}
           icon={<MenuOutlined />}
           type="dashed"
