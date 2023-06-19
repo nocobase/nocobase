@@ -327,7 +327,7 @@ export const querySchema: ISchema = {
               },
             },
             limit: {
-              title: 'Limit',
+              title: '{{t("Limit")}}',
               type: 'number',
               'x-decorator': 'FormItem',
               'x-component': 'InputNumber',

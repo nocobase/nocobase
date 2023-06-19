@@ -61,4 +61,9 @@ export default {
   'Built-in': '内置图表',
   'Config reference: ': '配置参考: ',
   Table: '表格',
+  Sum: '求和',
+  Avg: '平均值',
+  Count: '计数',
+  Min: '最小值',
+  Max: '最大值',
 };
