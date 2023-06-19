@@ -269,6 +269,7 @@ const SideMenu = ({
   t,
   api,
   refresh,
+  designable,
 }) => {
   const { Component, getMenuItems } = useMenuItem();
 
@@ -276,27 +277,30 @@ const SideMenu = ({
     const result = getMenuItems(() => {
       return <RecursionField schema={sideMenuSchema} onlyRenderProperties />;
     });
-    result.push({
-      key: 'x-designer-button',
-      disabled: true,
-      label: render({
-        insert: (s) => {
-          const dn = createDesignable({
-            t,
-            api,
-            refresh,
-            current: sideMenuSchema,
-          });
-          dn.loadAPIClientEvents();
-          dn.insertAdjacent('beforeEnd', s);
-        },
-      }),
-      order: 1,
-      notdelete: true,
-    });
+
+    if (designable) {
+      result.push({
+        key: 'x-designer-button',
+        disabled: true,
+        label: render({
+          insert: (s) => {
+            const dn = createDesignable({
+              t,
+              api,
+              refresh,
+              current: sideMenuSchema,
+            });
+            dn.loadAPIClientEvents();
+            dn.insertAdjacent('beforeEnd', s);
+          },
+        }),
+        order: 1,
+        notdelete: true,
+      });
+    }
 
     return result;
-  }, [render, sideMenuSchema]);
+  }, [render, sideMenuSchema, designable]);
 
   if (loading) {
     return null;
@@ -450,6 +454,7 @@ export const Menu: ComposedMenu = observer(
               t={t}
               api={api}
               refresh={refresh}
+              designable={designable}
             />
           </MenuModeContext.Provider>
         </MenuItemDesignerContext.Provider>
