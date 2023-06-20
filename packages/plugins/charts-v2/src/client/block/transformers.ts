@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 
 const transformers: {
   [key: string]: {
-    [key: string]: (val: any, locale?: string) => string;
+    [key: string]: (val: any, locale?: string) => string | number;
   };
 } = {
   datetime: {

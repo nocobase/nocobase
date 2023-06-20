@@ -1,6 +1,6 @@
 import { Context, Next } from '@nocobase/actions';
 import { formatter } from './formatter';
-import { FilterParser, Model, snakeCase } from '@nocobase/database';
+import { FilterParser, Repository, snakeCase } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
 import { Cache } from '@nocobase/cache';
 
@@ -44,6 +44,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const attributes = [];
   const group = [];
   const order = [];
+  const fieldMap = {};
   let hasAgg = false;
   measures?.forEach((item: { field: string; aggregation: string; alias: string }) => {
     const field = underscored ? snakeCase(item.field) : item.field;
@@ -59,6 +60,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
       attribute.push(item.alias);
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
+    fieldMap[item.alias || field] = field;
   });
 
   dimensions?.forEach((item: { field: string; format: string; alias: string }) => {
@@ -75,6 +77,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
     group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
+    fieldMap[item.alias || field] = field;
   });
 
   orders?.forEach((item: { field: string; order: string }) => {
@@ -87,18 +90,59 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   });
 
   return {
-    attributes,
-    group: hasAgg ? group : [],
-    order,
-    limit: limit > 2000 ? 2000 : limit,
-    ...filterParser.toSequelizeParams(),
+    queryParams: {
+      attributes,
+      group: hasAgg ? group : [],
+      order,
+      limit: limit > 2000 ? 2000 : limit,
+      ...filterParser.toSequelizeParams(),
+    },
+    fieldMap,
   };
+};
+
+export const process = (ctx: Context, repository: Repository, data: any[], fieldMap: { [source: string]: string }) => {
+  const { sequelize } = ctx.db;
+  const dialect = sequelize.getDialect();
+  const fields = repository.collection.fields;
+  switch (dialect) {
+    case 'postgres':
+      // https://github.com/sequelize/sequelize/issues/4550
+      return data.map((record) => {
+        const result = {};
+        const dataValues = record.dataValues || {};
+        Object.keys(dataValues).forEach((key) => {
+          let value = dataValues[key];
+          const field = fieldMap[key];
+          const type = fields.get(field).type;
+          console.log(type);
+          switch (type) {
+            case 'bigInt':
+            case 'integer':
+              value = parseInt(value);
+              break;
+            case 'float':
+            case 'double':
+              value = parseFloat(value);
+              break;
+          }
+          result[key] = value;
+        });
+        console.log(result);
+        record.dataValues = result;
+        return record;
+      });
+    default:
+      return data;
+  }
 };
 
 export const queryData = async (ctx: Context, builder: QueryParams) => {
   const { collection, measures, dimensions, orders, filter, limit, sql } = builder;
   const repository = ctx.db.getRepository(collection);
-  return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
+  const { queryParams, fieldMap } = parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit });
+  const data = await repository.find(queryParams);
+  return process(ctx, repository, data, fieldMap);
   // if (!sql) {
   //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
   // }
