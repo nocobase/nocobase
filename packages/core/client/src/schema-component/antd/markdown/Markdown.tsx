@@ -4,9 +4,8 @@ import { Input as AntdInput, Spin } from 'antd';
 import React from 'react';
 import { ReadPretty as InputReadPretty } from '../input';
 import { MarkdownVoid } from './Markdown.Void';
+import { useStyles } from './style';
 import { convertToText, useParseMarkdown } from './util';
-
-import './style.less';
 
 export const Markdown: any = connect(
   AntdInput.TextArea,
@@ -24,13 +23,14 @@ export const Markdown: any = connect(
 );
 
 export const MarkdownReadPretty = (props) => {
+  const { wrapSSR, hashId, className } = useStyles();
   const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
-  const value = <div className={'nb-markdown'} dangerouslySetInnerHTML={{ __html: html }} />;
+  const value = <div className={`${hashId} ${className} nb-markdown`} dangerouslySetInnerHTML={{ __html: html }} />;
   if (loading) {
-    return <Spin />;
+    return wrapSSR(<Spin />);
   }
-  return <InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />;
+  return wrapSSR(<InputReadPretty.TextArea {...props} autop={false} text={text} value={value} />);
 };
 
 Markdown.Void = MarkdownVoid;
