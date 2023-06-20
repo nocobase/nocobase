@@ -3456,7 +3456,6 @@
 "@formily/antd@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/antd/-/antd-2.2.25.tgz#fb8d356c2f9c2cd69d84509a2867149e2b50b7bf"
-  integrity sha512-3ABOvSySlM+xQspGscGK70iI4+f/lUj228rbtLw97UivHeu6qBHLtNkOqU5kgZV4okoM7IpwhMG9jCELvhHEKw==
   dependencies:
     "@formily/core" "2.2.25"
     "@formily/grid" "2.2.25"
@@ -3472,7 +3471,6 @@
 "@formily/core@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/core/-/core-2.2.25.tgz#e90d0345b202b13777a7604214244015c9ed3de0"
-  integrity sha512-nNnRbVviw/lPdz6k7oZC/bnDr6+PDfYXmCRKnC2FWLQF3szXxqD/mR3QQpjFaGWQJFFBwwPqj9KvpvhB9mL4cQ==
   dependencies:
     "@formily/reactive" "2.2.25"
     "@formily/shared" "2.2.25"
@@ -3481,7 +3479,6 @@
 "@formily/grid@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/grid/-/grid-2.2.25.tgz#eb8a9f1e80cad40ed7cd6f681dcad2e9b256b8d4"
-  integrity sha512-y3+8W7gZ0KCyimlNbf3UwbxH19NDzh6yDOZwXJFdsDMeGTlM9+nruuQnrmbQLLB5zkUK0/toi/cjqHHrARaH5A==
   dependencies:
     "@formily/reactive" "2.2.25"
     "@juggle/resize-observer" "^3.3.1"
@@ -3489,7 +3486,6 @@
 "@formily/json-schema@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/json-schema/-/json-schema-2.2.25.tgz#8208e5eb318722373ae30f378c782e3e76be2a7f"
-  integrity sha512-0UfcnwoKWTmtcod6W1IHTrxPd0UKFYY3XRyHoqmqYLB+T61g0/MlPrAt9zuhw6ZkI59JCfQ5d+flGdFoE2j3Qg==
   dependencies:
     "@formily/core" "2.2.25"
     "@formily/reactive" "2.2.25"
@@ -3498,12 +3494,10 @@
 "@formily/path@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/path/-/path-2.2.25.tgz#a7775835f4bf09a8be877fcca56956d40b7c430b"
-  integrity sha512-GHgUKMXmvadQ9PliQcG6vfbDQrzIAT9Gt1cN3yksXqjUsQDWaniKX5Sk2e1TUuem1sNyQBM4SvIY3ciW/24w0Q==
 
 "@formily/react@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/react/-/react-2.2.25.tgz#fa3159f61bfba19278093b070c7b1c690b91503f"
-  integrity sha512-rGdtT2BVfXEnZAXMWOPSeKKtAGgDQcuSBrRKN/rcBiPPzu2sh3KYvNKmICQAJ8E6Kxdet+4qR+at9NXpNet2UQ==
   dependencies:
     "@formily/core" "2.2.25"
     "@formily/json-schema" "2.2.25"
@@ -3516,7 +3510,6 @@
 "@formily/reactive-react@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/reactive-react/-/reactive-react-2.2.25.tgz#4bcfdfab9b0dddb3b1ee6dec82199b183e0f43a4"
-  integrity sha512-pcs02z4be9ecY3PG9nDODokuY3vcwZRNkxtzVeaFf7mTQvtI5mRYmAGJmUtJqxSUSqgfz+UqtpTHejKYPjPxlQ==
   dependencies:
     "@formily/reactive" "2.2.25"
     hoist-non-react-statics "^3.3.2"
@@ -3524,12 +3517,10 @@
 "@formily/reactive@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/reactive/-/reactive-2.2.25.tgz#e77d272c22a441d0ae5a2342e036216eb412833f"
-  integrity sha512-+IF16oDeWFSJTsEaMIFJVf1rEHL5wbp86mAJwBC2XvAgVAvJjlbjolBQu8kuD2MUkliUln/FY61iHk+lxttyzw==
 
 "@formily/shared@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/shared/-/shared-2.2.25.tgz#a2a8436836b884e392cd2b685ed4c9566d528ac1"
-  integrity sha512-0mD74oB1GwoIsV6cDkyTXrmFbT9PN/6uN06X8U5F4W+c6C9kmUwC6yIp0lL5TBpGwmx6WLztayKudcyROO6U1w==
   dependencies:
     "@formily/path" "2.2.25"
     camel-case "^4.1.1"
@@ -3542,7 +3533,6 @@
 "@formily/validator@2.2.25":
   version "2.2.25"
   resolved "https://registry.npmmirror.com/@formily/validator/-/validator-2.2.25.tgz#6b13bcdfbb16080ee6de38aa7c0607d8939ac946"
-  integrity sha512-W7Xqqztz0XrWppbGDahRMa86bRWpaMVrkXs7v3I//VUVU0zS5AlrWYUOPE+xTTAdyQW/dyjEv1uMYS8b34+I+Q==
   dependencies:
     "@formily/shared" "2.2.25"
 
@@ -11075,9 +11065,23 @@ dumi-assets-types@2.0.0-alpha.0:
   version "2.0.0-alpha.0"
   resolved "https://registry.yarnpkg.com/dumi-assets-types/-/dumi-assets-types-2.0.0-alpha.0.tgz#46bf619ed1cb6d27bbe6a9cfe4be51e5e9589981"
 
-dumi-theme-nocobase@^0.2.11, dumi-theme-nocobase@^0.2.9:
-  version "0.2.11"
-  resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.11.tgz#690c64cd284c913d7f6428bc291c3a6cdf0f2d50"
+dumi-theme-nocobase@^0.2.12:
+  version "0.2.12"
+  resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.12.tgz#663c9bab60ae6dcfd5255b99780b4ddb7942ace7"
+  dependencies:
+    "@ant-design/icons" "^5.1.3"
+    "@babel/runtime" "^7.22.3"
+    "@ctrl/tinycolor" "^3.6.0"
+    "@emotion/react" "^11.11.0"
+    antd "^5.5.1"
+    antd-token-previewer "^2.0.0-alpha.6"
+    classnames "^2.3.2"
+    dayjs "^1.11.7"
+    rc-drawer "^6.1.2"
+
+dumi-theme-nocobase@^0.2.9:
+  version "0.2.9"
+  resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.9.tgz#0037a5a750e293b73de5be83e7f2195dbb0ae347"
   dependencies:
     "@ant-design/icons" "^5.1.3"
     "@babel/runtime" "^7.22.3"
