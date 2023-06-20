@@ -154,7 +154,9 @@ const InternalRemoteSelect = connect(
             str = str.replace('$iteration.', `$iteration.${path.join('.')}.`);
           }
           const parseValue = parseVariables(str, variablesCtx);
-          const filterObj = JSON.parse(JSON.stringify(c).replace(jsonlogic.value, parseValue));
+          const filterObj = JSON.parse(
+            JSON.stringify(c).replace(jsonlogic.value, str.endsWith('id') ? parseValue ?? 0 : parseValue),
+          );
           results.push(filterObj);
         }
       });
@@ -278,7 +280,12 @@ const InternalRemoteSelect = connect(
       const fieldSchema = useFieldSchema();
       return {
         ...props,
-        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames,...fieldSchema['x-component-props']?.fieldNames },
+        fieldNames: {
+          ...defaultFieldNames,
+          ...props.fieldNames,
+          ...field.componentProps.fieldNames,
+          ...fieldSchema['x-component-props']?.fieldNames,
+        },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },
