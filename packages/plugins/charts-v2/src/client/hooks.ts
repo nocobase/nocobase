@@ -130,6 +130,7 @@ export const useFieldTypes = (fields: FieldOption[]) => (field: any) => {
     updatedAt: 'datetime',
     double: 'number',
     integer: 'number',
+    percent: 'number',
   };
   const fieldInterface = fieldProps?.interface;
   const fieldType = fieldProps?.type;

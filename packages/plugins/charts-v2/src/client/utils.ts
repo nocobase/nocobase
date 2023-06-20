@@ -66,12 +66,31 @@ export const getQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
 };
 
 export const processData = (fields: FieldOption[], data: any[]) => {
+  const parseEnum = (field: FieldOption, value: any) => {
+    const options = field.uiSchema?.enum as { value: string; label: string }[];
+    if (!options || !Array.isArray(options)) {
+      return value;
+    }
+    const option = options.find((option) => option.value === value);
+    return option?.label || value;
+  };
   return data.map((record) => {
     const processed = {};
     Object.entries(record).forEach(([key, value]) => {
       const field = fields.find((field) => field.name === key);
-      const label = field?.label || key;
-      processed[label] = value;
+      if (!field) {
+        processed[key] = value;
+        return;
+      }
+      const label = field.label || key;
+      switch (field.interface) {
+        case 'select':
+        case 'radioGroup':
+          processed[label] = parseEnum(field, value);
+          break;
+        default:
+          processed[label] = value;
+      }
     });
     return processed;
   });

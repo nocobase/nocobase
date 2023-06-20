@@ -1,4 +1,4 @@
-import { Area, Bar, Column, DualAxes, Gauge, Line, Pie, Scatter } from '@ant-design/plots';
+import { Area, Bar, Column, DualAxes, Line, Pie, Scatter } from '@ant-design/plots';
 import { lang } from '../../locale';
 import { Charts, commonInit, infer, usePropsFunc } from '../ChartLibrary';
 const init = commonInit;
