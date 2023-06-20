@@ -18,9 +18,9 @@ v0.10 进行了依赖的重大升级，如果 v0.9 升级 v0.10，需要删掉�
 
 ```bash
 # 删除 .umi 相关缓存
-yarn rimraf -rf ./**/{.umi,.umi-production}
+yarn rimraf -rf "./**/{.umi,.umi-production}"
 # 删除编译文件
-yarn rimraf -rf packages/*/*/{lib,esm,es,dist,node_modules}
+yarn rimraf -rf "./packages/*/*/{lib,esm,es,dist,node_modules}"
 # 删除全部依赖
 yarn rimraf -rf node_modules
 ```
