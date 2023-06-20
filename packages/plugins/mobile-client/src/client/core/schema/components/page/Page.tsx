@@ -54,7 +54,11 @@ const InternalPage: React.FC = (props) => {
         return (
           <TabsContextProvider>
             <ActionBarProvider
-              container={props.active && onlyInPage ? document.getElementById('nb-position-container') : null}
+              container={
+                (typeof props.active !== 'undefined' ? props.active : true) && onlyInPage
+                  ? document.getElementById('nb-position-container')
+                  : null
+              }
               forceProps={{
                 layout: 'one-column',
                 className: globalActionCSS,
