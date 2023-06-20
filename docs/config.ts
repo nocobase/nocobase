@@ -285,23 +285,17 @@ const sidebar = {
         },
       ],
     },
-    '/api/cli',
-    '/api/actions',
-    '/api/sdk',
     {
       title: '@nocobase/cli',
-      path: '/api/cli',
-      type: 'item',
+      link: '/api/cli',
     },
     {
       title: '@nocobase/actions',
-      path: '/api/actions',
-      type: 'item',
+      link: '/api/actions',
     },
     {
       title: '@nocobase/sdk',
-      path: '/api/sdk',
-      type: 'item',
+      link: '/api/sdk',
     },
   ],
 };
