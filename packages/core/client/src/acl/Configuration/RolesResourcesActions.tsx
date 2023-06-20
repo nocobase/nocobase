@@ -6,7 +6,7 @@ import { isEmpty } from 'lodash';
 import React, { createContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager, useCompile, useRecord } from '../..';
-import { tableContainer } from '../style';
+import { useStyles } from '../style';
 import { useAvailableActions } from './RoleTable';
 import { ScopeSelect } from './ScopeSelect';
 
@@ -24,6 +24,7 @@ const toActionMap = (arr: any[]) => {
 export const RoleResourceCollectionContext = createContext<any>({});
 
 export const RolesResourcesActions = connect((props) => {
+  const { styles } = useStyles();
   // const { onChange } = props;
   const onChange = (values) => {
     const items = values.map((item) => {
@@ -92,7 +93,7 @@ export const RolesResourcesActions = connect((props) => {
         <FormLayout layout={'vertical'}>
           <FormItem label={t('Action permission')}>
             <Table
-              className={tableContainer}
+              className={styles}
               size={'small'}
               pagination={false}
               columns={[
@@ -156,7 +157,7 @@ export const RolesResourcesActions = connect((props) => {
           </FormItem>
           <FormItem label={t('Field permission')}>
             <Table
-              className={tableContainer}
+              className={styles}
               pagination={false}
               dataSource={fieldPermissions}
               columns={[

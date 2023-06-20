@@ -5,7 +5,7 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { SettingsCenterContext } from '../../pm';
 import { useRecord } from '../../record-provider';
 import { useCompile } from '../../schema-component';
-import { tableContainer } from '../style';
+import { useStyles } from '../style';
 
 const getParentKeys = (tree, func, path = []) => {
   if (!tree) return [];
@@ -70,6 +70,7 @@ const formatPluginTabs = (data) => {
 };
 
 export const SettingsCenterConfigure = () => {
+  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const pluginTags = useContext(SettingMenuContext);
@@ -105,7 +106,7 @@ export const SettingsCenterConfigure = () => {
   return (
     items?.length && (
       <Table
-        className={tableContainer}
+        className={styles}
         loading={loading}
         rowKey={'key'}
         pagination={false}

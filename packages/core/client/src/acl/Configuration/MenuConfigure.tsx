@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useRequest } from '../../api-client';
 import { useRecord } from '../../record-provider';
-import { tableContainer } from '../style';
+import { useStyles } from '../style';
 import { useMenuItems } from './MenuItemsProvider';
 
 const findUids = (items) => {
@@ -40,6 +40,7 @@ const getChildrenUids = (data = [], arr = []) => {
 };
 
 export const MenuConfigure = () => {
+  const { styles } = useStyles();
   const record = useRecord();
   const api = useAPIClient();
   const { items } = useMenuItems();
@@ -87,7 +88,7 @@ export const MenuConfigure = () => {
   };
   return (
     <Table
-      className={tableContainer}
+      className={styles}
       loading={loading}
       rowKey={'uid'}
       pagination={false}
