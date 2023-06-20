@@ -465,7 +465,7 @@ SchemaSettings.SubMenu = function SubMenu(props) {
   return <Component />;
 };
 
-SchemaSettings.Divider = function Divider(props: MenuDividerProps) {
+SchemaSettings.Divider = function Divider() {
   const { pushMenuItem } = useCollectMenuItems();
   const key = useMemo(() => uid(), []);
   const item = {
