@@ -2,7 +2,6 @@ import { css } from '@emotion/css';
 import { Menu, Select } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
 import { useAPIClient } from '../api-client';
 import { useCompile } from '../schema-component';

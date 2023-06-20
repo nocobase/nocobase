@@ -17,7 +17,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
   (props) => {
     const { footerNodeName = 'Action.Drawer.Footer', ...others } = props;
     const { t } = useTranslation();
-    const { visible, setVisible, openSize = 'middle', drawerProps } = useActionContext();
+    const { visible, setVisible, openSize = 'middle', drawerProps, modalProps } = useActionContext();
     const schema = useFieldSchema();
     const field = useField();
     const openSizeFromParent = schema.parent?.['x-component-props']?.['openSize'];
@@ -35,6 +35,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         title={field.title}
         {...others}
         {...drawerProps}
+        {...modalProps}
         style={{
           ...drawerProps?.style,
           ...others?.style,

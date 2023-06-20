@@ -100,6 +100,7 @@ export const FormItem: any = observer(
 );
 
 FormItem.Designer = function Designer() {
+  let targetField;
   const { getCollectionFields, getInterface, getCollectionJoinField, getCollection } = useCollectionManager();
   const { getField } = useCollection();
   const { form } = useFormBlockContext();
@@ -112,9 +113,11 @@ FormItem.Designer = function Designer() {
   const IsShowMultipleSwitch = useIsShowMultipleSwitch();
 
   const collectionField = getField(fieldSchema['name']) || getCollectionJoinField(fieldSchema['x-collection-field']);
-  const targetField = getCollectionJoinField(
-    `${collectionField?.target}.${fieldSchema['x-component-props'].fieldNames?.label}`,
-  );
+  if (collectionField?.target) {
+    targetField = getCollectionJoinField(
+      `${collectionField.target}.${fieldSchema['x-component-props']?.fieldNames?.label || 'id'}`,
+    );
+  }
 
   const targetCollection = getCollection(collectionField?.target);
   const interfaceConfig = getInterface(collectionField?.interface);
@@ -563,7 +566,7 @@ FormItem.Designer = function Designer() {
       {showFieldMode && (
         <SchemaSettings.SelectItem
           key="field-mode"
-          title={t('Field mode')}
+          title={t('Field component')}
           options={fieldModeOptions}
           value={fieldMode}
           onChange={(mode) => {
@@ -661,11 +664,11 @@ FormItem.Designer = function Designer() {
       {!field.readPretty && isAssociationField && ['Select'].includes(fieldMode) && (
         <SchemaSettings.SelectItem
           key="add-mode"
-          title={t('Add new mode')}
+          title={t('Quick create')}
           options={[
             { label: t('None'), value: 'none' },
-            { label: t('Quick add'), value: 'quickAdd' },
-            { label: t('Modal add'), value: 'modalAdd' },
+            { label: t('Dropdown'), value: 'quickAdd' },
+            { label: t('Pop-up'), value: 'modalAdd' },
           ]}
           value={field.componentProps?.addMode || 'none'}
           onChange={(mode) => {
@@ -830,7 +833,7 @@ FormItem.Designer = function Designer() {
           }}
         />
       )}
-      {options.length > 0 && isAssociationField && (
+      {options.length > 0 && isAssociationField && fieldMode !== 'SubTable' && (
         <SchemaSettings.SelectItem
           key="title-field"
           title={t('Title field')}

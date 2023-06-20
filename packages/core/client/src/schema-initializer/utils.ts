@@ -72,22 +72,55 @@ export const findTableColumn = (schema: Schema, key: string, action: string, dee
     return buf;
   });
 };
+const quickEditField = [
+  'attachment',
+  'textarea',
+  'markdown',
+  'json',
+  'richText',
+  'polygon',
+  'circle',
+  'point',
+  'lineString',
+];
 
 export const useTableColumnInitializerFields = () => {
   const { name, currentFields = [] } = useCollection();
   const { getInterface, getCollection } = useCollectionManager();
+  const fieldSchema = useFieldSchema();
+  const isSubTable = fieldSchema['x-component'] === 'AssociationField.SubTable';
+  const form = useForm();
+  const isReadPretty = isSubTable ? form.readPretty : true;
   return currentFields
     .filter(
       (field) => field?.interface && field?.interface !== 'subTable' && !field?.isForeignKey && !field?.treeChildren,
     )
     .map((field) => {
       const interfaceConfig = getInterface(field.interface);
+      const isFileCollection = field?.target && getCollection(field?.target)?.template === 'file';
       const schema = {
         name: field.name,
         'x-collection-field': `${name}.${field.name}`,
         'x-component': 'CollectionField',
-        'x-read-pretty': true,
-        'x-component-props': {},
+        'x-component-props': isFileCollection
+          ? {
+              fieldNames: {
+                label: 'preview',
+                value: 'id',
+              },
+            }
+          : {},
+        'x-read-pretty': isReadPretty || field.uiSchema?.['x-read-pretty'],
+        'x-decorator': isSubTable
+          ? quickEditField.includes(field.interface) || isFileCollection
+            ? 'QuickEdit'
+            : 'FormItem'
+          : null,
+        'x-decorator-props': {
+          labelStyle: {
+            display: 'none',
+          },
+        },
       };
       // interfaceConfig?.schemaInitialize?.(schema, { field, readPretty: true, block: 'Table' });
       return {
@@ -99,7 +132,7 @@ export const useTableColumnInitializerFields = () => {
         schemaInitialize: (s) => {
           interfaceConfig?.schemaInitialize?.(s, {
             field,
-            readPretty: true,
+            readPretty: isReadPretty,
             block: 'Table',
             targetCollection: getCollection(field.target),
           });

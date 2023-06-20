@@ -127,7 +127,7 @@ export const TableBlockProvider = (props) => {
   return (
     <SchemaComponentOptions scope={{ treeTable }}>
       <FormContext.Provider value={form}>
-        <BlockProvider {...props} params={params}>
+        <BlockProvider {...props} params={params} runWhenParamsChanged>
           <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
         </BlockProvider>
       </FormContext.Provider>

@@ -133,7 +133,7 @@ const InternalFileManager = (props) => {
     };
   };
   return (
-    <div>
+    <div style={{ width: '100%', overflow: 'auto' }}>
       <FileSelector
         value={options}
         multiple={multiple}
@@ -153,7 +153,17 @@ const InternalFileManager = (props) => {
           }
         }}
       />
-      <ActionContextProvider value={{ openMode: 'drawer', visible: visibleSelector, setVisible: setVisibleSelector }}>
+      <ActionContextProvider
+        value={{
+          openMode: 'drawer',
+          visible: visibleSelector,
+          setVisible: setVisibleSelector,
+          modalProps: {
+            getContainer: others?.getContainer,
+          },
+          formValueChanged: false,
+        }}
+      >
         <RecordPickerProvider {...pickerProps}>
           <CollectionProvider name={collectionField.target}>
             <FormProvider>

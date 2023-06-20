@@ -1,11 +1,11 @@
-import React, { useCallback, useMemo } from 'react';
 import { css, cx } from '@emotion/css';
-import { PageDesigner } from './Page.Designer';
-import { ActionBarProvider, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
 import { RecursionField, useFieldSchema } from '@formily/react';
-import { countGridCol } from '../../helpers';
+import { ActionBarProvider, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
-import { useHistory, useLocation, useParams } from 'react-router-dom';
+import React, { useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { countGridCol } from '../../helpers';
+import { PageDesigner } from './Page.Designer';
 
 const globalActionCSS = css`
   #nb-position-container > & {
@@ -23,46 +23,36 @@ const globalActionCSS = css`
 const InternalPage: React.FC = (props) => {
   const Designer = useDesigner();
   const fieldSchema = useFieldSchema();
-  const history = useHistory();
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
+  const [searchParams, setSearchParams] = useSearchParams();
   const tabsSchema = fieldSchema.properties?.['tabs'];
   // Only support globalActions in page
   const onlyInPage = fieldSchema.root === fieldSchema.parent;
   let hasGlobalActions = false;
   if (!tabsSchema) {
     hasGlobalActions = countGridCol(fieldSchema.properties['grid'], 2) === 1;
-  } else if (query.has('tab') && tabsSchema.properties?.[query.get('tab')]) {
-    hasGlobalActions = countGridCol(tabsSchema.properties[query.get('tab')]?.properties?.['grid'], 2) === 1;
+  } else if (searchParams.has('tab') && tabsSchema.properties?.[searchParams.get('tab')]) {
+    hasGlobalActions = countGridCol(tabsSchema.properties[searchParams.get('tab')]?.properties?.['grid'], 2) === 1;
   } else if (tabsSchema.properties) {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
     if (schema) {
-      history.replace({
-        pathname: location.pathname,
-        search: new URLSearchParams({
-          tab: schema.name.toString(),
-        }).toString(),
+      setTimeout(() => {
+        setSearchParams([['tab', schema.name.toString()]]);
       });
     }
   }
 
   const onTabsChange = useCallback<TabsProps['onChange']>(
     (key) => {
-      history.replace({
-        pathname: history.location.pathname,
-        search: new URLSearchParams({
-          tab: key,
-        }).toString(),
-      });
+      setSearchParams([['tab', key]]);
     },
-    [history],
+    [setSearchParams],
   );
 
   const GlobalActionProvider = useMemo(() => {
     if (hasGlobalActions) {
       return ActionBarProvider;
     }
-    return React.Fragment;
+    return (props) => <>{props.children}</>;
   }, [hasGlobalActions]);
 
   return (
@@ -112,7 +102,7 @@ const InternalPage: React.FC = (props) => {
               return 'MHeader' === s['x-component'];
             }}
           ></RecursionField>
-          <TabsContextProvider deep={false} activeKey={query.get('tab')} onChange={onTabsChange}>
+          <TabsContextProvider deep={false} activeKey={searchParams.get('tab')} onChange={onTabsChange}>
             <RecursionField
               schema={fieldSchema}
               filterProperties={(s) => {

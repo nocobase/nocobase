@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
 import { css, cx } from '@emotion/css';
 import { useInterfaceContext } from './InterfaceProvider';
@@ -97,7 +97,7 @@ const MApplication: React.FC = (props) => {
             )}
           >
             {params.name && !params.name.startsWith('tab_') ? (
-              props.children
+              <Outlet />
             ) : (
               <RemoteSchemaComponent key={route.uiSchemaUid} uid={route.uiSchemaUid}>
                 {props.children}
