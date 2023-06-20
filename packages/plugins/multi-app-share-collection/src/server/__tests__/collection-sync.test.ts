@@ -1,5 +1,6 @@
 import { BelongsToManyRepository, Database } from '@nocobase/database';
 import { MockServer, mockServer, pgOnly } from '@nocobase/test';
+import * as process from 'process';
 
 pgOnly()('enable plugin', () => {
   let mainDb: Database;
@@ -274,7 +275,9 @@ pgOnly()('collection sync', () => {
 
     const postCollection = subApp1.db.getCollection('posts');
 
-    expect(postCollection.options.schema).toBe(mainDb.options.schema || 'public');
+    expect(postCollection.options.schema).toBe(
+      process.env.COLLECTION_MANAGER_SCHEMA || mainDb.options.schema || 'public',
+    );
   });
 
   it('should support syncToApps with wildcard value', async () => {
