@@ -7,7 +7,7 @@ import { ChartLibraryProvider } from './renderer/ChartLibrary';
 
 const Chart: React.FC = (props) => {
   const { t } = useChartsTranslation();
-  const initializers = useContext(SchemaInitializerContext);
+  const initializers = useContext<any>(SchemaInitializerContext);
   const children = initializers.BlockInitializers.items[0].children;
   const has = children.some((initializer) => initializer.component === 'ChartV2BlockInitializer');
   if (!has) {
