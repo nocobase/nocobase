@@ -4,13 +4,13 @@
   "displayName.zh-CN": "UI schema",
   "description": "A plugin used for managing page UI schemas.",
   "description.zh-CN": "UI schema 配置。",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
     "@formily/json-schema": "2.2.24",
-    "@nocobase/test": "0.10.0-alpha.1"
+    "@nocobase/test": "0.10.0-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }
