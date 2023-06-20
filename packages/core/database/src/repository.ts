@@ -111,7 +111,9 @@ export interface CommonFindOptions extends Transactionable {
   tree?: boolean;
 }
 
-export type FindOneOptions = Omit<FindOptions, 'limit'>;
+export type FindOneOptions = Omit<FindOptions, 'limit'> & {
+  targetCollection?: string;
+};
 
 export interface DestroyOptions extends SequelizeDestroyOptions {
   filter?: Filter;
@@ -375,6 +377,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async find(options: FindOptions = {}) {
+    console.log(options);
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 

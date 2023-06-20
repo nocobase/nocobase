@@ -85,6 +85,7 @@ describe('Inherited Collection', () => {
 
     const child1ViaObject1 = await db.getRepository<HasManyRepository>('object.assocs', object1.id).findOne({
       filterByTk: child1.get('id'),
+      targetCollection: 'child',
     });
 
     expect(child1ViaObject1.get('childName')).toBe('child1');
