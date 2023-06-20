@@ -4,12 +4,12 @@
   "displayName.zh-CN": "iframe",
   "description": "create and manage IFrame blocks on the page for embedding and displaying external web pages or content.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "devDependencies": {
-    "@nocobase/server": "0.10.0-alpha.1",
-    "@nocobase/test": "0.10.0-alpha.1"
+    "@nocobase/server": "0.10.0-alpha.2",
+    "@nocobase/test": "0.10.0-alpha.2"
   }
 }
