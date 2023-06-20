@@ -255,6 +255,28 @@ pgOnly()('collection sync', () => {
     expect(user).toBeTruthy();
   });
 
+  it('should sync custom collections', async () => {
+    const subApp1Record = await mainDb.getRepository('applications').create({
+      values: {
+        name: 'sub1',
+      },
+    });
+
+    const subApp1 = await mainApp.appManager.getApplication(subApp1Record.name);
+
+    await mainApp.db.getRepository('collections').create({
+      values: {
+        name: 'posts',
+        fields: [{ type: 'string', title: 'title' }],
+      },
+      context: {},
+    });
+
+    const postCollection = subApp1.db.getCollection('posts');
+
+    expect(postCollection.options.schema).toBe(mainDb.options.schema || 'public');
+  });
+
   it('should support syncToApps with wildcard value', async () => {
     const subApp1Record = await mainDb.getRepository('applications').create({
       values: {
