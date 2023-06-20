@@ -115,7 +115,6 @@ const InternalRemoteSelect = connect(
       },
       [targetField?.uiSchema, fieldNames],
     );
-
     const { data, run, loading } = useRequest(
       {
         action: 'list',
@@ -238,7 +237,12 @@ const InternalRemoteSelect = connect(
       const fieldSchema = useFieldSchema();
       return {
         ...props,
-        fieldNames: { ...defaultFieldNames, ...props.fieldNames, ...field.componentProps.fieldNames,...fieldSchema['x-component-props']?.fieldNames },
+        fieldNames: {
+          ...defaultFieldNames,
+          ...props.fieldNames,
+          ...field.componentProps.fieldNames,
+          ...fieldSchema['x-component-props']?.fieldNames,
+        },
         suffixIcon: field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffixIcon,
       };
     },

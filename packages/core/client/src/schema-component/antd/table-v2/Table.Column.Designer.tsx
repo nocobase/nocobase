@@ -1,10 +1,13 @@
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import React from 'react';
+import { set } from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useCollectionManager } from '../../../collection-manager';
+import { useCollectionManager, useCollectionFilterOptions } from '../../../collection-manager';
 import { GeneralSchemaDesigner, SchemaSettings, isPatternDisabled } from '../../../schema-settings';
 import { useCompile, useDesignable } from '../../hooks';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { FilterDynamicComponent } from './FilterDynamicComponent';
+import { removeNullCondition } from '../filter';
 
 const useLabelFields = (collectionName?: any) => {
   // 需要在组件顶层调用
@@ -39,6 +42,8 @@ export const TableColumnDesigner = (props) => {
   const isFileField = isFileCollection(targetCollection);
   const isSubTableColumn = ['QuickEdit', 'FormItem'].includes(fieldSchema['x-decorator']);
   const { currentMode, field: tableField } = useAssociationFieldContext();
+  const defaultFilter = fieldSchema?.['x-component-props']?.service?.params?.filter || {};
+  const dataSource = useCollectionFilterOptions(collectionField?.target);
   let readOnlyMode = 'editable';
   if (fieldSchema['x-disabled'] === true) {
     readOnlyMode = 'readonly';
@@ -80,6 +85,44 @@ export const TableColumnDesigner = (props) => {
           dn.refresh();
         }}
       />
+      {currentMode && !field.readPretty && (
+        <SchemaSettings.ModalItem
+          title={t('Set the data scope')}
+          schema={
+            {
+              type: 'object',
+              title: t('Set the data scope'),
+              properties: {
+                filter: {
+                  default: defaultFilter,
+                  enum: dataSource,
+                  'x-component': 'Filter',
+                  'x-component-props': {
+                    dynamicComponent: (props) => FilterDynamicComponent({ ...props }),
+                  },
+                },
+              },
+            } as ISchema
+          }
+          onSubmit={({ filter }) => {
+            filter = removeNullCondition(filter);
+            set(field.componentProps, 'service.params.filter', filter);
+            fieldSchema['x-component-props'] = field.componentProps;
+            const path = field.path?.splice(field.path?.length - 1, 1);
+            (tableField as any)?.value.map((_, index) => {
+              field.form.query(`${path.concat(`${index}.` + fieldSchema.name)}`).take((f) => {
+                set(f.componentProps, 'service.params.filter', filter);
+              });
+            });
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': field.componentProps,
+              },
+            });
+          }}
+        />
+      )}
       <SchemaSettings.ModalItem
         title={t('Column width')}
         schema={
