@@ -54,7 +54,11 @@ export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObjec
     },
   };
 };
-export type UseComponentStyleResult = [(node: React.ReactElement) => React.ReactElement, string, string];
+export type UseComponentStyleResult = {
+  wrapSSR: ReturnType<typeof useStyleRegister>;
+  hashId: string;
+  className: string;
+};
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
   component: ComponentName,
@@ -65,8 +69,9 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
     const { getPrefixCls, iconPrefixCls } = useConfig();
     const prefixCls = usePrefixCls(component);
     const rootPrefixCls = getPrefixCls();
-    return [
-      useStyleRegister(
+
+    return {
+      wrapSSR: useStyleRegister(
         {
           theme,
           token,
@@ -92,7 +97,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
         },
       ),
       hashId,
-      prefixCls,
-    ];
+      className: prefixCls,
+    };
   };
 };
