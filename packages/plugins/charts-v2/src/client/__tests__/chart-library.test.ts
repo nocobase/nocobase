@@ -6,26 +6,31 @@ describe('library', () => {
     const fields = [
       {
         name: 'price',
+        value: 'price',
         type: 'number',
         label: 'Price',
       },
       {
         name: 'count',
+        value: 'count',
         type: 'number',
         label: 'Count',
       },
       {
         name: 'title',
+        value: 'title',
         type: 'string',
         label: 'Title',
       },
       {
         name: 'name',
+        value: 'name',
         type: 'string',
         label: 'Name',
       },
       {
         name: 'createdAt',
+        value: 'createdAt',
         type: 'date',
         label: 'Created At',
       },
