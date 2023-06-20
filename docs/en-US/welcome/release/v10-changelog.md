@@ -12,15 +12,15 @@
 - Quick creation of relational data, supports two quick creation modes
   - Add in drop-down menu to quickly create a new record based on the title field
   - Add in pop-up window to configure complex add forms
-- Copy operation, supports two copy modes
-  - Direct copy
-  - Copy to the form and continue filling
+- Duplicate action, supports two modes
+  - Direct duplicate
+  - Copy into the form and continue to fill in
 - Form data templates
-- Filter data range support variables
+- Filter data scope support variables
 - List block
 - Grid card block
 - Mobile client plugin
-- User authentication plugin with different login support
+- User authentication plugin, support for different authentication methods
   - Email/Password
   - SMS
   - OIDC
@@ -33,30 +33,30 @@
   - Provide file collection template
   - Provide file manager component
 
-## Application upgrades
+## Upgrading applications
 
-### Upgrading of Docker installation
+### Upgrading for Docker compose
 
-No change, upgrade reference [Docker image upgrade guide](/welcome/getting-started/upgrading/docker-compose)
+No change, upgrade reference [Upgrading for Docker compose](/welcome/getting-started/upgrading/docker-compose)
 
-### Upgrading of source code installation
+### Upgrading for Git source code
 
 v0.10 has a major upgrade of dependencies, so to prevent errors when upgrading the source code, you need to delete the following directories before upgrading
 
 ```bash
 ### Remove .umi-related cache
-yarn rimraf -rf . /**/{.umi,.umi-production}
+yarn rimraf -rf "./**/{.umi,.umi-production}"
 # Delete compiled files
-yarn rimraf -rf packages/*/*/{lib,esm,es,dist,node_modules}
+yarn rimraf -rf "./packages/*/*/{lib,esm,es,dist,node_modules}"
 # Remove dependencies
 yarn rimraf -rf node_modules
 ```
 
-See [Git source upgrade guide](/welcome/getting-started/upgrading/git-clone) for more details
+See [Upgrading for Git source code](/welcome/getting-started/upgrading/git-clone) for more details
 
-### create-nocobase-app installed upgrades
+### Upgrading for create-nocobase-app
 
-It is recommended that `yarn create` re-download the new version and update the .env configuration, for more details refer to [major version upgrade guide](/welcome/getting-started/upgrading/create-nocobase-app#major-upgrade)
+It is recommended that `yarn create` re-download the new version and modify the `.env` configuration, for more details refer to [major version upgrade guide](/welcome/getting-started/upgrading/create-nocobase-app#major-upgrade)
 
 ## Upcoming deprecated and potentially incompatible changes
 
@@ -68,7 +68,7 @@ Not compatible with new version, block fields need to be removed and reassigned 
 
 In addition to the built-in attachments table, users can also custom file collection, the upload api for attachments has been changed from `/api/attachments:upload` to `/api/<file-collection>:create`, upload is deprecated, still compatible with v0.10 but will be Removed.
 
-### signin/signup apis changes
+### signin/signup api changes
 
 The nocobase kernel provides a more powerful [auth module](https://github.com/nocobase/nocobase/tree/main/packages/plugins/auth) with the following changes to the user login, registration, verification, and logout apis:
 
@@ -230,4 +230,4 @@ The following RegExp-style route paths are not valid in v6:
 /files-*
 ```
 
-For more changes and api changes, please refer to [react-router@6](https://reactrouter.com/en/main/upgrading/v5)。
+For more api changes, please refer to [react-router@6](https://reactrouter.com/en/main/upgrading/v5)。
