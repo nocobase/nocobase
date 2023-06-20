@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # IconPicker
@@ -11,4 +10,4 @@ group:
 
 ### IconPicker
 
-<code src="./demos/icon-picker.tsx" />
+<code src="./demos/icon-picker.tsx"></code>

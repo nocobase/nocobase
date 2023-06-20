@@ -32,7 +32,11 @@
   },
   "resolutions": {
     "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0"
+    "@types/react-dom": "^17.0.0",
+    "react-router-dom": "^6.11.2",
+    "react-router": "^6.11.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
   "config": {
     "ghooks": {
@@ -40,6 +44,10 @@
     }
   },
   "devDependencies": {
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
@@ -48,6 +56,8 @@
     "@testing-library/user-event": "^14.4.3",
     "@vitejs/plugin-react": "^4.0.0",
     "auto-changelog": "^2.4.0",
+    "dumi": "^2.2.0",
+    "dumi-theme-nocobase": "^0.2.11",
     "ghooks": "^2.0.4",
     "jsdom-worker": "^0.3.0",
     "prettier": "^2.2.1",

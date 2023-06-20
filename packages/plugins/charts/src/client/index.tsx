@@ -41,7 +41,7 @@ registerValidateRules({
 
 const Charts = React.memo((props) => {
   const api = useAPIClient();
-  const items = useContext(SchemaInitializerContext);
+  const items = useContext<any>(SchemaInitializerContext);
   const children = items.BlockInitializers.items[0].children;
   if (children) {
     const hasChartItem = children.some((child) => child?.component === 'ChartBlockInitializer');

@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # AsyncDataProvider
@@ -97,7 +96,7 @@ group:
 
 大多数实际应用中，表格视图的 dataSource 是异步获取的，可能也需要过滤和分页，这样一来直接在 x-component-props 里写 dataSource 并不合适。为了解决这个问题，可以给组件扩展一个 request 属性，用于请求远程数据，例子如下：
 
-<code src="./demos/demo2.tsx"/>
+<code src="./demos/demo2.tsx"></code>
 
 上述例子的 `<TableView/>` 组件就是一个 React Component，可以正常使用，而不局限于 SchemaComponent 场景。更进一步，为了处理过滤表单、分页等问题，建议将 request 通过 `<AsyncDataProvider/>` 共享给 `<TableView/>` 组件。
 
@@ -124,14 +123,14 @@ const { data, loading, params, run, refresh, parent } = useAsyncData();
 
 转化为 Schema 时，可以将 AsyncDataProvider 放在 `x-decorator` 里，也可以将重新组合的 AsyncDataProvider + TableView，放在 `x-component` 里。
 
-<code src="./demos/demo3.tsx"/>
+<code src="./demos/demo3.tsx"></code>
 
 将 AsyncDataProvider 独立出来，放到 x-decorator 里的另一个好处，例子如下：
 
 ```tsx | pure
 <CollectionProvider>
   {/* 从 CollectionProvider 里获取资源请求参数，并将请求结果同时共享给 DesignableBar 和 TableView */}
-  <AsyncDataProvider> 
+  <AsyncDataProvider>
     <DesignableBar/>
     <TableView>
       <RecordProvider>

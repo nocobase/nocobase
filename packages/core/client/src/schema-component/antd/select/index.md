@@ -1,25 +1,24 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
-# Select 
+# Select
 
 ## Examples
 
 ### 单选
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 ### 多选
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>
 
 ### 值为 Object 类型的 Select
 
-<code src="./demos/demo3.tsx" />
+<code src="./demos/demo3.tsx"></code>
 
 ## API
 

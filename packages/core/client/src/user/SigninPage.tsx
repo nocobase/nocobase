@@ -3,7 +3,7 @@ import { Space, Tabs } from 'antd';
 import React, { useCallback, useContext } from 'react';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { Link, useHistory, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import VerificationCode from './VerificationCode';
@@ -50,12 +50,11 @@ const passwordForm: ISchema = {
 };
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation<any>();
-  const history = useHistory();
-  const redirect = location?.['query']?.redirect;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   return useCallback(() => {
-    history.replace(redirect || '/admin');
-  }, [redirect]);
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
 }
 
 export const usePasswordSignIn = () => {

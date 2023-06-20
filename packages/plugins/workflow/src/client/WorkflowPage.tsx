@@ -1,12 +1,12 @@
 import { cx } from '@emotion/css';
-import React from 'react';
-import { useRouteMatch } from 'react-router-dom';
 import { SchemaComponent } from '@nocobase/client';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 import { workflowPageClass } from './style';
 import { WorkflowCanvas } from './WorkflowCanvas';
 
 export const WorkflowPage = () => {
-  const { params } = useRouteMatch<any>();
+  const params = useParams<any>();
 
   return (
     <div className={cx(workflowPageClass)}>
@@ -27,7 +27,7 @@ export const WorkflowPage = () => {
                   resource: 'workflows',
                   action: 'get',
                   params: {
-                    filter: params,
+                    filter: { id: params.id },
                     appends: [
                       'nodes',
                       'revisions.id',

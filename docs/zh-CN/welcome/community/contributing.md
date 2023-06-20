@@ -45,4 +45,4 @@ yarn doc --lang=en-US
 
 ## 其他
 
-更多 Commands 使用说明 [参考 NocoBase CLI 章节](./development/nocobase-cli.md)
+更多 Commands 使用说明 [参考 NocoBase CLI 章节](https://docs-cn.nocobase.com/api/cli)。

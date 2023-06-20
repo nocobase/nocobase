@@ -1,6 +1,6 @@
-import { PluginManagerContext, SettingsCenterProvider } from '@nocobase/client';
-import React, { useContext } from 'react';
+import { SettingsCenterProvider } from '@nocobase/client';
 import { Card } from 'antd';
+import React from 'react';
 
 const DuplicatorPanel = () => {
   return (
@@ -11,8 +11,6 @@ const DuplicatorPanel = () => {
 };
 
 export default function (props) {
-  const ctx = useContext(PluginManagerContext);
-
   return (
     <SettingsCenterProvider
       settings={
