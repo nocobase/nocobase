@@ -1,6 +1,6 @@
+import { Cache, createCache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
-import { Cache, createCache } from '@nocobase/cache';
 export class ChartsV2Plugin extends Plugin {
   cache: Cache;
 

@@ -1,11 +1,11 @@
-import React, { useContext } from 'react';
-import { Card, Button } from 'antd';
-import { Form, FormItem } from '@formily/antd';
 import { CheckOutlined } from '@ant-design/icons';
-import { ChartLibraryContext, useToggleChartLibrary } from './renderer';
-import { useChartsTranslation } from './locale';
-import cls from 'classnames';
 import { css } from '@emotion/css';
+import { Form, FormItem } from '@formily/antd';
+import { Button, Card } from 'antd';
+import cls from 'classnames';
+import React, { useContext } from 'react';
+import { useChartsTranslation } from './locale';
+import { ChartLibraryContext, useToggleChartLibrary } from './renderer';
 
 export const Settings = () => {
   const { t } = useChartsTranslation();

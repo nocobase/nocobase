@@ -1,7 +1,7 @@
-import { MockServer, mockServer } from '@nocobase/test';
-import ChartsV2Plugin from '../plugin';
 import { Database } from '@nocobase/database';
+import { MockServer, mockServer } from '@nocobase/test';
 import { queryData } from '../actions/query';
+import ChartsV2Plugin from '../plugin';
 
 describe('api', () => {
   let app: MockServer;
@@ -24,12 +24,16 @@ describe('api', () => {
           name: 'price',
         },
         {
-          type: 'integer',
+          type: 'bigInt',
           name: 'count',
         },
         {
           type: 'string',
           name: 'title',
+        },
+        {
+          type: 'date',
+          name: 'createdAt',
         },
       ],
     });
@@ -56,16 +60,47 @@ describe('api', () => {
         measures: [
           {
             field: 'price',
+            alias: 'Price',
           },
           {
             field: 'count',
+            alias: 'Count',
           },
         ],
         dimensions: [
           {
             field: 'title',
+            alias: 'Title',
           },
         ],
+      }),
+    ).resolves.toBeDefined();
+  });
+
+  test('query with sort', () => {
+    expect.assertions(1);
+    return expect(
+      queryData({ db } as any, {
+        collection: 'chart_test',
+        measures: [
+          {
+            field: 'price',
+            aggregate: 'sum',
+            alias: 'Price',
+          },
+        ],
+        dimensions: [
+          {
+            field: 'title',
+            alias: 'Title',
+          },
+          {
+            field: 'createdAt',
+            format: 'YYYY',
+            alias: 'Created At',
+          },
+        ],
+        orders: [{ field: 'createdAt', order: 'asc' }],
       }),
     ).resolves.toBeDefined();
   });

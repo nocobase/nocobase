@@ -1,7 +1,7 @@
 import { uid } from '@formily/shared';
-import { ChartLibraries, QueryProps } from './renderer';
-import { FieldOption } from './hooks';
 import { SelectedField } from './block';
+import { FieldOption } from './hooks';
+import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection } = decoratorProps;

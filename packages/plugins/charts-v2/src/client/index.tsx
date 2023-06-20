@@ -1,9 +1,9 @@
 import { SchemaComponentOptions, SchemaInitializerContext, SchemaInitializerProvider } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { ChartV2BlockInitializer, ChartV2BlockDesigner, ChartInitializers, ChartV2Block } from './block';
+import { ChartInitializers, ChartV2Block, ChartV2BlockDesigner, ChartV2BlockInitializer } from './block';
+import { useChartsTranslation } from './locale';
 import { ChartRenderer, ChartRendererProvider, InternalLibrary } from './renderer';
 import { ChartLibraryProvider } from './renderer/ChartLibrary';
-import { useChartsTranslation } from './locale';
 
 const Chart: React.FC = (props) => {
   const { t } = useChartsTranslation();

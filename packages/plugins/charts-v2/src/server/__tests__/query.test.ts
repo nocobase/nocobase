@@ -1,6 +1,6 @@
-import { cacheWrap, parseBuilder } from '../actions/query';
 import { MockServer, mockServer } from '@nocobase/test';
 import * as formatter from '../actions/formatter';
+import { cacheWrap, parseBuilder } from '../actions/query';
 
 describe('query', () => {
   describe('parseBuilder', () => {

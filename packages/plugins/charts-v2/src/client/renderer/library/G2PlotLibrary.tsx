@@ -204,7 +204,7 @@ export const G2PlotLibrary: Charts = {
       return {
         general: {
           xField: xField?.label,
-          yField: yFields?.map((f) => f.label) || [],
+          yField: yFields?.map((f) => f.label).slice(0, 2) || [],
         },
       };
     },

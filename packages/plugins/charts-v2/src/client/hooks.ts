@@ -1,12 +1,12 @@
-import { useContext } from 'react';
-import { ChartConfigContext, SelectedField } from './block/ChartConfigure';
-import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
 import { ISchema, Schema } from '@formily/react';
+import { useACLRoleContext, useCollectionManager } from '@nocobase/client';
+import { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChartConfigContext } from './block/ChartConfigure';
 import formatters from './block/formatters';
 import transformers from './block/transformers';
 import { lang } from './locale';
-import { ChartRendererProps, QueryProps } from './renderer';
+import { ChartRendererProps } from './renderer';
 import { getSelectedFields } from './utils';
 
 export type FieldOption = {

@@ -1,38 +1,37 @@
-import { useChartsTranslation } from '../locale';
-import React, { createContext, useContext, useMemo, useRef } from 'react';
-import { Row, Col, Card, Modal, Button, Space, Tabs, Typography, Empty } from 'antd';
-import { ArrayItems, Editable, FormCollapse, Switch } from '@formily/antd';
+import { RightSquareOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
+import { ArrayItems, Editable, Form, FormCollapse, FormItem, Switch } from '@formily/antd';
+import { createForm, Form as FormType, ObjectField, onFieldChange, onFormInit } from '@formily/core';
+import { FormConsumer, ISchema } from '@formily/react';
 import {
-  SchemaComponent,
+  AutoComplete,
+  DatePicker,
   Filter,
   gridRowColWrap,
-  Select,
   Input,
   InputNumber,
-  DatePicker,
   Radio,
+  SchemaComponent,
+  Select,
   useDesignable,
   useFilterFieldOptions,
-  AutoComplete,
 } from '@nocobase/client';
-import { css } from '@emotion/css';
-import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
-import { ISchema, FormConsumer } from '@formily/react';
-import { ChartLibraryContext, ChartRenderer, ChartRendererProvider, useChartTypes, useCharts } from '../renderer';
-import { Form, FormItem } from '@formily/antd';
-import { RightSquareOutlined } from '@ant-design/icons';
-import { createForm, onFieldChange, onFormInit, Form as FormType, ObjectField } from '@formily/core';
-import {
-  useFields,
-  useChartFields,
-  useFormatters,
-  useCollectionOptions,
-  useTransformers,
-  useFieldTypes,
-  useCompiledFields,
-} from '../hooks';
+import { Button, Card, Col, Modal, Row, Space, Tabs, Typography } from 'antd';
 import { cloneDeep, isEqual } from 'lodash';
+import React, { createContext, useContext, useMemo, useRef } from 'react';
+import {
+  useChartFields,
+  useCollectionOptions,
+  useCompiledFields,
+  useFields,
+  useFieldTypes,
+  useFormatters,
+  useTransformers,
+} from '../hooks';
+import { useChartsTranslation } from '../locale';
+import { ChartRenderer, ChartRendererProvider, useCharts, useChartTypes } from '../renderer';
 import { createRendererSchema, getSelectedFields } from '../utils';
+import { getConfigSchema, querySchema, transformSchema } from './schemas/configure';
 const { Paragraph, Text } = Typography;
 
 export type ChartConfigCurrent = {

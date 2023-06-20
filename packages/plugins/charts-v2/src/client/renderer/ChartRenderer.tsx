@@ -1,21 +1,21 @@
+import { Schema, useField, useFieldSchema } from '@formily/react';
 import {
   GeneralSchemaDesigner,
-  SchemaSettings,
   gridRowColWrap,
+  SchemaSettings,
   useAPIClient,
   useDesignable,
   useRequest,
 } from '@nocobase/client';
-import React, { useContext, useEffect, useState } from 'react';
 import { Empty, Result, Typography } from 'antd';
-import { useChartsTranslation } from '../locale';
-import { ChartConfigContext } from '../block';
-import { useFieldSchema, useField, Schema } from '@formily/react';
+import React, { useContext, useEffect, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useFieldTransformer, useCompiledFields } from '../hooks';
+import { ChartConfigContext } from '../block';
+import { useCompiledFields, useFieldTransformer } from '../hooks';
+import { useChartsTranslation } from '../locale';
 import { createRendererSchema, getQueryWithAlias } from '../utils';
-import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
 import { useCharts } from './ChartLibrary';
+import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{
@@ -33,6 +33,7 @@ export const ChartRenderer: React.FC<{
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
   const fields = useCompiledFields(collection);
+  console.log(fields);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
   const { runAsync } = useRequest(

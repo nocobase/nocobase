@@ -1,6 +1,6 @@
+import { Statistic, Table } from 'antd';
 import { lang } from '../../locale';
 import { Charts } from '../ChartLibrary';
-import { Statistic, Table } from 'antd';
 
 export const AntdLibrary: Charts = {
   statistic: {

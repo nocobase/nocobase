@@ -1,8 +1,8 @@
-import React, { createContext, useContext } from 'react';
 import { ISchema } from '@formily/react';
-import { QueryProps } from './ChartRendererProvider';
+import React, { createContext, useContext } from 'react';
 import { FieldOption } from '../hooks';
 import { lang } from '../locale';
+import { QueryProps } from './ChartRendererProvider';
 
 /**
  * @params {usePropsFunc} useProps - Accept the information that the chart component needs to render,

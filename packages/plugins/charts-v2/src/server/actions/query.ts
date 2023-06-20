@@ -1,8 +1,8 @@
 import { Context, Next } from '@nocobase/actions';
-import { formatter } from './formatter';
+import { Cache } from '@nocobase/cache';
 import { FilterParser, Repository, snakeCase } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
-import { Cache } from '@nocobase/cache';
+import { formatter } from './formatter';
 
 type QueryParams = Partial<{
   uid: string;
@@ -60,7 +60,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
       attribute.push(item.alias);
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    fieldMap[item.alias || field] = field;
+    fieldMap[item.alias || field] = item.field;
   });
 
   dimensions?.forEach((item: { field: string; format: string; alias: string }) => {
@@ -77,7 +77,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
     group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
-    fieldMap[item.alias || field] = field;
+    fieldMap[item.alias || field] = item.field;
   });
 
   orders?.forEach((item: { field: string; order: string }) => {
@@ -115,20 +115,16 @@ export const process = (ctx: Context, repository: Repository, data: any[], field
           let value = dataValues[key];
           const field = fieldMap[key];
           const type = fields.get(field).type;
-          console.log(type);
           switch (type) {
             case 'bigInt':
             case 'integer':
-              value = parseInt(value);
-              break;
             case 'float':
             case 'double':
-              value = parseFloat(value);
+              value = Number(value);
               break;
           }
           result[key] = value;
         });
-        console.log(result);
         record.dataValues = result;
         return record;
       });
