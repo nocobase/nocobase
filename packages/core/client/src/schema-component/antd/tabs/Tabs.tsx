@@ -16,7 +16,6 @@ export const Tabs: any = observer(
     const fieldSchema = useFieldSchema();
     const { render } = useSchemaInitializer(fieldSchema['x-initializer']);
     const { designable } = useDesignable();
-    console.log('🚀 ~ file: Tabs.tsx:19 ~ designable:', designable);
     const contextProps = useTabsContext();
     const { PaneRoot = React.Fragment as React.FC<any> } = contextProps;
 

@@ -28,22 +28,26 @@ const InternalPage: React.FC = (props) => {
   // Only support globalActions in page
   const onlyInPage = fieldSchema.root === fieldSchema.parent;
   let hasGlobalActions = false;
-  if (!tabsSchema) {
+  if (!tabsSchema && fieldSchema.properties) {
     hasGlobalActions = countGridCol(fieldSchema.properties['grid'], 2) === 1;
-  } else if (searchParams.has('tab') && tabsSchema.properties?.[searchParams.get('tab')]) {
+  } else if (searchParams.has('tab') && tabsSchema?.properties?.[searchParams.get('tab')]) {
     hasGlobalActions = countGridCol(tabsSchema.properties[searchParams.get('tab')]?.properties?.['grid'], 2) === 1;
-  } else if (tabsSchema.properties) {
+  } else if (tabsSchema?.properties) {
     const schema = Object.values(tabsSchema.properties).sort((t1, t2) => t1['x-index'] - t2['x-index'])[0];
     if (schema) {
       setTimeout(() => {
-        setSearchParams([['tab', schema.name.toString()]]);
+        setSearchParams([['tab', schema.name.toString()]], {
+          replace: true,
+        });
       });
     }
   }
 
   const onTabsChange = useCallback<TabsProps['onChange']>(
     (key) => {
-      setSearchParams([['tab', key]]);
+      setSearchParams([['tab', key]], {
+        replace: true,
+      });
     },
     [setSearchParams],
   );
