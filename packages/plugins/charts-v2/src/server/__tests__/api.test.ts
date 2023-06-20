@@ -85,7 +85,7 @@ describe('api', () => {
         measures: [
           {
             field: 'price',
-            aggregate: 'sum',
+            aggregation: 'sum',
             alias: 'Price',
           },
         ],

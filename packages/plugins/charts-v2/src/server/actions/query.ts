@@ -4,23 +4,29 @@ import { FilterParser, Repository, snakeCase } from '@nocobase/database';
 import ChartsV2Plugin from '../plugin';
 import { formatter } from './formatter';
 
+type MeasureProps = {
+  field: string;
+  aggregation?: string;
+  alias?: string;
+};
+
+type DimensionProps = {
+  field: string;
+  alias?: string;
+  format?: string;
+};
+
+type OrderProps = {
+  field: string;
+  order: 'asc' | 'desc';
+};
+
 type QueryParams = Partial<{
   uid: string;
   collection: string;
-  measures: {
-    field: string;
-    aggregate?: string;
-    alias?: string;
-  }[];
-  dimensions: {
-    field: string;
-    alias?: string;
-    format?: string;
-  }[];
-  orders: {
-    field: string;
-    order: 'asc' | 'desc';
-  }[];
+  measures: MeasureProps[];
+  dimensions: DimensionProps[];
+  orders: OrderProps[];
   filter: any;
   limit: number;
   sql: {
@@ -43,46 +49,61 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   const fields = repository.collection.fields;
   const attributes = [];
   const group = [];
+  const group2Alias = {};
   const order = [];
   const fieldMap = {};
   let hasAgg = false;
-  measures?.forEach((item: { field: string; aggregation: string; alias: string }) => {
-    const field = underscored ? snakeCase(item.field) : item.field;
+  const processSelected = (selected: MeasureProps | DimensionProps) => {
+    const field = underscored ? snakeCase(selected.field) : selected.field;
+    return {
+      ...selected,
+      field,
+      alias: selected.alias || (field !== selected.field ? selected.field : undefined),
+    };
+  };
+
+  measures?.forEach((item: MeasureProps) => {
+    const measure = processSelected(item) as MeasureProps;
+    const { field, aggregation, alias } = measure;
     const attribute = [];
     const col = sequelize.col(field);
-    if (item.aggregation) {
+    if (aggregation) {
       hasAgg = true;
-      attribute.push(sequelize.fn(item.aggregation, col));
+      attribute.push(sequelize.fn(aggregation, col));
     } else {
       attribute.push(field);
     }
-    if (item.alias) {
-      attribute.push(item.alias);
+    if (alias) {
+      attribute.push(alias);
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    fieldMap[item.alias || field] = item.field;
+    fieldMap[alias || field] = item.field;
   });
 
-  dimensions?.forEach((item: { field: string; format: string; alias: string }) => {
-    const field = underscored ? snakeCase(item.field) : item.field;
+  dimensions?.forEach((item: DimensionProps) => {
+    const dimension = processSelected(item) as DimensionProps;
+    const { field, format, alias } = dimension;
     const type = fields.get(item.field).type;
     const attribute = [];
-    if (item.format) {
-      attribute.push(formatter(sequelize, type, field, item.format));
+    if (format) {
+      attribute.push(formatter(sequelize, type, field, format));
     } else {
       attribute.push(field);
     }
-    if (item.alias) {
-      attribute.push(item.alias);
+    if (alias) {
+      attribute.push(alias);
     }
     attributes.push(attribute.length > 1 ? attribute : attribute[0]);
-    group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
-    fieldMap[item.alias || field] = item.field;
+    if (hasAgg) {
+      group.push(attribute.length > 1 ? attribute[1] : attribute[0]);
+      group2Alias[field] = alias;
+    }
+    fieldMap[alias || field] = item.field;
   });
 
-  orders?.forEach((item: { field: string; order: string }) => {
+  orders?.forEach((item: OrderProps) => {
     const field = underscored ? snakeCase(item.field) : item.field;
-    order.push([field, item.order || 'ASC']);
+    order.push([group2Alias[field] || field, item.order || 'ASC']);
   });
 
   const filterParser = new FilterParser(filter, {
@@ -92,7 +113,7 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   return {
     queryParams: {
       attributes,
-      group: hasAgg ? group : [],
+      group,
       order,
       limit: limit > 2000 ? 2000 : limit,
       ...filterParser.toSequelizeParams(),
@@ -101,7 +122,12 @@ export const parseBuilder = (ctx: Context, builder: QueryParams) => {
   };
 };
 
-export const process = (ctx: Context, repository: Repository, data: any[], fieldMap: { [source: string]: string }) => {
+export const processData = (
+  ctx: Context,
+  repository: Repository,
+  data: any[],
+  fieldMap: { [source: string]: string },
+) => {
   const { sequelize } = ctx.db;
   const dialect = sequelize.getDialect();
   const fields = repository.collection.fields;
@@ -138,7 +164,7 @@ export const queryData = async (ctx: Context, builder: QueryParams) => {
   const repository = ctx.db.getRepository(collection);
   const { queryParams, fieldMap } = parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit });
   const data = await repository.find(queryParams);
-  return process(ctx, repository, data, fieldMap);
+  return processData(ctx, repository, data, fieldMap);
   // if (!sql) {
   //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
   // }

@@ -64,3 +64,15 @@ export const getQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
     measures: appendAlias(measures),
   };
 };
+
+export const processData = (fields: FieldOption[], data: any[]) => {
+  return data.map((record) => {
+    const processed = {};
+    Object.entries(record).forEach(([key, value]) => {
+      const field = fields.find((field) => field.name === key);
+      const label = field?.label || key;
+      processed[label] = value;
+    });
+    return processed;
+  });
+};

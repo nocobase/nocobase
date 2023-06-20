@@ -13,9 +13,9 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ChartConfigContext } from '../block';
 import { useCompiledFields, useFieldTransformer } from '../hooks';
 import { useChartsTranslation } from '../locale';
-import { createRendererSchema, getQueryWithAlias } from '../utils';
+import { createRendererSchema, processData } from '../utils';
 import { useCharts } from './ChartLibrary';
-import { ChartRendererContext, QueryProps } from './ChartRendererProvider';
+import { ChartRendererContext, DimensionProps, MeasureProps, QueryProps } from './ChartRendererProvider';
 const { Paragraph, Text } = Typography;
 
 export const ChartRenderer: React.FC<{
@@ -45,11 +45,26 @@ export const ChartRenderer: React.FC<{
           data: {
             uid: currentSchema?.['x-uid'],
             collection,
-            ...getQueryWithAlias(fields, query),
+            ...query,
+            dimensions: (query?.dimensions || []).map((item: DimensionProps) => {
+              const dimension = { ...item };
+              if (item.format && !item.alias) {
+                dimension.alias = item.field;
+              }
+              return dimension;
+            }),
+            measures: (query?.measures || []).map((item: MeasureProps) => {
+              const measure = { ...item };
+              if (item.aggregation && !item.alias) {
+                measure.alias = item.field;
+              }
+              return measure;
+            }),
           },
         })
         .then((res) => {
-          return res?.data?.data || [];
+          const data = res?.data?.data || [];
+          return processData(fields, data);
         }),
     {
       manual: true,

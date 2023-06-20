@@ -1,17 +1,21 @@
 import { ACLCollectionProvider } from '@nocobase/client';
 import React, { createContext } from 'react';
 
+export type MeasureProps = {
+  field: string;
+  aggregation?: string;
+  alias?: string;
+};
+
+export type DimensionProps = {
+  field: string;
+  alias?: string;
+  format?: string;
+};
+
 export type QueryProps = Partial<{
-  measures: {
-    field: string;
-    aggregate?: string;
-    alias?: string;
-  }[];
-  dimensions: {
-    field: string;
-    alias?: string;
-    format?: string;
-  }[];
+  measures: MeasureProps[];
+  dimensions: DimensionProps[];
   orders: {
     field: string;
     order: 'asc' | 'desc';
