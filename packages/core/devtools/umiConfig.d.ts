@@ -1,4 +1,5 @@
 export declare function getUmiConfig(): {
+  alias: Record<string, string>;
   define: {
     'process.env.API_BASE_URL': string;
   };

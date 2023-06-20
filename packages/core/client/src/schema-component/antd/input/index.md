@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # Input
@@ -17,16 +16,16 @@ group:
 
 ### Input
 
-<code src="./demos/input.tsx"/>
+<code src="./demos/input.tsx"></code>
 
 ### Textarea
 
-<code src="./demos/textarea.tsx"/>
+<code src="./demos/textarea.tsx"></code>
 
 ### URL
 
-<code src="./demos/url.tsx"/>
+<code src="./demos/url.tsx"></code>
 
 ### JSON
 
-<code src="./demos/json.tsx"/>
+<code src="./demos/json.tsx"></code>

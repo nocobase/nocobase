@@ -168,12 +168,11 @@ export default (apiClient: APIClient) => {
         type: 'redirect',
         from: '/',
         to: '/admin',
-        exact: true,
       },
       {
         type: 'route',
         uiSchemaUid: 'qqzzjakwkwl',
-        path: '/admin/:name(.+)?',
+        path: '/admin/:name?',
         component: 'AdminLayout',
         title: 'NocoBase Admin',
       },

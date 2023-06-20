@@ -631,7 +631,7 @@ export default {
   "User": "User",
   "Field": "Field",
   "Select": "Select",
-  "Select Field": "Select Field",
+  "Select field": "Select field",
   "Field value changes": "Field value changes",
   "One to one (has one)": "One to one (has one)",
   "One to one (belongs to)": "One to one (belongs to)",

@@ -1,9 +1,7 @@
 ---
-nav:
-  path: /client
 group:
   title: Route Components
-  path: /route-components
+  order: 2
 ---
 
 # AdminLayout <Badge>待定</Badge>

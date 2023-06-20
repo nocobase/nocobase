@@ -18,7 +18,6 @@ const routes: RouteRedirectProps[] = [
   {
     type: 'route',
     path: '/',
-    exact: true,
     component: 'Home',
   },
   {

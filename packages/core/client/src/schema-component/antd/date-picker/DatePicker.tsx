@@ -14,6 +14,7 @@ interface IDatePickerProps {
 }
 
 type ComposedDatePicker = React.FC<AntdDatePickerProps> & {
+  ReadPretty?: React.FC<AntdDatePickerProps>;
   RangePicker?: React.FC<AntdRangePickerProps>;
 };
 
@@ -39,6 +40,8 @@ export const DatePicker = (props) => {
   props = { utc, ...props };
   return <_DatePicker {...props} />;
 };
+
+DatePicker.ReadPretty = ReadPretty.DatePicker;
 
 DatePicker.RangePicker = function RangePicker(props) {
   const { t } = useTranslation();

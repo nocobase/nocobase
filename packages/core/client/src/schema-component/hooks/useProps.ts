@@ -1,6 +1,3 @@
-import { merge } from '@formily/shared';
-import { useEffect } from 'react';
-
 interface Options {
   arrayMerge?(target: any[], source: any[], options?: Options): any[];
   clone?: boolean;
@@ -10,8 +7,13 @@ interface Options {
   cloneUnlessOtherwiseSpecified?: (value: any, options: Options) => any;
 }
 
-export const useProps = (props: any, options?: Options) => {
-  const { useProps, ...props1 } = props;
-  const props2 = typeof useProps === 'function' ? useProps() : {};
-  return merge(props1 || {}, props2, options);
+const useDef = () => ({});
+export const useProps = (originalProps: any = {}) => {
+  const { useProps: useDynamicHook = useDef, ...others } = originalProps;
+  let useDynamicProps = useDynamicHook;
+  if (typeof useDynamicHook !== 'function') {
+    useDynamicProps = useDef;
+  }
+  const dynamicProps = useDynamicProps();
+  return { ...others, ...dynamicProps };
 };

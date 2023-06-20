@@ -18,6 +18,8 @@ packages/*/*/server.d.ts
 packages/*/*/client.js
 packages/*/*/server.js
 packages/core/build
-packages/core/dumi-theme-nocobase
 packages/core/devtools
 packages/core/database/src/sql-parser/index.js
+**/.dumi/tmp
+**/.dumi/tmp-test
+**/.dumi/tmp-production

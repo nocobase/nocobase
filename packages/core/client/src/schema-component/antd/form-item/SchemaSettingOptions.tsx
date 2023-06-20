@@ -387,7 +387,7 @@ export const EditComponent = () => {
   return isAssociationField && fieldModeOptions ? (
     <SchemaSettings.SelectItem
       key="field-mode"
-      title={t('Field mode')}
+      title={t('Field component')}
       options={fieldModeOptions}
       value={field?.componentProps?.['mode'] || (isFileField ? 'FileManager' : 'Select')}
       onChange={(mode) => {

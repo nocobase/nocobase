@@ -29,7 +29,7 @@ export class UiRoutesStoragePlugin extends Plugin {
           },
           properties: {},
         },
-        path: '/admin/:name(.+)?',
+        path: '/admin/:name?',
         component: 'AdminLayout',
         title: 'NocoBase Admin',
         routes: [
@@ -51,7 +51,7 @@ export class UiRoutesStoragePlugin extends Plugin {
           // },
           {
             type: 'route',
-            path: '/admin/:name(.+)?',
+            path: '/admin/:name?',
             component: 'RouteSchemaComponent',
           },
         ],

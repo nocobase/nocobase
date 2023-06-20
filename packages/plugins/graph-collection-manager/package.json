@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据库可视化管理",
   "description": "database collection manage",
   "description.zh-CN": "数据库管理。",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -14,7 +14,7 @@
     "dagre": "^0.8.5"
   },
   "devDependencies": {
-    "@nocobase/client": "0.9.4-alpha.2",
-    "@nocobase/test": "0.9.4-alpha.2"
+    "@nocobase/client": "0.10.0-alpha.1",
+    "@nocobase/test": "0.10.0-alpha.1"
   }
 }

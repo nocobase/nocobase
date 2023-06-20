@@ -1,10 +1,9 @@
 import { SchemaInitializerItemOptions, useCollectionDataSource } from '@nocobase/client';
-
+import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
+import { FieldsSelect } from '../components/FieldsSelect';
+import { NAMESPACE, useWorkflowTranslation } from '../locale';
 import { appends, collection, filter } from '../schemas/collection';
 import { useCollectionFieldOptions } from '../variable';
-import { CollectionBlockInitializer } from '../components/CollectionBlockInitializer';
-import { NAMESPACE, useWorkflowTranslation } from '../locale';
-import { FieldsSelect } from '../components/FieldsSelect';
 
 const COLLECTION_TRIGGER_MODE = {
   CREATED: 1,
@@ -78,7 +77,7 @@ export default {
       'x-component': 'FieldsSelect',
       'x-component-props': {
         mode: 'multiple',
-        placeholder: '{{t("Select Field")}}',
+        placeholder: '{{t("Select field")}}',
         filter(field) {
           return (
             !field.hidden &&
