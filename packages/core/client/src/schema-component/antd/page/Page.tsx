@@ -132,6 +132,9 @@ const pageHeaderCss = css`
       margin-top: 0;
     }
   }
+  .ant-tabs-nav {
+    margin-bottom: 0;
+  }
 `;
 
 const height0 = css`

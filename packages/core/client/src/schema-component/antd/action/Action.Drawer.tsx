@@ -43,7 +43,7 @@ export const ActionDrawer: ComposedActionDrawer = observer(
         destroyOnClose
         open={visible}
         onClose={() => setVisible(false, true)}
-        className={classNames(
+        rootClassName={classNames(
           drawerProps?.className,
           others.className,
           css`
