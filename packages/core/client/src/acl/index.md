@@ -1,10 +1,7 @@
 ---
-nav:
-  title: Client
-  path: /client
 group:
   title: Client
-  path: /client
+  order: 1
 ---
 
 # ACL

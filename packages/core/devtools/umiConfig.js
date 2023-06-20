@@ -26,6 +26,10 @@ function getUmiConfig() {
   }
 
   return {
+    alias: getPackagePaths().reduce((memo, item) => {
+      memo[item[0]] = item[1]
+      return memo
+    }, {}),
     define: {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.APP_ENV': process.env.APP_ENV,

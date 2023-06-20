@@ -5,7 +5,7 @@
 - Submit pull request
 - Sign the CLA
 
-## Download 
+## Download
 
 ```bash
 # Replace the following git address with your own repo
@@ -45,4 +45,4 @@ The documentation is in the docs directory and follows Markdown syntax
 
 ## Others
 
-For more CLI instructions, please [refer to the NocoBase CLI chapter](./development/nocobase-cli.md)
+For more CLI instructions, please [refer to the NocoBase CLI chapter](https://docs-cn.nocobase.com/api/cli).

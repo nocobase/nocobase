@@ -1,9 +1,8 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
-# SortableItem 
+# SortableItem
 
