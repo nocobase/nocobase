@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mobile-client",
-  "version": "0.10.0-alpha.1",
+  "version": "0.10.0-alpha.2",
   "main": "lib/server/index.js",
   "displayName": "Mobile-client",
   "displayName.zh-CN": "移动端",
@@ -11,8 +11,8 @@
     "@formily/antd": "2.2.24",
     "@formily/react": "2.2.24",
     "@formily/shared": "2.2.24",
-    "@nocobase/server": "0.10.0-alpha.1",
-    "@nocobase/test": "0.10.0-alpha.1",
+    "@nocobase/server": "0.10.0-alpha.2",
+    "@nocobase/test": "0.10.0-alpha.2",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
     "antd": "^4.24.8",
