@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { Dropdown, Menu, Modal } from 'antd';
 import React, { createContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext, useAPIClient, useCurrentUserContext } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
 import { ChangePassword } from './ChangePassword';
@@ -28,7 +28,7 @@ export const SettingsMenu: React.FC<{
   const { redirectUrl = '' } = props;
   const { allowAll, snippets } = useACLRoleContext();
   const appAllowed = allowAll || snippets?.includes('app');
-  const history = useHistory();
+  const navigate = useNavigate();
   const api = useAPIClient();
   const { t } = useTranslation();
   const silenceApi = useAPIClient();
@@ -104,7 +104,7 @@ export const SettingsMenu: React.FC<{
         key="signout"
         onClick={async () => {
           await api.auth.signOut();
-          history.push(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
+          navigate(`/signin?redirect=${encodeURIComponent(redirectUrl)}`);
         }}
       >
         {t('Sign out')}

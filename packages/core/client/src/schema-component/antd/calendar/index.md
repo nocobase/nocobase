@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # CalendarV2
@@ -11,8 +10,8 @@ group:
 
 #### Basic
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>
 
 ### CalendarBlockProvider
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>

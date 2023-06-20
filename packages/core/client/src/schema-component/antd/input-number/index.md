@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
+  order: 3
 ---
 
 # InputNumber
@@ -11,12 +10,12 @@ group:
 
 ### InputNumber
 
-<code src="./demos/inputNumber.tsx"/>
+<code src="./demos/inputNumber.tsx"></code>
 
 ### addonBefore/addonAfter
 
-<code src="./demos/addonBefore&addonAfter.tsx"/>
+<code src="./demos/addonBefore&addonAfter.tsx"></code>
 
 ### High precision decimals
 
-<code src="./demos/highPrecisionDecimals.tsx"/>
+<code src="./demos/highPrecisionDecimals.tsx"></code>

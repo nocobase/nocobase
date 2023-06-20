@@ -4,23 +4,23 @@
   "displayName.zh-CN": "字段序列",
   "description": "provide the functionality of automatically generating unique sequence values for databases or data management systems.",
   "description.zh-CN": "为数据库或数据管理系统提供自动生成唯一序列值的功能。",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.2",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "0.9.4-alpha.2",
-    "@nocobase/client": "0.9.4-alpha.2",
-    "@nocobase/database": "0.9.4-alpha.2",
-    "@nocobase/plugin-collection-manager": "0.9.4-alpha.2",
-    "@nocobase/server": "0.9.4-alpha.2",
-    "@nocobase/utils": "0.9.4-alpha.2",
+    "@nocobase/actions": "0.10.0-alpha.2",
+    "@nocobase/client": "0.10.0-alpha.2",
+    "@nocobase/database": "0.10.0-alpha.2",
+    "@nocobase/plugin-collection-manager": "0.10.0-alpha.2",
+    "@nocobase/server": "0.10.0-alpha.2",
+    "@nocobase/utils": "0.10.0-alpha.2",
     "classnames": "^2.3.1",
     "cron-parser": "4.4.0",
     "react-js-cron": "^3.1.0"
   },
   "devDependencies": {
-    "@nocobase/test": "0.9.4-alpha.2"
+    "@nocobase/test": "0.10.0-alpha.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
 }

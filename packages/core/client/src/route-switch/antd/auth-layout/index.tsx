@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 import React from 'react';
+import { Outlet } from 'react-router-dom';
 import { PoweredBy } from '../../../powered-by';
 import { useSystemSettings } from '../../../system-settings';
 
@@ -14,7 +15,7 @@ export function AuthLayout(props: any) {
       }}
     >
       <h1>{data?.data?.title}</h1>
-      {props.children}
+      <Outlet />
       <div
         className={css`
           position: absolute;

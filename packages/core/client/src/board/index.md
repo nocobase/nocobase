@@ -1,8 +1,6 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
 ---
 
 # Board
@@ -11,4 +9,4 @@ group:
 
 ## Examples
 
-<code src="./demos/demo2.tsx" />
+<code src="./demos/demo2.tsx"></code>

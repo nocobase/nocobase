@@ -1,21 +1,21 @@
 import { RouteSwitchProvider, useRouteSwitchContext } from '@nocobase/client';
 import React, { useEffect } from 'react';
-import MApplication from './Application';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { isJSBridge } from '../core/bridge';
-import { useHistory, useLocation } from 'react-router-dom';
+import MApplication from './Application';
 
 export const RouterSwitchProvider = (props) => {
   const { routes, components } = useRouteSwitchContext();
   // redirect to mobile
   const location = useLocation();
-  const history = useHistory();
+  const navigate = useNavigate();
   useEffect(() => {
     if (isJSBridge()) {
       if (location.pathname.includes('/admin')) {
-        history.push('/mobile');
+        navigate('/mobile');
       }
     }
-  }, [history, location.pathname]);
+  }, [location.pathname, navigate]);
 
   return (
     <RouteSwitchProvider

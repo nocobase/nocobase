@@ -2,7 +2,7 @@ import { Field } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAPIClient, useRequest } from '../api-client';
 import { useBlockRequestContext } from '../block-provider/BlockProvider';
 import { useCollection } from '../collection-manager';
@@ -52,7 +52,7 @@ export const ACLRolesCheckProvider = (props) => {
     return <Spin />;
   }
   if (result.error) {
-    return <Redirect to={'/signin'} />;
+    return <Navigate replace to={'/signin'} />;
   }
   return <ACLContext.Provider value={result}>{props.children}</ACLContext.Provider>;
 };

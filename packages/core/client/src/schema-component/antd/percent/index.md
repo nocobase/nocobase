@@ -1,8 +1,6 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
 ---
 
 # Percent
@@ -11,4 +9,4 @@ group:
 
 ### Percent
 
-<code src="./demos/percent.tsx"/>
+<code src="./demos/percent.tsx"></code>
