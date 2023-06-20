@@ -4,12 +4,12 @@
   "displayName.zh-CN": "多应用管理",
   "description": "manage app",
   "description.zh-CN": "管理应用",
-  "version": "0.9.4-alpha.2",
+  "version": "0.10.0-alpha.1",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/server": "0.9.4-alpha.2",
+    "@nocobase/server": "0.10.0-alpha.1",
     "async-mutex": "^0.3.2"
   },
   "gitHead": "ce588eefb0bfc50f7d5bbee575e0b5e843bf6644"
