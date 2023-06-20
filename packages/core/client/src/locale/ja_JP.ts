@@ -540,7 +540,7 @@ export default {
   "Quick upload": "クイックアップロード",
   "Select file": "ファイルを選択",
   "Subtable": "サブテーブル",
-  "Subform": "サブフォーム",
+  "Sub-form": "サブフォーム",
   "Sub-details":"サブリスト",
   "Field mode":"フィールドコンポーネント",
   "Allow add new data":"データの追加を許可",
