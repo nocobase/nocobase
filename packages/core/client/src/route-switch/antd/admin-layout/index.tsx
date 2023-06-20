@@ -54,6 +54,12 @@ const useMenuProps = () => {
     defaultSelectedUid,
   };
 };
+
+const useAdminSchemaUid = () => {
+  const ctx = useSystemSettings();
+  return ctx?.data?.data?.options?.adminSchemaUid;
+};
+
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
@@ -70,12 +76,14 @@ const MenuEditor = (props) => {
     navigate(`/admin/${schema['x-uid']}`);
   };
 
+  const adminSchemaUid = useAdminSchemaUid();
+
   const { data, loading } = useRequest(
     {
-      url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
+      url: `/uiSchemas:getJsonSchema/${adminSchemaUid}`,
     },
     {
-      refreshDeps: [route.uiSchemaUid],
+      refreshDeps: [adminSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
         // url 为 `/admin` 的情况
