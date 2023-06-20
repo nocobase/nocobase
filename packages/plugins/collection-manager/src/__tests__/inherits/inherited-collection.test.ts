@@ -1,9 +1,9 @@
-import Database, { HasManyRepository, Repository } from "@nocobase/database";
-import Application from "@nocobase/server";
-import { createApp } from "..";
-// import { pgOnly } from '@nocobase/test';
+import Database, { HasManyRepository, Repository } from '@nocobase/database';
+import Application from '@nocobase/server';
+import { createApp } from '..';
+import { pgOnly } from '@nocobase/test';
 
-describe('Inherited Collection', () => {
+pgOnly()('Inherited Collection', () => {
   let db: Database;
   let app: Application;
 

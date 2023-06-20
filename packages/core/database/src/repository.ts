@@ -97,6 +97,7 @@ export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'i
 
 export interface FilterByTk {
   filterByTk?: TargetKey;
+  targetCollection?: string;
 }
 
 export type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
@@ -377,7 +378,10 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
    * @param options
    */
   async find(options: FindOptions = {}) {
-    console.log(options);
+    if (options?.targetCollection && options?.targetCollection !== this.collection.name) {
+      return await this.database.getCollection(options.targetCollection).repository.find(options);
+    }
+
     const model = this.collection.model;
     const transaction = await this.getTransaction(options);
 

@@ -16,18 +16,26 @@ import { transaction } from './relation-repository';
 
 interface IHasManyRepository<M extends Model> {
   find(options?: FindOptions): Promise<M>;
+
   findAndCount(options?: FindAndCountOptions): Promise<[M[], number]>;
+
   findOne(options?: FindOneOptions): Promise<M>;
+
   // 新增并关联
   create(options?: CreateOptions): Promise<M>;
+
   // 更新
   update(options?: UpdateOptions): Promise<M>;
+
   // 删除
   destroy(options?: TK | DestroyOptions): Promise<boolean>;
+
   // 建立关联
   set(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 附加关联
   add(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
+
   // 移除关联
   remove(options: TargetKey | TargetKey[] | AssociatedOptions): Promise<void>;
 }
