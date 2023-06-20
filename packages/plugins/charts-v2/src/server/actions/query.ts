@@ -213,7 +213,6 @@ export const query = async (ctx: Context, next: Next) => {
   } = ctx.action.params.values as QueryParams;
   const roleName = ctx.state.currentRole || 'anonymous';
   const can = ctx.app.acl.can({ role: roleName, resource: collection, action: 'list' });
-  console.log(roleName);
   if (!can && roleName !== 'root') {
     ctx.throw(403, 'No permissions');
   }

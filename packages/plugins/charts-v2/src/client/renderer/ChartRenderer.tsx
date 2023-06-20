@@ -33,7 +33,6 @@ export const ChartRenderer: React.FC<{
   const schema = useFieldSchema();
   const currentSchema = schema || current?.schema;
   const fields = useCompiledFields(collection);
-  console.log(fields);
   const api = useAPIClient();
   const [data, setData] = useState<any[]>([]);
   const { runAsync } = useRequest(

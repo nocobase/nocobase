@@ -1,8 +1,8 @@
+import * as client from '@nocobase/client';
 import { render } from '@testing-library/react';
-import { ChartConfigure } from '../block';
 import React from 'react';
 import { vi } from 'vitest';
-import * as client from '@nocobase/client';
+import { ChartConfigure } from '../block';
 
 describe('ChartConfigure', () => {
   afterEach(() => {

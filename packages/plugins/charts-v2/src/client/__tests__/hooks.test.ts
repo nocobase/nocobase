@@ -1,4 +1,8 @@
+import * as client from '@nocobase/client';
+import { renderHook } from '@testing-library/react';
 import { vi } from 'vitest';
+import formatters from '../block/formatters';
+import transformers from '../block/transformers';
 import {
   useChartFields,
   useCompiledFields,
@@ -7,10 +11,6 @@ import {
   useFormatters,
   useTransformers,
 } from '../hooks';
-import { renderHook } from '@testing-library/react-hooks';
-import * as client from '@nocobase/client';
-import formatters from '../block/formatters';
-import transformers from '../block/transformers';
 import { useChartsTranslation } from '../locale';
 
 describe('hooks', () => {

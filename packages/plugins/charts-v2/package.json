@@ -7,7 +7,7 @@
     "@nocobase/cache": "0.10.0-alpha.2",
     "@nocobase/server": "0.10.0-alpha.2",
     "@nocobase/test": "0.10.0-alpha.2",
-    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/react": "^14.0.0",
     "lodash": "^4.17.21"
   },
   "dependencies": {

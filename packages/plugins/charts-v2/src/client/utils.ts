@@ -44,27 +44,6 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const getQueryWithAlias = (fields: FieldOption[], query: QueryProps) => {
-  // If alias is not set, use field title (display name instead of field name) as alias
-  const appendAlias = (selectedFields: SelectedField[]) => {
-    return selectedFields
-      .filter((item) => item.field)
-      .map((item) => {
-        const field = fields.find((field) => field.name === item.field);
-        return {
-          ...item,
-          alias: item.alias || field?.label,
-        };
-      });
-  };
-  const { dimensions = [], measures = [] } = query || {};
-  return {
-    ...query,
-    dimensions: appendAlias(dimensions),
-    measures: appendAlias(measures),
-  };
-};
-
 export const processData = (fields: FieldOption[], data: any[]) => {
   const parseEnum = (field: FieldOption, value: any) => {
     const options = field.uiSchema?.enum as { value: string; label: string }[];

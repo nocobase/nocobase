@@ -128,18 +128,21 @@ export const infer = (
   let yField: FieldOption;
   let seriesField: FieldOption;
   let yFields: FieldOption[];
+  const equal = (field: FieldOption, selected: { field: string; alias?: string }) => {
+    return field.value === selected.field || field.value === selected.alias;
+  };
   if (measures?.length) {
-    yField = fields.find((f) => f.name === measures[0].field);
-    yFields = measures.map((m) => fields.find((f) => f.name === m.field));
+    yField = fields.find((f) => equal(f, measures[0]));
+    yFields = measures.map((m) => fields.find((f) => equal(f, m)));
   }
   if (dimensions) {
     if (dimensions.length === 1) {
-      xField = fields.find((f) => f.name === dimensions[0].field);
+      xField = fields.find((f) => equal(f, dimensions[0]));
     } else if (dimensions.length > 1) {
       // If there is a time field, it is used as the x-axis field by default.
       let xIndex: number;
       dimensions.forEach((d, i) => {
-        const field = fields.find((f) => f.name === d.field);
+        const field = fields.find((f) => equal(f, d));
         if (['date', 'time', 'datetime'].includes(field.type)) {
           xField = field;
           xIndex = i;
@@ -148,10 +151,10 @@ export const infer = (
       if (xIndex) {
         // If there is a time field, the other field is used as the series field by default.
         const index = xIndex === 0 ? 1 : 0;
-        seriesField = fields.find((f) => f.name === dimensions[index].field);
+        seriesField = fields.find((f) => equal(f, dimensions[index]));
       } else {
-        xField = fields.find((f) => f.name === dimensions[0].field);
-        seriesField = fields.find((f) => f.name === dimensions[1].field);
+        xField = fields.find((f) => equal(f, dimensions[0]));
+        seriesField = fields.find((f) => equal(f, dimensions[1]));
       }
     }
   }
