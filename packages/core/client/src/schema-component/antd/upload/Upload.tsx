@@ -1,16 +1,15 @@
 import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
-import { usePrefixCls } from '@formily/antd-v5/esm/__builtins__';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Upload as AntdUpload, Button, Modal, Progress, Space, UploadFile } from 'antd';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Lightbox from 'react-image-lightbox';
+import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
 import { ReadPretty } from './ReadPretty';
 import { isImage, isPdf, toArr, toFileList, toItem, toValue, useUploadProps } from './shared';
-import './style.less';
+import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
 export const Upload: ComposedUpload = connect(
@@ -25,13 +24,16 @@ export const Upload: ComposedUpload = connect(
 
 Upload.Attachment = connect((props: UploadProps) => {
   const { disabled, multiple, value, onChange } = props;
-  const [fileList, setFileList] = useState([]);
+  const [fileList, setFileList] = useState<any[]>([]);
   const [sync, setSync] = useState(true);
   const images = fileList;
   const [fileIndex, setFileIndex] = useState(0);
   const [visible, setVisible] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { t } = useTranslation();
+  const uploadProps = useUploadProps({ ...props });
+  const { wrapSSR, hashId, className: prefixCls } = useStyles();
+
   const internalFileList = useRef([]);
 
   function closeIFrameModal() {
@@ -44,11 +46,11 @@ Upload.Attachment = connect((props: UploadProps) => {
       internalFileList.current = fileList;
     }
   }, [value, sync]);
-  const uploadProps = useUploadProps({ ...props });
-  return (
+
+  return wrapSSR(
     <div>
-      <div className={cls('ant-upload-picture-card-wrapper nb-upload')}>
-        <div className={'ant-upload-list ant-upload-list-picture-card'}>
+      <div className={cls(`${prefixCls}-wrapper`, `${prefixCls}-picture-card-wrapper`, 'nb-upload', hashId)}>
+        <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
           {fileList.map((file) => {
             const handleClick = (e) => {
               e.preventDefault();
@@ -67,25 +69,34 @@ Upload.Attachment = connect((props: UploadProps) => {
               }
             };
             return (
-              <div key={file.uid || file.id} className={'ant-upload-list-picture-card-container'}>
-                <div className="ant-upload-list-item ant-upload-list-item-done ant-upload-list-item-list-type-picture-card">
-                  <div className={'ant-upload-list-item-info'}>
-                    <span className="ant-upload-span">
+              <div
+                key={file.uid || file.id}
+                className={`${prefixCls}-list-picture-card-container ${prefixCls}-list-item-container`}
+              >
+                <div
+                  className={cls(
+                    `${prefixCls}-list-item`,
+                    `${prefixCls}-list-item-done`,
+                    `${prefixCls}-list-item-list-type-picture-card`,
+                  )}
+                >
+                  <div className={`${prefixCls}-list-item-info`}>
+                    <span className={`${prefixCls}-span`}>
                       <a
-                        className="ant-upload-list-item-thumbnail"
+                        className={`${prefixCls}-list-item-thumbnail`}
                         href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={handleClick}
                       >
                         {file.imageUrl && (
-                          <img src={file.imageUrl} alt={file.title} className="ant-upload-list-item-image" />
+                          <img src={file.imageUrl} alt={file.title} className={`${prefixCls}-list-item-image`} />
                         )}
                       </a>
                       <a
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ant-upload-list-item-name"
+                        className={`${prefixCls}-list-item-name`}
                         title={file.title}
                         href={file.url}
                         onClick={handleClick}
@@ -94,7 +105,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                       </a>
                     </span>
                   </div>
-                  <span className={'ant-upload-list-item-actions'}>
+                  <span className={`${prefixCls}-list-item-actions`}>
                     <Space size={3}>
                       <Button
                         size={'small'}
@@ -113,7 +124,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                             setSync(false);
                             setFileList((prevFileList) => {
                               if (!multiple) {
-                                onChange(null);
+                                onChange?.(null as any);
                                 return [];
                               }
                               const index = prevFileList.indexOf(file);
@@ -121,7 +132,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                               internalFileList.current = internalFileList.current.filter(
                                 (item) => item.uid !== file.uid,
                               );
-                              onChange(toValue([...prevFileList]));
+                              onChange?.(toValue([...prevFileList]));
                               return [...prevFileList];
                             });
                           }}
@@ -130,7 +141,7 @@ Upload.Attachment = connect((props: UploadProps) => {
                     </Space>
                   </span>
                   {file.status === 'uploading' && (
-                    <div className={'ant-upload-list-item-progress'}>
+                    <div className={`${prefixCls}-list-item-progress`}>
                       <Progress strokeWidth={2} type={'line'} showInfo={false} percent={file.percent} />
                     </div>
                   )}
@@ -139,7 +150,7 @@ Upload.Attachment = connect((props: UploadProps) => {
             );
           })}
           {!disabled && (multiple || toArr(value).length < 1) && (
-            <div className={'ant-upload-list-picture-card-container'}>
+            <div className={cls(`${prefixCls}-list-picture-card-container`, `${prefixCls}-list-item-container`)}>
               <AntdUpload
                 {...uploadProps}
                 disabled={disabled}
@@ -155,14 +166,14 @@ Upload.Attachment = connect((props: UploadProps) => {
                   setSync(false);
                   if (multiple) {
                     if (info.file.status === 'done') {
-                      onChange(toValue(list));
+                      onChange?.(toValue(list));
                     }
                     setFileList(list.map(toItem));
                   } else {
                     if (info.file.status === 'done') {
                       // TODO(BUG): object 的联动有问题，不响应，折中的办法先置空再赋值
-                      onChange(null);
-                      onChange(info.file?.response?.data);
+                      onChange?.(null as any);
+                      onChange?.(info.file?.response?.data);
                     }
                     setFileList([toItem(info.file)]);
                   }
@@ -182,7 +193,7 @@ Upload.Attachment = connect((props: UploadProps) => {
       </div>
       {/* 预览图片的弹框 */}
       {visible && fileType === 'image' && (
-        <Lightbox
+        <LightBox
           // discourageDownloads={true}
           mainSrc={images[fileIndex]?.imageUrl}
           nextSrc={images[(fileIndex + 1) % images.length]?.imageUrl}
@@ -193,6 +204,7 @@ Upload.Attachment = connect((props: UploadProps) => {
           imageTitle={images[fileIndex]?.title}
           toolbarButtons={[
             <button
+              key={'preview-img'}
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               type="button"
               aria-label="Zoom in"
@@ -261,20 +273,21 @@ Upload.Attachment = connect((props: UploadProps) => {
           </div>
         </Modal>
       )}
-    </div>
+    </div>,
   );
 }, mapReadPretty(ReadPretty.File));
 
 Upload.Dragger = connect(
   (props: DraggerProps) => {
     const { tipContent } = props;
-    return (
-      <div className={usePrefixCls('upload-dragger')}>
+    const { wrapSSR, hashId, className: prefixCls } = useStyles();
+    return wrapSSR(
+      <div className={cls(`${prefixCls}-dragger`, hashId)}>
         <AntdUpload.Dragger {...useUploadProps(props)}>
           {tipContent}
           {props.children}
         </AntdUpload.Dragger>
-      </div>
+      </div>,
     );
   },
   mapProps({
@@ -290,8 +303,9 @@ Upload.DraggerV2 = connect(
     const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
     const extraProps: Record<string, any> = useProps?.() || {};
     const [loading, setLoading] = useState(false);
+    const { wrapSSR, hashId, className: prefixCls } = useStyles();
 
-    const handleChange = (fileList = []) => {
+    const handleChange = (fileList: any[] = []) => {
       const { onChange } = extraProps;
       onChange?.(fileList);
 
@@ -302,16 +316,16 @@ Upload.DraggerV2 = connect(
       }
     };
 
-    return (
-      <div className={usePrefixCls('upload-dragger')}>
+    return wrapSSR(
+      <div className={cls(`${prefixCls}-dragger`, hashId)}>
         <AntdUpload.Dragger {...useUploadProps({ ...props, ...extraProps, onChange: handleChange })}>
-          <p className="ant-upload-drag-icon">
+          <p className={`${prefixCls}-drag-icon`}>
             {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
           </p>
-          <p className="ant-upload-text">{title}</p>
-          <p className="ant-upload-hint">{subTitle}</p>
+          <p className={`${prefixCls}-text`}>{title}</p>
+          <p className={`${prefixCls}-hint`}>{subTitle}</p>
         </AntdUpload.Dragger>
-      </div>
+      </div>,
     );
   },
   mapProps({
