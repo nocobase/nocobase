@@ -1,12 +1,10 @@
 ---
-nav:
-  path: /client
 group:
-  path: /schema-components
+  title: Schema Components
 ---
 
 # ErrorFallback
 
 ## Example
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>

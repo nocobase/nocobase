@@ -1,7 +1,21 @@
 import { RouteSwitch, useRoutes } from '@nocobase/client';
 import React, { useMemo } from 'react';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter, UNSAFE_LocationContext, UNSAFE_RouteContext } from 'react-router-dom';
 import { InterfaceProvider } from './InterfaceProvider';
+
+function RouteCleaner(props) {
+  return (
+    <UNSAFE_RouteContext.Provider
+      value={{
+        outlet: null,
+        matches: [],
+        isDataRoute: false,
+      }}
+    >
+      <UNSAFE_LocationContext.Provider value={null as any}>{props.children}</UNSAFE_LocationContext.Provider>
+    </UNSAFE_RouteContext.Provider>
+  );
+}
 
 interface InterfaceRouterProps {
   [key: string]: any;
@@ -15,19 +29,20 @@ export const InterfaceRouter: React.FC<InterfaceRouterProps> = (props) => {
           nextRoutes.push(item, {
             type: 'redirect',
             to: '/mobile',
-            exact: true,
+            from: '/',
           });
         }
         return nextRoutes;
       }, []),
     [allRoutes],
   );
-
   return (
-    <InterfaceProvider>
+    <RouteCleaner>
       <HashRouter>
-        <RouteSwitch routes={routes}></RouteSwitch>
+        <InterfaceProvider>
+          <RouteSwitch routes={routes}></RouteSwitch>
+        </InterfaceProvider>
       </HashRouter>
-    </InterfaceProvider>
+    </RouteCleaner>
   );
 };

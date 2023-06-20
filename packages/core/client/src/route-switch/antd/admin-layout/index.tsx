@@ -1,19 +1,18 @@
 import { css } from '@emotion/css';
-import { useMutationObserver } from 'ahooks';
 import { Layout, Spin } from 'antd';
-import React, { createContext, useContext, useMemo, useRef, useState } from 'react';
-import { useHistory, useRouteMatch } from 'react-router-dom';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { Outlet, useNavigate, useParams } from 'react-router-dom';
 import {
   ACLRolesCheckProvider,
   CurrentAppInfoProvider,
   CurrentUser,
   CurrentUserProvider,
-  findByUid,
-  findMenuItem,
   PinnedPluginList,
   RemoteCollectionManagerProvider,
   RemoteSchemaTemplateManagerProvider,
   SchemaComponent,
+  findByUid,
+  findMenuItem,
   useACLRoleContext,
   useDocumentTitle,
   useRequest,
@@ -57,17 +56,20 @@ const useMenuProps = () => {
 };
 const MenuEditor = (props) => {
   const { setTitle } = useDocumentTitle();
-  const history = useHistory();
-  const match = useRouteMatch<any>();
-  const defaultSelectedUid = match.params.name;
+  const navigate = useNavigate();
+  const params = useParams<any>();
+  const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
   const route = useRoute();
+  const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
     setTitle(schema.title);
-    history.push(`/admin/${schema['x-uid']}`);
+    setCurrent(schema);
+    navigate(`/admin/${schema['x-uid']}`);
   };
+
   const { data, loading } = useRequest(
     {
       url: `/uiSchemas:getJsonSchema/${route.uiSchemaUid}`,
@@ -76,34 +78,52 @@ const MenuEditor = (props) => {
       refreshDeps: [route.uiSchemaUid],
       onSuccess(data) {
         const schema = filterByACL(data?.data, ctx);
-        if (defaultSelectedUid) {
-          if (defaultSelectedUid.includes('/')) {
-            return;
-          }
-          const s = findByUid(schema, defaultSelectedUid);
+        // url 为 `/admin` 的情况
+        if (params['*'] === 'admin') {
+          const s = findMenuItem(schema);
           if (s) {
+            navigate(`/admin/${s['x-uid']}`);
             setTitle(s.title);
           } else {
-            const s = findMenuItem(schema);
-            if (s) {
-              history.push(`/admin/${s['x-uid']}`);
-              setTitle(s.title);
-            } else {
-              history.push(`/admin/`);
-            }
+            navigate(`/admin/`);
           }
+        }
+
+        // url 不为 `/admin/xxx` 的情况，不做处理
+        const paramsArr = params['*'].split('/');
+        if (paramsArr[0] !== 'admin' || paramsArr[1] !== defaultSelectedUid || paramsArr.length > 2) return;
+
+        // url 为 `admin/xxx` 的情况
+        const s = findByUid(schema, defaultSelectedUid);
+        if (s) {
+          setTitle(s.title);
         } else {
           const s = findMenuItem(schema);
           if (s) {
-            history.push(`/admin/${s['x-uid']}`);
+            navigate(`/admin/${s['x-uid']}`);
             setTitle(s.title);
           } else {
-            history.push(`/admin/`);
+            navigate(`/admin/`);
           }
         }
       },
     },
   );
+
+  useEffect(() => {
+    const properties = Object.values(current?.root?.properties || {}).shift()?.['properties'] || data?.data?.properties;
+    if (properties && sideMenuRef.current) {
+      const pageType = Object.values(properties).find(
+        (item) => item['x-uid'] === params.name && item['x-component'] === 'Menu.Item',
+      );
+      if (pageType) {
+        sideMenuRef.current.style.display = 'none';
+      } else {
+        sideMenuRef.current.style.display = 'block';
+      }
+    }
+  }, [data?.data, params.name, sideMenuRef]);
+
   const schema = useMemo(() => {
     const s = filterByACL(data?.data, ctx);
     if (s?.['x-component-props']) {
@@ -123,22 +143,10 @@ const MenuEditor = (props) => {
 
 export const InternalAdminLayout = (props: any) => {
   const sideMenuRef = useRef<HTMLDivElement>();
-  const [sideMenuWidth, setSideMenuWidth] = useState(0);
-
-  useMutationObserver(
-    (value) => {
-      const width = (value[0].target as HTMLDivElement).offsetWidth;
-      setSideMenuWidth(width);
-    },
-    sideMenuRef,
-    {
-      childList: true,
-      attributes: true,
-    },
-  );
-
   const result = useSystemSettings();
   const { service } = useCollectionManager();
+  const params = useParams<any>();
+
   return (
     <Layout>
       <Layout.Header
@@ -218,37 +226,27 @@ export const InternalAdminLayout = (props: any) => {
           </div>
         </div>
       </Layout.Header>
-      <div
-        style={
-          {
-            '--side-menu-width': `${sideMenuWidth}px`,
-          } as Record<string, string>
-        }
-        className={css`
-          width: var(--side-menu-width);
-          overflow: hidden;
-          flex: 0 0 var(--side-menu-width);
-          max-width: var(--side-menu-width);
-          min-width: var(--side-menu-width);
-          pointer-events: none;
-          /* transition: background-color 0.3s ease 0s, min-width 0.3s ease 0s,
-            max-width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1) 0s; */
-        `}
-      ></div>
-      <Layout.Sider
-        className={css`
-          height: 100%;
-          position: fixed;
-          padding-top: 46px;
-          left: 0;
-          top: 0;
-          background: rgba(0, 0, 0, 0);
-          z-index: 100;
-        `}
-        style={{ display: 'none' }}
-        theme={'light'}
-        ref={sideMenuRef}
-      ></Layout.Sider>
+      {params.name && (
+        <Layout.Sider
+          className={css`
+            height: 100%;
+            /* position: fixed; */
+            position: relative;
+            left: 0;
+            top: 0;
+            background: rgba(0, 0, 0, 0);
+            z-index: 100;
+            .ant-layout-sider-children {
+              top: 46px;
+              position: fixed;
+              width: 200px;
+              height: calc(100vh - 46px);
+            }
+          `}
+          theme={'light'}
+          ref={sideMenuRef}
+        ></Layout.Sider>
+      )}
       <Layout.Content
         className={css`
           display: flex;
@@ -280,25 +278,25 @@ export const InternalAdminLayout = (props: any) => {
             pointer-events: none;
           `}
         ></header>
-        {service.contentLoading ? <Spin /> : props.children}
+        {service.contentLoading ? <Spin /> : <Outlet />}
       </Layout.Content>
     </Layout>
   );
 };
 
 export const AdminProvider = (props) => {
-  return <CurrentAppInfoProvider>
-    <CurrentUserProvider>
-      <RemoteSchemaTemplateManagerProvider>
-        <RemoteCollectionManagerProvider>
-          <ACLRolesCheckProvider>
-            {props.children}
-          </ACLRolesCheckProvider>
-        </RemoteCollectionManagerProvider>
-      </RemoteSchemaTemplateManagerProvider>
-    </CurrentUserProvider>
-  </CurrentAppInfoProvider>
-}
+  return (
+    <CurrentAppInfoProvider>
+      <CurrentUserProvider>
+        <RemoteSchemaTemplateManagerProvider>
+          <RemoteCollectionManagerProvider>
+            <ACLRolesCheckProvider>{props.children}</ACLRolesCheckProvider>
+          </RemoteCollectionManagerProvider>
+        </RemoteSchemaTemplateManagerProvider>
+      </CurrentUserProvider>
+    </CurrentAppInfoProvider>
+  );
+};
 
 export const AdminLayout = (props) => {
   return (

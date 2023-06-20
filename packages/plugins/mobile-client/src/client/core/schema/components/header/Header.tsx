@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { SortableItem, useCompile, useDesigner } from '@nocobase/client';
 import { NavBar, NavBarProps } from 'antd-mobile';
 import React, { useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { HeaderDesigner } from './Header.Designer';
 import { useField } from '@formily/react';
 import { generateNTemplate } from '../../../../locale';
@@ -17,7 +17,7 @@ const InternalHeader = (props: HeaderProps) => {
   const Designer = useDesigner();
   const compile = useCompile();
   const compiledTitle = compile(title);
-  const history = useHistory();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // sync title
@@ -34,7 +34,7 @@ const InternalHeader = (props: HeaderProps) => {
         `,
       )}
     >
-      <NavBar backArrow={showBack} onBack={history.goBack}>
+      <NavBar backArrow={showBack} onBack={() => navigate(-1)}>
         {compiledTitle}
       </NavBar>
       <Designer />

@@ -2,21 +2,21 @@ import { ApiOutlined, SettingOutlined } from '@ant-design/icons';
 import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import React, { useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useACLRoleContext } from '../acl/ACLProvider';
 import { ActionContextProvider, useCompile } from '../schema-component';
 import { getPluginsTabs, SettingsCenterContext } from './index';
 
 export const PluginManagerLink = () => {
   const { t } = useTranslation();
-  const history = useHistory();
+  const navigate = useNavigate();
   return (
     <Tooltip title={t('Plugin manager')}>
       <Button
         icon={<ApiOutlined />}
         title={t('Plugin manager')}
         onClick={() => {
-          history.push('/admin/pm/list/');
+          navigate('/admin/pm/list');
         }}
       />
     </Tooltip>
@@ -38,7 +38,7 @@ export const SettingsCenterDropdown = () => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const compile = useCompile();
-  const history = useHistory();
+  const navigate = useNavigate();
   const itemData = useContext(SettingsCenterContext);
   const pluginsTabs = getPluginsTabs(itemData, snippets);
   const bookmarkTabs = getBookmarkTabs(pluginsTabs);
@@ -59,7 +59,7 @@ export const SettingsCenterDropdown = () => {
             },
           ],
           onClick({ key }) {
-            history.push(key);
+            navigate(key);
           },
         }}
       >

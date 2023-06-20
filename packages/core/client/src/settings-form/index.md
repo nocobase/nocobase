@@ -1,10 +1,9 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # SettingsForm
 
-<code src="./demos/demo1.tsx" />
+<code src="./demos/demo1.tsx"></code>

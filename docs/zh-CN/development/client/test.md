@@ -25,7 +25,6 @@ describe('route-switch', () => {
                 {
                   type: 'route',
                   path: '/',
-                  exact: true,
                   component: 'Home',
                 },
               ]}

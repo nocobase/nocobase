@@ -5,7 +5,7 @@
 - Çekme isteği(pull request) gönderin
 - CLA'yı imzalayın
 
-## İndir 
+## İndir
 
 ```bash
 # Aşağıdaki git adresini kendi deponuzla değiştirin
@@ -47,4 +47,4 @@ Belgeler docs dizinindedir ve Markdown sözdizimini takip eder
 
 ## Diğerleri
 
-Daha fazla CLI talimatı için lütfen [NocoBase CLI bölümüne bakın](./development/nocobase-cli.md)
+Daha fazla CLI talimatı için lütfen [NocoBase CLI bölümüne bakın](https://docs-cn.nocobase.com/api/cli).
