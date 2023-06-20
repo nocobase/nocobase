@@ -3,7 +3,7 @@ import { uid } from '@formily/shared';
 import { message } from 'antd';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Redirect, useHistory } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { SchemaComponent, useAPIClient, useCurrentDocumentTitle, useSystemSettings } from '..';
 import VerificationCode from './VerificationCode';
 
@@ -114,7 +114,7 @@ export interface UseSignupProps {
 }
 
 export const useSignup = (props?: UseSignupProps) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const form = useForm();
   const api = useAPIClient();
   const { t } = useTranslation();
@@ -126,7 +126,7 @@ export const useSignup = (props?: UseSignupProps) => {
       });
       message.success(props?.message?.success || t('Sign up successfully, and automatically jump to the sign in page'));
       setTimeout(() => {
-        history.push('/signin');
+        navigate('/signin');
       }, 2000);
     },
   };
@@ -143,7 +143,7 @@ export const SignupPage = (props: SignupPageProps) => {
   const ctx = useSystemSettings();
   const { allowSignUp, smsAuthEnabled } = ctx?.data?.data || {};
   if (!allowSignUp) {
-    return <Redirect to={'/signin'} />;
+    return <Navigate replace to={'/signin'} />;
   }
   const { schema, components, scope } = props;
   return (

@@ -553,7 +553,7 @@ export default {
   /* add */
   "Unique": "重複を許可しない",
   "Default value": "デフォルト値",
-  "Select Field": "フィールドを選択してください",
+  "Select field": "フィールドを選択してください",
   'Any succeeded or failed': 'いずれかが成功もしくは失敗',
   'Continue after any branch succeeded, or exit after any branch failed': 'いずれかの分岐で成功し続行するか、分岐が失敗した後終了します',
   'Delay': '遅延実行',
@@ -601,8 +601,18 @@ export default {
   'Form data templates': 'フォームデータテンプレート',
   "Data template": "データテンプレート",
   "Duplicate":"レプリケーション",
+  "Duplicating":"コピー中",
   "Duplicate mode":"コピーモード",
   "Quick duplicate":"今すぐコピー",
   "Duplicate and continue":"コピーして続行",
-  "Please configure the duplicate fields":"コピーするフィールドを設定してください"
+  "Please configure the duplicate fields":"コピーするフィールドを設定してください",
+  "Add":"追加",
+  "Add new mode":"追加モード",
+  "Quick add":"すばやい",
+  "Modal add":"ポップアップ窓の追加",
+  "Save mode":"保存方法",
+  "First or create":"存在しない場合に追加",
+  "Update or create":"存在しなければ新規、存在すれば更新",
+  "Find by the following fields":"次のフィールドで検索",
+  "Create":"新規のみ"
 }

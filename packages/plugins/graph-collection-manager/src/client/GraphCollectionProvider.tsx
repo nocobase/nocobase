@@ -5,7 +5,7 @@ import {
   SettingsCenterProvider,
 } from '@nocobase/client';
 import React, { useContext } from 'react';
-import { GraphCollectionPane, GraphCollectionShortcut } from './GraphCollectionShortcut';
+import { GraphCollectionPane } from './GraphCollectionShortcut';
 import { useGCMTranslation } from './utils';
 
 export const GraphCollectionProvider = React.memo((props) => {
@@ -28,7 +28,6 @@ export const GraphCollectionProvider = React.memo((props) => {
         value={{
           components: {
             ...ctx?.components,
-            GraphCollectionShortcut,
           },
         }}
       >

@@ -27,8 +27,8 @@ export class CollectionManagerPlugin extends Plugin {
   public schema: string;
 
   async beforeLoad() {
-    if (process.env.COLLECTION_MANAGER_SCHEMA) {
-      this.schema = process.env.COLLECTION_MANAGER_SCHEMA;
+    if (this.app.db.inDialect('postgres')) {
+      this.schema = process.env.COLLECTION_MANAGER_SCHEMA || this.db.options.schema || 'public';
     }
 
     this.app.db.registerModels({

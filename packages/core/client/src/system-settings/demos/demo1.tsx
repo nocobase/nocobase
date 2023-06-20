@@ -2,11 +2,8 @@ import {
   AntdSchemaComponentProvider,
   APIClient,
   APIClientProvider,
-  PluginManager,
-  PluginManagerProvider,
   SchemaComponentProvider,
   SystemSettingsProvider,
-  SystemSettingsShortcut,
   useSystemSettings,
 } from '@nocobase/client';
 import MockAdapter from 'axios-mock-adapter';
@@ -38,17 +35,7 @@ export default () => {
       <SystemSettingsProvider>
         <SchemaComponentProvider>
           <AntdSchemaComponentProvider>
-            <PluginManagerProvider components={{ SystemSettingsShortcut }}>
-              <PluginManager.Toolbar
-                items={[
-                  {
-                    component: 'SystemSettingsShortcut',
-                    pin: true,
-                  },
-                ]}
-              />
-              <Demo />
-            </PluginManagerProvider>
+            <Demo />
           </AntdSchemaComponentProvider>
         </SchemaComponentProvider>
       </SystemSettingsProvider>

@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /route-components
+  title: Route Components
+  order: 2
 ---
 
 # AuthLayout

@@ -1,5 +1,3 @@
-import React, { useContext } from 'react';
-import { Card } from 'antd';
 import {
   CollectionManagerContext,
   PluginManagerContext,
@@ -7,24 +5,25 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SettingsCenterProvider,
-  registerField,
-  useCollectionDataSource,
+  useCollectionDataSource
 } from '@nocobase/client';
+import { Card } from 'antd';
+import React, { useContext } from 'react';
 
-import { WorkflowPage } from './WorkflowPage';
-import { ExecutionPage } from './ExecutionPage';
-import { triggers } from './triggers';
-import { instructions } from './nodes';
-import { lang } from './locale';
-import { workflowSchema } from './schemas/workflows';
-import { WorkflowLink } from './WorkflowLink';
-import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import { ExecutionLink } from './ExecutionLink';
+import { ExecutionPage } from './ExecutionPage';
+import { ExecutionResourceProvider } from './ExecutionResourceProvider';
+import { WorkflowLink } from './WorkflowLink';
+import { WorkflowPage } from './WorkflowPage';
+import { DynamicExpression } from './components/DynamicExpression';
 import OpenDrawer from './components/OpenDrawer';
+import expressionField from './interfaces/expression';
+import { lang } from './locale';
+import { instructions } from './nodes';
 import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
 import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
-import { DynamicExpression } from './components/DynamicExpression';
-import expressionField from './interfaces/expression';
+import { workflowSchema } from './schemas/workflows';
+import { triggers } from './triggers';
 
 // registerField(expressionField.group, 'expression', expressionField);
 
@@ -87,7 +86,6 @@ export const WorkflowProvider = (props) => {
         value={{
           components: {
             ...pmCtx?.components,
-            // WorkflowShortcut,
           },
         }}
       >

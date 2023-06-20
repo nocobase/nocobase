@@ -194,18 +194,6 @@ export class ClientPlugin extends Plugin {
     this.app.resource({
       name: 'plugins',
       actions: {
-        // TODO: 临时
-        async getPinned(ctx, next) {
-          ctx.body = [
-            { component: 'CollectionManagerShortcut' },
-            { component: 'ACLShortcut' },
-            { component: 'WorkflowShortcut' },
-            { component: 'SchemaTemplateShortcut' },
-            { component: 'SystemSettingsShortcut' },
-            { component: 'FileStorageShortcut' },
-          ];
-          await next();
-        },
         async getInfo(ctx, next) {
           const lang = await getLang(ctx);
           const { filterByTk } = ctx.action.params;

@@ -10,8 +10,8 @@ import React, {
 } from 'react';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
-import { useHistory, useLocation } from 'react-router-dom';
-import { useAPIClient, useCurrentDocumentTitle, useRequest } from '..';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAPIClient, useCurrentDocumentTitle, useRequest, useViewport } from '..';
 import { useSigninPageExtension } from './SigninPageExtension';
 import { useForm } from '@formily/react';
 
@@ -48,12 +48,11 @@ export type Authenticator = {
 export const AuthenticatorsContext = createContext<Authenticator[]>([]);
 
 export function useRedirect(next = '/admin') {
-  const location = useLocation<any>();
-  const history = useHistory();
-  const redirect = location?.['query']?.redirect;
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   return useCallback(() => {
-    history.replace(redirect || '/admin');
-  }, [redirect, history]);
+    navigate(searchParams.get('redirect') || '/admin', { replace: true });
+  }, [navigate, searchParams]);
 }
 
 export const useSignIn = (authenticator) => {
@@ -72,6 +71,7 @@ export const useSignIn = (authenticator) => {
 export const SigninPage = () => {
   const { t } = useTranslation();
   useCurrentDocumentTitle('Signin');
+  useViewport();
   const signInPages = useContext(SigninPageContext);
   const api = useAPIClient();
   const [authenticators, setAuthenticators] = useState<Authenticator[]>([]);

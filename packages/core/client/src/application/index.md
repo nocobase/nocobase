@@ -1,8 +1,7 @@
 ---
-nav:
-  path: /client
 group:
-  path: /client
+  title: Client
+  order: 1
 ---
 
 # Application <Badge>待定</Badge>
@@ -11,4 +10,4 @@ group:
 
 ## compose
 
-<code src="./demos/demo1/index.tsx"/>
+<code src="./demos/demo1/index.tsx"></code>

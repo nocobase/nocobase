@@ -1,7 +1,7 @@
 import { TabBar } from 'antd-mobile';
 import { TabBarItem } from './TabBar.Item';
-import React, { useCallback, useContext } from 'react';
-import { SchemaOptionsContext, useFieldSchema } from '@formily/react';
+import React, { useCallback } from 'react';
+import { useFieldSchema } from '@formily/react';
 import {
   DndContext,
   Icon,
@@ -14,7 +14,7 @@ import {
 import { useTranslation } from '../../../../locale';
 import { css, cx } from '@emotion/css';
 import { uid } from '@formily/shared';
-import { useHistory, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { tabItemSchema } from './schema';
 import { PageSchema } from '../../common';
 
@@ -23,7 +23,7 @@ export const InternalTabBar: React.FC = (props) => {
   const { designable } = useDesignable();
   const { t } = useTranslation();
   const { insertBeforeEnd } = useDesignable();
-  const history = useHistory();
+  const navigate = useNavigate();
   const params = useParams<{ name: string }>();
   const compile = useCompile();
 
@@ -58,7 +58,7 @@ export const InternalTabBar: React.FC = (props) => {
             if (key === 'add-tab') {
               return;
             }
-            history.push(key);
+            navigate(`/mobile/${key}`);
           }}
           safeArea
           className={cx(
