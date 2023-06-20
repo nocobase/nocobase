@@ -44,7 +44,7 @@ No change, upgrade reference [Upgrading for Docker compose](/welcome/getting-sta
 v0.10 has a major upgrade of dependencies, so to prevent errors when upgrading the source code, you need to delete the following directories before upgrading
 
 ```bash
-### Remove .umi-related cache
+# Remove .umi cache
 yarn rimraf -rf "./**/{.umi,.umi-production}"
 # Delete compiled files
 yarn rimraf -rf "./packages/*/*/{lib,esm,es,dist,node_modules}"
