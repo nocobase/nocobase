@@ -2,7 +2,7 @@ import { css, cx } from '@emotion/css';
 import { RecursionField, useFieldSchema } from '@formily/react';
 import { ActionBarProvider, SortableItem, TabsContextProvider, useDesigner } from '@nocobase/client';
 import { TabsProps } from 'antd';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { countGridCol } from '../../helpers';
 import { PageDesigner } from './Page.Designer';
@@ -96,11 +96,14 @@ const InternalPage: React.FC = (props) => {
           'nb-mobile-page-header',
           css`
             & > .ant-tabs > .ant-tabs-nav {
-              margin: 0 var(--nb-spacing);
+              .ant-tabs-tab {
+                margin: 0 !important;
+                padding: 0 16px !important;
+              }
+              background: #fff;
             }
             display: flex;
             flex-direction: column;
-            background: #fff;
           `,
         )}
       >
@@ -110,7 +113,11 @@ const InternalPage: React.FC = (props) => {
             return 'MHeader' === s['x-component'];
           }}
         ></RecursionField>
-        <TabsContextProvider PaneRoot={GlobalActionProvider} activeKey={query.get('tab')} onChange={onTabsChange}>
+        <TabsContextProvider
+          PaneRoot={GlobalActionProvider}
+          activeKey={searchParams.get('tab')}
+          onChange={onTabsChange}
+        >
           <RecursionField
             schema={fieldSchema}
             filterProperties={(s) => {
