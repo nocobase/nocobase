@@ -553,7 +553,7 @@ export default {
   /* add */
   "Unique": "重複を許可しない",
   "Default value": "デフォルト値",
-  "Select Field": "フィールドを選択してください",
+  "Select field": "フィールドを選択してください",
   'Any succeeded or failed': 'いずれかが成功もしくは失敗',
   'Continue after any branch succeeded, or exit after any branch failed': 'いずれかの分岐で成功し続行するか、分岐が失敗した後終了します',
   'Delay': '遅延実行',
