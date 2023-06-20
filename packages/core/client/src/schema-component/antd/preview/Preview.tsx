@@ -33,7 +33,7 @@ export const FileSelector = (props: Props) => {
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
   const internalFileList = useRef([]);
-  const { wrapSSR, hashId, className: prefixCls } = useStyles();
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
   // 兼容旧版本
   const showSelectButton = selectFile === undefined && quickUpload === undefined;

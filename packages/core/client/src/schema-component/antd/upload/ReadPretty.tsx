@@ -30,7 +30,7 @@ ReadPretty.File = function File(props: UploadProps) {
   const [visible, setVisible] = useState(false);
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { size } = props;
-  const { wrapSSR, hashId, className: prefixCls } = useStyles();
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
   function closeIFrameModal() {
     setVisible(false);

@@ -55,7 +55,7 @@ export const toColumns = (groupField: any, dataSource: Array<any> = []) => {
 
 export const Kanban: any = observer(
   (props: any) => {
-    const { wrapSSR, hashId, className } = useStyles();
+    const { wrapSSR, hashId, componentCls: className } = useStyles();
     const { groupField, onCardDragEnd, ...restProps } = useProps(props);
     const field = useField<ArrayField>();
     const fieldSchema = useFieldSchema();

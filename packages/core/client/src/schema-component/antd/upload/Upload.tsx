@@ -32,7 +32,7 @@ Upload.Attachment = connect((props: UploadProps) => {
   const [fileType, setFileType] = useState<'image' | 'pdf'>();
   const { t } = useTranslation();
   const uploadProps = useUploadProps({ ...props });
-  const { wrapSSR, hashId, className: prefixCls } = useStyles();
+  const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
   const internalFileList = useRef([]);
 
@@ -280,7 +280,7 @@ Upload.Attachment = connect((props: UploadProps) => {
 Upload.Dragger = connect(
   (props: DraggerProps) => {
     const { tipContent } = props;
-    const { wrapSSR, hashId, className: prefixCls } = useStyles();
+    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
     return wrapSSR(
       <div className={cls(`${prefixCls}-dragger`, hashId)}>
         <AntdUpload.Dragger {...useUploadProps(props)}>
@@ -303,7 +303,7 @@ Upload.DraggerV2 = connect(
     const { title = defaultTitle, subTitle = defaultSubTitle, useProps } = props;
     const extraProps: Record<string, any> = useProps?.() || {};
     const [loading, setLoading] = useState(false);
-    const { wrapSSR, hashId, className: prefixCls } = useStyles();
+    const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
 
     const handleChange = (fileList: any[] = []) => {
       const { onChange } = extraProps;

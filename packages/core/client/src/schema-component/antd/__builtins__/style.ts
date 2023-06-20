@@ -57,7 +57,7 @@ export const genCommonStyle = (token: any, componentPrefixCls: string): CSSObjec
 export type UseComponentStyleResult = {
   wrapSSR: ReturnType<typeof useStyleRegister>;
   hashId: string;
-  className: string;
+  componentCls: string;
 };
 
 export const genStyleHook = <ComponentName extends OverrideComponent>(
@@ -97,7 +97,7 @@ export const genStyleHook = <ComponentName extends OverrideComponent>(
         },
       ),
       hashId,
-      className: prefixCls,
+      componentCls: prefixCls,
     };
   };
 };

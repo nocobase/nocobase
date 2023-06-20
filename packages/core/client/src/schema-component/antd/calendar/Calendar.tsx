@@ -199,7 +199,7 @@ export const Calendar: any = observer(
     const events = useEvents(dataSource, fieldNames, date, view);
     const [visible, setVisible] = useState(false);
     const [record, setRecord] = useState<any>({});
-    const { wrapSSR, hashId, className: containerClassName } = useStyle();
+    const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
 
     const components = useMemo(() => {
       return {

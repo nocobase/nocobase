@@ -23,7 +23,7 @@ export const Markdown: any = connect(
 );
 
 export const MarkdownReadPretty = (props) => {
-  const { wrapSSR, hashId, className } = useStyles();
+  const { wrapSSR, hashId, componentCls: className } = useStyles();
   const { html = '', loading } = useParseMarkdown(props.value);
   const text = convertToText(html);
   const value = <div className={`${hashId} ${className} nb-markdown`} dangerouslySetInnerHTML={{ __html: html }} />;
