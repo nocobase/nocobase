@@ -13,7 +13,7 @@ import {
   isMovingACardToAnotherPosition,
   isMovingAColumnToAnotherPosition,
 } from './services';
-import { styleContainer } from './style';
+import { useStyles } from './style';
 import { partialRight, when } from './utils';
 import withDroppable from './withDroppable';
 
@@ -24,8 +24,10 @@ const Columns = forwardRef((props, ref: any) => (
 const DroppableBoard = withDroppable(Columns);
 
 const Board: any = (props) => {
+  const { styles } = useStyles();
+
   return (
-    <div className={styleContainer}>
+    <div className={styles}>
       {props.initialBoard ? <UncontrolledBoard {...props} /> : <ControlledBoard {...props} />}
     </div>
   );
