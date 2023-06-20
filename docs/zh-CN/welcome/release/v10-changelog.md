@@ -199,6 +199,16 @@ import React from 'react';
 + const location= useLocation();
 ```
 
+`const { query } = useLocation()` 改为 `useSearchParams()`。
+
+```diff
+- const location = useLocation();
+- const query = location.query;
+- const name = query.name;
++ const [searchParams, setSearchParams] = useSearchParams();
++ searchParams.get('name');
+```
+
 #### path
 
 支持下面的 `path` 方式
