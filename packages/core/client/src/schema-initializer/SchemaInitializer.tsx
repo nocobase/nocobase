@@ -9,7 +9,7 @@ import { useCollectMenuItem, useMenuItem } from '../hooks/useMenuItem';
 import { Icon } from '../icon';
 import { SchemaComponent, useActionContext } from '../schema-component';
 import { useCompile, useDesignable } from '../schema-component/hooks';
-import './style.less';
+import { useStyles } from './style';
 import {
   SchemaInitializerButtonProps,
   SchemaInitializerItemComponent,
@@ -42,8 +42,6 @@ export const SchemaInitializerButtonContext = createContext<{
 
 export const SchemaInitializer = () => null;
 
-const menuItemGroupCss = 'nb-menu-item-group';
-
 SchemaInitializer.Button = observer(
   (props: SchemaInitializerButtonProps) => {
     const {
@@ -64,6 +62,7 @@ SchemaInitializer.Button = observer(
     const [visible, setVisible] = useState(false);
     const { Component: CollectionComponent, getMenuItem, clean } = useMenuItem();
     const [searchValue, setSearchValue] = useState('');
+    const { styles } = useStyles();
     const [isPending, startTransition] = useTransition();
     const menuItems = useRef([]);
 
@@ -162,7 +161,7 @@ SchemaInitializer.Button = observer(
                 key: item.key || `item-group-${indexA}`,
                 label,
                 title: label,
-                popupClassName: menuItemGroupCss,
+                popupClassName: styles.nbMenuItemGroup,
                 children: renderItems(item.children),
               }
             );
@@ -207,6 +206,7 @@ SchemaInitializer.Button = observer(
 );
 
 SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
+  const { styles } = useStyles();
   const { info } = useContext(SchemaInitializerItemContext);
   const compile = useCompile();
   const { items = [], children = info?.title, icon, onClick } = props;
@@ -233,7 +233,7 @@ SchemaInitializer.Item = function Item(props: SchemaInitializerItemProps) {
             key: item.key || `item-group-${indexA}`,
             label,
             title: label,
-            className: menuItemGroupCss,
+            className: styles.nbMenuItemGroup,
             children: renderMenuItem(item.children),
           } as MenuProps['items'][0];
         }
