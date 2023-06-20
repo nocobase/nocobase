@@ -39,7 +39,7 @@ describe('query', () => {
           field: 'field',
         },
       ];
-      const result1 = parseBuilder(ctx, { measures: measures1 });
+      const { queryParams: result1 } = parseBuilder(ctx, { measures: measures1 });
       expect(result1.attributes).toEqual(['field']);
 
       const measures2 = [
@@ -49,7 +49,7 @@ describe('query', () => {
           alias: 'alias',
         },
       ];
-      const result2 = parseBuilder(ctx, { measures: measures2 });
+      const { queryParams: result2 } = parseBuilder(ctx, { measures: measures2 });
       expect(result2.attributes).toEqual([[['sum', 'field'], 'alias']]);
     });
 
@@ -62,7 +62,7 @@ describe('query', () => {
           alias: 'alias',
         },
       ];
-      const result = parseBuilder(ctx, { dimensions });
+      const { queryParams: result } = parseBuilder(ctx, { dimensions });
       expect(result.attributes).toEqual([['formatted-field', 'alias']]);
       expect(result.group).toEqual([]);
 
@@ -72,7 +72,7 @@ describe('query', () => {
           aggregation: 'sum',
         },
       ];
-      const result2 = parseBuilder(ctx, { measures, dimensions });
+      const { queryParams: result2 } = parseBuilder(ctx, { measures, dimensions });
       expect(result2.group).toEqual(['alias']);
     });
 
@@ -82,7 +82,7 @@ describe('query', () => {
           $gt: '2020-01-01',
         },
       };
-      const result = parseBuilder(ctx, { filter });
+      const { queryParams: result } = parseBuilder(ctx, { filter });
       expect(result.where.testField).toBeDefined();
     });
   });
