@@ -15,8 +15,6 @@ import { Router } from './Router';
 import { ApplicationOptions, ComponentAndProps, ComponentTypeAndString } from './types';
 import { getCurrentTimezone, normalizeContainer } from './utils';
 
-let app: Application;
-
 export class Application {
   providers: ComponentAndProps[];
   router: Router;
@@ -27,10 +25,6 @@ export class Application {
   pm: PluginManager;
 
   constructor(protected options: ApplicationOptions) {
-    // avoid duplicate instance
-    if (app) return app;
-    app = this;
-
     this.providers = [];
     this.scopes = options.scopes || {};
     this.components = options.components || {};

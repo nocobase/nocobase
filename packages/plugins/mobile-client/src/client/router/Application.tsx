@@ -1,10 +1,10 @@
+import { css, cx } from '@emotion/css';
+import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
+import { DrawerProps, ModalProps } from 'antd';
 import React, { useMemo } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
-import { ActionContextProvider, AdminProvider, RemoteSchemaComponent, useRoute, useViewport } from '@nocobase/client';
-import { css, cx } from '@emotion/css';
-import { useInterfaceContext } from './InterfaceProvider';
-import { DrawerProps, ModalProps } from 'antd';
 import { MobileCore } from '../core';
+import { useInterfaceContext } from './InterfaceProvider';
 
 const commonCSSVariables = css`
   --nb-spacing: 14px;
