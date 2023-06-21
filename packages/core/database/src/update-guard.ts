@@ -93,6 +93,8 @@ export class UpdateGuard {
     Object.keys(associationsValues).forEach((association) => {
       let associationValues = associationsValues[association];
 
+      const associationObj = associations[association];
+
       const filterAssociationToBeUpdate = (value) => {
         if (value === null) {
           return value;
@@ -103,8 +105,6 @@ export class UpdateGuard {
         if (associationKeysToBeUpdate.includes(association)) {
           return value;
         }
-
-        const associationObj = associations[association];
 
         const associationKeyName =
           associationObj.associationType == 'BelongsTo' || associationObj.associationType == 'HasOne'
@@ -143,6 +143,13 @@ export class UpdateGuard {
 
       // set association values to sanitized value
       values[association] = associationValues;
+
+      if (
+        associationObj.associationType === 'BelongsTo' &&
+        (typeof associationValues !== 'object' || associationValues === null)
+      ) {
+        values[(associationObj as any).foreignKey] = associationValues;
+      }
     });
 
     if (values instanceof Model) {

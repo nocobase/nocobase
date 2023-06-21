@@ -398,6 +398,7 @@ describe('repository.update', () => {
       fields: [
         { type: 'string', name: 'name' },
         { type: 'hasMany', name: 'comments' },
+        { type: 'belongsTo', name: 'user' },
       ],
     });
     Comment = db.collection({
@@ -536,6 +537,47 @@ describe('repository.update', () => {
     expect(postsAfterUpdated[2].name).toBe('p3');
 
     expect(hook).toBeCalledTimes(0);
+  });
+
+  it('update in batch with belongsTo field as foreignKey', async () => {
+    const u1 = await User.repository.create({ values: { name: 'u1' } });
+    const u2 = await User.repository.create({ values: { name: 'u2' } });
+    const p1 = await Post.repository.create({ values: { name: 'p1', userId: u1.id } });
+    const p2 = await Post.repository.create({ values: { name: 'p2', userId: u1.id } });
+
+    const r1 = await Post.repository.update({
+      filter: {
+        name: p1.name,
+      },
+      values: {
+        user: u2.id,
+      },
+      individualHooks: false,
+    });
+
+    expect(r1).toEqual(1);
+
+    const updatedP1 = await Post.repository.findOne({
+      filterByTk: p1.id,
+    });
+    expect(updatedP1.userId).toBe(u2.id);
+
+    const r2 = await Post.repository.update({
+      filter: {
+        id: p2.id,
+      },
+      values: {
+        user: null,
+      },
+      individualHooks: false,
+    });
+
+    expect(r2).toEqual(1);
+
+    const updatedP2 = await Post.repository.findOne({
+      filterByTk: p2.id,
+    });
+    expect(updatedP2.userId).toBe(null);
   });
 });
 
