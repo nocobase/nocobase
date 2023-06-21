@@ -18,7 +18,6 @@ import {
   useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
-  useRoute,
   useSystemSettings,
 } from '../../../';
 import { Plugin } from '../../../application-v2';
@@ -65,7 +64,6 @@ const MenuEditor = (props) => {
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
-  const route = useRoute();
   const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
