@@ -3,9 +3,12 @@ export * from './FlowContext';
 export * from './nodes';
 export { triggers } from './triggers';
 
-import { Plugin } from '@nocobase/client';
+import { Plugin, useCollectionDataSource } from '@nocobase/client';
 import React from 'react';
+import { DynamicExpression } from './components/DynamicExpression';
 import { ExecutionPage } from './ExecutionPage';
+import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
+import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { WorkflowPage } from './WorkflowPage';
 import { WorkflowProvider } from './WorkflowProvider';
 
@@ -15,10 +18,19 @@ export class WorkflowPlugin extends Plugin {
     this.app.use(WorkflowProvider);
   }
 
+  addScopes() {
+    this.app.addScopes({
+      useCollectionDataSource,
+    });
+  }
+
   addComponents() {
     this.app.addComponents({
       WorkflowPage,
       ExecutionPage,
+      WorkflowTodo,
+      WorkflowTodoBlockInitializer,
+      DynamicExpression,
     });
   }
 

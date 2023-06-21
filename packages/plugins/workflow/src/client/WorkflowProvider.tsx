@@ -2,21 +2,16 @@ import {
   CollectionManagerContext,
   PluginManagerContext,
   SchemaComponent,
-  SchemaComponentOptions,
   SettingsCenterProvider,
-  useCollectionDataSource,
 } from '@nocobase/client';
 import { Card } from 'antd';
 import React, { useContext } from 'react';
-import { DynamicExpression } from './components/DynamicExpression';
 import OpenDrawer from './components/OpenDrawer';
 import { ExecutionLink } from './ExecutionLink';
 import { ExecutionResourceProvider } from './ExecutionResourceProvider';
 import expressionField from './interfaces/expression';
 import { lang } from './locale';
 import { instructions } from './nodes';
-import { WorkflowTodo } from './nodes/manual/WorkflowTodo';
-import { WorkflowTodoBlockInitializer } from './nodes/manual/WorkflowTodoBlockInitializer';
 import { workflowSchema } from './schemas/workflows';
 import { triggers } from './triggers';
 import { WorkflowLink } from './WorkflowLink';
@@ -72,28 +67,17 @@ export const WorkflowProvider = (props) => {
           },
         }}
       >
-        <SchemaComponentOptions
-          components={{
-            WorkflowTodo,
-            WorkflowTodoBlockInitializer,
-            DynamicExpression,
-          }}
-          scope={{
-            useCollectionDataSource,
+        <CollectionManagerContext.Provider
+          value={{
+            ...cmCtx,
+            interfaces: {
+              ...cmCtx.interfaces,
+              expression: expressionField,
+            },
           }}
         >
-          <CollectionManagerContext.Provider
-            value={{
-              ...cmCtx,
-              interfaces: {
-                ...cmCtx.interfaces,
-                expression: expressionField,
-              },
-            }}
-          >
-            <WorkflowContext.Provider value={{ triggers, instructions }}>{props.children}</WorkflowContext.Provider>
-          </CollectionManagerContext.Provider>
-        </SchemaComponentOptions>
+          <WorkflowContext.Provider value={{ triggers, instructions }}>{props.children}</WorkflowContext.Provider>
+        </CollectionManagerContext.Provider>
       </PluginManagerContext.Provider>
     </SettingsCenterProvider>
   );

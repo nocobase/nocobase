@@ -5,7 +5,6 @@ import { cloneDeep } from 'lodash';
 import React, { createContext, ReactNode, useContext, useMemo } from 'react';
 import { useAPIClient, useRequest } from '../api-client';
 import { Plugin } from '../application-v2';
-import { SchemaComponentOptions } from '../schema-component';
 import { BlockTemplate } from './BlockTemplate';
 
 export const SchemaTemplateManagerContext = createContext<any>({});
@@ -14,7 +13,7 @@ export const SchemaTemplateManagerProvider: React.FC<any> = (props) => {
   const { templates, refresh } = props;
   return (
     <SchemaTemplateManagerContext.Provider value={{ templates, refresh }}>
-      <SchemaComponentOptions components={{ BlockTemplate }}>{props.children}</SchemaComponentOptions>
+      {props.children}
     </SchemaTemplateManagerContext.Provider>
   );
 };
@@ -141,7 +140,14 @@ export const RemoteSchemaTemplateManagerProvider: React.FC<{ children?: ReactNod
 export class RemoteSchemaTemplateManagerPlugin extends Plugin {
   async load() {
     this.addRoutes();
+    this.addComponents();
     this.app.use(RemoteSchemaTemplateManagerProvider);
+  }
+
+  addComponents() {
+    this.app.addComponents({
+      BlockTemplate,
+    });
   }
 
   addRoutes() {
