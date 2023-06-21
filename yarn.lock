@@ -12529,7 +12529,7 @@ dumi-assets-types@2.0.0-alpha.0:
   resolved "https://registry.npmmirror.com/dumi-assets-types/-/dumi-assets-types-2.0.0-alpha.0.tgz#46bf619ed1cb6d27bbe6a9cfe4be51e5e9589981"
   integrity sha512-a/Y5lf0G6gwsEQ9hop/n03CcjmHsGBk384Cz/AEX6mRYrfSpUx/lQvP9HLoXkCzScl9PL1sSmLPnMkgaXDCZLA==
 
-dumi-theme-nocobase@^0.2.12:
+dumi-theme-nocobase@^0.2.12, dumi-theme-nocobase@^0.2.9:
   version "0.2.12"
   resolved "https://registry.yarnpkg.com/dumi-theme-nocobase/-/dumi-theme-nocobase-0.2.12.tgz#663c9bab60ae6dcfd5255b99780b4ddb7942ace7"
   integrity sha512-ObjJZkKWYqeZ+JlQGOX71vI+FPD9RxASYRrFZV9vpkIALwkLfolwX+8JZTHq9VS8dG3+3tAukVY25FOagVs4ZA==
