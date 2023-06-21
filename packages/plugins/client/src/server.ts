@@ -1,4 +1,3 @@
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin, PluginManager } from '@nocobase/server';
 import fs from 'fs';
 import send from 'koa-send';
@@ -90,7 +89,7 @@ export class ClientPlugin extends Plugin {
     });
 
     this.db.on('systemSettings.beforeCreate', async (instance, { transaction }) => {
-      const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+      const uiSchemas = this.db.getRepository<any>('uiSchemas');
       const schema = await uiSchemas.insert(
         {
           type: 'void',

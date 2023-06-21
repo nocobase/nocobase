@@ -1,4 +1,3 @@
-import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import { Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { routes } from './routes';
@@ -23,7 +22,7 @@ export class MobileClientPlugin extends Plugin {
         values,
       });
     }
-    const uiSchemas = this.db.getRepository<UiSchemaRepository>('uiSchemas');
+    const uiSchemas = this.db.getRepository<any>('uiSchemas');
     const systemSettings = this.db.getRepository('systemSettings');
     const schema = await uiSchemas.insert({
       type: 'void',
