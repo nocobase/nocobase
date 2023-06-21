@@ -1,4 +1,4 @@
-import { DownOutlined, PlusOutlined } from '@ant-design/icons';
+import { DownOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { RecursionField, observer, useField, useFieldSchema } from '@formily/react';
 import { Button, Dropdown, MenuProps } from 'antd';
@@ -154,7 +154,7 @@ export const CreateAction = observer(
     const values = useRecord();
     const compile = useCompile();
     const { designable } = useDesignable();
-    const icon = props.icon || <PlusOutlined />;
+    const icon = props.icon || null;
     const menuItems = useMemo<MenuProps['items']>(() => {
       return inheritsCollections.map((option) => ({
         key: option.name,
