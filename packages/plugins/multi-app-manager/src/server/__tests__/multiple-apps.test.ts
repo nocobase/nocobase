@@ -1,4 +1,5 @@
 import { Database } from '@nocobase/database';
+import { AppSupervisor } from '@nocobase/server';
 import { mockServer, MockServer } from '@nocobase/test';
 import { uid } from '@nocobase/utils';
 import { PluginMultiAppManager } from '../server';
@@ -32,6 +33,7 @@ describe('multiple apps create', () => {
     });
 
     const name = `td_${uid()}`;
+
     await db.getRepository('applications').create({
       values: {
         name,
@@ -40,14 +42,16 @@ describe('multiple apps create', () => {
         },
       },
     });
-    await app.appManager.removeApplication(name);
+
+    await AppSupervisor.getInstance().removeApp(name);
 
     expect(fn).toBeCalled();
   });
 
   it('should create application', async () => {
     const name = `td_${uid()}`;
-    const miniApp = await db.getRepository('applications').create({
+
+    await db.getRepository('applications').create({
       values: {
         name,
         options: {
@@ -56,7 +60,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.appManager.applications.get(name)).toBeDefined();
+    expect(AppSupervisor.getInstance().getApp(name)).toBeDefined();
   });
 
   it('should remove application', async () => {
@@ -70,7 +74,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.appManager.applications.get(name)).toBeDefined();
+    expect(AppSupervisor.getInstance().getApp(name)).toBeDefined();
 
     await db.getRepository('applications').destroy({
       filter: {
@@ -78,7 +82,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    expect(app.appManager.applications.get(name)).toBeUndefined();
+    expect(AppSupervisor.getInstance().getApp(name)).toBeUndefined();
   });
 
   it('should create with plugins', async () => {
@@ -92,7 +96,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    const miniApp = app.appManager.applications.get(name);
+    const miniApp = await AppSupervisor.getInstance().getApp(name);
     expect(miniApp).toBeDefined();
 
     const plugin = miniApp.pm.get('ui-schema-storage');
@@ -105,6 +109,7 @@ describe('multiple apps create', () => {
 
   it('should lazy load applications', async () => {
     const name = `td_${uid()}`;
+
     await db.getRepository('applications').create({
       values: {
         name,
@@ -114,17 +119,13 @@ describe('multiple apps create', () => {
       },
     });
 
-    await app.appManager.removeApplication(name);
+    AppSupervisor.getInstance().removeApp(name);
 
-    app.appManager.setAppSelector(() => {
-      return name;
-    });
-
-    expect(app.appManager.applications.has(name)).toBeFalsy();
+    expect(AppSupervisor.getInstance().getApp(name)).toBeFalsy();
 
     await app.agent().resource('test').test();
 
-    expect(app.appManager.applications.has(name)).toBeTruthy();
+    expect(AppSupervisor.getInstance().getApp(name)).toBeTruthy();
   });
 
   it('should upgrade sub apps when main app upgrade', async () => {
@@ -139,7 +140,7 @@ describe('multiple apps create', () => {
       },
     });
 
-    const subApp = await app.appManager.getApplication(subAppName);
+    const subApp = await AppSupervisor.getInstance().getApp(subAppName);
     const jestFn = jest.fn();
 
     subApp.on('afterUpgrade', () => {
@@ -160,17 +161,18 @@ describe('multiple apps create', () => {
         options: {},
       },
     });
-    await app.appManager.removeApplication(subAppName);
+    await AppSupervisor.getInstance().removeApp(subAppName);
+
     await app.start();
-    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeUndefined();
     await subApp.update({
       options: {
         autoStart: true,
       },
     });
-    await app.appManager.removeApplication(subAppName);
+    await AppSupervisor.getInstance().removeApp(subAppName);
     await app.start();
-    expect(app.appManager.applications.get(subAppName)).toBeDefined();
+    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeDefined();
   });
 
   it('should get same obj ref when asynchronously access with same sub app name', async () => {
@@ -183,8 +185,8 @@ describe('multiple apps create', () => {
       },
     });
 
-    await app.appManager.removeApplication(subAppName);
-    expect(app.appManager.applications.get(subAppName)).toBeUndefined();
+    await AppSupervisor.getInstance().removeApp(subAppName);
+    expect(AppSupervisor.getInstance().getApp(subAppName)).toBeUndefined();
 
     const instances = [];
 
@@ -196,7 +198,7 @@ describe('multiple apps create', () => {
     for (let i = 0; i < 3; i++) {
       promises.push(
         (async () => {
-          await app.appManager.getApplication(subAppName);
+          await AppSupervisor.getInstance().getApp(subAppName);
         })(),
       );
     }

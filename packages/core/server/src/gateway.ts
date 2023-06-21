@@ -1,7 +1,4 @@
-import http, { IncomingMessage, OutgoingMessage } from 'http';
-import * as process from 'process';
 import Application from './application';
-import { AppSupervisor } from './app-supervisor';
 
 type AppSelectorReturn = Application | string | undefined | null;
 export type AppSelector = (req: IncomingMessage) => AppSelectorReturn | Promise<AppSelectorReturn>;
@@ -35,14 +32,15 @@ export class Gateway {
   }
 
   async requestHandler(req: IncomingMessage, res: OutgoingMessage) {
-    const handleApp = await this.appSelector(req);
-    const app = typeof handleApp === 'string' ? AppSupervisor.getInstance().getApp(handleApp) : handleApp;
+    const handleApp = (await this.appSelector(req)) || 'main';
+
+    const app: Application = typeof handleApp === 'string' ? AppSupervisor.getInstance().getApp(handleApp) : handleApp;
 
     if (!app) {
-      console.log('app not found');
+      console.log(`app ${handleApp} not found`);
+      return;
     }
 
-    console.log(app.fsm.currentState());
     app.callback()(req, res);
   }
 

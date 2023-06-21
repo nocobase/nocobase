@@ -12,20 +12,14 @@ export class AppSupervisor {
     if (!AppSupervisor.instance) {
       AppSupervisor.instance = new AppSupervisor();
     }
+
     return AppSupervisor.instance;
   }
 
-  getApp(appName: string) {
+  async getApp(appName: string) {
+    console.log(this.apps);
     return this.apps[appName];
   }
-
-  startApp(appName: string) {}
-
-  stopApp(appName: string) {}
-
-  restartApp(appName: string) {}
-
-  getStatus(appName: string) {}
 
   addApp(app: Application) {
     // if there is already an app with the same name, throw error

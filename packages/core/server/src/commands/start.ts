@@ -40,6 +40,7 @@ export default (app: Application) => {
 
         client.on('data', (data) => {
           const dataAsString = data.toString();
+          console.log({ dataAsString });
           if (dataAsString == 'start') {
             Gateway.getInstance().start();
           }

@@ -15,7 +15,6 @@ import compose from 'koa-compose';
 import semver from 'semver';
 import { promisify } from 'util';
 import { createACL } from './acl';
-import { AppManager } from './app-manager';
 import { registerCli } from './commands';
 import { createI18n, createResourcer, registerMiddlewares } from './helper';
 import { Plugin } from './plugin';
@@ -219,12 +218,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   get acl() {
     return this._acl;
-  }
-
-  protected _appManager: AppManager;
-
-  get appManager() {
-    return this._appManager;
   }
 
   protected _authManager: AuthManager;
@@ -520,12 +513,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         app: this,
         plugins: options.plugins,
       });
-    }
-
-    if (this._appManager) {
-      this._appManager.bindMainApplication(this);
-    } else {
-      this._appManager = new AppManager(this);
     }
 
     this._authManager = new AuthManager({

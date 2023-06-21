@@ -1,10 +1,5 @@
-import Database, { IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppManager, Plugin } from '@nocobase/server';
-import lodash from 'lodash';
-import * as path from 'path';
-import { resolve } from 'path';
-import { ApplicationModel } from './models/application';
-import { Mutex } from 'async-mutex';
+import { Transactionable } from '@nocobase/database';
+import Application from '@nocobase/server';
 
 export type AppDbCreator = (app: Application, transaction?: Transactionable) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
@@ -72,14 +67,6 @@ export class PluginMultiAppManager extends Plugin {
 
   private beforeGetApplicationMutex = new Mutex();
 
-  setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory;
-  }
-
-  setAppDbCreator(appDbCreator: AppDbCreator) {
-    this.appDbCreator = appDbCreator;
-  }
-
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     const oldConfig =
       app.options.database instanceof Database
@@ -89,6 +76,14 @@ export class PluginMultiAppManager extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
+  setAppOptionsFactory(factory: AppOptionsFactory) {
+    this.appOptionsFactory = factory;
+  }
+
+  setAppDbCreator(appDbCreator: AppDbCreator) {
+    this.appDbCreator = appDbCreator;
+  }
+
   beforeLoad() {
     this.db.registerModels({
       ApplicationModel,
@@ -96,7 +91,7 @@ export class PluginMultiAppManager extends Plugin {
   }
 
   async load() {
-    this.app.appManager.setAppSelector(async (req) => {
+    Gateway.getInstance().setAppSelector(async (req) => {
       if (req.headers['x-app']) {
         return req.headers['x-app'];
       }
