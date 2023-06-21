@@ -15,6 +15,7 @@ import {
   findByUid,
   findMenuItem,
   useACLRoleContext,
+  useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
   useRoute,
@@ -55,11 +56,6 @@ const useMenuProps = () => {
     selectedUid: defaultSelectedUid,
     defaultSelectedUid,
   };
-};
-
-const useAdminSchemaUid = () => {
-  const ctx = useSystemSettings();
-  return ctx?.data?.data?.options?.adminSchemaUid;
 };
 
 const MenuEditor = (props) => {
