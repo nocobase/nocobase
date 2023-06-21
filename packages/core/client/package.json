@@ -54,7 +54,7 @@
     "react-is": ">=18.0.0"
   },
   "devDependencies": {
-    "@testing-library/react": "^12.1.2",
+    "@testing-library/react": "^14.0.0",
     "@types/markdown-it": "12.2.3",
     "@types/markdown-it-highlightjs": "3.3.1",
     "@types/react-big-calendar": "^1.6.4",
