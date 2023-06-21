@@ -27,6 +27,11 @@ export const useMenuItems = () => {
   return useContext(MenuItemsContext);
 };
 
+const useAdminSchemaUid = () => {
+  const ctx = useSystemSettings();
+  return ctx?.data?.data?.options?.adminSchemaUid;
+};
+
 export const MenuItemsProvider = (props) => {
   const adminSchemaUid = useAdminSchemaUid();
   const options = {

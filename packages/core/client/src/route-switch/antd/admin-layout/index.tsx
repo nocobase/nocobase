@@ -17,7 +17,6 @@ import {
   useAdminSchemaUid,
   useDocumentTitle,
   useRequest,
-  useRoute,
   useSystemSettings,
 } from '../../../';
 import { useCollectionManager } from '../../../collection-manager';
@@ -63,7 +62,6 @@ const MenuEditor = (props) => {
   const defaultSelectedUid = params.name;
   const { sideMenuRef } = props;
   const ctx = useACLRoleContext();
-  const route = useRoute();
   const [current, setCurrent] = useState(null);
   const onSelect = ({ item }) => {
     const schema = item.props.schema;
